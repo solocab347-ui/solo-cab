@@ -27,7 +27,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("Function started", { action });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -50,6 +50,9 @@ serve(async (req) => {
     if (!user?.id) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const origin = req.headers.get("origin") || "https://solocab.fr";
+
     // Get driver data to find Stripe customer ID
     const { data: driver, error: driverError } = await supabaseClient
       .from("drivers")
@@ -57,9 +60,15 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (driverError || !driver) {
-      logStep("Driver not found, checking fleet manager");
-      
+    let stripeCustomerId: string | null = null;
+    let returnUrl = `${origin}/driver-dashboard?tab=subscription`;
+    let isPioneer = false;
+
+    if (!driverError && driver?.stripe_customer_id) {
+      stripeCustomerId = driver.stripe_customer_id;
+      isPioneer = driver.is_pioneer || false;
+      logStep("Found driver Stripe customer", { customerId: stripeCustomerId, isPioneer });
+    } else {
       // Check if fleet manager
       const { data: fleetManager, error: fmError } = await supabaseClient
         .from("fleet_managers")
@@ -67,67 +76,59 @@ serve(async (req) => {
         .eq("user_id", user.id)
         .single();
 
-      if (fmError || !fleetManager?.stripe_customer_id) {
-        throw new Error("No Stripe customer found for this user");
+      if (!fmError && fleetManager?.stripe_customer_id) {
+        stripeCustomerId = fleetManager.stripe_customer_id;
+        returnUrl = `${origin}/fleet-dashboard`;
+        logStep("Found fleet manager Stripe customer", { customerId: stripeCustomerId });
       }
-
-      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-      const origin = req.headers.get("origin") || "https://solocab.fr";
-      
-      // Build portal session config based on action
-      const portalConfig: any = {
-        customer: fleetManager.stripe_customer_id,
-        return_url: `${origin}/fleet-dashboard`,
-      };
-
-      // Add flow_data for specific actions
-      if (action === "payment_method") {
-        portalConfig.flow_data = {
-          type: "payment_method_update",
-        };
-      }
-      
-      const portalSession = await stripe.billingPortal.sessions.create(portalConfig);
-      
-      logStep("Fleet manager portal session created", { url: portalSession.url, action });
-      
-      return new Response(JSON.stringify({ url: portalSession.url }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
     }
 
-    if (!driver.stripe_customer_id) {
-      throw new Error("No Stripe customer ID found for this driver");
+    if (!stripeCustomerId) {
+      throw new Error("No Stripe customer found for this user");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const origin = req.headers.get("origin") || "https://solocab.fr";
-    
     // Build portal session config based on action
-    const portalConfig: any = {
-      customer: driver.stripe_customer_id,
-      return_url: `${origin}/driver-dashboard?tab=subscription`,
+    const portalConfig: Stripe.BillingPortal.SessionCreateParams = {
+      customer: stripeCustomerId,
+      return_url: returnUrl,
     };
 
     // Add flow_data for specific actions
+    // Stripe Billing Portal supports: payment_method_update, subscription_cancel, subscription_update
     if (action === "payment_method") {
       portalConfig.flow_data = {
         type: "payment_method_update",
       };
+      logStep("Adding payment_method_update flow");
+    } else if (action === "cancel") {
+      // For cancellation, we need the subscription ID
+      if (driver?.subscription_stripe_id) {
+        portalConfig.flow_data = {
+          type: "subscription_cancel",
+          subscription_cancel: {
+            subscription: driver.subscription_stripe_id,
+          },
+        };
+        logStep("Adding subscription_cancel flow", { subscriptionId: driver.subscription_stripe_id });
+      } else {
+        // If no subscription ID stored, just open the portal without flow_data
+        // User will see all their subscriptions
+        logStep("No subscription ID found, opening general portal for cancel");
+      }
     }
-    
+    // For "invoices" action, we don't add flow_data - user will see the general portal with invoices section
+
     const portalSession = await stripe.billingPortal.sessions.create(portalConfig);
     
-    logStep("Driver portal session created", { 
+    logStep("Portal session created", { 
       url: portalSession.url,
-      isPioneer: driver.is_pioneer,
-      action 
+      action,
+      isPioneer
     });
 
     return new Response(JSON.stringify({ 
       url: portalSession.url,
-      is_pioneer: driver.is_pioneer 
+      is_pioneer: isPioneer 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

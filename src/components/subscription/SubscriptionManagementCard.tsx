@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,24 @@ import {
   ExternalLink,
   FileText,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SubscriptionManagementCardProps {
   /** Type d'utilisateur */
@@ -43,16 +55,17 @@ export const SubscriptionManagementCard = ({
   onBeforeOpenPortal,
   onAfterManage
 }: SubscriptionManagementCardProps) => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const handleOpenPortal = async (action?: "payment_method" | "cancel" | "invoices") => {
+  const handleOpenPortal = useCallback(async (action?: "payment_method" | "cancel" | "invoices") => {
     // Callback optionnel avant ouverture (ex: avertissement Pioneer) - uniquement pour cancel
     if (action === "cancel" && onBeforeOpenPortal) {
       const shouldContinue = await onBeforeOpenPortal();
       if (!shouldContinue) return;
     }
 
-    setLoading(true);
+    setLoading(action || "general");
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal", {
         body: { action }
@@ -61,22 +74,47 @@ export const SubscriptionManagementCard = ({
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, "_blank");
+        // Ouvrir dans un nouvel onglet pour mobile
+        window.open(data.url, "_blank", "noopener,noreferrer");
         
-        // Rafraîchir après un délai
+        toast.success(
+          action === "payment_method" 
+            ? "Portail de paiement ouvert" 
+            : action === "cancel"
+            ? "Portail de résiliation ouvert"
+            : action === "invoices"
+            ? "Portail des factures ouvert"
+            : "Portail de gestion ouvert",
+          {
+            description: "Revenez ici une fois vos modifications effectuées"
+          }
+        );
+        
+        // Rafraîchir après un délai plus long pour laisser le temps de faire les changements
         setTimeout(() => {
           onAfterManage?.();
-        }, 2000);
+        }, 5000);
       } else {
         throw new Error("Aucune URL reçue");
       }
     } catch (error: any) {
       console.error("Error opening customer portal:", error);
-      toast.error("Erreur lors de l'ouverture du portail de gestion");
+      toast.error("Erreur lors de l'ouverture du portail", {
+        description: error.message || "Veuillez réessayer"
+      });
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
-  };
+  }, [onBeforeOpenPortal, onAfterManage]);
+
+  const handleCancelClick = useCallback(() => {
+    setShowCancelConfirm(true);
+  }, []);
+
+  const handleCancelConfirm = useCallback(async () => {
+    setShowCancelConfirm(false);
+    await handleOpenPortal("cancel");
+  }, [handleOpenPortal]);
 
   // Ne rien afficher si pas de customer Stripe ou pas actif
   if (!hasStripeCustomer || !isActive) {
@@ -84,117 +122,173 @@ export const SubscriptionManagementCard = ({
   }
 
   return (
-    <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
-      <div className="space-y-4">
-        {/* En-tête avec titre bien visible */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/20 rounded-xl">
-              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base sm:text-lg text-foreground">
-                Gérer mon abonnement
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Paiement, factures et résiliation
+    <>
+      {/* Dialog de confirmation de résiliation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Résilier votre abonnement ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Vous êtes sur le point de résilier votre abonnement SoloCab.
               </p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30">
-            Actif
-          </Badge>
-        </div>
+              <div className="bg-destructive/10 p-3 rounded-lg text-sm">
+                <p className="font-medium text-destructive mb-1">En résiliant, vous perdrez :</p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>L'accès à votre page de réservation publique</li>
+                  <li>La gestion de vos clients et courses</li>
+                  <li>Les outils de facturation et devis</li>
+                  <li>Votre visibilité auprès des entreprises</li>
+                </ul>
+              </div>
+              <p className="text-sm">
+                Vous serez redirigé vers Stripe pour finaliser la résiliation.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelConfirm}
+              className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
+            >
+              Continuer vers la résiliation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {/* Prochain prélèvement */}
-        {(nextBillingDate || nextBillingAmount) && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-background/60 rounded-lg border border-border/50">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="text-sm text-muted-foreground">Prochain prélèvement :</span>
+      <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
+        <div className="space-y-4">
+          {/* En-tête avec titre bien visible */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary/20 rounded-xl">
+                <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base sm:text-lg text-foreground">
+                  Gérer mon abonnement
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Paiement, factures et résiliation
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 ml-6 sm:ml-0">
-              {nextBillingDate && (
-                <span className="font-semibold text-sm">
-                  {format(new Date(nextBillingDate), "d MMMM yyyy", { locale: fr })}
-                </span>
+            <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              Actif
+            </Badge>
+          </div>
+
+          {/* Prochain prélèvement */}
+          {(nextBillingDate || nextBillingAmount) && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-background/60 rounded-lg border border-border/50">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Prochain prélèvement :</span>
+              </div>
+              <div className="flex items-center gap-2 ml-6 sm:ml-0">
+                {nextBillingDate && (
+                  <span className="font-semibold text-sm">
+                    {format(new Date(nextBillingDate), "d MMMM yyyy", { locale: fr })}
+                  </span>
+                )}
+                {nextBillingAmount && (
+                  <Badge className="bg-primary/20 text-primary border-primary/30">
+                    {nextBillingAmount.toFixed(2)} €
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions principales - optimisées pour mobile */}
+          <div className="space-y-3">
+            {/* Modifier la carte bancaire - Action principale */}
+            <Button
+              onClick={() => handleOpenPortal("payment_method")}
+              disabled={loading !== null}
+              className="w-full h-auto py-4 px-4 flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all touch-manipulation active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-base block">Modifier ma carte bancaire</span>
+                  <span className="text-xs opacity-80">Changer de moyen de paiement</span>
+                </div>
+              </div>
+              {loading === "payment_method" ? (
+                <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+              ) : (
+                <ExternalLink className="w-4 h-4 opacity-60 flex-shrink-0" />
               )}
-              {nextBillingAmount && (
-                <Badge className="bg-primary/20 text-primary border-primary/30">
-                  {nextBillingAmount.toFixed(2)} €
-                </Badge>
+            </Button>
+
+            {/* Voir les factures */}
+            <Button
+              onClick={() => handleOpenPortal("invoices")}
+              disabled={loading !== null}
+              variant="outline"
+              className="w-full h-auto py-4 px-4 flex items-center justify-between gap-3 border-2 hover:bg-muted/50 transition-all touch-manipulation active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-base block">Mes factures</span>
+                  <span className="text-xs text-muted-foreground">Consulter et télécharger</span>
+                </div>
+              </div>
+              {loading === "invoices" ? (
+                <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+              ) : (
+                <ExternalLink className="w-4 h-4 opacity-40 flex-shrink-0" />
               )}
-            </div>
+            </Button>
           </div>
-        )}
 
-        {/* Actions principales - bien visibles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Modifier la carte bancaire */}
-          <Button
-            onClick={() => handleOpenPortal("payment_method")}
-            disabled={loading}
-            variant="outline"
-            className="h-auto py-3 px-4 flex items-center justify-start gap-3 border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all"
-          >
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="text-left">
-              <span className="font-medium text-sm block">Modifier ma carte</span>
-              <span className="text-xs text-muted-foreground">Changer de moyen de paiement</span>
-            </div>
-          </Button>
-
-          {/* Voir les factures */}
-          <Button
-            onClick={() => handleOpenPortal("invoices")}
-            disabled={loading}
-            variant="outline"
-            className="h-auto py-3 px-4 flex items-center justify-start gap-3 border-2 border-muted hover:border-muted-foreground/30 hover:bg-muted/50 transition-all"
-          >
-            <div className="p-2 bg-muted rounded-lg">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="text-left">
-              <span className="font-medium text-sm block">Mes factures</span>
-              <span className="text-xs text-muted-foreground">Télécharger vos factures</span>
-            </div>
-          </Button>
-        </div>
-
-        {/* Bouton résilier - séparé et plus discret mais accessible */}
-        <div className="pt-2 border-t border-border/50">
-          <Button
-            onClick={() => handleOpenPortal("cancel")}
-            disabled={loading}
-            variant="ghost"
-            className="w-full h-auto py-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <XCircle className="w-4 h-4 mr-2" />
-            )}
-            <span className="text-sm">Résilier mon abonnement</span>
-          </Button>
-        </div>
-
-        {/* Loader global */}
-        {loading && (
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            <span>Ouverture du portail de gestion...</span>
+          {/* Bouton résilier - séparé et accessible */}
+          <div className="pt-3 border-t border-border/50">
+            <Button
+              onClick={handleCancelClick}
+              disabled={loading !== null}
+              variant="ghost"
+              className="w-full h-auto py-4 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all touch-manipulation active:scale-[0.98]"
+            >
+              {loading === "cancel" ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="w-5 h-5 mr-2" />
+              )}
+              <span className="font-medium">Résilier mon abonnement</span>
+            </Button>
           </div>
-        )}
 
-        {/* Note d'information */}
-        <p className="text-xs text-center text-muted-foreground pt-2">
-          <ExternalLink className="w-3 h-3 inline mr-1" />
-          Vous serez redirigé vers le portail sécurisé Stripe
-        </p>
-      </div>
-    </Card>
+          {/* Loader global */}
+          {loading && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>Ouverture du portail Stripe...</span>
+            </div>
+          )}
+
+          {/* Note d'information */}
+          <p className="text-xs text-center text-muted-foreground pt-2 flex items-center justify-center gap-1">
+            <ExternalLink className="w-3 h-3" />
+            Vous serez redirigé vers le portail sécurisé Stripe
+          </p>
+        </div>
+      </Card>
+    </>
   );
 };
 
