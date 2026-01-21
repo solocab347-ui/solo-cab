@@ -195,8 +195,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 Statut Pionnier Perdu
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground mb-3">
-                Votre abonnement Pioneer a été résilié et vous avez perdu le tarif préférentiel de 39,99€/mois.
-                Si vous souhaitez vous réabonner, le tarif standard de 49,99€/mois s'appliquera.
+                Votre abonnement Pioneer a été résilié et vous avez perdu le tarif préférentiel.
+                Si vous souhaitez vous réabonner, le tarif standard de 9,99€/mois s'appliquera.
               </p>
             </div>
           </div>
@@ -234,7 +234,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                       {format(new Date(pioneerTrialEnd!), "d MMMM yyyy", { locale: fr })}
                     </p>
                     <p className="pt-2 text-amber-600 dark:text-amber-400 font-semibold">
-                      💰 Après l'essai : 39,99€/mois au lieu de 49,99€ (à vie !)
+                      💰 Après l'essai : tarif Pioneer préférentiel à vie !
                     </p>
                   </>
                 ) : (
@@ -364,8 +364,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel Pionnier</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm line-through text-gray-500">49,99€</span>
-                <span className="font-bold text-sm sm:text-base text-amber-400">39,99€ / mois</span>
+                <span className="text-xs sm:text-sm line-through text-gray-500">9,99€</span>
+                <span className="font-bold text-sm sm:text-base text-amber-400">Tarif préférentiel</span>
               </div>
             </div>
           ) : !hasFreeAccess && (
@@ -433,7 +433,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">
-                {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : '1 mois gratuit puis 49,99€/mois'}
+                {isPioneer ? 'Activer - Offre Pionnier' : '14 jours gratuits puis 9,99€/mois'}
               </span>
             </Button>
           )}
@@ -447,7 +447,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
           isActive={isActive || hasFreeAccess}
           nextBillingDate={driverProfile?.driver?.subscription_end_date}
-          nextBillingAmount={isPioneer ? 39.99 : 49.99}
+          nextBillingAmount={9.99}
           onBeforeOpenPortal={async () => {
             if (isPioneer && !pioneerStatusLost) {
               setShowPioneerWarning(true);
@@ -474,8 +474,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
               <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
               <p className="text-lg sm:text-2xl font-bold text-premium break-words">
-                <span className="text-green-400 text-sm">1 mois gratuit</span>
-                <br />49,99€/mois
+                <span className="text-green-400 text-sm">14 jours gratuits</span>
+                <br />9,99€/mois
               </p>
               <p className="text-premium/70 text-xs">0% commission</p>
             </div>
@@ -491,8 +491,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             <div className="bg-white/10 dark:bg-black/20 rounded-lg p-3 sm:p-4">
-              <p className="text-muted-foreground mb-1 sm:mb-2 text-xs sm:text-sm">Tarif Standard</p>
-              <p className="text-lg sm:text-2xl font-bold text-muted-foreground line-through break-words">49,99€/mois</p>
+              <p className="text-muted-foreground mb-1 sm:mb-2 text-xs sm:text-sm">Plateformes classiques</p>
+              <p className="text-lg sm:text-2xl font-bold text-muted-foreground line-through break-words">~25% commission</p>
             </div>
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
               <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">Votre Tarif Pionnier</p>

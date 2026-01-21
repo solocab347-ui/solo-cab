@@ -75,9 +75,15 @@ const Index = () => {
             <Link to="/plaque-nfc" className="text-gray-400 hover:text-white transition-colors">
               Plaque NFC
             </Link>
+            <Link to="/tarifs" className="text-gray-400 hover:text-white transition-colors font-medium">
+              Tarifs
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <SocialLinks variant="compact" iconSize={20} />
+            <Link to="/tarifs" className="text-green-400 hover:text-green-300 transition-colors font-medium hidden sm:block">
+              Tarifs
+            </Link>
             <Link to="/login">
               <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
                 {t('landing.connect')}
