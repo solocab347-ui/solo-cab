@@ -8,6 +8,7 @@ import { Download, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import logo from "@/assets/logo-solocab.png";
+import { cn } from "@/lib/utils";
 
 interface DriverProspectionFlyerProps {
   qrCode: any;
@@ -259,51 +260,60 @@ Scannez le QR code pour réserver`
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Nombre de flyers par page */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
               Format de flyer
             </Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <Button
                 type="button"
                 variant={flyersPerPage === 1 ? "default" : "outline"}
                 onClick={() => setFlyersPerPage(1)}
-                className={flyersPerPage === 1 ? "bg-gradient-to-r from-primary to-accent text-white" : "border-primary/20 hover:bg-primary/5"}
+                className={cn(
+                  "h-auto py-2 px-1 sm:px-3",
+                  flyersPerPage === 1 ? "bg-gradient-to-r from-primary to-accent text-white" : "border-primary/20 hover:bg-primary/5"
+                )}
               >
-                <span className="flex flex-col items-center">
-                  <span>1 flyer</span>
-                  <span className="text-xs opacity-80">(A4)</span>
+                <span className="flex flex-col items-center text-center">
+                  <span className="text-xs sm:text-sm">1 flyer</span>
+                  <span className="text-[10px] sm:text-xs opacity-80">(A4)</span>
                 </span>
               </Button>
               <Button
                 type="button"
                 variant={flyersPerPage === 2 ? "default" : "outline"}
                 onClick={() => setFlyersPerPage(2)}
-                className={flyersPerPage === 2 ? "bg-gradient-to-r from-accent to-secondary text-white" : "border-accent/20 hover:bg-accent/5"}
+                className={cn(
+                  "h-auto py-2 px-1 sm:px-3",
+                  flyersPerPage === 2 ? "bg-gradient-to-r from-accent to-secondary text-white" : "border-accent/20 hover:bg-accent/5"
+                )}
               >
-                <span className="flex flex-col items-center">
-                  <span>2 flyers</span>
-                  <span className="text-xs opacity-80">(A5 vertical)</span>
+                <span className="flex flex-col items-center text-center">
+                  <span className="text-xs sm:text-sm">2 flyers</span>
+                  <span className="text-[10px] sm:text-xs opacity-80">(A5)</span>
                 </span>
               </Button>
               <Button
                 type="button"
                 variant={flyersPerPage === 4 ? "default" : "outline"}
                 onClick={() => setFlyersPerPage(4)}
-                className={flyersPerPage === 4 ? "bg-gradient-to-r from-secondary to-primary text-white" : "border-secondary/20 hover:bg-secondary/5"}
+                className={cn(
+                  "h-auto py-2 px-1 sm:px-3",
+                  flyersPerPage === 4 ? "bg-gradient-to-r from-secondary to-primary text-white" : "border-secondary/20 hover:bg-secondary/5"
+                )}
               >
-                <span className="flex flex-col items-center">
-                  <span>4 flyers</span>
-                  <span className="text-xs opacity-80">(A6)</span>
+                <span className="flex flex-col items-center text-center">
+                  <span className="text-xs sm:text-sm">4 flyers</span>
+                  <span className="text-[10px] sm:text-xs opacity-80">(A6)</span>
                 </span>
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {flyersPerPage === 1 && "Format A4 complet - Idéal pour affichage"}
-              {flyersPerPage === 2 && "2 flyers A5 verticaux à découper - Parfait pour distribution"}
-              {flyersPerPage === 4 && "4 petits flyers A6 à découper - Économique"}
+              {flyersPerPage === 2 && "2 flyers A5 verticaux à découper"}
+              {flyersPerPage === 4 && "4 petits flyers A6 à découper"}
             </p>
           </div>
 
@@ -343,9 +353,9 @@ Scannez le QR code pour réserver`
           </div>
 
           {/* Coordonnées */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-semibold">
+              <Label htmlFor="phone" className="text-xs sm:text-sm font-semibold">
                 Téléphone (optionnel)
               </Label>
               <Input
@@ -353,11 +363,11 @@ Scannez le QR code pour réserver`
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="06 12 34 56 78"
-                className="bg-background"
+                className="bg-background text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold">
+              <Label htmlFor="email" className="text-xs sm:text-sm font-semibold">
                 Email (optionnel)
               </Label>
               <Input
@@ -365,27 +375,27 @@ Scannez le QR code pour réserver`
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="contact@votrevtc.fr"
-                className="bg-background"
+                className="bg-background text-sm"
               />
             </div>
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
             <Button
               onClick={() => setShowPreview(!showPreview)}
               variant="outline"
-              className="flex-1 border-primary/20 hover:bg-primary/5"
+              className="flex-1 border-primary/20 hover:bg-primary/5 text-sm"
             >
               {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
+              {showPreview ? "Masquer" : "Aperçu"}
             </Button>
             <Button
               onClick={generatePDF}
-              className="flex-1 bg-gradient-to-r from-primary via-accent to-secondary hover:opacity-90 text-white"
+              className="flex-1 bg-gradient-to-r from-primary via-accent to-secondary hover:opacity-90 text-white text-sm"
             >
               <Download className="w-4 h-4 mr-2" />
-              Télécharger le PDF
+              Télécharger PDF
             </Button>
           </div>
 

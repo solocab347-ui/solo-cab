@@ -873,52 +873,104 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-        {days.map(day => {
-          const dateKey = format(day, "yyyy-MM-dd");
-          const dayCourses = grouped.get(dateKey) || [];
-          const isToday = isSameDay(day, new Date());
+      <div className="space-y-2">
+        {/* Mobile: Scrollable horizontal list */}
+        <div className="flex md:hidden gap-2 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+          {days.map(day => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const dayCourses = grouped.get(dateKey) || [];
+            const isToday = isSameDay(day, new Date());
 
-          return (
-            <div 
-              key={dateKey}
-              className={cn(
-                "border rounded-lg overflow-hidden min-h-[200px] bg-card/30 backdrop-blur-sm",
-                isToday && "border-primary/50 bg-primary/5"
-              )}
-            >
-              <div className={cn(
-                "text-center py-2 border-b",
-                isToday ? "bg-primary/10 border-primary/20" : "bg-muted/30 border-border/50"
-              )}>
-                <div className={cn(
-                  "text-xs font-medium uppercase",
-                  isToday ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {format(day, "EEE", { locale: fr })}
-                </div>
-                <div className={cn(
-                  "text-xl font-bold",
-                  isToday ? "text-primary" : "text-foreground"
-                )}>
-                  {format(day, "d")}
-                </div>
-                {dayCourses.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] mt-1">
-                    {dayCourses.length} course{dayCourses.length > 1 ? 's' : ''}
-                  </Badge>
+            return (
+              <div 
+                key={dateKey}
+                className={cn(
+                  "flex-shrink-0 w-[140px] snap-start border rounded-lg overflow-hidden bg-card/30 backdrop-blur-sm",
+                  isToday && "border-primary/50 bg-primary/5"
                 )}
-              </div>
-              <ScrollArea className="h-[200px] p-2">
-                <div className="space-y-2">
-                  {dayCourses.map(course => (
-                    <CompactCourseCard key={course.id} course={course} />
-                  ))}
+              >
+                <div className={cn(
+                  "text-center py-1.5 border-b",
+                  isToday ? "bg-primary/10 border-primary/20" : "bg-muted/30 border-border/50"
+                )}>
+                  <div className={cn(
+                    "text-[10px] font-medium uppercase",
+                    isToday ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {format(day, "EEE", { locale: fr })}
+                  </div>
+                  <div className={cn(
+                    "text-lg font-bold",
+                    isToday ? "text-primary" : "text-foreground"
+                  )}>
+                    {format(day, "d")}
+                  </div>
+                  {dayCourses.length > 0 && (
+                    <Badge variant="secondary" className="text-[9px] mt-0.5 px-1.5 py-0">
+                      {dayCourses.length}
+                    </Badge>
+                  )}
                 </div>
-              </ScrollArea>
-            </div>
-          );
-        })}
+                <ScrollArea className="h-[150px] p-1.5">
+                  <div className="space-y-1.5">
+                    {dayCourses.map(course => (
+                      <CompactCourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: 7-column grid */}
+        <div className="hidden md:grid md:grid-cols-7 gap-3">
+          {days.map(day => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const dayCourses = grouped.get(dateKey) || [];
+            const isToday = isSameDay(day, new Date());
+
+            return (
+              <div 
+                key={dateKey}
+                className={cn(
+                  "border rounded-lg overflow-hidden min-h-[200px] bg-card/30 backdrop-blur-sm",
+                  isToday && "border-primary/50 bg-primary/5"
+                )}
+              >
+                <div className={cn(
+                  "text-center py-2 border-b",
+                  isToday ? "bg-primary/10 border-primary/20" : "bg-muted/30 border-border/50"
+                )}>
+                  <div className={cn(
+                    "text-xs font-medium uppercase",
+                    isToday ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {format(day, "EEE", { locale: fr })}
+                  </div>
+                  <div className={cn(
+                    "text-xl font-bold",
+                    isToday ? "text-primary" : "text-foreground"
+                  )}>
+                    {format(day, "d")}
+                  </div>
+                  {dayCourses.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] mt-1">
+                      {dayCourses.length} course{dayCourses.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+                <ScrollArea className="h-[200px] p-2">
+                  <div className="space-y-2">
+                    {dayCourses.map(course => (
+                      <CompactCourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
