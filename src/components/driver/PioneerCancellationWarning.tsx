@@ -85,10 +85,10 @@ const PioneerCancellationWarning = ({
                         <div>
                           <p className="font-medium text-destructive">Tarif Pionnier à vie</p>
                           <p className="text-sm text-muted-foreground">
-                            <span className="line-through">39,99€/mois</span> → Vous passerez à <strong>49,99€/mois</strong>
+                            Vous perdrez votre tarif préférentiel Pioneer → Vous passerez au tarif standard <strong>9,99€/mois</strong>
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            = 120€ de plus par an, soit <strong>600€ sur 5 ans</strong>
+                            Perte de l'avantage Pioneer exclusif
                           </p>
                         </div>
                       </div>
@@ -108,7 +108,7 @@ const PioneerCancellationWarning = ({
                         <div>
                           <p className="font-medium text-destructive">Avantages irrécupérables</p>
                           <p className="text-sm text-muted-foreground">
-                            Si vous vous réinscrivez après la fin de période, vous paierez le tarif standard (49,99€/mois).
+                            Si vous vous réinscrivez après la fin de période, vous perdrez définitivement le statut Pioneer.
                           </p>
                         </div>
                       </div>
@@ -162,7 +162,7 @@ const PioneerCancellationWarning = ({
 
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <p className="text-2xl font-bold text-destructive mb-1">
-                      39,99€ → 49,99€/mois
+                      Perte du statut Pioneer
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Si vous vous réinscrivez après expiration

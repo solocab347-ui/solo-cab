@@ -118,8 +118,8 @@ const AdminOverview = () => {
         !d.free_access_granted
       ).length || 0;
 
-      // Revenus mensuels
-      const monthlyRevenue = activeSubscriptions * 49.99;
+      // Revenus mensuels (nouveau tarif: 9.99€/mois)
+      const monthlyRevenue = activeSubscriptions * 9.99;
 
       // Nouveaux abonnements ce mois
       const startOfCurrentMonth = startOfMonth(new Date());
@@ -172,7 +172,7 @@ const AdminOverview = () => {
                 {stats.monthly_revenue.toFixed(2)}€
               </div>
               <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                {stats.active_subscriptions} × 49.99€
+                {stats.active_subscriptions} × 9.99€
               </p>
             </CardContent>
           </Card>

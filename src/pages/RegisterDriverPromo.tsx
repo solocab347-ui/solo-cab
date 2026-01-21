@@ -207,16 +207,16 @@ const RegisterDriverPromo = () => {
             <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6">
               <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium">
                 <Sparkles className="w-3 h-3 mr-1" />
-                OFFRE SPÉCIALE - 1 MOIS GRATUIT
+                OFFRE DE LANCEMENT - 14 JOURS GRATUITS
               </Badge>
               <div className="flex items-center justify-center gap-4 mb-2">
                 <span className="text-5xl font-bold text-green-500">GRATUIT</span>
               </div>
               <p className="text-lg text-muted-foreground">
-                1 mois d'essai gratuit, puis <span className="font-semibold text-foreground">9,99€/mois</span>
+                14 jours d'essai gratuit, puis <span className="font-semibold text-foreground">9,99€/mois</span>
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Testez toutes les fonctionnalités sans engagement pendant 30 jours
+                Testez toutes les fonctionnalités sans engagement pendant 14 jours
               </p>
             </Card>
           </div>
@@ -471,7 +471,7 @@ const RegisterDriverPromo = () => {
             <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
               <FileText className="w-5 h-5 text-amber-500" />
               <AlertDescription className="text-sm">
-                <strong>Documents requis :</strong> Après votre inscription, vous aurez <strong>30 jours</strong> pour 
+                <strong>Documents requis :</strong> Après votre inscription, vous aurez <strong>14 jours</strong> pour 
                 soumettre vos documents professionnels (carte VTC, permis, assurance, etc.) via votre espace personnel.
               </AlertDescription>
             </Alert>
@@ -510,11 +510,11 @@ const RegisterDriverPromo = () => {
             <div className="bg-muted/50 rounded-lg p-4 mb-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-muted-foreground">Essai gratuit</span>
-                <Badge className="bg-green-500">30 jours</Badge>
+                <Badge className="bg-green-500">14 jours</Badge>
               </div>
               <div className="h-px bg-border my-3"></div>
               <div className="flex justify-between items-center">
-                <span className="font-bold text-lg">Premier mois</span>
+                <span className="font-bold text-lg">Période d'essai</span>
                 <span className="font-bold text-2xl text-green-500">GRATUIT</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -527,7 +527,7 @@ const RegisterDriverPromo = () => {
               <Shield className="w-5 h-5 text-blue-500" />
               <AlertDescription className="text-sm">
                 <strong>Aucun prélèvement immédiat :</strong> Il s'agit d'une simple empreinte bancaire de <strong>0€</strong> pour 
-                enregistrer vos coordonnées de paiement. Vous ne serez prélevé qu'après vos 30 jours d'essai gratuit, 
+                enregistrer vos coordonnées de paiement. Vous ne serez prélevé qu'après vos 14 jours d'essai gratuit, 
                 et uniquement si vous décidez de rester abonné.
               </AlertDescription>
             </Alert>

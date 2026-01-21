@@ -44,6 +44,7 @@ import SafeMode from "./pages/SafeMode";
 import NfcPlatePage from "./pages/NfcPlatePage";
 import NfcPlateOrderSuccess from "./pages/NfcPlateOrderSuccess";
 import TrackNfcOrder from "./pages/TrackNfcOrder";
+import Tarifs from "./pages/Tarifs";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 
 // Lazy load heavy dashboards and authenticated pages
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/plaque-nfc" element={<NfcPlatePage />} />
               <Route path="/plaque-nfc/success" element={<NfcPlateOrderSuccess />} />
               <Route path="/suivi-plaque-nfc" element={<TrackNfcOrder />} />
+              <Route path="/tarifs" element={<Tarifs />} />
               
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
