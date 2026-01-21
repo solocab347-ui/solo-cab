@@ -49,9 +49,21 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
 
     setLoading(true);
     try {
+      // Si on active le profil public, activer aussi toutes les visibilités
+      let updateData: Record<string, boolean> = { [field]: value };
+      
+      if (field === 'public_profile_enabled' && value === true) {
+        updateData = {
+          public_profile_enabled: true,
+          visible_to_companies: true,
+          visible_to_fleet_managers: true,
+          visible_to_drivers: true,
+        };
+      }
+      
       const { error } = await supabase
         .from('drivers')
-        .update({ [field]: value })
+        .update(updateData)
         .eq('id', driverProfile.id);
 
       if (error) throw error;
@@ -78,6 +90,10 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
           break;
         case 'public_profile_enabled':
           setPublicProfileEnabled(value);
+          // Si activé, mettre aussi visible_to_drivers à jour localement
+          if (value) {
+            setVisibleToDrivers(true);
+          }
           break;
       }
 
