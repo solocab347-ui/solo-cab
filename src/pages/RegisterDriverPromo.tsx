@@ -134,7 +134,16 @@ const RegisterDriverPromo = () => {
       setCurrentStep(2);
     } catch (error: any) {
       console.error("Erreur step 1:", error);
-      toast.error(error.message || "Erreur lors de la création du compte");
+      // Traduire les erreurs Supabase en français
+      let errorMessage = error.message || "Erreur lors de la création du compte";
+      if (error.message?.includes("User already registered")) {
+        errorMessage = "Cet email est déjà utilisé. Veuillez vous connecter.";
+      } else if (error.message?.includes("Invalid email")) {
+        errorMessage = "Email invalide";
+      } else if (error.message?.includes("Password")) {
+        errorMessage = "Le mot de passe doit contenir au moins 6 caractères";
+      }
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
