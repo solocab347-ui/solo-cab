@@ -122,10 +122,18 @@ serve(async (req) => {
       console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ New customer created:", customerId);
     }
 
-    // Utiliser le produit et prix existants pour l'abonnement 9.99€/mois
-    // Produit: prod_ToCaKWphCKGShD - Prix: price_1SqaBl34nJZKnmmIKC7vYZy5
-    const priceId = "price_1SqaBl34nJZKnmmIKC7vYZy5";
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Using subscription price 9.99€/month:", priceId);
+    // Récupérer le type d'abonnement depuis le body (monthly ou annual)
+    const subscriptionType = body?.subscription_type || "monthly";
+    
+    // Prix mensuel: 9.99€/mois avec 14 jours d'essai
+    // Prix annuel: 101.90€/an (15% de réduction, non remboursable)
+    const monthlyPriceId = "price_1SqaBl34nJZKnmmIKC7vYZy5"; // 9.99€/mois
+    const annualPriceId = "price_1Srytp34nJZKnmmIcUnFX9DV"; // 101.90€/an
+    
+    const priceId = subscriptionType === "annual" ? annualPriceId : monthlyPriceId;
+    const trialDays = subscriptionType === "annual" ? 0 : 14; // Pas d'essai pour l'annuel
+    
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Using price:", priceId, "Type:", subscriptionType, "Trial:", trialDays);
 
     // Get origin for redirect URLs avec validation
     const origin = req.headers.get("origin");
@@ -135,9 +143,9 @@ serve(async (req) => {
     }
     console.log("[CREATE-DRIVER-SUBSCRIPTION] 🌐 Origin:", origin);
 
-    // Create checkout session for SUBSCRIPTION with 1 MONTH FREE TRIAL
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] 💳 Creating checkout session with 30-day free trial...");
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session for SUBSCRIPTION with 14-DAY FREE TRIAL (mensuel uniquement)
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] 💳 Creating checkout session...");
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
         {
@@ -147,11 +155,12 @@ serve(async (req) => {
       ],
       mode: "subscription",
       subscription_data: {
-        trial_period_days: 30, // 1 mois gratuit
+        trial_period_days: trialDays > 0 ? trialDays : undefined,
         metadata: {
           driver_id: driver_id,
           user_id: user.id,
           type: "driver_subscription",
+          subscription_type: subscriptionType,
         },
       },
       success_url: `${origin}/driver-welcome?driver_id=${driver_id}&pioneer=false`,
@@ -160,10 +169,15 @@ serve(async (req) => {
         driver_id: driver_id,
         user_id: user.id,
         type: "driver_subscription",
+        subscription_type: subscriptionType,
       },
       allow_promotion_codes: false,
       billing_address_collection: "auto",
-    });
+      // Empreinte bancaire obligatoire même pour l'essai gratuit
+      payment_method_collection: "always",
+    };
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     if (!session.url) {
       console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ No checkout URL generated");

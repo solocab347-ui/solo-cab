@@ -166,7 +166,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       case "1_month": return "1 mois";
       case "2_months": return "2 mois";
       case "3_months": return "3 mois";
-      case "trial": return "30 jours d'essai";
+      case "trial": return "14 jours d'essai";
       case "unlimited": return "Illimité";
       case "custom": return "Personnalisé";
       default: return "Non défini";
@@ -306,7 +306,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">1 mois gratuit puis 49,99€/mois</span>
+                <span className="truncate">14 jours d'essai gratuit puis 9,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -372,8 +372,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Offre</span>
               <div className="flex flex-col items-end">
-                <Badge className="bg-green-500 mb-1">1 mois gratuit</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 49,99€ / mois</span>
+                <Badge className="bg-green-500 mb-1">14 jours d'essai gratuit</Badge>
+                <span className="font-bold text-sm sm:text-base text-white">puis 9,99€ / mois</span>
               </div>
             </div>
           )}

@@ -82,7 +82,7 @@ serve(async (req) => {
       logStep("Created new Stripe customer", { customerId });
     }
 
-    // Create checkout session with 30-day trial
+    // Create checkout session with 14-day trial (aligned with standard subscription)
     const origin = req.headers.get("origin") || "https://solocab.lovable.app";
     
     const session = await stripe.checkout.sessions.create({
@@ -95,13 +95,13 @@ serve(async (req) => {
       ],
       mode: "subscription",
       subscription_data: {
-        trial_period_days: 30,
+        trial_period_days: 14, // Aligné sur l'abonnement standard: 14 jours d'essai
         metadata: {
           driver_id: driver.id,
           is_pioneer: "true",
         },
       },
-      payment_method_collection: "always",
+      payment_method_collection: "always", // Empreinte bancaire obligatoire
       success_url: `${origin}/driver-welcome?driver_id=${driver.id}&pioneer=true`,
       cancel_url: `${origin}/pioneer-payment?cancelled=true`,
       metadata: {

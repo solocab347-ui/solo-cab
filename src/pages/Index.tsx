@@ -11,6 +11,7 @@ import SocialLinks from "@/components/SocialLinks";
 import { ClientHeroSection } from "@/components/landing/ClientHeroSection";
 import { DriverHeroSection } from "@/components/landing/DriverHeroSection";
 import { NfcHeroSection } from "@/components/landing/NfcHeroSection";
+import PricingSection from "@/components/landing/PricingSection";
 import {
   Car,
   Users,
@@ -239,6 +240,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* Driver Partnership Feature */}
       <section className="py-16 bg-[#1a2942]">
