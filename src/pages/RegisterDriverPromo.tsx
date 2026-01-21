@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
+import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
 
 const PLATE_PRICE = 29.99;
 const SUBSCRIPTION_MONTHLY_PRICE = 9.99;
@@ -52,6 +53,9 @@ const RegisterDriverPromo = () => {
   // Payment failure tracking
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [paymentFailedReason, setPaymentFailedReason] = useState<string | null>(null);
+  
+  // Payment redirect overlay - show immediately when user clicks pay
+  const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
 
   // Check URL params for payment failure
   useEffect(() => {
@@ -371,31 +375,38 @@ const RegisterDriverPromo = () => {
       }
     }
 
+    // Show overlay IMMEDIATELY for better UX
+    setShowPaymentOverlay(true);
     setLoading(true);
     setPaymentFailed(false);
 
     try {
-      // Save choices before redirecting to payment
-      await saveChoicesBeforePayment();
+      // Save choices in parallel with creating checkout session for speed
+      const [_, checkoutResult] = await Promise.all([
+        saveChoicesBeforePayment(),
+        supabase.functions.invoke("create-driver-subscription", {
+          body: { 
+            driver_id: driverId,
+            subscription_type: subscriptionType,
+            with_plate: wantsPlate,
+            shipping_address: wantsPlate ? shippingAddress.trim() : null,
+            shipping_city: wantsPlate ? shippingCity.trim() : null,
+            shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
+          },
+        })
+      ]);
 
-      const { data, error } = await supabase.functions.invoke("create-driver-subscription", {
-        body: { 
-          driver_id: driverId,
-          subscription_type: subscriptionType,
-          with_plate: wantsPlate,
-          shipping_address: wantsPlate ? shippingAddress.trim() : null,
-          shipping_city: wantsPlate ? shippingCity.trim() : null,
-          shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
-        },
-      });
+      if (checkoutResult.error) throw checkoutResult.error;
+      if (!checkoutResult.data?.url) throw new Error("URL de paiement non générée");
 
-      if (error) throw error;
-      if (!data?.url) throw new Error("URL de paiement non générée");
+      // Small delay to ensure overlay animation is seen
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Redirect to Stripe
-      window.location.href = data.url;
+      window.location.href = checkoutResult.data.url;
     } catch (error: any) {
       console.error("Erreur step 2:", error);
+      setShowPaymentOverlay(false);
       
       // Record payment failure
       if (driverId) {
@@ -438,7 +449,11 @@ const RegisterDriverPromo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <>
+      {/* Payment redirect overlay - shown immediately when user clicks pay */}
+      <PaymentRedirectOverlay isVisible={showPaymentOverlay} />
+      
+      <div className="min-h-screen bg-background py-8 px-4">
       <div className="container max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -1014,6 +1029,7 @@ const RegisterDriverPromo = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
