@@ -12,7 +12,7 @@ import {
   Shield,
   MapPin,
   MessageSquare,
-  Building2,
+  Handshake,
   ChevronRight,
   Rocket,
   CheckCircle2
@@ -54,9 +54,9 @@ const FEATURES = [
     color: "from-rose-500 to-red-500"
   },
   {
-    icon: <Building2 className="w-6 h-6" />,
-    title: "Partenariats entreprises",
-    description: "Développez votre activité B2B avec des contrats entreprises.",
+    icon: <Handshake className="w-6 h-6" />,
+    title: "Partenariats chauffeurs",
+    description: "Partagez vos courses avec d'autres chauffeurs de confiance.",
     color: "from-indigo-500 to-violet-500"
   },
   {
@@ -82,13 +82,7 @@ const DriverWelcome = () => {
   const isPioneer = searchParams.get("pioneer") === "true";
   const driverId = searchParams.get("driver_id");
 
-  // Ouvrir automatiquement le guide après 2 secondes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowGuide(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Ne pas ouvrir automatiquement le guide - laisser l'utilisateur choisir
 
   // Animation des fonctionnalités
   useEffect(() => {
@@ -310,7 +304,7 @@ const DriverWelcome = () => {
         >
           <p className="text-white/50 text-sm flex items-center justify-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            Le tutoriel Liberty va s'ouvrir automatiquement pour vous guider
+            Liberty vous guidera pas à pas pour configurer votre espace
           </p>
         </motion.div>
       </div>
