@@ -113,197 +113,215 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
   };
 
   const fetchFactures = async () => {
-    try {
-      // Fetch regular factures (with client)
-      const { data: regularFactures, error: regularError } = await supabase
-        .from("factures")
-        .select(`
-          *,
-          clients(
-            id,
-            profiles:user_id(full_name, email, phone, profile_photo_url)
-          ),
-          courses!inner(
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes,
-            passengers_count,
-            is_guest_booking,
-            guest_name,
-            guest_phone
-          ),
-          devis(
-            base_price,
-            distance_price,
-            time_price,
-            discount_amount,
-            promo_code,
-            evening_surcharge_amount,
-            weekend_surcharge_amount,
-            peak_hours_surcharge_amount,
-            tva_rate,
-            tva_amount,
-            airport_fee
-          )
-        `)
-        .eq("driver_id", driverId)
-        .order("created_at", { ascending: false });
-
-      if (regularError) throw regularError;
-
-      // Fetch company course info for factures including employee info
-      const courseIds = (regularFactures || []).map(f => f.course_id);
-      let companyCoursesMap = new Map();
-      let companyCourseRequestsMap = new Map();
-      let directCompaniesMap = new Map();
-      
-      // Also gather company_ids directly from factures for direct company lookup
-      const directCompanyIds = (regularFactures || [])
-        .filter(f => f.company_id)
-        .map(f => f.company_id);
-      
-      if (directCompanyIds.length > 0) {
-        const { data: directCompanyData } = await supabase
-          .from("companies")
-          .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
-          .in("id", [...new Set(directCompanyIds)]);
-        
-        directCompanyData?.forEach(company => {
-          directCompaniesMap.set(company.id, company);
-        });
-      }
-      
-      if (courseIds.length > 0) {
-        // Fetch company_courses with company info
-        const { data: companyData, error: companyDataError } = await supabase
-          .from("company_courses")
+    const maxRetries = 4;
+    
+    const attemptFetch = async (attempt: number): Promise<void> => {
+      try {
+        // Fetch regular factures (with client)
+        const { data: regularFactures, error: regularError } = await supabase
+          .from("factures")
           .select(`
-            course_id,
-            employee_id,
-            company_id,
-            companies!company_courses_company_id_fkey(id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address),
-            company_employees!company_courses_employee_id_fkey(
+            *,
+            clients(
               id,
-              user_id,
-              profiles:user_id(full_name, phone, email)
+              profiles:user_id(full_name, email, phone, profile_photo_url)
+            ),
+            courses(
+              pickup_address,
+              destination_address,
+              scheduled_date,
+              distance_km,
+              duration_minutes,
+              passengers_count,
+              is_guest_booking,
+              guest_name,
+              guest_phone
+            ),
+            devis(
+              base_price,
+              distance_price,
+              time_price,
+              discount_amount,
+              promo_code,
+              evening_surcharge_amount,
+              weekend_surcharge_amount,
+              peak_hours_surcharge_amount,
+              tva_rate,
+              tva_amount,
+              airport_fee
             )
           `)
-          .in("course_id", courseIds);
+          .eq("driver_id", driverId)
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        if (regularError) throw regularError;
+
+        // Fetch company course info for factures including employee info
+        const courseIds = (regularFactures || []).map(f => f.course_id);
+        let companyCoursesMap = new Map();
+        let companyCourseRequestsMap = new Map();
+        let directCompaniesMap = new Map();
         
-        if (companyDataError) {
-          console.error("Error fetching company courses:", companyDataError);
+        // Also gather company_ids directly from factures for direct company lookup
+        const directCompanyIds = (regularFactures || [])
+          .filter(f => f.company_id)
+          .map(f => f.company_id);
+        
+        if (directCompanyIds.length > 0) {
+          const { data: directCompanyData } = await supabase
+            .from("companies")
+            .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
+            .in("id", [...new Set(directCompanyIds)]);
+          
+          directCompanyData?.forEach(company => {
+            directCompaniesMap.set(company.id, company);
+          });
         }
         
-        companyData?.forEach(cc => {
-          companyCoursesMap.set(cc.course_id, {
-            company: cc.companies,
-            employee: cc.company_employees
-          });
-        });
-
-        // Fetch company_course_requests for guest employees
-        const { data: requestsData } = await supabase
-          .from("company_course_requests")
-          .select(`
-            final_course_id,
-            is_guest_employee,
-            guest_employee_name,
-            guest_employee_phone,
-            guest_employee_email,
-            employee_id,
-            company_employees(
-              id,
-              user_id,
-              profiles:user_id(full_name, phone, email)
-            )
-          `)
-          .in("final_course_id", courseIds);
-        
-        requestsData?.forEach(req => {
-          companyCourseRequestsMap.set(req.final_course_id, req);
-        });
-      }
-
-      // Enrich factures with company info and employee info
-      const enrichedFactures = (regularFactures || []).map(f => {
-        const companyInfo = companyCoursesMap.get(f.course_id);
-        const requestInfo = companyCourseRequestsMap.get(f.course_id);
-        // Direct company from facture.company_id takes priority
-        const directCompany = f.company_id ? directCompaniesMap.get(f.company_id) : null;
-        
-        let employeeName = null;
-        let employeePhone = null;
-        let employeeEmail = null;
-        let isGuestEmployee = false;
-        
-        if (requestInfo) {
-          isGuestEmployee = requestInfo.is_guest_employee || false;
-          if (isGuestEmployee) {
-            employeeName = requestInfo.guest_employee_name;
-            employeePhone = requestInfo.guest_employee_phone;
-            employeeEmail = requestInfo.guest_employee_email;
-          } else if (requestInfo.company_employees?.profiles) {
-            employeeName = requestInfo.company_employees.profiles.full_name;
-            employeePhone = requestInfo.company_employees.profiles.phone;
-            employeeEmail = requestInfo.company_employees.profiles.email;
+        if (courseIds.length > 0) {
+          // Fetch company_courses with company info
+          const { data: companyData, error: companyDataError } = await supabase
+            .from("company_courses")
+            .select(`
+              course_id,
+              employee_id,
+              company_id,
+              companies!company_courses_company_id_fkey(id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address),
+              company_employees!company_courses_employee_id_fkey(
+                id,
+                user_id,
+                profiles:user_id(full_name, phone, email)
+              )
+            `)
+            .in("course_id", courseIds);
+          
+          if (companyDataError) {
+            console.error("Error fetching company courses:", companyDataError);
           }
-        } else if (companyInfo?.employee?.profiles) {
-          employeeName = companyInfo.employee.profiles.full_name;
-          employeePhone = companyInfo.employee.profiles.phone;
-          employeeEmail = companyInfo.employee.profiles.email;
+          
+          companyData?.forEach(cc => {
+            companyCoursesMap.set(cc.course_id, {
+              company: cc.companies,
+              employee: cc.company_employees
+            });
+          });
+
+          // Fetch company_course_requests for guest employees
+          const { data: requestsData } = await supabase
+            .from("company_course_requests")
+            .select(`
+              final_course_id,
+              is_guest_employee,
+              guest_employee_name,
+              guest_employee_phone,
+              guest_employee_email,
+              employee_id,
+              company_employees(
+                id,
+                user_id,
+                profiles:user_id(full_name, phone, email)
+              )
+            `)
+            .in("final_course_id", courseIds);
+          
+          requestsData?.forEach(req => {
+            companyCourseRequestsMap.set(req.final_course_id, req);
+          });
+        }
+
+        // Enrich factures with company info and employee info
+        const enrichedFactures = (regularFactures || []).map(f => {
+          const companyInfo = companyCoursesMap.get(f.course_id);
+          const requestInfo = companyCourseRequestsMap.get(f.course_id);
+          // Direct company from facture.company_id takes priority
+          const directCompany = f.company_id ? directCompaniesMap.get(f.company_id) : null;
+          
+          let employeeName = null;
+          let employeePhone = null;
+          let employeeEmail = null;
+          let isGuestEmployee = false;
+          
+          if (requestInfo) {
+            isGuestEmployee = requestInfo.is_guest_employee || false;
+            if (isGuestEmployee) {
+              employeeName = requestInfo.guest_employee_name;
+              employeePhone = requestInfo.guest_employee_phone;
+              employeeEmail = requestInfo.guest_employee_email;
+            } else if (requestInfo.company_employees?.profiles) {
+              employeeName = requestInfo.company_employees.profiles.full_name;
+              employeePhone = requestInfo.company_employees.profiles.phone;
+              employeeEmail = requestInfo.company_employees.profiles.email;
+            }
+          } else if (companyInfo?.employee?.profiles) {
+            employeeName = companyInfo.employee.profiles.full_name;
+            employeePhone = companyInfo.employee.profiles.phone;
+            employeeEmail = companyInfo.employee.profiles.email;
+          }
+          
+          // Use direct company from facture.company_id, fallback to company_courses
+          const finalCompanyInfo = directCompany || companyInfo?.company || null;
+          
+          return {
+            ...f,
+            companyInfo: finalCompanyInfo,
+            employeeName,
+            employeePhone,
+            employeeEmail,
+            isGuestEmployee
+          };
+        });
+
+        setFactures(enrichedFactures);
+        setFilteredFactures(enrichedFactures);
+
+        // Extract unique clients/companies for filter
+        const uniqueEntities = new Map();
+        enrichedFactures.forEach((f) => {
+          if (f.clients?.id) {
+            uniqueEntities.set(f.clients.id, { 
+              id: f.clients.id, 
+              name: f.clients.profiles?.full_name || 'Client',
+              type: 'client'
+            });
+          }
+          if (f.companyInfo?.id) {
+            uniqueEntities.set(f.companyInfo.id, {
+              id: f.companyInfo.id,
+              name: `🏢 ${f.companyInfo.company_name}`,
+              type: 'company'
+            });
+          }
+          // For guest bookings without company
+          if (f.courses?.is_guest_booking && f.courses?.guest_name && !f.companyInfo) {
+            uniqueEntities.set(`guest-${f.id}`, {
+              id: `guest-${f.id}`,
+              name: `${f.courses.guest_name} (Non inscrit)`,
+              type: 'guest'
+            });
+          }
+        });
+        setClients(Array.from(uniqueEntities.values()));
+        setLoading(false);
+        
+      } catch (error: any) {
+        console.error(`Erreur chargement factures (tentative ${attempt + 1}/${maxRetries}):`, error);
+        
+        if (attempt < maxRetries - 1) {
+          // Retry avec délai exponentiel
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          return attemptFetch(attempt + 1);
         }
         
-        // Use direct company from facture.company_id, fallback to company_courses
-        const finalCompanyInfo = directCompany || companyInfo?.company || null;
-        
-        return {
-          ...f,
-          companyInfo: finalCompanyInfo,
-          employeeName,
-          employeePhone,
-          employeeEmail,
-          isGuestEmployee
-        };
-      });
-
-      setFactures(enrichedFactures);
-      setFilteredFactures(enrichedFactures);
-
-      // Extract unique clients/companies for filter
-      const uniqueEntities = new Map();
-      enrichedFactures.forEach((f) => {
-        if (f.clients?.id) {
-          uniqueEntities.set(f.clients.id, { 
-            id: f.clients.id, 
-            name: f.clients.profiles?.full_name || 'Client',
-            type: 'client'
-          });
-        }
-        if (f.companyInfo?.id) {
-          uniqueEntities.set(f.companyInfo.id, {
-            id: f.companyInfo.id,
-            name: `🏢 ${f.companyInfo.company_name}`,
-            type: 'company'
-          });
-        }
-        // For guest bookings without company
-        if (f.courses?.is_guest_booking && f.courses?.guest_name && !f.companyInfo) {
-          uniqueEntities.set(`guest-${f.id}`, {
-            id: `guest-${f.id}`,
-            name: `${f.courses.guest_name} (Non inscrit)`,
-            type: 'guest'
-          });
-        }
-      });
-      setClients(Array.from(uniqueEntities.values()));
-    } catch (error: any) {
-      console.error("Error fetching factures:", error);
-      toast.error("Erreur lors du chargement des factures");
-    } finally {
-      setLoading(false);
-    }
+        // Échec final - afficher liste vide sans bloquer
+        setFactures([]);
+        setFilteredFactures([]);
+        setLoading(false);
+        toast.error("Impossible de charger les factures. Réessayez plus tard.");
+      }
+    };
+    
+    await attemptFetch(0);
   };
 
   const handleDownloadPDF = async (facture: any, forClient: boolean = false) => {

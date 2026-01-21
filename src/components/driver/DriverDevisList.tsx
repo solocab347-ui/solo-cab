@@ -175,262 +175,281 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
   };
 
   const fetchDevis = async () => {
-    try {
-      // Fetch regular devis (with client)
-      const { data: regularDevis, error: devisError } = await supabase
-        .from("devis")
-        .select(`
-          *,
-          courses(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes
-          ),
-          clients(
-            id,
-            profiles:user_id(full_name, email, phone, profile_photo_url)
-          )
-        `)
-        .eq("driver_id", driverId)
-        .order("created_at", { ascending: false });
-
-      if (devisError) throw devisError;
-
-      // Fetch company course quotes - include all relevant statuses
-      const { data: companyQuotes, error: companyError } = await supabase
-        .from("company_course_quotes")
-        .select(`
-          *,
-          company_course_requests!inner(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            company_id,
-            is_guest_employee,
-            guest_employee_name,
-            guest_employee_phone,
-            guest_employee_email,
-            employee_id,
-            companies!inner(
+    const maxRetries = 4;
+    
+    const attemptFetch = async (attempt: number): Promise<void> => {
+      try {
+        // Fetch regular devis (with client) - limit for performance
+        const { data: regularDevis, error: devisError } = await supabase
+          .from("devis")
+          .select(`
+            *,
+            courses(
               id,
-              company_name,
-              logo_url,
-              contact_email,
-              contact_phone,
-              siret,
-              siren,
-              tva_number,
-              address,
-              billing_address
+              pickup_address,
+              destination_address,
+              scheduled_date,
+              distance_km,
+              duration_minutes
+            ),
+            clients(
+              id,
+              profiles:user_id(full_name, email, phone, profile_photo_url)
             )
-          )
-        `)
-        .eq("driver_id", driverId)
-        .in("status", ["sent", "accepted", "refused", "taken_by_other"])
-        .order("created_at", { ascending: false });
+          `)
+          .eq("driver_id", driverId)
+          .order("created_at", { ascending: false })
+          .limit(200);
 
-      if (companyError) throw companyError;
+        if (devisError) throw devisError;
 
-      // Fetch company info for regular devis that have company_id or company_employee_id
-      const devisWithCompany = (regularDevis || []).filter((d: any) => d.company_id || d.company_employee_id);
-      const companyIds = [...new Set(devisWithCompany.map((d: any) => d.company_id).filter(Boolean))];
-      const employeeIdsFromDevis = [...new Set(devisWithCompany.map((d: any) => d.company_employee_id).filter(Boolean))];
-      
-      let companyInfoMap = new Map();
-      if (companyIds.length > 0) {
-        const { data: companies } = await supabase
-          .from("companies")
-          .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
-          .in("id", companyIds);
+        // Fetch company course quotes - include all relevant statuses
+        const { data: companyQuotes, error: companyError } = await supabase
+          .from("company_course_quotes")
+          .select(`
+            *,
+            company_course_requests!inner(
+              id,
+              pickup_address,
+              destination_address,
+              scheduled_date,
+              company_id,
+              is_guest_employee,
+              guest_employee_name,
+              guest_employee_phone,
+              guest_employee_email,
+              employee_id,
+              companies!inner(
+                id,
+                company_name,
+                logo_url,
+                contact_email,
+                contact_phone,
+                siret,
+                siren,
+                tva_number,
+                address,
+                billing_address
+              )
+            )
+          `)
+          .eq("driver_id", driverId)
+          .in("status", ["sent", "accepted", "refused", "taken_by_other"])
+          .order("created_at", { ascending: false })
+          .limit(100);
+
+        if (companyError) throw companyError;
+
+        // Fetch company info for regular devis that have company_id or company_employee_id
+        const devisWithCompany = (regularDevis || []).filter((d: any) => d.company_id || d.company_employee_id);
+        const companyIds = [...new Set(devisWithCompany.map((d: any) => d.company_id).filter(Boolean))];
+        const employeeIdsFromDevis = [...new Set(devisWithCompany.map((d: any) => d.company_employee_id).filter(Boolean))];
         
-        companies?.forEach(c => companyInfoMap.set(c.id, c));
-      }
+        let companyInfoMap = new Map();
+        if (companyIds.length > 0) {
+          const { data: companies } = await supabase
+            .from("companies")
+            .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
+            .in("id", companyIds);
+          
+          companies?.forEach(c => companyInfoMap.set(c.id, c));
+        }
 
-      // Fetch employee profiles using RPC function for all employee IDs
-      const employeeIdsFromQuotes = (companyQuotes || [])
-        .map((q: any) => q.company_course_requests?.employee_id)
-        .filter(Boolean);
-      
-      const allEmployeeIds = [...new Set([...employeeIdsFromQuotes, ...employeeIdsFromDevis])];
-      
-      let employeeProfiles = new Map();
-      if (allEmployeeIds.length > 0) {
-        // Use RPC function to bypass RLS
-        const employeePromises = allEmployeeIds.map(async (empId) => {
-          const { data } = await supabase.rpc('get_employee_profile_for_course', { 
-            p_employee_id: empId 
+        // Fetch employee profiles using RPC function for all employee IDs
+        const employeeIdsFromQuotes = (companyQuotes || [])
+          .map((q: any) => q.company_course_requests?.employee_id)
+          .filter(Boolean);
+        
+        const allEmployeeIds = [...new Set([...employeeIdsFromQuotes, ...employeeIdsFromDevis])];
+        
+        let employeeProfiles = new Map();
+        if (allEmployeeIds.length > 0) {
+          // Use RPC function to bypass RLS
+          const employeePromises = allEmployeeIds.map(async (empId) => {
+            const { data } = await supabase.rpc('get_employee_profile_for_course', { 
+              p_employee_id: empId 
+            });
+            if (data && data.length > 0) {
+              return { 
+                id: empId, 
+                full_name: data[0].full_name, 
+                phone: data[0].phone 
+              };
+            }
+            return null;
           });
-          if (data && data.length > 0) {
-            return { 
-              id: empId, 
-              full_name: data[0].full_name, 
-              phone: data[0].phone 
-            };
-          }
-          return null;
+          
+          const employeeResults = await Promise.all(employeePromises);
+          employeeResults.forEach(result => {
+            if (result) {
+              employeeProfiles.set(result.id, result);
+            }
+          });
+        }
+
+        // Transform regular devis to unified format
+        const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => {
+          // Check if this is a company devis
+          const companyInfo = d.company_id ? companyInfoMap.get(d.company_id) : null;
+          const employeeInfo = d.company_employee_id ? employeeProfiles.get(d.company_employee_id) : null;
+          const isCompanyDevis = !!(d.company_id || d.company_employee_id);
+          
+          return {
+            id: d.id,
+            quote_number: d.quote_number,
+            amount: d.amount,
+            status: d.status,
+            created_at: d.created_at,
+            valid_until: d.valid_until,
+            base_price: d.base_price,
+            distance_price: d.distance_price,
+            time_price: d.time_price,
+            evening_surcharge_amount: d.evening_surcharge_amount,
+            weekend_surcharge_amount: d.weekend_surcharge_amount,
+            peak_hours_surcharge_amount: d.peak_hours_surcharge_amount,
+            discount_amount: d.discount_amount,
+            promo_code: d.promo_code,
+            tva_rate: d.tva_rate || null,
+            tva_amount: d.tva_amount || null,
+            airport_fee: d.airport_fee || null,
+            pickup_address: d.courses?.pickup_address || "",
+            destination_address: d.courses?.destination_address || "",
+            scheduled_date: d.courses?.scheduled_date || d.created_at,
+            distance_km: d.courses?.distance_km,
+            duration_minutes: d.courses?.duration_minutes,
+            client_id: isCompanyDevis ? null : d.clients?.id,
+            client_name: isCompanyDevis ? null : d.clients?.profiles?.full_name,
+            client_email: isCompanyDevis ? null : d.clients?.profiles?.email,
+            client_phone: isCompanyDevis ? null : d.clients?.profiles?.phone,
+            client_photo_url: isCompanyDevis ? null : d.clients?.profiles?.profile_photo_url,
+            company_id: d.company_id || (employeeInfo ? d.company_employee_id : null),
+            company_name: companyInfo?.company_name || null,
+            company_logo_url: companyInfo?.logo_url || null,
+            company_contact_email: companyInfo?.contact_email || null,
+            company_contact_phone: companyInfo?.contact_phone || null,
+            company_siret: companyInfo?.siret || null,
+            company_siren: companyInfo?.siren || null,
+            company_tva_number: companyInfo?.tva_number || null,
+            company_address: companyInfo?.address || null,
+            company_billing_address: companyInfo?.billing_address || null,
+            employee_name: employeeInfo?.full_name || null,
+            employee_phone: employeeInfo?.phone || null,
+            employee_email: null,
+            is_guest_employee: false,
+            is_company_quote: isCompanyDevis,
+            request_id: null,
+          };
         });
+
+        // Transform company quotes to unified format - map statuses correctly
+        const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => {
+          // Map company quote status to unified status
+          let mappedStatus = "pending";
+          if (q.status === "sent") mappedStatus = "pending";
+          else if (q.status === "accepted") mappedStatus = "accepted";
+          else if (q.status === "refused") mappedStatus = "refused";
+          else if (q.status === "taken_by_other") mappedStatus = "expired";
+          
+          // Get employee info - either guest or registered (using fetched profiles)
+          const req = q.company_course_requests;
+          const isGuest = req.is_guest_employee || false;
+          const empProfile = req.employee_id ? employeeProfiles.get(req.employee_id) : null;
+          const employeeName = isGuest 
+            ? req.guest_employee_name 
+            : empProfile?.full_name || null;
+          const employeePhone = isGuest 
+            ? req.guest_employee_phone 
+            : empProfile?.phone || null;
+          const employeeEmail = isGuest 
+            ? req.guest_employee_email 
+            : empProfile?.email || null;
+          
+          return {
+            id: q.id,
+            quote_number: `ENT-${q.id.slice(0, 8).toUpperCase()}`,
+            amount: q.total_price,
+            status: mappedStatus,
+            created_at: q.created_at,
+            valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            base_price: q.base_price,
+            distance_price: q.distance_price,
+            time_price: q.time_price,
+            evening_surcharge_amount: q.evening_surcharge,
+            weekend_surcharge_amount: q.weekend_surcharge,
+            peak_hours_surcharge_amount: 0,
+            discount_amount: 0,
+            promo_code: null,
+            tva_rate: null,
+            tva_amount: null,
+            airport_fee: null,
+            pickup_address: req.pickup_address,
+            destination_address: req.destination_address,
+            scheduled_date: req.scheduled_date,
+            distance_km: q.distance_km,
+            duration_minutes: q.duration_minutes,
+            client_id: null,
+            client_name: null,
+            client_email: null,
+            client_phone: null,
+            client_photo_url: null,
+            company_id: req.company_id,
+            company_name: req.companies.company_name,
+            company_logo_url: req.companies.logo_url,
+            company_contact_email: req.companies.contact_email,
+            company_contact_phone: req.companies.contact_phone,
+            company_siret: req.companies.siret || null,
+            company_siren: req.companies.siren || null,
+            company_tva_number: req.companies.tva_number || null,
+            company_address: req.companies.address || null,
+            company_billing_address: req.companies.billing_address || null,
+            employee_name: employeeName || null,
+            employee_phone: employeePhone || null,
+            employee_email: employeeEmail || null,
+            is_guest_employee: isGuest,
+            is_company_quote: true,
+            request_id: q.request_id,
+          };
+        });
+
+        // Combine and sort by date
+        const allQuotes = [...transformedRegularDevis, ...transformedCompanyQuotes].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setDevisList(allQuotes);
+        setFilteredDevis(allQuotes);
+
+        // Extract unique clients/companies for filter
+        const uniqueEntities = new Map();
+        allQuotes.forEach((d) => {
+          if (d.client_id && d.client_name) {
+            uniqueEntities.set(d.client_id, { id: d.client_id, name: d.client_name, type: 'client' });
+          }
+          if (d.company_id && d.company_name) {
+            uniqueEntities.set(d.company_id, { id: d.company_id, name: `🏢 ${d.company_name}`, type: 'company' });
+          }
+        });
+        setClients(Array.from(uniqueEntities.values()));
+        setLoading(false);
         
-        const employeeResults = await Promise.all(employeePromises);
-        employeeResults.forEach(result => {
-          if (result) {
-            employeeProfiles.set(result.id, result);
-          }
-        });
+      } catch (error: any) {
+        console.error(`Erreur chargement devis (tentative ${attempt + 1}/${maxRetries}):`, error);
+        
+        if (attempt < maxRetries - 1) {
+          // Retry avec délai exponentiel
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          return attemptFetch(attempt + 1);
+        }
+        
+        // Échec final - afficher liste vide sans bloquer
+        setDevisList([]);
+        setFilteredDevis([]);
+        setLoading(false);
+        toast.error("Impossible de charger les devis. Réessayez plus tard.");
       }
-
-      // Transform regular devis to unified format
-      const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => {
-        // Check if this is a company devis
-        const companyInfo = d.company_id ? companyInfoMap.get(d.company_id) : null;
-        const employeeInfo = d.company_employee_id ? employeeProfiles.get(d.company_employee_id) : null;
-        const isCompanyDevis = !!(d.company_id || d.company_employee_id);
-        
-        return {
-          id: d.id,
-          quote_number: d.quote_number,
-          amount: d.amount,
-          status: d.status,
-          created_at: d.created_at,
-          valid_until: d.valid_until,
-          base_price: d.base_price,
-          distance_price: d.distance_price,
-          time_price: d.time_price,
-          evening_surcharge_amount: d.evening_surcharge_amount,
-          weekend_surcharge_amount: d.weekend_surcharge_amount,
-          peak_hours_surcharge_amount: d.peak_hours_surcharge_amount,
-          discount_amount: d.discount_amount,
-          promo_code: d.promo_code,
-          tva_rate: d.tva_rate || null,
-          tva_amount: d.tva_amount || null,
-          airport_fee: d.airport_fee || null,
-          pickup_address: d.courses?.pickup_address || "",
-          destination_address: d.courses?.destination_address || "",
-          scheduled_date: d.courses?.scheduled_date || d.created_at,
-          distance_km: d.courses?.distance_km,
-          duration_minutes: d.courses?.duration_minutes,
-          client_id: isCompanyDevis ? null : d.clients?.id,
-          client_name: isCompanyDevis ? null : d.clients?.profiles?.full_name,
-          client_email: isCompanyDevis ? null : d.clients?.profiles?.email,
-          client_phone: isCompanyDevis ? null : d.clients?.profiles?.phone,
-          client_photo_url: isCompanyDevis ? null : d.clients?.profiles?.profile_photo_url,
-          company_id: d.company_id || (employeeInfo ? d.company_employee_id : null),
-          company_name: companyInfo?.company_name || null,
-          company_logo_url: companyInfo?.logo_url || null,
-          company_contact_email: companyInfo?.contact_email || null,
-          company_contact_phone: companyInfo?.contact_phone || null,
-          company_siret: companyInfo?.siret || null,
-          company_siren: companyInfo?.siren || null,
-          company_tva_number: companyInfo?.tva_number || null,
-          company_address: companyInfo?.address || null,
-          company_billing_address: companyInfo?.billing_address || null,
-          employee_name: employeeInfo?.full_name || null,
-          employee_phone: employeeInfo?.phone || null,
-          employee_email: null,
-          is_guest_employee: false,
-          is_company_quote: isCompanyDevis,
-          request_id: null,
-        };
-      });
-
-      // Transform company quotes to unified format - map statuses correctly
-      const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => {
-        // Map company quote status to unified status
-        let mappedStatus = "pending";
-        if (q.status === "sent") mappedStatus = "pending";
-        else if (q.status === "accepted") mappedStatus = "accepted";
-        else if (q.status === "refused") mappedStatus = "refused";
-        else if (q.status === "taken_by_other") mappedStatus = "expired"; // Map to expired for display
-        
-        // Get employee info - either guest or registered (using fetched profiles)
-        const req = q.company_course_requests;
-        const isGuest = req.is_guest_employee || false;
-        const empProfile = req.employee_id ? employeeProfiles.get(req.employee_id) : null;
-        const employeeName = isGuest 
-          ? req.guest_employee_name 
-          : empProfile?.full_name || null;
-        const employeePhone = isGuest 
-          ? req.guest_employee_phone 
-          : empProfile?.phone || null;
-        const employeeEmail = isGuest 
-          ? req.guest_employee_email 
-          : empProfile?.email || null;
-        
-        return {
-          id: q.id,
-          quote_number: `ENT-${q.id.slice(0, 8).toUpperCase()}`,
-          amount: q.total_price,
-          status: mappedStatus,
-          created_at: q.created_at,
-          valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days validity
-          base_price: q.base_price,
-          distance_price: q.distance_price,
-          time_price: q.time_price,
-          evening_surcharge_amount: q.evening_surcharge,
-          weekend_surcharge_amount: q.weekend_surcharge,
-          peak_hours_surcharge_amount: 0, // Company quotes don't have peak hours surcharge yet
-          discount_amount: 0,
-          promo_code: null,
-          tva_rate: null, // Will be calculated based on course type
-          tva_amount: null,
-          airport_fee: null,
-          pickup_address: req.pickup_address,
-          destination_address: req.destination_address,
-          scheduled_date: req.scheduled_date,
-          distance_km: q.distance_km,
-          duration_minutes: q.duration_minutes,
-          client_id: null,
-          client_name: null,
-          client_email: null,
-          client_phone: null,
-          client_photo_url: null,
-          company_id: req.company_id,
-          company_name: req.companies.company_name,
-          company_logo_url: req.companies.logo_url,
-          company_contact_email: req.companies.contact_email,
-          company_contact_phone: req.companies.contact_phone,
-          company_siret: req.companies.siret || null,
-          company_siren: req.companies.siren || null,
-          company_tva_number: req.companies.tva_number || null,
-          company_address: req.companies.address || null,
-          company_billing_address: req.companies.billing_address || null,
-          employee_name: employeeName || null,
-          employee_phone: employeePhone || null,
-          employee_email: employeeEmail || null,
-          is_guest_employee: isGuest,
-          is_company_quote: true,
-          request_id: q.request_id,
-        };
-      });
-
-      // Combine and sort by date
-      const allQuotes = [...transformedRegularDevis, ...transformedCompanyQuotes].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      setDevisList(allQuotes);
-      setFilteredDevis(allQuotes);
-
-      // Extract unique clients/companies for filter
-      const uniqueEntities = new Map();
-      allQuotes.forEach((d) => {
-        if (d.client_id && d.client_name) {
-          uniqueEntities.set(d.client_id, { id: d.client_id, name: d.client_name, type: 'client' });
-        }
-        if (d.company_id && d.company_name) {
-          uniqueEntities.set(d.company_id, { id: d.company_id, name: `🏢 ${d.company_name}`, type: 'company' });
-        }
-      });
-      setClients(Array.from(uniqueEntities.values()));
-    } catch (error: any) {
-      console.error("Error fetching devis:", error);
-      toast.error("Erreur lors du chargement des devis");
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    await attemptFetch(0);
   };
 
   // Mutation for accepting/refusing company quotes
