@@ -243,7 +243,7 @@ export async function pingConnection(): Promise<{ connected: boolean; latency: n
 class ConnectionRecovery {
   private isRecovering = false;
   private recoveryAttempts = 0;
-  private maxRecoveryAttempts = 5;
+  private maxRecoveryAttempts = 10; // Augmenté pour plus de résilience
   private listeners: Set<(state: string) => void> = new Set();
   private recoveryTimer: NodeJS.Timeout | null = null;
 
@@ -252,76 +252,40 @@ class ConnectionRecovery {
    */
   async attemptRecovery(): Promise<boolean> {
     if (this.isRecovering) {
-      logger.info('Recovery already in progress');
       return false;
     }
 
     this.isRecovering = true;
     this.recoveryAttempts++;
     
-    logger.info(`Connection recovery attempt ${this.recoveryAttempts}/${this.maxRecoveryAttempts}`);
     this.notifyListeners('recovering');
 
     try {
       // Étape 1: Vérifier la connectivité réseau
       if (!navigator.onLine) {
-        logger.warn('Browser reports offline');
         this.notifyListeners('offline');
+        this.isRecovering = false;
+        // Planifier retry automatique
+        this.scheduleRecovery();
         return false;
       }
 
-      // Étape 2: Vérifier la session Supabase
-      const { data: { session }, error: sessionError } = await Promise.race([
-        supabase.auth.getSession(),
-        new Promise<{ data: { session: null }, error: Error }>((resolve) => 
-          setTimeout(() => resolve({ 
-            data: { session: null }, 
-            error: new Error('Session check timeout') 
-          }), 5000)
-        )
-      ]);
-
-      if (sessionError) {
-        logger.warn('Session check failed', { error: sessionError.message });
-      }
-
-      // Étape 3: Rafraîchir la session si nécessaire
-      if (session) {
-        const expiresAt = session.expires_at || 0;
-        const now = Math.floor(Date.now() / 1000);
-        
-        if (expiresAt - now < 600) { // Moins de 10 minutes
-          logger.info('Refreshing session');
-          const { error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError) {
-            logger.warn('Session refresh failed', { error: refreshError.message });
-          }
-        }
-      }
-
-      // Étape 4: Ping pour vérifier la connexion
+      // Étape 2: Ping pour vérifier la connexion
       const { connected, latency } = await pingConnection();
       
       if (connected) {
-        logger.info('Connection recovered', { latency });
         this.recoveryAttempts = 0;
         this.notifyListeners('recovered');
+        this.isRecovering = false;
         return true;
       }
 
-      // Planifier une nouvelle tentative si pas trop d'échecs
-      if (this.recoveryAttempts < this.maxRecoveryAttempts) {
-        this.scheduleRecovery();
-      } else {
-        logger.error('Max recovery attempts reached');
-        this.notifyListeners('failed');
-      }
-
+      // Planifier une nouvelle tentative - SANS LIMITE
+      this.scheduleRecovery();
       return false;
     } catch (error) {
-      logger.error('Recovery error', { error });
-      this.notifyListeners('error');
+      this.notifyListeners('recovering');
+      this.scheduleRecovery();
       return false;
     } finally {
       this.isRecovering = false;
@@ -329,14 +293,15 @@ class ConnectionRecovery {
   }
 
   /**
-   * Planifie une tentative de récupération
+   * Planifie une tentative de récupération - récupération infinie
    */
   private scheduleRecovery() {
     if (this.recoveryTimer) {
       clearTimeout(this.recoveryTimer);
     }
 
-    const delay = CONNECTION_CONFIG.RECOVERY_INTERVAL * Math.min(this.recoveryAttempts, 3);
+    // Délai progressif mais plafonné à 30s pour toujours réessayer
+    const delay = Math.min(CONNECTION_CONFIG.RECOVERY_INTERVAL * Math.min(this.recoveryAttempts, 3), 30000);
     
     this.recoveryTimer = setTimeout(() => {
       this.attemptRecovery();
@@ -356,7 +321,7 @@ class ConnectionRecovery {
       try {
         cb(state);
       } catch (e) {
-        logger.error('Recovery listener error', { error: e });
+        // Silencieux
       }
     });
   }
