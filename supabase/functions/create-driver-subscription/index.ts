@@ -158,7 +158,7 @@ serve(async (req) => {
         },
       },
       success_url: `${origin}/driver-welcome?driver_id=${driver_id}&pioneer=false&plate=${with_plate}`,
-      cancel_url: `${origin}/register-driver-promo`,
+      cancel_url: `${origin}/register-driver-promo?canceled=true`,
       metadata: {
         driver_id: driver_id,
         user_id: user.id,

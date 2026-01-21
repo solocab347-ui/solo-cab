@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 
 const PLATE_PRICE = 29.99;
@@ -20,11 +20,17 @@ const ANNUAL_MONTHLY_EQUIVALENT = (SUBSCRIPTION_ANNUAL_PRICE / 12).toFixed(2);
 
 const RegisterDriverPromo = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Login mode for returning users
+  const [isLoginMode, setIsLoginMode] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // Étape 1 - Informations obligatoires
   const [email, setEmail] = useState("");
@@ -42,6 +48,21 @@ const RegisterDriverPromo = () => {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
+  
+  // Payment failure tracking
+  const [paymentFailed, setPaymentFailed] = useState(false);
+  const [paymentFailedReason, setPaymentFailedReason] = useState<string | null>(null);
+
+  // Check URL params for payment failure
+  useEffect(() => {
+    const canceled = searchParams.get("canceled");
+    const failed = searchParams.get("failed");
+    
+    if (canceled === "true" || failed === "true") {
+      setPaymentFailed(true);
+      setPaymentFailedReason("Paiement annulé ou échoué. Veuillez réessayer.");
+    }
+  }, [searchParams]);
 
   // Check if user is already logged in and has a driver profile
   useEffect(() => {
@@ -56,12 +77,24 @@ const RegisterDriverPromo = () => {
           // Check if driver profile exists
           const { data: existingDriver } = await supabase
             .from("drivers")
-            .select("id, subscription_status, subscription_paid")
+            .select(`
+              id, 
+              subscription_status, 
+              subscription_paid,
+              registration_step,
+              pending_subscription_type,
+              pending_wants_plate,
+              shipping_address,
+              shipping_city,
+              shipping_postal_code,
+              payment_failed_at,
+              payment_failed_reason
+            `)
             .eq("user_id", session.user.id)
             .maybeSingle();
           
           if (existingDriver) {
-            console.log("[RegisterDriverPromo] Driver exists:", existingDriver);
+            console.log("[RegisterDriverPromo] Driver profile found:", existingDriver);
             setDriverId(existingDriver.id);
             
             // If subscription already paid and active, redirect to dashboard
@@ -72,8 +105,31 @@ const RegisterDriverPromo = () => {
               return;
             }
             
-            // Otherwise go to step 2 for payment (registration incomplete)
-            toast.info("Continuez votre inscription en choisissant votre abonnement");
+            // Restore saved choices if any
+            if (existingDriver.pending_subscription_type) {
+              setSubscriptionType(existingDriver.pending_subscription_type as "monthly" | "annual");
+            }
+            if (existingDriver.pending_wants_plate) {
+              setWantsPlate(true);
+            }
+            if (existingDriver.shipping_address) {
+              setShippingAddress(existingDriver.shipping_address);
+            }
+            if (existingDriver.shipping_city) {
+              setShippingCity(existingDriver.shipping_city);
+            }
+            if (existingDriver.shipping_postal_code) {
+              setShippingPostalCode(existingDriver.shipping_postal_code);
+            }
+            
+            // Check for previous payment failure
+            if (existingDriver.payment_failed_at) {
+              setPaymentFailed(true);
+              setPaymentFailedReason(existingDriver.payment_failed_reason || "Votre dernier paiement a échoué. Veuillez réessayer.");
+            }
+            
+            // Go to step 2 for payment (registration incomplete)
+            toast.info("Reprenez votre inscription là où vous l'avez laissée");
             setCurrentStep(2);
           }
         }
@@ -86,6 +142,95 @@ const RegisterDriverPromo = () => {
 
     checkExistingSession();
   }, [navigate]);
+
+  // Handle login for returning users
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        setUserId(data.user.id);
+        
+        // Check driver profile
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select(`
+            id, 
+            subscription_status, 
+            subscription_paid,
+            pending_subscription_type,
+            pending_wants_plate,
+            shipping_address,
+            shipping_city,
+            shipping_postal_code,
+            payment_failed_at,
+            payment_failed_reason
+          `)
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (driverData) {
+          setDriverId(driverData.id);
+          
+          // Already has active subscription
+          if (driverData.subscription_paid && 
+              (driverData.subscription_status === "active" || driverData.subscription_status === "trialing")) {
+            toast.success("Bienvenue ! Redirection vers votre tableau de bord...");
+            navigate("/driver-dashboard");
+            return;
+          }
+          
+          // Restore saved choices
+          if (driverData.pending_subscription_type) {
+            setSubscriptionType(driverData.pending_subscription_type as "monthly" | "annual");
+          }
+          if (driverData.pending_wants_plate) {
+            setWantsPlate(true);
+          }
+          if (driverData.shipping_address) {
+            setShippingAddress(driverData.shipping_address);
+          }
+          if (driverData.shipping_city) {
+            setShippingCity(driverData.shipping_city);
+          }
+          if (driverData.shipping_postal_code) {
+            setShippingPostalCode(driverData.shipping_postal_code);
+          }
+          
+          // Check payment failure
+          if (driverData.payment_failed_at) {
+            setPaymentFailed(true);
+            setPaymentFailedReason(driverData.payment_failed_reason || "Votre dernier paiement a échoué.");
+          }
+          
+          toast.success("Connexion réussie ! Finalisez votre inscription.");
+          setCurrentStep(2);
+        } else {
+          // User exists but no driver profile - shouldn't happen but handle it
+          toast.error("Aucun profil chauffeur trouvé. Créez un nouveau compte.");
+          await supabase.auth.signOut();
+          setIsLoginMode(false);
+        }
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      if (error.message?.includes("Invalid login credentials")) {
+        toast.error("Email ou mot de passe incorrect");
+      } else {
+        toast.error(error.message || "Erreur de connexion");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +274,11 @@ const RegisterDriverPromo = () => {
       if (profileError) throw profileError;
 
       // Create driver profile with all required fields
-      // Note: subscription_status must be one of: 'active', 'inactive', 'past_due', 'canceled'
-      // We use 'inactive' for new registrations pending payment
       const driverInsertData: any = {
         user_id: newUserId,
         status: "on_hold",
-        subscription_status: "inactive", // Will become 'active' or 'trialing' after payment
-        subscription_paid: false, // Track if payment is done
+        subscription_status: "inactive",
+        subscription_paid: false,
         registration_step: 2,
         license_number: "À_COMPLÉTER",
         vehicle_brand: "À compléter",
@@ -172,7 +315,9 @@ const RegisterDriverPromo = () => {
       console.error("Erreur step 1:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";
       if (error.message?.includes("User already registered")) {
-        errorMessage = "Cet email est déjà utilisé. Veuillez vous connecter.";
+        errorMessage = "Cet email est déjà utilisé. Connectez-vous pour reprendre votre inscription.";
+        setIsLoginMode(true);
+        setLoginEmail(email);
       } else if (error.message?.includes("Invalid email")) {
         errorMessage = "Email invalide";
       } else if (error.message?.includes("Password")) {
@@ -184,8 +329,35 @@ const RegisterDriverPromo = () => {
     }
   };
 
-  const handleStep2Payment = async () => {
+  // Save choices before payment
+  const saveChoicesBeforePayment = async () => {
     if (!driverId) return;
+    
+    try {
+      await supabase
+        .from("drivers")
+        .update({
+          pending_subscription_type: subscriptionType,
+          pending_wants_plate: wantsPlate,
+          shipping_address: wantsPlate ? shippingAddress.trim() : null,
+          shipping_city: wantsPlate ? shippingCity.trim() : null,
+          shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
+          payment_failed_at: null, // Reset on new attempt
+          payment_failed_reason: null,
+        })
+        .eq("id", driverId);
+        
+      console.log("[RegisterDriverPromo] Choices saved before payment");
+    } catch (error) {
+      console.error("[RegisterDriverPromo] Failed to save choices:", error);
+    }
+  };
+
+  const handleStep2Payment = async () => {
+    if (!driverId) {
+      toast.error("Erreur: profil chauffeur non trouvé");
+      return;
+    }
 
     // Validation adresse si plaque commandée
     if (wantsPlate) {
@@ -200,8 +372,12 @@ const RegisterDriverPromo = () => {
     }
 
     setLoading(true);
+    setPaymentFailed(false);
 
     try {
+      // Save choices before redirecting to payment
+      await saveChoicesBeforePayment();
+
       const { data, error } = await supabase.functions.invoke("create-driver-subscription", {
         body: { 
           driver_id: driverId,
@@ -216,9 +392,24 @@ const RegisterDriverPromo = () => {
       if (error) throw error;
       if (!data?.url) throw new Error("URL de paiement non générée");
 
+      // Redirect to Stripe
       window.location.href = data.url;
     } catch (error: any) {
       console.error("Erreur step 2:", error);
+      
+      // Record payment failure
+      if (driverId) {
+        await supabase
+          .from("drivers")
+          .update({
+            payment_failed_at: new Date().toISOString(),
+            payment_failed_reason: error.message || "Erreur de paiement",
+          })
+          .eq("id", driverId);
+      }
+      
+      setPaymentFailed(true);
+      setPaymentFailedReason(error.message || "Erreur lors de la création du paiement");
       toast.error(error.message || "Erreur lors de la création du paiement");
       setLoading(false);
     }
@@ -281,8 +472,89 @@ const RegisterDriverPromo = () => {
           ))}
         </div>
 
+        {/* Payment failure alert */}
+        {paymentFailed && currentStep === 2 && (
+          <Alert className="mb-4 bg-destructive/10 border-destructive/30">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <AlertDescription className="text-sm">
+              <strong>Paiement échoué :</strong> {paymentFailedReason || "Une erreur est survenue."}
+              <br />
+              <span className="text-muted-foreground">Vos choix ont été sauvegardés. Vous pouvez réessayer le paiement.</span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Login mode for returning users */}
+        {isLoginMode && currentStep === 1 && (
+          <Card className="p-6 mb-4">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-premium" />
+              Reprendre votre inscription
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Vous avez déjà un compte ? Connectez-vous pour finaliser votre inscription.
+            </p>
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="loginEmail" className="text-sm">Email</Label>
+                <Input
+                  id="loginEmail"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                  placeholder="votre@email.com"
+                  className="h-10"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="loginPassword" className="text-sm">Mot de passe</Label>
+                <div className="relative">
+                  <Input
+                    id="loginPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    placeholder="Votre mot de passe"
+                    className="h-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-premium">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Se connecter et continuer
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center">
+              <Button
+                variant="link"
+                onClick={() => {
+                  setIsLoginMode(false);
+                  setLoginEmail("");
+                  setLoginPassword("");
+                }}
+                className="text-sm"
+              >
+                ← Créer un nouveau compte
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Step 1: Account Info */}
-        {currentStep === 1 && (
+        {currentStep === 1 && !isLoginMode && (
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-4">Étape 1 : Vos informations</h2>
             <form onSubmit={handleStep1} className="space-y-4">
@@ -382,6 +654,19 @@ const RegisterDriverPromo = () => {
                 Continuer
               </Button>
             </form>
+
+            {/* Link to login for existing users */}
+            <div className="mt-4 pt-4 border-t text-center">
+              <p className="text-sm text-muted-foreground mb-2">Déjà inscrit mais pas finalisé ?</p>
+              <Button
+                variant="outline"
+                onClick={() => setIsLoginMode(true)}
+                className="w-full"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reprendre mon inscription
+              </Button>
+            </div>
           </Card>
         )}
 
@@ -670,6 +955,7 @@ const RegisterDriverPromo = () => {
               className="w-full h-11 bg-gradient-premium text-premium-foreground shadow-premium"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {paymentFailed && <RefreshCw className="w-4 h-4 mr-2" />}
               {totalToPay === 0 
                 ? "Valider l'empreinte bancaire (0€)" 
                 : `Payer ${totalToPay.toFixed(2)}€`
@@ -680,14 +966,34 @@ const RegisterDriverPromo = () => {
               Paiement sécurisé par Stripe
             </p>
 
-            {/* Bouton retour */}
-            <Button
-              variant="ghost"
-              onClick={() => setCurrentStep(1)}
-              className="w-full mt-2 text-sm"
-            >
-              ← Modifier mes informations
-            </Button>
+            {/* Bouton retour - seulement si nouveau compte */}
+            {!userId && (
+              <Button
+                variant="ghost"
+                onClick={() => setCurrentStep(1)}
+                className="w-full mt-2 text-sm"
+              >
+                ← Modifier mes informations
+              </Button>
+            )}
+
+            {/* Logout option for logged in users who want to use different account */}
+            {userId && (
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setUserId(null);
+                  setDriverId(null);
+                  setCurrentStep(1);
+                  setIsLoginMode(false);
+                  toast.info("Déconnexion réussie");
+                }}
+                className="w-full mt-2 text-sm text-muted-foreground"
+              >
+                Utiliser un autre compte
+              </Button>
+            )}
           </Card>
         )}
 

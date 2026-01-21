@@ -5207,6 +5207,10 @@ export type Database = {
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
+          payment_failed_at: string | null
+          payment_failed_reason: string | null
+          pending_subscription_type: string | null
+          pending_wants_plate: boolean | null
           per_km_rate: number | null
           pioneer_since: string | null
           preferred_zones: string[] | null
@@ -5239,6 +5243,7 @@ export type Database = {
           smart_buffer_fallback_action: string | null
           smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"]
+          stripe_checkout_session_id: string | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_created_at: string | null
@@ -5329,6 +5334,10 @@ export type Database = {
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -5361,6 +5370,7 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"]
+          stripe_checkout_session_id?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_created_at?: string | null
@@ -5451,6 +5461,10 @@ export type Database = {
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -5483,6 +5497,7 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"]
+          stripe_checkout_session_id?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_created_at?: string | null
@@ -15285,6 +15300,10 @@ export type Database = {
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
+          payment_failed_at: string | null
+          payment_failed_reason: string | null
+          pending_subscription_type: string | null
+          pending_wants_plate: boolean | null
           per_km_rate: number | null
           pioneer_since: string | null
           preferred_zones: string[] | null
@@ -15317,6 +15336,7 @@ export type Database = {
           smart_buffer_fallback_action: string | null
           smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"]
+          stripe_checkout_session_id: string | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_created_at: string | null
