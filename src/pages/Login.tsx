@@ -190,7 +190,13 @@ const Login = () => {
   logger.debug("Login: showing form", { emergencyOverride });
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen bg-background flex items-center justify-center p-4"
+      style={{
+        paddingTop: "max(env(safe-area-inset-top, 0px), 1rem)",
+        paddingBottom: "max(env(safe-area-inset-bottom, 0px), 1rem)",
+      }}
+    >
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">

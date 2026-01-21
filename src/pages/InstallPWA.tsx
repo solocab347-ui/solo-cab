@@ -1,8 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Download, CheckCircle, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Smartphone, 
+  Download, 
+  CheckCircle, 
+  ArrowLeft, 
+  Share, 
+  MoreVertical,
+  Plus,
+  Wifi,
+  Bell,
+  Zap
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo from "@/assets/logo-solocab.png";
 
 export const InstallPWA = () => {
   const navigate = useNavigate();
@@ -51,19 +64,51 @@ export const InstallPWA = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full p-8">
+    <div 
+      className="min-h-screen bg-background"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 py-3 flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="font-semibold text-lg">Installer SoloCab</h1>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-6 max-w-lg">
+        {/* App Icon & Info */}
         <div className="text-center mb-8">
-          <div className="w-24 h-24 bg-gradient-trust rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-trust">
-            <Smartphone className="w-12 h-12 text-white" />
+          <div className="w-24 h-24 rounded-3xl mx-auto mb-4 bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg">
+            <div className="w-full h-full rounded-3xl bg-background flex items-center justify-center">
+              <img src={logo} alt="SoloCab" className="w-16 h-16 object-contain" />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold mb-3">
-            {isInstalled ? "Application Installée !" : "Installez SoloCab"}
-          </h1>
-          <p className="text-muted-foreground text-lg">
+          
+          <h2 className="text-2xl font-bold mb-2">
+            {isInstalled ? "Installé !" : "SoloCab"}
+          </h2>
+          
+          {!isInstalled && (
+            <Badge variant="outline" className="text-xs">
+              Application Web Progressive
+            </Badge>
+          )}
+          
+          <p className="text-muted-foreground mt-3 text-sm">
             {isInstalled 
               ? "L'application est installée sur votre appareil"
-              : "Accédez rapidement à SoloCab depuis votre écran d'accueil"
+              : "Installez l'app pour un accès rapide"
             }
           </p>
         </div>
@@ -75,7 +120,7 @@ export const InstallPWA = () => {
               <Button
                 onClick={handleInstall}
                 size="lg"
-                className="w-full mb-6 bg-gradient-premium text-premium-foreground"
+                className="w-full mb-6 bg-gradient-to-r from-primary to-accent text-primary-foreground h-12"
               >
                 <Download className="w-5 h-5 mr-2" />
                 Installer l'application
@@ -84,94 +129,166 @@ export const InstallPWA = () => {
 
             {/* Instructions pour iOS */}
             {platform === 'ios' && (
-              <Card className="p-6 bg-muted/50 mb-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Download className="w-5 h-5" />
-                  Instructions pour iPhone/iPad
+              <Card className="p-5 mb-6 bg-muted/30 border-primary/20">
+                <h3 className="font-semibold mb-4 flex items-center gap-2 text-primary">
+                  <Smartphone className="w-5 h-5" />
+                  Instructions iPhone / iPad
                 </h3>
-                <ol className="space-y-3 text-sm">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">1</span>
-                    <span>Appuyez sur le bouton <strong>Partager</strong> dans Safari (en bas de l'écran)</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">2</span>
-                    <span>Faites défiler et sélectionnez <strong>"Sur l'écran d'accueil"</strong></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">3</span>
-                    <span>Appuyez sur <strong>"Ajouter"</strong> pour terminer</span>
-                  </li>
-                </ol>
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Share className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">1. Appuyez sur Partager</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Le bouton carré avec une flèche vers le haut, en bas de Safari
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Plus className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">2. Sur l'écran d'accueil</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Faites défiler et sélectionnez "Sur l'écran d'accueil"
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">3. Ajouter</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Appuyez sur "Ajouter" en haut à droite
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             )}
 
             {/* Instructions pour Android sans prompt */}
             {platform === 'android' && !deferredPrompt && (
-              <Card className="p-6 bg-muted/50 mb-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Download className="w-5 h-5" />
-                  Instructions pour Android
+              <Card className="p-5 mb-6 bg-muted/30 border-primary/20">
+                <h3 className="font-semibold mb-4 flex items-center gap-2 text-primary">
+                  <Smartphone className="w-5 h-5" />
+                  Instructions Android
                 </h3>
-                <ol className="space-y-3 text-sm">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">1</span>
-                    <span>Appuyez sur le menu <strong>⋮</strong> dans Chrome (en haut à droite)</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">2</span>
-                    <span>Sélectionnez <strong>"Ajouter à l'écran d'accueil"</strong> ou <strong>"Installer l'application"</strong></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">3</span>
-                    <span>Confirmez l'installation</span>
-                  </li>
-                </ol>
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <MoreVertical className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">1. Menu Chrome</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Appuyez sur les 3 points ⋮ en haut à droite de Chrome
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Download className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">2. Installer l'application</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Sélectionnez "Installer l'application" ou "Ajouter à l'écran d'accueil"
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">3. Confirmer</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Confirmez l'installation
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             )}
 
-            {/* Avantages de l'installation */}
-            <div className="grid md:grid-cols-3 gap-4 mb-6">
-              <Card className="p-4 text-center">
-                <div className="w-12 h-12 bg-success/10 rounded-full mx-auto mb-3 flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-success" />
-                </div>
-                <h4 className="font-semibold mb-2">Accès rapide</h4>
-                <p className="text-xs text-muted-foreground">
-                  Lancez SoloCab en un clic depuis votre écran d'accueil
+            {/* Desktop instructions */}
+            {platform === 'desktop' && !deferredPrompt && (
+              <Card className="p-5 mb-6 bg-muted/30 border-primary/20">
+                <h3 className="font-semibold mb-4 flex items-center gap-2 text-primary">
+                  <Smartphone className="w-5 h-5" />
+                  Installation sur ordinateur
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Cliquez sur l'icône d'installation dans la barre d'adresse de votre navigateur, 
+                  ou utilisez le menu du navigateur pour "Installer SoloCab".
                 </p>
               </Card>
-              
-              <Card className="p-4 text-center">
-                <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-3 flex items-center justify-center">
-                  <Download className="w-6 h-6 text-primary" />
+            )}
+
+            {/* Avantages */}
+            <h3 className="font-semibold mb-4 text-sm text-muted-foreground uppercase tracking-wide">
+              Avantages
+            </h3>
+            <div className="space-y-3 mb-6">
+              <Card className="p-4 flex items-center gap-4 bg-muted/20">
+                <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-success" />
                 </div>
-                <h4 className="font-semibold mb-2">Hors ligne</h4>
-                <p className="text-xs text-muted-foreground">
-                  Consultez vos données même sans connexion
-                </p>
+                <div>
+                  <p className="font-medium text-sm">Accès instantané</p>
+                  <p className="text-xs text-muted-foreground">
+                    Lancez SoloCab en un clic depuis votre écran d'accueil
+                  </p>
+                </div>
               </Card>
               
-              <Card className="p-4 text-center">
-                <div className="w-12 h-12 bg-accent/10 rounded-full mx-auto mb-3 flex items-center justify-center">
-                  <Smartphone className="w-6 h-6 text-accent" />
+              <Card className="p-4 flex items-center gap-4 bg-muted/20">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Wifi className="w-5 h-5 text-primary" />
                 </div>
-                <h4 className="font-semibold mb-2">Expérience native</h4>
-                <p className="text-xs text-muted-foreground">
-                  Interface optimisée comme une vraie app mobile
-                </p>
+                <div>
+                  <p className="font-medium text-sm">Mode hors ligne</p>
+                  <p className="text-xs text-muted-foreground">
+                    Accédez à vos données même sans connexion
+                  </p>
+                </div>
+              </Card>
+              
+              <Card className="p-4 flex items-center gap-4 bg-muted/20">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                  <Bell className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Notifications</p>
+                  <p className="text-xs text-muted-foreground">
+                    Recevez des alertes pour vos courses et messages
+                  </p>
+                </div>
               </Card>
             </div>
           </>
         )}
 
         {isInstalled && (
-          <div className="text-center">
+          <div className="text-center py-8">
             <div className="w-20 h-20 bg-success/10 rounded-full mx-auto mb-6 flex items-center justify-center">
               <CheckCircle className="w-10 h-10 text-success" />
             </div>
-            <p className="text-muted-foreground mb-6">
-              Vous pouvez maintenant utiliser SoloCab comme une application native depuis votre écran d'accueil.
+            <p className="text-muted-foreground mb-2">
+              L'application est maintenant sur votre écran d'accueil.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Vous pouvez fermer cette page et utiliser l'icône SoloCab.
             </p>
           </div>
         )}
@@ -179,13 +296,12 @@ export const InstallPWA = () => {
         <Button
           onClick={() => navigate('/')}
           variant="outline"
-          className="w-full"
+          className="w-full mt-4"
           size="lg"
         >
-          <ExternalLink className="w-5 h-5 mr-2" />
           Retour à l'accueil
         </Button>
-      </Card>
+      </div>
     </div>
   );
 };

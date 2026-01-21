@@ -216,7 +216,13 @@ export const PWAInstallBanner = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg">
+      {/* Banner en bas de l'écran pour ne pas bloquer le header */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Download className="h-5 w-5 flex-shrink-0" />
