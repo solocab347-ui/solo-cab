@@ -46,6 +46,9 @@ interface SmartOnboardingProps {
   driverProfile: any;
 }
 
+// Type d'action : configurer (éditable) ou découvrir (informatif)
+type FeatureActionType = "configure" | "discover";
+
 // Guide sections explaining SoloCab features
 const SOLOCAB_FEATURES = [
   {
@@ -53,6 +56,8 @@ const SOLOCAB_FEATURES = [
     title: "Bienvenue sur SoloCab ! 🚗",
     description: "SoloCab est votre plateforme tout-en-un pour développer votre clientèle privée. Fini la dépendance aux plateformes classiques !",
     icon: <Home className="w-6 h-6" />,
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Commencer la visite",
     benefits: [
       "Clientèle 100% privée et fidèle",
       "Aucune commission sur vos courses",
@@ -63,105 +68,136 @@ const SOLOCAB_FEATURES = [
   {
     id: "profile",
     title: "Votre Vitrine Publique",
-    description: "Votre profil public est votre carte de visite digitale. Les clients vous trouvent et peuvent vous contacter directement.",
+    description: "Votre profil public est votre carte de visite digitale. Complétez-le avec vos informations, photo, et services pour attirer des clients.",
     icon: <User className="w-6 h-6" />,
     navigateTo: "profile",
+    actionType: "configure" as FeatureActionType,
+    actionLabel: "Personnaliser mon profil",
     benefits: [
-      "Visible sur la vitrine SoloCab",
-      "Photo professionnelle",
-      "Services mis en avant",
-      "Avis clients visibles"
+      "Photo professionnelle à ajouter",
+      "Description de vos services",
+      "Secteurs d'intervention",
+      "Équipements véhicule"
     ],
   },
   {
     id: "qrcode",
-    title: "QR Code Personnel",
-    description: "Votre QR Code est un outil puissant d'acquisition. Chaque scan peut devenir un nouveau client !",
+    title: "Votre QR Code Personnel",
+    description: "Votre QR Code unique permet aux clients de s'inscrire chez vous instantanément. Imprimez-le sur vos cartes de visite ou affichez-le dans votre véhicule !",
     icon: <QrCode className="w-6 h-6" />,
     navigateTo: "qrcode",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Voir mon QR Code",
     benefits: [
-      "Acquisition directe",
-      "Cartes de visite",
-      "Affichage véhicule",
-      "Suivi des scans"
+      "Déjà généré automatiquement",
+      "À partager ou imprimer",
+      "Lien d'inscription direct",
+      "Suivi des scans en temps réel"
     ],
   },
   {
     id: "pricing",
-    title: "Tarification Personnalisée",
-    description: "Définissez vos propres tarifs : base, km, horaire, majorations... Gardez le contrôle total.",
+    title: "Vos Tarifs Personnalisés",
+    description: "Définissez vos tarifs : prise en charge, prix au km, tarif horaire, majorations heures de pointe et week-end. Tout est paramétrable !",
     icon: <Euro className="w-6 h-6" />,
     navigateTo: "tarification",
+    actionType: "configure" as FeatureActionType,
+    actionLabel: "Définir mes tarifs",
     benefits: [
-      "Tarifs au kilomètre",
-      "Majorations heures de pointe",
-      "Prix minimum et forfaits",
-      "Calcul automatique"
+      "Tarif de base à définir",
+      "Prix au kilomètre",
+      "Majorations automatiques",
+      "Prix minimum configurable"
     ],
   },
   {
     id: "clients",
-    title: "Gestion de Clientèle",
-    description: "Gérez vos clients, leurs préférences, leur historique. Construisez une relation durable.",
+    title: "Mes Clients",
+    description: "Retrouvez ici tous vos clients inscrits. Consultez leur historique de courses, ajoutez des notes, et gérez leur statut (exclusif ou partagé).",
     icon: <Users className="w-6 h-6" />,
     navigateTo: "clients",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Voir mes clients",
     benefits: [
-      "Clients exclusifs/partagés",
-      "Historique des courses",
+      "Liste des clients inscrits",
+      "Historique par client",
       "Notes et préférences",
-      "Fidélisation"
+      "Statistiques de fidélité"
     ],
   },
   {
     id: "courses",
-    title: "Courses et Devis",
-    description: "Gérez vos courses, créez des devis professionnels, facturez vos clients automatiquement.",
+    title: "Gestion des Courses",
+    description: "Créez et gérez vos courses. Les courses 'En attente' nécessitent confirmation, 'Confirmées' sont planifiées, 'Terminées' sont archivées.",
     icon: <FileText className="w-6 h-6" />,
     navigateTo: "courses",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Voir mes courses",
     benefits: [
-      "Planning intégré",
-      "Devis automatiques",
-      "Factures pro",
-      "Suivi paiements"
+      "En attente = à confirmer",
+      "Confirmées = planifiées",
+      "Terminées = historique",
+      "Factures générées auto"
+    ],
+  },
+  {
+    id: "quotes",
+    title: "Devis Professionnels",
+    description: "Créez des devis instantanés basés sur vos tarifs configurés. Le calcul du prix est automatique selon la distance et vos paramètres.",
+    icon: <FileText className="w-6 h-6" />,
+    navigateTo: "quotes",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Créer un devis",
+    benefits: [
+      "Calcul automatique du prix",
+      "Basé sur vos tarifs",
+      "Envoi par email",
+      "Conversion en course"
+    ],
+  },
+  {
+    id: "messages",
+    title: "Messagerie",
+    description: "Communiquez directement avec vos clients et partenaires chauffeurs. Tous vos échanges sont centralisés ici.",
+    icon: <MessageSquare className="w-6 h-6" />,
+    navigateTo: "messages",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Voir mes messages",
+    benefits: [
+      "Chat avec les clients",
+      "Échanges partenaires",
+      "Historique conservé",
+      "Notifications en temps réel"
     ],
   },
   {
     id: "partnerships",
     title: "Partenariats Chauffeurs",
-    description: "Débordé ? Partagez des courses avec d'autres chauffeurs de confiance.",
+    description: "Débordé ? Partagez vos courses avec d'autres chauffeurs de confiance. Définissez votre commission et gérez les paiements.",
     icon: <Handshake className="w-6 h-6" />,
     navigateTo: "sharing",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Explorer les partenariats",
     benefits: [
-      "Réseau partenaires",
-      "Partage de courses",
-      "Commission claire",
-      "Gestion paiements"
+      "Trouver des partenaires",
+      "Partager des courses",
+      "Commission configurable",
+      "Suivi des paiements"
     ],
   },
   {
     id: "stats",
     title: "Statistiques",
-    description: "Suivez votre activité, analysez vos performances, identifiez vos opportunités.",
+    description: "Analysez votre activité : chiffre d'affaires, nombre de courses, clients les plus fidèles, et rentabilité par période.",
     icon: <BarChart3 className="w-6 h-6" />,
     navigateTo: "statistics",
+    actionType: "discover" as FeatureActionType,
+    actionLabel: "Voir mes statistiques",
     benefits: [
       "Chiffre d'affaires",
-      "Courses par période",
-      "Clients fidèles",
-      "Rentabilité"
-    ],
-  },
-  {
-    id: "messaging",
-    title: "Messagerie Intégrée",
-    description: "Communiquez avec vos clients et partenaires directement depuis la plateforme.",
-    icon: <MessageSquare className="w-6 h-6" />,
-    navigateTo: "messages",
-    benefits: [
-      "Chat clients",
-      "Notifications",
-      "Historique",
-      "Pièces jointes"
+      "Évolution mensuelle",
+      "Top clients",
+      "Analyse de rentabilité"
     ],
   },
 ];
@@ -316,16 +352,30 @@ export const SmartOnboarding = ({ isOpen, onClose, onNavigate, driverProfile }: 
                       ))}
                     </div>
 
-                    {currentFeature.navigateTo && (
+                    {currentFeature.navigateTo ? (
                       <Button
                         onClick={() => handleNavigateToFeature(currentFeature.navigateTo)}
                         size="sm"
-                        className="mt-4 w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                        className={cn(
+                          "mt-4 w-full",
+                          currentFeature.actionType === "configure" 
+                            ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                            : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                        )}
                       >
-                        Configurer
+                        {currentFeature.actionLabel || (currentFeature.actionType === "configure" ? "Configurer" : "Découvrir")}
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
-                    )}
+                    ) : currentFeature.actionLabel ? (
+                      <Button
+                        onClick={handleNextFeature}
+                        size="sm"
+                        className="mt-4 w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                      >
+                        {currentFeature.actionLabel}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    ) : null}
                   </motion.div>
 
                   {/* Navigation */}
