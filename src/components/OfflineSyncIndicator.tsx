@@ -1,9 +1,11 @@
 /**
  * Indicateur de synchronisation offline
  * Affiche l'état du cache et des mutations en attente
+ * UNIQUEMENT pour les utilisateurs connectés
  */
 
 import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { 
   Cloud, 
@@ -26,6 +28,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function OfflineSyncIndicator() {
+  const { user } = useAuth();
   const {
     isOnline,
     isOfflineMode,
@@ -40,6 +43,9 @@ export function OfflineSyncIndicator() {
   } = useOfflineSync();
 
   const [isOpen, setIsOpen] = useState(false);
+
+  // Ne pas afficher pour les utilisateurs non connectés
+  if (!user) return null;
 
   // Déterminer l'icône et le style
   const getStatusConfig = () => {
