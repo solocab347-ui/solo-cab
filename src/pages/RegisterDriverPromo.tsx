@@ -56,22 +56,24 @@ const RegisterDriverPromo = () => {
           // Check if driver profile exists
           const { data: existingDriver } = await supabase
             .from("drivers")
-            .select("id, subscription_status")
+            .select("id, subscription_status, subscription_paid")
             .eq("user_id", session.user.id)
             .maybeSingle();
           
           if (existingDriver) {
-            console.log("[RegisterDriverPromo] Driver exists:", existingDriver.id);
+            console.log("[RegisterDriverPromo] Driver exists:", existingDriver);
             setDriverId(existingDriver.id);
             
-            // If subscription already paid, redirect to dashboard
-            if (existingDriver.subscription_status === "active" || existingDriver.subscription_status === "trialing") {
+            // If subscription already paid and active, redirect to dashboard
+            if (existingDriver.subscription_paid === true && 
+                (existingDriver.subscription_status === "active" || existingDriver.subscription_status === "trialing")) {
               toast.info("Vous avez déjà un abonnement actif");
               navigate("/driver-dashboard");
               return;
             }
             
-            // Otherwise go to step 2 for payment
+            // Otherwise go to step 2 for payment (registration incomplete)
+            toast.info("Continuez votre inscription en choisissant votre abonnement");
             setCurrentStep(2);
           }
         }
@@ -127,10 +129,13 @@ const RegisterDriverPromo = () => {
       if (profileError) throw profileError;
 
       // Create driver profile with all required fields
+      // Note: subscription_status must be one of: 'active', 'inactive', 'past_due', 'canceled'
+      // We use 'inactive' for new registrations pending payment
       const driverInsertData: any = {
         user_id: newUserId,
         status: "on_hold",
-        subscription_status: "payment_required",
+        subscription_status: "inactive", // Will become 'active' or 'trialing' after payment
+        subscription_paid: false, // Track if payment is done
         registration_step: 2,
         license_number: "À_COMPLÉTER",
         vehicle_brand: "À compléter",
