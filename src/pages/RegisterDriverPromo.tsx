@@ -97,6 +97,7 @@ const RegisterDriverPromo = () => {
         status: "on_hold",
         subscription_status: "payment_required",
         registration_step: 2,
+        license_number: "À_COMPLÉTER", // Placeholder, sera complété après inscription
       };
 
       // Ajouter l'adresse d'expédition si plaque commandée
