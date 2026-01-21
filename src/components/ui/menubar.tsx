@@ -26,19 +26,94 @@ const Menubar = React.forwardRef<
 ));
 Menubar.displayName = MenubarPrimitive.Root.displayName;
 
+// Trigger amélioré pour mobile avec protection anti-scroll
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <MenubarPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex cursor-default select-none items-center rounded-sm px-3 py-1.5 text-sm font-medium outline-none data-[state=open]:bg-accent data-[state=open]:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-      className,
-    )}
-    {...props}
-  />
-));
+>(({ className, onPointerDown, onPointerMove, onPointerUp, ...props }, ref) => {
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const isScrollingRef = React.useRef(false);
+  const lastScrollBlockRef = React.useRef(0);
+  
+  const MOVE_THRESHOLD = 12;
+  const MIN_PRESS_DURATION = 100;
+  const SCROLL_BLOCK_DURATION = 250;
+  
+  const handlePointerDown = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      touchStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      isScrollingRef.current = false;
+    }
+    onPointerDown?.(e);
+  }, [onPointerDown]);
+  
+  const handlePointerMove = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch' && touchStartRef.current) {
+      const deltaX = Math.abs(e.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(e.clientY - touchStartRef.current.y);
+      
+      if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+        isScrollingRef.current = true;
+        lastScrollBlockRef.current = Date.now();
+      }
+    }
+    onPointerMove?.(e);
+  }, [onPointerMove]);
+  
+  const handlePointerUp = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      const now = Date.now();
+      
+      if (now - lastScrollBlockRef.current < SCROLL_BLOCK_DURATION) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      if (isScrollingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      if (touchStartRef.current) {
+        const duration = now - touchStartRef.current.time;
+        if (duration < MIN_PRESS_DURATION) {
+          e.preventDefault();
+          e.stopPropagation();
+          touchStartRef.current = null;
+          return;
+        }
+      }
+      
+      touchStartRef.current = null;
+      isScrollingRef.current = false;
+    }
+    onPointerUp?.(e);
+  }, [onPointerUp]);
+  
+  return (
+    <MenubarPrimitive.Trigger
+      ref={ref}
+      className={cn(
+        "flex cursor-default select-none items-center rounded-sm px-3 py-1.5 text-sm font-medium outline-none data-[state=open]:bg-accent data-[state=open]:text-accent-foreground focus:bg-accent focus:text-accent-foreground touch-manipulation",
+        className,
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      {...props}
+    />
+  );
+});
 MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName;
 
 const MenubarSubTrigger = React.forwardRef<

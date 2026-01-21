@@ -4,9 +4,173 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// Hook interne pour gérer les interactions tactiles sécurisées
+const useMobileSafeDropdown = () => {
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const isScrollingRef = React.useRef(false);
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  const MOVE_THRESHOLD = 12; // pixels - seuil de mouvement pour détecter le scroll
+  const MIN_PRESS_DURATION = 80; // ms - durée minimum pour un clic intentionnel
+  const SCROLL_BLOCK_DURATION = 300; // ms - délai après scroll pour bloquer l'ouverture
+  
+  const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      touchStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      isScrollingRef.current = false;
+    }
+  }, []);
+  
+  const handlePointerMove = React.useCallback((e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch' || !touchStartRef.current) return;
+    
+    const deltaX = Math.abs(e.clientX - touchStartRef.current.x);
+    const deltaY = Math.abs(e.clientY - touchStartRef.current.y);
+    
+    if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+      isScrollingRef.current = true;
+    }
+  }, []);
+  
+  const shouldPreventOpen = React.useCallback((e: React.PointerEvent | React.MouseEvent) => {
+    // Pour les événements tactiles, vérifier si c'était un scroll
+    if ('pointerType' in e && e.pointerType === 'touch') {
+      if (isScrollingRef.current) {
+        return true;
+      }
+      
+      if (touchStartRef.current) {
+        const duration = Date.now() - touchStartRef.current.time;
+        // Bloquer si la durée est trop courte (touch accidentel)
+        if (duration < MIN_PRESS_DURATION) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }, []);
+  
+  const handleOpenChange = React.useCallback((open: boolean, e?: React.PointerEvent | React.MouseEvent) => {
+    if (open && e && shouldPreventOpen(e)) {
+      // Bloquer l'ouverture accidentelle
+      return false;
+    }
+    setIsOpen(open);
+    return true;
+  }, [shouldPreventOpen]);
+  
+  const resetTouch = React.useCallback(() => {
+    touchStartRef.current = null;
+    isScrollingRef.current = false;
+  }, []);
+  
+  return {
+    isOpen,
+    setIsOpen,
+    handlePointerDown,
+    handlePointerMove,
+    handleOpenChange,
+    resetTouch,
+    shouldPreventOpen
+  };
+};
+
 const DropdownMenu = DropdownMenuPrimitive.Root;
 
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+// Trigger amélioré pour mobile avec protection anti-scroll
+const DropdownMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ className, onPointerDown, onPointerMove, onPointerUp, ...props }, ref) => {
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const isScrollingRef = React.useRef(false);
+  const lastScrollBlockRef = React.useRef(0);
+  
+  const MOVE_THRESHOLD = 12;
+  const MIN_PRESS_DURATION = 100;
+  const SCROLL_BLOCK_DURATION = 250;
+  
+  const handlePointerDown = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      touchStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      isScrollingRef.current = false;
+    }
+    onPointerDown?.(e);
+  }, [onPointerDown]);
+  
+  const handlePointerMove = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch' && touchStartRef.current) {
+      const deltaX = Math.abs(e.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(e.clientY - touchStartRef.current.y);
+      
+      if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+        isScrollingRef.current = true;
+        lastScrollBlockRef.current = Date.now();
+      }
+    }
+    onPointerMove?.(e);
+  }, [onPointerMove]);
+  
+  const handlePointerUp = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      const now = Date.now();
+      
+      // Bloquer si scroll récent
+      if (now - lastScrollBlockRef.current < SCROLL_BLOCK_DURATION) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      // Bloquer si mouvement détecté
+      if (isScrollingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      // Bloquer si durée trop courte
+      if (touchStartRef.current) {
+        const duration = now - touchStartRef.current.time;
+        if (duration < MIN_PRESS_DURATION) {
+          e.preventDefault();
+          e.stopPropagation();
+          touchStartRef.current = null;
+          return;
+        }
+      }
+      
+      touchStartRef.current = null;
+      isScrollingRef.current = false;
+    }
+    onPointerUp?.(e);
+  }, [onPointerUp]);
+  
+  return (
+    <DropdownMenuPrimitive.Trigger
+      ref={ref}
+      className={cn("touch-manipulation", className)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      {...props}
+    />
+  );
+});
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
@@ -25,7 +189,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[state=open]:bg-accent focus:bg-accent",
+      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[state=open]:bg-accent focus:bg-accent touch-manipulation",
       inset && "pl-8",
       className,
     )}
@@ -79,7 +243,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground touch-manipulation",
       inset && "pl-8",
       className,
     )}
@@ -95,7 +259,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground touch-manipulation",
       className,
     )}
     checked={checked}
@@ -118,7 +282,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground touch-manipulation",
       className,
     )}
     {...props}

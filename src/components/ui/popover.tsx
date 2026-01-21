@@ -5,7 +5,95 @@ import { cn } from "@/lib/utils";
 
 const Popover = PopoverPrimitive.Root;
 
-const PopoverTrigger = PopoverPrimitive.Trigger;
+// Trigger amélioré pour mobile avec protection anti-scroll
+const PopoverTrigger = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
+>(({ className, onPointerDown, onPointerMove, onPointerUp, ...props }, ref) => {
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const isScrollingRef = React.useRef(false);
+  const lastScrollBlockRef = React.useRef(0);
+  
+  const MOVE_THRESHOLD = 12;
+  const MIN_PRESS_DURATION = 100;
+  const SCROLL_BLOCK_DURATION = 250;
+  
+  const handlePointerDown = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      touchStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      isScrollingRef.current = false;
+    }
+    onPointerDown?.(e);
+  }, [onPointerDown]);
+  
+  const handlePointerMove = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch' && touchStartRef.current) {
+      const deltaX = Math.abs(e.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(e.clientY - touchStartRef.current.y);
+      
+      if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+        isScrollingRef.current = true;
+        lastScrollBlockRef.current = Date.now();
+      }
+    }
+    onPointerMove?.(e);
+  }, [onPointerMove]);
+  
+  const handlePointerUp = React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      const now = Date.now();
+      
+      // Bloquer si scroll récent
+      if (now - lastScrollBlockRef.current < SCROLL_BLOCK_DURATION) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      // Bloquer si mouvement détecté
+      if (isScrollingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+        return;
+      }
+      
+      // Bloquer si durée trop courte
+      if (touchStartRef.current) {
+        const duration = now - touchStartRef.current.time;
+        if (duration < MIN_PRESS_DURATION) {
+          e.preventDefault();
+          e.stopPropagation();
+          touchStartRef.current = null;
+          return;
+        }
+      }
+      
+      touchStartRef.current = null;
+      isScrollingRef.current = false;
+    }
+    onPointerUp?.(e);
+  }, [onPointerUp]);
+  
+  return (
+    <PopoverPrimitive.Trigger
+      ref={ref}
+      className={cn("touch-manipulation", className)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      {...props}
+    />
+  );
+});
+PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName;
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
