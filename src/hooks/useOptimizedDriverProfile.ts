@@ -79,25 +79,43 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) throw new Error('User ID required');
 
-      const [profileRes, driverRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('drivers').select('*').eq('user_id', userId).single()
-      ]);
+      // Requêtes séquentielles pour éviter les timeouts
+      const profileRes = await supabase
+        .from('profiles')
+        .select('id, full_name, phone, email, avatar_url, created_at')
+        .eq('id', userId)
+        .single();
 
-      if (profileRes.error) throw profileRes.error;
-      if (driverRes.error) throw driverRes.error;
+      if (profileRes.error) {
+        console.error('Erreur profil:', profileRes.error);
+        throw profileRes.error;
+      }
 
+      const driverRes = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (driverRes.error) {
+        console.error('Erreur driver:', driverRes.error);
+        throw driverRes.error;
+      }
+
+      const fullName = profileRes.data?.full_name || '';
+      
       return {
         ...profileRes.data,
         driver: driverRes.data,
-        full_name: profileRes.data.full_name || 'Chauffeur'
+        full_name: fullName
       };
     },
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - permet rafraîchissement rapide
+    staleTime: 1 * 60 * 1000, // 1 minute - rafraîchissement plus fréquent
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    retry: 2,
   });
 
   // Calculer le statut d'accès de manière synchrone (pas d'appel async = pas de flickering)
