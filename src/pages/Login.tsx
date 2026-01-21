@@ -13,6 +13,8 @@ import { logger } from "@/lib/productionLogger";
 import { useLocale } from "@/hooks/useLocale";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
+const REMEMBER_ME_KEY = "solocab_remember_credentials";
+
 const Login = () => {
   const { t } = useLocale();
   const { signIn, user, userRole, isCompanyEmployee, isCompanyEmployeeChecked, loading: authLoading } = useAuth();
@@ -20,10 +22,27 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
   const [isResumeMode, setIsResumeMode] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+
+  // Charger les identifiants sauvegardés au montage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REMEMBER_ME_KEY);
+      if (saved) {
+        const { email, password, remember } = JSON.parse(saved);
+        if (email) setLoginEmail(email);
+        if (password) setLoginPassword(password);
+        if (remember) setRememberMe(true);
+      }
+    } catch (e) {
+      // Ignorer les erreurs de parsing
+      localStorage.removeItem(REMEMBER_ME_KEY);
+    }
+  }, []);
 
   // TIMEOUT D'URGENCE: forcer l'affichage après 4 secondes max (réduit de 8s)
   useEffect(() => {
@@ -128,6 +147,17 @@ const Login = () => {
           setHasRedirected(false);
           return;
         }
+      }
+
+      // Sauvegarder ou supprimer les identifiants selon le choix de l'utilisateur
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+          remember: true
+        }));
+      } else {
+        localStorage.removeItem(REMEMBER_ME_KEY);
       }
 
       // MODE CONNEXION NORMALE: Utiliser signIn qui gère tout (y compris employee check)
@@ -235,9 +265,15 @@ const Login = () => {
               />
             </div>
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="rounded" disabled={loading} />
-                <span className="text-muted-foreground">Se souvenir</span>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  className="rounded border-gray-300 text-primary focus:ring-primary" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading} 
+                />
+                <span className="text-muted-foreground">Se souvenir de moi</span>
               </label>
               <a href="#" className="text-premium hover:underline">
                 Mot de passe oublié ?
