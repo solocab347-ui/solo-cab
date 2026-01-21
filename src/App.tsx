@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { PWABannerProvider } from "@/contexts/PWABannerContext";
 import { PushNotificationListener } from "@/components/PushNotificationListener";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
@@ -71,18 +72,19 @@ const App = () => (
     <GlobalSecurityProvider>
       <BrowserRouter>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            
-            <PWAInstallBanner />
-            <PushNotificationListener />
-            <NotificationPermissionPrompt />
-            <EmergencyReset />
-            <ConnectionIndicator />
-            <OfflineSyncIndicator />
-            <ErrorBoundary>
-            <Routes>
+          <PWABannerProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              
+              <PWAInstallBanner />
+              <PushNotificationListener />
+              <NotificationPermissionPrompt />
+              <EmergencyReset />
+              <ConnectionIndicator />
+              <OfflineSyncIndicator />
+              <ErrorBoundary>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/chauffeurs" element={<Chauffeurs />} />
@@ -309,6 +311,7 @@ const App = () => (
             </ErrorBoundary>
             <SafeModeIndicator />
           </TooltipProvider>
+          </PWABannerProvider>
         </AuthProvider>
       </BrowserRouter>
     </GlobalSecurityProvider>
