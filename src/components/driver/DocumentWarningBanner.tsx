@@ -72,23 +72,24 @@ export const DocumentWarningBanner = ({
     );
   }
 
-  // Plus de 7 jours - simple rappel
+  // Plus de 7 jours ou rappel simple
   if (documentsStatus === "pending") {
+    const displayDays = daysRemaining !== null ? daysRemaining : 7;
     return (
-      <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
-        <AlertTriangle className="h-4 w-4 text-amber-500" />
-        <AlertTitle className="text-amber-500">Documents en attente</AlertTitle>
-        <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <span>
-            Vous avez {daysRemaining} jours pour soumettre vos documents professionnels et finaliser votre inscription.
+      <Alert className="mb-4 sm:mb-6 bg-amber-500/10 border-amber-500/30">
+        <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+        <AlertTitle className="text-amber-500 text-sm sm:text-base">Documents en attente</AlertTitle>
+        <AlertDescription className="flex flex-col gap-3">
+          <span className="text-xs sm:text-sm">
+            Vous avez {displayDays} jour{displayDays > 1 ? "s" : ""} pour soumettre vos documents professionnels et finaliser votre inscription.
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={onNavigateToDocuments}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap w-full sm:w-auto text-xs sm:text-sm"
           >
-            <FileText className="w-4 h-4 mr-2" />
+            <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
             Mes documents
           </Button>
         </AlertDescription>
