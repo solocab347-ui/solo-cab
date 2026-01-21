@@ -315,40 +315,40 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
       </Card>
       {/* Clients */}
       <div>
-        <h2 className="text-xl font-bold mb-4">📊 Clients</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 bg-gradient-trust border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-trust-foreground" />
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📊 Clients</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <Card className="p-4 sm:p-6 bg-gradient-trust border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-trust-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-trust-foreground/80">Total Clients</p>
-                <h3 className="text-3xl font-bold text-trust-foreground">{stats.totalClients}</h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-gradient-magenta border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-magenta-foreground/10 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-magenta-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-magenta-foreground/80">Clients Exclusifs</p>
-                <h3 className="text-3xl font-bold text-magenta-foreground">{stats.exclusiveClients}</h3>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-trust-foreground/80">Total Clients</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-trust-foreground">{stats.totalClients}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-success border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-success-foreground" />
+          <Card className="p-4 sm:p-6 bg-gradient-magenta border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-magenta-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-magenta-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-success-foreground/80">Clients Libres</p>
-                <h3 className="text-3xl font-bold text-success-foreground">{stats.freeClients}</h3>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-magenta-foreground/80">Exclusifs</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-magenta-foreground">{stats.exclusiveClients}</h3>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 sm:p-6 bg-gradient-success border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-success-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-success-foreground/80">Libres</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-success-foreground">{stats.freeClients}</h3>
               </div>
             </div>
           </Card>
@@ -357,52 +357,52 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
 
       {/* Courses */}
       <div>
-        <h2 className="text-xl font-bold mb-4">🚗 Courses</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-6 bg-gradient-trust border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-trust-foreground" />
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">🚗 Courses</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6 bg-gradient-trust border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Car className="w-4 h-4 sm:w-6 sm:h-6 text-trust-foreground" />
               </div>
               <div>
-                <p className="text-sm text-trust-foreground/80">Total</p>
-                <h3 className="text-3xl font-bold text-trust-foreground">{stats.totalCourses}</h3>
+                <p className="text-[10px] sm:text-sm text-trust-foreground/80">Total</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-trust-foreground">{stats.totalCourses}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-success border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-success-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-success border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-success-foreground" />
               </div>
               <div>
-                <p className="text-sm text-success-foreground/80">Terminées</p>
-                <h3 className="text-3xl font-bold text-success-foreground">{stats.completedCourses}</h3>
+                <p className="text-[10px] sm:text-sm text-success-foreground/80">Terminées</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-success-foreground">{stats.completedCourses}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-warning border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-warning-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-warning border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-warning-foreground" />
               </div>
               <div>
-                <p className="text-sm text-warning-foreground/80">En attente</p>
-                <h3 className="text-3xl font-bold text-warning-foreground">{stats.pendingCourses}</h3>
+                <p className="text-[10px] sm:text-sm text-warning-foreground/80">En attente</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-warning-foreground">{stats.pendingCourses}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-brown border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-brown-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-brown border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <XCircle className="w-4 h-4 sm:w-6 sm:h-6 text-brown-foreground" />
               </div>
               <div>
-                <p className="text-sm text-brown-foreground/80">Annulées</p>
-                <h3 className="text-3xl font-bold text-brown-foreground">{stats.cancelledCourses}</h3>
+                <p className="text-[10px] sm:text-sm text-brown-foreground/80">Annulées</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-brown-foreground">{stats.cancelledCourses}</h3>
               </div>
             </div>
           </Card>
@@ -411,28 +411,28 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
 
       {/* Distance & Durée */}
       <div>
-        <h2 className="text-xl font-bold mb-4">📍 Distance & Temps</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-6 bg-gradient-magenta border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-magenta-foreground/10 rounded-lg flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-magenta-foreground" />
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📍 Distance & Temps</h2>
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6 bg-gradient-magenta border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-magenta-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-4 h-4 sm:w-6 sm:h-6 text-magenta-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-magenta-foreground/80">Distance totale</p>
-                <h3 className="text-3xl font-bold text-magenta-foreground">{stats.totalDistance.toFixed(0)} km</h3>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-sm text-magenta-foreground/80">Distance</p>
+                <h3 className="text-lg sm:text-3xl font-bold text-magenta-foreground">{stats.totalDistance.toFixed(0)} <span className="text-sm">km</span></h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-brown border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-brown-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-brown border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-brown-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-brown-foreground/80">Durée totale</p>
-                <h3 className="text-3xl font-bold text-brown-foreground">{(stats.totalDuration / 60).toFixed(0)} h</h3>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-sm text-brown-foreground/80">Durée</p>
+                <h3 className="text-lg sm:text-3xl font-bold text-brown-foreground">{(stats.totalDuration / 60).toFixed(0)} <span className="text-sm">h</span></h3>
               </div>
             </div>
           </Card>
@@ -441,40 +441,40 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
 
       {/* Revenus */}
       <div>
-        <h2 className="text-xl font-bold mb-4">💰 Chiffre d'Affaires</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 bg-gradient-success border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center">
-                <Euro className="w-6 h-6 text-success-foreground" />
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">💰 Chiffre d'Affaires</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6 bg-gradient-success border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Euro className="w-4 h-4 sm:w-6 sm:h-6 text-success-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-success-foreground/80">Ce mois</p>
-                <h3 className="text-3xl font-bold text-success-foreground">{stats.monthRevenue.toFixed(2)}€</h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-gradient-warning border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center">
-                <Euro className="w-6 h-6 text-warning-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-warning-foreground/80">Cette année</p>
-                <h3 className="text-3xl font-bold text-warning-foreground">{stats.yearRevenue.toFixed(2)}€</h3>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-sm text-success-foreground/80">Ce mois</p>
+                <h3 className="text-lg sm:text-3xl font-bold text-success-foreground truncate">{stats.monthRevenue.toFixed(0)}€</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-trust border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-trust-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-warning border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Euro className="w-4 h-4 sm:w-6 sm:h-6 text-warning-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-trust-foreground/80">Total</p>
-                <h3 className="text-3xl font-bold text-trust-foreground">{stats.totalRevenue.toFixed(2)}€</h3>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-sm text-warning-foreground/80">Cette année</p>
+                <h3 className="text-lg sm:text-3xl font-bold text-warning-foreground truncate">{stats.yearRevenue.toFixed(0)}€</h3>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-3 sm:p-6 bg-gradient-trust border-0">
+            <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 text-trust-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-sm text-trust-foreground/80">Total</p>
+                <h3 className="text-lg sm:text-3xl font-bold text-trust-foreground truncate">{stats.totalRevenue.toFixed(0)}€</h3>
               </div>
             </div>
           </Card>
@@ -483,52 +483,52 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
 
       {/* Devis */}
       <div>
-        <h2 className="text-xl font-bold mb-4">📋 Devis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-6 bg-gradient-trust border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-trust-foreground" />
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📋 Devis</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6 bg-gradient-trust border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Car className="w-4 h-4 sm:w-6 sm:h-6 text-trust-foreground" />
               </div>
               <div>
-                <p className="text-sm text-trust-foreground/80">Total</p>
-                <h3 className="text-3xl font-bold text-trust-foreground">{stats.totalDevis}</h3>
+                <p className="text-[10px] sm:text-sm text-trust-foreground/80">Total</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-trust-foreground">{stats.totalDevis}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-success border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-success-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-success border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-success-foreground" />
               </div>
               <div>
-                <p className="text-sm text-success-foreground/80">Acceptés</p>
-                <h3 className="text-3xl font-bold text-success-foreground">{stats.acceptedDevis}</h3>
+                <p className="text-[10px] sm:text-sm text-success-foreground/80">Acceptés</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-success-foreground">{stats.acceptedDevis}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-warning border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-warning-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-warning border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-warning-foreground" />
               </div>
               <div>
-                <p className="text-sm text-warning-foreground/80">En attente</p>
-                <h3 className="text-3xl font-bold text-warning-foreground">{stats.pendingDevis}</h3>
+                <p className="text-[10px] sm:text-sm text-warning-foreground/80">En attente</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-warning-foreground">{stats.pendingDevis}</h3>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-brown border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-brown-foreground" />
+          <Card className="p-3 sm:p-6 bg-gradient-brown border-0">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-brown-foreground/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <XCircle className="w-4 h-4 sm:w-6 sm:h-6 text-brown-foreground" />
               </div>
               <div>
-                <p className="text-sm text-brown-foreground/80">Refusés</p>
-                <h3 className="text-3xl font-bold text-brown-foreground">{stats.rejectedDevis}</h3>
+                <p className="text-[10px] sm:text-sm text-brown-foreground/80">Refusés</p>
+                <h3 className="text-xl sm:text-3xl font-bold text-brown-foreground">{stats.rejectedDevis}</h3>
               </div>
             </div>
           </Card>
