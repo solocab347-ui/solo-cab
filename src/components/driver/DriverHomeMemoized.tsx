@@ -90,6 +90,11 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     return () => { mounted = false; };
   }, [driverProfile?.driver?.id]);
 
+  // Extraire le prénom pour l'affichage
+  const displayName = driverProfile?.full_name 
+    ? driverProfile.full_name.split(' ')[0] // Premier mot = prénom
+    : driverProfile?.driver?.display_name || '';
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       {/* Welcome Header */}
@@ -97,7 +102,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-              Bienvenue, {driverProfile?.full_name || 'Chauffeur'}
+              Bienvenue{displayName ? `, ${displayName}` : ''}
             </h1>
             <p className="text-muted-foreground text-lg">Tableau de bord professionnel</p>
           </div>
@@ -315,7 +320,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
   );
 };
 
-// Export mémoïsé pour éviter re-renders
+// Export mémoïsé - compare aussi le nom pour bien afficher
 export const DriverHome = memo(DriverHomeComponent, (prevProps, nextProps) => {
-  return prevProps.driverProfile?.driver?.id === nextProps.driverProfile?.driver?.id;
+  return (
+    prevProps.driverProfile?.driver?.id === nextProps.driverProfile?.driver?.id &&
+    prevProps.driverProfile?.full_name === nextProps.driverProfile?.full_name
+  );
 });
