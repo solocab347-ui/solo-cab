@@ -40,15 +40,47 @@ All colors MUST be HSL.
   padding-right: env(safe-area-inset-right);
 }
 
-/* iOS viewport fix - prevent zooming issues */
+/* iOS viewport fix - force same zoom as Android */
 @supports (-webkit-touch-callout: none) {
   html {
     /* Fix for iOS Safari viewport issues */
     min-height: -webkit-fill-available;
+    /* Force iOS to use same text size as Android */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   body {
     min-height: -webkit-fill-available;
+    /* Prevent iOS from auto-adjusting font sizes */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Force consistent rendering on iOS */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Ensure cards and elements have same visual size */
+  .ios-consistent {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+
+/* Universal mobile consistency */
+@media screen and (max-width: 768px) {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  body {
+    font-size: 16px;
+    line-height: 1.5;
   }
 }
 
