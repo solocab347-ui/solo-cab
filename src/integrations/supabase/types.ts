@@ -13461,6 +13461,7 @@ export type Database = {
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
+          vehicle_category: string[] | null
           vehicle_model: string | null
           working_sectors: string[] | null
         }
@@ -13493,6 +13494,8 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          documents_access_blocked: boolean | null
+          documents_access_blocked_at: string | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
@@ -13521,11 +13524,16 @@ export type Database = {
           max_passengers: number | null
           minimum_price: number | null
           nfc_tag_number: string | null
+          partner_course_counter: number | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
+          payment_failed_at: string | null
+          payment_failed_reason: string | null
+          pending_subscription_type: string | null
+          pending_wants_plate: boolean | null
           per_km_rate: number | null
           pioneer_since: string | null
           preferred_zones: string[] | null
@@ -13540,6 +13548,10 @@ export type Database = {
           sharing_available: boolean | null
           sharing_available_since: string | null
           sharing_number: number | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
@@ -13554,6 +13566,15 @@ export type Database = {
           smart_buffer_fallback_action: string | null
           smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id: string | null
+          stripe_connect_account_id: string | null
+          stripe_connect_charges_enabled: boolean | null
+          stripe_connect_created_at: string | null
+          stripe_connect_details_submitted: boolean | null
+          stripe_connect_onboarding_completed: boolean | null
+          stripe_connect_payouts_enabled: boolean | null
+          stripe_connect_status: string | null
+          stripe_connect_updated_at: string | null
           stripe_customer_id: string | null
           stripe_subscription_paused: boolean | null
           stripe_subscription_paused_at: string | null
@@ -13600,6 +13621,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -13628,11 +13651,16 @@ export type Database = {
           max_passengers?: number | null
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -13647,6 +13675,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -13661,6 +13693,15 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_created_at?: string | null
+          stripe_connect_details_submitted?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
+          stripe_connect_status?: string | null
+          stripe_connect_updated_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
@@ -13707,6 +13748,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -13735,11 +13778,16 @@ export type Database = {
           max_passengers?: number | null
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -13754,6 +13802,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -13768,6 +13820,15 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_created_at?: string | null
+          stripe_connect_details_submitted?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
+          stripe_connect_status?: string | null
+          stripe_connect_updated_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
@@ -13832,6 +13893,8 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          documents_access_blocked: boolean | null
+          documents_access_blocked_at: string | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
@@ -13860,11 +13923,16 @@ export type Database = {
           max_passengers: number | null
           minimum_price: number | null
           nfc_tag_number: string | null
+          partner_course_counter: number | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
+          payment_failed_at: string | null
+          payment_failed_reason: string | null
+          pending_subscription_type: string | null
+          pending_wants_plate: boolean | null
           per_km_rate: number | null
           pioneer_since: string | null
           preferred_zones: string[] | null
@@ -13879,6 +13947,10 @@ export type Database = {
           sharing_available: boolean | null
           sharing_available_since: string | null
           sharing_number: number | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
@@ -13893,6 +13965,15 @@ export type Database = {
           smart_buffer_fallback_action: string | null
           smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id: string | null
+          stripe_connect_account_id: string | null
+          stripe_connect_charges_enabled: boolean | null
+          stripe_connect_created_at: string | null
+          stripe_connect_details_submitted: boolean | null
+          stripe_connect_onboarding_completed: boolean | null
+          stripe_connect_payouts_enabled: boolean | null
+          stripe_connect_status: string | null
+          stripe_connect_updated_at: string | null
           stripe_customer_id: string | null
           stripe_subscription_paused: boolean | null
           stripe_subscription_paused_at: string | null
@@ -13939,6 +14020,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -13967,11 +14050,16 @@ export type Database = {
           max_passengers?: number | null
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -13986,6 +14074,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -14000,6 +14092,15 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_created_at?: string | null
+          stripe_connect_details_submitted?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
+          stripe_connect_status?: string | null
+          stripe_connect_updated_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
@@ -14046,6 +14147,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -14074,11 +14177,16 @@ export type Database = {
           max_passengers?: number | null
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_failed_at?: string | null
+          payment_failed_reason?: string | null
+          pending_subscription_type?: string | null
+          pending_wants_plate?: boolean | null
           per_km_rate?: number | null
           pioneer_since?: string | null
           preferred_zones?: string[] | null
@@ -14093,6 +14201,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -14107,6 +14219,15 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_checkout_session_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_created_at?: string | null
+          stripe_connect_details_submitted?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
+          stripe_connect_status?: string | null
+          stripe_connect_updated_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
@@ -14445,33 +14566,20 @@ export type Database = {
       }
       fleet_searchable_drivers: {
         Row: {
-          base_fare: number | null
-          bio: string | null
           company_name: string | null
-          email: string | null
           full_name: string | null
-          gallery_photos: string[] | null
-          home_address: string | null
-          hourly_rate: number | null
           id: string | null
-          per_km_rate: number | null
-          phone: string | null
           profile_photo_url: string | null
           rating: number | null
           service_description: string | null
           services_offered: string[] | null
-          sharing_number: number | null
-          show_email: boolean | null
-          show_phone: boolean | null
+          show_rating_partners: boolean | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
           vehicle_category: string[] | null
-          vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
-          vehicle_photos: string[] | null
-          vehicle_year: number | null
           working_sectors: string[] | null
         }
         Relationships: [
@@ -14489,6 +14597,7 @@ export type Database = {
           bio: string | null
           card_photo_url: string | null
           company_name: string | null
+          created_at: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
           gallery_photos: string[] | null
@@ -14500,9 +14609,11 @@ export type Database = {
           services_offered: string[] | null
           show_email: boolean | null
           show_phone: boolean | null
+          status: Database["public"]["Enums"]["driver_status"] | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
+          vehicle_category: string[] | null
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
@@ -14514,6 +14625,7 @@ export type Database = {
           bio?: string | null
           card_photo_url?: string | null
           company_name?: string | null
+          created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           gallery_photos?: string[] | null
@@ -14525,9 +14637,11 @@ export type Database = {
           services_offered?: string[] | null
           show_email?: boolean | null
           show_phone?: boolean | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
           total_rides?: number | null
           user_id?: string | null
           vehicle_brand?: string | null
+          vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
@@ -14539,6 +14653,7 @@ export type Database = {
           bio?: string | null
           card_photo_url?: string | null
           company_name?: string | null
+          created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           gallery_photos?: string[] | null
@@ -14550,9 +14665,11 @@ export type Database = {
           services_offered?: string[] | null
           show_email?: boolean | null
           show_phone?: boolean | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
           total_rides?: number | null
           user_id?: string | null
           vehicle_brand?: string | null
+          vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
@@ -14668,6 +14785,14 @@ export type Database = {
           assigned_driver_id: string
           message: string
           success: boolean
+        }[]
+      }
+      auto_fix_all_visibility_issues: {
+        Args: never
+        Returns: {
+          details: Json
+          total_issues_fixed: number
+          total_issues_found: number
         }[]
       }
       calculate_city_course_price: {
@@ -14952,6 +15077,16 @@ export type Database = {
       }
       detect_city_from_address: { Args: { p_address: string }; Returns: string }
       detect_paris_address: { Args: { p_address: string }; Returns: string }
+      diagnose_and_fix_visibility_issues: {
+        Args: never
+        Returns: {
+          details: string
+          driver_id: string
+          driver_name: string
+          issue_type: string
+          was_fixed: boolean
+        }[]
+      }
       dispatch_company_course_to_fleet: {
         Args: { p_company_request_id: string; p_fleet_manager_id: string }
         Returns: Json
@@ -14962,6 +15097,20 @@ export type Database = {
       }
       driver_has_full_access: {
         Args: { driver_id_param: string }
+        Returns: boolean
+      }
+      driver_should_be_visible: {
+        Args: {
+          p_created_at: string
+          p_fleet_manager_id: string
+          p_free_access_end_date: string
+          p_free_access_granted: boolean
+          p_is_fleet_driver: boolean
+          p_is_pioneer: boolean
+          p_status: Database["public"]["Enums"]["driver_status"]
+          p_subscription_paid: boolean
+          p_subscription_status: string
+        }
         Returns: boolean
       }
       ensure_driver_profile_visibility: {
@@ -15265,140 +15414,35 @@ export type Database = {
         Returns: string[]
       }
       get_drivers_with_full_access: {
-        Args: { limit_count?: number; visibility_field?: string }
+        Args: { limit_count?: number; visibility_field: string }
         Returns: {
-          airport_surcharge: number | null
-          auto_accept_from_partners: boolean | null
-          base_fare: number | null
-          base_rate: number | null
-          bio: string | null
-          can_create_courses: boolean | null
-          can_manage_clients: boolean | null
-          card_photo_url: string | null
-          company_address: string | null
-          company_name: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          course_counter: number | null
+          bio: string
+          card_photo_url: string
+          company_name: string
           created_at: string
-          display_company_name: boolean | null
-          display_driver_name: boolean | null
-          documents: Json | null
-          documents_access_blocked: boolean | null
-          documents_access_blocked_at: string | null
-          documents_deadline: string | null
-          documents_status: string | null
-          documents_submitted_at: string | null
-          driver_code: string | null
-          evening_surcharge: number | null
-          fleet_documents_deadline: string | null
-          fleet_documents_status: string | null
-          fleet_documents_submitted_at: string | null
-          fleet_manager_id: string | null
-          free_access_end_date: string | null
-          free_access_granted: boolean | null
-          free_access_start_date: string | null
-          free_access_type: string | null
-          gallery_photos: string[] | null
-          home_address: string | null
-          home_latitude: number | null
-          home_longitude: number | null
-          hourly_rate: number | null
+          display_company_name: boolean
+          display_driver_name: boolean
+          gallery_photos: string[]
           id: string
-          invoice_counter: number | null
-          is_demo_account: boolean | null
-          is_fleet_driver: boolean | null
-          is_pioneer: boolean | null
-          license_number: string
-          max_daily_courses: number | null
+          is_pioneer: boolean
           max_passengers: number
-          minimum_price: number | null
-          nfc_tag_number: string | null
-          partner_course_counter: number | null
-          partner_invoice_counter: number | null
-          partner_order_counter: number | null
-          partnerships_suspended: boolean | null
-          partnerships_suspended_at: string | null
-          partnerships_suspended_reason: string | null
-          payment_failed_at: string | null
-          payment_failed_reason: string | null
-          pending_subscription_type: string | null
-          pending_wants_plate: boolean | null
-          per_km_rate: number | null
-          pioneer_since: string | null
-          preferred_zones: string[] | null
-          public_profile_enabled: boolean | null
-          quote_counter: number | null
-          rating: number | null
-          registration_data: Json | null
-          registration_step: number | null
-          reservation_counter: number | null
-          service_description: string | null
-          services_offered: string[] | null
-          sharing_available: boolean | null
-          sharing_available_since: string | null
-          sharing_number: number | null
-          shipping_address: string | null
-          shipping_city: string | null
-          shipping_country: string | null
-          shipping_postal_code: string | null
-          show_email: boolean | null
-          show_phone: boolean | null
-          show_phone_for_sharing: boolean | null
-          show_pricing_partners: boolean | null
-          show_rating_for_sharing: boolean | null
-          show_rating_partners: boolean | null
-          show_rating_public: boolean | null
-          show_rides_for_sharing: boolean | null
-          siren: string | null
-          siret: string | null
-          smart_buffer_enabled: boolean | null
-          smart_buffer_fallback_action: string | null
-          smart_buffer_min_minutes: number | null
+          rating: number
+          service_description: string
+          services_offered: string[]
+          show_email: boolean
+          show_phone: boolean
           status: Database["public"]["Enums"]["driver_status"]
-          stripe_checkout_session_id: string | null
-          stripe_connect_account_id: string | null
-          stripe_connect_charges_enabled: boolean | null
-          stripe_connect_created_at: string | null
-          stripe_connect_details_submitted: boolean | null
-          stripe_connect_onboarding_completed: boolean | null
-          stripe_connect_payouts_enabled: boolean | null
-          stripe_connect_status: string | null
-          stripe_connect_updated_at: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_paused: boolean | null
-          stripe_subscription_paused_at: string | null
-          subscription_end_date: string | null
-          subscription_paid: boolean | null
-          subscription_status: string | null
-          subscription_stripe_id: string | null
-          total_rides: number | null
-          tva_included: boolean
-          tva_number: string | null
-          tva_rate: number | null
-          updated_at: string
+          total_rides: number
           user_id: string
-          validation_date: string | null
-          vehicle_brand: string | null
-          vehicle_category: string[] | null
-          vehicle_color: string | null
-          vehicle_equipment: string[] | null
+          vehicle_brand: string
+          vehicle_category: string[]
+          vehicle_color: string
+          vehicle_equipment: string[]
           vehicle_model: string
-          vehicle_photos: string[] | null
-          vehicle_plate: string | null
-          vehicle_year: number | null
-          visible_to_companies: boolean | null
-          visible_to_drivers: boolean | null
-          visible_to_fleet_managers: boolean | null
-          weekend_surcharge: number | null
-          working_sectors: string[] | null
+          vehicle_photos: string[]
+          vehicle_year: number
+          working_sectors: string[]
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "drivers"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_employee_company_id: { Args: { p_user_id: string }; Returns: string }
       get_employee_profile_for_course: {
@@ -15518,17 +15562,18 @@ export type Database = {
         Args: { driver_id_param: string }
         Returns: {
           base_rate: number
+          bio: string
+          card_photo_url: string
           company_name: string
           contact_email: string
           contact_phone: string
           created_at: string
           display_company_name: boolean
           display_driver_name: boolean
-          free_access_end_date: string
-          free_access_type: string
           gallery_photos: string[]
           id: string
           is_pioneer: boolean
+          max_passengers: number
           per_km_rate: number
           profile_email: string
           profile_full_name: string
@@ -15537,17 +15582,14 @@ export type Database = {
           rating: number
           service_description: string
           services_offered: string[]
-          sharing_number: number
           show_email: boolean
           show_phone: boolean
-          show_phone_for_sharing: boolean
-          show_rating_for_sharing: boolean
           show_rating_public: boolean
-          show_rides_for_sharing: boolean
-          status: string
+          status: Database["public"]["Enums"]["driver_status"]
           total_rides: number
           user_id: string
           vehicle_brand: string
+          vehicle_category: string[]
           vehicle_color: string
           vehicle_equipment: string[]
           vehicle_model: string
