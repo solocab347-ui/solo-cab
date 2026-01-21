@@ -106,44 +106,44 @@ serve(async (req) => {
     }
 
     // ========================================
-    // 3. ENVOYER LES RELANCES (J+2, J+4, J+6)
+    // 3. ENVOYER LES RELANCES (J+4, J+8, J+12) pour délai de 14 jours
     // ========================================
-    // Relance J+2 (5 jours restants)
-    const { data: day2Drivers } = await supabaseClient
+    // Relance J+4 (10 jours restants)
+    const { data: driversForReminders } = await supabaseClient
       .from("drivers")
       .select("id, created_at, documents_status")
       .not("documents_status", "in", "(submitted,validated)")
       .eq("documents_access_blocked", false);
 
-    let remindersDay2 = 0;
     let remindersDay4 = 0;
-    let remindersDay6 = 0;
+    let remindersDay8 = 0;
+    let remindersDay12 = 0;
 
-    if (day2Drivers) {
-      for (const driver of day2Drivers) {
+    if (driversForReminders) {
+      for (const driver of driversForReminders) {
         const createdAt = new Date(driver.created_at);
         const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
         
-        let daysRemaining = 7 - daysSinceCreation;
+        let daysRemaining = 14 - daysSinceCreation;
         let isFinalWarning = false;
         let shouldSendReminder = false;
 
-        if (daysSinceCreation === 2) {
-          // J+2 : 5 jours restants
-          daysRemaining = 5;
-          shouldSendReminder = true;
-          remindersDay2++;
-        } else if (daysSinceCreation === 4) {
-          // J+4 : 3 jours restants
-          daysRemaining = 3;
+        if (daysSinceCreation === 4) {
+          // J+4 : 10 jours restants
+          daysRemaining = 10;
           shouldSendReminder = true;
           remindersDay4++;
-        } else if (daysSinceCreation === 6) {
-          // J+6 : 1 jour restant - FINAL WARNING
-          daysRemaining = 1;
+        } else if (daysSinceCreation === 8) {
+          // J+8 : 6 jours restants
+          daysRemaining = 6;
+          shouldSendReminder = true;
+          remindersDay8++;
+        } else if (daysSinceCreation === 12) {
+          // J+12 : 2 jours restants - FINAL WARNING
+          daysRemaining = 2;
           isFinalWarning = true;
           shouldSendReminder = true;
-          remindersDay6++;
+          remindersDay12++;
         }
 
         if (shouldSendReminder) {
@@ -166,9 +166,9 @@ serve(async (req) => {
     const summary = {
       driversBlocked,
       fleetManagersBlocked: fmBlocked,
-      remindersDay2,
       remindersDay4,
-      remindersDay6,
+      remindersDay8,
+      remindersDay12,
       timestamp: now.toISOString(),
     };
 
