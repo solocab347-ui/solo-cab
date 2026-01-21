@@ -17,15 +17,16 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'SoloCab - Plateforme VTC',
+        name: 'SoloCab - Chauffeur VTC',
         short_name: 'SoloCab',
-        description: 'Votre chauffeur privé exclusif - Plateforme VTC premium',
-        theme_color: '#1e3a5f',
+        description: 'Votre chauffeur privé exclusif - Plateforme VTC premium sans commission',
+        theme_color: '#000000',
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'any',
         scope: '/',
         start_url: '/',
+        categories: ['business', 'lifestyle', 'travel'],
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -44,6 +45,15 @@ export default defineConfig(({ mode }) => ({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'SoloCab App'
           }
         ]
       },

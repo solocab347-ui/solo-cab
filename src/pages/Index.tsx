@@ -59,11 +59,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
-      {/* Navigation with black background */}
-      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Navigation with black background - iOS safe area support */}
+      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
+            <Link to="/">
+              <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">
@@ -79,13 +81,13 @@ const Index = () => {
               Tarifs
             </Link>
           </nav>
-          <div className="flex items-center gap-3 sm:gap-4">
-            <SocialLinks variant="compact" iconSize={20} className="hidden sm:flex" />
-            <Link to="/tarifs" className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent hover:from-blue-400 hover:to-purple-500 transition-all text-base sm:text-lg font-bold">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <SocialLinks variant="compact" iconSize={18} className="hidden sm:flex" />
+            <Link to="/tarifs" className="hidden sm:block bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent hover:from-blue-400 hover:to-purple-500 transition-all text-sm font-bold">
               Tarifs
             </Link>
             <Link to="/login">
-              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg text-xs sm:text-sm px-3 sm:px-4">
+              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg text-xs px-3 py-1.5 h-8">
                 {t('landing.connect')}
               </Button>
             </Link>

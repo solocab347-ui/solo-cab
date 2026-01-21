@@ -28,8 +28,11 @@ const ChauffeurLanding = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
-      {/* Header compact */}
-      <header className="border-b border-border/20 sticky top-0 bg-black/90 backdrop-blur-sm z-50">
+      {/* Header compact - iOS safe area support */}
+      <header 
+        className="border-b border-border/20 sticky top-0 bg-black/95 backdrop-blur-sm z-50"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <div className="container mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3">
             <img src={logo} alt="SoloCab" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
