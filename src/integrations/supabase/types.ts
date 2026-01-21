@@ -5171,6 +5171,8 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          documents_access_blocked: boolean | null
+          documents_access_blocked_at: string | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
@@ -5291,6 +5293,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -5411,6 +5415,8 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -8522,6 +8528,8 @@ export type Database = {
           dispatch_priority: string | null
           dispatch_timeout_minutes: number | null
           documents: Json | null
+          documents_access_blocked: boolean | null
+          documents_access_blocked_at: string | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
@@ -8606,6 +8614,8 @@ export type Database = {
           dispatch_priority?: string | null
           dispatch_timeout_minutes?: number | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -8690,6 +8700,8 @@ export type Database = {
           dispatch_priority?: string | null
           dispatch_timeout_minutes?: number | null
           documents?: Json | null
+          documents_access_blocked?: boolean | null
+          documents_access_blocked_at?: string | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
@@ -14770,6 +14782,7 @@ export type Database = {
         Args: { p_driver_id: string; p_shared_course_id: string }
         Returns: Json
       }
+      check_and_block_expired_documents: { Args: never; Returns: undefined }
       check_company_payment_reminders: { Args: never; Returns: undefined }
       check_course_buffer_conflict: {
         Args: {
@@ -15236,6 +15249,8 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          documents_access_blocked: boolean | null
+          documents_access_blocked_at: string | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null

@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface ReminderRequest {
   fleetManagerId?: string;
-  reminderType?: "day3" | "day5" | "day7";
+  reminderType?: "day2" | "day4" | "day6";
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -74,25 +74,25 @@ const handler = async (req: Request): Promise<Response> => {
       let subject = "";
       let urgencyLevel = "";
 
-      // Relance J+3 (4 jours restants)
-      if (reminderType === "day3" || (daysSinceCreation === 3 && !reminderType)) {
+      // Relance J+2 (5 jours restants)
+      if (reminderType === "day2" || (daysSinceCreation === 2 && !reminderType)) {
         shouldSend = true;
-        emailType = "day3";
-        subject = "⚠️ Rappel : Plus que 4 jours pour soumettre vos documents";
+        emailType = "day2";
+        subject = "⚠️ Rappel : Plus que 5 jours pour soumettre vos documents";
         urgencyLevel = "warning";
       } 
-      // Relance J+5 (2 jours restants)
-      else if (reminderType === "day5" || (daysSinceCreation === 5 && !reminderType)) {
+      // Relance J+4 (3 jours restants)
+      else if (reminderType === "day4" || (daysSinceCreation === 4 && !reminderType)) {
         shouldSend = true;
-        emailType = "day5";
-        subject = "🚨 URGENT : Plus que 2 jours pour soumettre vos documents !";
+        emailType = "day4";
+        subject = "🚨 URGENT : Plus que 3 jours pour soumettre vos documents !";
         urgencyLevel = "urgent";
       } 
-      // Relance J+7 (dernier jour/dépassé)
-      else if (reminderType === "day7" || (daysSinceCreation >= 7 && !reminderType)) {
+      // Relance J+6 (1 jour restant - dernier rappel)
+      else if (reminderType === "day6" || (daysSinceCreation >= 6 && !reminderType)) {
         shouldSend = true;
-        emailType = "day7";
-        subject = "🚨 DERNIER RAPPEL : Soumettez vos documents maintenant !";
+        emailType = "day6";
+        subject = "🚨 DERNIER RAPPEL : 1 jour restant pour soumettre vos documents !";
         urgencyLevel = "critical";
       }
 
@@ -135,20 +135,20 @@ const handler = async (req: Request): Promise<Response> => {
     
     <p style="font-size: 16px;">Bonjour ${fm.contact_name},</p>
     
-    ${emailType === "day3" ? `
-    <p>Ceci est un rappel : il vous reste <strong>4 jours</strong> pour soumettre les documents requis pour <strong>${fm.company_name}</strong>.</p>
+    ${emailType === "day2" ? `
+    <p>Ceci est un rappel : il vous reste <strong>5 jours</strong> pour soumettre les documents requis pour <strong>${fm.company_name}</strong>.</p>
     
     <p>Les documents suivants sont toujours en attente :</p>
-    ` : emailType === "day5" ? `
-    <p style="color: #ea580c; font-weight: bold;">URGENT : Il ne vous reste plus que <strong>2 jours</strong> pour soumettre vos documents pour <strong>${fm.company_name}</strong> !</p>
+    ` : emailType === "day4" ? `
+    <p style="color: #ea580c; font-weight: bold;">URGENT : Il ne vous reste plus que <strong>3 jours</strong> pour soumettre vos documents pour <strong>${fm.company_name}</strong> !</p>
     
     <p>Si les documents ne sont pas soumis avant la date limite, votre compte sera suspendu.</p>
     
     <p>Documents requis :</p>
     ` : `
-    <p style="color: #dc2626; font-weight: bold;">DERNIER RAPPEL : Votre délai pour soumettre les documents est dépassé ou sur le point d'expirer !</p>
+    <p style="color: #dc2626; font-weight: bold;">DERNIER RAPPEL : Il ne vous reste plus qu'<strong>1 jour</strong> pour soumettre vos documents !</p>
     
-    <p>Votre compte <strong>${fm.company_name}</strong> sera <strong>SUSPENDU IMMÉDIATEMENT</strong> si vous ne soumettez pas les documents requis aujourd'hui.</p>
+    <p>Votre compte <strong>${fm.company_name}</strong> sera <strong>SUSPENDU DEMAIN</strong> si vous ne soumettez pas les documents requis aujourd'hui.</p>
     
     <p>Documents requis :</p>
     `}
