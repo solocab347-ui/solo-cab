@@ -123,8 +123,8 @@ const TermsOfService = () => {
               <h3 className="text-lg font-medium">4.2 Abonnement chauffeur</h3>
               <p>
                 L'utilisation de la plateforme par les chauffeurs est soumise à un abonnement 
-                mensuel de 49,99€ TTC. Cet abonnement donne accès à toutes les fonctionnalités 
-                de la plateforme.
+                mensuel de 9,99€ TTC. Cet abonnement donne accès à toutes les fonctionnalités 
+                de la plateforme. Un essai gratuit de 14 jours est offert à tous les nouveaux chauffeurs.
               </p>
 
               <h3 className="text-lg font-medium">4.3 Moyens de paiement</h3>
