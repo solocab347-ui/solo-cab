@@ -218,7 +218,7 @@ export const SmartOnboarding = ({ isOpen, onClose, onNavigate, driverProfile }: 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <motion.div
@@ -226,7 +226,8 @@ export const SmartOnboarding = ({ isOpen, onClose, onNavigate, driverProfile }: 
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: "spring", duration: 0.4 }}
-          className="relative w-full h-[90vh] sm:h-auto sm:max-h-[85vh] max-w-lg mx-0 sm:mx-4 overflow-hidden rounded-t-3xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl border border-white/10 flex flex-col"
+          className="relative w-full h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-lg mx-0 sm:mx-4 overflow-hidden rounded-t-3xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl border border-white/10 flex flex-col"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           {/* Header - Fixed */}
           <div className="flex-shrink-0 p-4 pb-3 border-b border-white/10">
