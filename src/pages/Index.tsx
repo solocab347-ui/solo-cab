@@ -79,13 +79,13 @@ const Index = () => {
               Tarifs
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <SocialLinks variant="compact" iconSize={20} />
-            <Link to="/tarifs" className="text-green-400 hover:text-green-300 transition-colors font-medium hidden sm:block">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <SocialLinks variant="compact" iconSize={20} className="hidden sm:flex" />
+            <Link to="/tarifs" className="text-green-400 hover:text-green-300 transition-colors text-sm sm:text-base font-medium">
               Tarifs
             </Link>
             <Link to="/login">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
+              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg text-xs sm:text-sm px-3 sm:px-4">
                 {t('landing.connect')}
               </Button>
             </Link>
