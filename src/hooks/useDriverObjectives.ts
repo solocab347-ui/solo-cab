@@ -24,6 +24,19 @@ export interface DriverStats {
   recentGrowth: number;
 }
 
+export interface SoloCabPeriodStats {
+  courses: number;
+  revenue: number;
+  clients: number;
+}
+
+export interface SoloCabFullStats {
+  today: SoloCabPeriodStats;
+  week: SoloCabPeriodStats;
+  month: SoloCabPeriodStats;
+  year: SoloCabPeriodStats;
+}
+
 export function useDriverObjectives(driverId: string | null) {
   const [objectives, setObjectives] = useState<DriverObjective[]>([]);
   const [platforms, setPlatforms] = useState<DriverPlatform[]>([]);
@@ -42,6 +55,12 @@ export function useDriverObjectives(driverId: string | null) {
     isFirstClient: false,
     isFirstCourse: false,
     recentGrowth: 0,
+  });
+  const [soloCabFullStats, setSoloCabFullStats] = useState<SoloCabFullStats>({
+    today: { courses: 0, revenue: 0, clients: 0 },
+    week: { courses: 0, revenue: 0, clients: 0 },
+    month: { courses: 0, revenue: 0, clients: 0 },
+    year: { courses: 0, revenue: 0, clients: 0 },
   });
 
   // Fetch all driver statistics for milestones and coaching
@@ -141,6 +160,65 @@ export function useDriverObjectives(driverId: string | null) {
       console.error('Error fetching driver stats:', error);
     }
   }, [driverId, dailyEntries, objectives]);
+
+  // Fetch complete SoloCab stats for all periods
+  const fetchSoloCabFullStats = useCallback(async () => {
+    if (!driverId) return;
+
+    try {
+      const now = new Date();
+      const todayStart = startOfDay(now);
+      const todayEnd = endOfDay(now);
+      const weekStart = startOfWeek(now, { locale: fr });
+      const weekEnd = endOfWeek(now, { locale: fr });
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      const yearStart = startOfYear(now);
+      const yearEnd = endOfYear(now);
+
+      // Helper to fetch stats for a period
+      const fetchPeriodStats = async (start: Date, end: Date): Promise<SoloCabPeriodStats> => {
+        const startStr = format(start, "yyyy-MM-dd'T'HH:mm:ss");
+        const endStr = format(end, "yyyy-MM-dd'T'HH:mm:ss");
+
+        const [coursesRes, clientsRes] = await Promise.all([
+          supabase
+            .from('courses')
+            .select('id, final_price, price')
+            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+            .eq('status', 'completed')
+            .gte('scheduled_date', startStr)
+            .lte('scheduled_date', endStr),
+          supabase
+            .from('clients')
+            .select('id')
+            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+            .gte('created_at', startStr)
+            .lte('created_at', endStr),
+        ]);
+
+        const courses = coursesRes.data || [];
+        const clients = clientsRes.data || [];
+
+        return {
+          courses: courses.length,
+          revenue: courses.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0),
+          clients: clients.length,
+        };
+      };
+
+      const [today, week, month, year] = await Promise.all([
+        fetchPeriodStats(todayStart, todayEnd),
+        fetchPeriodStats(weekStart, weekEnd),
+        fetchPeriodStats(monthStart, monthEnd),
+        fetchPeriodStats(yearStart, yearEnd),
+      ]);
+
+      setSoloCabFullStats({ today, week, month, year });
+    } catch (error) {
+      console.error('Error fetching SoloCab full stats:', error);
+    }
+  }, [driverId]);
 
   const fetchAll = useCallback(async () => {
     if (!driverId) return;
@@ -277,8 +355,9 @@ export function useDriverObjectives(driverId: string | null) {
   useEffect(() => {
     if (!loading && driverId) {
       fetchDriverStats();
+      fetchSoloCabFullStats();
     }
-  }, [loading, driverId, dailyEntries, objectives, fetchDriverStats]);
+  }, [loading, driverId, dailyEntries, objectives, fetchDriverStats, fetchSoloCabFullStats]);
 
   // CRUD operations
   const upsertObjective = async (data: Partial<DriverObjective> & { period_type: string }) => {
@@ -413,6 +492,7 @@ export function useDriverObjectives(driverId: string | null) {
     schedule,
     progress,
     driverStats,
+    soloCabFullStats,
     loading,
     fetchAll,
     upsertObjective,
@@ -423,5 +503,6 @@ export function useDriverObjectives(driverId: string | null) {
     upsertSchedule,
     markMessageRead,
     fetchSoloCabStats,
+    fetchSoloCabFullStats,
   };
 }
