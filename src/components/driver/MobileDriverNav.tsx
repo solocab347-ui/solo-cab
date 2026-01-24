@@ -12,7 +12,7 @@ import {
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
   FolderOpen, Calendar, Timer, Zap, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
@@ -97,6 +97,7 @@ export const MobileDriverNav = ({
       icon: Wrench,
       gradient: "from-blue-500 to-cyan-600",
       items: [
+        { value: "objectives", icon: Target, label: t('driverDashboard.menu.objectives') },
         { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign') },
         { value: "profitability", icon: PieChart, label: t('driverDashboard.menu.profitability') },
         { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection') },

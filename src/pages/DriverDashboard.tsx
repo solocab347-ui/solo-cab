@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap, Save, Loader2 } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap, Save, Loader2, Target } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -49,6 +49,7 @@ import { PioneerBanner } from "@/components/driver/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
+import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -621,6 +622,10 @@ const DriverDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("objectives")} className="gap-2 cursor-pointer hover:bg-muted">
+                    <Target className="w-4 h-4" />
+                    {t('driverDashboard.menu.objectives')}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer hover:bg-muted">
                     <Megaphone className="w-4 h-4" />
                     {t('driverDashboard.menu.campaign')}
@@ -1240,6 +1245,13 @@ const DriverDashboard = () => {
                 userId={user.id}
                 isFleetDriver={driverProfile.driver.is_fleet_driver || false}
               />
+            )}
+          </TabsContent>
+
+          {/* Objectives Tab */}
+          <TabsContent value="objectives">
+            {driverProfile?.driver?.id && (
+              <ObjectivesDashboard driverId={driverProfile.driver.id} />
             )}
           </TabsContent>
 

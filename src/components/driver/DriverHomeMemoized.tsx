@@ -6,7 +6,7 @@
 import { memo, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
@@ -126,7 +126,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           <div className="w-1 h-5 sm:h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
           <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-success group touch-manipulation active:scale-[0.98]" onClick={() => navigate("/driver/create-course")}>
             <div className="absolute inset-0 bg-gradient-success opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
@@ -175,6 +175,20 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Planning</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Voir mes courses</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Objectives Shortcut */}
+          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-lg group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("objectives")}>
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-accent to-primary rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Target className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Objectifs</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Suivi & coaching</p>
               </div>
             </div>
           </Card>

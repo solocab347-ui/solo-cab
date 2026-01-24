@@ -219,6 +219,14 @@ export const driverDashboardTranslations: Translations = {
     zh: '统计',
     ar: 'الإحصائيات',
   },
+  'driverDashboard.menu.objectives': {
+    fr: 'Objectifs',
+    en: 'Objectives',
+    es: 'Objetivos',
+    it: 'Obiettivi',
+    zh: '目标',
+    ar: 'الأهداف',
+  },
   'driverDashboard.menu.stats': {
     fr: 'Stats',
     en: 'Stats',
