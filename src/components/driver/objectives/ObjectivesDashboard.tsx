@@ -10,6 +10,7 @@ import { PlatformsManager } from './PlatformsManager';
 import { WorkScheduleManager } from './WorkScheduleManager';
 import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
+import { TodayStatusBanner } from './schedule/TodayStatusBanner';
 import { 
   Target, 
   Calendar, 
@@ -31,6 +32,27 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
   
   const unreadMessages = hook.coachingMessages.filter(m => !m.is_read).length;
 
+  // Get today's schedule and progress for the status banner
+  const today = new Date().getDay();
+  const todayScheduleData = hook.schedule.find(s => s.day_of_week === today);
+  const todaySchedule = todayScheduleData ? {
+    is_working_day: todayScheduleData.is_working_day,
+    start_time: todayScheduleData.start_time || '08:00',
+    end_time: todayScheduleData.end_time || '18:00',
+    target_hours: todayScheduleData.target_hours || 8,
+  } : null;
+
+  // Get daily progress
+  const dailyProgress = hook.progress.find(p => p.period === 'daily');
+  const progressData = dailyProgress && dailyProgress.objective ? {
+    revenue: dailyProgress.current.revenue,
+    courses: dailyProgress.current.courses,
+    hours: dailyProgress.current.hours,
+    revenueTarget: dailyProgress.objective.revenue_target,
+    coursesTarget: dailyProgress.objective.courses_target,
+    hoursTarget: dailyProgress.objective.hours_target,
+  } : undefined;
+
   if (hook.loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -41,6 +63,12 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* Today's Status Banner - Always visible at the top */}
+      <TodayStatusBanner 
+        schedule={todaySchedule} 
+        progress={progressData}
+      />
+
       {/* Header */}
       <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
         <CardHeader className="pb-2">
@@ -152,6 +180,7 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
           <WorkScheduleManager 
             schedule={hook.schedule}
             onSave={hook.upsertSchedule}
+            dailyProgress={progressData}
           />
         </TabsContent>
         
