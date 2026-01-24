@@ -214,7 +214,7 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
                   </div>
                   <div>
                     <p className="text-lg font-bold">{weeklyClients}</p>
-                    <p className="text-[10px] text-muted-foreground">Clients/sem</p>
+                    <p className="text-[10px] text-muted-foreground">Démarchages/sem</p>
                   </div>
                 </div>
               )}
