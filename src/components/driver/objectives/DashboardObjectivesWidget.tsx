@@ -28,6 +28,7 @@ interface ObjectiveSummary {
   dailyTarget: number;
   streakDays: number;
   todayRevenue: number;
+  todayCourses: number;
   isWorkingDay: boolean;
   unreadCoachingMessages: number;
 }
@@ -85,7 +86,9 @@ export function DashboardObjectivesWidget({
         
         // Calculate today's revenue from entries + automatic courses revenue
         const entriesRevenue = entriesRes.data?.reduce((sum, e) => sum + (e.revenue || 0), 0) || 0;
-        const coursesRevenue = coursesRes.data?.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0) || 0;
+        const coursesData = coursesRes.data || [];
+        const coursesRevenue = coursesData.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0);
+        const todayCourses = coursesData.length;
         // Use the higher value (entries might include manual entries, courses are automatic)
         const todayRevenue = Math.max(entriesRevenue, coursesRevenue);
         
@@ -127,6 +130,7 @@ export function DashboardObjectivesWidget({
           dailyTarget,
           streakDays,
           todayRevenue,
+          todayCourses,
           isWorkingDay,
           unreadCoachingMessages: messagesRes.data?.length || 0
         });
@@ -237,7 +241,7 @@ export function DashboardObjectivesWidget({
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {summary.isWorkingDay 
-                    ? `${summary.todayRevenue.toFixed(0)}€ / ${summary.dailyTarget.toFixed(0)}€`
+                    ? `${summary.todayRevenue.toFixed(0)}€ / ${summary.dailyTarget.toFixed(0)}€ • ${summary.todayCourses} course${summary.todayCourses > 1 ? 's' : ''}`
                     : "Profitez de votre repos !"}
                 </p>
               </div>
