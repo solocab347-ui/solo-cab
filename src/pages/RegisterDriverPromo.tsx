@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw, Bot, Trophy, MessageSquare, Target } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
 
@@ -461,6 +461,45 @@ const RegisterDriverPromo = () => {
           
           <h1 className="text-2xl font-bold mb-1">Inscription Chauffeur VTC</h1>
           <p className="text-sm text-muted-foreground">Rejoignez SoloCab et développez votre activité</p>
+        </div>
+
+        {/* AI Coaching Banner - Always visible */}
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-orange-500/10 border border-purple-500/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-xl" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs">
+                  🤖 Coach IA Inclus
+                </Badge>
+              </div>
+            </div>
+            
+            <h3 className="font-semibold text-sm mb-2">Votre assistant personnel pour devenir indépendant</h3>
+            
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Trophy className="w-3 h-3 text-amber-500" />
+                <span>Célébration des victoires</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Target className="w-3 h-3 text-blue-500" />
+                <span>Suivi d'objectifs</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <TrendingUp className="w-3 h-3 text-green-500" />
+                <span>Conseils stratégiques</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <MessageSquare className="w-3 h-3 text-purple-500" />
+                <span>Accompagnement quotidien</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Progress indicator */}
