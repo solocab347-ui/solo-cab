@@ -280,13 +280,13 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                       </div>
                     </div>
                     
-                    {/* Clients Target */}
+                    {/* Prospecting Target (Démarchages) */}
                     <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                           <Users className="w-4 h-4 text-purple-600" />
                         </div>
-                        <Label className="text-sm font-medium">Nouveaux clients</Label>
+                        <Label className="text-sm font-medium">Démarchages</Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
@@ -298,8 +298,11 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                           placeholder="0"
                           className="h-9 text-sm"
                         />
-                        <span className="text-sm text-muted-foreground">clients</span>
+                        <span className="text-sm text-muted-foreground">prospects</span>
                       </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Objectif de prospection quotidien
+                      </p>
                     </div>
                   </div>
                 </div>
