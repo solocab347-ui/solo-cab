@@ -33,6 +33,19 @@ interface Message {
   type?: 'greeting' | 'advice' | 'celebration' | 'encouragement' | 'partnership';
 }
 
+interface SoloCabPeriodStats {
+  courses: number;
+  revenue: number;
+  clients: number;
+}
+
+interface SoloCabFullStats {
+  today: SoloCabPeriodStats;
+  week: SoloCabPeriodStats;
+  month: SoloCabPeriodStats;
+  year: SoloCabPeriodStats;
+}
+
 interface IntelligentCoachProps {
   driverId: string;
   progress: ObjectiveProgress[];
@@ -48,6 +61,7 @@ interface IntelligentCoachProps {
     isFirstCourse: boolean;
     recentGrowth: number;
   };
+  soloCabStats?: SoloCabFullStats;
 }
 
 const QUICK_ACTIONS = [
@@ -89,7 +103,7 @@ const QUICK_ACTIONS = [
   },
 ];
 
-export function IntelligentCoach({ driverId, progress, driverName, stats }: IntelligentCoachProps) {
+export function IntelligentCoach({ driverId, progress, driverName, stats, soloCabStats }: IntelligentCoachProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -176,28 +190,51 @@ export function IntelligentCoach({ driverId, progress, driverName, stats }: Inte
       const weeklyProgress = progress.find(p => p.period === 'weekly');
       const monthlyProgress = progress.find(p => p.period === 'monthly');
 
+      const sc = soloCabStats || { 
+        today: { courses: 0, revenue: 0, clients: 0 },
+        week: { courses: 0, revenue: 0, clients: 0 },
+        month: { courses: 0, revenue: 0, clients: 0 },
+        year: { courses: 0, revenue: 0, clients: 0 }
+      };
+
       const context = `
 CONTEXTE CHAUFFEUR VTC SOLOCAB:
-- Clients directs: ${stats.totalClients}
-- Courses réalisées: ${stats.totalCourses}
+- Clients directs total: ${stats.totalClients}
+- Courses totales: ${stats.totalCourses}
 - CA total clients privés: ${stats.totalRevenue.toFixed(0)}€
 - Indépendance plateformes: ${stats.soloCabPercentage.toFixed(0)}%
 - Partenaires chauffeurs: ${stats.partnershipsCount}
-- Série de jours consécutifs: ${stats.streakDays}
+- Série de jours consécutifs actifs: ${stats.streakDays}
 
-PROGRESSION AUJOURD'HUI:
-- CA: ${dailyProgress?.current.revenue.toFixed(0) || 0}€ / ${dailyProgress?.objective?.revenue_target || 0}€ (${dailyProgress?.percentage.revenue.toFixed(0) || 0}%)
-- Courses: ${dailyProgress?.current.courses || 0} / ${dailyProgress?.objective?.courses_target || 0}
+📊 STATISTIQUES SOLOCAB DÉTAILLÉES:
 
-PROGRESSION SEMAINE:
-- CA: ${weeklyProgress?.current.revenue.toFixed(0) || 0}€ / ${weeklyProgress?.objective?.revenue_target || 0}€
+🗓️ AUJOURD'HUI:
+- Courses: ${sc.today.courses}
+- CA: ${sc.today.revenue.toFixed(0)}€
+- Nouveaux clients: ${sc.today.clients}
+- Objectif CA: ${dailyProgress?.objective?.revenue_target || 0}€ (${dailyProgress?.percentage.revenue.toFixed(0) || 0}% atteint)
+- Objectif courses: ${dailyProgress?.objective?.courses_target || 0}
 
-PROGRESSION MOIS:
-- CA: ${monthlyProgress?.current.revenue.toFixed(0) || 0}€ / ${monthlyProgress?.objective?.revenue_target || 0}€
-- Nouveaux clients: ${monthlyProgress?.current.newClients || 0}
+📅 CETTE SEMAINE:
+- Courses: ${sc.week.courses}
+- CA: ${sc.week.revenue.toFixed(0)}€
+- Nouveaux clients: ${sc.week.clients}
+- Objectif CA: ${weeklyProgress?.objective?.revenue_target || 0}€
+
+📆 CE MOIS:
+- Courses: ${sc.month.courses}
+- CA: ${sc.month.revenue.toFixed(0)}€
+- Nouveaux clients: ${sc.month.clients}
+- Objectif CA: ${monthlyProgress?.objective?.revenue_target || 0}€
+
+📈 CETTE ANNÉE:
+- Courses: ${sc.year.courses}
+- CA: ${sc.year.revenue.toFixed(0)}€
+- Clients acquis: ${sc.year.clients}
 
 OBJECTIF SOLOCAB: Aider ce chauffeur à devenir INDÉPENDANT des plateformes (Uber, Bolt, etc.) 
 en développant sa clientèle directe et son réseau de partenariats avec d'autres chauffeurs.
+Utilise les statistiques ci-dessus pour contextualiser tes conseils.
 
 Question du chauffeur: ${messageText}
 `;

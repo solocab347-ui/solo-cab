@@ -5,6 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface SoloCabPeriodStats {
+  courses: number;
+  revenue: number;
+  clients: number;
+}
+
+interface SoloCabFullStats {
+  today: SoloCabPeriodStats;
+  week: SoloCabPeriodStats;
+  month: SoloCabPeriodStats;
+  year: SoloCabPeriodStats;
+}
+
 interface DriverProfile {
   currentRevenue: number;
   targetRevenue: number;
@@ -30,6 +43,7 @@ interface CoachingRequest {
     monthRevenue: number;
     monthClients: number;
   };
+  soloCabStats?: SoloCabFullStats;
   specificQuestion?: string;
 }
 
@@ -72,7 +86,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, driverProfile, currentStats, specificQuestion } = await req.json() as CoachingRequest;
+    const { type, driverProfile, currentStats, soloCabStats, specificQuestion } = await req.json() as CoachingRequest;
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -93,7 +107,29 @@ serve(async (req) => {
 - Objectif principal: ${driverProfile.mainGoal}
 - Défis identifiés: ${driverProfile.challenges.join(', ')}`;
 
-    if (currentStats) {
+    if (soloCabStats) {
+      userPrompt += `\n\n📊 STATISTIQUES SOLOCAB COMPLÈTES:
+      
+🗓️ AUJOURD'HUI:
+- Courses: ${soloCabStats.today.courses}
+- CA: ${soloCabStats.today.revenue.toFixed(0)}€
+- Nouveaux clients: ${soloCabStats.today.clients}
+
+📅 CETTE SEMAINE:
+- Courses: ${soloCabStats.week.courses}
+- CA: ${soloCabStats.week.revenue.toFixed(0)}€
+- Nouveaux clients: ${soloCabStats.week.clients}
+
+📆 CE MOIS:
+- Courses: ${soloCabStats.month.courses}
+- CA: ${soloCabStats.month.revenue.toFixed(0)}€
+- Nouveaux clients: ${soloCabStats.month.clients}
+
+📈 CETTE ANNÉE:
+- Courses: ${soloCabStats.year.courses}
+- CA: ${soloCabStats.year.revenue.toFixed(0)}€
+- Clients acquis: ${soloCabStats.year.clients}`;
+    } else if (currentStats) {
       userPrompt += `\n\nStatistiques actuelles:
 - Aujourd'hui: ${currentStats.todayRevenue}€ (${currentStats.todayCourses} courses)
 - Cette semaine: ${currentStats.weekRevenue}€ (${currentStats.weekCourses} courses)
@@ -105,7 +141,7 @@ serve(async (req) => {
     }
 
     if (type === 'onboarding_analysis') {
-      userPrompt += `\n\nAnalyse ce profil et fournis un plan personnalisé pour aider ce chauffeur à atteindre ses objectifs et devenir plus indépendant des plateformes.`;
+      userPrompt += `\n\nAnalyse ce profil et fournis un plan personnalisé basé sur ses statistiques réelles SoloCab pour l'aider à atteindre ses objectifs et devenir plus indépendant des plateformes.`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

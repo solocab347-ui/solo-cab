@@ -7,7 +7,7 @@ import {
   PartnershipPromotion,
   DailyMotivation 
 } from './coaching';
-import type { DriverStats } from '@/hooks/useDriverObjectives';
+import type { DriverStats, SoloCabFullStats } from '@/hooks/useDriverObjectives';
 import { 
   Bot, 
   Trophy, 
@@ -20,6 +20,7 @@ interface CoachingPanelProps {
   messages: DriverCoachingMessage[];
   progress: ObjectiveProgress[];
   driverStats: DriverStats;
+  soloCabStats: SoloCabFullStats;
   isWorkingDay: boolean;
   driverName?: string;
   onMarkRead: (id: string) => Promise<void>;
@@ -30,6 +31,7 @@ export function CoachingPanel({
   messages, 
   progress, 
   driverStats,
+  soloCabStats,
   isWorkingDay,
   driverName,
   onMarkRead 
@@ -84,6 +86,7 @@ export function CoachingPanel({
             progress={progress}
             driverName={driverName}
             stats={driverStats}
+            soloCabStats={soloCabStats}
           />
         </TabsContent>
 

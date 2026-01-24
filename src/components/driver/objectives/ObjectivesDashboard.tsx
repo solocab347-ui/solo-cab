@@ -321,6 +321,7 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
             messages={hook.coachingMessages}
             progress={hook.progress}
             driverStats={hook.driverStats}
+            soloCabStats={hook.soloCabFullStats}
             isWorkingDay={isWorkingDay}
             driverName={driverName}
             onMarkRead={hook.markMessageRead}
