@@ -59,6 +59,12 @@ export interface DriverWorkSchedule {
   end_time: string | null;
   is_working_day: boolean;
   target_hours: number;
+  target_revenue: number;
+  target_courses: number;
+  target_clients: number;
+  break_start?: string | null;
+  break_end?: string | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }

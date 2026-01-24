@@ -12,18 +12,25 @@ import {
   ChevronUp,
   Moon,
   Sun,
-  Palmtree
+  Palmtree,
+  Euro,
+  Car,
+  Users
 } from 'lucide-react';
 import { useState } from 'react';
 import { DAYS_OF_WEEK } from '../types';
 
-interface DaySchedule {
+export interface DaySchedule {
   is_working_day: boolean;
   start_time: string;
   end_time: string;
   target_hours: number;
+  target_revenue: number;
+  target_courses: number;
+  target_clients: number;
   break_start?: string;
   break_end?: string;
+  notes?: string;
 }
 
 interface DayScheduleCardProps {
@@ -82,6 +89,9 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
   
   const shiftType = getShiftType();
   const ShiftIcon = shiftType === 'rest' ? Palmtree : shiftType === 'morning' ? Sun : shiftType === 'evening' ? Moon : Clock;
+
+  // Check if any targets are set
+  const hasTargets = schedule.target_revenue > 0 || schedule.target_courses > 0 || schedule.target_clients > 0;
   
   return (
     <Card className={`transition-all ${
@@ -147,6 +157,28 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                   )}
                 </div>
                 
+                {/* Targets Summary */}
+                <div className="hidden lg:flex items-center gap-1.5">
+                  {schedule.target_revenue > 0 && (
+                    <Badge variant="outline" className="text-[10px] gap-1 bg-green-500/10 text-green-600 border-green-500/30">
+                      <Euro className="w-3 h-3" />
+                      {schedule.target_revenue}€
+                    </Badge>
+                  )}
+                  {schedule.target_courses > 0 && (
+                    <Badge variant="outline" className="text-[10px] gap-1 bg-blue-500/10 text-blue-600 border-blue-500/30">
+                      <Car className="w-3 h-3" />
+                      {schedule.target_courses}
+                    </Badge>
+                  )}
+                  {schedule.target_clients > 0 && (
+                    <Badge variant="outline" className="text-[10px] gap-1 bg-purple-500/10 text-purple-600 border-purple-500/30">
+                      <Users className="w-3 h-3" />
+                      {schedule.target_clients}
+                    </Badge>
+                  )}
+                </div>
+                
                 {/* Hours Badge */}
                 <Badge className={`text-xs ${
                   calculatedHours >= 10 ? 'bg-amber-500/20 text-amber-600 border-amber-500/30' :
@@ -197,6 +229,81 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
           <CollapsibleContent>
             {schedule.is_working_day && (
               <div className="mt-4 pt-4 border-t space-y-4">
+                {/* Daily Targets Section */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    🎯 Objectifs du jour
+                  </Label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Revenue Target */}
+                    <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                          <Euro className="w-4 h-4 text-green-600" />
+                        </div>
+                        <Label className="text-sm font-medium">CA cible</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="10"
+                          value={schedule.target_revenue || ''}
+                          onChange={(e) => onUpdate('target_revenue', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-9 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground">€</span>
+                      </div>
+                    </div>
+                    
+                    {/* Courses Target */}
+                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <Car className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <Label className="text-sm font-medium">Courses</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={schedule.target_courses || ''}
+                          onChange={(e) => onUpdate('target_courses', parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-9 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground">courses</span>
+                      </div>
+                    </div>
+                    
+                    {/* Clients Target */}
+                    <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <Users className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <Label className="text-sm font-medium">Nouveaux clients</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={schedule.target_clients || ''}
+                          onChange={(e) => onUpdate('target_clients', parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-9 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground">clients</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Break Time */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-2">
@@ -264,5 +371,3 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
     </Card>
   );
 }
-
-export type { DaySchedule };

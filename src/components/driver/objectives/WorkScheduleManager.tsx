@@ -12,7 +12,10 @@ import {
   Calendar,
   LayoutTemplate,
   Copy,
-  TrendingUp
+  TrendingUp,
+  Euro,
+  Car,
+  Users
 } from 'lucide-react';
 import { 
   ScheduleTemplates, 
@@ -52,6 +55,12 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
         start_time: existing?.start_time || '08:00',
         end_time: existing?.end_time || '18:00',
         target_hours: existing?.target_hours || 8,
+        target_revenue: existing?.target_revenue || 0,
+        target_courses: existing?.target_courses || 0,
+        target_clients: existing?.target_clients || 0,
+        break_start: existing?.break_start || undefined,
+        break_end: existing?.break_end || undefined,
+        notes: existing?.notes || undefined,
       };
     }
     setLocalSchedule(initial);
@@ -66,6 +75,12 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
           start_time: localSchedule[i].start_time,
           end_time: localSchedule[i].end_time,
           target_hours: localSchedule[i].target_hours,
+          target_revenue: localSchedule[i].target_revenue,
+          target_courses: localSchedule[i].target_courses,
+          target_clients: localSchedule[i].target_clients,
+          break_start: localSchedule[i].break_start || null,
+          break_end: localSchedule[i].break_end || null,
+          notes: localSchedule[i].notes || null,
         });
       }
       toast.success('Planning enregistré avec succès');
@@ -99,6 +114,18 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
     return sum + (day.is_working_day ? day.target_hours : 0);
   }, 0);
 
+  const weeklyRevenue = Object.values(localSchedule).reduce((sum, day) => {
+    return sum + (day.is_working_day ? day.target_revenue : 0);
+  }, 0);
+
+  const weeklyCourses = Object.values(localSchedule).reduce((sum, day) => {
+    return sum + (day.is_working_day ? day.target_courses : 0);
+  }, 0);
+
+  const weeklyClients = Object.values(localSchedule).reduce((sum, day) => {
+    return sum + (day.is_working_day ? day.target_clients : 0);
+  }, 0);
+
   const workingDays = Object.values(localSchedule).filter(d => d.is_working_day).length;
   const restDays = 7 - workingDays;
 
@@ -116,34 +143,82 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
       {/* Summary Stats */}
       <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
         <CardContent className="py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Votre rythme de travail</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="outline" className="text-xs">
-                    {workingDays} jours travaillés
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {restDays} jours de repos
-                  </Badge>
-                  <Badge className="bg-primary/20 text-primary border-0 text-xs">
-                    {weeklyHours}h/semaine
-                  </Badge>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Votre rythme de travail</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="outline" className="text-xs">
+                      {workingDays} jours travaillés
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {restDays} jours de repos
+                    </Badge>
+                  </div>
                 </div>
               </div>
+              <Button onClick={handleSaveAll} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Sauvegarder
+              </Button>
             </div>
-            <Button onClick={handleSaveAll} disabled={saving}>
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
+            
+            {/* Weekly Targets Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/50">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">{weeklyHours}h</p>
+                  <p className="text-[10px] text-muted-foreground">Heures/sem</p>
+                </div>
+              </div>
+              
+              {weeklyRevenue > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/50">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <Euro className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">{weeklyRevenue}€</p>
+                    <p className="text-[10px] text-muted-foreground">CA/sem</p>
+                  </div>
+                </div>
               )}
-              Sauvegarder
-            </Button>
+              
+              {weeklyCourses > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/50">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Car className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">{weeklyCourses}</p>
+                    <p className="text-[10px] text-muted-foreground">Courses/sem</p>
+                  </div>
+                </div>
+              )}
+              
+              {weeklyClients > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/50">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">{weeklyClients}</p>
+                    <p className="text-[10px] text-muted-foreground">Clients/sem</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

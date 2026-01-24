@@ -230,7 +230,7 @@ export function useDriverObjectives(driverId: string | null) {
         supabase.from('driver_platforms').select('*').eq('driver_id', driverId).order('display_order'),
         supabase.from('driver_daily_entries').select('*, platform:driver_platforms(*)').eq('driver_id', driverId).order('entry_date', { ascending: false }).limit(100),
         supabase.from('driver_coaching_messages').select('*').eq('driver_id', driverId).order('created_at', { ascending: false }).limit(20),
-        supabase.from('driver_work_schedule').select('*').eq('driver_id', driverId).order('day_of_week'),
+        supabase.from('driver_work_schedules').select('*').eq('driver_id', driverId).order('day_of_week'),
       ]);
 
       if (objectivesRes.data) setObjectives(objectivesRes.data as DriverObjective[]);
@@ -455,7 +455,7 @@ export function useDriverObjectives(driverId: string | null) {
 
     if (existing) {
       const { data: updated, error } = await supabase
-        .from('driver_work_schedule')
+        .from('driver_work_schedules')
         .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', existing.id)
         .select()
@@ -465,7 +465,7 @@ export function useDriverObjectives(driverId: string | null) {
       return updated;
     } else {
       const { data: created, error } = await supabase
-        .from('driver_work_schedule')
+        .from('driver_work_schedules')
         .insert({ ...data, driver_id: driverId, day_of_week: dayOfWeek })
         .select()
         .single();
