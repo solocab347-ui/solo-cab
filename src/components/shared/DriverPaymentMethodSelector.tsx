@@ -1,0 +1,205 @@
+import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CreditCard, Banknote, Building2, Wallet, HelpCircle, Settings2, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useDriverPaymentMethods, DriverPaymentConfig } from "@/hooks/useDriverPaymentMethods";
+
+const PAYMENT_METHOD_INFO: Record<string, { label: string; icon: any; description: string; color: string }> = {
+  cash: { 
+    label: "Espèces", 
+    icon: Banknote, 
+    description: "Paiement en liquide", 
+    color: "bg-green-500/10 text-green-600 border-green-500/30" 
+  },
+  card: { 
+    label: "Carte bancaire", 
+    icon: CreditCard, 
+    description: "CB, Visa, Mastercard", 
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/30" 
+  },
+  transfer: { 
+    label: "Virement", 
+    icon: Building2, 
+    description: "Virement bancaire", 
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/30" 
+  },
+  check: { 
+    label: "Chèque", 
+    icon: Wallet, 
+    description: "Paiement par chèque", 
+    color: "bg-amber-500/10 text-amber-600 border-amber-500/30" 
+  },
+  other: { 
+    label: "Autre", 
+    icon: Settings2, 
+    description: "Autre moyen", 
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/30" 
+  },
+  not_specified: { 
+    label: "Non précisé", 
+    icon: HelpCircle, 
+    description: "Je déciderai plus tard", 
+    color: "bg-muted text-muted-foreground" 
+  }
+};
+
+interface DriverPaymentMethodSelectorProps {
+  driverId: string;
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+  showNotSpecified?: boolean;
+  className?: string;
+}
+
+/**
+ * Payment method selector that automatically adapts to driver's configured payment methods
+ */
+export function DriverPaymentMethodSelector({
+  driverId,
+  value,
+  onChange,
+  label = "Moyen de paiement",
+  showNotSpecified = true,
+  className = ""
+}: DriverPaymentMethodSelectorProps) {
+  const { config, loading, isStripeEnabled } = useDriverPaymentMethods(driverId);
+
+  // Build available methods from driver config
+  const availableMethods = [
+    ...(showNotSpecified ? ['not_specified'] : []),
+    ...config.acceptedMethods
+  ];
+
+  // Set default value if current value is not available
+  useEffect(() => {
+    if (!loading && value && !availableMethods.includes(value)) {
+      onChange(config.defaultMethod || 'not_specified');
+    }
+  }, [loading, value, availableMethods, config.defaultMethod, onChange]);
+
+  if (loading) {
+    return (
+      <div className={`space-y-3 ${className}`}>
+        <Skeleton className="h-5 w-40" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-16" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`space-y-3 ${className}`}>
+      <Label className="text-base font-medium flex items-center gap-2">
+        <CreditCard className="w-4 h-4 text-primary" />
+        {label}
+        {isStripeEnabled && (
+          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+            <Zap className="h-3 w-3 mr-1" />
+            Paiement en ligne
+          </Badge>
+        )}
+      </Label>
+      
+      <RadioGroup
+        value={value}
+        onValueChange={onChange}
+        className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+      >
+        {availableMethods.map((method) => {
+          const info = PAYMENT_METHOD_INFO[method];
+          if (!info) return null;
+          
+          const IconComponent = info.icon;
+          const isOnlinePayment = isStripeEnabled && method === 'card';
+          
+          return (
+            <div key={method}>
+              <RadioGroupItem
+                value={method}
+                id={`payment-${method}`}
+                className="peer sr-only"
+              />
+              <Label
+                htmlFor={`payment-${method}`}
+                className={cn(
+                  "flex flex-col items-center justify-center rounded-lg border-2 p-3 cursor-pointer transition-all min-h-[70px]",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                )}
+              >
+                <div className="relative">
+                  <IconComponent className="mb-1 h-5 w-5" />
+                  {isOnlinePayment && (
+                    <Zap className="absolute -top-1 -right-2 h-3 w-3 text-primary" />
+                  )}
+                </div>
+                <span className="text-xs font-medium text-center">{info.label}</span>
+                {isOnlinePayment && (
+                  <span className="text-[10px] text-primary mt-0.5">En ligne</span>
+                )}
+              </Label>
+            </div>
+          );
+        })}
+      </RadioGroup>
+      
+      <p className="text-xs text-muted-foreground">
+        {isStripeEnabled 
+          ? "Les paiements CB seront traités en ligne via Stripe"
+          : "Indiquez le moyen de paiement prévu pour cette course"
+        }
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Display badge for payment method
+ */
+export function DriverPaymentMethodBadge({ 
+  paymentMethod, 
+  isOnline = false,
+  size = "sm",
+  className 
+}: { 
+  paymentMethod: string | null | undefined;
+  isOnline?: boolean;
+  size?: "sm" | "md";
+  className?: string;
+}) {
+  if (!paymentMethod || paymentMethod === "not_specified") {
+    return null;
+  }
+
+  const info = PAYMENT_METHOD_INFO[paymentMethod];
+  if (!info) return null;
+
+  const IconComponent = info.icon;
+  const iconSize = size === "sm" ? "w-3 h-3" : "w-4 h-4";
+  const textSize = size === "sm" ? "text-xs" : "text-sm";
+
+  return (
+    <Badge 
+      variant="outline" 
+      className={cn(
+        "gap-1 font-medium border",
+        info.color,
+        textSize,
+        className
+      )}
+    >
+      <IconComponent className={iconSize} />
+      {info.label}
+      {isOnline && <Zap className="h-3 w-3 ml-1 text-primary" />}
+    </Badge>
+  );
+}
+
+export default DriverPaymentMethodSelector;

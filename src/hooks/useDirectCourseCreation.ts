@@ -20,6 +20,7 @@ export interface DirectCourseParams {
   estimatedPrice?: number;
   courseType?: "classic" | "hourly";
   durationHours?: number;
+  paymentMethod?: string;
 }
 
 /**
@@ -59,6 +60,7 @@ export function useDirectCourseCreation() {
       estimatedPrice,
       courseType = "classic",
       durationHours,
+      paymentMethod,
     } = params;
 
     // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si une soumission est déjà en cours
@@ -216,6 +218,7 @@ export function useDirectCourseCreation() {
           guest_estimated_price: finalPrice || null,
           guest_tracking_token: trackingToken,
           created_by_user_id: driverData.user_id,
+          payment_method: paymentMethod || null,
         }])
         .select()
         .single();
