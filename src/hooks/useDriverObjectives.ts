@@ -173,14 +173,15 @@ export function useDriverObjectives(driverId: string | null) {
     
     const dateStr = format(date, 'yyyy-MM-dd');
     
-    // Get courses completed on this date
+    // Get courses completed on this date - use final_price for revenue
     const { data: courses } = await supabase
       .from('courses')
-      .select('id, price, distance_km, duration_minutes, client_id')
+      .select('id, final_price, price, distance_km, duration_minutes, client_id')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', `${dateStr}T00:00:00`)
       .lte('scheduled_date', `${dateStr}T23:59:59`);
+      
     // Get new clients registered this date
     const { data: newClients } = await supabase
       .from('clients')
@@ -192,7 +193,7 @@ export function useDriverObjectives(driverId: string | null) {
     if (!courses) return null;
 
     return {
-      revenue: courses.reduce((sum, c: any) => sum + (c.price || 0), 0),
+      revenue: courses.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0),
       courses_count: courses.length,
       new_clients_count: newClients?.length || 0,
       km_driven: courses.reduce((sum, c: any) => sum + (c.distance_km || 0), 0),

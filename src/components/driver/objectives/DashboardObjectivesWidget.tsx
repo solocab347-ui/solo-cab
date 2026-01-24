@@ -45,8 +45,10 @@ export function DashboardObjectivesWidget({
       if (!driverId) return;
 
       try {
-        // Fetch objectives, schedule, and coaching messages in parallel
-        const [objectivesRes, scheduleRes, messagesRes, entriesRes] = await Promise.all([
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Fetch objectives, schedule, coaching messages, and today's entries in parallel
+        const [objectivesRes, scheduleRes, messagesRes, entriesRes, coursesRes] = await Promise.all([
           supabase
             .from('driver_objectives')
             .select('*')
@@ -67,12 +69,26 @@ export function DashboardObjectivesWidget({
             .from('driver_daily_entries')
             .select('revenue')
             .eq('driver_id', driverId)
-            .eq('entry_date', new Date().toISOString().split('T')[0])
+            .eq('entry_date', today),
+          // Also fetch today's completed courses for automatic revenue
+          supabase
+            .from('courses')
+            .select('final_price, price')
+            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+            .eq('status', 'completed')
+            .gte('scheduled_date', `${today}T00:00:00`)
+            .lte('scheduled_date', `${today}T23:59:59`)
         ]);
 
         const hasObjectives = !!objectivesRes.data;
         const dailyTarget = objectivesRes.data?.revenue_target || 0;
-        const todayRevenue = entriesRes.data?.reduce((sum, e) => sum + (e.revenue || 0), 0) || 0;
+        
+        // Calculate today's revenue from entries + automatic courses revenue
+        const entriesRevenue = entriesRes.data?.reduce((sum, e) => sum + (e.revenue || 0), 0) || 0;
+        const coursesRevenue = coursesRes.data?.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0) || 0;
+        // Use the higher value (entries might include manual entries, courses are automatic)
+        const todayRevenue = Math.max(entriesRevenue, coursesRevenue);
+        
         const dailyProgress = dailyTarget > 0 ? Math.min(100, (todayRevenue / dailyTarget) * 100) : 0;
         
         // Schedule returns an array, get first item
