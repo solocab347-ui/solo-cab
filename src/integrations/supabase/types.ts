@@ -5749,10 +5749,12 @@ export type Database = {
       }
       drivers: {
         Row: {
+          accepted_payment_methods: string[] | null
           airport_surcharge: number | null
           auto_accept_from_partners: boolean | null
           base_fare: number | null
           base_rate: number | null
+          billing_type: string | null
           bio: string | null
           can_create_courses: boolean | null
           can_manage_clients: boolean | null
@@ -5763,6 +5765,7 @@ export type Database = {
           contact_phone: string | null
           course_counter: number | null
           created_at: string
+          default_payment_method: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
@@ -5802,6 +5805,7 @@ export type Database = {
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
+          payment_config_updated_at: string | null
           payment_failed_at: string | null
           payment_failed_reason: string | null
           pending_subscription_type: string | null
@@ -5825,6 +5829,7 @@ export type Database = {
           shipping_country: string | null
           shipping_postal_code: string | null
           show_email: boolean | null
+          show_payment_methods_publicly: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
           show_pricing_partners: boolean | null
@@ -5876,10 +5881,12 @@ export type Database = {
           working_sectors: string[] | null
         }
         Insert: {
+          accepted_payment_methods?: string[] | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
           base_fare?: number | null
           base_rate?: number | null
+          billing_type?: string | null
           bio?: string | null
           can_create_courses?: boolean | null
           can_manage_clients?: boolean | null
@@ -5890,6 +5897,7 @@ export type Database = {
           contact_phone?: string | null
           course_counter?: number | null
           created_at?: string
+          default_payment_method?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
@@ -5929,6 +5937,7 @@ export type Database = {
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
           pending_subscription_type?: string | null
@@ -5952,6 +5961,7 @@ export type Database = {
           shipping_country?: string | null
           shipping_postal_code?: string | null
           show_email?: boolean | null
+          show_payment_methods_publicly?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
           show_pricing_partners?: boolean | null
@@ -6003,10 +6013,12 @@ export type Database = {
           working_sectors?: string[] | null
         }
         Update: {
+          accepted_payment_methods?: string[] | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
           base_fare?: number | null
           base_rate?: number | null
+          billing_type?: string | null
           bio?: string | null
           can_create_courses?: boolean | null
           can_manage_clients?: boolean | null
@@ -6017,6 +6029,7 @@ export type Database = {
           contact_phone?: string | null
           course_counter?: number | null
           created_at?: string
+          default_payment_method?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
@@ -6056,6 +6069,7 @@ export type Database = {
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
+          payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
           pending_subscription_type?: string | null
@@ -6079,6 +6093,7 @@ export type Database = {
           shipping_country?: string | null
           shipping_postal_code?: string | null
           show_email?: boolean | null
+          show_payment_methods_publicly?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
           show_pricing_partners?: boolean | null

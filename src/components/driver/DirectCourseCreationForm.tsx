@@ -29,6 +29,7 @@ import {
 import { calculateRoute } from "@/lib/geocoding";
 import { useDirectCourseCreation } from "@/hooks/useDirectCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
+import { DriverPaymentMethodSelector } from "@/components/shared/DriverPaymentMethodSelector";
 
 interface DirectCourseCreationFormProps {
   onSuccess?: () => void;
@@ -63,6 +64,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
   const [passengersCount, setPassengersCount] = useState("1");
   const [notes, setNotes] = useState("");
   const [durationHours, setDurationHours] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("not_specified");
   
   // Calculated values
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -226,6 +228,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
       estimatedPrice: calculatedPrice || undefined,
       courseType,
       durationHours: durationHours ? parseFloat(durationHours) : undefined,
+      paymentMethod: paymentMethod !== "not_specified" ? paymentMethod : undefined,
     });
 
     if (course) {
@@ -467,6 +470,19 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
             </div>
           </div>
         </div>
+
+        {/* Payment Method */}
+        {driverProfile?.id && (
+          <div className="bg-card/50 p-6 rounded-lg border border-border">
+            <DriverPaymentMethodSelector
+              driverId={driverProfile.id}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              label="Moyen de paiement prévu"
+              showNotSpecified={true}
+            />
+          </div>
+        )}
 
         {/* Notes */}
         <div className="space-y-2">

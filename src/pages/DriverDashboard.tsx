@@ -50,6 +50,7 @@ import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
+import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -996,6 +997,14 @@ const DriverDashboard = () => {
                 />
               )}
             </Card>
+
+            {/* Payment Methods Configuration */}
+            {driverProfile?.driver?.id && (
+              <DriverPaymentSettings 
+                driverId={driverProfile.driver.id}
+                onUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
+              />
+            )}
 
             {/* Company Info */}
             <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
