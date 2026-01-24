@@ -10,6 +10,7 @@ import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, C
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
+import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidget";
 
 interface DriverHomeProps {
   driverProfile: any;
@@ -119,6 +120,15 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           )}
         </div>
       </div>
+
+      {/* AI Objectives Widget - Always visible at top */}
+      {driverProfile?.driver?.id && (
+        <DashboardObjectivesWidget
+          driverId={driverProfile.driver.id}
+          driverName={displayName}
+          onNavigateToObjectives={() => onTabChange("objectives")}
+        />
+      )}
 
       {/* Accès Rapide */}
       <div className="animate-fade-in">
