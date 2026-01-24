@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,9 @@ import { WorkScheduleManager } from './WorkScheduleManager';
 import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { TodayStatusBanner } from './schedule/TodayStatusBanner';
+import { OnboardingWizard, type OnboardingData } from './onboarding';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Target, 
   Calendar, 
@@ -28,9 +31,131 @@ interface ObjectivesDashboardProps {
 
 export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const hook = useDriverObjectives(driverId);
   
   const unreadMessages = hook.coachingMessages.filter(m => !m.is_read).length;
+
+  // Check if onboarding is needed
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      try {
+        // Check if driver has any objectives set
+        const { data: objectives } = await supabase
+          .from('driver_objectives')
+          .select('id')
+          .eq('driver_id', driverId)
+          .limit(1);
+
+        // Show onboarding if no objectives exist
+        setShowOnboarding(!objectives || objectives.length === 0);
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+        setShowOnboarding(false);
+      } finally {
+        setCheckingOnboarding(false);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, [driverId]);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (data: OnboardingData, aiRecommendations: string) => {
+    try {
+      // Save objectives for all periods
+      const periods = ['daily', 'weekly', 'monthly', 'yearly'] as const;
+      const multipliers = {
+        daily: { revenue: 1/22, clients: 1/22, hours: 1 },
+        weekly: { revenue: 1/4, clients: 1/4, hours: data.workDaysPerWeek },
+        monthly: { revenue: 1, clients: 1, hours: data.workDaysPerWeek * 4 },
+        yearly: { revenue: 12, clients: 12, hours: data.workDaysPerWeek * 4 * 12 }
+      };
+
+      for (const period of periods) {
+        const mult = multipliers[period];
+        await hook.upsertObjective({
+          period_type: period,
+          revenue_target: Math.round(data.targetMonthlyRevenue * mult.revenue),
+          new_clients_target: Math.round(data.targetDirectClients * mult.clients),
+          hours_target: Math.round(data.workHoursPerDay * mult.hours),
+          courses_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25), // Estimate 25€/course
+          km_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25 * 15), // Estimate 15km/course
+          is_active: true
+        });
+      }
+
+      // Save work schedule
+      const scheduleDefaults: Record<string, { start: string; end: string }> = {
+        early: { start: '06:00', end: '14:00' },
+        standard: { start: '08:00', end: '18:00' },
+        late: { start: '16:00', end: '00:00' },
+        flexible: { start: '09:00', end: '19:00' }
+      };
+      const schedule = scheduleDefaults[data.preferredSchedule] || scheduleDefaults.standard;
+      
+      for (let day = 0; day < 7; day++) {
+        const isWorkDay = day !== 0 && day <= data.workDaysPerWeek;
+        await hook.upsertSchedule(day, {
+          is_working_day: isWorkDay,
+          start_time: schedule.start,
+          end_time: schedule.end,
+          target_hours: isWorkDay ? data.workHoursPerDay : 0
+        });
+      }
+
+      // Save platforms
+      for (const platform of data.platformsUsed) {
+        await hook.addPlatform(platform.charAt(0).toUpperCase() + platform.slice(1), 'car');
+      }
+
+      // Store AI recommendations as coaching message
+      await supabase.from('driver_coaching_messages').insert({
+        driver_id: driverId,
+        message_type: 'suggestion',
+        title: '🎯 Votre plan personnalisé',
+        content: aiRecommendations,
+        is_read: false
+      });
+
+      setShowOnboarding(false);
+      toast.success('Configuration terminée ! Bienvenue dans votre Centre d\'Objectifs');
+      
+      // Refresh data
+      hook.fetchAll?.();
+      
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    }
+  };
+
+  const handleSkipOnboarding = () => {
+    setShowOnboarding(false);
+  };
+
+  // Loading state
+  if (checkingOnboarding || hook.loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show onboarding wizard
+  if (showOnboarding) {
+    return (
+      <div className="pb-20">
+        <OnboardingWizard 
+          driverId={driverId}
+          onComplete={handleOnboardingComplete}
+          onSkip={handleSkipOnboarding}
+        />
+      </div>
+    );
+  }
 
   // Get today's schedule and progress for the status banner
   const today = new Date().getDay();
@@ -52,14 +177,6 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
     coursesTarget: dailyProgress.objective.courses_target,
     hoursTarget: dailyProgress.objective.hours_target,
   } : undefined;
-
-  if (hook.loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 pb-20">
