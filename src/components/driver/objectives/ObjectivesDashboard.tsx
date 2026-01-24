@@ -12,6 +12,7 @@ import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { TodayStatusBanner } from './schedule/TodayStatusBanner';
 import { OnboardingWizard, type OnboardingData } from './onboarding';
+import { DailyMotivation } from './coaching';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
@@ -22,14 +23,16 @@ import {
   Clock, 
   MessageSquare,
   History,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 interface ObjectivesDashboardProps {
   driverId: string;
+  driverName?: string;
 }
 
-export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
+export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
@@ -160,6 +163,7 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
   // Get today's schedule and progress for the status banner
   const today = new Date().getDay();
   const todayScheduleData = hook.schedule.find(s => s.day_of_week === today);
+  const isWorkingDay = todayScheduleData?.is_working_day ?? true;
   const todaySchedule = todayScheduleData ? {
     is_working_day: todayScheduleData.is_working_day,
     start_time: todayScheduleData.start_time || '08:00',
@@ -180,10 +184,12 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
 
   return (
     <div className="space-y-4 pb-20">
-      {/* Today's Status Banner - Always visible at the top */}
-      <TodayStatusBanner 
-        schedule={todaySchedule} 
-        progress={progressData}
+      {/* Daily Motivation Banner - Always visible at the top */}
+      <DailyMotivation
+        progress={hook.progress}
+        isWorkingDay={isWorkingDay}
+        streakDays={hook.driverStats.streakDays}
+        driverName={driverName}
       />
 
       {/* Header */}
@@ -314,6 +320,9 @@ export function ObjectivesDashboard({ driverId }: ObjectivesDashboardProps) {
             driverId={driverId}
             messages={hook.coachingMessages}
             progress={hook.progress}
+            driverStats={hook.driverStats}
+            isWorkingDay={isWorkingDay}
+            driverName={driverName}
             onMarkRead={hook.markMessageRead}
           />
         </TabsContent>

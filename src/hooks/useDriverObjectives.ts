@@ -9,8 +9,20 @@ import {
   PeriodStats,
   ObjectiveProgress 
 } from '@/components/driver/objectives/types';
-import { startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, format } from 'date-fns';
+import { startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+export interface DriverStats {
+  totalClients: number;
+  totalCourses: number;
+  totalRevenue: number;
+  soloCabPercentage: number;
+  streakDays: number;
+  partnershipsCount: number;
+  isFirstClient: boolean;
+  isFirstCourse: boolean;
+  recentGrowth: number;
+}
 
 export function useDriverObjectives(driverId: string | null) {
   const [objectives, setObjectives] = useState<DriverObjective[]>([]);
@@ -20,6 +32,115 @@ export function useDriverObjectives(driverId: string | null) {
   const [schedule, setSchedule] = useState<DriverWorkSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<ObjectiveProgress[]>([]);
+  const [driverStats, setDriverStats] = useState<DriverStats>({
+    totalClients: 0,
+    totalCourses: 0,
+    totalRevenue: 0,
+    soloCabPercentage: 0,
+    streakDays: 0,
+    partnershipsCount: 0,
+    isFirstClient: false,
+    isFirstCourse: false,
+    recentGrowth: 0,
+  });
+
+  // Fetch all driver statistics for milestones and coaching
+  const fetchDriverStats = useCallback(async () => {
+    if (!driverId) return;
+
+    try {
+      // Get total clients
+      const { count: clientCount } = await supabase
+        .from('clients')
+        .select('id', { count: 'exact' })
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
+
+      // Get total courses completed
+      const { data: courses, count: courseCount } = await supabase
+        .from('courses')
+        .select('id, final_price, created_at', { count: 'exact' })
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+        .eq('status', 'completed');
+
+      // Get partnerships count
+      const { count: partnerCount } = await supabase
+        .from('driver_partnerships')
+        .select('id', { count: 'exact' })
+        .or(`requester_id.eq.${driverId},target_id.eq.${driverId}`)
+        .eq('status', 'active');
+
+      // Calculate total revenue from courses
+      const totalRevenue = courses?.reduce((sum, c: any) => sum + (c.final_price || 0), 0) || 0;
+
+      // Check if first client/course (simplified)
+      const isFirstClient = clientCount === 1;
+      const isFirstCourse = courseCount === 1;
+
+      // Calculate SoloCab percentage (estimate based on entries)
+      const soloCabEntries = dailyEntries.filter(e => e.is_solocab);
+      const platformEntries = dailyEntries.filter(e => !e.is_solocab);
+      const soloCabRevenue = soloCabEntries.reduce((sum, e) => sum + (e.revenue || 0), 0);
+      const platformRevenue = platformEntries.reduce((sum, e) => sum + (e.revenue || 0), 0);
+      const totalMonthlyRevenue = soloCabRevenue + platformRevenue;
+      const soloCabPercentage = totalMonthlyRevenue > 0 
+        ? (soloCabRevenue / totalMonthlyRevenue) * 100 
+        : 0;
+
+      // Calculate streak days (consecutive days meeting daily objectives)
+      let streakDays = 0;
+      const today = new Date();
+      const dailyObjective = objectives.find(o => o.period_type === 'daily');
+      
+      if (dailyObjective) {
+        for (let i = 0; i < 30; i++) {
+          const checkDate = new Date(today);
+          checkDate.setDate(today.getDate() - i);
+          const dateStr = format(checkDate, 'yyyy-MM-dd');
+          
+          const dayEntries = dailyEntries.filter(e => e.entry_date === dateStr);
+          const dayRevenue = dayEntries.reduce((sum, e) => sum + (e.revenue || 0), 0);
+          
+          if (dayRevenue >= dailyObjective.revenue_target) {
+            streakDays++;
+          } else if (i > 0) {
+            break;
+          }
+        }
+      }
+
+      // Calculate recent growth (compare last week to previous week)
+      const lastWeekEntries = dailyEntries.filter(e => {
+        const entryDate = new Date(e.entry_date);
+        return differenceInDays(today, entryDate) <= 7;
+      });
+      const prevWeekEntries = dailyEntries.filter(e => {
+        const entryDate = new Date(e.entry_date);
+        const daysDiff = differenceInDays(today, entryDate);
+        return daysDiff > 7 && daysDiff <= 14;
+      });
+      
+      const lastWeekRevenue = lastWeekEntries.reduce((sum, e) => sum + (e.revenue || 0), 0);
+      const prevWeekRevenue = prevWeekEntries.reduce((sum, e) => sum + (e.revenue || 0), 0);
+      const recentGrowth = prevWeekRevenue > 0 
+        ? ((lastWeekRevenue - prevWeekRevenue) / prevWeekRevenue) * 100 
+        : 0;
+
+      setDriverStats({
+        totalClients: clientCount || 0,
+        totalCourses: courseCount || 0,
+        totalRevenue,
+        soloCabPercentage,
+        streakDays,
+        partnershipsCount: partnerCount || 0,
+        isFirstClient,
+        isFirstCourse,
+        recentGrowth,
+      });
+
+    } catch (error) {
+      console.error('Error fetching driver stats:', error);
+    }
+  }, [driverId, dailyEntries, objectives]);
 
   const fetchAll = useCallback(async () => {
     if (!driverId) return;
@@ -122,7 +243,7 @@ export function useDriverObjectives(driverId: string | null) {
         newClients: periodEntries.reduce((sum, e) => sum + (e.new_clients_count || 0), 0),
         hours: periodEntries.reduce((sum, e) => sum + (e.hours_worked || 0), 0),
         km: periodEntries.reduce((sum, e) => sum + (e.km_driven || 0), 0),
-        averageRating: 0, // TODO: Calculate from courses
+        averageRating: 0,
       };
 
       const objective = objectives.find(o => o.period_type === period) || null;
@@ -150,6 +271,13 @@ export function useDriverObjectives(driverId: string | null) {
       calculateProgress();
     }
   }, [dailyEntries, objectives, calculateProgress]);
+
+  // Fetch driver stats when data changes
+  useEffect(() => {
+    if (!loading && driverId) {
+      fetchDriverStats();
+    }
+  }, [loading, driverId, dailyEntries, objectives, fetchDriverStats]);
 
   // CRUD operations
   const upsertObjective = async (data: Partial<DriverObjective> & { period_type: string }) => {
@@ -283,6 +411,7 @@ export function useDriverObjectives(driverId: string | null) {
     coachingMessages,
     schedule,
     progress,
+    driverStats,
     loading,
     fetchAll,
     upsertObjective,
