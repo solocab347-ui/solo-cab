@@ -18,6 +18,11 @@ import {
   Zap,
   Car,
   Shield,
+  Bot,
+  Trophy,
+  TrendingUp,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 
 export const DriverHeroSection = () => {
@@ -77,8 +82,31 @@ export const DriverHeroSection = () => {
   const benefits = [
     "Inscription gratuite en 5 minutes",
     "0% de commission sur vos courses",
-    "Votre propre page de profil public",
-    "QR code personnel à partager",
+    "Coach IA personnalisé inclus",
+    "Suivi d'objectifs intelligent",
+  ];
+
+  const aiFeatures = [
+    {
+      icon: Bot,
+      title: "Coach IA Personnalisé",
+      description: "Un assistant virtuel qui apprend votre profil et vous guide vers l'indépendance",
+    },
+    {
+      icon: Trophy,
+      title: "Jalons & Célébrations",
+      description: "Célébrez chaque victoire : 1er client privé, 1ère course, objectifs atteints",
+    },
+    {
+      icon: TrendingUp,
+      title: "Objectifs Intelligents",
+      description: "Définissez vos objectifs de CA, clients, rythme de travail avec suivi quotidien",
+    },
+    {
+      icon: MessageSquare,
+      title: "Conseils Stratégiques",
+      description: "Recevez des recommandations pour convertir vos clients plateformes en directs",
+    },
   ];
 
   return (
@@ -123,6 +151,60 @@ export const DriverHeroSection = () => {
         </div>
       </div>
 
+      {/* AI COACHING SECTION - NEW */}
+      <div className="mb-12 max-w-5xl mx-auto">
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-orange-500/10 border border-purple-500/30 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/30 to-transparent rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/30 to-transparent rounded-full blur-2xl" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-sm px-4 py-1">
+                🤖 Nouveau : Coach IA Intelligent
+              </Badge>
+              <Sparkles className="w-6 h-6 text-pink-400 animate-pulse" />
+            </div>
+            
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              Votre Assistant Personnel pour <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">l'Indépendance</span>
+            </h2>
+            <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+              SoloCab vous offre un coach IA qui apprend votre profil, suit vos objectifs et vous guide 
+              étape par étape pour quitter les plateformes et développer votre clientèle privée.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {aiFeatures.map((feature, index) => (
+                <Card key={index} className="p-4 bg-white/5 border-purple-500/20 hover:border-purple-500/40 transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform">
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-white text-sm mb-1">{feature.title}</h4>
+                  <p className="text-xs text-gray-400">{feature.description}</p>
+                </Card>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-purple-300">
+                <Trophy className="w-4 h-4" />
+                Célébrez vos victoires
+              </div>
+              <div className="flex items-center gap-2 text-sm text-pink-300">
+                <TrendingUp className="w-4 h-4" />
+                Suivi quotidien
+              </div>
+              <div className="flex items-center gap-2 text-sm text-orange-300">
+                <MessageSquare className="w-4 h-4" />
+                Conseils personnalisés
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Why Join */}
       <div className="mb-12 max-w-4xl mx-auto">
         <h3 className="text-xl font-semibold text-white mb-6">Pourquoi rejoindre SoloCab ?</h3>
@@ -141,12 +223,17 @@ export const DriverHeroSection = () => {
             <h4 className="font-semibold text-white mb-2">Visibilité en ligne</h4>
             <p className="text-sm text-gray-400">Votre page profil personnalisée visible sur Google</p>
           </Card>
-          <Card className="p-4 bg-white/5 border-white/10">
-            <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-500 flex items-center justify-center font-bold mb-3 mx-auto">
-              <Shield className="w-5 h-5" />
+          <Card className="p-4 bg-white/5 border-white/10 relative overflow-hidden">
+            <div className="absolute -top-1 -right-1">
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs">
+                IA
+              </Badge>
             </div>
-            <h4 className="font-semibold text-white mb-2">Indépendance totale</h4>
-            <p className="text-sm text-gray-400">Vous êtes maître de votre activité et de vos tarifs</p>
+            <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-500 flex items-center justify-center font-bold mb-3 mx-auto">
+              <Bot className="w-5 h-5" />
+            </div>
+            <h4 className="font-semibold text-white mb-2">Coach IA Inclus</h4>
+            <p className="text-sm text-gray-400">Un assistant intelligent pour atteindre vos objectifs</p>
           </Card>
         </div>
       </div>
@@ -155,7 +242,7 @@ export const DriverHeroSection = () => {
       <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-600/5 border border-white/5">
         <p className="text-gray-300">
           <Star className="w-5 h-5 inline mr-2 text-amber-500" />
-          Rejoignez la première plateforme 100% indépendante
+          Rejoignez la première plateforme 100% indépendante avec coach IA
         </p>
         <Link to="/devenir-chauffeur">
           <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
@@ -183,8 +270,12 @@ export const DriverHeroSection = () => {
 
       {/* Bottom CTA */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-500/20 max-w-3xl mx-auto">
-        <h3 className="text-2xl font-bold text-white mb-3">Lancez votre activité dès aujourd'hui !</h3>
-        <p className="text-gray-400 mb-6">Créez votre profil en quelques minutes et commencez à recevoir des clients</p>
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Bot className="w-6 h-6 text-purple-400" />
+          <Sparkles className="w-5 h-5 text-pink-400" />
+        </div>
+        <h3 className="text-2xl font-bold text-white mb-3">Lancez votre activité avec un coach IA !</h3>
+        <p className="text-gray-400 mb-6">Créez votre profil et bénéficiez d'un accompagnement personnalisé pour devenir indépendant</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link to="/devenir-chauffeur">
             <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg w-full sm:w-auto">
