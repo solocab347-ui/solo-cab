@@ -4281,6 +4281,208 @@ export type Database = {
           },
         ]
       }
+      driver_coaching_messages: {
+        Row: {
+          content: string
+          created_at: string
+          driver_id: string
+          id: string
+          is_read: boolean | null
+          message_type: string
+          related_kpi: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          is_read?: boolean | null
+          message_type: string
+          related_kpi?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          related_kpi?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_messages_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_daily_entries: {
+        Row: {
+          courses_count: number | null
+          created_at: string
+          driver_id: string
+          entry_date: string
+          hours_worked: number | null
+          id: string
+          is_solocab: boolean | null
+          km_driven: number | null
+          new_clients_count: number | null
+          notes: string | null
+          platform_id: string | null
+          revenue: number | null
+          updated_at: string
+        }
+        Insert: {
+          courses_count?: number | null
+          created_at?: string
+          driver_id: string
+          entry_date?: string
+          hours_worked?: number | null
+          id?: string
+          is_solocab?: boolean | null
+          km_driven?: number | null
+          new_clients_count?: number | null
+          notes?: string | null
+          platform_id?: string | null
+          revenue?: number | null
+          updated_at?: string
+        }
+        Update: {
+          courses_count?: number | null
+          created_at?: string
+          driver_id?: string
+          entry_date?: string
+          hours_worked?: number | null
+          id?: string
+          is_solocab?: boolean | null
+          km_driven?: number | null
+          new_clients_count?: number | null
+          notes?: string | null
+          platform_id?: string | null
+          revenue?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_daily_entries_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "driver_platforms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_documents: {
         Row: {
           can_be_updated: boolean
@@ -4506,6 +4708,108 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_objectives: {
+        Row: {
+          courses_target: number | null
+          created_at: string
+          driver_id: string
+          hours_target: number | null
+          id: string
+          is_active: boolean | null
+          km_target: number | null
+          new_clients_target: number | null
+          period_type: string
+          rating_target: number | null
+          revenue_target: number | null
+          updated_at: string
+        }
+        Insert: {
+          courses_target?: number | null
+          created_at?: string
+          driver_id: string
+          hours_target?: number | null
+          id?: string
+          is_active?: boolean | null
+          km_target?: number | null
+          new_clients_target?: number | null
+          period_type: string
+          rating_target?: number | null
+          revenue_target?: number | null
+          updated_at?: string
+        }
+        Update: {
+          courses_target?: number | null
+          created_at?: string
+          driver_id?: string
+          hours_target?: number | null
+          id?: string
+          is_active?: boolean | null
+          km_target?: number | null
+          new_clients_target?: number | null
+          period_type?: string
+          rating_target?: number | null
+          revenue_target?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_objectives_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
@@ -4791,6 +5095,93 @@ export type Database = {
           {
             foreignKeyName: "driver_partnerships_proposed_by_fkey"
             columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_platforms: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          driver_id: string
+          id: string
+          is_active: boolean | null
+          platform_icon: string | null
+          platform_name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          driver_id: string
+          id?: string
+          is_active?: boolean | null
+          platform_icon?: string | null
+          platform_name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          driver_id?: string
+          id?: string
+          is_active?: boolean | null
+          platform_icon?: string | null
+          platform_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_platforms_driver_id_fkey"
+            columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
@@ -5145,6 +5536,99 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_work_schedule: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          driver_id: string
+          end_time: string | null
+          id: string
+          is_working_day: boolean | null
+          start_time: string | null
+          target_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          driver_id: string
+          end_time?: string | null
+          id?: string
+          is_working_day?: boolean | null
+          start_time?: string | null
+          target_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          driver_id?: string
+          end_time?: string | null
+          id?: string
+          is_working_day?: boolean | null
+          start_time?: string | null
+          target_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_work_schedule_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
