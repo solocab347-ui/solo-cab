@@ -105,6 +105,23 @@ const TEMPLATES = [
       6: { is_working_day: false, start_time: '09:00', end_time: '17:00', target_hours: 0 },
     }
   },
+  {
+    id: 'flexible',
+    name: 'Flexible',
+    description: 'Personnalisé par jour',
+    icon: Clock,
+    color: 'from-teal-500 to-cyan-500',
+    isCustom: true,
+    schedule: {
+      0: { is_working_day: false, start_time: '09:00', end_time: '17:00', target_hours: 0 },
+      1: { is_working_day: true, start_time: '08:00', end_time: '18:00', target_hours: 9, break_start: '12:00', break_end: '13:00' },
+      2: { is_working_day: true, start_time: '08:00', end_time: '18:00', target_hours: 9, break_start: '12:00', break_end: '13:00' },
+      3: { is_working_day: true, start_time: '08:00', end_time: '18:00', target_hours: 9, break_start: '12:00', break_end: '13:00' },
+      4: { is_working_day: true, start_time: '08:00', end_time: '18:00', target_hours: 9, break_start: '12:00', break_end: '13:00' },
+      5: { is_working_day: true, start_time: '08:00', end_time: '18:00', target_hours: 9, break_start: '12:00', break_end: '13:00' },
+      6: { is_working_day: false, start_time: '09:00', end_time: '17:00', target_hours: 0 },
+    }
+  },
 ];
 
 export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
@@ -117,21 +134,31 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {TEMPLATES.map((template) => {
             const Icon = template.icon;
             const totalHours = Object.values(template.schedule).reduce(
               (sum, day) => sum + (day.is_working_day ? day.target_hours : 0), 0
             );
             const workingDays = Object.values(template.schedule).filter(d => d.is_working_day).length;
+            const isCustom = 'isCustom' in template && template.isCustom;
             
             return (
               <button
                 key={template.id}
                 onClick={() => onApplyTemplate(template.schedule)}
-                className="group relative p-4 rounded-xl border-2 border-border hover:border-primary/50 transition-all text-left bg-card hover:bg-accent/5"
+                className={`group relative p-4 rounded-xl border-2 transition-all text-left bg-card hover:bg-accent/5 ${
+                  isCustom 
+                    ? 'border-primary/50 hover:border-primary ring-2 ring-primary/20' 
+                    : 'border-border hover:border-primary/50'
+                }`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${template.color} opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} />
+                {isCustom && (
+                  <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    Recommandé
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center shrink-0`}>
                     <Icon className="w-5 h-5 text-white" />
@@ -153,6 +180,9 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground mt-4 text-center">
+          💡 Sélectionnez "Flexible" pour personnaliser chaque jour individuellement
+        </p>
       </CardContent>
     </Card>
   );

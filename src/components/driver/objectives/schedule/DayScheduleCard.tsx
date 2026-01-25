@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { 
   Clock, 
   Coffee, 
@@ -245,14 +246,14 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                         <Label className="text-sm font-medium">CA cible</Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="10"
+                        <NumericInput
+                          min={0}
+                          step={10}
                           value={schedule.target_revenue || ''}
-                          onChange={(e) => onUpdate('target_revenue', parseFloat(e.target.value) || 0)}
+                          onChange={(val) => onUpdate('target_revenue', parseFloat(val) || 0)}
                           placeholder="0"
                           className="h-9 text-sm"
+                          allowEmpty
                         />
                         <span className="text-sm text-muted-foreground">€</span>
                       </div>
@@ -267,14 +268,14 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                         <Label className="text-sm font-medium">Courses</Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
+                        <NumericInput
+                          min={0}
+                          step={1}
                           value={schedule.target_courses || ''}
-                          onChange={(e) => onUpdate('target_courses', parseInt(e.target.value) || 0)}
+                          onChange={(val) => onUpdate('target_courses', parseInt(val) || 0)}
                           placeholder="0"
                           className="h-9 text-sm"
+                          allowEmpty
                         />
                         <span className="text-sm text-muted-foreground">courses</span>
                       </div>
@@ -289,14 +290,14 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                         <Label className="text-sm font-medium">Démarchages</Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
+                        <NumericInput
+                          min={0}
+                          step={1}
                           value={schedule.target_clients || ''}
-                          onChange={(e) => onUpdate('target_clients', parseInt(e.target.value) || 0)}
+                          onChange={(val) => onUpdate('target_clients', parseInt(val) || 0)}
                           placeholder="0"
                           className="h-9 text-sm"
+                          allowEmpty
                         />
                         <span className="text-sm text-muted-foreground">prospects</span>
                       </div>
@@ -352,14 +353,14 @@ export function DayScheduleCard({ dayIndex, schedule, onUpdate, isToday }: DaySc
                     Objectif heures (optionnel)
                   </Label>
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="24"
-                      value={schedule.target_hours}
-                      onChange={(e) => onUpdate('target_hours', parseFloat(e.target.value) || 0)}
+                    <NumericInput
+                      step={0.5}
+                      min={0}
+                      max={24}
+                      value={schedule.target_hours || ''}
+                      onChange={(val) => onUpdate('target_hours', parseFloat(val) || 0)}
                       className="w-[100px] h-8 text-sm"
+                      allowEmpty
                     />
                     <span className="text-sm text-muted-foreground">
                       heures (calculé: {calculatedHours}h)

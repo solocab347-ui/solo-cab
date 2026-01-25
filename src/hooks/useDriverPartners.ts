@@ -9,6 +9,7 @@ export interface DriverPartner {
   commissionPercentage: number;
   sharingNumber?: number;
   status: string;
+  stripeConnected: boolean;
 }
 
 export function useDriverPartners(driverId: string | null) {
@@ -44,16 +45,18 @@ export function useDriverPartners(driverId: string | null) {
           p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id
         );
 
-        // Get driver info
-        const { data: drivers } = await supabase
+        // Get driver info - ONLY drivers with Stripe Connect for sharing
+        const { data: driversRaw } = await supabase
           .from('drivers')
-          .select('id, user_id, sharing_number')
+          .select('*')
           .in('id', partnerIds);
 
-        const driverMap = new Map(drivers?.map(d => [d.id, d]) || []);
+        // Filter only drivers with stripe_account_id and cast to bypass typing
+        const drivers = (driversRaw as any[])?.filter(d => d.stripe_account_id) || [];
+        const driverMap = new Map(drivers.map(d => [d.id, d]));
 
         // Get profiles
-        const userIds = drivers?.map(d => d.user_id) || [];
+        const userIds = drivers.map(d => d.user_id) || [];
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name, profile_photo_url')
@@ -61,22 +64,28 @@ export function useDriverPartners(driverId: string | null) {
 
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-        // Build partners list
-        const partnersList: DriverPartner[] = partnerships.map(p => {
-          const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
-          const driver = driverMap.get(partnerId);
-          const profile = driver ? profileMap.get(driver.user_id) : null;
+        // Build partners list - only include partners who have Stripe Connect
+        const partnersList: DriverPartner[] = partnerships
+          .filter(p => {
+            const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
+            return driverMap.has(partnerId);
+          })
+          .map(p => {
+            const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
+            const driver = driverMap.get(partnerId);
+            const profile = driver ? profileMap.get(driver.user_id) : null;
 
-          return {
-            id: p.id,
-            partnerId,
-            partnerName: profile?.full_name || 'Partenaire',
-            partnerPhoto: profile?.profile_photo_url || undefined,
-            commissionPercentage: p.commission_percentage || 10,
-            sharingNumber: driver?.sharing_number,
-            status: p.status
-          };
-        });
+            return {
+              id: p.id,
+              partnerId,
+              partnerName: profile?.full_name || 'Partenaire',
+              partnerPhoto: profile?.profile_photo_url || undefined,
+              commissionPercentage: p.commission_percentage || 10,
+              sharingNumber: driver?.sharing_number,
+              status: p.status,
+              stripeConnected: !!driver?.stripe_account_id
+            };
+          });
 
         setPartners(partnersList);
       } catch (error) {
