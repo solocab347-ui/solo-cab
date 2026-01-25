@@ -20,16 +20,17 @@ export interface NumericInputProps
 const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
   ({ className, value, onChange, allowEmpty = true, allowNegative = false, min, max, step = 0.01, ...props }, ref) => {
     // Convertir la valeur en string pour l'affichage
+    // Permettre d'afficher "0" quand c'est explicitement tapé par l'utilisateur
     const displayValue = React.useMemo(() => {
       if (value === null || value === undefined || value === "") {
         return "";
       }
-      // Si c'est un nombre, le convertir en string
+      // Si c'est un nombre, le convertir en string (y compris 0)
       if (typeof value === "number") {
-        return value === 0 ? "" : value.toString();
+        return value.toString();
       }
-      // Si c'est déjà une string
-      return value === "0" ? "" : value;
+      // Si c'est déjà une string, la retourner telle quelle
+      return value;
     }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
