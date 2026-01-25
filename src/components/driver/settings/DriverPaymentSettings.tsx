@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { StripeConnectInfo } from "./StripeConnectInfo";
 
 const PAYMENT_METHODS = [
   { 
@@ -399,6 +400,13 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
           </div>
         </CardContent>
       </Card>
+
+      {/* Stripe Connect Info - shows if billing type is solocab_stripe */}
+      <StripeConnectInfo 
+        driverId={driverId} 
+        billingType={billingType}
+        onStatusChange={loadSettings}
+      />
 
       {/* Save Button */}
       <Button 
