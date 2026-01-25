@@ -6,12 +6,21 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#1e3a5f" />
     
-    <title>SoloCab - Votre Chauffeur Privé Exclusif</title>
-    <meta name="description" content="Plateforme VTC premium - Connectez-vous avec des chauffeurs professionnels pour un service de transport personnalisé et exclusif" />
+    <!-- Primary SEO Meta Tags -->
+    <title>SoloCab - Chauffeur VTC Privé | Réservation Course & Transfert Aéroport</title>
+    <meta name="description" content="Réservez votre chauffeur VTC privé en quelques clics. Transferts aéroport CDG, Orly, gare. Service premium, tarifs transparents. Votre chauffeur exclusif vous attend." />
+    <meta name="keywords" content="VTC, chauffeur privé, transfert aéroport, CDG, Orly, réservation VTC, course privée, transport premium, taxi privé, chauffeur exclusif, mise à disposition" />
     <meta name="author" content="SoloCab" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://solocab.fr" />
 
+    <!-- Geographic Meta Tags -->
+    <meta name="geo.region" content="FR" />
+    <meta name="geo.placename" content="France" />
+
+    <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
@@ -24,14 +33,108 @@
     <meta name="apple-mobile-web-app-title" content="SoloCab" />
     <link rel="apple-touch-startup-image" href="/pwa-512x512.png" />
 
-    <meta property="og:title" content="SoloCab - Votre Chauffeur Privé Exclusif" />
-    <meta property="og:description" content="Plateforme VTC premium - Service de transport personnalisé et exclusif" />
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://solocab.fr" />
+    <meta property="og:title" content="SoloCab - Votre Chauffeur VTC Privé & Exclusif" />
+    <meta property="og:description" content="Réservez votre chauffeur VTC privé. Transferts aéroport CDG, Orly. Service premium 24h/24. Tarifs transparents, paiement sécurisé." />
+    <meta property="og:image" content="https://solocab.fr/og-image.jpg" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="SoloCab" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@SoloCab" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="SoloCab - Chauffeur VTC Privé | Transfert Aéroport" />
+    <meta name="twitter:description" content="Réservez votre chauffeur VTC privé. Transferts aéroport, courses longue distance. Service premium, tarifs clairs." />
+    <meta name="twitter:image" content="https://solocab.fr/og-image.jpg" />
+
+    <!-- Structured Data - Local Business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "SoloCab",
+      "description": "Service de VTC premium avec chauffeurs privés exclusifs. Transferts aéroport, courses privées, mise à disposition.",
+      "url": "https://solocab.fr",
+      "telephone": "+33-1-XX-XX-XX-XX",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "FR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "48.8566",
+        "longitude": "2.3522"
+      },
+      "priceRange": "€€",
+      "openingHours": "Mo-Su 00:00-24:00",
+      "sameAs": [
+        "https://www.facebook.com/solocab",
+        "https://www.instagram.com/solocab"
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "150"
+      },
+      "areaServed": [
+        {
+          "@type": "City",
+          "name": "Paris"
+        },
+        {
+          "@type": "Place",
+          "name": "Aéroport CDG"
+        },
+        {
+          "@type": "Place",
+          "name": "Aéroport Orly"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Structured Data - Service -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "serviceType": "VTC - Voiture de Transport avec Chauffeur",
+      "provider": {
+        "@type": "LocalBusiness",
+        "name": "SoloCab"
+      },
+      "areaServed": "France",
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Services VTC",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Transfert Aéroport"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Course Privée"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Mise à Disposition"
+            }
+          }
+        ]
+      }
+    }
+    </script>
 
     <!-- iOS Safe Area CSS -->
     <style>

@@ -451,7 +451,104 @@ serve(async (req) => {
         }
       }
 
-      // CASE 4: Shared course payment
+      // CASE 4: Course payment via create-course-payment (with bank imprint support)
+      if (metadata.type === "course_payment" && metadata.course_id) {
+        const course_id = metadata.course_id;
+        const driver_id = metadata.driver_id;
+        const devis_id = metadata.devis_id;
+        const capture_method = metadata.capture_method || "automatic";
+
+        logStep("Course payment (new flow)", { 
+          courseId: course_id, 
+          captureMethod: capture_method 
+        });
+
+        // Get payment intent details
+        const paymentIntentId = session.payment_intent as string;
+        const paymentIntent = paymentIntentId ? await stripe.paymentIntents.retrieve(paymentIntentId) : null;
+
+        // Update course with payment info
+        const courseUpdate: Record<string, unknown> = {
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_checkout_session_id: session.id,
+          payment_method: "stripe",
+        };
+
+        // If manual capture (bank imprint), payment is authorized but not captured yet
+        if (capture_method === "manual" && paymentIntent?.status === "requires_capture") {
+          courseUpdate.payment_status = "bank_imprint_captured";
+          courseUpdate.bank_imprint_at = new Date().toISOString();
+          logStep("Bank imprint captured, awaiting course completion", { paymentIntentId });
+        } else if (paymentIntent?.status === "succeeded") {
+          // Automatic capture - payment is complete
+          courseUpdate.payment_status = "paid";
+          courseUpdate.payment_captured_at = new Date().toISOString();
+          courseUpdate.status = "accepted";
+
+          // Calculate SoloCab fee if applicable
+          if (paymentIntent.application_fee_amount) {
+            courseUpdate.solocab_fee_amount = paymentIntent.application_fee_amount / 100;
+          }
+
+          logStep("Payment captured automatically", { 
+            amount: (paymentIntent.amount_received || 0) / 100 
+          });
+        }
+
+        await supabaseClient
+          .from("courses")
+          .update(courseUpdate)
+          .eq("id", course_id);
+
+        // Update devis if exists
+        if (devis_id) {
+          await supabaseClient
+            .from("devis")
+            .update({ 
+              status: capture_method === "manual" ? "bank_imprint" : "accepted",
+              accepted_at: capture_method === "manual" ? null : new Date().toISOString()
+            })
+            .eq("id", devis_id);
+        }
+
+        // If automatic capture, generate invoice
+        if (paymentIntent?.status === "succeeded") {
+          try {
+            await supabaseClient.functions.invoke("create-facture-auto", {
+              body: { course_id }
+            });
+          } catch (invoiceError) {
+            logStep("Invoice generation error (non-blocking)", { error: String(invoiceError) });
+          }
+
+          // Notify driver
+          const { data: driverData } = await supabaseClient
+            .from("drivers")
+            .select("user_id")
+            .eq("id", driver_id)
+            .single();
+
+          if (driverData?.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "💳 Paiement client reçu",
+              message: `Un client a payé ${((paymentIntent.amount_received || 0) / 100).toFixed(2)}€ pour une course.`,
+              type: "info",
+            });
+          }
+        }
+
+        return new Response(JSON.stringify({ 
+          received: true, 
+          type: "course_payment",
+          capture_method 
+        }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // CASE 5: Shared course payment
       if (metadata.type === "shared_course_payment" && metadata.shared_course_id) {
         const sharedCourseId = metadata.shared_course_id;
         const courseId = metadata.course_id;

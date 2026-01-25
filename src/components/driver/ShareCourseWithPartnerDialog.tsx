@@ -357,6 +357,29 @@ export function ShareCourseWithPartnerDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Stripe Connect Required Alert */}
+          {stripeNotConnected && (
+            <Alert className="border-amber-500/50 bg-amber-500/10">
+              <CreditCard className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-700 font-semibold">Stripe Connect requis</AlertTitle>
+              <AlertDescription className="text-amber-600 text-sm space-y-2">
+                <p>Pour partager des courses et recevoir des commissions automatiques, vous devez configurer Stripe Connect.</p>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => {
+                    onOpenChange(false);
+                    window.location.href = '/driver-dashboard?tab=settings';
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Configurer Stripe
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Course info */}
           <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
             <p className="font-medium">{course.clients?.profiles?.full_name || 'Client'}</p>

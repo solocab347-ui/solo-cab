@@ -3501,6 +3501,7 @@ export type Database = {
       courses: {
         Row: {
           auto_dispatch_enabled: boolean | null
+          bank_imprint_at: string | null
           client_id: string | null
           client_payment_confirmation: string | null
           client_payment_confirmation_at: string | null
@@ -3535,20 +3536,27 @@ export type Database = {
           last_dispatched_at: string | null
           notes: string | null
           passengers_count: number
+          payment_captured_at: string | null
           payment_confirmed_at: string | null
           payment_confirmed_by: string | null
+          payment_method: string | null
           payment_method_requested: string | null
           payment_method_used: string | null
+          payment_status: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
           promo_code: string | null
           scheduled_date: string
+          solocab_fee_amount: number | null
           status: Database["public"]["Enums"]["course_status"]
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
           updated_at: string
         }
         Insert: {
           auto_dispatch_enabled?: boolean | null
+          bank_imprint_at?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3583,20 +3591,27 @@ export type Database = {
           last_dispatched_at?: string | null
           notes?: string | null
           passengers_count?: number
+          payment_captured_at?: string | null
           payment_confirmed_at?: string | null
           payment_confirmed_by?: string | null
+          payment_method?: string | null
           payment_method_requested?: string | null
           payment_method_used?: string | null
+          payment_status?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           promo_code?: string | null
           scheduled_date: string
+          solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string
         }
         Update: {
           auto_dispatch_enabled?: boolean | null
+          bank_imprint_at?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3631,16 +3646,22 @@ export type Database = {
           last_dispatched_at?: string | null
           notes?: string | null
           passengers_count?: number
+          payment_captured_at?: string | null
           payment_confirmed_at?: string | null
           payment_confirmed_by?: string | null
+          payment_method?: string | null
           payment_method_requested?: string | null
           payment_method_used?: string | null
+          payment_status?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           promo_code?: string | null
           scheduled_date?: string
+          solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3810,6 +3831,7 @@ export type Database = {
           promo_code: string | null
           quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
+          stripe_checkout_session_id: string | null
           time_price: number | null
           tva_amount: number | null
           tva_rate: number | null
@@ -3837,6 +3859,7 @@ export type Database = {
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
+          stripe_checkout_session_id?: string | null
           time_price?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
@@ -3864,6 +3887,7 @@ export type Database = {
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
+          stripe_checkout_session_id?: string | null
           time_price?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
