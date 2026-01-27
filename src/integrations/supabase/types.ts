@@ -3805,6 +3805,13 @@ export type Database = {
             foreignKeyName: "detected_errors_pattern_id_fkey"
             columns: ["pattern_id"]
             isOneToOne: false
+            referencedRelation: "error_learning_metrics"
+            referencedColumns: ["pattern_id"]
+          },
+          {
+            foreignKeyName: "detected_errors_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
             referencedRelation: "error_patterns"
             referencedColumns: ["id"]
           },
@@ -6346,6 +6353,126 @@ export type Database = {
           },
         ]
       }
+      error_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          auto_resolved: boolean | null
+          context: Json | null
+          created_at: string | null
+          first_occurrence_at: string | null
+          id: string
+          last_occurrence_at: string | null
+          message: string
+          occurrences_count: number | null
+          pattern_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          auto_resolved?: boolean | null
+          context?: Json | null
+          created_at?: string | null
+          first_occurrence_at?: string | null
+          id?: string
+          last_occurrence_at?: string | null
+          message: string
+          occurrences_count?: number | null
+          pattern_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          auto_resolved?: boolean | null
+          context?: Json | null
+          created_at?: string | null
+          first_occurrence_at?: string | null
+          id?: string
+          last_occurrence_at?: string | null
+          message?: string
+          occurrences_count?: number | null
+          pattern_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_alerts_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_learning_metrics"
+            referencedColumns: ["pattern_id"]
+          },
+          {
+            foreignKeyName: "error_alerts_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      error_learning_rules: {
+        Row: {
+          action_config: Json | null
+          action_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          priority: number | null
+          rule_code: string
+          rule_name: string
+          success_rate: number | null
+          times_triggered: number | null
+          trigger_condition: Json
+          updated_at: string | null
+        }
+        Insert: {
+          action_config?: Json | null
+          action_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          priority?: number | null
+          rule_code: string
+          rule_name: string
+          success_rate?: number | null
+          times_triggered?: number | null
+          trigger_condition: Json
+          updated_at?: string | null
+        }
+        Update: {
+          action_config?: Json | null
+          action_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          priority?: number | null
+          rule_code?: string
+          rule_name?: string
+          success_rate?: number | null
+          times_triggered?: number | null
+          trigger_condition?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       error_learnings: {
         Row: {
           auto_fix_enabled: boolean | null
@@ -6397,16 +6524,102 @@ export type Database = {
         }
         Relationships: []
       }
+      error_occurrences: {
+        Row: {
+          browser_info: Json | null
+          context: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          error_fingerprint: string
+          error_message: string | null
+          error_stack: string | null
+          fix_attempted_at: string | null
+          fix_duration_ms: number | null
+          fix_successful: boolean | null
+          id: string
+          occurred_at: string | null
+          pattern_id: string | null
+          solution_id: string | null
+          user_id: string | null
+          was_auto_fixed: boolean | null
+        }
+        Insert: {
+          browser_info?: Json | null
+          context?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_fingerprint: string
+          error_message?: string | null
+          error_stack?: string | null
+          fix_attempted_at?: string | null
+          fix_duration_ms?: number | null
+          fix_successful?: boolean | null
+          id?: string
+          occurred_at?: string | null
+          pattern_id?: string | null
+          solution_id?: string | null
+          user_id?: string | null
+          was_auto_fixed?: boolean | null
+        }
+        Update: {
+          browser_info?: Json | null
+          context?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_fingerprint?: string
+          error_message?: string | null
+          error_stack?: string | null
+          fix_attempted_at?: string | null
+          fix_duration_ms?: number | null
+          fix_successful?: boolean | null
+          id?: string
+          occurred_at?: string | null
+          pattern_id?: string | null
+          solution_id?: string | null
+          user_id?: string | null
+          was_auto_fixed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_occurrences_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_learning_metrics"
+            referencedColumns: ["pattern_id"]
+          },
+          {
+            foreignKeyName: "error_occurrences_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_occurrences_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "error_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_patterns: {
         Row: {
+          auto_escalate_threshold: number | null
           auto_fix_enabled: boolean | null
+          consecutive_failures: number | null
+          context_keys: string[] | null
+          cooldown_until: string | null
           created_at: string | null
           description: string | null
           detection_query: string | null
           entity_type: string
+          fingerprint: string | null
           id: string
           is_active: boolean | null
+          last_auto_fix_at: string | null
           last_occurrence_at: string | null
+          learning_confidence: number | null
           occurrences_count: number | null
           pattern_code: string
           pattern_name: string
@@ -6414,14 +6627,21 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_escalate_threshold?: number | null
           auto_fix_enabled?: boolean | null
+          consecutive_failures?: number | null
+          context_keys?: string[] | null
+          cooldown_until?: string | null
           created_at?: string | null
           description?: string | null
           detection_query?: string | null
           entity_type: string
+          fingerprint?: string | null
           id?: string
           is_active?: boolean | null
+          last_auto_fix_at?: string | null
           last_occurrence_at?: string | null
+          learning_confidence?: number | null
           occurrences_count?: number | null
           pattern_code: string
           pattern_name: string
@@ -6429,14 +6649,21 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_escalate_threshold?: number | null
           auto_fix_enabled?: boolean | null
+          consecutive_failures?: number | null
+          context_keys?: string[] | null
+          cooldown_until?: string | null
           created_at?: string | null
           description?: string | null
           detection_query?: string | null
           entity_type?: string
+          fingerprint?: string | null
           id?: string
           is_active?: boolean | null
+          last_auto_fix_at?: string | null
           last_occurrence_at?: string | null
+          learning_confidence?: number | null
           occurrences_count?: number | null
           pattern_code?: string
           pattern_name?: string
@@ -6513,14 +6740,21 @@ export type Database = {
       }
       error_solutions: {
         Row: {
+          avg_fix_duration_ms: number | null
+          conditions: Json | null
           created_at: string | null
           description: string | null
+          failed_fixes: number | null
           fix_function: string | null
           fix_query: string | null
           id: string
           is_active: boolean | null
+          last_failure_at: string | null
+          last_success_at: string | null
           pattern_id: string | null
           priority: number | null
+          requires_validation: boolean | null
+          rollback_query: string | null
           solution_code: string
           solution_name: string
           success_rate: number | null
@@ -6530,14 +6764,21 @@ export type Database = {
           validation_query: string | null
         }
         Insert: {
+          avg_fix_duration_ms?: number | null
+          conditions?: Json | null
           created_at?: string | null
           description?: string | null
+          failed_fixes?: number | null
           fix_function?: string | null
           fix_query?: string | null
           id?: string
           is_active?: boolean | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
           pattern_id?: string | null
           priority?: number | null
+          requires_validation?: boolean | null
+          rollback_query?: string | null
           solution_code: string
           solution_name: string
           success_rate?: number | null
@@ -6547,14 +6788,21 @@ export type Database = {
           validation_query?: string | null
         }
         Update: {
+          avg_fix_duration_ms?: number | null
+          conditions?: Json | null
           created_at?: string | null
           description?: string | null
+          failed_fixes?: number | null
           fix_function?: string | null
           fix_query?: string | null
           id?: string
           is_active?: boolean | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
           pattern_id?: string | null
           priority?: number | null
+          requires_validation?: boolean | null
+          rollback_query?: string | null
           solution_code?: string
           solution_name?: string
           success_rate?: number | null
@@ -6564,6 +6812,13 @@ export type Database = {
           validation_query?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "error_solutions_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_learning_metrics"
+            referencedColumns: ["pattern_id"]
+          },
           {
             foreignKeyName: "error_solutions_pattern_id_fkey"
             columns: ["pattern_id"]
@@ -10194,6 +10449,67 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_fixes: {
+        Row: {
+          created_at: string | null
+          error_occurrence_id: string | null
+          fix_code: string | null
+          fix_description: string
+          fix_steps: Json | null
+          fixed_by: string | null
+          id: string
+          pattern_id: string | null
+          should_auto_fix: boolean | null
+          was_successful: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_occurrence_id?: string | null
+          fix_code?: string | null
+          fix_description: string
+          fix_steps?: Json | null
+          fixed_by?: string | null
+          id?: string
+          pattern_id?: string | null
+          should_auto_fix?: boolean | null
+          was_successful?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          error_occurrence_id?: string | null
+          fix_code?: string | null
+          fix_description?: string
+          fix_steps?: Json | null
+          fixed_by?: string | null
+          id?: string
+          pattern_id?: string | null
+          should_auto_fix?: boolean | null
+          was_successful?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_fixes_error_occurrence_id_fkey"
+            columns: ["error_occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "error_occurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_fixes_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_learning_metrics"
+            referencedColumns: ["pattern_id"]
+          },
+          {
+            foreignKeyName: "manual_fixes_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_patterns"
             referencedColumns: ["id"]
           },
         ]
@@ -14907,6 +15223,57 @@ export type Database = {
           },
         ]
       }
+      error_learning_metrics: {
+        Row: {
+          auto_fix_enabled: boolean | null
+          auto_fixed_count: number | null
+          avg_fix_duration_ms: number | null
+          consecutive_failures: number | null
+          is_active: boolean | null
+          last_auto_fix_at: string | null
+          learning_confidence: number | null
+          manual_fixes_count: number | null
+          occurrences_count: number | null
+          pattern_code: string | null
+          pattern_id: string | null
+          pattern_name: string | null
+          severity: string | null
+          successful_fixes: number | null
+        }
+        Insert: {
+          auto_fix_enabled?: boolean | null
+          auto_fixed_count?: never
+          avg_fix_duration_ms?: never
+          consecutive_failures?: number | null
+          is_active?: boolean | null
+          last_auto_fix_at?: string | null
+          learning_confidence?: number | null
+          manual_fixes_count?: never
+          occurrences_count?: number | null
+          pattern_code?: string | null
+          pattern_id?: string | null
+          pattern_name?: string | null
+          severity?: string | null
+          successful_fixes?: never
+        }
+        Update: {
+          auto_fix_enabled?: boolean | null
+          auto_fixed_count?: never
+          avg_fix_duration_ms?: never
+          consecutive_failures?: number | null
+          is_active?: boolean | null
+          last_auto_fix_at?: string | null
+          learning_confidence?: number | null
+          manual_fixes_count?: never
+          occurrences_count?: number | null
+          pattern_code?: string | null
+          pattern_id?: string | null
+          pattern_name?: string | null
+          severity?: string | null
+          successful_fixes?: never
+        }
+        Relationships: []
+      }
       fleet_client_dashboard_view: {
         Row: {
           client_email: string | null
@@ -16380,6 +16747,38 @@ export type Database = {
       is_ip_blocked: { Args: { check_ip: string }; Returns: boolean }
       is_valid_employee_invitation: {
         Args: { p_company_id: string; p_invitation_id: string }
+        Returns: boolean
+      }
+      learn_from_manual_fix: {
+        Args: {
+          p_fix_code?: string
+          p_fix_description: string
+          p_fix_steps?: Json
+          p_fixed_by?: string
+          p_pattern_id: string
+          p_should_auto_fix?: boolean
+        }
+        Returns: string
+      }
+      log_error_with_learning: {
+        Args: {
+          p_browser_info?: Json
+          p_context?: Json
+          p_entity_id?: string
+          p_entity_type?: string
+          p_error_message: string
+          p_error_stack?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      log_fix_result: {
+        Args: {
+          p_duration_ms?: number
+          p_occurrence_id: string
+          p_solution_id: string
+          p_was_successful: boolean
+        }
         Returns: boolean
       }
       mark_commission_paid: {

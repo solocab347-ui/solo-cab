@@ -1,11 +1,13 @@
 /**
- * SELF-HEALING SERVICE
+ * SELF-HEALING SERVICE (V2)
  * Système d'auto-correction automatique des erreurs connues
  * Chaque erreur corrigée manuellement est enregistrée pour ne plus se reproduire
+ * Intégré avec le système d'apprentissage intelligent
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./productionLogger";
+import { errorLearner } from "./intelligentErrorLearner";
 
 interface ErrorLearning {
   id: string;
@@ -102,6 +104,11 @@ class SelfHealingService {
 
       return results;
     } catch (err) {
+      // Enregistrer l'erreur pour apprentissage
+      await errorLearner.logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { entityType: "health_check", context: { phase: "runHealthChecks" } }
+      );
       logger.exception(err, { context: "runHealthChecks" });
       return [];
     } finally {
