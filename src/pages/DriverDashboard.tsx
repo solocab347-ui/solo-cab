@@ -39,8 +39,7 @@ import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { PioneerBadge } from "@/components/ui/PioneerBadge";
-import { SmartOnboarding } from "@/components/onboarding/SmartOnboarding";
-import { SmartOnboardingButton } from "@/components/onboarding/SmartOnboardingButton";
+import { DriverOnboardingTunnel } from "@/components/driver/onboarding";
 import { useDriverProfileCompletion } from "@/hooks/useDriverProfileCompletion";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
@@ -82,16 +81,17 @@ const DriverDashboard = () => {
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
-  const [showLibertyGuide, setShowLibertyGuide] = useState(false);
+  const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   
-  // Ne plus ouvrir automatiquement Liberty - l'utilisateur choisit depuis DriverWelcome
+  // Vérifier si l'onboarding doit être affiché
   useEffect(() => {
-    const isFirstLogin = localStorage.getItem("liberty-first-login");
-    if (isFirstLogin === "true") {
-      // Nettoyer le flag mais ne pas ouvrir automatiquement
-      localStorage.removeItem("liberty-first-login");
+    if (driverProfile?.driver && !driverProfile.driver.onboarding_completed) {
+      // Chauffeur n'a pas complété l'onboarding - afficher le tunnel
+      setShowOnboardingTunnel(true);
+    } else {
+      setShowOnboardingTunnel(false);
     }
-  }, []);
+  }, [driverProfile?.driver?.onboarding_completed]);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
@@ -967,20 +967,21 @@ const DriverDashboard = () => {
       
       {/* Assistant virtuel Max */}
       <DriverAssistant />
-      
-      {/* Liberty Guide - bouton flottant et guide intelligent */}
-      <SmartOnboardingButton 
-        onClick={() => setShowLibertyGuide(true)} 
-      />
-      <SmartOnboarding 
-        isOpen={showLibertyGuide} 
-        onClose={() => setShowLibertyGuide(false)}
-        onNavigate={(tab) => {
-          setActiveTab(tab);
-          setShowLibertyGuide(false);
-        }}
-        driverProfile={driverProfile}
-      />
+
+      {/* Onboarding Tunnel - Affiché si non complété */}
+      {showOnboardingTunnel && driverProfile?.driver?.id && user?.id && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <DriverOnboardingTunnel
+            driverId={driverProfile.driver.id}
+            userId={user.id}
+            driverProfile={driverProfile}
+            onComplete={() => {
+              setShowOnboardingTunnel(false);
+              queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

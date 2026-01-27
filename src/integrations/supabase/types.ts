@@ -5830,6 +5830,12 @@ export type Database = {
           max_passengers: number
           minimum_price: number | null
           nfc_tag_number: string | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
+          onboarding_documents_completed: boolean | null
+          onboarding_profile_completed: boolean | null
+          onboarding_settings_completed: boolean | null
+          onboarding_step: string | null
           partner_course_counter: number | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
@@ -5962,6 +5968,12 @@ export type Database = {
           max_passengers?: number
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          onboarding_documents_completed?: boolean | null
+          onboarding_profile_completed?: boolean | null
+          onboarding_settings_completed?: boolean | null
+          onboarding_step?: string | null
           partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
@@ -6094,6 +6106,12 @@ export type Database = {
           max_passengers?: number
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          onboarding_documents_completed?: boolean | null
+          onboarding_profile_completed?: boolean | null
+          onboarding_settings_completed?: boolean | null
+          onboarding_step?: string | null
           partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
