@@ -51,6 +51,7 @@ import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
+import { DriverSettingsSimplified } from "@/components/driver/settings/DriverSettingsSimplified";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -178,6 +179,7 @@ const DriverDashboard = () => {
   const [airportSurcharge, setAirportSurcharge] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+  // Note: visibleToFleetManagers et visibleToCompanies sont conservés pour compatibilité DB mais non affichés
   const [visibleToFleetManagers, setVisibleToFleetManagers] = useState(false);
   const [visibleToCompanies, setVisibleToCompanies] = useState(false);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
@@ -185,7 +187,7 @@ const DriverDashboard = () => {
   const [showRatingPartners, setShowRatingPartners] = useState(false);
   const [showPricingPartners, setShowPricingPartners] = useState(false);
   const [vehicleCategories, setVehicleCategories] = useState<string[]>([]);
-  const [autoAcceptFromPartners, setAutoAcceptFromPartners] = useState(false);
+  // Note: autoAcceptFromPartners supprimé - fonctionnalité gestionnaires de flotte obsolète
 
   // Callback stable pour les mises à jour de photos
   const handleVehiclePhotosUpdate = useCallback((newVehiclePhotos: string[], newGalleryPhotos: string[]) => {
@@ -252,7 +254,7 @@ const DriverDashboard = () => {
     setShowRatingPartners((driver as any).show_rating_partners || false);
     setShowPricingPartners((driver as any).show_pricing_partners || false);
     setVehicleCategories(driver.vehicle_category || []);
-    setAutoAcceptFromPartners((driver as any).auto_accept_from_partners || false);
+    // Note: auto_accept_from_partners n'est plus utilisé (fonctionnalité gestionnaires obsolète)
   }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
   useEffect(() => {
@@ -373,7 +375,7 @@ const DriverDashboard = () => {
         show_rating_partners: showRatingPartners,
         show_pricing_partners: showPricingPartners,
         vehicle_category: vehicleCategories,
-        auto_accept_from_partners: autoAcceptFromPartners,
+        // Note: auto_accept_from_partners n'est plus utilisé (fonctionnalité gestionnaires obsolète)
       };
 
       logger.info("Mise à jour de la table drivers");
@@ -769,339 +771,52 @@ const DriverDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            {/* Important Warning */}
-            <Alert className="border-warning bg-warning/10">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <AlertTitle className="text-warning font-semibold">Configuration obligatoire</AlertTitle>
-              <AlertDescription className="text-sm">
-                <p className="mb-2">
-                  <strong>Tous les paramètres ci-dessous sont obligatoires</strong> pour le bon fonctionnement de votre activité sur SoloCab.
-                </p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Les <strong>tarifs</strong> servent à calculer automatiquement vos devis</li>
-                  <li>Les <strong>informations entreprise</strong> apparaissent sur toutes vos factures</li>
-                  <li>Les <strong>détails véhicule</strong> sont visibles par vos clients</li>
-                  <li>Les <strong>équipements et services</strong> améliorent votre visibilité</li>
-                </ul>
-                <p className="mt-2 text-warning font-medium">
-                  ⚠️ Des informations manquantes peuvent bloquer la génération de vos devis et factures.
-                </p>
-              </AlertDescription>
-            </Alert>
-
-            {/* Bouton d'enregistrement en haut - très visible */}
-            <div className="sticky top-0 z-10 p-4 bg-gradient-to-r from-primary via-primary/90 to-primary rounded-xl border-2 border-primary shadow-lg">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 text-white">
-                  <Save className="w-6 h-6" />
-                  <div>
-                    <p className="font-bold text-lg">N'oubliez pas d'enregistrer !</p>
-                    <p className="text-sm text-white/80">Tous les paramètres seront sauvegardés ensemble</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleUpdateProfile} 
-                  disabled={loading || isUpdating} 
-                  size="lg"
-                  className="bg-white text-primary hover:bg-white/90 font-bold px-6 py-3 shadow-lg min-w-[200px]"
-                >
-                  {loading || isUpdating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Enregistrer tout
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Pricing */}
-            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
-              <h2 className="text-xl font-bold mb-6 text-white">Tarification Professionnelle</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="baseFare" className="text-white font-medium">Forfait de base (€)</Label>
-                  <NumericInput
-                    id="baseFare"
-                    value={baseFare}
-                    onChange={setBaseFare}
-                    placeholder="10.00"
-                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/80">Prix de départ de la course</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="perKm" className="text-white font-medium">Prix par kilomètre (€)</Label>
-                  <NumericInput
-                    id="perKm"
-                    value={perKmRate}
-                    onChange={setPerKmRate}
-                    placeholder="1.50"
-                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/80">Coût par km parcouru</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hourly" className="text-white font-medium">Tarif horaire (€)</Label>
-                  <NumericInput
-                    id="hourly"
-                    value={hourlyRate}
-                    onChange={setHourlyRate}
-                    placeholder="45.00"
-                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/80">Pour les mises à disposition (obligatoire)</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="minimumPrice" className="text-white font-medium">Prix minimum par course (€)</Label>
-                  <NumericInput
-                    id="minimumPrice"
-                    value={minimumPrice}
-                    onChange={setMinimumPrice}
-                    placeholder="15.00"
-                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/80">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="maxPassengers" className="text-white font-medium">Nombre maximum de passagers</Label>
-                  <NumericInput
-                    id="maxPassengers"
-                    value={maxPassengers}
-                    onChange={setMaxPassengers}
-                    placeholder="4"
-                    min={1}
-                    max={20}
-                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/80">Places disponibles (4 par défaut, augmentez pour van)</p>
-                </div>
-
-                <div className="col-span-2">
-                  <TvaToggle
-                    checked={tvaIncluded}
-                    onCheckedChange={setTvaIncluded}
-                    className="bg-white/10 border-white/20"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
-                  <FileText className="w-4 h-4 text-white" />
-                  TVA Automatique
-                </h4>
-                <div className="space-y-1 text-sm text-white/80">
-                  <p>• <span className="font-medium text-white">10% TVA</span> pour les courses au kilomètre</p>
-                  <p>• <span className="font-medium text-white">20% TVA</span> pour les mises à disposition (horaire)</p>
-                  <p className="text-xs mt-2 italic text-white">La TVA est calculée automatiquement selon le type de course</p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="eveningSurcharge" className="text-white font-medium">Augmentation Soir (%)</Label>
-                    <NumericInput
-                      id="eveningSurcharge"
-                      value={eveningSurcharge}
-                      onChange={setEveningSurcharge}
-                      placeholder="0"
-                      className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                    />
-                    <p className="text-xs text-white/70">Augmentation pour les courses du soir (20h-6h). <span className="font-semibold">Exemples : 10%, 15%, 20%</span></p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="weekendSurcharge" className="text-white font-medium">Augmentation Weekend (%)</Label>
-                    <NumericInput
-                      id="weekendSurcharge"
-                      value={weekendSurcharge}
-                      onChange={setWeekendSurcharge}
-                      placeholder="0"
-                      className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                    />
-                    <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
-                  </div>
-                </div>
-
-                {/* Forfait Aéroport */}
-                <div className="space-y-2 border-t border-white/10 pt-6">
-                  <Label htmlFor="airportSurcharge" className="text-white font-medium flex items-center gap-2">
-                    ✈️ Forfait Aéroport (€)
-                  </Label>
-                  <NumericInput
-                    id="airportSurcharge"
-                    value={airportSurcharge}
-                    onChange={setAirportSurcharge}
-                    placeholder="0"
-                    className="max-w-xs bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
-                  />
-                  <p className="text-xs text-white/70">
-                    Forfait fixe ajouté automatiquement pour toutes les courses depuis/vers un aéroport français (Roissy CDG, Orly, Lyon Saint-Exupéry, Nice, Marseille, etc.)
-                  </p>
-                  <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10 mt-2">
-                    💡 <span className="font-medium">Détection automatique :</span> Le système détecte automatiquement si l'adresse de départ ou de destination contient un aéroport et applique ce forfait.
-                  </p>
-                </div>
-
-                <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10">
-                  💡 <span className="font-medium">Info :</span> Mettez 0 si vous ne souhaitez pas appliquer d'augmentation. Les pourcentages sont appliqués automatiquement lors du calcul des prix.
-                </p>
-              </div>
-            </Card>
-
-            {/* Automatisations */}
-            <Card className="p-6 bg-gradient-to-br from-amber-600/20 to-amber-700/20 border-amber-500/30 shadow-elegant">
-              <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-400" />
-                Automatisations
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <div>
-                    <Label htmlFor="autoAcceptFromPartners" className="font-semibold text-white">Acceptation automatique des courses gestionnaire</Label>
-                    <p className="text-xs text-white/70 mt-1">
-                      Quand un gestionnaire de flotte vous attribue une course, elle sera automatiquement acceptée sans validation manuelle.
-                    </p>
-                  </div>
-                  <Switch
-                    id="autoAcceptFromPartners"
-                    checked={autoAcceptFromPartners}
-                    onCheckedChange={setAutoAcceptFromPartners}
-                  />
-                </div>
-                <p className="text-xs text-amber-300/80 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-                  ⚡ <span className="font-medium">Conseil :</span> Activez cette option si vous travaillez régulièrement avec un gestionnaire de confiance. Les courses iront directement dans vos courses "Confirmées".
-                </p>
-              </div>
-            </Card>
-
-            {/* City Pricing */}
-            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
-              {driverProfile?.driver?.id && (
-                <CityPricingManager 
-                  driverId={driverProfile.driver.id} 
-                  onSave={handleUpdateProfile}
-                />
-              )}
-            </Card>
-
-            {/* Payment Methods Configuration */}
+          {/* Settings Tab - Version simplifiée */}
+          <TabsContent value="settings" className="space-y-4">
             {driverProfile?.driver?.id && (
-              <DriverPaymentSettings 
+              <DriverSettingsSimplified
                 driverId={driverProfile.driver.id}
-                onUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
+                baseFare={baseFare}
+                perKmRate={perKmRate}
+                hourlyRate={hourlyRate}
+                minimumPrice={minimumPrice}
+                maxPassengers={maxPassengers}
+                tvaIncluded={tvaIncluded}
+                eveningSurcharge={eveningSurcharge}
+                weekendSurcharge={weekendSurcharge}
+                airportSurcharge={airportSurcharge}
+                companyName={companyName}
+                companyAddress={companyAddress}
+                siret={siret}
+                siren={siren}
+                tvaNumber={tvaNumber}
+                vehicleBrand={vehicleBrand}
+                vehicleYear={vehicleYear}
+                vehicleColor={vehicleColor}
+                vehiclePlate={vehiclePlate}
+                onBaseFareChange={setBaseFare}
+                onPerKmRateChange={setPerKmRate}
+                onHourlyRateChange={setHourlyRate}
+                onMinimumPriceChange={setMinimumPrice}
+                onMaxPassengersChange={setMaxPassengers}
+                onTvaIncludedChange={setTvaIncluded}
+                onEveningSurchargeChange={setEveningSurcharge}
+                onWeekendSurchargeChange={setWeekendSurcharge}
+                onAirportSurchargeChange={setAirportSurcharge}
+                onCompanyNameChange={setCompanyName}
+                onCompanyAddressChange={setCompanyAddress}
+                onSiretChange={setSiret}
+                onSirenChange={setSiren}
+                onTvaNumberChange={setTvaNumber}
+                onVehicleBrandChange={setVehicleBrand}
+                onVehicleYearChange={setVehicleYear}
+                onVehicleColorChange={setVehicleColor}
+                onVehiclePlateChange={setVehiclePlate}
+                onSave={handleUpdateProfile}
+                loading={loading || isUpdating}
+                onPaymentUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
               />
             )}
-
-            {/* Company Info */}
-            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
-              <h2 className="text-xl font-bold mb-6 text-white">Informations Entreprise</h2>
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="company" className="text-white">Nom de l'entreprise</Label>
-                    <Input
-                      id="company"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="VTC Excellence"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="siret" className="text-white">SIRET (14 chiffres)</Label>
-                    <Input
-                      id="siret"
-                      value={siret}
-                      onChange={(e) => setSiret(e.target.value)}
-                      placeholder="123 456 789 00012"
-                      maxLength={14}
-                    />
-                    <p className="text-xs text-white/70">Ou remplissez le SIREN ci-dessous</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="siren" className="text-white">SIREN (9 chiffres)</Label>
-                    <Input
-                      id="siren"
-                      value={siren}
-                      onChange={(e) => setSiren(e.target.value)}
-                      placeholder="123 456 789"
-                      maxLength={9}
-                    />
-                    <p className="text-xs text-white/70">Alternative au SIRET (9 premiers chiffres)</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tvaNumber" className="text-white">N° TVA Intracommunautaire</Label>
-                    <Input
-                      id="tvaNumber"
-                      value={tvaNumber}
-                      onChange={(e) => setTvaNumber(e.target.value)}
-                      placeholder="FR12345678901"
-                      maxLength={15}
-                    />
-                    <p className="text-xs text-white/70">Apparaîtra sur vos devis et factures</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="companyAddress" className="text-white">Adresse de l'entreprise</Label>
-                  <Textarea
-                    id="companyAddress"
-                    value={companyAddress}
-                    onChange={(e) => setCompanyAddress(e.target.value)}
-                    placeholder="123 Rue de la République, 75001 Paris"
-                    rows={3}
-                  />
-                  <p className="text-xs text-white">Cette adresse apparaîtra sur vos devis et factures</p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Bouton d'enregistrement en bas - très visible */}
-            <div className="p-4 bg-gradient-to-r from-primary via-primary/90 to-primary rounded-xl border-2 border-primary shadow-lg">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 text-white">
-                  <Save className="w-6 h-6" />
-                  <div>
-                    <p className="font-bold text-lg">Enregistrer tous les paramètres</p>
-                    <p className="text-sm text-white/80">Tarifs + Entreprise + Véhicule + Tarifs par ville</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleUpdateProfile} 
-                  disabled={loading || isUpdating} 
-                  size="lg"
-                  className="bg-white text-primary hover:bg-white/90 font-bold px-8 py-4 shadow-lg min-w-[220px] text-lg"
-                >
-                  {loading || isUpdating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5 mr-2" />
-                      Enregistrer tout
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
           </TabsContent>
 
 
@@ -1186,10 +901,7 @@ const DriverDashboard = () => {
                   onServicesOfferedChange={setServicesOffered}
                   vehicleCategories={vehicleCategories}
                   onVehicleCategoriesChange={setVehicleCategories}
-                  visibleToFleetManagers={visibleToFleetManagers}
-                  onVisibleToFleetManagersChange={!driverProfile?.driver?.is_fleet_driver && !driverProfile?.driver?.fleet_manager_id ? setVisibleToFleetManagers : undefined}
-                  visibleToCompanies={visibleToCompanies}
-                  onVisibleToCompaniesChange={setVisibleToCompanies}
+                  // Note: visibleToFleetManagers et visibleToCompanies supprimés (fonctionnalités obsolètes)
                   visibleToDrivers={visibleToDrivers}
                   onVisibleToDriversChange={setVisibleToDrivers}
                   showRatingPublic={showRatingPublic}
