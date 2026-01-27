@@ -1,29 +1,31 @@
 /**
  * Optimiseur de connexion robuste et auto-réparateur
  * Solution définitive contre les problèmes de connexion et latence
+ * 
+ * Utilise désormais la configuration centralisée de networkConfig.ts
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/productionLogger";
+import { 
+  TIMEOUTS, 
+  RETRY, 
+  REALTIME,
+  calculateRetryDelay as calcDelay,
+  isRetryableError 
+} from "@/lib/networkConfig";
 
-// Configuration ROBUSTE pour réseaux variés (3G/4G/Wifi)
+// Configuration héritée pour compatibilité (utilise les valeurs centralisées)
 const CONNECTION_CONFIG = {
-  // Timeouts généreux pour éviter les faux échecs
-  AUTH_TIMEOUT: 15000, // 15s - connexion auth
-  QUERY_TIMEOUT: 10000, // 10s - requêtes standard
-  CRITICAL_QUERY_TIMEOUT: 20000, // 20s - requêtes critiques
-  
-  // Retry avec backoff exponentiel
-  MAX_RETRIES: 3,
-  BASE_RETRY_DELAY: 500, // 500ms initial
-  MAX_RETRY_DELAY: 5000, // 5s max
-  
-  // Vérification périodique
-  PING_INTERVAL: 30000, // 30s
-  HEALTH_CHECK_TIMEOUT: 5000, // 5s pour ping
-  
-  // Recovery
-  RECOVERY_INTERVAL: 10000, // 10s entre tentatives de récupération
+  AUTH_TIMEOUT: TIMEOUTS.AUTH,
+  QUERY_TIMEOUT: TIMEOUTS.QUERY,
+  CRITICAL_QUERY_TIMEOUT: TIMEOUTS.CRITICAL,
+  MAX_RETRIES: RETRY.MAX_ATTEMPTS,
+  BASE_RETRY_DELAY: RETRY.BASE_DELAY,
+  MAX_RETRY_DELAY: RETRY.MAX_DELAY,
+  PING_INTERVAL: REALTIME.HEALTH_CHECK_INTERVAL,
+  HEALTH_CHECK_TIMEOUT: TIMEOUTS.PING,
+  RECOVERY_INTERVAL: 10000,
 } as const;
 
 export { CONNECTION_CONFIG };
@@ -107,10 +109,7 @@ function updateConnectionState(success: boolean, latency?: number) {
  * Calcul du délai de retry avec backoff exponentiel + jitter
  */
 function calculateRetryDelay(attempt: number): number {
-  const baseDelay = CONNECTION_CONFIG.BASE_RETRY_DELAY;
-  const exponentialDelay = baseDelay * Math.pow(2, attempt);
-  const jitter = Math.random() * baseDelay;
-  return Math.min(exponentialDelay + jitter, CONNECTION_CONFIG.MAX_RETRY_DELAY);
+  return calcDelay(attempt);
 }
 
 /**
