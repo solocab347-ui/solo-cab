@@ -40,6 +40,18 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
 
   return (
     <div className="space-y-4">
+      {/* Message d'introduction sur la philosophie SoloCab */}
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
+        <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+          💡 Sur SoloCab, vous êtes maître de vos tarifs
+        </h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Contrairement aux plateformes classiques, <strong>c'est vous qui fixez vos prix</strong> en fonction 
+          de la qualité de votre service, de votre véhicule et de votre zone d'activité. 
+          Des tarifs justes = des clients fidèles qui reviendront directement vers vous.
+        </p>
+      </div>
+
       {/* Tarifs */}
       <Card className={isPricingComplete ? 'border-primary/30 bg-primary/5' : ''}>
         <CardHeader className="pb-3">
