@@ -32,7 +32,7 @@ import { ProfitabilityCalculator } from "@/components/driver/profitability/Profi
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
-import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
+import { DriverPublicProfileSimplified } from "@/components/driver/profile/DriverPublicProfileSimplified";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/DriverPlanning";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
@@ -655,7 +655,7 @@ const DriverDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="profile" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Globe className="w-4 h-4" />
-                <span>{t('driverDashboard.profile.publicProfile')}</span>
+                <span>Profil SoloCab</span>
               </TabsTrigger>
               <TabsTrigger value="statistics" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4" />
@@ -860,64 +860,53 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Profile Tab */}
+          {/* Profile Tab - Version simplifiée */}
           <TabsContent value="profile" className="space-y-6">
             {driverProfile && user ? (
-              <>
-                <DriverPublicProfile
-                  driverProfile={driverProfile}
-                  userId={user.id}
-                  publicProfileEnabled={publicProfileEnabled}
-                  showPhone={showPhone}
-                  showEmail={showEmail}
-                  contactPhone={contactPhone}
-                  contactEmail={contactEmail}
-                  workingSectors={workingSectors}
-                  serviceDescription={serviceDescription}
-                  homeAddress={homeAddress}
-                  displayDriverName={displayDriverName}
-                  displayCompanyName={displayCompanyName}
-                  companyName={companyName}
-                  profilePhotoUrl={profilePhotoUrl}
-                  cardPhotoUrl={cardPhotoUrl}
-                  vehicleEquipment={vehicleEquipment}
-                  servicesOffered={servicesOffered}
-                  onTogglePublicProfile={handleTogglePublicProfile}
-                  onPhotoUpdate={setProfilePhotoUrl}
-                  onCardPhotoUpdate={setCardPhotoUrl}
-                  onShowPhoneChange={setShowPhone}
-                  onShowEmailChange={setShowEmail}
-                  onContactPhoneChange={setContactPhone}
-                  onContactEmailChange={setContactEmail}
-                  onWorkingSectorsChange={setWorkingSectors}
-                  onServiceDescriptionChange={setServiceDescription}
-                  onHomeAddressChange={(address, coords) => {
-                    setHomeAddress(address);
-                    if (coords) setHomeCoordinates(coords);
-                  }}
-                  onDisplayDriverNameChange={setDisplayDriverName}
-                  onDisplayCompanyNameChange={setDisplayCompanyName}
-                  onVehicleEquipmentChange={setVehicleEquipment}
-                  onServicesOfferedChange={setServicesOffered}
-                  vehicleCategories={vehicleCategories}
-                  onVehicleCategoriesChange={setVehicleCategories}
-                  // Note: visibleToFleetManagers et visibleToCompanies supprimés (fonctionnalités obsolètes)
-                  visibleToDrivers={visibleToDrivers}
-                  onVisibleToDriversChange={setVisibleToDrivers}
-                  showRatingPublic={showRatingPublic}
-                  onShowRatingPublicChange={setShowRatingPublic}
-                  showRatingPartners={showRatingPartners}
-                  onShowRatingPartnersChange={setShowRatingPartners}
-                  showPricingPartners={showPricingPartners}
-                  onShowPricingPartnersChange={setShowPricingPartners}
-                />
-
-                <div className="flex justify-end">
-                  <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
-                    {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-                  </Button>
-                </div>
-              </>
+              <DriverPublicProfileSimplified
+                driverProfile={driverProfile}
+                userId={user.id}
+                publicProfileEnabled={publicProfileEnabled}
+                visibleToDrivers={visibleToDrivers}
+                displayDriverName={displayDriverName}
+                displayCompanyName={displayCompanyName}
+                companyName={companyName}
+                profilePhotoUrl={profilePhotoUrl}
+                cardPhotoUrl={cardPhotoUrl}
+                serviceDescription={serviceDescription}
+                workingSectors={workingSectors}
+                vehicleEquipment={vehicleEquipment}
+                servicesOffered={servicesOffered}
+                vehicleCategories={vehicleCategories}
+                homeAddress={homeAddress}
+                showPhone={showPhone}
+                showEmail={showEmail}
+                contactPhone={contactPhone}
+                contactEmail={contactEmail}
+                showRatingPublic={showRatingPublic}
+                onTogglePublicProfile={handleTogglePublicProfile}
+                onVisibleToDriversChange={setVisibleToDrivers}
+                onDisplayDriverNameChange={setDisplayDriverName}
+                onDisplayCompanyNameChange={setDisplayCompanyName}
+                onPhotoUpdate={setProfilePhotoUrl}
+                onCardPhotoUpdate={setCardPhotoUrl}
+                onServiceDescriptionChange={setServiceDescription}
+                onWorkingSectorsChange={setWorkingSectors}
+                onVehicleEquipmentChange={setVehicleEquipment}
+                onServicesOfferedChange={setServicesOffered}
+                onVehicleCategoriesChange={setVehicleCategories}
+                onHomeAddressChange={(address, coords) => {
+                  setHomeAddress(address);
+                  if (coords) setHomeCoordinates(coords);
+                }}
+                onShowPhoneChange={setShowPhone}
+                onShowEmailChange={setShowEmail}
+                onContactPhoneChange={setContactPhone}
+                onContactEmailChange={setContactEmail}
+                onShowRatingPublicChange={setShowRatingPublic}
+                onSave={handleUpdateProfile}
+                loading={loading || isUpdating}
+              />
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Chargement du profil...</p>

@@ -109,7 +109,7 @@ export const MobileDriverNav = ({
   const secondaryItems: NavItem[] = [
     { value: "feedback", icon: Lightbulb, label: t('driverDashboard.menu.feedback'), gradient: "from-amber-500 to-orange-600" },
     { value: "subscription", icon: TrendingUp, label: t('driverDashboard.menu.subscription'), gradient: "from-purple-500 to-pink-600" },
-    { value: "profile", icon: Globe, label: t('driverDashboard.profile.publicProfile'), gradient: "from-blue-500 to-cyan-600" },
+    { value: "profile", icon: Globe, label: "Profil SoloCab", gradient: "from-blue-500 to-cyan-600" },
     { value: "statistics", icon: BarChart3, label: t('driverDashboard.menu.statistics'), gradient: "from-cyan-500 to-blue-600" },
     { 
       value: "sharing", 
