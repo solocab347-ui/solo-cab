@@ -256,61 +256,8 @@ export const DriverPublicProfile = memo(({
             </div>
           )}
 
-          {/* Visible aux entreprises */}
-          {onVisibleToCompaniesChange && (
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10">
-                  <Building2 className="h-5 w-5 text-purple-500" />
-                </div>
-                <div>
-                  <Label className="font-medium">Visible aux entreprises</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Les entreprises peuvent vous proposer des contrats B2B
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {visibleToCompanies && (
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
-                    Visible
-                  </Badge>
-                )}
-                <Switch
-                  checked={visibleToCompanies}
-                  onCheckedChange={onVisibleToCompaniesChange}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Visible aux gestionnaires de flotte */}
-          {onVisibleToFleetManagersChange && (
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/10">
-                  <Car className="h-5 w-5 text-amber-500" />
-                </div>
-                <div>
-                  <Label className="font-medium">Visible aux gestionnaires de flotte</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Les gestionnaires peuvent vous proposer de rejoindre leur réseau
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {visibleToFleetManagers && (
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                    Visible
-                  </Badge>
-                )}
-                <Switch
-                  checked={visibleToFleetManagers}
-                  onCheckedChange={onVisibleToFleetManagersChange}
-                />
-              </div>
-            </div>
-          )}
+          {/* Note: Les options "Visible aux entreprises" et "Visible aux gestionnaires de flotte" 
+              ont été supprimées car ces rôles n'existent plus dans l'application SoloCab */}
         </div>
       </Card>
 
