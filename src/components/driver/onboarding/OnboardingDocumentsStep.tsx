@@ -149,7 +149,8 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${driverId}/${docKey}_${Date.now()}.${fileExt}`;
+      // IMPORTANT: Le dossier doit être le userId pour respecter la politique RLS
+      const fileName = `${userId}/${docKey}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("driver-documents")
