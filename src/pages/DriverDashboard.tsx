@@ -424,6 +424,23 @@ const DriverDashboard = () => {
     );
   }
 
+  // TUNNEL D'ONBOARDING - Bloque l'accès au dashboard tant que non complété
+  if (showOnboardingTunnel && driverProfile?.driver?.id && user?.id) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DriverOnboardingTunnel
+          driverId={driverProfile.driver.id}
+          userId={user.id}
+          driverProfile={driverProfile}
+          onComplete={() => {
+            setShowOnboardingTunnel(false);
+            queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
       {/* Header */}
@@ -968,20 +985,6 @@ const DriverDashboard = () => {
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
-      {/* Onboarding Tunnel - Affiché si non complété */}
-      {showOnboardingTunnel && driverProfile?.driver?.id && user?.id && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <DriverOnboardingTunnel
-            driverId={driverProfile.driver.id}
-            userId={user.id}
-            driverProfile={driverProfile}
-            onComplete={() => {
-              setShowOnboardingTunnel(false);
-              queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 };
