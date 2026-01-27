@@ -790,10 +790,6 @@ const DriverDashboard = () => {
                 siret={siret}
                 siren={siren}
                 tvaNumber={tvaNumber}
-                vehicleBrand={vehicleBrand}
-                vehicleYear={vehicleYear}
-                vehicleColor={vehicleColor}
-                vehiclePlate={vehiclePlate}
                 onBaseFareChange={setBaseFare}
                 onPerKmRateChange={setPerKmRate}
                 onHourlyRateChange={setHourlyRate}
@@ -808,10 +804,6 @@ const DriverDashboard = () => {
                 onSiretChange={setSiret}
                 onSirenChange={setSiren}
                 onTvaNumberChange={setTvaNumber}
-                onVehicleBrandChange={setVehicleBrand}
-                onVehicleYearChange={setVehicleYear}
-                onVehicleColorChange={setVehicleColor}
-                onVehiclePlateChange={setVehiclePlate}
                 onSave={handleUpdateProfile}
                 loading={loading || isUpdating}
                 onPaymentUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}

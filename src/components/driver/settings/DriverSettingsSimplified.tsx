@@ -17,7 +17,6 @@ import {
 import { 
   Euro, 
   Building2, 
-  Car, 
   CreditCard, 
   Save, 
   Loader2, 
@@ -53,11 +52,6 @@ interface DriverSettingsSimplifiedProps {
   siret: string;
   siren: string;
   tvaNumber: string;
-  // Vehicle
-  vehicleBrand: string;
-  vehicleYear: string;
-  vehicleColor: string;
-  vehiclePlate: string;
   // Callbacks
   onBaseFareChange: (v: string) => void;
   onPerKmRateChange: (v: string) => void;
@@ -73,10 +67,6 @@ interface DriverSettingsSimplifiedProps {
   onSiretChange: (v: string) => void;
   onSirenChange: (v: string) => void;
   onTvaNumberChange: (v: string) => void;
-  onVehicleBrandChange: (v: string) => void;
-  onVehicleYearChange: (v: string) => void;
-  onVehicleColorChange: (v: string) => void;
-  onVehiclePlateChange: (v: string) => void;
   onSave: () => void;
   loading: boolean;
   onPaymentUpdate?: () => void;
@@ -159,10 +149,6 @@ export function DriverSettingsSimplified({
   siret,
   siren,
   tvaNumber,
-  vehicleBrand,
-  vehicleYear,
-  vehicleColor,
-  vehiclePlate,
   onBaseFareChange,
   onPerKmRateChange,
   onHourlyRateChange,
@@ -177,10 +163,6 @@ export function DriverSettingsSimplified({
   onSiretChange,
   onSirenChange,
   onTvaNumberChange,
-  onVehicleBrandChange,
-  onVehicleYearChange,
-  onVehicleColorChange,
-  onVehiclePlateChange,
   onSave,
   loading,
   onPaymentUpdate
@@ -189,140 +171,135 @@ export function DriverSettingsSimplified({
   // Check completion status
   const isPricingComplete = !!(baseFare && perKmRate && hourlyRate);
   const isCompanyComplete = !!(companyName && (siret || siren) && companyAddress);
-  const isVehicleComplete = !!(vehicleBrand && vehiclePlate);
 
   return (
-    <div className="space-y-4">
-      {/* Warning Banner */}
-      <Alert className="border-warning bg-warning/10">
-        <AlertCircle className="h-5 w-5 text-warning" />
-        <AlertTitle className="text-warning font-semibold">Configuration obligatoire</AlertTitle>
-        <AlertDescription className="text-sm">
-          Complétez tous les paramètres pour générer vos devis et factures automatiquement.
-          <span className="block mt-1 text-warning font-medium">
-            ⚠️ Des informations manquantes peuvent bloquer vos documents.
-          </span>
-        </AlertDescription>
+    <div className="space-y-3 sm:space-y-4">
+      {/* Warning Banner - Compact on mobile */}
+      <Alert className="border-warning bg-warning/10 p-3 sm:p-4">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-warning shrink-0 mt-0.5" />
+          <div>
+            <AlertTitle className="text-warning font-semibold text-sm sm:text-base">Configuration obligatoire</AlertTitle>
+            <AlertDescription className="text-xs sm:text-sm">
+              Complétez les paramètres pour vos devis et factures.
+            </AlertDescription>
+          </div>
+        </div>
       </Alert>
 
-      {/* Floating Save Button */}
-      <div className="sticky top-0 z-20 p-3 bg-primary rounded-xl shadow-lg">
-        <div className="flex items-center justify-between gap-4">
+      {/* Floating Save Button - Compact */}
+      <div className="sticky top-0 z-20 p-2 sm:p-3 bg-primary rounded-lg sm:rounded-xl shadow-lg">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-primary-foreground">
-            <Save className="w-5 h-5" />
-            <span className="font-semibold text-sm sm:text-base">Enregistrer les modifications</span>
+            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-semibold text-xs sm:text-sm">Enregistrer</span>
           </div>
           <Button 
             onClick={onSave} 
             disabled={loading} 
             variant="secondary"
+            size="sm"
             className="font-bold shadow-md"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                <span className="hidden sm:inline">Enregistrement...</span>
-              </>
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Enregistrer</span>
-                <span className="sm:hidden">OK</span>
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">OK</span>
               </>
             )}
           </Button>
         </div>
       </div>
 
-      {/* Main Tabs */}
-      <Tabs defaultValue="pricing" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4 h-auto p-1">
-          <TabsTrigger value="pricing" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
+      {/* Main Tabs - 3 columns now */}
+      <Tabs defaultValue="pricing" className="space-y-3 sm:space-y-4">
+        <TabsList className="w-full grid grid-cols-3 h-auto p-1 bg-muted/50">
+          <TabsTrigger value="pricing" className="flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm data-[state=active]:bg-background">
             <Euro className="w-4 h-4" />
             <span>Tarifs</span>
             {isPricingComplete && <CheckCircle2 className="w-3 h-3 text-primary hidden sm:block" />}
           </TabsTrigger>
-          <TabsTrigger value="company" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
+          <TabsTrigger value="company" className="flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm data-[state=active]:bg-background">
             <Building2 className="w-4 h-4" />
             <span>Entreprise</span>
             {isCompanyComplete && <CheckCircle2 className="w-3 h-3 text-primary hidden sm:block" />}
           </TabsTrigger>
-          <TabsTrigger value="vehicle" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
-            <Car className="w-4 h-4" />
-            <span>Véhicule</span>
-            {isVehicleComplete && <CheckCircle2 className="w-3 h-3 text-primary hidden sm:block" />}
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
+          <TabsTrigger value="payment" className="flex flex-col sm:flex-row items-center gap-1 py-2 px-2 text-xs sm:text-sm data-[state=active]:bg-background">
             <CreditCard className="w-4 h-4" />
             <span>Paiement</span>
           </TabsTrigger>
         </TabsList>
 
         {/* PRICING TAB */}
-        <TabsContent value="pricing" className="space-y-4">
+        <TabsContent value="pricing" className="space-y-3 sm:space-y-4">
           {/* Base Pricing */}
           <Card className="bg-gradient-to-br from-card to-card/80 border-primary/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Euro className="w-5 h-5 text-primary" />
+            <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Euro className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 Tarifs de base
               </CardTitle>
-              <CardDescription>
-                Ces tarifs s'appliquent à toutes vos courses par défaut
+              <CardDescription className="text-xs sm:text-sm">
+                Appliqués à toutes vos courses
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Prise en charge (€)</Label>
+            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+              {/* Grid 2x2 sur mobile et desktop */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm font-medium">Prise en charge (€)</Label>
                   <NumericInput
                     value={baseFare}
                     onChange={onBaseFareChange}
                     placeholder="10.00"
-                    className="font-semibold"
+                    className="font-semibold h-9 sm:h-10 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Prix/km (€)</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm font-medium">Prix/km (€)</Label>
                   <NumericInput
                     value={perKmRate}
                     onChange={onPerKmRateChange}
                     placeholder="1.50"
-                    className="font-semibold"
+                    className="font-semibold h-9 sm:h-10 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Tarif horaire (€)</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm font-medium">Tarif horaire (€)</Label>
                   <NumericInput
                     value={hourlyRate}
                     onChange={onHourlyRateChange}
                     placeholder="45.00"
-                    className="font-semibold"
+                    className="font-semibold h-9 sm:h-10 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Minimum/course (€)</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm font-medium">Minimum (€)</Label>
                   <NumericInput
                     value={minimumPrice}
                     onChange={onMinimumPriceChange}
                     placeholder="15.00"
-                    className="font-semibold"
+                    className="font-semibold h-9 sm:h-10 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Places max</Label>
+              {/* Places max + TVA side by side */}
+              <div className="flex items-center gap-3 sm:gap-4 pt-2 border-t border-border/30">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs sm:text-sm font-medium">Places max</Label>
                   <NumericInput
                     value={maxPassengers}
                     onChange={onMaxPassengersChange}
                     placeholder="4"
                     min={1}
                     max={20}
+                    className="h-9 sm:h-10"
                   />
                 </div>
-                <div className="flex items-center justify-center">
+                <div className="shrink-0">
                   <TvaToggle
                     checked={tvaIncluded}
                     onCheckedChange={onTvaIncludedChange}
@@ -394,121 +371,71 @@ export function DriverSettingsSimplified({
         </TabsContent>
 
         {/* COMPANY TAB */}
-        <TabsContent value="company" className="space-y-4">
+        <TabsContent value="company" className="space-y-3 sm:space-y-4">
           <Card className="bg-gradient-to-br from-card to-card/80 border-primary/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="w-5 h-5 text-primary" />
+            <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 Informations légales
               </CardTitle>
-              <CardDescription>
-                Ces informations apparaissent sur vos devis et factures
+              <CardDescription className="text-xs sm:text-sm">
+                Apparaissent sur vos devis et factures
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Nom de l'entreprise *</Label>
+            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="font-medium text-sm">Nom entreprise *</Label>
                 <Input
                   value={companyName}
                   onChange={(e) => onCompanyNameChange(e.target.value)}
                   placeholder="VTC Excellence"
+                  className="h-9 sm:h-10"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">SIRET (14 chiffres)</Label>
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="font-medium text-xs sm:text-sm">SIRET</Label>
                   <Input
                     value={siret}
                     onChange={(e) => onSiretChange(e.target.value)}
-                    placeholder="12345678900012"
+                    placeholder="14 chiffres"
                     maxLength={14}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">ou SIREN (9 chiffres)</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="font-medium text-xs sm:text-sm">ou SIREN</Label>
                   <Input
                     value={siren}
                     onChange={(e) => onSirenChange(e.target.value)}
-                    placeholder="123456789"
+                    placeholder="9 chiffres"
                     maxLength={9}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="font-medium">N° TVA Intracommunautaire</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="font-medium text-sm">N° TVA Intracom.</Label>
                 <Input
                   value={tvaNumber}
                   onChange={(e) => onTvaNumberChange(e.target.value)}
                   placeholder="FR12345678901"
                   maxLength={15}
+                  className="h-9 sm:h-10"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="font-medium">Adresse complète *</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="font-medium text-sm">Adresse *</Label>
                 <Textarea
                   value={companyAddress}
                   onChange={(e) => onCompanyAddressChange(e.target.value)}
                   placeholder="123 Rue de la République, 75001 Paris"
                   rows={2}
+                  className="text-sm resize-none"
                 />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* VEHICLE TAB */}
-        <TabsContent value="vehicle" className="space-y-4">
-          <Card className="bg-gradient-to-br from-card to-card/80 border-primary/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Car className="w-5 h-5 text-primary" />
-                Informations véhicule
-              </CardTitle>
-              <CardDescription>
-                Visible par vos clients sur votre profil
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Marque / Modèle *</Label>
-                  <Input
-                    value={vehicleBrand}
-                    onChange={(e) => onVehicleBrandChange(e.target.value)}
-                    placeholder="Mercedes Classe E"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">Année</Label>
-                  <Input
-                    value={vehicleYear}
-                    onChange={(e) => onVehicleYearChange(e.target.value)}
-                    placeholder="2023"
-                    maxLength={4}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Couleur</Label>
-                  <Input
-                    value={vehicleColor}
-                    onChange={(e) => onVehicleColorChange(e.target.value)}
-                    placeholder="Noir"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">Immatriculation *</Label>
-                  <Input
-                    value={vehiclePlate}
-                    onChange={(e) => onVehiclePlateChange(e.target.value)}
-                    placeholder="AB-123-CD"
-                  />
-                </div>
               </div>
             </CardContent>
           </Card>
