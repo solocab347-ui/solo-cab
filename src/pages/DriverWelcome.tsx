@@ -178,7 +178,7 @@ const DriverWelcome = () => {
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Inscription réussie !</h2>
             <p className="text-white/70 text-sm">
-              Votre période d'essai de <strong className="text-amber-400">30 jours gratuits</strong> commence maintenant.
+              Votre période d'essai de <strong className="text-amber-400">14 jours gratuits</strong> commence maintenant.
               Profitez-en pour configurer votre espace et attirer vos premiers clients !
             </p>
           </Card>
@@ -238,10 +238,10 @@ const DriverWelcome = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white mb-2">
-                  30 jours pour compléter vos documents
+                  14 jours pour compléter vos documents
                 </h3>
                 <p className="text-white/70 text-sm mb-3">
-                  Vous disposez d'un accès complet pendant 30 jours. Profitez-en pour téléverser 
+                  Vous disposez d'un accès complet pendant 14 jours. Profitez-en pour téléverser 
                   vos documents professionnels (permis, carte VTC, assurance...) via l'onglet "Documents" 
                   de votre tableau de bord.
                 </p>

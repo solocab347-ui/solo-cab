@@ -106,10 +106,11 @@ export function DriverOnboardingTunnel({
     }
   }, [currentStep]);
 
-  // Validation de chaque étape
+  // Validation de chaque étape - SIMPLIFIÉE pour réduire les abandons
   const isSettingsValid = () => {
-    const { baseFare, perKmRate, hourlyRate, companyName, companyAddress, siret, siren, vehicleBrand, vehiclePlate } = stepData.settings;
-    return !!(baseFare && perKmRate && hourlyRate && companyName && companyAddress && (siret || siren) && vehicleBrand && vehiclePlate);
+    const { baseFare, perKmRate, companyName, vehicleBrand } = stepData.settings;
+    // Seuls les champs essentiels sont requis - le reste peut être complété plus tard
+    return !!(baseFare && perKmRate && companyName && vehicleBrand);
   };
 
   const isProfileValid = () => {
