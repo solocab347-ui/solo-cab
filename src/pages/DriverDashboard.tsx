@@ -143,8 +143,7 @@ const DriverDashboard = () => {
     }
   };
 
-  // Form states
-  const [publicProfileEnabled, setPublicProfileEnabled] = useState(false); // Désactivé par défaut
+  // Form states - profil public toujours actif (plus de toggle)
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [contactPhone, setContactPhone] = useState("");
@@ -202,8 +201,7 @@ const DriverDashboard = () => {
     const driver = driverProfile.driver;
     
     // Utiliser startTransition pour les mises à jour non urgentes
-    // Batch TOUS les états en une seule fois
-    setPublicProfileEnabled(driver.public_profile_enabled || false);
+    // Batch TOUS les états en une seule fois - profil public toujours actif
     setShowPhone(driver.show_phone || false);
     setShowEmail(driver.show_email || false);
     setContactPhone((driver as any).contact_phone || driverProfile.phone || "");
@@ -314,11 +312,7 @@ const DriverDashboard = () => {
     toast.success("QR Code téléchargé !");
   };
 
-  const handleTogglePublicProfile = async (enabled: boolean) => {
-    if (!driverProfile?.driver?.id || !updateProfile) return;
-    setPublicProfileEnabled(enabled);
-    updateProfile({ public_profile_enabled: enabled });
-  };
+  // handleTogglePublicProfile supprimé - profil toujours public
 
   const handleUpdateProfile = async () => {
     if (!driverProfile?.driver?.id || !updateProfile) {
@@ -331,9 +325,9 @@ const DriverDashboard = () => {
     try {
       logger.info("Début de la sauvegarde du profil");
       
-      // 1. Sauvegarder les données du driver
+      // 1. Sauvegarder les données du driver - profil toujours public
       const driverUpdates = {
-        public_profile_enabled: publicProfileEnabled,
+        public_profile_enabled: true, // Toujours true
         show_phone: showPhone,
         show_email: showEmail,
         contact_phone: contactPhone || null,
@@ -875,7 +869,6 @@ const DriverDashboard = () => {
               <DriverPublicProfileSimplified
                 driverProfile={driverProfile}
                 userId={user.id}
-                publicProfileEnabled={publicProfileEnabled}
                 visibleToDrivers={visibleToDrivers}
                 displayDriverName={displayDriverName}
                 displayCompanyName={displayCompanyName}
@@ -893,7 +886,6 @@ const DriverDashboard = () => {
                 contactPhone={contactPhone}
                 contactEmail={contactEmail}
                 showRatingPublic={showRatingPublic}
-                onTogglePublicProfile={handleTogglePublicProfile}
                 onVisibleToDriversChange={setVisibleToDrivers}
                 onDisplayDriverNameChange={setDisplayDriverName}
                 onDisplayCompanyNameChange={setDisplayCompanyName}
