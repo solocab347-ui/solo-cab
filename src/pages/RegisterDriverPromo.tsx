@@ -1093,10 +1093,11 @@ const RegisterDriverPromo = () => {
                       value={shippingAddress}
                       onChange={(e) => setShippingAddress(e.target.value)}
                       placeholder="123 rue de la Liberté, Bât A"
-                      className="h-9 text-sm"
+                      className="h-11 text-base"
+                      autoComplete="street-address"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
                       <Input
@@ -1106,7 +1107,7 @@ const RegisterDriverPromo = () => {
                         onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
                         placeholder="75001"
                         maxLength={5}
-                        className="h-10 text-sm"
+                        className="h-11 text-base"
                       />
                     </div>
                     <div>
@@ -1117,7 +1118,7 @@ const RegisterDriverPromo = () => {
                         value={shippingCity}
                         onChange={(e) => setShippingCity(e.target.value)}
                         placeholder="Paris"
-                        className="h-10 text-sm"
+                        className="h-11 text-base"
                       />
                     </div>
                   </div>
@@ -1261,8 +1262,8 @@ const RegisterDriverPromo = () => {
               Paiement sécurisé par Stripe
             </p>
 
-            {/* Bouton retour */}
-            {!fromPlate && !userId && (
+            {/* Bouton retour - allow going back during registration */}
+            {!fromPlate && (
               <Button
                 variant="ghost"
                 onClick={() => setCurrentStep(2)}
@@ -1272,7 +1273,7 @@ const RegisterDriverPromo = () => {
               </Button>
             )}
             
-            {fromPlate && !userId && (
+            {fromPlate && (
               <Button
                 variant="ghost"
                 onClick={() => setCurrentStep(1)}
