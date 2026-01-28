@@ -1078,51 +1078,6 @@ const RegisterDriverPromo = () => {
                     <span className="font-bold text-green-600">{getPlatePromoPrice()}€</span>
                   </div>
                 </div>
-
-                {/* Adresse de livraison */}
-                <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-premium" />
-                    Adresse de livraison
-                  </h4>
-                  <div>
-                    <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
-                    <Input
-                      id="shippingAddress"
-                      type="text"
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      placeholder="123 rue de la Liberté, Bât A"
-                      className="h-11 text-base"
-                      autoComplete="street-address"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
-                      <Input
-                        id="shippingPostalCode"
-                        type="text"
-                        value={shippingPostalCode}
-                        onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                        placeholder="75001"
-                        maxLength={5}
-                        className="h-11 text-base"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
-                      <Input
-                        id="shippingCity"
-                        type="text"
-                        value={shippingCity}
-                        onChange={(e) => setShippingCity(e.target.value)}
-                        placeholder="Paris"
-                        className="h-11 text-base"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1244,6 +1199,62 @@ const RegisterDriverPromo = () => {
                 <span>Facturation automatique</span>
               </div>
             </div>
+
+            {/* Adresse de livraison - OBLIGATOIRE si plaque commandée */}
+            {wantsPlate && (
+              <div className="p-4 bg-gradient-to-r from-premium/10 to-primary/10 rounded-lg border-2 border-premium/30 mb-4">
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                  <Truck className="w-4 h-4 text-premium" />
+                  📦 Adresse de livraison de votre plaque NFC
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="shippingAddress" className="text-xs font-medium">Adresse complète *</Label>
+                    <Input
+                      id="shippingAddress"
+                      type="text"
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      placeholder="123 rue de la Liberté, Bât A"
+                      className="h-11 text-base mt-1"
+                      autoComplete="street-address"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="shippingPostalCode" className="text-xs font-medium">Code postal *</Label>
+                      <Input
+                        id="shippingPostalCode"
+                        type="text"
+                        value={shippingPostalCode}
+                        onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                        placeholder="75001"
+                        maxLength={5}
+                        className="h-11 text-base mt-1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingCity" className="text-xs font-medium">Ville *</Label>
+                      <Input
+                        id="shippingCity"
+                        type="text"
+                        value={shippingCity}
+                        onChange={(e) => setShippingCity(e.target.value)}
+                        placeholder="Paris"
+                        className="h-11 text-base mt-1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Truck className="w-3 h-3" />
+                    Livraison offerte en 5-7 jours ouvrés
+                  </p>
+                </div>
+              </div>
+            )}
 
             <Button
               onClick={handleFinalPayment}
