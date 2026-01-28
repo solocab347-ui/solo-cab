@@ -477,86 +477,94 @@ const AdminDriversManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Statistiques - Responsive 2x2 grid mobile */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-500" />
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-amber-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Demandes reçues</p>
-                <p className="text-2xl font-bold">{allPendingDrivers.length}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Reçues</p>
+                <p className="text-lg sm:text-2xl font-bold">{allPendingDrivers.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-blue-500" />
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4 sm:w-6 sm:h-6 text-blue-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Mises en attente</p>
-                <p className="text-2xl font-bold">{allOnHoldDrivers.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Demandes acceptées</p>
-                <p className="text-2xl font-bold">{allValidatedDrivers.length}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Attente</p>
+                <p className="text-lg sm:text-2xl font-bold">{allOnHoldDrivers.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center">
-                <X className="w-6 h-6 text-red-500" />
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-green-500/10 rounded-lg flex items-center justify-center shrink-0">
+                <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 text-green-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Demandes refusées</p>
-                <p className="text-2xl font-bold">{allRejectedDrivers.length}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Acceptées</p>
+                <p className="text-lg sm:text-2xl font-bold">{allValidatedDrivers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-destructive/10 rounded-lg flex items-center justify-center shrink-0">
+                <X className="w-4 h-4 sm:w-6 sm:h-6 text-destructive" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Refusées</p>
+                <p className="text-lg sm:text-2xl font-bold">{allRejectedDrivers.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Sections par onglets */}
-      <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pending" className="relative">
-            Demandes reçues
+      {/* Sections par onglets - Responsive */}
+      <Tabs defaultValue="pending" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
+          <TabsTrigger value="pending" className="relative py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <span className="hidden sm:inline">Demandes reçues</span>
+            <span className="sm:hidden">Reçues</span>
             {allPendingDrivers.length > 0 && (
-              <Badge variant="destructive" className="ml-2 px-2 py-0.5 text-xs">
+              <Badge variant="destructive" className="ml-1 sm:ml-2 px-1.5 py-0.5 text-[10px] sm:text-xs">
                 {allPendingDrivers.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="on_hold" className="relative">
-            En attente
+          <TabsTrigger value="on_hold" className="relative py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <span className="hidden sm:inline">En attente</span>
+            <span className="sm:hidden">Attente</span>
             {allOnHoldDrivers.length > 0 && (
-              <Badge variant="default" className="ml-2 px-2 py-0.5 text-xs">
+              <Badge variant="default" className="ml-1 sm:ml-2 px-1.5 py-0.5 text-[10px] sm:text-xs">
                 {allOnHoldDrivers.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="validated">Acceptées</TabsTrigger>
-          <TabsTrigger value="rejected">Refusées</TabsTrigger>
+          <TabsTrigger value="validated" className="py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <span className="hidden sm:inline">Acceptées</span>
+            <span className="sm:hidden">OK</span>
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="py-2 px-2 sm:px-3 text-xs sm:text-sm">
+            <span className="hidden sm:inline">Refusées</span>
+            <span className="sm:hidden">Refus</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">

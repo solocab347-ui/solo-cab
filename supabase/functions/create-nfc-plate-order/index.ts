@@ -59,10 +59,10 @@ serve(async (req) => {
     logStep("Received body", body);
 
     const {
-      email,
-      first_name,
-      last_name,
-      phone,
+      email: providedEmail,
+      first_name: providedFirstName,
+      last_name: providedLastName,
+      phone: providedPhone,
       shipping_address,
       shipping_city,
       shipping_postal_code,
@@ -72,9 +72,60 @@ serve(async (req) => {
       plate_type = "large", // "large" ou "small"
     } = body;
 
-    // Validation
-    if (!email || !first_name || !last_name || !shipping_address || !shipping_city || !shipping_postal_code) {
-      throw new Error("Tous les champs obligatoires doivent être remplis");
+    // Si driver_id est fourni, récupérer les infos du chauffeur
+    let email = providedEmail;
+    let firstName = providedFirstName;
+    let lastName = providedLastName;
+    let phone = providedPhone;
+    let qrCodeLink = null;
+
+    if (driver_id) {
+      logStep("Fetching driver info", { driver_id });
+      
+      // Récupérer le chauffeur et son profil
+      const { data: driver, error: driverError } = await supabaseClient
+        .from("drivers")
+        .select(`
+          id,
+          qr_code_url,
+          contact_phone,
+          contact_email,
+          user_id
+        `)
+        .eq("id", driver_id)
+        .single();
+
+      if (driverError) {
+        logStep("Driver fetch error", { error: driverError.message });
+      } else if (driver) {
+        qrCodeLink = driver.qr_code_url || `${Deno.env.get("SITE_URL") || "https://solocab.fr"}/chauffeur/${driver.id}`;
+        
+        // Récupérer le profil pour le nom complet
+        if (driver.user_id) {
+          const { data: profile } = await supabaseClient
+            .from("profiles")
+            .select("full_name, email, phone")
+            .eq("id", driver.user_id)
+            .single();
+          
+          if (profile) {
+            // Utiliser les infos du profil si non fournies
+            if (!email) email = driver.contact_email || profile.email;
+            if (!firstName && profile.full_name) {
+              const nameParts = profile.full_name.split(" ");
+              firstName = nameParts[0] || "Chauffeur";
+              lastName = nameParts.slice(1).join(" ") || "";
+            }
+            if (!phone) phone = driver.contact_phone || profile.phone;
+          }
+        }
+        logStep("Driver info found", { email, firstName, qrCodeLink });
+      }
+    }
+
+    // Validation après récupération des infos
+    if (!email || !firstName || !shipping_address || !shipping_city || !shipping_postal_code) {
+      throw new Error("Tous les champs obligatoires doivent être remplis (email, prénom, adresse, ville, code postal)");
     }
 
     // Récupérer le bon prix selon le type de plaque
@@ -85,28 +136,13 @@ serve(async (req) => {
     const orderNumber = `NFC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     logStep("Order number generated", { orderNumber });
 
-    // Récupérer le QR code link si driver_id est fourni
-    let qrCodeLink = null;
-    if (driver_id) {
-      const { data: driver } = await supabaseClient
-        .from("drivers")
-        .select("id, qr_code_url")
-        .eq("id", driver_id)
-        .single();
-      
-      if (driver?.qr_code_url) {
-        qrCodeLink = driver.qr_code_url;
-        logStep("QR code link found", { qrCodeLink });
-      }
-    }
-
     // Créer la commande en base
     const { data: order, error: orderError } = await supabaseClient
       .from("nfc_plate_orders")
       .insert({
         email,
-        first_name,
-        last_name,
+        first_name: firstName,
+        last_name: lastName || "",
         phone,
         shipping_address,
         shipping_city,
@@ -116,8 +152,8 @@ serve(async (req) => {
         driver_id: driver_id || null,
         qr_code_link: qrCodeLink,
         with_subscription,
-        plate_type, // Stocker le type de plaque
-        amount: plateConfig.amount, // Stocker le montant
+        plate_type,
+        amount: plateConfig.amount,
         payment_status: "pending",
         delivery_status: "pending",
         estimated_delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -142,10 +178,10 @@ serve(async (req) => {
     } else {
       const customer = await stripe.customers.create({
         email,
-        name: `${first_name} ${last_name}`,
+        name: `${firstName} ${lastName}`,
         phone,
         shipping: {
-          name: `${first_name} ${last_name}`,
+          name: `${firstName} ${lastName}`,
           address: {
             line1: shipping_address,
             city: shipping_city,

@@ -5816,6 +5816,7 @@ export type Database = {
           free_access_start_date: string | null
           free_access_type: string | null
           gallery_photos: string[] | null
+          has_nfc_plate: boolean | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -5829,6 +5830,8 @@ export type Database = {
           max_daily_courses: number | null
           max_passengers: number
           minimum_price: number | null
+          nfc_plate_order_id: string | null
+          nfc_plate_ordered_at: string | null
           nfc_tag_number: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
@@ -5954,6 +5957,7 @@ export type Database = {
           free_access_start_date?: string | null
           free_access_type?: string | null
           gallery_photos?: string[] | null
+          has_nfc_plate?: boolean | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -5967,6 +5971,8 @@ export type Database = {
           max_daily_courses?: number | null
           max_passengers?: number
           minimum_price?: number | null
+          nfc_plate_order_id?: string | null
+          nfc_plate_ordered_at?: string | null
           nfc_tag_number?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
@@ -6092,6 +6098,7 @@ export type Database = {
           free_access_start_date?: string | null
           free_access_type?: string | null
           gallery_photos?: string[] | null
+          has_nfc_plate?: boolean | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -6105,6 +6112,8 @@ export type Database = {
           max_daily_courses?: number | null
           max_passengers?: number
           minimum_price?: number | null
+          nfc_plate_order_id?: string | null
+          nfc_plate_ordered_at?: string | null
           nfc_tag_number?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
@@ -6199,6 +6208,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_nfc_plate_order_id_fkey"
+            columns: ["nfc_plate_order_id"]
+            isOneToOne: false
+            referencedRelation: "nfc_plate_orders"
             referencedColumns: ["id"]
           },
           {
