@@ -35,9 +35,10 @@ interface OnboardingSettingsStepProps {
 }
 
 export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsStepProps) {
-  const isPricingComplete = !!(data.baseFare && data.perKmRate && data.hourlyRate);
-  const isCompanyComplete = !!(data.companyName && (data.siret || data.siren) && data.companyAddress);
-  const isVehicleComplete = !!(data.vehicleBrand && data.vehiclePlate);
+  // Seuls les tarifs de base sont vraiment requis - le reste peut être complété plus tard
+  const isPricingComplete = !!(data.baseFare && data.perKmRate);
+  const isCompanyComplete = !!data.companyName; // Simplifié - SIRET/adresse peuvent être ajoutés plus tard
+  const isVehicleComplete = !!data.vehicleBrand; // Simplifié - plaque peut être ajoutée plus tard
 
   return (
     <div className="space-y-3">
@@ -81,7 +82,7 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <NumericInput
                 value={data.baseFare}
                 onChange={(v) => onUpdate({ baseFare: v })}
-                placeholder="10.00"
+                placeholder="ex: 10.00"
                 className="h-9"
               />
             </div>
@@ -90,16 +91,16 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <NumericInput
                 value={data.perKmRate}
                 onChange={(v) => onUpdate({ perKmRate: v })}
-                placeholder="1.50"
+                placeholder="ex: 1.50"
                 className="h-9"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Tarif horaire (€) *</Label>
+              <Label className="text-xs">Tarif horaire (€)</Label>
               <NumericInput
                 value={data.hourlyRate}
                 onChange={(v) => onUpdate({ hourlyRate: v })}
-                placeholder="45.00"
+                placeholder="ex: 45.00"
                 className="h-9"
               />
             </div>
@@ -108,7 +109,7 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <NumericInput
                 value={data.minimumPrice}
                 onChange={(v) => onUpdate({ minimumPrice: v })}
-                placeholder="15.00"
+                placeholder="ex: 15.00"
                 className="h-9"
               />
             </div>
@@ -148,17 +149,17 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
             <Input
               value={data.companyName}
               onChange={(e) => onUpdate({ companyName: e.target.value })}
-              placeholder="VTC Excellence"
+              placeholder="ex: VTC Excellence"
               className="h-9"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">SIRET *</Label>
+              <Label className="text-xs">SIRET</Label>
               <Input
                 value={data.siret}
                 onChange={(e) => onUpdate({ siret: e.target.value })}
-                placeholder="14 chiffres"
+                placeholder="14 chiffres (optionnel)"
                 maxLength={14}
                 className="h-9"
               />
@@ -168,7 +169,7 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <Input
                 value={data.siren}
                 onChange={(e) => onUpdate({ siren: e.target.value })}
-                placeholder="9 chiffres"
+                placeholder="9 chiffres (optionnel)"
                 maxLength={9}
                 className="h-9"
               />
@@ -184,11 +185,11 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Adresse *</Label>
+            <Label className="text-xs">Adresse</Label>
             <Input
               value={data.companyAddress}
               onChange={(e) => onUpdate({ companyAddress: e.target.value })}
-              placeholder="123 Rue..., 75001 Paris"
+              placeholder="123 Rue..., 75001 Paris (optionnel)"
               className="h-9"
             />
           </div>
@@ -221,7 +222,7 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <Input
                 value={data.vehicleBrand}
                 onChange={(e) => onUpdate({ vehicleBrand: e.target.value })}
-                placeholder="Mercedes"
+                placeholder="ex: Mercedes"
                 className="h-9"
               />
             </div>
@@ -230,7 +231,7 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <Input
                 value={data.vehicleYear}
                 onChange={(e) => onUpdate({ vehicleYear: e.target.value })}
-                placeholder="2023"
+                placeholder="ex: 2023"
                 maxLength={4}
                 className="h-9"
               />
@@ -240,16 +241,16 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               <Input
                 value={data.vehicleColor}
                 onChange={(e) => onUpdate({ vehicleColor: e.target.value })}
-                placeholder="Noir"
+                placeholder="ex: Noir"
                 className="h-9"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Plaque *</Label>
+              <Label className="text-xs">Plaque</Label>
               <Input
                 value={data.vehiclePlate}
                 onChange={(e) => onUpdate({ vehiclePlate: e.target.value })}
-                placeholder="AA-123-BB"
+                placeholder="ex: AA-123-BB (optionnel)"
                 className="h-9 uppercase"
               />
             </div>
