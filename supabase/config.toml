@@ -212,3 +212,9 @@ verify_jwt = false
 
 [functions.send-nfc-status-email]
 verify_jwt = false
+
+[functions.delete-user-account]
+verify_jwt = false
+
+[functions.reset-trial-on-validation]
+verify_jwt = false
