@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,13 +12,11 @@ import {
   FileText, 
   Upload, 
   CheckCircle, 
-  AlertTriangle, 
   Loader2, 
   Eye, 
   Trash2,
   Info
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface OnboardingDocumentsStepProps {
   driverId: string;
@@ -37,60 +35,15 @@ interface DocumentsData {
 }
 
 const REQUIRED_DOCUMENTS = [
-  {
-    key: "vtc_card_recto",
-    label: "Carte VTC (Recto)",
-    description: "Face avant",
-    required: true,
-  },
-  {
-    key: "vtc_card_verso",
-    label: "Carte VTC (Verso)",
-    description: "Face arrière",
-    required: false,
-  },
-  {
-    key: "driving_license_recto",
-    label: "Permis (Recto)",
-    description: "Face avant",
-    required: true,
-  },
-  {
-    key: "driving_license_verso",
-    label: "Permis (Verso)",
-    description: "Face arrière",
-    required: false,
-  },
-  {
-    key: "id_card_recto",
-    label: "Pièce d'identité (Recto)",
-    description: "CNI ou passeport",
-    required: true,
-  },
-  {
-    key: "id_card_verso",
-    label: "Pièce d'identité (Verso)",
-    description: "Optionnel pour passeport",
-    required: false,
-  },
-  {
-    key: "vehicle_registration",
-    label: "Carte grise",
-    description: "Véhicule utilisé",
-    required: true,
-  },
-  {
-    key: "insurance",
-    label: "Assurance RC Pro",
-    description: "En cours de validité",
-    required: true,
-  },
-  {
-    key: "kbis",
-    label: "Kbis ou INSEE",
-    description: "Moins de 3 mois",
-    required: true,
-  },
+  { key: "vtc_card_recto", label: "Carte VTC (Recto)", required: true },
+  { key: "vtc_card_verso", label: "Carte VTC (Verso)", required: false },
+  { key: "driving_license_recto", label: "Permis (Recto)", required: true },
+  { key: "driving_license_verso", label: "Permis (Verso)", required: false },
+  { key: "id_card_recto", label: "Pièce d'identité (Recto)", required: true },
+  { key: "id_card_verso", label: "Pièce d'identité (Verso)", required: false },
+  { key: "vehicle_registration", label: "Carte grise", required: true },
+  { key: "insurance", label: "Assurance RC Pro", required: true },
+  { key: "kbis", label: "Kbis ou INSEE", required: true },
 ];
 
 export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: OnboardingDocumentsStepProps) {
@@ -141,7 +94,7 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Le fichier est trop volumineux (max 5 Mo)");
+      toast.error("Fichier trop volumineux (max 5 Mo)");
       return;
     }
 
@@ -173,7 +126,6 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
 
       const requiredDocs = REQUIRED_DOCUMENTS.filter(doc => doc.required);
       const allUploaded = requiredDocs.every((doc) => newDocuments[doc.key]?.url);
-
       const newStatus = allUploaded ? "submitted" : "pending";
 
       const { error: updateError } = await supabase
@@ -193,9 +145,9 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
       onStatusChange(newStatus);
 
       if (allUploaded) {
-        toast.success("Tous les documents ont été soumis !");
+        toast.success("Tous les documents soumis !");
       } else {
-        toast.success("Document téléchargé");
+        toast.success("Document ajouté");
       }
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -241,85 +193,81 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
 
   const requiredDocs = REQUIRED_DOCUMENTS.filter(doc => doc.required);
   const uploadedRequiredCount = requiredDocs.filter((doc) => documents[doc.key]?.url).length;
-  const totalUploaded = REQUIRED_DOCUMENTS.filter((doc) => documents[doc.key]?.url).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Status */}
-      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-        <span className="text-sm font-medium">Documents requis</span>
-        <Badge variant={documentsStatus === "submitted" ? "default" : "outline"}>
+      <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg">
+        <span className="text-xs font-medium">Documents requis</span>
+        <Badge variant={documentsStatus === "submitted" ? "default" : "outline"} className="text-xs">
           {uploadedRequiredCount}/{requiredDocs.length}
         </Badge>
       </div>
 
       {documentsStatus === "submitted" && (
-        <Alert className="bg-primary/5 border-primary/20">
-          <CheckCircle className="w-4 h-4 text-primary" />
-          <AlertDescription className="text-sm">
-            Vos documents sont en attente de validation par l'administration.
+        <Alert className="bg-primary/5 border-primary/20 py-2">
+          <CheckCircle className="w-3.5 h-3.5 text-primary" />
+          <AlertDescription className="text-xs">
+            Documents en attente de validation (24-48h).
           </AlertDescription>
         </Alert>
       )}
 
       {/* Documents List */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {REQUIRED_DOCUMENTS.map((doc) => {
           const uploadedDoc = documents[doc.key];
           const isUploading = uploading === doc.key;
 
           return (
             <Card key={doc.key} className={uploadedDoc ? 'border-primary/30 bg-primary/5' : ''}>
-              <CardContent className="p-3">
+              <CardContent className="p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     {uploadedDoc ? (
-                      <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                      <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                     )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">{doc.label}</p>
-                        {!doc.required && (
-                          <Badge variant="outline" className="text-[10px] bg-muted/50">
-                            Optionnel
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{doc.description}</p>
+                    <div className="min-w-0 flex items-center gap-1.5">
+                      <p className="text-xs font-medium truncate">{doc.label}</p>
+                      {!doc.required && (
+                        <Badge variant="outline" className="text-[9px] bg-muted/50 px-1 py-0">
+                          Opt.
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     {uploadedDoc ? (
                       <>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => window.open(uploadedDoc.url, "_blank")}
-                          className="h-8 w-8 p-0"
+                          className="h-7 w-7 p-0"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteDocument(doc.key)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </>
                     ) : (
                       <Label htmlFor={`upload-${doc.key}`} className="cursor-pointer">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
                           {isUploading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <Upload className="w-4 h-4" />
+                            <Upload className="w-3.5 h-3.5" />
                           )}
-                          <span className="text-xs">Ajouter</span>
+                          <span className="text-[10px]">Ajouter</span>
                         </div>
                         <Input
                           id={`upload-${doc.key}`}
@@ -343,11 +291,10 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
       </div>
 
       {/* Info */}
-      <Alert>
-        <Info className="w-4 h-4" />
-        <AlertDescription className="text-xs">
-          Formats acceptés : JPG, PNG, WebP, PDF (max 5 Mo).
-          Vos documents seront vérifiés par l'administration avant activation de votre compte.
+      <Alert className="py-2">
+        <Info className="w-3.5 h-3.5" />
+        <AlertDescription className="text-[10px]">
+          Formats : JPG, PNG, WebP, PDF (max 5 Mo)
         </AlertDescription>
       </Alert>
     </div>

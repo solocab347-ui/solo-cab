@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -14,12 +11,12 @@ import {
   Sparkles,
   CheckCircle2,
   Loader2,
-  Target,
-  Info
+  CreditCard
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
+import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingCompleteStep } from './OnboardingCompleteStep';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,10 +31,11 @@ export interface OnboardingTunnelProps {
 }
 
 const STEPS = [
-  { id: 'settings', title: 'Réglages', icon: Settings, description: 'Tarifs & Entreprise' },
-  { id: 'profile', title: 'Profil', icon: User, description: 'Photo & Services' },
-  { id: 'documents', title: 'Documents', icon: FileText, description: 'Pièces justificatives' },
-  { id: 'complete', title: 'Terminé', icon: Sparkles, description: 'Accès complet' },
+  { id: 'settings', title: 'Réglages', icon: Settings },
+  { id: 'profile', title: 'Profil', icon: User },
+  { id: 'documents', title: 'Documents', icon: FileText },
+  { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },
+  { id: 'complete', title: 'Terminé', icon: Sparkles },
 ];
 
 export function DriverOnboardingTunnel({ 
@@ -49,6 +47,8 @@ export function DriverOnboardingTunnel({
 }: OnboardingTunnelProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [saving, setSaving] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   const [stepData, setStepData] = useState({
     settings: {
       baseFare: driverProfile?.driver?.base_fare?.toString() || '',
@@ -84,6 +84,10 @@ export function DriverOnboardingTunnel({
     },
     documents: {
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
+    },
+    nfc: {
+      hasNfcPlate: driverProfile?.driver?.has_nfc_plate || false,
+      wantsNfcPlate: false,
     }
   });
 
@@ -92,7 +96,15 @@ export function DriverOnboardingTunnel({
     settings: driverProfile?.driver?.onboarding_settings_completed || false,
     profile: driverProfile?.driver?.onboarding_profile_completed || false,
     documents: driverProfile?.driver?.onboarding_documents_completed || false,
+    nfc: true, // Toujours "complétable" car optionnel
   });
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep]);
 
   // Validation de chaque étape
   const isSettingsValid = () => {
@@ -114,7 +126,8 @@ export function DriverOnboardingTunnel({
       case 0: return isSettingsValid();
       case 1: return isProfileValid();
       case 2: return isDocumentsValid();
-      case 3: return true;
+      case 3: return true; // NFC est optionnel
+      case 4: return true;
       default: return false;
     }
   };
@@ -195,7 +208,7 @@ export function DriverOnboardingTunnel({
           home_address: profile.homeAddress,
           home_latitude: profile.homeCoordinates?.latitude || null,
           home_longitude: profile.homeCoordinates?.longitude || null,
-          public_profile_enabled: true, // Activer le profil public automatiquement
+          public_profile_enabled: true,
           onboarding_profile_completed: true,
           onboarding_step: 'documents',
         })
@@ -227,6 +240,10 @@ export function DriverOnboardingTunnel({
         break;
       case 2:
         // Documents are saved automatically via DriverDocuments component
+        success = true;
+        break;
+      case 3:
+        // NFC step - just proceed
         success = true;
         break;
       default:
@@ -297,6 +314,13 @@ export function DriverOnboardingTunnel({
           />
         );
       case 3:
+        return (
+          <OnboardingNfcStep
+            hasNfcPlate={stepData.nfc.hasNfcPlate}
+            driverId={driverId}
+          />
+        );
+      case 4:
         return <OnboardingCompleteStep onComplete={handleComplete} loading={saving} />;
       default:
         return null;
@@ -304,130 +328,135 @@ export function DriverOnboardingTunnel({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 p-4 sm:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <img src={logo} alt="SoloCab" className="h-10 sm:h-12 mx-auto mb-4" />
-          <h1 className="text-xl sm:text-2xl font-bold">Configuration de votre espace</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-background to-muted/30">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 px-4 pt-4 pb-2 safe-area-top">
+        <div className="max-w-lg mx-auto">
+          {/* Logo */}
+          <div className="text-center mb-3">
+            <img src={logo} alt="SoloCab" className="h-8 mx-auto" />
+          </div>
+          
+          {/* Title */}
+          <h1 className="text-lg font-bold text-center">Configuration de votre espace</h1>
+          <p className="text-muted-foreground text-xs text-center mt-0.5">
             Complétez ces étapes pour démarrer votre activité
           </p>
-        </div>
 
-        {/* Progress */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Étape {currentStep + 1} sur {STEPS.length}
-            </span>
-            <span className="text-sm font-medium">{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          
-          {/* Step Indicators */}
-          <div className="flex justify-between mt-4">
-            {STEPS.map((step, index) => {
-              const Icon = step.icon;
-              const isCompleted = index < currentStep || completedSteps[step.id as keyof typeof completedSteps];
-              const isCurrent = index === currentStep;
-              
-              return (
-                <div 
-                  key={step.id}
-                  className={`flex flex-col items-center ${
-                    index <= currentStep ? 'text-primary' : 'text-muted-foreground/50'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    isCompleted 
-                      ? 'bg-primary text-primary-foreground' 
-                      : isCurrent 
-                        ? 'bg-primary/20 border-2 border-primary' 
-                        : 'bg-muted'
-                  }`}>
-                    {isCompleted && !isCurrent ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <Icon className="w-5 h-5" />
-                    )}
+          {/* Progress */}
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
+                Étape {currentStep + 1} sur {STEPS.length}
+              </span>
+              <span className="text-xs font-medium">{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
+            
+            {/* Step Indicators - Compact */}
+            <div className="flex justify-between mt-3 px-1">
+              {STEPS.map((step, index) => {
+                const Icon = step.icon;
+                const isCompleted = index < currentStep || completedSteps[step.id as keyof typeof completedSteps];
+                const isCurrent = index === currentStep;
+                
+                return (
+                  <div 
+                    key={step.id}
+                    className={`flex flex-col items-center ${
+                      index <= currentStep ? 'text-primary' : 'text-muted-foreground/50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                      isCompleted 
+                        ? 'bg-primary text-primary-foreground' 
+                        : isCurrent 
+                          ? 'bg-primary/20 border-2 border-primary' 
+                          : 'bg-muted'
+                    }`}>
+                      {isCompleted && !isCurrent ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        <Icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className="text-[9px] mt-1 font-medium">{step.title}</span>
                   </div>
-                  <span className="text-[10px] sm:text-xs mt-1.5 font-medium">{step.title}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Step Content */}
-        <Card className="shadow-lg border-primary/10">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+      {/* Scrollable Content */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-4"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <div className="max-w-lg mx-auto">
+          {/* Step Header Card */}
+          <div className="bg-card border rounded-lg p-3 mb-3 mt-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
                 {(() => {
                   const Icon = STEPS[currentStep].icon;
-                  return <Icon className="w-5 h-5 text-primary" />;
+                  return <Icon className="w-4 h-4 text-primary" />;
                 })()}
               </div>
               <div>
-                <CardTitle className="text-lg">{STEPS[currentStep].title}</CardTitle>
-                <CardDescription>{STEPS[currentStep].description}</CardDescription>
+                <h2 className="text-base font-semibold">{STEPS[currentStep].title}</h2>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Navigation */}
-        {currentStep < STEPS.length - 1 && (
-          <div className="flex justify-between mt-6 gap-4">
+          {/* Step Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderStep()}
+            </motion.div>
+          </AnimatePresence>
+          
+          {/* Spacer for fixed footer */}
+          <div className="h-24" />
+        </div>
+      </div>
+
+      {/* Fixed Footer Navigation */}
+      {currentStep < STEPS.length - 1 && (
+        <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur px-4 py-3 safe-area-bottom">
+          <div className="max-w-lg mx-auto flex gap-3">
             <Button
               variant="outline"
               onClick={handlePrev}
               disabled={currentStep === 0 || saving}
-              className="flex-1 sm:flex-none"
+              className="flex-1 h-11"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
               Précédent
             </Button>
             
             <Button
               onClick={handleNext}
               disabled={!canProceed() || saving}
-              className="flex-1 sm:flex-none"
+              className="flex-1 h-11"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
               ) : null}
-              {currentStep === 2 ? 'Terminer' : 'Suivant'}
-              {!saving && <ArrowRight className="w-4 h-4 ml-2" />}
+              {currentStep === 3 ? 'Terminer' : 'Suivant'}
+              {!saving && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>
-        )}
-
-        {/* Info */}
-        {currentStep < 3 && (
-          <Alert className="mt-4 bg-primary/5 border-primary/20">
-            <Info className="w-4 h-4" />
-            <AlertDescription className="text-sm">
-              Toutes les informations sont obligatoires pour passer à l'étape suivante.
-              Vous pourrez les modifier ultérieurement dans votre espace.
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
