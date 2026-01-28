@@ -374,8 +374,8 @@ const NfcPlatePage = () => {
 
         {/* Action Buttons */}
         <div className="max-w-4xl mx-auto mb-10">
-          {purchaseMode === "with_subscription" ? (
-            <Link to="/inscription-chauffeur" className="block">
+        {purchaseMode === "with_subscription" ? (
+            <Link to="/devenir-chauffeur" className="block">
               <Button 
                 size="lg" 
                 className="w-full h-14 text-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
