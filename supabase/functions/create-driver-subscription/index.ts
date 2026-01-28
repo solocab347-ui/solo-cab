@@ -7,10 +7,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Prix Stripe
+// Prix Stripe - Abonnements
 const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SqaBl34nJZKnmmIKC7vYZy5"; // 9.99€/mois
 const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1Srytp34nJZKnmmIcUnFX9DV"; // 101.90€/an
-const NFC_PLATE_PRICE_ID = "price_1SqaCu34nJZKnmmIbgUaYK8K"; // 29.99€ one-time
+
+// Prix Stripe - Plaques NFC (prix plein)
+const NFC_PLATE_STANDARD_PRICE_ID = "price_1Sqdz534nJZKnmmItg1y3Nck"; // 14.99€ (bois)
+const NFC_PLATE_PREMIUM_PRICE_ID = "price_1SqaCu34nJZKnmmIbgUaYK8K"; // 29.99€ (plastique)
+
+// Prix Stripe - Plaques NFC avec réduction -20% (achat avec abonnement)
+const NFC_PLATE_STANDARD_PROMO_PRICE_ID = "price_1SuZ9t34nJZKnmmIFVoOoK3k"; // 11.99€ (bois -20%)
+const NFC_PLATE_PREMIUM_PROMO_PRICE_ID = "price_1SuZDV34nJZKnmmIhr1UaJ5x"; // 23.99€ (plastique -20%)
+
+// Prix en centimes pour la DB
+const PLATE_PRICES = {
+  standard: { full: 1499, promo: 1199 },
+  premium: { full: 2999, promo: 2399 },
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -55,6 +68,7 @@ serve(async (req) => {
     const body = await req.json();
     const driver_id = body?.driver_id;
     const with_plate = body?.with_plate === true;
+    const plate_type = body?.plate_type || "premium"; // "standard" (bois) ou "premium" (plastique)
     const subscription_type = body?.subscription_type || "monthly";
     const shipping_address = body?.shipping_address;
     const shipping_city = body?.shipping_city;
@@ -65,7 +79,7 @@ serve(async (req) => {
     }
     
     console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Driver ID:", driver_id);
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] 📦 With plate:", with_plate);
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] 📦 With plate:", with_plate, "Type:", plate_type);
 
     // Verify driver ownership
     const { data: driverCheck, error: driverCheckError } = await supabaseClient
@@ -133,13 +147,24 @@ serve(async (req) => {
       },
     ];
 
-    // Add plate if requested
+    // Add plate if requested (avec prix promo -20%)
+    let platePriceId = null;
+    let plateAmountCents = 0;
+    
     if (with_plate) {
+      if (plate_type === "standard") {
+        platePriceId = NFC_PLATE_STANDARD_PROMO_PRICE_ID; // 11.99€ (-20%)
+        plateAmountCents = PLATE_PRICES.standard.promo;
+      } else {
+        platePriceId = NFC_PLATE_PREMIUM_PROMO_PRICE_ID; // 23.99€ (-20%)
+        plateAmountCents = PLATE_PRICES.premium.promo;
+      }
+      
       lineItems.push({
-        price: NFC_PLATE_PRICE_ID,
+        price: platePriceId,
         quantity: 1,
       });
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] 📦 Added NFC plate to order");
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] 📦 Added NFC plate:", plate_type, "Price:", plateAmountCents);
     }
 
     // Create checkout session
@@ -155,9 +180,10 @@ serve(async (req) => {
           type: "driver_subscription",
           subscription_type: subscription_type,
           with_plate: with_plate ? "true" : "false",
+          plate_type: plate_type,
         },
       },
-      success_url: `${origin}/driver-welcome?driver_id=${driver_id}&pioneer=false&plate=${with_plate}`,
+      success_url: `${origin}/driver-welcome?driver_id=${driver_id}&pioneer=false&plate=${with_plate}&plate_type=${plate_type}`,
       cancel_url: `${origin}/register-driver-promo?canceled=true`,
       metadata: {
         driver_id: driver_id,
@@ -165,6 +191,7 @@ serve(async (req) => {
         type: "driver_subscription",
         subscription_type: subscription_type,
         with_plate: with_plate ? "true" : "false",
+        plate_type: plate_type,
         shipping_address: shipping_address || "",
         shipping_city: shipping_city || "",
         shipping_postal_code: shipping_postal_code || "",
@@ -203,8 +230,8 @@ serve(async (req) => {
           shipping_city: shipping_city,
           shipping_postal_code: shipping_postal_code,
           shipping_country: "France",
-          plate_type: "large",
-          amount: 2999, // in cents
+          plate_type: plate_type, // "standard" ou "premium"
+          amount: plateAmountCents, // Prix promo en centimes
           driver_id: driver_id,
           driver_qr_code_url: driverData?.qr_code_url || null,
           payment_status: "pending",
@@ -212,7 +239,7 @@ serve(async (req) => {
           order_number: orderNumber,
         });
         
-        console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ NFC plate order created:", orderNumber);
+        console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ NFC plate order created:", orderNumber, "Type:", plate_type);
       } catch (orderError) {
         console.error("[CREATE-DRIVER-SUBSCRIPTION] ⚠️ Failed to create plate order:", orderError);
         // Continue anyway - the webhook will handle it
