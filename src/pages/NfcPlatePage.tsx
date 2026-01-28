@@ -32,20 +32,22 @@ type PlateType = "large" | "small";
 
 const PLATES = {
   large: {
-    name: "Plaque NFC Plastique",
-    subtitle: "Format carré - Grande",
+    name: "Plaque NFC Premium",
+    subtitle: "Plastique - Format carré",
     description: "Plaque carrée en plastique noir premium avec QR code intégré",
     material: "Plastique",
     price: 29.99,
+    promoPrice: 23.99,
     priceId: "price_1SqaCu34nJZKnmmIbgUaYK8K",
     image: nfcPlateLarge,
   },
   small: {
-    name: "Plaque NFC Bois",
-    subtitle: "Format ovale - Compacte",
+    name: "Plaque NFC Standard",
+    subtitle: "Bois naturel - Format ovale",
     description: "Plaque ovale en bois naturel, élégante et écologique",
     material: "Bois naturel",
     price: 14.99,
+    promoPrice: 11.99,
     priceId: "price_1Sqdz534nJZKnmmItg1y3Nck",
     image: nfcPlateSmall,
   },
@@ -171,9 +173,144 @@ const NfcPlatePage = () => {
           </p>
         </div>
 
+        {/* Subscription advantage banner */}
+        <Card className="mb-8 p-6 bg-gradient-to-r from-primary/20 to-orange-500/20 border-primary/40 max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <Star className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-xl font-bold text-white mb-2">
+                🎁 Économisez 20% avec l'abonnement SoloCab !
+              </h2>
+              <p className="text-gray-300 mb-3">
+                En devenant chauffeur SoloCab, votre plaque NFC est <strong className="text-primary">liée à votre profil professionnel complet</strong> : 
+                avis clients, réservations en ligne, CRM, statistiques et bien plus encore.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Plaque Bois : <span className="line-through">14,99€</span> → <strong className="text-green-400">11,99€</strong></span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Plaque Premium : <span className="line-through">29,99€</span> → <strong className="text-green-400">23,99€</strong></span>
+                </div>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <Link to="/inscription-chauffeur">
+                <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                  <Car className="w-4 h-4 mr-2" />
+                  S'inscrire et économiser
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        {/* Comparison: With vs Without subscription */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
+          {/* Without subscription */}
+          <Card className="p-6 bg-white/5 border-white/20">
+            <div className="flex items-center gap-3 mb-4">
+              <Smartphone className="w-8 h-8 text-gray-400" />
+              <div>
+                <h3 className="font-bold text-white">Plaque seule</h3>
+                <p className="text-sm text-gray-400">Sans abonnement</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Lien vers votre numéro de téléphone</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>QR code + puce NFC</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
+                <span>Pas de profil public professionnel</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
+                <span>Pas de système de réservation</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
+                <span>Pas de suivi des avis clients</span>
+              </div>
+            </div>
+            <div className="text-center pt-4 border-t border-white/10">
+              <p className="text-gray-400 text-sm mb-1">À partir de</p>
+              <p className="text-3xl font-bold text-white">14,99€</p>
+              <p className="text-xs text-gray-500">Paiement unique</p>
+            </div>
+          </Card>
+
+          {/* With subscription */}
+          <Card className="p-6 bg-gradient-to-br from-primary/10 to-orange-500/10 border-primary/40 relative overflow-hidden">
+            <Badge className="absolute top-4 right-4 bg-primary text-white">
+              Recommandé
+            </Badge>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <Star className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Plaque + SoloCab</h3>
+                <p className="text-sm text-primary">Avec abonnement</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span><strong>Profil public professionnel</strong> complet</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Système de <strong>réservation en ligne</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span><strong>Avis clients</strong> et notation</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>CRM et gestion de votre clientèle</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Statistiques et tableau de bord</span>
+              </div>
+            </div>
+            <div className="text-center pt-4 border-t border-primary/30">
+              <p className="text-primary text-sm mb-1 font-medium">-20% sur la plaque</p>
+              <p className="text-3xl font-bold text-white">11,99€</p>
+              <p className="text-xs text-gray-400">+ 9,99€/mois (14 jours gratuits)</p>
+            </div>
+            <Link to="/inscription-chauffeur" className="block mt-4">
+              <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                Devenir chauffeur SoloCab
+              </Button>
+            </Link>
+          </Card>
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Product showcase */}
           <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-white text-center lg:text-left">
+              Commander une plaque seule
+            </h2>
+            <p className="text-gray-400 text-center lg:text-left">
+              Vous ne souhaitez pas vous abonner ? Commandez simplement votre plaque NFC 
+              qui sera liée à votre numéro de téléphone.
+            </p>
+
             {/* Plate selection */}
             <div className="grid grid-cols-2 gap-4">
               <button
@@ -194,8 +331,9 @@ const NfcPlatePage = () => {
                   alt="Plaque grande"
                   className="w-full h-24 object-contain mb-3"
                 />
-                <p className="text-white font-semibold text-sm">Plastique</p>
+                <p className="text-white font-semibold text-sm">Premium</p>
                 <p className="text-orange-400 font-bold">29,99€</p>
+                <p className="text-xs text-gray-500 line-through">23,99€ avec abo</p>
               </button>
 
               <button
@@ -218,9 +356,10 @@ const NfcPlatePage = () => {
                 />
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <TreeDeciduous className="w-3 h-3 text-green-400" />
-                  <p className="text-white font-semibold text-sm">Bois</p>
+                  <p className="text-white font-semibold text-sm">Standard</p>
                 </div>
                 <p className="text-green-400 font-bold">14,99€</p>
+                <p className="text-xs text-gray-500 line-through">11,99€ avec abo</p>
               </button>
             </div>
 
@@ -243,11 +382,14 @@ const NfcPlatePage = () => {
                 <p className="text-gray-400 mb-4">{currentPlate.description}</p>
                 <div className="flex items-center justify-center gap-3 mb-2">
                   <span className="text-5xl font-bold text-white">{currentPlate.price.toFixed(2)}€</span>
-                  <Badge className={`${selectedPlate === "large" ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-green-500/20 text-green-400 border-green-500/30"}`}>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                     TTC
                   </Badge>
                 </div>
-                <p className="text-gray-400">Paiement unique - Pas d'abonnement</p>
+                <p className="text-gray-500 text-sm mb-2">
+                  <span className="text-primary">{currentPlate.promoPrice.toFixed(2)}€</span> avec abonnement SoloCab
+                </p>
+                <p className="text-gray-400">Liée à votre numéro de téléphone</p>
                 <div className="flex items-center justify-center gap-2 mt-3">
                   <Badge variant="outline" className="text-gray-400 border-gray-600">
                     {currentPlate.material}
@@ -282,19 +424,21 @@ const NfcPlatePage = () => {
               </AlertDescription>
             </Alert>
 
-            {/* Already a driver? */}
+            {/* Encourage subscription again */}
             <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-blue-600/10 border-purple-500/30">
               <div className="flex items-start gap-4">
                 <Car className="w-10 h-10 text-purple-500 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-white mb-2">Déjà chauffeur SoloCab ?</h3>
+                  <h3 className="font-bold text-white mb-2">💡 Conseil : Passez à SoloCab</h3>
                   <p className="text-sm text-gray-400 mb-4">
-                    Commandez votre plaque depuis votre espace chauffeur et elle sera automatiquement 
-                    liée à votre profil public.
+                    Avec SoloCab, votre plaque NFC devient une vraie machine à clients : 
+                    profil professionnel, avis, réservations en ligne... Et en plus, 
+                    vous économisez sur la plaque !
                   </p>
-                  <Link to="/login">
+                  <Link to="/inscription-chauffeur">
                     <Button variant="outline" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10">
-                      Se connecter
+                      <Star className="w-4 h-4 mr-2" />
+                      Devenir chauffeur SoloCab
                     </Button>
                   </Link>
                 </div>
