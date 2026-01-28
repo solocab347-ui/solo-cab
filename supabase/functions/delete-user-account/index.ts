@@ -237,32 +237,130 @@ Deno.serve(async (req) => {
     if (deletion_type === 'immediate') {
       console.log('🗑️ Immediate deletion for:', driver.user_id);
       
-      // Supprimer le profil (cascade supprimera drivers, clients, etc.)
-      const { error: profileDeleteError } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('id', driver.user_id);
+      try {
+        // Supprimer toutes les données liées au driver dans l'ordre (contraintes FK)
+        const tablesToClean = [
+          'congress_registrations',
+          'document_reminders',
+          'driver_vehicle_documents',
+          'course_queue',
+          'fleet_course_escalations',
+          'course_escalations',
+          'fleet_partner_courses',
+          'fleet_driver_blocks',
+          'company_payment_reminders',
+          'company_course_quotes',
+          'company_course_requests',
+          'guest_registration_tokens',
+          'partner_payments',
+          'partner_invoices',
+          'partner_order_documents',
+          'vehicle_documents',
+          'driver_vehicles',
+          'course_invitations',
+          'fleet_partnership_payments',
+          'fleet_driver_documents_archive',
+          'fleet_driver_declined_courses',
+          'company_payments',
+          'company_driver_agreements',
+          'partner_course_pool',
+          'city_pricing',
+          'client_first_orders',
+          'fleet_driver_partnerships',
+          'driver_schedules',
+          'fleet_driver_invitations',
+          'partnership_disputes',
+          'shared_courses',
+          'driver_partnerships',
+          'fleet_manager_invitations',
+          'fleet_manager_drivers',
+          'company_drivers',
+          'invitation_tokens',
+          'driver_feedback',
+          'assistant_requests',
+          'campaigns',
+          'promotions',
+          'factures',
+          'devis',
+          'courses',
+          'qr_codes',
+          'driver_availability_slots',
+          'fleet_manager_course_requests',
+        ];
 
-      if (profileDeleteError) {
-        console.error('Error deleting profile:', profileDeleteError);
-      }
+        for (const table of tablesToClean) {
+          const { error } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('driver_id', driver.id);
+          
+          if (error) {
+            console.log(`Note: Could not clean ${table}:`, error.message);
+          }
+        }
 
-      // Supprimer l'utilisateur auth
-      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(driver.user_id);
-      
-      if (authDeleteError) {
-        console.error('Error deleting auth user:', authDeleteError);
-      } else {
+        // Nettoyer aussi les références par user_id
+        const userTables = ['notifications', 'push_subscriptions'];
+        for (const table of userTables) {
+          await supabaseAdmin.from(table).delete().eq('user_id', driver.user_id);
+        }
+
+        // Nettoyer les clients liés
+        await supabaseAdmin.from('clients').delete().eq('driver_id', driver.id);
+
+        // Supprimer le driver
+        const { error: driverDeleteError } = await supabaseAdmin
+          .from('drivers')
+          .delete()
+          .eq('id', driver.id);
+
+        if (driverDeleteError) {
+          console.error('Error deleting driver:', driverDeleteError);
+          throw new Error(`Impossible de supprimer le chauffeur: ${driverDeleteError.message}`);
+        }
+
+        // Supprimer le profil
+        const { error: profileDeleteError } = await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('id', driver.user_id);
+
+        if (profileDeleteError) {
+          console.error('Error deleting profile:', profileDeleteError);
+          throw new Error(`Impossible de supprimer le profil: ${profileDeleteError.message}`);
+        }
+
+        // Supprimer l'utilisateur auth
+        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(driver.user_id);
+        
+        if (authDeleteError) {
+          console.error('Error deleting auth user:', authDeleteError);
+          throw new Error(`Impossible de supprimer l'utilisateur auth: ${authDeleteError.message}`);
+        }
+        
         console.log('✅ User completely deleted:', driver.user_id);
-      }
 
-      // Marquer comme complété
-      await supabaseAdmin
-        .from('scheduled_user_deletions')
-        .update({
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', deletion.id);
+        // Marquer comme complété
+        await supabaseAdmin
+          .from('scheduled_user_deletions')
+          .update({
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', deletion.id);
+          
+      } catch (deleteError) {
+        console.error('❌ Deletion failed:', deleteError);
+        
+        // Marquer la suppression comme échouée
+        await supabaseAdmin
+          .from('scheduled_user_deletions')
+          .update({
+            status: 'failed',
+          })
+          .eq('id', deletion.id);
+          
+        throw deleteError;
+      }
     }
 
     return new Response(
