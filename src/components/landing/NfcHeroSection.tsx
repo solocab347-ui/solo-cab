@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  CreditCard,
   Shield,
   Smartphone,
   Zap,
@@ -11,9 +10,12 @@ import {
   CheckCircle,
   Star,
   Truck,
-  QrCode,
   Users,
+  TreeDeciduous,
+  Crown,
 } from "lucide-react";
+import nfcPlateLarge from "@/assets/nfc-plate-large-clean.png";
+import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
 
 export const NfcHeroSection = () => {
   const features = [
@@ -53,65 +55,127 @@ export const NfcHeroSection = () => {
   return (
     <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Primary CTA Section */}
-      <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-600/10 border border-orange-500/20 max-w-4xl mx-auto">
+      <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-600/10 border border-orange-500/20 max-w-5xl mx-auto">
         <Badge className="mb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
-          🏷️ Plaque NFC VTC Professionnelle
+          🏷️ Plaques NFC VTC Professionnelles
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight text-white">
-          Votre <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Plaque NFC</span> professionnelle
+          Vos <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Plaques NFC</span> professionnelles
         </h1>
-        <p className="text-xl text-gray-400 mb-6 max-w-2xl mx-auto">
-          Permettez à vos clients de vous contacter en un scan. Une plaque NFC programmée avec le lien vers votre profil SoloCab.
+        <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+          Permettez à vos clients de vous contacter en un scan. Choisissez votre plaque NFC programmée avec le lien vers votre profil SoloCab.
         </p>
 
-        {/* Price Cards - Two options */}
-        <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
-          {/* Standard option */}
-          <Card className="p-5 bg-white/5 border-white/20">
-            <p className="text-sm text-gray-400 mb-2">Plaque seule</p>
-            <div className="flex items-baseline justify-center gap-2 mb-2">
-              <span className="text-3xl font-bold text-white">14,99€</span>
+        {/* Two Plates Display */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+          {/* Premium Plate - Highlighted */}
+          <Card className="p-6 bg-gradient-to-br from-orange-500/20 to-red-600/20 border-orange-500/40 relative overflow-hidden">
+            <Badge className="absolute top-3 right-3 bg-orange-500 text-white text-xs">
+              <Crown className="w-3 h-3 mr-1" />
+              Premium
+            </Badge>
+            
+            {/* Plate Image */}
+            <div className="bg-white/5 rounded-xl p-4 mb-4">
+              <img 
+                src={nfcPlateLarge} 
+                alt="Plaque NFC Premium" 
+                className="w-full h-32 object-contain"
+              />
             </div>
-            <p className="text-xs text-gray-500 mb-3">
-              Liée à votre numéro de téléphone
-            </p>
+            
+            <h3 className="text-lg font-bold text-white mb-1">Plaque Premium</h3>
+            <p className="text-sm text-gray-400 mb-4">Plastique noir - Format carré</p>
+            
+            {/* Prices */}
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                <span className="text-sm text-gray-400">Plaque seule</span>
+                <span className="text-xl font-bold text-white">29,99€</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-primary font-medium">Avec abonnement</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-white">23,99€</span>
+                  <span className="text-xs text-gray-500 line-through ml-2">29,99€</span>
+                </div>
+              </div>
+            </div>
+
             <Link to="/plaque-nfc">
-              <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
-                Commander
+              <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                Commander Premium
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
           </Card>
 
-          {/* With subscription - Recommended */}
-          <Card className="p-5 bg-gradient-to-br from-primary/20 to-orange-500/20 border-primary/40 relative">
-            <Badge className="absolute -top-2 right-4 bg-primary text-white text-xs">
-              -20%
+          {/* Standard Plate */}
+          <Card className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-600/10 border-green-500/30 relative overflow-hidden">
+            <Badge className="absolute top-3 right-3 bg-green-500 text-white text-xs">
+              <TreeDeciduous className="w-3 h-3 mr-1" />
+              Écologique
             </Badge>
-            <p className="text-sm text-primary mb-2 font-medium">Avec abonnement SoloCab</p>
-            <div className="flex items-baseline justify-center gap-2 mb-2">
-              <span className="text-3xl font-bold text-white">11,99€</span>
-              <span className="text-sm text-gray-500 line-through">14,99€</span>
+            
+            {/* Plate Image */}
+            <div className="bg-white/5 rounded-xl p-4 mb-4">
+              <img 
+                src={nfcPlateSmall} 
+                alt="Plaque NFC Standard" 
+                className="w-full h-32 object-contain"
+              />
             </div>
-            <p className="text-xs text-gray-400 mb-3">
-              Profil pro + réservations + avis
-            </p>
-            <Link to="/inscription-chauffeur">
-              <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
-                <Star className="w-4 h-4 mr-2" />
-                S'inscrire
+            
+            <h3 className="text-lg font-bold text-white mb-1">Plaque Standard</h3>
+            <p className="text-sm text-gray-400 mb-4">Bois naturel - Format ovale</p>
+            
+            {/* Prices */}
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                <span className="text-sm text-gray-400">Plaque seule</span>
+                <span className="text-xl font-bold text-white">14,99€</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-primary font-medium">Avec abonnement</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-white">11,99€</span>
+                  <span className="text-xs text-gray-500 line-through ml-2">14,99€</span>
+                </div>
+              </div>
+            </div>
+
+            <Link to="/plaque-nfc">
+              <Button variant="outline" className="w-full border-green-500/50 text-white hover:bg-green-500/10">
+                Commander Standard
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
           </Card>
         </div>
 
         {/* Benefits List */}
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
           {benefits.map((benefit, index) => (
             <div key={index} className="flex items-center gap-2 text-sm text-gray-300">
               <CheckCircle className="w-4 h-4 text-green-500" />
               {benefit}
             </div>
           ))}
+        </div>
+
+        {/* Subscription advantage */}
+        <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 max-w-2xl mx-auto">
+          <p className="text-gray-300 text-sm">
+            <Star className="w-4 h-4 inline mr-2 text-primary" />
+            <strong className="text-primary">-20% avec l'abonnement SoloCab</strong> : 
+            Profil professionnel, réservations en ligne, avis clients, CRM et statistiques inclus !
+          </p>
         </div>
       </div>
 
@@ -183,14 +247,14 @@ export const NfcHeroSection = () => {
           <Link to="/inscription-chauffeur">
             <Button size="lg" className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg w-full sm:w-auto">
               <Star className="w-5 h-5 mr-2" />
-              S'inscrire chauffeur - Plaque dès 11,99€
+              S'inscrire chauffeur
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
           <Link to="/plaque-nfc">
             <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto">
-              <CreditCard className="w-5 h-5 mr-2" />
-              Plaque seule à 14,99€
+              Voir les plaques
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
         </div>

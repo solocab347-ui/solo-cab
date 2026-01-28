@@ -57,7 +57,7 @@ const NfcPlatePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
-  const [selectedPlate, setSelectedPlate] = useState<PlateType>("large");
+  const [selectedPlate, setSelectedPlate] = useState<PlateType>("large"); // Premium par défaut
 
   // Formulaire
   const [formData, setFormData] = useState({
@@ -211,54 +211,16 @@ const NfcPlatePage = () => {
           </div>
         </Card>
 
-        {/* Comparison: With vs Without subscription */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
-          {/* Without subscription */}
-          <Card className="p-6 bg-white/5 border-white/20">
-            <div className="flex items-center gap-3 mb-4">
-              <Smartphone className="w-8 h-8 text-gray-400" />
-              <div>
-                <h3 className="font-bold text-white">Plaque seule</h3>
-                <p className="text-sm text-gray-400">Sans abonnement</p>
-              </div>
-            </div>
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-2 text-gray-300 text-sm">
-                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span>Lien vers votre numéro de téléphone</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-300 text-sm">
-                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span>QR code + puce NFC</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
-                <span>Pas de profil public professionnel</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
-                <span>Pas de système de réservation</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <span className="w-4 h-4 flex-shrink-0 text-center">✗</span>
-                <span>Pas de suivi des avis clients</span>
-              </div>
-            </div>
-            <div className="text-center pt-4 border-t border-white/10">
-              <p className="text-gray-400 text-sm mb-1">À partir de</p>
-              <p className="text-3xl font-bold text-white">14,99€</p>
-              <p className="text-xs text-gray-500">Paiement unique</p>
-            </div>
-          </Card>
-
-          {/* With subscription */}
-          <Card className="p-6 bg-gradient-to-br from-primary/10 to-orange-500/10 border-primary/40 relative overflow-hidden">
+        {/* Comparison: Three options - With subscription, Without subscription, Without plate */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
+          {/* With subscription - Recommended */}
+          <Card className="p-6 bg-gradient-to-br from-primary/10 to-orange-500/10 border-primary/40 relative overflow-hidden order-1 md:order-1">
             <Badge className="absolute top-4 right-4 bg-primary text-white">
-              Recommandé
+              ⭐ Recommandé
             </Badge>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <Star className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Star className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-bold text-white">Plaque + SoloCab</h3>
@@ -280,27 +242,135 @@ const NfcPlatePage = () => {
               </div>
               <div className="flex items-center gap-2 text-gray-300 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span>CRM et gestion de votre clientèle</span>
+                <span>CRM et gestion de clientèle</span>
               </div>
               <div className="flex items-center gap-2 text-gray-300 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                 <span>Statistiques et tableau de bord</span>
               </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Plaque liée à votre <strong>écosystème pro</strong></span>
+              </div>
             </div>
             <div className="text-center pt-4 border-t border-primary/30">
               <p className="text-primary text-sm mb-1 font-medium">-20% sur la plaque</p>
-              <p className="text-3xl font-bold text-white">11,99€</p>
+              <p className="text-3xl font-bold text-white">dès 11,99€</p>
               <p className="text-xs text-gray-400">+ 9,99€/mois (14 jours gratuits)</p>
             </div>
             <Link to="/inscription-chauffeur" className="block mt-4">
               <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                <Star className="w-4 h-4 mr-2" />
                 Devenir chauffeur SoloCab
+              </Button>
+            </Link>
+          </Card>
+
+          {/* Without subscription - Plate only */}
+          <Card className="p-6 bg-white/5 border-white/20 order-2 md:order-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gray-500/20 flex items-center justify-center">
+                <Smartphone className="w-6 h-6 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Plaque seule</h3>
+                <p className="text-sm text-gray-400">Sans abonnement</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Lien vers votre <strong>numéro de téléphone</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>QR code + puce NFC inclus</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Scan instantané sans application</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center text-red-400">✗</span>
+                <span>Pas de profil public</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center text-red-400">✗</span>
+                <span>Pas de système de réservation</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center text-red-400">✗</span>
+                <span>Pas de suivi des avis</span>
+              </div>
+            </div>
+            <div className="text-center pt-4 border-t border-white/10">
+              <p className="text-gray-400 text-sm mb-1">À partir de</p>
+              <p className="text-3xl font-bold text-white">14,99€</p>
+              <p className="text-xs text-gray-500">Paiement unique</p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full mt-4 border-white/30 text-white hover:bg-white/10"
+              onClick={() => {
+                const element = document.getElementById('order-section');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Commander une plaque seule
+            </Button>
+          </Card>
+
+          {/* Without plate - Subscription only */}
+          <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-600/10 border-blue-500/30 order-3 md:order-3">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <Wifi className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">SoloCab seul</h3>
+                <p className="text-sm text-blue-400">Sans plaque NFC</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Profil public professionnel</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Système de réservation en ligne</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Avis clients et notation</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>CRM et gestion de clientèle</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span>Partagez votre lien manuellement</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <span className="w-4 h-4 flex-shrink-0 text-center text-yellow-400">⚠</span>
+                <span className="text-yellow-400/70">Pas de scan NFC dans le véhicule</span>
+              </div>
+            </div>
+            <div className="text-center pt-4 border-t border-blue-500/30">
+              <p className="text-blue-400 text-sm mb-1 font-medium">14 jours gratuits</p>
+              <p className="text-3xl font-bold text-white">9,99€<span className="text-lg text-gray-400">/mois</span></p>
+              <p className="text-xs text-gray-400">Ajoutez une plaque à -20% plus tard</p>
+            </div>
+            <Link to="/inscription-chauffeur" className="block mt-4">
+              <Button variant="outline" className="w-full border-blue-500/50 text-blue-400 hover:bg-blue-500/10">
+                S'inscrire sans plaque
               </Button>
             </Link>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div id="order-section" className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto scroll-mt-8">
           {/* Product showcase */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white text-center lg:text-left">
@@ -311,8 +381,9 @@ const NfcPlatePage = () => {
               qui sera liée à votre numéro de téléphone.
             </p>
 
-            {/* Plate selection */}
+            {/* Plate selection - Premium first */}
             <div className="grid grid-cols-2 gap-4">
+              {/* Premium - First position */}
               <button
                 onClick={() => setSelectedPlate("large")}
                 className={`relative p-4 rounded-xl border-2 transition-all ${
@@ -321,21 +392,25 @@ const NfcPlatePage = () => {
                     : "border-white/20 bg-white/5 hover:border-white/40"
                 }`}
               >
+                <Badge className="absolute -top-2 left-2 bg-orange-500 text-white text-xs">
+                  Premium
+                </Badge>
                 {selectedPlate === "large" && (
-                  <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs">
-                    Sélectionné
+                  <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
+                    ✓
                   </Badge>
                 )}
                 <img
                   src={nfcPlateLarge}
-                  alt="Plaque grande"
-                  className="w-full h-24 object-contain mb-3"
+                  alt="Plaque Premium"
+                  className="w-full h-28 object-contain mb-3 mt-2"
                 />
-                <p className="text-white font-semibold text-sm">Premium</p>
-                <p className="text-orange-400 font-bold">29,99€</p>
-                <p className="text-xs text-gray-500 line-through">23,99€ avec abo</p>
+                <p className="text-white font-semibold text-sm">Plastique noir</p>
+                <p className="text-orange-400 font-bold text-lg">29,99€</p>
+                <p className="text-xs text-primary">23,99€ avec abo (-20%)</p>
               </button>
 
+              {/* Standard - Second position */}
               <button
                 onClick={() => setSelectedPlate("small")}
                 className={`relative p-4 rounded-xl border-2 transition-all ${
@@ -344,22 +419,23 @@ const NfcPlatePage = () => {
                     : "border-white/20 bg-white/5 hover:border-white/40"
                 }`}
               >
+                <Badge className="absolute -top-2 left-2 bg-green-600 text-white text-xs">
+                  <TreeDeciduous className="w-3 h-3 mr-1" />
+                  Éco
+                </Badge>
                 {selectedPlate === "small" && (
                   <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
-                    Sélectionné
+                    ✓
                   </Badge>
                 )}
                 <img
                   src={nfcPlateSmall}
-                  alt="Plaque petite"
-                  className="w-full h-24 object-contain mb-3"
+                  alt="Plaque Standard"
+                  className="w-full h-28 object-contain mb-3 mt-2"
                 />
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <TreeDeciduous className="w-3 h-3 text-green-400" />
-                  <p className="text-white font-semibold text-sm">Standard</p>
-                </div>
-                <p className="text-green-400 font-bold">14,99€</p>
-                <p className="text-xs text-gray-500 line-through">11,99€ avec abo</p>
+                <p className="text-white font-semibold text-sm">Bois naturel</p>
+                <p className="text-green-400 font-bold text-lg">14,99€</p>
+                <p className="text-xs text-primary">11,99€ avec abo (-20%)</p>
               </button>
             </div>
 
