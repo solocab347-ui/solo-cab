@@ -86,7 +86,7 @@ export function DriverOnboardingTunnel({
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
     nfc: {
-      hasNfcPlate: driverProfile?.driver?.has_nfc_plate || false,
+      hasNfcPlate: driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number ? true : false,
       wantsNfcPlate: false,
     }
   });
