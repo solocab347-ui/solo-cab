@@ -55,7 +55,7 @@ export const NfcHeroSection = () => {
       {/* Primary CTA Section */}
       <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-600/10 border border-orange-500/20 max-w-4xl mx-auto">
         <Badge className="mb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
-          🏷️ Plaque NFC VTC Coutras
+          🏷️ Plaque NFC VTC Professionnelle
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight text-white">
           Votre <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Plaque NFC</span> professionnelle
@@ -64,21 +64,41 @@ export const NfcHeroSection = () => {
           Permettez à vos clients de vous contacter en un scan. Une plaque NFC programmée avec le lien vers votre profil SoloCab.
         </p>
 
-        {/* Price Card */}
-        <div className="max-w-sm mx-auto mb-6">
-          <Card className="p-6 bg-gradient-to-br from-orange-500/20 to-red-600/20 border-orange-500/30">
+        {/* Price Cards - Two options */}
+        <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
+          {/* Standard option */}
+          <Card className="p-5 bg-white/5 border-white/20">
+            <p className="text-sm text-gray-400 mb-2">Plaque seule</p>
             <div className="flex items-baseline justify-center gap-2 mb-2">
-              <span className="text-5xl font-bold text-white">29,99€</span>
-              <span className="text-gray-400">TTC</span>
+              <span className="text-3xl font-bold text-white">14,99€</span>
             </div>
-            <p className="text-sm text-gray-300 mb-4">
-              Paiement unique • Livraison incluse
+            <p className="text-xs text-gray-500 mb-3">
+              Liée à votre numéro de téléphone
             </p>
             <Link to="/plaque-nfc">
-              <Button size="lg" className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Commander ma plaque
-                <ArrowRight className="w-5 h-5 ml-2" />
+              <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
+                Commander
+              </Button>
+            </Link>
+          </Card>
+
+          {/* With subscription - Recommended */}
+          <Card className="p-5 bg-gradient-to-br from-primary/20 to-orange-500/20 border-primary/40 relative">
+            <Badge className="absolute -top-2 right-4 bg-primary text-white text-xs">
+              -20%
+            </Badge>
+            <p className="text-sm text-primary mb-2 font-medium">Avec abonnement SoloCab</p>
+            <div className="flex items-baseline justify-center gap-2 mb-2">
+              <span className="text-3xl font-bold text-white">11,99€</span>
+              <span className="text-sm text-gray-500 line-through">14,99€</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Profil pro + réservations + avis
+            </p>
+            <Link to="/inscription-chauffeur">
+              <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                <Star className="w-4 h-4 mr-2" />
+                S'inscrire
               </Button>
             </Link>
           </Card>
@@ -155,19 +175,22 @@ export const NfcHeroSection = () => {
       {/* Bottom CTA */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-600/10 border border-orange-500/20 max-w-3xl mx-auto">
         <h3 className="text-2xl font-bold text-white mb-3">Prêt à booster votre visibilité ?</h3>
-        <p className="text-gray-400 mb-6">Commandez votre plaque NFC et facilitez le contact avec vos futurs clients</p>
+        <p className="text-gray-400 mb-6">
+          Commandez votre plaque NFC et facilitez le contact avec vos futurs clients. 
+          <strong className="text-primary"> -20% avec un abonnement SoloCab !</strong>
+        </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/plaque-nfc">
+          <Link to="/inscription-chauffeur">
             <Button size="lg" className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg w-full sm:w-auto">
-              <CreditCard className="w-5 h-5 mr-2" />
-              Commander à 29,99€
+              <Star className="w-5 h-5 mr-2" />
+              S'inscrire chauffeur - Plaque dès 11,99€
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
-          <Link to="/devenir-chauffeur">
+          <Link to="/plaque-nfc">
             <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto">
-              <Star className="w-5 h-5 mr-2" />
-              Ou s'inscrire chauffeur
+              <CreditCard className="w-5 h-5 mr-2" />
+              Plaque seule à 14,99€
             </Button>
           </Link>
         </div>
