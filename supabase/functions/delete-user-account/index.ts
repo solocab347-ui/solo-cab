@@ -30,27 +30,30 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Missing or invalid Authorization header');
       return new Response(
         JSON.stringify({ error: 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Admin client avec service role key
-    const supabaseAdmin = createClient(
+    const token = authHeader.replace('Bearer ', '');
+
+    // Client avec anon key + Authorization header pour valider le token utilisateur
+    const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { 
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false }
+      }
     );
 
-    // Vérifier le token avec l'API admin - passer le JWT directement
-    const token = authHeader.replace('Bearer ', '');
+    // Valider le token utilisateur
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
     
-    // Utiliser getUser avec le token JWT passé en argument
-    const { data, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (userError || !data?.user) {
+    if (userError || !userData?.user) {
       console.error('Auth error:', userError?.message || 'No user found');
       return new Response(
         JSON.stringify({ error: 'Token invalide' }),
@@ -58,7 +61,15 @@ Deno.serve(async (req) => {
       );
     }
     
-    const user = data.user;
+    const user = userData.user;
+    console.log('Authenticated user:', user.id);
+
+    // Admin client avec service role key pour les opérations privilégiées
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
     // Vérifier admin
     const { data: roleData } = await supabaseAdmin
