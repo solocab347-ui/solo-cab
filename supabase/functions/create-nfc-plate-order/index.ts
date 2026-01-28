@@ -197,14 +197,25 @@ serve(async (req) => {
     // Créer la session Stripe Checkout
     const origin = req.headers.get("origin") || "https://solocab.fr";
     
+    // MODE TEST: Prix forcé à 1€ pour les tests (à supprimer en production)
+    const TEST_MODE_ENABLED = true;
+    const testPriceData = TEST_MODE_ENABLED ? {
+      price_data: {
+        currency: "eur",
+        unit_amount: 100, // 1€ en centimes
+        product_data: {
+          name: plateConfig.name + " (TEST)",
+        },
+      },
+      quantity: 1,
+    } : {
+      price: plateConfig.priceId,
+      quantity: 1,
+    };
+    
     const sessionParams: any = {
       customer: customerId,
-      line_items: [
-        {
-          price: plateConfig.priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [testPriceData],
       mode: "payment",
       success_url: `${origin}/plaque-nfc/success?order=${orderNumber}&token=${order.tracking_token}`,
       cancel_url: `${origin}/plaque-nfc?canceled=true`,
@@ -213,6 +224,7 @@ serve(async (req) => {
         order_number: orderNumber,
         type: "nfc_plate_order",
         plate_type: plate_type,
+        test_mode: TEST_MODE_ENABLED ? "true" : "false",
       },
       shipping_address_collection: {
         allowed_countries: ["FR"],
