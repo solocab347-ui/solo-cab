@@ -17,15 +17,15 @@ interface OnboardingCompleteStepProps {
 
 export function OnboardingCompleteStep({ onComplete, loading }: OnboardingCompleteStepProps) {
   return (
-    <div className="text-center space-y-6 py-4">
+    <div className="text-center space-y-4 py-2">
       {/* Success Animation */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center"
+        className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center"
       >
-        <CheckCircle2 className="w-10 h-10 text-primary-foreground" />
+        <CheckCircle2 className="w-8 h-8 text-primary-foreground" />
       </motion.div>
 
       <motion.div
@@ -33,8 +33,8 @@ export function OnboardingCompleteStep({ onComplete, loading }: OnboardingComple
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <h2 className="text-2xl font-bold">Félicitations ! 🎉</h2>
-        <p className="text-muted-foreground mt-2">
+        <h2 className="text-xl font-bold">Félicitations ! 🎉</h2>
+        <p className="text-muted-foreground text-sm mt-1">
           Votre inscription est presque complète
         </p>
       </motion.div>
@@ -44,19 +44,18 @@ export function OnboardingCompleteStep({ onComplete, loading }: OnboardingComple
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="space-y-3"
+        className="space-y-2"
       >
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-primary/20 rounded-lg shrink-0">
-                <Target className="w-5 h-5 text-primary" />
+          <CardContent className="p-3">
+            <div className="flex items-start gap-2">
+              <div className="p-1.5 bg-primary/20 rounded-lg shrink-0">
+                <Target className="w-4 h-4 text-primary" />
               </div>
               <div className="text-left">
                 <h3 className="font-semibold text-sm">Coach IA dédié</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Votre assistant personnel vous aidera à fixer vos objectifs et à développer 
-                  votre clientèle privée pour devenir indépendant des plateformes.
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Votre assistant vous aidera à développer votre clientèle privée.
                 </p>
               </div>
             </div>
@@ -64,16 +63,15 @@ export function OnboardingCompleteStep({ onComplete, loading }: OnboardingComple
         </Card>
 
         <Card className="bg-muted/30">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-muted rounded-lg shrink-0">
-                <MessageSquare className="w-5 h-5 text-muted-foreground" />
+          <CardContent className="p-3">
+            <div className="flex items-start gap-2">
+              <div className="p-1.5 bg-muted rounded-lg shrink-0">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
               </div>
               <div className="text-left">
-                <h3 className="font-semibold text-sm">Validation des documents</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  L'administration vérifiera vos documents sous 24-48h. 
-                  Vous serez notifié dès la validation.
+                <h3 className="font-semibold text-sm">Validation documents</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Vérification sous 24-48h. Notification dès validation.
                 </p>
               </div>
             </div>
@@ -81,16 +79,15 @@ export function OnboardingCompleteStep({ onComplete, loading }: OnboardingComple
         </Card>
 
         <Card className="bg-muted/30">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-muted rounded-lg shrink-0">
-                <Rocket className="w-5 h-5 text-muted-foreground" />
+          <CardContent className="p-3">
+            <div className="flex items-start gap-2">
+              <div className="p-1.5 bg-muted rounded-lg shrink-0">
+                <Rocket className="w-4 h-4 text-muted-foreground" />
               </div>
               <div className="text-left">
                 <h3 className="font-semibold text-sm">Accès complet</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Vous pouvez dès maintenant explorer votre espace : QR codes, 
-                  calculateur de prix, statistiques, et bien plus.
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  QR codes, calculateur de prix, statistiques, et plus.
                 </p>
               </div>
             </div>
@@ -103,12 +100,13 @@ export function OnboardingCompleteStep({ onComplete, loading }: OnboardingComple
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
+        className="pt-2"
       >
         <Button 
           onClick={onComplete} 
           disabled={loading}
           size="lg"
-          className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80"
+          className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 h-12"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
