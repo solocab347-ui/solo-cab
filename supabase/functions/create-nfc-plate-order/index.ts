@@ -197,8 +197,8 @@ serve(async (req) => {
     // Créer la session Stripe Checkout
     const origin = req.headers.get("origin") || "https://solocab.fr";
     
-    // MODE TEST: Prix forcé à 1€ pour les tests (à supprimer en production)
-    const TEST_MODE_ENABLED = true;
+    // MODE PRODUCTION: Prix réels activés
+    const TEST_MODE_ENABLED = false;
     const testPriceData = TEST_MODE_ENABLED ? {
       price_data: {
         currency: "eur",
