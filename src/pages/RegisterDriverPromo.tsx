@@ -10,9 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw, Bot, Trophy, MessageSquare, Target, Trees } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw, Bot, Trophy, MessageSquare, Target, Trees, Truck, ArrowRight, Smartphone, QrCode, Star, X } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
+import nfcPlateLarge from "@/assets/nfc-plate-large-clean.png";
+import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
 
 // Prix des plaques NFC
 const PLATE_STANDARD_PRICE = 14.99; // Bois
@@ -33,6 +35,10 @@ const RegisterDriverPromo = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Check if coming from NFC plate page (skip step 2)
+  const fromPlate = searchParams.get("with_plate") === "true";
+  const preselectedPlate = searchParams.get("plate") as "standard" | "premium" | null;
+  
   // Login mode for returning users
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -45,10 +51,12 @@ const RegisterDriverPromo = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
-  // Étape 2 - Choix abonnement et options
+  // Étape 2 - Choix plaque NFC (promotion intermédiaire)
+  const [wantsPlate, setWantsPlate] = useState(fromPlate);
+  const [plateType, setPlateType] = useState<"standard" | "premium">(preselectedPlate || "premium");
+
+  // Étape 3 - Choix abonnement et finalisation
   const [subscriptionType, setSubscriptionType] = useState<"monthly" | "annual">("monthly");
-  const [wantsPlate, setWantsPlate] = useState(false);
-  const [plateType, setPlateType] = useState<"standard" | "premium">("premium");
   const [shippingAddress, setShippingAddress] = useState("");
   const [shippingCity, setShippingCity] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
@@ -62,6 +70,9 @@ const RegisterDriverPromo = () => {
   
   // Payment redirect overlay - show immediately when user clicks pay
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
+
+  // Determine total steps based on entry point
+  const totalSteps = fromPlate ? 2 : 3; // 2 steps if from plate page (skip NFC promo), 3 steps otherwise
 
   // Check URL params for payment failure
   useEffect(() => {
@@ -94,6 +105,7 @@ const RegisterDriverPromo = () => {
               registration_step,
               pending_subscription_type,
               pending_wants_plate,
+              pending_plate_type,
               shipping_address,
               shipping_city,
               shipping_postal_code,
@@ -101,7 +113,7 @@ const RegisterDriverPromo = () => {
               payment_failed_reason
             `)
             .eq("user_id", session.user.id)
-            .maybeSingle();
+            .maybeSingle() as { data: any; error: any };
           
           if (existingDriver) {
             console.log("[RegisterDriverPromo] Driver profile found:", existingDriver);
@@ -122,6 +134,9 @@ const RegisterDriverPromo = () => {
             if (existingDriver.pending_wants_plate) {
               setWantsPlate(true);
             }
+            if (existingDriver.pending_plate_type) {
+              setPlateType(existingDriver.pending_plate_type as "standard" | "premium");
+            }
             if (existingDriver.shipping_address) {
               setShippingAddress(existingDriver.shipping_address);
             }
@@ -138,9 +153,9 @@ const RegisterDriverPromo = () => {
               setPaymentFailedReason(existingDriver.payment_failed_reason || "Votre dernier paiement a échoué. Veuillez réessayer.");
             }
             
-            // Go to step 2 for payment (registration incomplete)
+            // Go to final step for payment (registration incomplete)
             toast.info("Reprenez votre inscription là où vous l'avez laissée");
-            setCurrentStep(2);
+            setCurrentStep(totalSteps);
           }
         }
       } catch (error) {
@@ -151,7 +166,7 @@ const RegisterDriverPromo = () => {
     };
 
     checkExistingSession();
-  }, [navigate]);
+  }, [navigate, totalSteps]);
 
   // Handle login for returning users
   const handleLogin = async (e: React.FormEvent) => {
@@ -178,6 +193,7 @@ const RegisterDriverPromo = () => {
             subscription_paid,
             pending_subscription_type,
             pending_wants_plate,
+            pending_plate_type,
             shipping_address,
             shipping_city,
             shipping_postal_code,
@@ -185,7 +201,7 @@ const RegisterDriverPromo = () => {
             payment_failed_reason
           `)
           .eq("user_id", data.user.id)
-          .maybeSingle();
+          .maybeSingle() as { data: any; error: any };
 
         if (driverData) {
           setDriverId(driverData.id);
@@ -205,6 +221,9 @@ const RegisterDriverPromo = () => {
           if (driverData.pending_wants_plate) {
             setWantsPlate(true);
           }
+          if (driverData.pending_plate_type) {
+            setPlateType(driverData.pending_plate_type as "standard" | "premium");
+          }
           if (driverData.shipping_address) {
             setShippingAddress(driverData.shipping_address);
           }
@@ -222,7 +241,7 @@ const RegisterDriverPromo = () => {
           }
           
           toast.success("Connexion réussie ! Finalisez votre inscription.");
-          setCurrentStep(2);
+          setCurrentStep(totalSteps);
         } else {
           // User exists but no driver profile - shouldn't happen but handle it
           toast.error("Aucun profil chauffeur trouvé. Créez un nouveau compte.");
@@ -320,7 +339,13 @@ const RegisterDriverPromo = () => {
       }
 
       toast.success("Compte créé avec succès !");
-      setCurrentStep(2);
+      
+      // If coming from plate page, skip step 2 (NFC promo) and go directly to step 3
+      if (fromPlate) {
+        setCurrentStep(2); // Step 2 is final when totalSteps = 2
+      } else {
+        setCurrentStep(2); // Go to NFC promo step
+      }
     } catch (error: any) {
       console.error("Erreur step 1:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";
@@ -337,6 +362,17 @@ const RegisterDriverPromo = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle step 2 - NFC plate choice (continue to step 3)
+  const handleStep2Continue = () => {
+    setCurrentStep(3);
+  };
+
+  // Skip NFC plate
+  const handleSkipPlate = () => {
+    setWantsPlate(false);
+    setCurrentStep(3);
   };
 
   // Save choices before payment
@@ -364,7 +400,7 @@ const RegisterDriverPromo = () => {
     }
   };
 
-  const handleStep2Payment = async () => {
+  const handleFinalPayment = async () => {
     if (!driverId) {
       toast.error("Erreur: profil chauffeur non trouvé");
       return;
@@ -413,7 +449,7 @@ const RegisterDriverPromo = () => {
       // Redirect to Stripe
       window.location.href = checkoutResult.data.url;
     } catch (error: any) {
-      console.error("Erreur step 2:", error);
+      console.error("Erreur paiement:", error);
       setShowPaymentOverlay(false);
       
       // Record payment failure
@@ -448,6 +484,14 @@ const RegisterDriverPromo = () => {
 
   const totalToPay = getSubscriptionPrice() + (wantsPlate ? getPlatePromoPrice() : 0);
 
+  // Get current display step number (for progress indicator)
+  const getDisplayStep = () => {
+    if (fromPlate) {
+      return currentStep; // 1 or 2
+    }
+    return currentStep; // 1, 2, or 3
+  };
+
   // Afficher un loader pendant l'initialisation
   if (initializing) {
     return (
@@ -459,6 +503,11 @@ const RegisterDriverPromo = () => {
       </div>
     );
   }
+
+  // Determine if we're showing the final payment step
+  const isFinalStep = currentStep === totalSteps;
+  // NFC promo step only shown when not from plate page and on step 2
+  const isNfcPromoStep = !fromPlate && currentStep === 2;
 
   return (
     <>
@@ -516,7 +565,7 @@ const RegisterDriverPromo = () => {
 
         {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 mb-6">
-          {[1, 2].map((step) => (
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
@@ -527,7 +576,7 @@ const RegisterDriverPromo = () => {
               >
                 {currentStep > step ? <CheckCircle className="w-4 h-4" /> : step}
               </div>
-              {step < 2 && (
+              {step < totalSteps && (
                 <div
                   className={`w-12 h-1 mx-1 ${
                     currentStep > step ? "bg-gradient-premium" : "bg-muted"
@@ -539,7 +588,7 @@ const RegisterDriverPromo = () => {
         </div>
 
         {/* Payment failure alert */}
-        {paymentFailed && currentStep === 2 && (
+        {paymentFailed && isFinalStep && (
           <Alert className="mb-4 bg-destructive/10 border-destructive/30">
             <AlertTriangle className="w-4 h-4 text-destructive" />
             <AlertDescription className="text-sm">
@@ -732,10 +781,194 @@ const RegisterDriverPromo = () => {
           </Card>
         )}
 
-        {/* Step 2: Choix abonnement et options */}
-        {currentStep === 2 && (
+        {/* Step 2: NFC Plate Promotion (only if not from plate page) */}
+        {isNfcPromoStep && (
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">Étape 2 : Votre abonnement</h2>
+            <div className="text-center mb-6">
+              <Badge className="mb-3 bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Offre exclusive -20%
+              </Badge>
+              <h2 className="text-xl font-bold mb-2">Boostez votre visibilité !</h2>
+              <p className="text-sm text-muted-foreground">
+                Ajoutez une plaque NFC à votre commande et fidélisez vos clients en 1 scan
+              </p>
+            </div>
+
+            {/* Two Plates Side by Side */}
+            <div className="grid gap-4 mb-6">
+              {/* Premium Plate - First */}
+              <div 
+                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  wantsPlate && plateType === "premium"
+                    ? "border-orange-500 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50"
+                    : "border-border hover:border-orange-500/50 bg-card/50"
+                }`}
+                onClick={() => {
+                  setWantsPlate(true);
+                  setPlateType("premium");
+                }}
+              >
+                <Badge className="absolute top-3 right-3 bg-orange-500 text-white text-xs">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Premium
+                </Badge>
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-16 bg-zinc-900/50 rounded-lg flex items-center justify-center p-2">
+                    <img 
+                      src={nfcPlateLarge} 
+                      alt="Plaque NFC Premium" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="font-bold text-white">Plastique noir</h3>
+                    <p className="text-xs text-muted-foreground">Format carte • Ultra résistant</p>
+                    
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="line-through text-sm text-muted-foreground">{PLATE_PREMIUM_PRICE}€</span>
+                      <span className="font-bold text-lg text-orange-500">{PLATE_PREMIUM_PROMO}€</span>
+                      <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
+                        -20%
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    wantsPlate && plateType === "premium" 
+                      ? "border-orange-500 bg-orange-500" 
+                      : "border-muted-foreground"
+                  }`}>
+                    {wantsPlate && plateType === "premium" && (
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Standard Plate */}
+              <div 
+                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  wantsPlate && plateType === "standard"
+                    ? "border-green-500 bg-gradient-to-br from-amber-900/20 to-amber-800/10"
+                    : "border-border hover:border-green-500/50 bg-card/50"
+                }`}
+                onClick={() => {
+                  setWantsPlate(true);
+                  setPlateType("standard");
+                }}
+              >
+                <Badge className="absolute top-3 right-3 bg-green-500 text-white text-xs">
+                  <Trees className="w-3 h-3 mr-1" />
+                  Éco
+                </Badge>
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-16 bg-amber-900/20 rounded-lg flex items-center justify-center p-2">
+                    <img 
+                      src={nfcPlateSmall} 
+                      alt="Plaque NFC Bois" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="font-bold text-white">Bois naturel</h3>
+                    <p className="text-xs text-muted-foreground">Format ovale • Écologique</p>
+                    
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="line-through text-sm text-muted-foreground">{PLATE_STANDARD_PRICE}€</span>
+                      <span className="font-bold text-lg text-green-500">{PLATE_STANDARD_PROMO}€</span>
+                      <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
+                        -20%
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    wantsPlate && plateType === "standard" 
+                      ? "border-green-500 bg-green-500" 
+                      : "border-muted-foreground"
+                  }`}>
+                    {wantsPlate && plateType === "standard" && (
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Features */}
+            <div className="p-4 rounded-xl bg-muted/30 border border-border/50 mb-6">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-premium" />
+                Pourquoi une plaque NFC ?
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  <span>Compatible tous smartphones</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  <span>QR code + NFC intégré</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  <span>Profil pro accessible</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  <span>Fidélisation clients</span>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-xs">
+                <Truck className="w-4 h-4 text-premium" />
+                <span>Livraison gratuite en 5-7 jours</span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="space-y-3">
+              <Button
+                onClick={handleStep2Continue}
+                disabled={!wantsPlate}
+                className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
+              >
+                <Package className="w-4 h-4 mr-2" />
+                Ajouter la plaque {plateType === "premium" ? "Premium" : "Bois"} ({getPlatePromoPrice()}€)
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={handleSkipPlate}
+                className="w-full text-muted-foreground hover:text-foreground"
+              >
+                Continuer sans plaque NFC
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+
+            {/* Back button */}
+            <Button
+              variant="ghost"
+              onClick={() => setCurrentStep(1)}
+              className="w-full mt-2 text-sm"
+            >
+              ← Modifier mes informations
+            </Button>
+          </Card>
+        )}
+
+        {/* Final Step: Subscription choice and payment */}
+        {isFinalStep && (
+          <Card className="p-6">
+            <h2 className="text-xl font-bold mb-4">
+              {fromPlate ? "Étape 2" : "Étape 3"} : Votre abonnement
+            </h2>
             
             {/* Choix du type d'abonnement */}
             <div className="mb-6">
@@ -819,132 +1052,78 @@ const RegisterDriverPromo = () => {
               </RadioGroup>
             </div>
 
-            {/* Option Plaque NFC */}
-            <div className="border-t pt-4 mb-4">
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="wantsPlate"
-                  checked={wantsPlate}
-                  onCheckedChange={(checked) => setWantsPlate(checked === true)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <label htmlFor="wantsPlate" className="flex items-center gap-2 cursor-pointer">
-                    <Package className="w-4 h-4 text-premium" />
-                    <span className="font-medium text-sm">Commander une Plaque NFC</span>
-                    <Badge variant="outline" className="ml-auto text-xs bg-green-500/10 border-green-500/30 text-green-600">
-                      -20%
-                    </Badge>
-                  </label>
-                  
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Fidélisez vos clients en 1 scan • Liée à votre profil
-                  </p>
-                </div>
-              </div>
-
-              {/* Choix du type de plaque si sélectionné */}
-              {wantsPlate && (
-                <div className="mt-4 space-y-3">
-                  {/* Plaque Standard (Bois) */}
-                  <div 
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      plateType === "standard" 
-                        ? "border-amber-500 bg-amber-500/10" 
-                        : "border-border hover:border-amber-500/50"
-                    }`}
-                    onClick={() => setPlateType("standard")}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-7 bg-gradient-to-br from-amber-700 to-amber-900 rounded flex items-center justify-center">
-                        <Trees className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">Plaque Bois (Ovale)</span>
-                          <div className="text-right">
-                            <span className="line-through text-xs text-muted-foreground mr-1">{PLATE_STANDARD_PRICE}€</span>
-                            <span className="font-bold text-green-600">{PLATE_STANDARD_PROMO}€</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Naturel, élégant, compact</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Plaque Premium (Plastique) */}
-                  <div 
-                    className={`p-3 rounded-lg border cursor-pointer transition-all relative ${
-                      plateType === "premium" 
-                        ? "border-zinc-500 bg-zinc-500/10" 
-                        : "border-border hover:border-zinc-500/50"
-                    }`}
-                    onClick={() => setPlateType("premium")}
-                  >
-                    <Badge className="absolute -top-2 right-2 bg-zinc-700 text-white text-[9px]">POPULAIRE</Badge>
-                    <div className="flex items-center gap-3">
+            {/* Plaque NFC Summary (if selected) */}
+            {wantsPlate && (
+              <div className="border-t pt-4 mb-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    {plateType === "premium" ? (
                       <div className="w-10 h-7 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded flex items-center justify-center">
                         <CreditCard className="w-4 h-4 text-white" />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">Plaque Premium (Plastique)</span>
-                          <div className="text-right">
-                            <span className="line-through text-xs text-muted-foreground mr-1">{PLATE_PREMIUM_PRICE}€</span>
-                            <span className="font-bold text-green-600">{PLATE_PREMIUM_PROMO}€</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Format carte, ultra résistante</p>
+                    ) : (
+                      <div className="w-10 h-7 bg-gradient-to-br from-amber-700 to-amber-900 rounded flex items-center justify-center">
+                        <Trees className="w-4 h-4 text-white" />
                       </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">Plaque NFC {plateType === "premium" ? "Premium" : "Bois"}</p>
+                      <p className="text-xs text-muted-foreground">Livraison gratuite</p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <span className="line-through text-xs text-muted-foreground mr-1">
+                      {plateType === "premium" ? PLATE_PREMIUM_PRICE : PLATE_STANDARD_PRICE}€
+                    </span>
+                    <span className="font-bold text-green-600">{getPlatePromoPrice()}€</span>
+                  </div>
+                </div>
 
-                  {/* Adresse de livraison */}
-                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                    <h4 className="font-medium text-sm flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-premium" />
-                      Adresse de livraison
-                    </h4>
+                {/* Adresse de livraison */}
+                <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-premium" />
+                    Adresse de livraison
+                  </h4>
+                  <div>
+                    <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
+                    <Input
+                      id="shippingAddress"
+                      type="text"
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      placeholder="123 rue de la Liberté, Bât A"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
+                      <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
                       <Input
-                        id="shippingAddress"
+                        id="shippingPostalCode"
                         type="text"
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder="123 rue de la Liberté, Bât A"
-                        className="h-9 text-sm"
+                        value={shippingPostalCode}
+                        onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                        placeholder="75001"
+                        maxLength={5}
+                        className="h-10 text-sm"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
-                        <Input
-                          id="shippingPostalCode"
-                          type="text"
-                          value={shippingPostalCode}
-                          onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                          placeholder="75001"
-                          maxLength={5}
-                          className="h-10 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
-                        <Input
-                          id="shippingCity"
-                          type="text"
-                          value={shippingCity}
-                          onChange={(e) => setShippingCity(e.target.value)}
-                          placeholder="Paris"
-                          className="h-10 text-sm"
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
+                      <Input
+                        id="shippingCity"
+                        type="text"
+                        value={shippingCity}
+                        onChange={(e) => setShippingCity(e.target.value)}
+                        placeholder="Paris"
+                        className="h-10 text-sm"
+                      />
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Résumé de la commande */}
             <div className="bg-muted/30 rounded-lg p-4 mb-4 space-y-3">
@@ -1066,7 +1245,7 @@ const RegisterDriverPromo = () => {
             </div>
 
             <Button
-              onClick={handleStep2Payment}
+              onClick={handleFinalPayment}
               disabled={loading}
               className="w-full h-11 bg-gradient-premium text-premium-foreground shadow-premium"
             >
@@ -1082,8 +1261,18 @@ const RegisterDriverPromo = () => {
               Paiement sécurisé par Stripe
             </p>
 
-            {/* Bouton retour - seulement si nouveau compte */}
-            {!userId && (
+            {/* Bouton retour */}
+            {!fromPlate && !userId && (
+              <Button
+                variant="ghost"
+                onClick={() => setCurrentStep(2)}
+                className="w-full mt-2 text-sm"
+              >
+                ← Modifier mon choix de plaque
+              </Button>
+            )}
+            
+            {fromPlate && !userId && (
               <Button
                 variant="ghost"
                 onClick={() => setCurrentStep(1)}

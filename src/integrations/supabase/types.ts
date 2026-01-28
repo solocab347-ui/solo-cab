@@ -5848,6 +5848,7 @@ export type Database = {
           payment_config_updated_at: string | null
           payment_failed_at: string | null
           payment_failed_reason: string | null
+          pending_plate_type: string | null
           pending_subscription_type: string | null
           pending_wants_plate: boolean | null
           per_km_rate: number | null
@@ -5989,6 +5990,7 @@ export type Database = {
           payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
+          pending_plate_type?: string | null
           pending_subscription_type?: string | null
           pending_wants_plate?: boolean | null
           per_km_rate?: number | null
@@ -6130,6 +6132,7 @@ export type Database = {
           payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
+          pending_plate_type?: string | null
           pending_subscription_type?: string | null
           pending_wants_plate?: boolean | null
           per_km_rate?: number | null
