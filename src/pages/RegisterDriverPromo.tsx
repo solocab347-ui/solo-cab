@@ -10,11 +10,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw, Bot, Trophy, MessageSquare, Target } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard, Percent, CalendarDays, AlertTriangle, RefreshCw, Bot, Trophy, MessageSquare, Target, Trees } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
 
-const PLATE_PRICE = 29.99;
+// Prix des plaques NFC
+const PLATE_STANDARD_PRICE = 14.99; // Bois
+const PLATE_PREMIUM_PRICE = 29.99; // Plastique
+const PLATE_STANDARD_PROMO = 11.99; // Bois avec -20%
+const PLATE_PREMIUM_PROMO = 23.99; // Plastique avec -20%
+
 const SUBSCRIPTION_MONTHLY_PRICE = 9.99;
 const SUBSCRIPTION_ANNUAL_PRICE = 101.90;
 const ANNUAL_MONTHLY_EQUIVALENT = (SUBSCRIPTION_ANNUAL_PRICE / 12).toFixed(2);
@@ -43,6 +48,7 @@ const RegisterDriverPromo = () => {
   // Étape 2 - Choix abonnement et options
   const [subscriptionType, setSubscriptionType] = useState<"monthly" | "annual">("monthly");
   const [wantsPlate, setWantsPlate] = useState(false);
+  const [plateType, setPlateType] = useState<"standard" | "premium">("premium");
   const [shippingAddress, setShippingAddress] = useState("");
   const [shippingCity, setShippingCity] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
@@ -343,6 +349,7 @@ const RegisterDriverPromo = () => {
         .update({
           pending_subscription_type: subscriptionType,
           pending_wants_plate: wantsPlate,
+          pending_plate_type: wantsPlate ? plateType : null,
           shipping_address: wantsPlate ? shippingAddress.trim() : null,
           shipping_city: wantsPlate ? shippingCity.trim() : null,
           shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
@@ -389,6 +396,7 @@ const RegisterDriverPromo = () => {
             driver_id: driverId,
             subscription_type: subscriptionType,
             with_plate: wantsPlate,
+            plate_type: plateType,
             shipping_address: wantsPlate ? shippingAddress.trim() : null,
             shipping_city: wantsPlate ? shippingCity.trim() : null,
             shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
@@ -426,7 +434,7 @@ const RegisterDriverPromo = () => {
     }
   };
 
-  // Calcul du total
+  // Calcul du total avec prix promo des plaques (-20%)
   const getSubscriptionPrice = () => {
     if (subscriptionType === "annual") {
       return SUBSCRIPTION_ANNUAL_PRICE;
@@ -434,7 +442,11 @@ const RegisterDriverPromo = () => {
     return 0; // Monthly has 14-day trial
   };
 
-  const totalToPay = getSubscriptionPrice() + (wantsPlate ? PLATE_PRICE : 0);
+  const getPlatePromoPrice = () => {
+    return plateType === "standard" ? PLATE_STANDARD_PROMO : PLATE_PREMIUM_PROMO;
+  };
+
+  const totalToPay = getSubscriptionPrice() + (wantsPlate ? getPlatePromoPrice() : 0);
 
   // Afficher un loader pendant l'initialisation
   if (initializing) {
@@ -819,69 +831,116 @@ const RegisterDriverPromo = () => {
                 <div className="flex-1">
                   <label htmlFor="wantsPlate" className="flex items-center gap-2 cursor-pointer">
                     <Package className="w-4 h-4 text-premium" />
-                    <span className="font-medium text-sm">Commander une Plaque NFC Pro</span>
-                    <Badge variant="outline" className="ml-auto text-xs bg-premium/10 border-premium/30 text-premium">
-                      {PLATE_PRICE}€
+                    <span className="font-medium text-sm">Commander une Plaque NFC</span>
+                    <Badge variant="outline" className="ml-auto text-xs bg-green-500/10 border-green-500/30 text-green-600">
+                      -20%
                     </Badge>
                   </label>
                   
-                  <div className="mt-2 space-y-1.5">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <CheckCircle className="w-3 h-3 text-success shrink-0" />
-                      Liée directement à votre profil chauffeur
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <CheckCircle className="w-3 h-3 text-success shrink-0" />
-                      Les clients s'inscrivent en 1 scan
-                    </p>
-                    <p className="text-xs text-premium font-medium flex items-center gap-1.5 mt-2">
-                      <Package className="w-3 h-3 shrink-0" />
-                      Expédition sous 5-7 jours ouvrés
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Fidélisez vos clients en 1 scan • Liée à votre profil
+                  </p>
                 </div>
               </div>
 
-              {/* Adresse de livraison si plaque commandée */}
+              {/* Choix du type de plaque si sélectionné */}
               {wantsPlate && (
-                <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-premium" />
-                    Adresse de livraison
-                  </h4>
-                  <div>
-                    <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
-                    <Input
-                      id="shippingAddress"
-                      type="text"
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      placeholder="123 rue de la Liberté, Bât A"
-                      className="h-9 text-sm"
-                    />
+                <div className="mt-4 space-y-3">
+                  {/* Plaque Standard (Bois) */}
+                  <div 
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                      plateType === "standard" 
+                        ? "border-amber-500 bg-amber-500/10" 
+                        : "border-border hover:border-amber-500/50"
+                    }`}
+                    onClick={() => setPlateType("standard")}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-7 bg-gradient-to-br from-amber-700 to-amber-900 rounded flex items-center justify-center">
+                        <Trees className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Plaque Bois (Ovale)</span>
+                          <div className="text-right">
+                            <span className="line-through text-xs text-muted-foreground mr-1">{PLATE_STANDARD_PRICE}€</span>
+                            <span className="font-bold text-green-600">{PLATE_STANDARD_PROMO}€</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Naturel, élégant, compact</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
-                    <Input
-                      id="shippingPostalCode"
-                      type="text"
-                      value={shippingPostalCode}
-                      onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                      placeholder="75001"
-                      maxLength={5}
-                      className="h-10 text-sm"
-                    />
+
+                  {/* Plaque Premium (Plastique) */}
+                  <div 
+                    className={`p-3 rounded-lg border cursor-pointer transition-all relative ${
+                      plateType === "premium" 
+                        ? "border-zinc-500 bg-zinc-500/10" 
+                        : "border-border hover:border-zinc-500/50"
+                    }`}
+                    onClick={() => setPlateType("premium")}
+                  >
+                    <Badge className="absolute -top-2 right-2 bg-zinc-700 text-white text-[9px]">POPULAIRE</Badge>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-7 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded flex items-center justify-center">
+                        <CreditCard className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Plaque Premium (Plastique)</span>
+                          <div className="text-right">
+                            <span className="line-through text-xs text-muted-foreground mr-1">{PLATE_PREMIUM_PRICE}€</span>
+                            <span className="font-bold text-green-600">{PLATE_PREMIUM_PROMO}€</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Format carte, ultra résistante</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
-                    <Input
-                      id="shippingCity"
-                      type="text"
-                      value={shippingCity}
-                      onChange={(e) => setShippingCity(e.target.value)}
-                      placeholder="Paris"
-                      className="h-10 text-sm"
-                    />
+
+                  {/* Adresse de livraison */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-premium" />
+                      Adresse de livraison
+                    </h4>
+                    <div>
+                      <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
+                      <Input
+                        id="shippingAddress"
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="123 rue de la Liberté, Bât A"
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
+                        <Input
+                          id="shippingPostalCode"
+                          type="text"
+                          value={shippingPostalCode}
+                          onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                          placeholder="75001"
+                          maxLength={5}
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
+                        <Input
+                          id="shippingCity"
+                          type="text"
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          placeholder="Paris"
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -925,8 +984,12 @@ const RegisterDriverPromo = () => {
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <div>
                     <p className="font-medium text-sm flex items-center gap-2">
-                      <Package className="w-4 h-4 text-premium" />
-                      Plaque NFC Pro
+                      {plateType === "standard" ? (
+                        <Trees className="w-4 h-4 text-amber-600" />
+                      ) : (
+                        <CreditCard className="w-4 h-4 text-zinc-600" />
+                      )}
+                      Plaque NFC {plateType === "standard" ? "Bois" : "Premium"}
                     </p>
                     {shippingCity && (
                       <p className="text-xs text-muted-foreground">
@@ -934,7 +997,12 @@ const RegisterDriverPromo = () => {
                       </p>
                     )}
                   </div>
-                  <p className="font-semibold">{PLATE_PRICE}€</p>
+                  <div className="text-right">
+                    <span className="line-through text-xs text-muted-foreground mr-1">
+                      {plateType === "standard" ? PLATE_STANDARD_PRICE : PLATE_PREMIUM_PRICE}€
+                    </span>
+                    <span className="font-semibold text-green-600">{getPlatePromoPrice()}€</span>
+                  </div>
                 </div>
               )}
 
@@ -954,8 +1022,8 @@ const RegisterDriverPromo = () => {
                 {subscriptionType === "monthly" ? (
                   wantsPlate ? (
                     <>
-                      <strong>Paiement sécurisé :</strong> Vous serez débité de <strong>{PLATE_PRICE}€</strong> pour 
-                      la plaque NFC. L'abonnement ({SUBSCRIPTION_MONTHLY_PRICE}€/mois) commencera après vos 14 jours d'essai.
+                      <strong>Paiement sécurisé :</strong> Vous serez débité de <strong>{getPlatePromoPrice()}€</strong> pour 
+                      la plaque NFC {plateType === "standard" ? "Bois" : "Premium"}. L'abonnement ({SUBSCRIPTION_MONTHLY_PRICE}€/mois) commencera après vos 14 jours d'essai.
                     </>
                   ) : (
                     <>

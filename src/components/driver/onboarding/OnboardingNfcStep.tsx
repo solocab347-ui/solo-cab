@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,20 +11,18 @@ import {
   Smartphone, 
   Users, 
   Star, 
-  Zap,
   Check,
   Package,
   MapPin,
   Loader2,
   Sparkles,
-  TrendingUp,
   QrCode,
   Wifi,
-  Shield,
   ArrowRight,
-  Crown
+  Crown,
+  Trees
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface OnboardingNfcStepProps {
   hasNfcPlate: boolean;
@@ -33,34 +31,35 @@ interface OnboardingNfcStepProps {
 
 type PlateType = 'standard' | 'premium' | null;
 
+// Prix PLEIN (hors abonnement) - à utiliser dans le tunnel onboarding
 const plates = {
   standard: {
-    name: 'Plaque NFC Standard',
-    price: 29.99,
-    description: 'Format carte de visite élégant',
+    name: 'Plaque NFC Bois',
+    price: 14.99,
+    description: 'Ovale en bois naturel, élégante',
     features: [
       'Scan NFC instantané',
-      'QR Code de secours intégré',
-      'Design professionnel noir mat',
-      'Personnalisation avec votre nom'
+      'QR Code de secours',
+      'Design naturel & écologique',
+      'Format compact ovale'
     ],
-    color: 'from-zinc-600 to-zinc-800',
-    icon: CreditCard,
+    color: 'from-amber-700 to-amber-900',
+    icon: Trees,
     popular: false
   },
   premium: {
     name: 'Plaque NFC Premium',
-    price: 49.99,
-    description: 'Format XXL avec support adhésif',
+    price: 29.99,
+    description: 'Plastique mat, professionnelle',
     features: [
       'Tout de la version Standard',
-      'Format large (10x6 cm)',
-      'Support adhésif 3M inclus',
-      'Finition dorée premium',
-      'Résistant UV & intempéries'
+      'Format carte de visite',
+      'Finition noir mat premium',
+      'Ultra résistante',
+      'Idéale véhicule'
     ],
-    color: 'from-amber-500 to-amber-600',
-    icon: Crown,
+    color: 'from-zinc-700 to-zinc-900',
+    icon: CreditCard,
     popular: true
   }
 };
@@ -70,6 +69,8 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
   const [ordering, setOrdering] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryCity, setDeliveryCity] = useState('');
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState('');
 
   // Si le chauffeur a déjà une plaque NFC, afficher un message de confirmation
   if (hasNfcPlate) {
@@ -98,24 +99,44 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
   }
 
   const handleOrder = async () => {
-    if (!selectedPlate || !deliveryAddress.trim()) {
-      toast.error('Veuillez saisir une adresse de livraison');
+    if (!selectedPlate || !deliveryAddress.trim() || !deliveryCity.trim() || !deliveryPostalCode.trim()) {
+      toast.error('Veuillez remplir tous les champs de livraison');
+      return;
+    }
+
+    if (!/^\d{5}$/.test(deliveryPostalCode.trim())) {
+      toast.error('Le code postal doit contenir 5 chiffres');
       return;
     }
 
     setOrdering(true);
     try {
       const plate = plates[selectedPlate];
-      console.log('NFC plate order:', { driverId, plateType: selectedPlate, price: plate.price, deliveryAddress });
       
-      // Simuler un délai d'appel API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Appel à l'edge function pour créer la commande
+      const { data, error } = await supabase.functions.invoke('create-nfc-plate-order', {
+        body: {
+          driver_id: driverId,
+          plate_type: selectedPlate,
+          shipping_address: deliveryAddress.trim(),
+          shipping_city: deliveryCity.trim(),
+          shipping_postal_code: deliveryPostalCode.trim(),
+          // Prix plein car hors inscription
+        }
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        // Redirection vers Stripe
+        window.location.href = data.url;
+        return;
+      }
 
       setOrderSuccess(true);
       toast.success(`Commande de ${plate.name} enregistrée !`);
     } catch (error: any) {
       console.error('Order error:', error);
-      toast.error('Erreur lors de la commande');
+      toast.error(error.message || 'Erreur lors de la commande');
     } finally {
       setOrdering(false);
     }
@@ -145,7 +166,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
             </p>
             <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
               <MapPin className="w-3.5 h-3.5 inline mr-1" />
-              {deliveryAddress}
+              {deliveryAddress}, {deliveryPostalCode} {deliveryCity}
             </div>
           </motion.div>
         </div>
@@ -161,14 +182,13 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
         animate={{ opacity: 1, x: 0 }}
         className="space-y-4"
       >
-        {/* Order Form */}
         <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardHeader className="pb-3">
+          <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
+              <h4 className="text-base font-semibold flex items-center gap-2">
                 <Package className="w-4 h-4 text-primary" />
                 Finaliser ma commande
-              </CardTitle>
+              </h4>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -178,8 +198,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
                 ← Retour
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+
             {/* Selected Plate Summary */}
             <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
               <div className="flex items-center gap-3">
@@ -197,23 +216,49 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address" className="text-sm flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
-                Adresse de livraison
-              </Label>
-              <Input
-                id="address"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                placeholder="123 Rue de la République, 75001 Paris"
-                className="h-11"
-              />
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="address" className="text-sm flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Adresse de livraison *
+                </Label>
+                <Input
+                  id="address"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="123 Rue de la République"
+                  className="h-10 mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="postalCode" className="text-sm">Code postal *</Label>
+                  <Input
+                    id="postalCode"
+                    value={deliveryPostalCode}
+                    onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    placeholder="75001"
+                    maxLength={5}
+                    className="h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="city" className="text-sm">Ville *</Label>
+                  <Input
+                    id="city"
+                    value={deliveryCity}
+                    onChange={(e) => setDeliveryCity(e.target.value)}
+                    placeholder="Paris"
+                    className="h-10 mt-1"
+                  />
+                </div>
+              </div>
             </div>
 
             <Button
               onClick={handleOrder}
-              disabled={ordering || !deliveryAddress.trim()}
+              disabled={ordering || !deliveryAddress.trim() || !deliveryCity.trim() || !deliveryPostalCode.trim()}
               className={`w-full h-12 bg-gradient-to-r ${plate.color} hover:opacity-90`}
               size="lg"
             >
@@ -236,7 +281,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
 
   return (
     <div className="space-y-4">
-      {/* Hero Section with Animation */}
+      {/* Hero Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -252,16 +297,16 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
             <motion.div 
               animate={{ rotateY: [0, 180, 360] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-              className="w-14 h-10 bg-gradient-to-br from-zinc-600 to-zinc-800 rounded-lg shadow-lg flex items-center justify-center"
+              className="w-14 h-10 bg-gradient-to-br from-amber-700 to-amber-900 rounded-lg shadow-lg flex items-center justify-center"
             >
-              <CreditCard className="w-6 h-6 text-white" />
+              <Trees className="w-6 h-6 text-white" />
             </motion.div>
             <motion.div 
               animate={{ rotateY: [0, 180, 360] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, delay: 0.3 }}
-              className="w-14 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg flex items-center justify-center"
+              className="w-14 h-10 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded-lg shadow-lg flex items-center justify-center"
             >
-              <Crown className="w-6 h-6 text-white" />
+              <CreditCard className="w-6 h-6 text-white" />
             </motion.div>
           </div>
           <motion.div 
@@ -278,7 +323,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
         </p>
       </motion.div>
 
-      {/* How it works - Animated */}
+      {/* How it works */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -323,20 +368,20 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
       <div className="space-y-3">
         <h4 className="text-sm font-semibold text-center">Choisissez votre plaque</h4>
         
-        {/* Standard Plate */}
+        {/* Standard Plate (Bois) */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
           <Card 
-            className={`cursor-pointer transition-all hover:border-zinc-500 hover:shadow-md`}
+            className="cursor-pointer transition-all hover:border-amber-600 hover:shadow-md"
             onClick={() => setSelectedPlate('standard')}
           >
             <CardContent className="p-3">
               <div className="flex items-start gap-3">
-                <div className="w-14 h-10 bg-gradient-to-br from-zinc-600 to-zinc-800 rounded-lg flex items-center justify-center shrink-0 shadow">
-                  <CreditCard className="w-6 h-6 text-white" />
+                <div className="w-14 h-10 bg-gradient-to-br from-amber-700 to-amber-900 rounded-lg flex items-center justify-center shrink-0 shadow">
+                  <Trees className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
@@ -346,7 +391,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
                   <p className="text-xs text-muted-foreground mb-2">{plates.standard.description}</p>
                   <div className="flex flex-wrap gap-1">
                     {plates.standard.features.slice(0, 3).map((feature, i) => (
-                      <span key={i} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                      <span key={i} className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded">
                         {feature}
                       </span>
                     ))}
@@ -357,39 +402,39 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
           </Card>
         </motion.div>
 
-        {/* Premium Plate */}
+        {/* Premium Plate (Plastique) */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
           <Card 
-            className={`cursor-pointer transition-all border-amber-500/50 hover:border-amber-500 hover:shadow-lg bg-gradient-to-br from-amber-500/5 to-transparent relative overflow-hidden`}
+            className="cursor-pointer transition-all border-zinc-500/50 hover:border-zinc-500 hover:shadow-lg bg-gradient-to-br from-zinc-500/5 to-transparent relative overflow-hidden"
             onClick={() => setSelectedPlate('premium')}
           >
             <div className="absolute top-0 right-0">
-              <Badge className="bg-amber-500 text-white text-[9px] rounded-none rounded-bl-lg">
+              <Badge className="bg-zinc-700 text-white text-[9px] rounded-none rounded-bl-lg">
                 POPULAIRE
               </Badge>
             </div>
             <CardContent className="p-3">
               <div className="flex items-start gap-3">
                 <motion.div 
-                  animate={{ boxShadow: ['0 0 0 0 rgba(245, 158, 11, 0)', '0 0 0 8px rgba(245, 158, 11, 0.3)', '0 0 0 0 rgba(245, 158, 11, 0)'] }}
+                  animate={{ boxShadow: ['0 0 0 0 rgba(113, 113, 122, 0)', '0 0 0 8px rgba(113, 113, 122, 0.3)', '0 0 0 0 rgba(113, 113, 122, 0)'] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-14 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg"
+                  className="w-14 h-10 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded-lg flex items-center justify-center shrink-0 shadow-lg"
                 >
-                  <Crown className="w-6 h-6 text-white" />
+                  <CreditCard className="w-6 h-6 text-white" />
                 </motion.div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-sm font-semibold text-amber-600">{plates.premium.name}</h4>
-                    <span className="text-base font-bold text-amber-600">{plates.premium.price.toFixed(2)} €</span>
+                    <h4 className="text-sm font-semibold">{plates.premium.name}</h4>
+                    <span className="text-base font-bold">{plates.premium.price.toFixed(2)} €</span>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">{plates.premium.description}</p>
                   <div className="flex flex-wrap gap-1">
                     {plates.premium.features.slice(0, 4).map((feature, i) => (
-                      <span key={i} className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                      <span key={i} className="text-[10px] bg-zinc-100 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded">
                         {feature}
                       </span>
                     ))}
