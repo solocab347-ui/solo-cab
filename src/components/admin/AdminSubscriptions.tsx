@@ -3,27 +3,44 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Gift, Search, Calendar, User } from "lucide-react";
+import { 
+  Activity, Gift, Search, Calendar, User, RefreshCw, 
+  Clock, CheckCircle, XCircle, AlertTriangle, Ban, Loader2
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Driver {
   id: string;
   user_id: string;
-  subscription_status: string;
+  subscription_status: string | null;
   subscription_end_date: string | null;
   subscription_stripe_id: string | null;
+  subscription_paid: boolean | null;
   free_access_granted: boolean;
   free_access_end_date: string | null;
+  free_access_type: string | null;
   created_at: string;
+  is_demo_account: boolean;
   profiles: {
     full_name: string;
     email: string;
-  };
+  } | null;
+}
+
+interface SubscriptionStats {
+  total: number;
+  trialing: number;
+  active: number;
+  pastDue: number;
+  canceled: number;
+  freeAccess: number;
+  noSubscription: number;
 }
 
 const AdminSubscriptions = () => {
@@ -37,6 +54,8 @@ const AdminSubscriptions = () => {
   const [customMonths, setCustomMonths] = useState<string>("1");
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [stats, setStats] = useState<SubscriptionStats | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchDrivers();
@@ -47,6 +66,7 @@ const AdminSubscriptions = () => {
   }, [searchTerm, filterStatus, drivers]);
 
   const fetchDrivers = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("drivers")
@@ -56,19 +76,36 @@ const AdminSubscriptions = () => {
           subscription_status,
           subscription_end_date,
           subscription_stripe_id,
+          subscription_paid,
           free_access_granted,
           free_access_end_date,
+          free_access_type,
           created_at,
+          is_demo_account,
           profiles:user_id (
             full_name,
             email
           )
         `)
-        .eq("status", "validated")
+        .eq("is_demo_account", false)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDrivers(data || []);
+      
+      const validDrivers = (data || []).filter(d => d.profiles) as Driver[];
+      setDrivers(validDrivers);
+      
+      // Calculer les stats
+      const newStats: SubscriptionStats = {
+        total: validDrivers.length,
+        trialing: validDrivers.filter(d => d.subscription_status === 'trialing').length,
+        active: validDrivers.filter(d => d.subscription_status === 'active' && !d.free_access_granted).length,
+        pastDue: validDrivers.filter(d => d.subscription_status === 'past_due').length,
+        canceled: validDrivers.filter(d => d.subscription_status === 'canceled').length,
+        freeAccess: validDrivers.filter(d => d.free_access_granted).length,
+        noSubscription: validDrivers.filter(d => !d.subscription_status && !d.free_access_granted).length,
+      };
+      setStats(newStats);
     } catch (error: any) {
       console.error("Error fetching drivers:", error);
       toast.error("Erreur lors du chargement des chauffeurs");
@@ -83,7 +120,7 @@ const AdminSubscriptions = () => {
     // Filtre de recherche par nom ou email
     if (searchTerm) {
       filtered = filtered.filter((driver) => {
-        const profile = driver.profiles as any;
+        const profile = driver.profiles;
         const fullName = profile?.full_name?.toLowerCase() || "";
         const email = profile?.email?.toLowerCase() || "";
         const term = searchTerm.toLowerCase();
@@ -94,16 +131,22 @@ const AdminSubscriptions = () => {
     // Filtre par statut
     if (filterStatus !== "all") {
       filtered = filtered.filter((driver) => {
-        if (filterStatus === "active") {
-          return driver.subscription_status === "active" && !driver.free_access_granted;
+        switch (filterStatus) {
+          case "trialing":
+            return driver.subscription_status === "trialing";
+          case "active":
+            return driver.subscription_status === "active" && !driver.free_access_granted;
+          case "past_due":
+            return driver.subscription_status === "past_due";
+          case "canceled":
+            return driver.subscription_status === "canceled";
+          case "free_access":
+            return driver.free_access_granted;
+          case "no_subscription":
+            return !driver.subscription_status && !driver.free_access_granted;
+          default:
+            return true;
         }
-        if (filterStatus === "free_access") {
-          return driver.free_access_granted;
-        }
-        if (filterStatus === "inactive") {
-          return driver.subscription_status !== "active" && !driver.free_access_granted;
-        }
-        return true;
       });
     }
 
@@ -115,21 +158,16 @@ const AdminSubscriptions = () => {
 
     setGrantingAccess(true);
     try {
-      // Si le chauffeur a un abonnement actif, l'accès gratuit commence après la fin de l'abonnement actuel
-      // Sinon, il commence immédiatement
       let startDate: Date;
       
       if (selectedDriver.subscription_end_date && selectedDriver.subscription_status === 'active') {
-        // L'accès gratuit commence après la fin de l'abonnement actuel
         startDate = new Date(selectedDriver.subscription_end_date);
       } else {
-        // Pas d'abonnement actif, commence immédiatement
         startDate = new Date();
       }
 
       let endDate: Date | null = null;
 
-      // Calculer la date de fin selon le type d'accès
       if (freeAccessDuration === "1_month") {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 1);
@@ -143,9 +181,7 @@ const AdminSubscriptions = () => {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + parseInt(customMonths));
       }
-      // Pour "unlimited", endDate reste null
 
-      // Mettre à jour le chauffeur dans la base de données
       const { error } = await supabase
         .from("drivers")
         .update({
@@ -158,7 +194,6 @@ const AdminSubscriptions = () => {
 
       if (error) throw error;
 
-      // Suspendre l'abonnement Stripe uniquement si l'accès gratuit commence maintenant
       if (selectedDriver.subscription_stripe_id && startDate <= new Date()) {
         const { error: stripeError } = await supabase.functions.invoke("manage-driver-subscription", {
           body: {
@@ -173,22 +208,15 @@ const AdminSubscriptions = () => {
         }
       }
 
-      // Envoyer l'email de notification
       try {
-        const profile = selectedDriver.profiles as any;
+        const profile = selectedDriver.profiles;
         let durationText = "";
         
-        if (freeAccessDuration === "1_month") {
-          durationText = "1 mois";
-        } else if (freeAccessDuration === "2_months") {
-          durationText = "2 mois";
-        } else if (freeAccessDuration === "3_months") {
-          durationText = "3 mois";
-        } else if (freeAccessDuration === "custom") {
-          durationText = `${customMonths} mois`;
-        } else {
-          durationText = "Illimité";
-        }
+        if (freeAccessDuration === "1_month") durationText = "1 mois";
+        else if (freeAccessDuration === "2_months") durationText = "2 mois";
+        else if (freeAccessDuration === "3_months") durationText = "3 mois";
+        else if (freeAccessDuration === "custom") durationText = `${customMonths} mois`;
+        else durationText = "Illimité";
 
         await supabase.functions.invoke("send-email", {
           body: {
@@ -204,7 +232,6 @@ const AdminSubscriptions = () => {
         });
       } catch (emailError) {
         console.error("Erreur lors de l'envoi de l'email:", emailError);
-        // Ne pas bloquer si l'email échoue
       }
 
       const startDateStr = format(startDate, "dd/MM/yyyy", { locale: fr });
@@ -227,39 +254,160 @@ const AdminSubscriptions = () => {
 
   const getStatusBadge = (driver: Driver) => {
     if (driver.free_access_granted) {
-      return <Badge className="bg-green-500">Accès Gratuit</Badge>;
+      const isLifetime = driver.free_access_type === "unlimited";
+      return (
+        <Badge className="bg-emerald-500 text-xs">
+          <Gift className="w-3 h-3 mr-1" />
+          {isLifetime ? "Accès Illimité" : "Accès Gratuit"}
+        </Badge>
+      );
     }
-    if (driver.subscription_status === "active") {
-      return <Badge className="bg-primary">Abonné</Badge>;
+    
+    switch (driver.subscription_status) {
+      case "trialing":
+        return (
+          <Badge className="bg-sky-500 text-xs">
+            <Clock className="w-3 h-3 mr-1" />
+            Essai gratuit
+          </Badge>
+        );
+      case "active":
+        return (
+          <Badge className="bg-primary text-xs">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Abonné
+          </Badge>
+        );
+      case "past_due":
+        return (
+          <Badge className="bg-amber-500 text-xs">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Paiement en retard
+          </Badge>
+        );
+      case "canceled":
+        return (
+          <Badge variant="destructive" className="text-xs">
+            <XCircle className="w-3 h-3 mr-1" />
+            Résilié
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="text-xs">
+            <Ban className="w-3 h-3 mr-1" />
+            Sans abonnement
+          </Badge>
+        );
     }
-    return <Badge variant="secondary">Inactif</Badge>;
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Chargement...</p>
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-            <Activity className="w-6 h-6 text-white" />
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Gestion des Abonnements</h2>
+              <p className="text-sm text-muted-foreground">
+                {stats?.total} chauffeur{(stats?.total || 0) > 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold">Gestion des Abonnements</h2>
-            <p className="text-muted-foreground">
-              {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? "s" : ""}
-            </p>
-          </div>
+          <Button variant="outline" size="sm" onClick={fetchDrivers}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Stats cards - Responsive grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'trialing' ? 'ring-2 ring-sky-500' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'trialing' ? 'all' : 'trialing')}
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-sky-500" />
+              <div>
+                <p className="text-lg font-bold">{stats?.trialing}</p>
+                <p className="text-xs text-muted-foreground">Essai</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'active' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'active' ? 'all' : 'active')}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-primary" />
+              <div>
+                <p className="text-lg font-bold">{stats?.active}</p>
+                <p className="text-xs text-muted-foreground">Actifs</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'past_due' ? 'ring-2 ring-amber-500' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'past_due' ? 'all' : 'past_due')}
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <div>
+                <p className="text-lg font-bold">{stats?.pastDue}</p>
+                <p className="text-xs text-muted-foreground">Impayés</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'canceled' ? 'ring-2 ring-destructive' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'canceled' ? 'all' : 'canceled')}
+          >
+            <div className="flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-destructive" />
+              <div>
+                <p className="text-lg font-bold">{stats?.canceled}</p>
+                <p className="text-xs text-muted-foreground">Résiliés</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'free_access' ? 'ring-2 ring-emerald-500' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'free_access' ? 'all' : 'free_access')}
+          >
+            <div className="flex items-center gap-2">
+              <Gift className="w-4 h-4 text-emerald-500" />
+              <div>
+                <p className="text-lg font-bold">{stats?.freeAccess}</p>
+                <p className="text-xs text-muted-foreground">Gratuits</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'no_subscription' ? 'ring-2 ring-muted-foreground' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'no_subscription' ? 'all' : 'no_subscription')}
+          >
+            <div className="flex items-center gap-2">
+              <Ban className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p className="text-lg font-bold">{stats?.noSubscription}</p>
+                <p className="text-xs text-muted-foreground">Sans abo</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Filtres */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -272,42 +420,45 @@ const AdminSubscriptions = () => {
             </div>
           </div>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filtrer par statut" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="trialing">Essai gratuit</SelectItem>
               <SelectItem value="active">Abonnés actifs</SelectItem>
+              <SelectItem value="past_due">Paiement en retard</SelectItem>
+              <SelectItem value="canceled">Résiliés</SelectItem>
               <SelectItem value="free_access">Accès gratuit</SelectItem>
-              <SelectItem value="inactive">Inactifs</SelectItem>
+              <SelectItem value="no_subscription">Sans abonnement</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Liste des chauffeurs */}
-        <div className="space-y-3">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {filteredDrivers.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucun chauffeur trouvé</p>
           ) : (
             filteredDrivers.map((driver) => {
-              const profile = driver.profiles as any;
+              const profile = driver.profiles;
               return (
-                <Card key={driver.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
+                <Card key={driver.id} className="p-3">
+                  <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-primary" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold">{profile?.full_name || "Non renseigné"}</p>
-                        <p className="text-sm text-muted-foreground">{profile?.email}</p>
-                        <div className="flex items-center gap-2 mt-1">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{profile?.full_name || "Non renseigné"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
+                        <div className="flex flex-wrap items-center gap-1 mt-1">
                           {getStatusBadge(driver)}
-                          {driver.subscription_end_date && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {driver.subscription_end_date && driver.subscription_status !== 'canceled' && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              Expire le {format(new Date(driver.subscription_end_date), "dd/MM/yyyy", { locale: fr })}
-                            </div>
+                              {format(new Date(driver.subscription_end_date), "dd/MM/yy", { locale: fr })}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -319,10 +470,13 @@ const AdminSubscriptions = () => {
                         setSelectedDriver(driver);
                         setDialogOpen(true);
                       }}
-                      disabled={driver.free_access_granted}
+                      disabled={driver.free_access_granted && driver.free_access_type === 'unlimited'}
+                      className="shrink-0 w-full sm:w-auto"
                     >
-                      <Gift className="w-4 h-4 mr-2" />
-                      Accès Gratuit
+                      <Gift className="w-4 h-4 mr-1" />
+                      <span className={isMobile ? "text-xs" : ""}>
+                        {driver.free_access_granted ? "Modifier" : "Accès Gratuit"}
+                      </span>
                     </Button>
                   </div>
                 </Card>
@@ -334,18 +488,18 @@ const AdminSubscriptions = () => {
 
       {/* Dialog d'attribution d'accès gratuit */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Accorder un accès gratuit</DialogTitle>
           </DialogHeader>
           {selectedDriver && (
-            <div className="space-y-4 pt-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Chauffeur</p>
-                <p className="text-sm text-muted-foreground">
-                  {(selectedDriver.profiles as any)?.full_name} ({(selectedDriver.profiles as any)?.email})
-                </p>
+            <div className="space-y-4 pt-2">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="font-medium">{selectedDriver.profiles?.full_name}</p>
+                <p className="text-sm text-muted-foreground">{selectedDriver.profiles?.email}</p>
+                <div className="mt-2">{getStatusBadge(selectedDriver)}</div>
               </div>
+              
               <div>
                 <p className="text-sm font-medium mb-2">Durée de l'accès gratuit</p>
                 <Select value={freeAccessDuration} onValueChange={setFreeAccessDuration}>
@@ -357,10 +511,11 @@ const AdminSubscriptions = () => {
                     <SelectItem value="2_months">2 mois</SelectItem>
                     <SelectItem value="3_months">3 mois</SelectItem>
                     <SelectItem value="custom">Personnalisé</SelectItem>
-                    <SelectItem value="unlimited">Illimité</SelectItem>
+                    <SelectItem value="unlimited">Illimité (pionnier)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
               {freeAccessDuration === "custom" && (
                 <div>
                   <p className="text-sm font-medium mb-2">Nombre de mois</p>
@@ -373,21 +528,28 @@ const AdminSubscriptions = () => {
                   />
                 </div>
               )}
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   {selectedDriver.subscription_status === 'active' && selectedDriver.subscription_end_date ? (
-                    <>⚠️ L'accès gratuit commencera après la fin de l'abonnement actuel (le {format(new Date(selectedDriver.subscription_end_date), "dd/MM/yyyy", { locale: fr })}) car le chauffeur a déjà payé pour le mois en cours.</>
+                    <>⚠️ L'accès gratuit commencera après la fin de l'abonnement actuel (le {format(new Date(selectedDriver.subscription_end_date), "dd/MM/yyyy", { locale: fr })}).</>
                   ) : (
-                    <>⚠️ L'accès gratuit commencera immédiatement. L'abonnement Stripe sera automatiquement suspendu.</>
+                    <>⚠️ L'accès gratuit commencera immédiatement. L'abonnement Stripe sera suspendu si existant.</>
                   )}
                 </p>
               </div>
-              <div className="flex gap-2 justify-end">
+              
+              <div className="flex gap-2 justify-end pt-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Annuler
                 </Button>
                 <Button onClick={handleGrantFreeAccess} disabled={grantingAccess}>
-                  {grantingAccess ? "Attribution..." : "Accorder"}
+                  {grantingAccess ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Attribution...
+                    </>
+                  ) : "Accorder"}
                 </Button>
               </div>
             </div>
