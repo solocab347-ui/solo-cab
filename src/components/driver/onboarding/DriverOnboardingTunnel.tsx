@@ -328,9 +328,22 @@ export function DriverOnboardingTunnel({
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-background to-muted/30">
+    <div 
+      className="min-h-screen min-h-[100dvh] flex flex-col bg-gradient-to-b from-background to-muted/30"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        touchAction: 'pan-y',
+      }}
+    >
       {/* Fixed Header */}
-      <div className="flex-shrink-0 px-4 pt-4 pb-2 safe-area-top">
+      <div 
+        className="flex-shrink-0 px-4 pt-4 pb-2"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
         <div className="max-w-lg mx-auto">
           {/* Logo */}
           <div className="text-center mb-3">
@@ -389,13 +402,18 @@ export function DriverOnboardingTunnel({
         </div>
       </div>
 
-      {/* Scrollable Content */}
+      {/* Scrollable Content - FIXED for iOS/Android */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-4"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden px-4"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
+          paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
+        }}
       >
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg mx-auto pb-4">
           {/* Step Header Card */}
           <div className="bg-card border rounded-lg p-3 mb-3 mt-3 shadow-sm">
             <div className="flex items-center gap-2">
@@ -423,15 +441,15 @@ export function DriverOnboardingTunnel({
               {renderStep()}
             </motion.div>
           </AnimatePresence>
-          
-          {/* Spacer for fixed footer */}
-          <div className="h-24" />
         </div>
       </div>
 
       {/* Fixed Footer Navigation */}
       {currentStep < STEPS.length - 1 && (
-        <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur px-4 py-3 safe-area-bottom">
+        <div 
+          className="flex-shrink-0 border-t bg-background/95 backdrop-blur px-4 py-3"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
           <div className="max-w-lg mx-auto flex gap-3">
             <Button
               variant="outline"
