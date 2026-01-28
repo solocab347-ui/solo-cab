@@ -14563,24 +14563,34 @@ export type Database = {
       }
       drivers_available_for_sharing: {
         Row: {
+          bio: string | null
+          card_photo_url: string | null
           company_name: string | null
+          created_at: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
-          email: string | null
           full_name: string | null
+          gallery_photos: string[] | null
           id: string | null
-          phone: string | null
+          is_pioneer: boolean | null
+          max_passengers: number | null
           profile_photo_url: string | null
           rating: number | null
-          sharing_number: number | null
+          service_description: string | null
+          services_offered: string[] | null
           show_email: boolean | null
-          show_phone_for_sharing: boolean | null
-          show_rating_partners: boolean | null
+          show_phone: boolean | null
+          status: Database["public"]["Enums"]["driver_status"] | null
+          stripe_connect_account_id: string | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
           vehicle_category: string[] | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
           vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_year: number | null
           working_sectors: string[] | null
         }
         Relationships: [
@@ -14595,394 +14605,90 @@ export type Database = {
       }
       drivers_visible_to_companies: {
         Row: {
-          airport_surcharge: number | null
-          auto_accept_from_partners: boolean | null
-          base_fare: number | null
-          base_rate: number | null
           bio: string | null
-          can_create_courses: boolean | null
-          can_manage_clients: boolean | null
           card_photo_url: string | null
-          company_address: string | null
           company_name: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          course_counter: number | null
           created_at: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
-          documents: Json | null
-          documents_access_blocked: boolean | null
-          documents_access_blocked_at: string | null
-          documents_deadline: string | null
-          documents_status: string | null
-          documents_submitted_at: string | null
-          driver_code: string | null
-          evening_surcharge: number | null
-          fleet_documents_deadline: string | null
-          fleet_documents_status: string | null
-          fleet_documents_submitted_at: string | null
-          fleet_manager_id: string | null
-          free_access_end_date: string | null
-          free_access_granted: boolean | null
-          free_access_start_date: string | null
-          free_access_type: string | null
           gallery_photos: string[] | null
-          home_address: string | null
-          home_latitude: number | null
-          home_longitude: number | null
-          hourly_rate: number | null
           id: string | null
-          invoice_counter: number | null
-          is_demo_account: boolean | null
-          is_fleet_driver: boolean | null
           is_pioneer: boolean | null
-          license_number: string | null
-          max_daily_courses: number | null
           max_passengers: number | null
-          minimum_price: number | null
-          nfc_tag_number: string | null
-          partner_course_counter: number | null
-          partner_invoice_counter: number | null
-          partner_order_counter: number | null
-          partnerships_suspended: boolean | null
-          partnerships_suspended_at: string | null
-          partnerships_suspended_reason: string | null
-          payment_failed_at: string | null
-          payment_failed_reason: string | null
-          pending_subscription_type: string | null
-          pending_wants_plate: boolean | null
-          per_km_rate: number | null
-          pioneer_since: string | null
-          preferred_zones: string[] | null
-          public_profile_enabled: boolean | null
-          quote_counter: number | null
           rating: number | null
-          registration_data: Json | null
-          registration_step: number | null
-          reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
-          sharing_available: boolean | null
-          sharing_available_since: string | null
-          sharing_number: number | null
-          shipping_address: string | null
-          shipping_city: string | null
-          shipping_country: string | null
-          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
-          show_phone_for_sharing: boolean | null
-          show_pricing_partners: boolean | null
-          show_rating_for_sharing: boolean | null
-          show_rating_partners: boolean | null
-          show_rating_public: boolean | null
-          show_rides_for_sharing: boolean | null
-          siren: string | null
-          siret: string | null
-          smart_buffer_enabled: boolean | null
-          smart_buffer_fallback_action: string | null
-          smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id: string | null
-          stripe_connect_account_id: string | null
-          stripe_connect_charges_enabled: boolean | null
-          stripe_connect_created_at: string | null
-          stripe_connect_details_submitted: boolean | null
-          stripe_connect_onboarding_completed: boolean | null
-          stripe_connect_payouts_enabled: boolean | null
-          stripe_connect_status: string | null
-          stripe_connect_updated_at: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_paused: boolean | null
-          stripe_subscription_paused_at: string | null
-          subscription_end_date: string | null
-          subscription_paid: boolean | null
-          subscription_status: string | null
-          subscription_stripe_id: string | null
           total_rides: number | null
-          tva_included: boolean | null
-          tva_number: string | null
-          tva_rate: number | null
-          updated_at: string | null
           user_id: string | null
-          validation_date: string | null
           vehicle_brand: string | null
           vehicle_category: string[] | null
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
           vehicle_photos: string[] | null
-          vehicle_plate: string | null
           vehicle_year: number | null
-          visible_to_companies: boolean | null
-          visible_to_drivers: boolean | null
-          visible_to_fleet_managers: boolean | null
-          weekend_surcharge: number | null
           working_sectors: string[] | null
         }
         Insert: {
-          airport_surcharge?: number | null
-          auto_accept_from_partners?: boolean | null
-          base_fare?: number | null
-          base_rate?: number | null
           bio?: string | null
-          can_create_courses?: boolean | null
-          can_manage_clients?: boolean | null
           card_photo_url?: string | null
-          company_address?: string | null
           company_name?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          course_counter?: number | null
           created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
-          documents?: Json | null
-          documents_access_blocked?: boolean | null
-          documents_access_blocked_at?: string | null
-          documents_deadline?: string | null
-          documents_status?: string | null
-          documents_submitted_at?: string | null
-          driver_code?: string | null
-          evening_surcharge?: number | null
-          fleet_documents_deadline?: string | null
-          fleet_documents_status?: string | null
-          fleet_documents_submitted_at?: string | null
-          fleet_manager_id?: string | null
-          free_access_end_date?: string | null
-          free_access_granted?: boolean | null
-          free_access_start_date?: string | null
-          free_access_type?: string | null
           gallery_photos?: string[] | null
-          home_address?: string | null
-          home_latitude?: number | null
-          home_longitude?: number | null
-          hourly_rate?: number | null
           id?: string | null
-          invoice_counter?: number | null
-          is_demo_account?: boolean | null
-          is_fleet_driver?: boolean | null
           is_pioneer?: boolean | null
-          license_number?: string | null
-          max_daily_courses?: number | null
           max_passengers?: number | null
-          minimum_price?: number | null
-          nfc_tag_number?: string | null
-          partner_course_counter?: number | null
-          partner_invoice_counter?: number | null
-          partner_order_counter?: number | null
-          partnerships_suspended?: boolean | null
-          partnerships_suspended_at?: string | null
-          partnerships_suspended_reason?: string | null
-          payment_failed_at?: string | null
-          payment_failed_reason?: string | null
-          pending_subscription_type?: string | null
-          pending_wants_plate?: boolean | null
-          per_km_rate?: number | null
-          pioneer_since?: string | null
-          preferred_zones?: string[] | null
-          public_profile_enabled?: boolean | null
-          quote_counter?: number | null
           rating?: number | null
-          registration_data?: Json | null
-          registration_step?: number | null
-          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
-          sharing_available?: boolean | null
-          sharing_available_since?: string | null
-          sharing_number?: number | null
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
-          show_phone_for_sharing?: boolean | null
-          show_pricing_partners?: boolean | null
-          show_rating_for_sharing?: boolean | null
-          show_rating_partners?: boolean | null
-          show_rating_public?: boolean | null
-          show_rides_for_sharing?: boolean | null
-          siren?: string | null
-          siret?: string | null
-          smart_buffer_enabled?: boolean | null
-          smart_buffer_fallback_action?: string | null
-          smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id?: string | null
-          stripe_connect_account_id?: string | null
-          stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_created_at?: string | null
-          stripe_connect_details_submitted?: boolean | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_payouts_enabled?: boolean | null
-          stripe_connect_status?: string | null
-          stripe_connect_updated_at?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_paused?: boolean | null
-          stripe_subscription_paused_at?: string | null
-          subscription_end_date?: string | null
-          subscription_paid?: boolean | null
-          subscription_status?: string | null
-          subscription_stripe_id?: string | null
           total_rides?: number | null
-          tva_included?: boolean | null
-          tva_number?: string | null
-          tva_rate?: number | null
-          updated_at?: string | null
           user_id?: string | null
-          validation_date?: string | null
           vehicle_brand?: string | null
           vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
           vehicle_photos?: string[] | null
-          vehicle_plate?: string | null
           vehicle_year?: number | null
-          visible_to_companies?: boolean | null
-          visible_to_drivers?: boolean | null
-          visible_to_fleet_managers?: boolean | null
-          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Update: {
-          airport_surcharge?: number | null
-          auto_accept_from_partners?: boolean | null
-          base_fare?: number | null
-          base_rate?: number | null
           bio?: string | null
-          can_create_courses?: boolean | null
-          can_manage_clients?: boolean | null
           card_photo_url?: string | null
-          company_address?: string | null
           company_name?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          course_counter?: number | null
           created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
-          documents?: Json | null
-          documents_access_blocked?: boolean | null
-          documents_access_blocked_at?: string | null
-          documents_deadline?: string | null
-          documents_status?: string | null
-          documents_submitted_at?: string | null
-          driver_code?: string | null
-          evening_surcharge?: number | null
-          fleet_documents_deadline?: string | null
-          fleet_documents_status?: string | null
-          fleet_documents_submitted_at?: string | null
-          fleet_manager_id?: string | null
-          free_access_end_date?: string | null
-          free_access_granted?: boolean | null
-          free_access_start_date?: string | null
-          free_access_type?: string | null
           gallery_photos?: string[] | null
-          home_address?: string | null
-          home_latitude?: number | null
-          home_longitude?: number | null
-          hourly_rate?: number | null
           id?: string | null
-          invoice_counter?: number | null
-          is_demo_account?: boolean | null
-          is_fleet_driver?: boolean | null
           is_pioneer?: boolean | null
-          license_number?: string | null
-          max_daily_courses?: number | null
           max_passengers?: number | null
-          minimum_price?: number | null
-          nfc_tag_number?: string | null
-          partner_course_counter?: number | null
-          partner_invoice_counter?: number | null
-          partner_order_counter?: number | null
-          partnerships_suspended?: boolean | null
-          partnerships_suspended_at?: string | null
-          partnerships_suspended_reason?: string | null
-          payment_failed_at?: string | null
-          payment_failed_reason?: string | null
-          pending_subscription_type?: string | null
-          pending_wants_plate?: boolean | null
-          per_km_rate?: number | null
-          pioneer_since?: string | null
-          preferred_zones?: string[] | null
-          public_profile_enabled?: boolean | null
-          quote_counter?: number | null
           rating?: number | null
-          registration_data?: Json | null
-          registration_step?: number | null
-          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
-          sharing_available?: boolean | null
-          sharing_available_since?: string | null
-          sharing_number?: number | null
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
-          show_phone_for_sharing?: boolean | null
-          show_pricing_partners?: boolean | null
-          show_rating_for_sharing?: boolean | null
-          show_rating_partners?: boolean | null
-          show_rating_public?: boolean | null
-          show_rides_for_sharing?: boolean | null
-          siren?: string | null
-          siret?: string | null
-          smart_buffer_enabled?: boolean | null
-          smart_buffer_fallback_action?: string | null
-          smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id?: string | null
-          stripe_connect_account_id?: string | null
-          stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_created_at?: string | null
-          stripe_connect_details_submitted?: boolean | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_payouts_enabled?: boolean | null
-          stripe_connect_status?: string | null
-          stripe_connect_updated_at?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_paused?: boolean | null
-          stripe_subscription_paused_at?: string | null
-          subscription_end_date?: string | null
-          subscription_paid?: boolean | null
-          subscription_status?: string | null
-          subscription_stripe_id?: string | null
           total_rides?: number | null
-          tva_included?: boolean | null
-          tva_number?: string | null
-          tva_rate?: number | null
-          updated_at?: string | null
           user_id?: string | null
-          validation_date?: string | null
           vehicle_brand?: string | null
           vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
           vehicle_photos?: string[] | null
-          vehicle_plate?: string | null
           vehicle_year?: number | null
-          visible_to_companies?: boolean | null
-          visible_to_drivers?: boolean | null
-          visible_to_fleet_managers?: boolean | null
-          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Relationships: [
-          {
-            foreignKeyName: "drivers_fleet_manager_id_fkey"
-            columns: ["fleet_manager_id"]
-            isOneToOne: false
-            referencedRelation: "fleet_managers"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "drivers_user_id_fkey"
             columns: ["user_id"]
@@ -14994,394 +14700,90 @@ export type Database = {
       }
       drivers_visible_to_fleet_managers: {
         Row: {
-          airport_surcharge: number | null
-          auto_accept_from_partners: boolean | null
-          base_fare: number | null
-          base_rate: number | null
           bio: string | null
-          can_create_courses: boolean | null
-          can_manage_clients: boolean | null
           card_photo_url: string | null
-          company_address: string | null
           company_name: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          course_counter: number | null
           created_at: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
-          documents: Json | null
-          documents_access_blocked: boolean | null
-          documents_access_blocked_at: string | null
-          documents_deadline: string | null
-          documents_status: string | null
-          documents_submitted_at: string | null
-          driver_code: string | null
-          evening_surcharge: number | null
-          fleet_documents_deadline: string | null
-          fleet_documents_status: string | null
-          fleet_documents_submitted_at: string | null
-          fleet_manager_id: string | null
-          free_access_end_date: string | null
-          free_access_granted: boolean | null
-          free_access_start_date: string | null
-          free_access_type: string | null
           gallery_photos: string[] | null
-          home_address: string | null
-          home_latitude: number | null
-          home_longitude: number | null
-          hourly_rate: number | null
           id: string | null
-          invoice_counter: number | null
-          is_demo_account: boolean | null
-          is_fleet_driver: boolean | null
           is_pioneer: boolean | null
-          license_number: string | null
-          max_daily_courses: number | null
           max_passengers: number | null
-          minimum_price: number | null
-          nfc_tag_number: string | null
-          partner_course_counter: number | null
-          partner_invoice_counter: number | null
-          partner_order_counter: number | null
-          partnerships_suspended: boolean | null
-          partnerships_suspended_at: string | null
-          partnerships_suspended_reason: string | null
-          payment_failed_at: string | null
-          payment_failed_reason: string | null
-          pending_subscription_type: string | null
-          pending_wants_plate: boolean | null
-          per_km_rate: number | null
-          pioneer_since: string | null
-          preferred_zones: string[] | null
-          public_profile_enabled: boolean | null
-          quote_counter: number | null
           rating: number | null
-          registration_data: Json | null
-          registration_step: number | null
-          reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
-          sharing_available: boolean | null
-          sharing_available_since: string | null
-          sharing_number: number | null
-          shipping_address: string | null
-          shipping_city: string | null
-          shipping_country: string | null
-          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
-          show_phone_for_sharing: boolean | null
-          show_pricing_partners: boolean | null
-          show_rating_for_sharing: boolean | null
-          show_rating_partners: boolean | null
-          show_rating_public: boolean | null
-          show_rides_for_sharing: boolean | null
-          siren: string | null
-          siret: string | null
-          smart_buffer_enabled: boolean | null
-          smart_buffer_fallback_action: string | null
-          smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id: string | null
-          stripe_connect_account_id: string | null
-          stripe_connect_charges_enabled: boolean | null
-          stripe_connect_created_at: string | null
-          stripe_connect_details_submitted: boolean | null
-          stripe_connect_onboarding_completed: boolean | null
-          stripe_connect_payouts_enabled: boolean | null
-          stripe_connect_status: string | null
-          stripe_connect_updated_at: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_paused: boolean | null
-          stripe_subscription_paused_at: string | null
-          subscription_end_date: string | null
-          subscription_paid: boolean | null
-          subscription_status: string | null
-          subscription_stripe_id: string | null
           total_rides: number | null
-          tva_included: boolean | null
-          tva_number: string | null
-          tva_rate: number | null
-          updated_at: string | null
           user_id: string | null
-          validation_date: string | null
           vehicle_brand: string | null
           vehicle_category: string[] | null
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
           vehicle_photos: string[] | null
-          vehicle_plate: string | null
           vehicle_year: number | null
-          visible_to_companies: boolean | null
-          visible_to_drivers: boolean | null
-          visible_to_fleet_managers: boolean | null
-          weekend_surcharge: number | null
           working_sectors: string[] | null
         }
         Insert: {
-          airport_surcharge?: number | null
-          auto_accept_from_partners?: boolean | null
-          base_fare?: number | null
-          base_rate?: number | null
           bio?: string | null
-          can_create_courses?: boolean | null
-          can_manage_clients?: boolean | null
           card_photo_url?: string | null
-          company_address?: string | null
           company_name?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          course_counter?: number | null
           created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
-          documents?: Json | null
-          documents_access_blocked?: boolean | null
-          documents_access_blocked_at?: string | null
-          documents_deadline?: string | null
-          documents_status?: string | null
-          documents_submitted_at?: string | null
-          driver_code?: string | null
-          evening_surcharge?: number | null
-          fleet_documents_deadline?: string | null
-          fleet_documents_status?: string | null
-          fleet_documents_submitted_at?: string | null
-          fleet_manager_id?: string | null
-          free_access_end_date?: string | null
-          free_access_granted?: boolean | null
-          free_access_start_date?: string | null
-          free_access_type?: string | null
           gallery_photos?: string[] | null
-          home_address?: string | null
-          home_latitude?: number | null
-          home_longitude?: number | null
-          hourly_rate?: number | null
           id?: string | null
-          invoice_counter?: number | null
-          is_demo_account?: boolean | null
-          is_fleet_driver?: boolean | null
           is_pioneer?: boolean | null
-          license_number?: string | null
-          max_daily_courses?: number | null
           max_passengers?: number | null
-          minimum_price?: number | null
-          nfc_tag_number?: string | null
-          partner_course_counter?: number | null
-          partner_invoice_counter?: number | null
-          partner_order_counter?: number | null
-          partnerships_suspended?: boolean | null
-          partnerships_suspended_at?: string | null
-          partnerships_suspended_reason?: string | null
-          payment_failed_at?: string | null
-          payment_failed_reason?: string | null
-          pending_subscription_type?: string | null
-          pending_wants_plate?: boolean | null
-          per_km_rate?: number | null
-          pioneer_since?: string | null
-          preferred_zones?: string[] | null
-          public_profile_enabled?: boolean | null
-          quote_counter?: number | null
           rating?: number | null
-          registration_data?: Json | null
-          registration_step?: number | null
-          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
-          sharing_available?: boolean | null
-          sharing_available_since?: string | null
-          sharing_number?: number | null
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
-          show_phone_for_sharing?: boolean | null
-          show_pricing_partners?: boolean | null
-          show_rating_for_sharing?: boolean | null
-          show_rating_partners?: boolean | null
-          show_rating_public?: boolean | null
-          show_rides_for_sharing?: boolean | null
-          siren?: string | null
-          siret?: string | null
-          smart_buffer_enabled?: boolean | null
-          smart_buffer_fallback_action?: string | null
-          smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id?: string | null
-          stripe_connect_account_id?: string | null
-          stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_created_at?: string | null
-          stripe_connect_details_submitted?: boolean | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_payouts_enabled?: boolean | null
-          stripe_connect_status?: string | null
-          stripe_connect_updated_at?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_paused?: boolean | null
-          stripe_subscription_paused_at?: string | null
-          subscription_end_date?: string | null
-          subscription_paid?: boolean | null
-          subscription_status?: string | null
-          subscription_stripe_id?: string | null
           total_rides?: number | null
-          tva_included?: boolean | null
-          tva_number?: string | null
-          tva_rate?: number | null
-          updated_at?: string | null
           user_id?: string | null
-          validation_date?: string | null
           vehicle_brand?: string | null
           vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
           vehicle_photos?: string[] | null
-          vehicle_plate?: string | null
           vehicle_year?: number | null
-          visible_to_companies?: boolean | null
-          visible_to_drivers?: boolean | null
-          visible_to_fleet_managers?: boolean | null
-          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Update: {
-          airport_surcharge?: number | null
-          auto_accept_from_partners?: boolean | null
-          base_fare?: number | null
-          base_rate?: number | null
           bio?: string | null
-          can_create_courses?: boolean | null
-          can_manage_clients?: boolean | null
           card_photo_url?: string | null
-          company_address?: string | null
           company_name?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          course_counter?: number | null
           created_at?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
-          documents?: Json | null
-          documents_access_blocked?: boolean | null
-          documents_access_blocked_at?: string | null
-          documents_deadline?: string | null
-          documents_status?: string | null
-          documents_submitted_at?: string | null
-          driver_code?: string | null
-          evening_surcharge?: number | null
-          fleet_documents_deadline?: string | null
-          fleet_documents_status?: string | null
-          fleet_documents_submitted_at?: string | null
-          fleet_manager_id?: string | null
-          free_access_end_date?: string | null
-          free_access_granted?: boolean | null
-          free_access_start_date?: string | null
-          free_access_type?: string | null
           gallery_photos?: string[] | null
-          home_address?: string | null
-          home_latitude?: number | null
-          home_longitude?: number | null
-          hourly_rate?: number | null
           id?: string | null
-          invoice_counter?: number | null
-          is_demo_account?: boolean | null
-          is_fleet_driver?: boolean | null
           is_pioneer?: boolean | null
-          license_number?: string | null
-          max_daily_courses?: number | null
           max_passengers?: number | null
-          minimum_price?: number | null
-          nfc_tag_number?: string | null
-          partner_course_counter?: number | null
-          partner_invoice_counter?: number | null
-          partner_order_counter?: number | null
-          partnerships_suspended?: boolean | null
-          partnerships_suspended_at?: string | null
-          partnerships_suspended_reason?: string | null
-          payment_failed_at?: string | null
-          payment_failed_reason?: string | null
-          pending_subscription_type?: string | null
-          pending_wants_plate?: boolean | null
-          per_km_rate?: number | null
-          pioneer_since?: string | null
-          preferred_zones?: string[] | null
-          public_profile_enabled?: boolean | null
-          quote_counter?: number | null
           rating?: number | null
-          registration_data?: Json | null
-          registration_step?: number | null
-          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
-          sharing_available?: boolean | null
-          sharing_available_since?: string | null
-          sharing_number?: number | null
-          shipping_address?: string | null
-          shipping_city?: string | null
-          shipping_country?: string | null
-          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
-          show_phone_for_sharing?: boolean | null
-          show_pricing_partners?: boolean | null
-          show_rating_for_sharing?: boolean | null
-          show_rating_partners?: boolean | null
-          show_rating_public?: boolean | null
-          show_rides_for_sharing?: boolean | null
-          siren?: string | null
-          siret?: string | null
-          smart_buffer_enabled?: boolean | null
-          smart_buffer_fallback_action?: string | null
-          smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"] | null
-          stripe_checkout_session_id?: string | null
-          stripe_connect_account_id?: string | null
-          stripe_connect_charges_enabled?: boolean | null
-          stripe_connect_created_at?: string | null
-          stripe_connect_details_submitted?: boolean | null
-          stripe_connect_onboarding_completed?: boolean | null
-          stripe_connect_payouts_enabled?: boolean | null
-          stripe_connect_status?: string | null
-          stripe_connect_updated_at?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_paused?: boolean | null
-          stripe_subscription_paused_at?: string | null
-          subscription_end_date?: string | null
-          subscription_paid?: boolean | null
-          subscription_status?: string | null
-          subscription_stripe_id?: string | null
           total_rides?: number | null
-          tva_included?: boolean | null
-          tva_number?: string | null
-          tva_rate?: number | null
-          updated_at?: string | null
           user_id?: string | null
-          validation_date?: string | null
           vehicle_brand?: string | null
           vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string | null
           vehicle_photos?: string[] | null
-          vehicle_plate?: string | null
           vehicle_year?: number | null
-          visible_to_companies?: boolean | null
-          visible_to_drivers?: boolean | null
-          visible_to_fleet_managers?: boolean | null
-          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Relationships: [
-          {
-            foreignKeyName: "drivers_fleet_manager_id_fkey"
-            columns: ["fleet_manager_id"]
-            isOneToOne: false
-            referencedRelation: "fleet_managers"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "drivers_user_id_fkey"
             columns: ["user_id"]
@@ -15735,20 +15137,33 @@ export type Database = {
       }
       fleet_searchable_drivers: {
         Row: {
+          bio: string | null
+          card_photo_url: string | null
           company_name: string | null
+          created_at: string | null
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
           full_name: string | null
+          gallery_photos: string[] | null
           id: string | null
+          is_pioneer: boolean | null
+          max_passengers: number | null
           profile_photo_url: string | null
           rating: number | null
           service_description: string | null
           services_offered: string[] | null
-          show_rating_partners: boolean | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          status: Database["public"]["Enums"]["driver_status"] | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
           vehicle_category: string[] | null
+          vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_year: number | null
           working_sectors: string[] | null
         }
         Relationships: [
