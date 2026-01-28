@@ -44,17 +44,21 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Vérifier le token avec l'API admin
+    // Vérifier le token avec l'API admin - passer le JWT directement
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
-    if (userError || !user) {
-      console.error('Auth error:', userError);
+    // Utiliser getUser avec le token JWT passé en argument
+    const { data, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !data?.user) {
+      console.error('Auth error:', userError?.message || 'No user found');
       return new Response(
         JSON.stringify({ error: 'Token invalide' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    const user = data.user;
 
     // Vérifier admin
     const { data: roleData } = await supabaseAdmin
