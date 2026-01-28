@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+// v2.0.1 - Fixed auth validation with Authorization header passthrough
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
 const corsHeaders = {
@@ -40,21 +41,18 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    // Client avec anon key + Authorization header pour valider le token utilisateur
-    const supabaseAuth = createClient(
+    // Admin client avec service role key - PEUT valider n'importe quel token
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { 
-        global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false }
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Valider le token utilisateur
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    // Valider le token utilisateur avec getUser(token) - requiert service role key
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !userData?.user) {
-      console.error('Auth error:', userError?.message || 'No user found');
+      console.error('Auth validation failed:', userError?.message || 'No user found');
       return new Response(
         JSON.stringify({ error: 'Token invalide' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -62,14 +60,7 @@ Deno.serve(async (req) => {
     }
     
     const user = userData.user;
-    console.log('Authenticated user:', user.id);
-
-    // Admin client avec service role key pour les opérations privilégiées
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    console.log('✅ Authenticated user:', user.id, user.email);
 
     // Vérifier admin
     const { data: roleData } = await supabaseAdmin
@@ -316,7 +307,41 @@ Deno.serve(async (req) => {
           await supabaseAdmin.from(table).delete().eq('user_id', driver.user_id);
         }
 
-        // Nettoyer les clients liés
+        // IMPORTANT: Mettre à NULL les références au driver dans les clients d'autres drivers
+        // (clients qui ont ce driver comme favorite ou preferred)
+        console.log('Cleaning client references to driver...');
+        
+        // Mettre à NULL favorite_driver_id dans tous les clients qui référencent ce driver
+        const { error: favError } = await supabaseAdmin
+          .from('clients')
+          .update({ favorite_driver_id: null })
+          .eq('favorite_driver_id', driver.id);
+        
+        if (favError) {
+          console.log('Note: Could not clean favorite_driver_id:', favError.message);
+        }
+
+        // Mettre à NULL preferred_fleet_driver_id dans tous les clients qui référencent ce driver
+        const { error: prefError } = await supabaseAdmin
+          .from('clients')
+          .update({ preferred_fleet_driver_id: null })
+          .eq('preferred_fleet_driver_id', driver.id);
+        
+        if (prefError) {
+          console.log('Note: Could not clean preferred_fleet_driver_id:', prefError.message);
+        }
+
+        // Mettre à NULL driver_id dans les clients (ne pas supprimer, juste dissocier)
+        const { error: driverIdError } = await supabaseAdmin
+          .from('clients')
+          .update({ driver_id: null })
+          .eq('driver_id', driver.id);
+        
+        if (driverIdError) {
+          console.log('Note: Could not clean driver_id in clients:', driverIdError.message);
+        }
+
+        // Maintenant supprimer uniquement les clients créés par ce driver (qui n'ont plus de lien)
         await supabaseAdmin.from('clients').delete().eq('driver_id', driver.id);
 
         // Supprimer le driver
