@@ -228,6 +228,24 @@ const AdminDriversManagement = () => {
 
         if (error) throw error;
 
+        // Si validation, redémarrer la période d'essai Stripe
+        if (newStatus === "validated") {
+          try {
+            console.log("🔄 Resetting trial period for validated driver...");
+            const resetResponse = await supabase.functions.invoke("reset-trial-on-validation", {
+              body: { driver_id: actionDialog.driver.id }
+            });
+            
+            if (resetResponse.error) {
+              console.error("⚠️ Trial reset error:", resetResponse.error);
+            } else {
+              console.log("✅ Trial period reset:", resetResponse.data);
+            }
+          } catch (resetErr) {
+            console.error("⚠️ Trial reset failed:", resetErr);
+          }
+        }
+
         // Envoyer l'email approprié selon l'action
         if (actionDialog.action === "validate" || actionDialog.action === "reject") {
           try {
