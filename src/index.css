@@ -572,3 +572,45 @@ All colors MUST be HSL.
   .stagger-fade-in > *:nth-child(7) { animation-delay: 0.35s; }
   .stagger-fade-in > *:nth-child(8) { animation-delay: 0.4s; }
 }
+
+/* ===== Mobile Scrolling Fixes for iOS/Android ===== */
+/* Fix scroll blocking on fullscreen modals/tunnels */
+.mobile-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+/* Ensure onboarding tunnel scrolls properly */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific scroll fixes */
+  [style*="position: fixed"] {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent iOS rubber-banding from blocking scroll */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+}
+
+/* Universal touch scroll improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Mobile devices */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth;
+  }
+  
+  /* Ensure form inputs don't block scroll */
+  input, textarea, select {
+    touch-action: manipulation;
+  }
+}
+
+/* Dynamic viewport height for mobile browsers */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
