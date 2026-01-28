@@ -28,6 +28,9 @@ interface Driver {
   free_access_type: string | null;
   created_at: string;
   is_demo_account: boolean;
+  status: string | null;
+  validation_date: string | null;
+  is_pioneer: boolean | null;
   profiles: {
     full_name: string;
     email: string;
@@ -36,6 +39,7 @@ interface Driver {
 
 interface SubscriptionStats {
   total: number;
+  awaitingValidation: number;
   trialing: number;
   active: number;
   pastDue: number;
@@ -85,6 +89,9 @@ const AdminSubscriptions = () => {
           free_access_type,
           created_at,
           is_demo_account,
+          status,
+          validation_date,
+          is_pioneer,
           profiles:user_id (
             full_name,
             email
@@ -98,15 +105,26 @@ const AdminSubscriptions = () => {
       const validDrivers = (data || []).filter(d => d.profiles) as Driver[];
       setDrivers(validDrivers);
       
-      // Calculer les stats
+      // Calculer les stats avec distinction validation/essai
+      // Un utilisateur est "en attente de validation" s'il n'a pas de validation_date
+      // et a un statut 'pending' ou 'on_hold'
       const newStats: SubscriptionStats = {
         total: validDrivers.length,
-        trialing: validDrivers.filter(d => d.subscription_status === 'trialing').length,
-        active: validDrivers.filter(d => d.subscription_status === 'active' && !d.free_access_granted).length,
+        awaitingValidation: validDrivers.filter(d => 
+          !d.validation_date && (d.status === 'pending' || d.status === 'on_hold')
+        ).length,
+        trialing: validDrivers.filter(d => 
+          d.subscription_status === 'trialing' && d.validation_date
+        ).length,
+        active: validDrivers.filter(d => 
+          d.subscription_status === 'active' && !d.free_access_granted && d.validation_date
+        ).length,
         pastDue: validDrivers.filter(d => d.subscription_status === 'past_due').length,
         canceled: validDrivers.filter(d => d.subscription_status === 'canceled').length,
         freeAccess: validDrivers.filter(d => d.free_access_granted).length,
-        noSubscription: validDrivers.filter(d => !d.subscription_status && !d.free_access_granted).length,
+        noSubscription: validDrivers.filter(d => 
+          !d.subscription_status && !d.free_access_granted && d.validation_date
+        ).length,
       };
       setStats(newStats);
     } catch (error: any) {
@@ -135,10 +153,12 @@ const AdminSubscriptions = () => {
     if (filterStatus !== "all") {
       filtered = filtered.filter((driver) => {
         switch (filterStatus) {
+          case "awaiting_validation":
+            return !driver.validation_date && (driver.status === 'pending' || driver.status === 'on_hold');
           case "trialing":
-            return driver.subscription_status === "trialing";
+            return driver.subscription_status === "trialing" && driver.validation_date;
           case "active":
-            return driver.subscription_status === "active" && !driver.free_access_granted;
+            return driver.subscription_status === "active" && !driver.free_access_granted && driver.validation_date;
           case "past_due":
             return driver.subscription_status === "past_due";
           case "canceled":
@@ -146,7 +166,7 @@ const AdminSubscriptions = () => {
           case "free_access":
             return driver.free_access_granted;
           case "no_subscription":
-            return !driver.subscription_status && !driver.free_access_granted;
+            return !driver.subscription_status && !driver.free_access_granted && driver.validation_date;
           default:
             return true;
         }
@@ -256,6 +276,16 @@ const AdminSubscriptions = () => {
   };
 
   const getStatusBadge = (driver: Driver) => {
+    // Vérifier d'abord si en attente de validation
+    if (!driver.validation_date && (driver.status === 'pending' || driver.status === 'on_hold')) {
+      return (
+        <Badge className="bg-orange-500 text-xs">
+          <User className="w-3 h-3 mr-1" />
+          {driver.status === 'on_hold' ? "En attente" : "À valider"}
+        </Badge>
+      );
+    }
+
     if (driver.free_access_granted) {
       const isLifetime = driver.free_access_type === "unlimited";
       return (
@@ -334,7 +364,19 @@ const AdminSubscriptions = () => {
         </div>
 
         {/* Stats cards - Responsive grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'awaiting_validation' ? 'ring-2 ring-orange-500' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'awaiting_validation' ? 'all' : 'awaiting_validation')}
+          >
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-lg font-bold">{stats?.awaitingValidation}</p>
+                <p className="text-xs text-muted-foreground">En attente</p>
+              </div>
+            </div>
+          </Card>
           <Card 
             className={`p-3 cursor-pointer transition-all ${filterStatus === 'trialing' ? 'ring-2 ring-sky-500' : ''}`}
             onClick={() => setFilterStatus(filterStatus === 'trialing' ? 'all' : 'trialing')}
@@ -428,7 +470,8 @@ const AdminSubscriptions = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="trialing">Essai gratuit</SelectItem>
+              <SelectItem value="awaiting_validation">En attente validation</SelectItem>
+              <SelectItem value="trialing">Essai (validés)</SelectItem>
               <SelectItem value="active">Abonnés actifs</SelectItem>
               <SelectItem value="past_due">Paiement en retard</SelectItem>
               <SelectItem value="canceled">Résiliés</SelectItem>
