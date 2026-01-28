@@ -7,13 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Activity, Gift, Search, Calendar, User, RefreshCw, 
-  Clock, CheckCircle, XCircle, AlertTriangle, Ban, Loader2
+  Clock, CheckCircle, XCircle, AlertTriangle, Ban, Loader2, Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DeleteUserDialog } from "./dialogs/DeleteUserDialog";
 
 interface Driver {
   id: string;
@@ -54,6 +55,8 @@ const AdminSubscriptions = () => {
   const [customMonths, setCustomMonths] = useState<string>("1");
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
   const [stats, setStats] = useState<SubscriptionStats | null>(null);
   const isMobile = useIsMobile();
 
@@ -463,21 +466,34 @@ const AdminSubscriptions = () => {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedDriver(driver);
-                        setDialogOpen(true);
-                      }}
-                      disabled={driver.free_access_granted && driver.free_access_type === 'unlimited'}
-                      className="shrink-0 w-full sm:w-auto"
-                    >
-                      <Gift className="w-4 h-4 mr-1" />
-                      <span className={isMobile ? "text-xs" : ""}>
-                        {driver.free_access_granted ? "Modifier" : "Accès Gratuit"}
-                      </span>
-                    </Button>
+                    <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setDialogOpen(true);
+                        }}
+                        disabled={driver.free_access_granted && driver.free_access_type === 'unlimited'}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Gift className="w-4 h-4 mr-1" />
+                        <span className={isMobile ? "text-xs" : ""}>
+                          {driver.free_access_granted ? "Modifier" : "Accès Gratuit"}
+                        </span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setDriverToDelete(driver);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               );
@@ -556,6 +572,14 @@ const AdminSubscriptions = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de suppression */}
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        driver={driverToDelete}
+        onDeleted={fetchDrivers}
+      />
     </div>
   );
 };
