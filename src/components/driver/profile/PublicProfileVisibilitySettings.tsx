@@ -30,7 +30,7 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
   const [showRatingPublic, setShowRatingPublic] = useState(false);
   const [showRatingPartners, setShowRatingPartners] = useState(false);
   const [showPricingPartners, setShowPricingPartners] = useState(false);
-  const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
+  // Le profil public est toujours activé automatiquement
 
   useEffect(() => {
     if (driverProfile) {
@@ -40,27 +40,16 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
       setShowRatingPublic(driverProfile.show_rating_public ?? false);
       setShowRatingPartners(driverProfile.show_rating_partners ?? false);
       setShowPricingPartners(driverProfile.show_pricing_partners ?? false);
-      setPublicProfileEnabled(driverProfile.public_profile_enabled ?? false);
+      // profil public toujours activé
     }
   }, [driverProfile]);
 
   const updateSetting = async (field: string, value: boolean) => {
     if (!driverProfile?.id) return;
 
-    setLoading(true);
     try {
-      // Si on active le profil public, activer aussi toutes les visibilités
-      let updateData: Record<string, boolean> = { [field]: value };
-      
-      if (field === 'public_profile_enabled' && value === true) {
-        updateData = {
-          public_profile_enabled: true,
-          visible_to_companies: true,
-          visible_to_fleet_managers: true,
-          visible_to_drivers: true,
-        };
-      }
-      
+      // Mise à jour standard
+      const updateData: Record<string, boolean> = { [field]: value };
       const { error } = await supabase
         .from('drivers')
         .update(updateData)
@@ -88,13 +77,7 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
         case 'show_pricing_partners':
           setShowPricingPartners(value);
           break;
-        case 'public_profile_enabled':
-          setPublicProfileEnabled(value);
-          // Si activé, mettre aussi visible_to_drivers à jour localement
-          if (value) {
-            setVisibleToDrivers(true);
-          }
-          break;
+        // public_profile_enabled n'est plus modifiable (toujours true)
       }
 
       // Invalider les caches pour synchronisation instantanée
@@ -117,35 +100,17 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
 
   return (
     <div className="space-y-6">
-      {/* Profil public principal */}
-      <Card>
+      {/* Info: Profil public toujours actif */}
+      <Card className="bg-primary/10 border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Profil public
+            <Globe className="h-5 w-5 text-primary" />
+            Profil public actif
           </CardTitle>
           <CardDescription>
-            Activez votre profil public pour être visible par les clients
+            Votre profil est automatiquement visible sur la vitrine SoloCab.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="public-profile" className="font-medium">
-                Activer le profil public
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Les clients pourront vous trouver et vous contacter
-              </p>
-            </div>
-            <Switch
-              id="public-profile"
-              checked={publicProfileEnabled}
-              onCheckedChange={(value) => updateSetting('public_profile_enabled', value)}
-              disabled={loading}
-            />
-          </div>
-        </CardContent>
       </Card>
 
       {/* Visibilité pour les partenaires chauffeurs */}

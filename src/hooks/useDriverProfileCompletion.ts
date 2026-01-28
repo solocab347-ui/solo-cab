@@ -237,17 +237,8 @@ export const useDriverProfileCompletion = (driverProfile: any): ProfileCompletio
         tip: "Apparaît sur vos factures et devis",
       },
 
-      // === VISIBILITÉ ===
-      {
-        id: "public_profile",
-        category: "visibility",
-        label: "Profil public activé",
-        description: "Rendez-vous visible sur la vitrine SoloCab",
-        isComplete: driver.public_profile_enabled === true,
-        priority: "recommended",
-        navigateTo: "profile",
-        tip: "Activez pour recevoir des clients via SoloCab",
-      },
+      // Profil public est automatiquement activé pour tous les chauffeurs
+      // L'option de visibilité a été supprimée - visible_to_drivers reste pour les partenariats
     ];
 
     const completedCount = items.filter(i => i.isComplete).length;

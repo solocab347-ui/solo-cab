@@ -25,8 +25,7 @@ import { toast } from "sonner";
 interface DriverPublicProfileSimplifiedProps {
   driverProfile: any;
   userId: string;
-  // Visibilité
-  publicProfileEnabled: boolean;
+  // Visibilité partenariats uniquement (profil public toujours actif)
   visibleToDrivers: boolean;
   // Identité
   displayDriverName: boolean;
@@ -48,7 +47,6 @@ interface DriverPublicProfileSimplifiedProps {
   contactEmail?: string;
   showRatingPublic?: boolean;
   // Callbacks
-  onTogglePublicProfile: (enabled: boolean) => void;
   onVisibleToDriversChange: (visible: boolean) => void;
   onDisplayDriverNameChange: (checked: boolean) => void;
   onDisplayCompanyNameChange: (checked: boolean) => void;
@@ -73,7 +71,6 @@ interface DriverPublicProfileSimplifiedProps {
 export const DriverPublicProfileSimplified = memo(({
   driverProfile,
   userId,
-  publicProfileEnabled,
   visibleToDrivers,
   displayDriverName,
   displayCompanyName,
@@ -91,7 +88,6 @@ export const DriverPublicProfileSimplified = memo(({
   contactPhone = "",
   contactEmail = "",
   showRatingPublic = false,
-  onTogglePublicProfile,
   onVisibleToDriversChange,
   onDisplayDriverNameChange,
   onDisplayCompanyNameChange,
@@ -138,8 +134,8 @@ export const DriverPublicProfileSimplified = memo(({
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  // Indicateurs de complétion
-  const isVisibilityComplete = publicProfileEnabled;
+  // Indicateurs de complétion - profil toujours public donc visibilité toujours complète
+  const isVisibilityComplete = true;
   const isIdentityComplete = (displayDriverName || displayCompanyName) && (profilePhotoUrl || cardPhotoUrl);
   const isServicesComplete = workingSectors.length > 0 && servicesOffered.length > 0;
   const isContactComplete = (contactPhone && showPhone) || (contactEmail && showEmail);
@@ -219,49 +215,35 @@ export const DriverPublicProfileSimplified = memo(({
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Visibilité */}
+        {/* Tab Visibilité - Uniquement partenariats */}
         <TabsContent value="visibility" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Activation du profil</h3>
-            
-            {/* Toggle principal */}
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50">
-              <div className="flex-1 min-w-0 pr-3">
-                <Label className="text-sm sm:text-base font-medium">Profil public actif</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
-                  Visible dans la vitrine SoloCab
-                </p>
-              </div>
-              <Switch
-                checked={publicProfileEnabled}
-                onCheckedChange={onTogglePublicProfile}
-              />
+          {/* Info: Profil automatiquement public */}
+          <Card className="p-3 sm:p-6 bg-primary/10 border-primary/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Check className="w-4 h-4 text-primary" />
+              <span className="text-sm sm:text-base text-primary font-medium">
+                Profil public actif
+              </span>
             </div>
-
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+              Votre profil est automatiquement visible sur la vitrine SoloCab.
+            </p>
             {/* Lien du profil */}
-            {driverId && (publicProfileEnabled || isPioneer) && (
-              <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Check className="w-4 h-4 text-primary" />
-                  <span className="text-xs sm:text-sm text-primary font-medium">
-                    {isPioneer ? "Profil pionnier actif" : "Profil visible"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={publicProfileUrl}
-                    readOnly
-                    className="flex-1 text-xs h-8 sm:h-9 bg-background/50"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCopyLink}
-                    className="gap-1 shrink-0 h-8"
-                  >
-                    {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </Button>
-                </div>
+            {driverId && (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={publicProfileUrl}
+                  readOnly
+                  className="flex-1 text-xs h-8 sm:h-9 bg-background/50"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="gap-1 shrink-0 h-8"
+                >
+                  {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
               </div>
             )}
           </Card>
