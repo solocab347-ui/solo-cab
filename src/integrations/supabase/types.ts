@@ -12695,6 +12695,140 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_user_deletions: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          completed_at: string | null
+          created_at: string
+          deletion_date: string
+          deletion_type: string
+          driver_id: string | null
+          email_notification_sent: boolean | null
+          email_sent_at: string | null
+          id: string
+          reason_custom: string | null
+          reason_type: string
+          scheduled_at: string
+          scheduled_by: string | null
+          status: string
+          stripe_subscription_cancelled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deletion_date: string
+          deletion_type: string
+          driver_id?: string | null
+          email_notification_sent?: boolean | null
+          email_sent_at?: string | null
+          id?: string
+          reason_custom?: string | null
+          reason_type: string
+          scheduled_at?: string
+          scheduled_by?: string | null
+          status?: string
+          stripe_subscription_cancelled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deletion_date?: string
+          deletion_type?: string
+          driver_id?: string | null
+          email_notification_sent?: boolean | null
+          email_sent_at?: string | null
+          id?: string
+          reason_custom?: string | null
+          reason_type?: string
+          scheduled_at?: string
+          scheduled_by?: string | null
+          status?: string
+          stripe_subscription_cancelled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_user_deletions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_user_deletions_scheduled_by_fkey"
+            columns: ["scheduled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_alerts: {
         Row: {
           acknowledged_at: string | null
