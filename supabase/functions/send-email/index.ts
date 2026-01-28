@@ -10,7 +10,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string;
-  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access";
+  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access" | "account_deletion_notice";
   data?: {
     driverName?: string;
     clientName?: string;
@@ -406,6 +406,135 @@ const getEmailTemplate = (type: string, data: any) => {
                 </div>
                 
                 <p>Profitez pleinement de cette période pour développer votre activité !</p>
+                
+                <p>Cordialement,<br><strong>L'équipe SoloCab</strong></p>
+              </div>
+              <div class="footer">
+                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    },
+
+    account_deletion_notice: {
+      subject: data.isImmediate 
+        ? "⚠️ Votre compte SoloCab a été supprimé" 
+        : "⚠️ Suppression programmée de votre compte SoloCab",
+      html: data.isImmediate ? `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .reason-box { background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .info-box { background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Compte supprimé</h1>
+              </div>
+              <div class="content">
+                <p>Bonjour <strong>${data.driverName || "Utilisateur"}</strong>,</p>
+                
+                <p>Nous vous informons que votre compte SoloCab a été <strong>supprimé</strong> par un administrateur.</p>
+                
+                <div class="reason-box">
+                  <p><strong>📋 Motif de la suppression :</strong></p>
+                  <p>${data.reason || "Non spécifié"}</p>
+                </div>
+                
+                <div class="info-box">
+                  <p><strong>📌 Informations importantes :</strong></p>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Toutes vos données personnelles ont été supprimées conformément au RGPD</li>
+                    <li>Si vous aviez un abonnement actif, il a été annulé automatiquement</li>
+                    <li>Vous pouvez vous réinscrire à tout moment avec la même adresse email</li>
+                  </ul>
+                </div>
+                
+                <p>Si vous pensez qu'il s'agit d'une erreur ou si vous avez des questions, veuillez nous contacter à <a href="mailto:support@solocab.fr">support@solocab.fr</a>.</p>
+                
+                <p>Cordialement,<br><strong>L'équipe SoloCab</strong></p>
+              </div>
+              <div class="footer">
+                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      ` : `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .reason-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .warning-box { background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .action-box { background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⏳ Suppression de compte programmée</h1>
+              </div>
+              <div class="content">
+                <p>Bonjour <strong>${data.driverName || "Utilisateur"}</strong>,</p>
+                
+                <p>Nous vous informons que votre compte SoloCab sera <strong>supprimé ${data.deletionType}</strong>, soit le <strong>${data.deletionDate}</strong>.</p>
+                
+                <div class="reason-box">
+                  <p><strong>📋 Motif de la suppression :</strong></p>
+                  <p>${data.reason || "Non spécifié"}</p>
+                </div>
+                
+                <div class="warning-box">
+                  <p><strong>⚠️ IMPORTANT - Sauvegardez vos données !</strong></p>
+                  <p>Conformément au RGPD, vous avez le droit de récupérer vos données avant la suppression de votre compte :</p>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Vos clients :</strong> Exportez la liste de vos clients fidèles</li>
+                    <li><strong>Vos courses :</strong> Téléchargez l'historique de vos courses</li>
+                    <li><strong>Vos factures :</strong> Conservez une copie de toutes vos factures</li>
+                    <li><strong>Vos devis :</strong> Sauvegardez vos devis en attente</li>
+                  </ul>
+                </div>
+                
+                <div class="action-box">
+                  <p><strong>📥 Comment récupérer vos données ?</strong></p>
+                  <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li>Connectez-vous à votre espace chauffeur</li>
+                    <li>Allez dans <strong>Paramètres > Export des données</strong></li>
+                    <li>Cliquez sur <strong>"Télécharger mes données"</strong></li>
+                    <li>Vous recevrez un fichier contenant toutes vos informations</li>
+                  </ol>
+                  <p style="text-align: center; margin-top: 15px;">
+                    <a href="https://solocab.fr/driver-dashboard" class="button">Accéder à mon espace</a>
+                  </p>
+                </div>
+                
+                <p><strong>📌 Ce qui va se passer :</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                  <li>Votre abonnement sera annulé à la fin de la période en cours</li>
+                  <li>Le ${data.deletionDate}, toutes vos données seront définitivement supprimées</li>
+                  <li>Vous pourrez vous réinscrire ultérieurement avec la même adresse email</li>
+                </ul>
+                
+                <p>Si vous pensez qu'il s'agit d'une erreur ou si vous souhaitez contester cette décision, veuillez nous contacter immédiatement à <a href="mailto:support@solocab.fr">support@solocab.fr</a>.</p>
                 
                 <p>Cordialement,<br><strong>L'équipe SoloCab</strong></p>
               </div>
