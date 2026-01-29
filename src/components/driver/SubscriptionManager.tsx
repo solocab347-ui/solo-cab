@@ -359,17 +359,74 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {isPastDue && (
-        <Card className="p-4 sm:p-6 bg-yellow-50 dark:bg-yellow-900/10 border-yellow-500">
-          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="font-bold text-base sm:text-lg text-yellow-700 dark:text-yellow-500 mb-2">
-                Paiement en Retard
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                Votre dernier paiement n'a pas pu être effectué. Veuillez mettre à jour vos informations de paiement pour continuer à utiliser la plateforme.
-              </p>
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500 shadow-lg">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+              <div className="p-2.5 bg-yellow-500/20 rounded-xl">
+                <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-base sm:text-lg text-yellow-700 dark:text-yellow-500 mb-2">
+                  ⚠️ Paiement en Retard
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                  Votre dernier paiement n'a pas pu être effectué. Régularisez votre situation pour continuer à utiliser la plateforme.
+                </p>
+                <div className="bg-destructive/10 p-3 rounded-lg text-sm">
+                  <p className="font-medium text-destructive mb-1">⏰ Accès limité :</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-1 text-xs">
+                    <li>Votre page de réservation n'est plus visible</li>
+                    <li>Vous ne pouvez plus recevoir de nouveaux clients</li>
+                    <li>Régularisez rapidement pour éviter la suspension</li>
+                  </ul>
+                </div>
+              </div>
             </div>
+            
+            {/* Actions pour impayés */}
+            {driverProfile?.driver?.stripe_customer_id && (
+              <div className="space-y-3 pt-2">
+                <Button
+                  onClick={async () => {
+                    setManagingSubscription(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("customer-portal", {
+                        body: { action: "payment_method" }
+                      });
+                      if (error) throw error;
+                      if (data?.url) {
+                        window.open(data.url, "_blank", "noopener,noreferrer");
+                        toast.success("Portail de paiement ouvert", {
+                          description: "Mettez à jour votre carte pour régulariser"
+                        });
+                      }
+                    } catch (error: any) {
+                      console.error("Error opening portal:", error);
+                      toast.error("Erreur lors de l'ouverture du portail");
+                    } finally {
+                      setManagingSubscription(false);
+                    }
+                  }}
+                  disabled={managingSubscription}
+                  className="w-full h-auto py-4 px-4 flex items-center justify-between gap-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white transition-all touch-manipulation active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-lg">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-semibold text-base block">Régulariser mon paiement</span>
+                      <span className="text-xs opacity-80">Mettre à jour ma carte bancaire</span>
+                    </div>
+                  </div>
+                  {managingSubscription ? (
+                    <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                  ) : (
+                    <Check className="w-5 h-5 flex-shrink-0" />
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -499,11 +556,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       </Card>
 
       {/* Section Gestion d'abonnement - Très visible et séparée */}
-      {(isActive || isInTrialPeriod || hasAdminFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
+      {(isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue) && driverProfile?.driver?.stripe_customer_id && (
         <SubscriptionManagementCard
           userType="driver"
           hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
-          isActive={isActive || isInTrialPeriod || hasAdminFreeAccess}
+          isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
           nextBillingDate={driverProfile?.driver?.subscription_end_date}
           nextBillingAmount={9.99}
           onBeforeOpenPortal={async () => {
