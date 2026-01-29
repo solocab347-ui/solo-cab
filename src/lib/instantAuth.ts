@@ -373,7 +373,16 @@ export async function instantSignOut(): Promise<void> {
 export function getNavigationPath(
   role: string | null,
   isEmployee: boolean,
-  driverData?: { is_fleet_driver?: boolean; fleet_manager_id?: string; is_pioneer?: boolean; stripe_customer_id?: string }
+  driverData?: { 
+    is_fleet_driver?: boolean; 
+    fleet_manager_id?: string; 
+    is_pioneer?: boolean; 
+    stripe_customer_id?: string;
+    free_access_granted?: boolean;
+    free_access_end_date?: string;
+    subscription_paid?: boolean;
+    created_at?: string;
+  }
 ): string {
   if (!role) return "/client-dashboard";
   
@@ -385,7 +394,38 @@ export function getNavigationPath(
     case "company":
       return "/company-dashboard";
     case "driver":
-      if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
+      // Pionniers: vérifier l'accès
+      if (driverData?.is_pioneer) {
+        // Accès gratuit permanent (admin) - toujours accès
+        const hasPermanentFreeAccess = driverData.free_access_granted === true && 
+          driverData.free_access_end_date && 
+          new Date(driverData.free_access_end_date) > new Date();
+        
+        if (hasPermanentFreeAccess) {
+          return driverData.is_fleet_driver && driverData.fleet_manager_id 
+            ? "/fleet-driver-dashboard" 
+            : "/driver-dashboard";
+        }
+        
+        // Abonnement payé
+        if (driverData.subscription_paid === true) {
+          return driverData.is_fleet_driver && driverData.fleet_manager_id 
+            ? "/fleet-driver-dashboard" 
+            : "/driver-dashboard";
+        }
+        
+        // Essai pionnier encore actif (30 jours depuis création)
+        if (driverData.created_at) {
+          const createdAt = new Date(driverData.created_at);
+          const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+          if (new Date() < pioneerTrialEnd) {
+            return driverData.is_fleet_driver && driverData.fleet_manager_id 
+              ? "/fleet-driver-dashboard" 
+              : "/driver-dashboard";
+          }
+        }
+        
+        // Sinon, paiement requis
         return "/pioneer-payment";
       }
       if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {

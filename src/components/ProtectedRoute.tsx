@@ -144,21 +144,37 @@ export const ProtectedRoute = ({
 
       // PIONNIERS: Ils ont 30 jours gratuits depuis leur inscription
       // Après 30 jours, ils doivent payer (pas de nouvel essai)
+      // EXCEPTION: Les pionniers avec accès gratuit permanent (free_access_end_date)
       if (driver.is_pioneer) {
         const createdAt = new Date(driver.created_at);
         const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
         const now = new Date();
         const isPioneerTrialActive = now < pioneerTrialEnd;
         
+        // Vérifier si le pionnier a un accès gratuit permanent (accordé par admin)
+        const hasPermanentFreeAccess = driver.free_access_granted === true && 
+          driver.free_access_end_date && 
+          new Date(driver.free_access_end_date) > new Date();
+        
         logger.info("Vérification pionnier", { 
           createdAt: createdAt.toISOString(),
           pioneerTrialEnd: pioneerTrialEnd.toISOString(),
           isPioneerTrialActive,
+          hasPermanentFreeAccess,
+          freeAccessEndDate: driver.free_access_end_date,
           hasStripeCustomer: !!driver.stripe_customer_id,
           subscriptionPaid: driver.subscription_paid
         });
         
-        // Si le pionnier a déjà payé, accès accordé
+        // PRIORITÉ 1: Si le pionnier a un accès gratuit permanent (admin), accès accordé
+        if (hasPermanentFreeAccess) {
+          logger.info("Pionnier avec accès gratuit permanent - accès accordé");
+          setDriverStatus("validated");
+          setCheckingDriver(false);
+          return;
+        }
+        
+        // PRIORITÉ 2: Si le pionnier a déjà payé, accès accordé
         if (driver.subscription_paid === true) {
           logger.info("Pionnier avec abonnement payé - accès accordé");
           setDriverStatus("validated");
@@ -166,7 +182,7 @@ export const ProtectedRoute = ({
           return;
         }
         
-        // Si l'essai pionnier est encore actif (< 30 jours), accès gratuit complet
+        // PRIORITÉ 3: Si l'essai pionnier est encore actif (< 30 jours), accès gratuit complet
         if (isPioneerTrialActive) {
           logger.info("Pionnier en période d'essai - accès accordé");
           setDriverStatus("validated");
@@ -174,7 +190,7 @@ export const ProtectedRoute = ({
           return;
         }
         
-        // Essai pionnier expiré et pas de paiement = rediriger vers paiement
+        // Essai pionnier expiré et pas de paiement ni d'accès gratuit = rediriger vers paiement
         logger.info("Pionnier - essai expiré, paiement requis");
         setDriverStatus("pioneer_payment_required");
         setCheckingDriver(false);
