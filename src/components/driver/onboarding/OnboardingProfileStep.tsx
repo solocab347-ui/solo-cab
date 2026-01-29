@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
-import { DualProfilePhotoUpload } from '../DualProfilePhotoUpload';
+import { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 import { SectorSelector } from '../SectorSelector';
 import { ServicesSelector } from '../ServicesSelector';
 import { EquipmentSelector } from '../EquipmentSelector';
@@ -45,12 +45,12 @@ export function OnboardingProfileStep({ data, driverProfile, userId, onUpdate }:
 
   return (
     <div className="space-y-3">
-      {/* Photo */}
+      {/* Photo unique */}
       <Card className={isPhotoComplete ? 'border-primary/30 bg-primary/5' : ''}>
         <CardHeader className="p-3 pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Camera className="w-4 h-4 text-primary" />
-            Vos photos
+            Votre photo
             {isPhotoComplete ? (
               <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
                 <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
@@ -65,13 +65,14 @@ export function OnboardingProfileStep({ data, driverProfile, userId, onUpdate }:
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0">
-          <DualProfilePhotoUpload
-            currentProfilePhotoUrl={data.profilePhotoUrl}
-            currentCardPhotoUrl={data.cardPhotoUrl}
+          <SingleProfilePhotoUpload
+            currentPhotoUrl={data.profilePhotoUrl}
             userId={userId}
             driverName={driverProfile?.full_name || 'Chauffeur'}
-            onProfilePhotoUpdate={(url) => onUpdate({ profilePhotoUrl: url })}
-            onCardPhotoUpdate={(url) => onUpdate({ cardPhotoUrl: url })}
+            onPhotoUpdate={(url) => {
+              // Mettre à jour les deux URLs en même temps
+              onUpdate({ profilePhotoUrl: url, cardPhotoUrl: url });
+            }}
           />
         </CardContent>
       </Card>

@@ -105,13 +105,16 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Minimum (€)</Label>
+              <Label className="text-xs">Minimum course (€)</Label>
               <NumericInput
                 value={data.minimumPrice}
                 onChange={(v) => onUpdate({ minimumPrice: v })}
                 placeholder="ex: 15.00"
                 className="h-9"
               />
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Tarif plancher garanti, quel que soit le nombre de km
+              </p>
             </div>
           </div>
           <div className="flex items-center justify-between pt-2 border-t">
