@@ -176,6 +176,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   // Détection de la résiliation programmée
   const cancelAtPeriodEnd = driverProfile?.driver?.subscription_cancel_at_period_end;
   const cancelAt = driverProfile?.driver?.subscription_cancel_at;
+  const trialCancelled = driverProfile?.driver?.trial_cancelled === true;
 
   const remainingDays = freeAccessEndDate ? differenceInDays(new Date(freeAccessEndDate), new Date()) : null;
   
@@ -655,6 +656,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
         isInTrialPeriod={isInTrialPeriod || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0)}
         trialEndDate={isInTrialPeriod ? trialEndDate : (isPioneer ? new Date(pioneerTrialEnd!) : undefined)}
+        trialCancelled={trialCancelled}
         nextBillingDate={driverProfile?.driver?.subscription_end_date}
         nextBillingAmount={isPioneer ? 39.99 : 9.99}
         cancelAtPeriodEnd={driverProfile?.driver?.subscription_cancel_at_period_end}

@@ -41,6 +41,8 @@ interface SubscriptionManagementCardProps {
   isInTrialPeriod?: boolean;
   /** Date de fin d'essai */
   trialEndDate?: Date;
+  /** Essai annulé par l'utilisateur */
+  trialCancelled?: boolean;
   /** Date du prochain prélèvement */
   nextBillingDate?: string | null;
   /** Montant du prochain prélèvement */
@@ -61,6 +63,7 @@ export const SubscriptionManagementCard = ({
   isActive,
   isInTrialPeriod = false,
   trialEndDate,
+  trialCancelled = false,
   nextBillingDate,
   nextBillingAmount,
   cancelAtPeriodEnd = false,
@@ -191,9 +194,113 @@ export const SubscriptionManagementCard = ({
     }
   }, [onAfterManage]);
 
-  // Afficher la carte dans tous les cas (essai ou abonnement actif)
-  if (!isActive && !isInTrialPeriod) {
+  // Réactiver l'essai (annuler l'annulation de l'essai)
+  const handleReactivateTrial = useCallback(async () => {
+    setLoading("reactivate_trial");
+    try {
+      const { data, error } = await supabase.functions.invoke("reactivate-trial");
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("Essai réactivé ! 🎉", {
+          description: "Vous continuerez à bénéficier de l'accès complet."
+        });
+        onAfterManage?.();
+      } else {
+        throw new Error(data?.error || "Erreur lors de la réactivation");
+      }
+    } catch (error: any) {
+      console.error("Error reactivating trial:", error);
+      toast.error("Erreur lors de la réactivation", {
+        description: error.message || "Veuillez réessayer"
+      });
+    } finally {
+      setLoading(null);
+    }
+  }, [onAfterManage]);
+
+  // Afficher la carte dans tous les cas (essai ou abonnement actif ou essai annulé)
+  if (!isActive && !isInTrialPeriod && !trialCancelled) {
     return null;
+  }
+
+  // Mode essai annulé - affichage avec possibilité de réactiver
+  if (trialCancelled && !hasStripeCustomer) {
+    return (
+      <Card className="p-4 sm:p-6 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-orange-500/10 border-2 border-orange-500/30 shadow-lg">
+        <div className="space-y-4">
+          {/* En-tête */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-orange-500/20 rounded-xl">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base sm:text-lg text-foreground">
+                  Essai annulé
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Vous avez choisi de ne pas continuer
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              Annulé
+            </Badge>
+          </div>
+
+          {/* Info date de fin */}
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-orange-700 dark:text-orange-400">
+                  Accès jusqu'au {trialEndDate ? format(trialEndDate, "d MMMM yyyy", { locale: fr }) : "fin de la période"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Après cette date, vous n'aurez plus accès aux fonctionnalités SoloCab.
+                  Vos données seront conservées pendant 30 jours.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Encart changement d'avis */}
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <RefreshCw className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-foreground">
+                  Vous avez changé d'avis ?
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Vous pouvez réactiver votre essai à tout moment et continuer à profiter de SoloCab gratuitement jusqu'au {trialEndDate ? format(trialEndDate, "d MMMM yyyy", { locale: fr }) : "terme de la période"}.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={handleReactivateTrial}
+              disabled={loading !== null}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              {loading === "reactivate_trial" ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+              )}
+              Reprendre mon essai gratuit
+            </Button>
+          </div>
+
+          {/* Rappel qu'on peut toujours s'abonner */}
+          <p className="text-xs text-center text-muted-foreground">
+            Vous pouvez également vous abonner à tout moment pour conserver l'accès après la fin de l'essai
+          </p>
+        </div>
+      </Card>
+    );
   }
 
   // Mode essai sans Stripe customer - affichage simplifié
