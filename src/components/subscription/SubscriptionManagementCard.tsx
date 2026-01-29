@@ -12,11 +12,12 @@ import {
   XCircle,
   RefreshCw,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   AlertDialog,
@@ -36,6 +37,10 @@ interface SubscriptionManagementCardProps {
   hasStripeCustomer: boolean;
   /** Abonnement actif */
   isActive: boolean;
+  /** En période d'essai */
+  isInTrialPeriod?: boolean;
+  /** Date de fin d'essai */
+  trialEndDate?: Date;
   /** Date du prochain prélèvement */
   nextBillingDate?: string | null;
   /** Montant du prochain prélèvement */
@@ -54,6 +59,8 @@ export const SubscriptionManagementCard = ({
   userType,
   hasStripeCustomer,
   isActive,
+  isInTrialPeriod = false,
+  trialEndDate,
   nextBillingDate,
   nextBillingAmount,
   cancelAtPeriodEnd = false,
@@ -63,6 +70,11 @@ export const SubscriptionManagementCard = ({
 }: SubscriptionManagementCardProps) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showTrialCancelConfirm, setShowTrialCancelConfirm] = useState(false);
+
+  const trialDaysLeft = trialEndDate 
+    ? Math.max(0, differenceInDays(trialEndDate, new Date()))
+    : 0;
 
   const handleOpenPortal = useCallback(async (action?: "payment_method" | "cancel" | "invoices") => {
     // Callback optionnel avant ouverture (ex: avertissement Pioneer) - uniquement pour cancel
@@ -117,10 +129,41 @@ export const SubscriptionManagementCard = ({
     setShowCancelConfirm(true);
   }, []);
 
+  const handleTrialCancelClick = useCallback(() => {
+    setShowTrialCancelConfirm(true);
+  }, []);
+
   const handleCancelConfirm = useCallback(async () => {
     setShowCancelConfirm(false);
     await handleOpenPortal("cancel");
   }, [handleOpenPortal]);
+
+  // Annuler l'essai (sans Stripe customer)
+  const handleTrialCancelConfirm = useCallback(async () => {
+    setShowTrialCancelConfirm(false);
+    setLoading("cancel_trial");
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-trial");
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("Essai annulé", {
+          description: `Votre accès reste actif jusqu'au ${trialEndDate ? format(trialEndDate, "d MMMM yyyy", { locale: fr }) : "fin de la période d'essai"}.`
+        });
+        onAfterManage?.();
+      } else {
+        throw new Error(data?.error || "Erreur lors de l'annulation");
+      }
+    } catch (error: any) {
+      console.error("Error canceling trial:", error);
+      toast.error("Erreur lors de l'annulation", {
+        description: error.message || "Veuillez réessayer"
+      });
+    } finally {
+      setLoading(null);
+    }
+  }, [trialEndDate, onAfterManage]);
 
   // Réactiver l'abonnement (annuler la résiliation programmée)
   const handleReactivateSubscription = useCallback(async () => {
@@ -148,11 +191,134 @@ export const SubscriptionManagementCard = ({
     }
   }, [onAfterManage]);
 
-  // Ne rien afficher si pas de customer Stripe ou pas actif
-  if (!hasStripeCustomer || !isActive) {
+  // Afficher la carte dans tous les cas (essai ou abonnement actif)
+  if (!isActive && !isInTrialPeriod) {
     return null;
   }
 
+  // Mode essai sans Stripe customer - affichage simplifié
+  if (isInTrialPeriod && !hasStripeCustomer) {
+    return (
+      <>
+        {/* Dialog de confirmation d'annulation d'essai */}
+        <AlertDialog open={showTrialCancelConfirm} onOpenChange={setShowTrialCancelConfirm}>
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-5 h-5" />
+                Annuler votre période d'essai ?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  Vous êtes sur le point d'annuler votre période d'essai SoloCab.
+                </p>
+                <div className="bg-blue-500/10 p-3 rounded-lg text-sm border border-blue-500/30">
+                  <p className="font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    Bonne nouvelle !
+                  </p>
+                  <p className="text-muted-foreground">
+                    Votre accès restera actif jusqu'au{" "}
+                    <span className="font-semibold">
+                      {trialEndDate ? format(trialEndDate, "d MMMM yyyy", { locale: fr }) : "fin de la période d'essai"}
+                    </span>.
+                    Aucun paiement ne sera prélevé.
+                  </p>
+                </div>
+                <div className="bg-destructive/10 p-3 rounded-lg text-sm">
+                  <p className="font-medium text-destructive mb-1">Après cette date, vous perdrez :</p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                    <li>L'accès à votre page de réservation publique</li>
+                    <li>La gestion de vos clients et courses</li>
+                    <li>Les outils de facturation et devis</li>
+                    <li>Votre visibilité auprès des entreprises</li>
+                  </ul>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">
+                Continuer l'essai
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleTrialCancelConfirm}
+                className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
+              >
+                Confirmer l'annulation
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg">
+          <div className="space-y-4">
+            {/* En-tête */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/20 rounded-xl">
+                  <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg text-foreground">
+                    Gérer mon abonnement
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Période d'essai en cours
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {trialDaysLeft} jour{trialDaysLeft > 1 ? "s" : ""} restant{trialDaysLeft > 1 ? "s" : ""}
+              </Badge>
+            </div>
+
+            {/* Info essai */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-background/60 rounded-lg border border-border/50">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Fin de l'essai :</span>
+              </div>
+              <span className="font-semibold text-sm ml-6 sm:ml-0">
+                {trialEndDate ? format(trialEndDate, "d MMMM yyyy", { locale: fr }) : "Non défini"}
+              </span>
+            </div>
+
+            {/* Note info - options disponibles après conversion */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm text-muted-foreground">
+              <p className="flex items-start gap-2">
+                <CreditCard className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong className="text-foreground">Après souscription :</strong> vous pourrez modifier votre carte bancaire et consulter vos factures.
+                </span>
+              </p>
+            </div>
+
+            {/* Bouton résilier l'essai */}
+            <div className="pt-3 border-t border-border/50">
+              <Button
+                onClick={handleTrialCancelClick}
+                disabled={loading !== null}
+                variant="ghost"
+                className="w-full h-auto py-4 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all touch-manipulation active:scale-[0.98]"
+              >
+                {loading === "cancel_trial" ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="w-5 h-5 mr-2" />
+                )}
+                <span className="font-medium">Ne pas continuer après l'essai</span>
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Votre accès restera actif jusqu'à la fin de l'essai
+              </p>
+            </div>
+          </div>
+        </Card>
+      </>
+    );
+  }
+
+  // Mode abonnement avec Stripe customer
   return (
     <>
       {/* Dialog de confirmation de résiliation */}
