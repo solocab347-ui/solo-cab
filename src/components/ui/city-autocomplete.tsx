@@ -21,6 +21,10 @@ interface CityAutocompleteProps {
   disabled?: boolean;
 }
 
+// Cache local pour éviter les appels répétés
+const localCache = new Map<string, { data: CitySuggestion[], timestamp: number }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export const CityAutocomplete = ({
   value,
   onChange,
@@ -32,27 +36,10 @@ export const CityAutocomplete = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const debounceTimer = useRef<NodeJS.Timeout>();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch Mapbox token on mount
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-        if (error) throw error;
-        if (data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (error) {
-        console.error("Error fetching Mapbox token:", error);
-      }
-    };
-    fetchToken();
-  }, []);
 
   useEffect(() => {
     setInputValue(value);
@@ -95,33 +82,44 @@ export const CityAutocomplete = ({
   }, [showSuggestions]);
 
   const fetchSuggestions = async (query: string) => {
-    if (!query || query.length < 2 || !mapboxToken) {
+    if (!query || query.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
+    // Vérifier le cache local d'abord
+    const cacheKey = `city:${query.toLowerCase().trim()}`;
+    const cached = localCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log("🏙️ Cache local HIT pour:", query);
+      setSuggestions(cached.data);
+      setShowSuggestions(cached.data.length > 0);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Focus on cities and places only (not addresses)
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          query
-        )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=8&types=place,locality`
-      );
+      // Utiliser l'edge function avec cache en DB
+      const { data, error } = await supabase.functions.invoke("geocode-cached", {
+        body: { query, type: 'city' }
+      });
 
-      if (!response.ok) throw new Error("Geocoding failed");
-
-      const data = await response.json();
-      console.log("🏙️ City suggestions:", data.features?.length || 0);
-      
-      if (data.features && data.features.length > 0) {
-        setSuggestions(data.features);
-        setShowSuggestions(true);
-      } else {
+      if (error) {
+        console.error("Geocoding error:", error);
         setSuggestions([]);
         setShowSuggestions(false);
+        return;
       }
+
+      const features = data?.features || [];
+      console.log(`🏙️ City suggestions: ${features.length} (cached: ${data?.cached || false})`);
+      
+      // Sauvegarder dans le cache local
+      localCache.set(cacheKey, { data: features, timestamp: Date.now() });
+      
+      setSuggestions(features);
+      setShowSuggestions(features.length > 0);
     } catch (error) {
       console.error("Error fetching city suggestions:", error);
       setSuggestions([]);
@@ -133,8 +131,6 @@ export const CityAutocomplete = ({
 
   const handleInputChange = (newValue: string) => {
     setInputValue(newValue);
-    // Ne pas propager le changement immédiatement, seulement le texte local
-    // La valeur sera propagée uniquement lors de la sélection
 
     // Debounce API calls
     if (debounceTimer.current) {
@@ -143,7 +139,7 @@ export const CityAutocomplete = ({
 
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 250);
+    }, 300); // Augmenté à 300ms pour réduire les appels
   };
 
   const handleSelectSuggestion = (suggestion: CitySuggestion) => {
