@@ -65,6 +65,44 @@ interface Driver {
   } | null;
 }
 
+// Legacy key mappings (old format -> new format)
+const LEGACY_KEY_MAPPING: Record<string, string> = {
+  'identity_recto': 'id_card_recto',
+  'identity_verso': 'id_card_verso',
+  'vtc_recto': 'vtc_card_recto',
+  'vtc_verso': 'vtc_card_verso',
+  'vehicle_insurance': 'insurance',
+  'registration': 'vehicle_registration',
+};
+
+// Helper function to normalize document keys (handles both old and new formats)
+const normalizeDocuments = (docs: Record<string, any> | null): Record<string, any> => {
+  if (!docs) return {};
+  
+  const normalized: Record<string, any> = {};
+  
+  Object.entries(docs).forEach(([key, value]) => {
+    // Convert legacy keys to new format
+    const normalizedKey = LEGACY_KEY_MAPPING[key] || key;
+    
+    // Handle both formats: { url, name, uploadedAt } or direct URL string
+    if (typeof value === 'string') {
+      // Old format: direct URL string
+      normalized[normalizedKey] = {
+        url: value,
+        name: normalizedKey,
+        uploadedAt: null,
+        validated: false
+      };
+    } else if (value && typeof value === 'object') {
+      // New format: object with metadata
+      normalized[normalizedKey] = value;
+    }
+  });
+  
+  return normalized;
+};
+
 // Document types with recto/verso support and lock rules
 const DOCUMENT_CONFIG: Record<string, {
   label: string;
@@ -73,20 +111,23 @@ const DOCUMENT_CONFIG: Record<string, {
   hasVerso: boolean;
   canUpdateAfterValidation: boolean; // For insurance/carte grise
   alternativeKey?: string; // For passport as alternative to ID card verso
+  legacyKeys?: string[]; // Old keys that map to this document
 }> = {
   id_card_recto: {
     label: "Pièce d'identité (Recto)",
     description: "Face avant de votre CNI ou passeport",
     isRequired: true,
     hasVerso: false,
-    canUpdateAfterValidation: false
+    canUpdateAfterValidation: false,
+    legacyKeys: ['identity_recto']
   },
   id_card_verso: {
     label: "Pièce d'identité (Verso)",
     description: "Face arrière de votre CNI (optionnel si passeport)",
     isRequired: false, // Optionnel si passeport
     hasVerso: false,
-    canUpdateAfterValidation: false
+    canUpdateAfterValidation: false,
+    legacyKeys: ['identity_verso']
   },
   passport: {
     label: "Passeport (Alternative)",
@@ -101,14 +142,16 @@ const DOCUMENT_CONFIG: Record<string, {
     description: "Face avant de votre carte professionnelle VTC",
     isRequired: true,
     hasVerso: false,
-    canUpdateAfterValidation: false
+    canUpdateAfterValidation: false,
+    legacyKeys: ['vtc_recto']
   },
   vtc_card_verso: {
     label: "Carte VTC (Verso)",
     description: "Face arrière de votre carte professionnelle VTC",
     isRequired: true,
     hasVerso: false,
-    canUpdateAfterValidation: false
+    canUpdateAfterValidation: false,
+    legacyKeys: ['vtc_verso']
   },
   driving_license_recto: {
     label: "Permis de conduire (Recto)",
@@ -129,14 +172,16 @@ const DOCUMENT_CONFIG: Record<string, {
     description: "Carte grise du véhicule - peut être mise à jour",
     isRequired: true,
     hasVerso: false,
-    canUpdateAfterValidation: true // Can be updated (vehicle change)
+    canUpdateAfterValidation: true, // Can be updated (vehicle change)
+    legacyKeys: ['registration']
   },
   insurance: {
     label: "Attestation d'assurance",
     description: "Assurance RC Pro VTC - peut être mise à jour",
     isRequired: true,
     hasVerso: false,
-    canUpdateAfterValidation: true // Can be updated (renewal)
+    canUpdateAfterValidation: true, // Can be updated (renewal)
+    legacyKeys: ['vehicle_insurance']
   },
   kbis: {
     label: "Extrait Kbis ou INSEE",
@@ -199,9 +244,11 @@ export const AdminDriverDocumentsManagement = () => {
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      // Normalize all documents to use new key format
       setDrivers((data || []).map(d => ({
         ...d,
-        documents: (d.documents as Record<string, any>) || {}
+        documents: normalizeDocuments(d.documents as Record<string, any>)
       })));
     } catch (error) {
       console.error("Error fetching drivers:", error);
@@ -210,6 +257,32 @@ export const AdminDriverDocumentsManagement = () => {
       setLoading(false);
     }
   }, [statusFilter]);
+
+  // Function to migrate legacy documents to new format in database
+  const migrateDriverDocuments = async (driver: Driver) => {
+    const originalDocs = driver.documents || {};
+    const normalizedDocs = normalizeDocuments(originalDocs);
+    
+    // Check if migration is needed (if any legacy keys exist)
+    const hasLegacyKeys = Object.keys(originalDocs).some(key => LEGACY_KEY_MAPPING[key]);
+    
+    if (!hasLegacyKeys) return; // No migration needed
+    
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({ documents: normalizedDocs })
+        .eq("id", driver.id);
+        
+      if (error) throw error;
+      
+      toast.success(`Documents de ${driver.profiles?.full_name || 'ce chauffeur'} migrés avec succès`);
+      fetchDrivers();
+    } catch (error) {
+      console.error("Migration error:", error);
+      toast.error("Erreur lors de la migration des documents");
+    }
+  };
 
   useEffect(() => {
     fetchDrivers();

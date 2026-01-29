@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Download, FileText } from "lucide-react";
+import { X, Download, FileText, ExternalLink, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,24 +12,98 @@ interface DocumentViewerProps {
   driver: any;
 }
 
-const REQUIRED_DOCUMENTS = [
-  { key: "vtc_card", label: "Carte professionnelle VTC" },
-  { key: "driving_license", label: "Permis de conduire" },
-  { key: "id_card", label: "Pièce d'identité (CNI ou Passeport)" },
-  { key: "vehicle_registration", label: "Carte grise du véhicule" },
-  { key: "insurance", label: "Attestation d'assurance RC Pro VTC" },
-  { key: "kbis", label: "Extrait Kbis ou INSEE" },
+interface DocumentDef {
+  key: string;
+  label: string;
+  legacyKey?: string;
+  optional?: boolean;
+}
+
+interface DocumentGroup {
+  groupLabel: string;
+  documents: DocumentDef[];
+}
+
+// Document configuration with recto/verso support
+const DOCUMENT_GROUPS: DocumentGroup[] = [
+  { 
+    groupLabel: "Carte professionnelle VTC",
+    documents: [
+      { key: "vtc_card_recto", label: "Recto", legacyKey: "vtc_recto" },
+      { key: "vtc_card_verso", label: "Verso", legacyKey: "vtc_verso" },
+    ]
+  },
+  { 
+    groupLabel: "Permis de conduire",
+    documents: [
+      { key: "driving_license_recto", label: "Recto" },
+      { key: "driving_license_verso", label: "Verso" },
+    ]
+  },
+  { 
+    groupLabel: "Pièce d'identité (CNI ou Passeport)",
+    documents: [
+      { key: "id_card_recto", label: "Recto", legacyKey: "identity_recto" },
+      { key: "id_card_verso", label: "Verso (optionnel si passeport)", legacyKey: "identity_verso", optional: true },
+    ]
+  },
+  { 
+    groupLabel: "Carte grise du véhicule",
+    documents: [
+      { key: "vehicle_registration", label: "Carte grise", legacyKey: "registration" },
+    ]
+  },
+  { 
+    groupLabel: "Attestation d'assurance RC Pro VTC",
+    documents: [
+      { key: "insurance", label: "Assurance", legacyKey: "vehicle_insurance" },
+    ]
+  },
+  { 
+    groupLabel: "Extrait Kbis ou INSEE",
+    documents: [
+      { key: "kbis", label: "Kbis/INSEE" },
+    ]
+  },
 ];
+
+// Helper to extract URL from document data (handles both old string format and new object format)
+const extractDocumentUrl = (docData: any): string | null => {
+  if (!docData) return null;
+  
+  // New format: { url, name, uploadedAt }
+  if (typeof docData === 'object' && docData.url) {
+    return docData.url;
+  }
+  
+  // Old format: direct URL string
+  if (typeof docData === 'string') {
+    return docData;
+  }
+  
+  return null;
+};
 
 const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => {
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [loadingUrls, setLoadingUrls] = useState(false);
 
-  if (!driver) return null;
+  const documents = driver?.documents || {};
 
-  const documents = driver.documents || {};
+  // Get document URL (checks both new key and legacy key)
+  const getDocumentData = (key: string, legacyKey?: string): string | null => {
+    // Try new key first
+    let url = extractDocumentUrl(documents[key]);
+    
+    // Try legacy key if new key not found
+    if (!url && legacyKey) {
+      url = extractDocumentUrl(documents[legacyKey]);
+    }
+    
+    return url;
+  };
 
-  // Générer des signed URLs pour tous les documents au chargement
+  // Generate signed URLs for all documents on open
   useEffect(() => {
     const generateSignedUrls = async () => {
       if (!open || !driver.id) return;
@@ -38,32 +112,48 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
       const urls: Record<string, string> = {};
 
       try {
-        for (const [key, storagePath] of Object.entries(documents)) {
-          if (typeof storagePath === 'string' && storagePath) {
-            // Extraire le chemin du fichier depuis l'URL complète
-            let filePath = storagePath;
-            
-            // Si c'est une URL complète, extraire uniquement le chemin
-            if (storagePath.includes('/storage/v1/object/')) {
-              const parts = storagePath.split('/storage/v1/object/');
-              if (parts[1]) {
-                // Enlever "public/" ou "sign/" du début
-                filePath = parts[1].replace(/^(public|sign)\//, '');
-                // Enlever le nom du bucket
-                filePath = filePath.replace(/^[^/]+\//, '');
-              }
+        // Collect all document keys and their URLs
+        const allDocs: { key: string; url: string }[] = [];
+        
+        DOCUMENT_GROUPS.forEach(group => {
+          group.documents.forEach(doc => {
+            const url = getDocumentData(doc.key, doc.legacyKey);
+            if (url) {
+              allDocs.push({ key: doc.key, url });
             }
+          });
+        });
 
-            // Générer une signed URL valide 1 heure
-            const { data, error } = await supabase.storage
-              .from('driver-documents')
-              .createSignedUrl(filePath, 3600);
+        for (const { key, url } of allDocs) {
+          if (!url) continue;
 
-            if (data?.signedUrl) {
-              urls[key] = data.signedUrl;
-            } else if (error) {
-              console.error(`Erreur génération URL pour ${key}:`, error);
+          // If it's already a public URL, use it directly
+          if (url.includes('/storage/v1/object/public/')) {
+            urls[key] = url;
+            continue;
+          }
+
+          // Extract file path from URL
+          let filePath = url;
+          
+          if (url.includes('/storage/v1/object/')) {
+            const parts = url.split('/storage/v1/object/');
+            if (parts[1]) {
+              filePath = parts[1].replace(/^(public|sign)\//, '');
+              filePath = filePath.replace(/^[^/]+\//, '');
             }
+          }
+
+          // Generate signed URL
+          const { data, error } = await supabase.storage
+            .from('driver-documents')
+            .createSignedUrl(filePath, 3600);
+
+          if (data?.signedUrl) {
+            urls[key] = data.signedUrl;
+          } else if (error) {
+            // Fallback to public URL if signing fails
+            urls[key] = url;
           }
         }
 
@@ -77,7 +167,7 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
     };
 
     generateSignedUrls();
-  }, [open, driver.id, documents]);
+  }, [open, driver.id]);
 
   const downloadDocument = async (key: string, name: string) => {
     const signedUrl = signedUrls[key];
@@ -88,7 +178,6 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
     }
 
     try {
-      // Télécharger le fichier via fetch pour tous les types
       const response = await fetch(signedUrl);
       if (!response.ok) throw new Error('Erreur téléchargement');
 
@@ -101,7 +190,6 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
       document.body.appendChild(link);
       link.click();
       
-      // Nettoyage
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
@@ -112,9 +200,12 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
     }
   };
 
-  const getDocumentUrl = (key: string): string | null => {
-    if (typeof documents !== 'object') return null;
-    return signedUrls[key] || null;
+  const getFinalUrl = (key: string, legacyKey?: string): string | null => {
+    // Check signed URL cache first
+    if (signedUrls[key]) return signedUrls[key];
+    
+    // Get raw URL
+    return getDocumentData(key, legacyKey);
   };
 
   const isImage = (url: string) => {
@@ -132,6 +223,17 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
     return url && (url.includes('.pdf') || url.toLowerCase().includes('pdf'));
   };
 
+  // Count total and uploaded documents
+  const totalDocs = DOCUMENT_GROUPS.flatMap(g => g.documents).filter(d => !d.optional).length;
+  const uploadedDocs = DOCUMENT_GROUPS.flatMap(g => g.documents).filter(doc => {
+    const url = getDocumentData(doc.key, doc.legacyKey);
+    return !!url;
+  }).length;
+
+  if (!driver) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -148,99 +250,133 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {REQUIRED_DOCUMENTS.map((doc) => {
-            const url = getDocumentUrl(doc.key);
-            const hasDocument = !!url;
-
+        <div className="space-y-6 mt-4">
+          {DOCUMENT_GROUPS.map((group) => {
+            const groupHasAllDocs = group.documents.every(doc => 
+              doc.optional || getDocumentData(doc.key, doc.legacyKey)
+            );
+            
             return (
               <div
-                key={doc.key}
+                key={group.groupLabel}
                 className={`border rounded-lg p-4 ${
-                  hasDocument 
+                  groupHasAllDocs 
                     ? "border-green-500/50 bg-green-500/5" 
                     : "border-red-500/50 bg-red-500/5"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5" />
-                    <div>
-                      <h3 className="font-semibold">{doc.label}</h3>
-                      <Badge 
-                        variant={hasDocument ? "default" : "destructive"}
-                        className="mt-1"
-                      >
-                        {hasDocument ? "Fourni" : "Manquant"}
-                      </Badge>
-                    </div>
+                    <h3 className="font-semibold">{group.groupLabel}</h3>
                   </div>
-                  {hasDocument && url && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadDocument(doc.key, `${doc.label}`)}
-                      disabled={loadingUrls}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Badge 
+                    variant={groupHasAllDocs ? "default" : "destructive"}
+                  >
+                    {groupHasAllDocs ? "Complet" : "Incomplet"}
+                  </Badge>
                 </div>
 
-                {loadingUrls ? (
-                  <div className="bg-muted rounded-lg p-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Chargement...
-                    </p>
-                  </div>
-                ) : hasDocument && url ? (
-                  isImage(url) ? (
-                    <img
-                      src={url}
-                      alt={doc.label}
-                      className="w-full h-64 object-contain rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => window.open(url, "_blank")}
-                      onError={(e) => {
-                        console.error('Erreur chargement image:', doc.key);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : isPDF(url) ? (
-                    <div className="bg-muted rounded-lg p-6 text-center">
-                      <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Document PDF - Cliquez pour ouvrir
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(url, '_blank')}
+                <div className={`grid gap-4 ${group.documents.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                  {group.documents.map((doc) => {
+                    const url = getFinalUrl(doc.key, doc.legacyKey);
+                    const hasDocument = !!url;
+
+                    return (
+                      <div
+                        key={doc.key}
+                        className={`border rounded-lg p-3 ${
+                          hasDocument 
+                            ? "border-green-500/30 bg-green-500/5" 
+                            : doc.optional 
+                              ? "border-muted bg-muted/30"
+                              : "border-red-500/30 bg-red-500/5"
+                        }`}
                       >
-                        Ouvrir le PDF
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="bg-muted rounded-lg p-6 text-center">
-                      <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Document disponible
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(url, '_blank')}
-                      >
-                        Ouvrir le document
-                      </Button>
-                    </div>
-                  )
-                ) : (
-                  <div className="bg-muted rounded-lg p-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Document non fourni
-                    </p>
-                  </div>
-                )}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">{doc.label}</span>
+                            {doc.optional && (
+                              <Badge variant="outline" className="text-xs">Optionnel</Badge>
+                            )}
+                          </div>
+                          {hasDocument && url && (
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => window.open(url, '_blank')}
+                                disabled={loadingUrls}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => downloadDocument(doc.key, `${group.groupLabel}_${doc.label}`)}
+                                disabled={loadingUrls}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {loadingUrls ? (
+                          <div className="bg-muted rounded-lg p-4 text-center">
+                            <p className="text-sm text-muted-foreground">
+                              Chargement...
+                            </p>
+                          </div>
+                        ) : hasDocument && url ? (
+                          isImage(url) ? (
+                            <img
+                              src={url}
+                              alt={doc.label}
+                              className="w-full h-40 object-contain rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => window.open(url, "_blank")}
+                              onError={(e) => {
+                                console.error('Erreur chargement image:', doc.key);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : isPDF(url) ? (
+                            <div className="bg-muted rounded-lg p-4 text-center">
+                              <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(url, '_blank')}
+                              >
+                                Ouvrir le PDF
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="bg-muted rounded-lg p-4 text-center">
+                              <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(url, '_blank')}
+                              >
+                                Ouvrir
+                              </Button>
+                            </div>
+                          )
+                        ) : (
+                          <div className="bg-muted rounded-lg p-4 text-center">
+                            <p className="text-sm text-muted-foreground">
+                              {doc.optional ? "Non fourni (optionnel)" : "Document non fourni"}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -249,7 +385,7 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
         <div className="flex justify-between items-center pt-4 mt-4 border-t">
           <div>
             <Badge variant="outline" className="mr-2">
-              {REQUIRED_DOCUMENTS.filter(doc => getDocumentUrl(doc.key)).length} / {REQUIRED_DOCUMENTS.length} documents fournis
+              {uploadedDocs} / {totalDocs} documents fournis
             </Badge>
           </div>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
