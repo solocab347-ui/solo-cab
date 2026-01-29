@@ -483,14 +483,50 @@ serve(async (req) => {
           subscriptionId 
         });
 
-        // Update NFC plate order status if applicable
+        // Update NFC plate order status if applicable AND update driver has_nfc_plate
         if (metadata.with_plate === "true" && session.id) {
           try {
-            await supabaseClient
+            // Récupérer et mettre à jour la commande NFC
+            const { data: plateOrder } = await supabaseClient
               .from("nfc_plate_orders")
-              .update({ payment_status: "paid" })
-              .eq("stripe_checkout_session_id", session.id);
-            logStep("✅ NFC plate order marked as paid");
+              .update({ 
+                payment_status: "paid",
+                delivery_status: "pending" // Prêt pour expédition si l'adresse est complète
+              })
+              .eq("stripe_checkout_session_id", session.id)
+              .select("id, qr_code_link, shipping_address, shipping_city, shipping_postal_code")
+              .single();
+
+            if (plateOrder) {
+              // Mettre à jour le driver avec has_nfc_plate et nfc_plate_order_id
+              const hasValidAddress = plateOrder.shipping_address && 
+                plateOrder.shipping_address !== 'À compléter' &&
+                plateOrder.shipping_city !== 'À compléter';
+              
+              await supabaseClient
+                .from("drivers")
+                .update({ 
+                  has_nfc_plate: true,
+                  nfc_plate_order_id: plateOrder.id,
+                  nfc_plate_ordered_at: new Date().toISOString(),
+                })
+                .eq("id", driverId);
+
+              // Si l'adresse n'est pas complète, laisser delivery_status à pending_address
+              if (!hasValidAddress) {
+                await supabaseClient
+                  .from("nfc_plate_orders")
+                  .update({ delivery_status: "pending_address" })
+                  .eq("id", plateOrder.id);
+              }
+
+              logStep("✅ NFC plate order marked as paid, driver updated", { 
+                orderId: plateOrder.id, 
+                hasValidAddress 
+              });
+            } else {
+              logStep("⚠️ NFC plate order not found for session", { sessionId: session.id });
+            }
           } catch (plateError) {
             logStep("⚠️ Failed to update plate order (non-blocking)", { error: String(plateError) });
           }

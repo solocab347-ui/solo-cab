@@ -185,11 +185,15 @@ const AdminNfcOrdersManager = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "delivered":
-        return <Badge className="bg-green-500">Livré</Badge>;
+        return <Badge className="bg-success">Livré</Badge>;
       case "shipped":
         return <Badge className="bg-blue-500">Expédié</Badge>;
       case "preparing":
         return <Badge className="bg-orange-500">En préparation</Badge>;
+      case "pending_address":
+        return <Badge variant="destructive" className="gap-1"><AlertCircle className="w-3 h-3" /> Adresse manquante</Badge>;
+      case "pending":
+        return <Badge variant="secondary">En attente</Badge>;
       default:
         return <Badge variant="secondary">En attente</Badge>;
     }
@@ -198,7 +202,7 @@ const AdminNfcOrdersManager = () => {
   const getPaymentBadge = (status: string) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-green-500">Payé</Badge>;
+        return <Badge className="bg-success">Payé</Badge>;
       case "pending":
         return <Badge variant="secondary">En attente</Badge>;
       default:
@@ -219,7 +223,8 @@ const AdminNfcOrdersManager = () => {
 
   const stats = {
     total: orders.length,
-    pending: orders.filter((o) => o.delivery_status === "pending" && o.payment_status === "paid").length,
+    pending: orders.filter((o) => (o.delivery_status === "pending" || o.delivery_status === "pending_address") && o.payment_status === "paid").length,
+    pendingAddress: orders.filter((o) => o.delivery_status === "pending_address" && o.payment_status === "paid").length,
     shipped: orders.filter((o) => o.delivery_status === "shipped").length,
     delivered: orders.filter((o) => o.delivery_status === "delivered").length,
     revenue: orders.filter((o) => o.payment_status === "paid").reduce((acc, o) => acc + Number(o.amount), 0),
@@ -316,6 +321,7 @@ const AdminNfcOrdersManager = () => {
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
               <SelectItem value="pending">En attente</SelectItem>
+              <SelectItem value="pending_address">Adresse manquante</SelectItem>
               <SelectItem value="preparing">En préparation</SelectItem>
               <SelectItem value="shipped">Expédié</SelectItem>
               <SelectItem value="delivered">Livré</SelectItem>
