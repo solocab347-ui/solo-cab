@@ -84,10 +84,10 @@ const GuestBooking = () => {
         if (!error && driverData && driverData.length > 0) {
           d = driverData[0];
         } else {
-          // Fallback: chercher directement dans la table drivers (pour pionniers/pending/période de grâce)
+          // Fallback: chercher directement dans la table drivers
           const { data: directDriver, error: directError } = await supabase
             .from('drivers')
-            .select('id, company_name, display_driver_name, display_company_name, card_photo_url, user_id, is_pioneer, free_access_end_date, public_profile_enabled, status, created_at')
+            .select('id, company_name, display_driver_name, display_company_name, card_photo_url, user_id, public_profile_enabled')
             .eq('id', driverId)
             .maybeSingle();
           
@@ -97,18 +97,8 @@ const GuestBooking = () => {
             return;
           }
           
-          // Vérifier accès complet: validé, pionnier actif, OU période de grâce 30 jours
-          const isValidated = directDriver.status === 'validated';
-          const isPioneerActive = directDriver.is_pioneer && 
-            directDriver.free_access_end_date && 
-            new Date(directDriver.free_access_end_date) > new Date();
-          const isInGracePeriod = directDriver.created_at && 
-            new Date(directDriver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) &&
-            (directDriver.status === 'pending' || directDriver.status === 'validated');
-          
-          const hasFullAccess = isValidated || isPioneerActive || isInGracePeriod;
-          
-          if (!directDriver.public_profile_enabled || !hasFullAccess) {
+          // SIMPLIFICATION: Tout chauffeur avec public_profile_enabled = true est accessible
+          if (!directDriver.public_profile_enabled) {
             toast.error("Ce chauffeur n'accepte pas de réservations");
             navigate('/chauffeurs');
             return;
