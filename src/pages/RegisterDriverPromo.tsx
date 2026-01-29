@@ -16,11 +16,12 @@ import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
 import nfcPlateLarge from "@/assets/nfc-plate-large-clean.png";
 import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
 
-// Prix des plaques NFC
-const PLATE_STANDARD_PRICE = 14.99; // Bois
-const PLATE_PREMIUM_PRICE = 29.99; // Plastique
-const PLATE_STANDARD_PROMO = 11.99; // Bois avec -20%
-const PLATE_PREMIUM_PROMO = 23.99; // Plastique avec -20%
+// Prix des plaques NFC - MODE TEST: 0.50€
+const TEST_MODE_PRICING = true;
+const PLATE_STANDARD_PRICE = TEST_MODE_PRICING ? 0.50 : 14.99; // Bois
+const PLATE_PREMIUM_PRICE = TEST_MODE_PRICING ? 0.50 : 29.99; // Plastique
+const PLATE_STANDARD_PROMO = TEST_MODE_PRICING ? 0.50 : 11.99; // Bois avec -20%
+const PLATE_PREMIUM_PROMO = TEST_MODE_PRICING ? 0.50 : 23.99; // Plastique avec -20%
 
 const SUBSCRIPTION_MONTHLY_PRICE = 9.99;
 const SUBSCRIPTION_ANNUAL_PRICE = 101.90;

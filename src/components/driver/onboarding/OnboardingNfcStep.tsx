@@ -31,11 +31,13 @@ interface OnboardingNfcStepProps {
 
 type PlateType = 'standard' | 'premium' | null;
 
-// Prix PLEIN (hors abonnement) - à utiliser dans le tunnel onboarding
+// MODE TEST: Prix à 0.50€
+const TEST_MODE_PRICING = true;
+
 const plates = {
   standard: {
     name: 'Plaque NFC Bois',
-    price: 14.99,
+    price: TEST_MODE_PRICING ? 0.50 : 14.99,
     description: 'Ovale en bois naturel, élégante',
     features: [
       'Scan NFC instantané',
@@ -49,7 +51,7 @@ const plates = {
   },
   premium: {
     name: 'Plaque NFC Premium',
-    price: 29.99,
+    price: TEST_MODE_PRICING ? 0.50 : 29.99,
     description: 'Plastique mat, professionnelle',
     features: [
       'Tout de la version Standard',
