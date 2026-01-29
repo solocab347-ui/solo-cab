@@ -61,7 +61,7 @@ const AdminNfcHub = () => {
         pendingOrders: paidOrders.filter(o => o.delivery_status === "pending").length,
         shippedOrders: paidOrders.filter(o => o.delivery_status === "shipped").length,
         deliveredOrders: paidOrders.filter(o => o.delivery_status === "delivered").length,
-        totalRevenue: paidOrders.reduce((acc, o) => acc + Number(o.amount || 0), 0),
+        totalRevenue: paidOrders.reduce((acc, o) => acc + Number(o.amount || 0), 0) / 100, // Convertir centimes en euros
       });
     } catch (error) {
       console.error("Error fetching NFC stats:", error);
@@ -180,7 +180,7 @@ const AdminNfcHub = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-500">
-                      {stats?.totalRevenue.toFixed(0)}€
+                      {stats?.totalRevenue.toFixed(2)}€
                     </p>
                     <p className="text-xs text-muted-foreground">Revenus NFC</p>
                   </div>
