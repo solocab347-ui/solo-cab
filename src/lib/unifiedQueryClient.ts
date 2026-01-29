@@ -275,7 +275,7 @@ export async function prefetchUserData(userId: string): Promise<void> {
   
   const prefetchPromises = [
     supabase.from("user_roles").select("role").eq("user_id", userId),
-    supabase.from("drivers").select("id, status, is_pioneer, subscription_paid").eq("user_id", userId).maybeSingle(),
+    supabase.from("drivers").select("id, status, is_pioneer, subscription_paid, is_fleet_driver, fleet_manager_id, free_access_granted, free_access_end_date, created_at, stripe_customer_id").eq("user_id", userId).maybeSingle(),
     supabase.from("clients").select("id, is_exclusive, driver_id").eq("user_id", userId).maybeSingle(),
     supabase.from("profiles").select("*").eq("id", userId).single(),
   ];
