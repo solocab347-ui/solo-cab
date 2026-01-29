@@ -19,35 +19,55 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized - No valid authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    logStep("Authorization header found");
+
+    // Créer le client avec le header d'auth pour getClaims
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Extraire et valider le token avec getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      logStep("Claims error", { error: claimsError?.message });
+      return new Response(JSON.stringify({ error: "Unauthorized - Invalid token" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized - No user ID in token" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    logStep("User authenticated via getClaims", { userId });
+
+    // Client admin pour les opérations DB
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
-
-    // Extraire le token JWT du header Authorization
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) throw new Error("No token provided");
-
-    // Valider le token avec le client admin
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError) {
-      logStep("Auth error details", { error: userError.message, code: userError.code });
-      throw new Error(`Authentication error: ${userError.message}`);
-    }
-    const user = userData.user;
-    if (!user?.id) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
-
-    // Vérifier si c'est un chauffeur (utiliser le client admin pour les opérations DB)
+    // Vérifier si c'est un chauffeur
     const { data: driver, error: driverError } = await supabaseAdmin
       .from("drivers")
       .select("id, created_at, is_pioneer, free_access_end_date, subscription_status, trial_cancelled")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (driverError || !driver) {
@@ -56,7 +76,7 @@ serve(async (req) => {
       const { data: fleetManager, error: fmError } = await supabaseAdmin
         .from("fleet_managers")
         .select("id, created_at, subscription_status, trial_cancelled")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (fmError || !fleetManager) {
@@ -116,7 +136,7 @@ serve(async (req) => {
     await supabaseAdmin
       .from("notifications")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         title: "Essai réactivé",
         message: "Votre période d'essai a été réactivée ! Vous conservez l'accès complet à SoloCab.",
         type: "subscription",
