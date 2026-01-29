@@ -19,7 +19,19 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const supabaseClient = createClient(
+    // Utiliser le client avec la clé anon pour l'auth, puis service role pour les opérations
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { 
+        auth: { persistSession: false },
+        global: {
+          headers: { Authorization: req.headers.get("Authorization") ?? "" }
+        }
+      }
+    );
+
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
@@ -29,23 +41,27 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    // Récupérer l'utilisateur via le client avec le token
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    if (userError) {
+      logStep("Auth error details", { error: userError.message, code: userError.code });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
     const user = userData.user;
     if (!user?.id) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    // Vérifier si c'est un chauffeur
-    const { data: driver, error: driverError } = await supabaseClient
+    // Vérifier si c'est un chauffeur (utiliser le client admin pour les opérations DB)
+    const { data: driver, error: driverError } = await supabaseAdmin
       .from("drivers")
       .select("id, created_at, is_pioneer, free_access_end_date, subscription_status, trial_cancelled")
       .eq("user_id", user.id)
       .single();
 
     if (driverError || !driver) {
+      logStep("Driver not found, checking fleet manager", { error: driverError?.message });
       // Vérifier si c'est un fleet manager
-      const { data: fleetManager, error: fmError } = await supabaseClient
+      const { data: fleetManager, error: fmError } = await supabaseAdmin
         .from("fleet_managers")
         .select("id, created_at, subscription_status, trial_cancelled")
         .eq("user_id", user.id)
@@ -60,7 +76,7 @@ serve(async (req) => {
       }
 
       // Réactiver l'essai pour le fleet manager
-      const { error: updateError } = await supabaseClient
+      const { error: updateError } = await supabaseAdmin
         .from("fleet_managers")
         .update({
           trial_cancelled: false,
@@ -88,7 +104,7 @@ serve(async (req) => {
     }
 
     // Réactiver l'essai pour le chauffeur
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await supabaseAdmin
       .from("drivers")
       .update({
         trial_cancelled: false,
@@ -105,7 +121,7 @@ serve(async (req) => {
     logStep("Driver trial reactivated", { driverId: driver.id });
 
     // Créer une notification
-    await supabaseClient
+    await supabaseAdmin
       .from("notifications")
       .insert({
         user_id: user.id,

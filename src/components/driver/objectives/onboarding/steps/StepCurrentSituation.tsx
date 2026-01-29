@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Users, Percent } from 'lucide-react';
@@ -11,6 +12,22 @@ interface StepCurrentSituationProps {
 }
 
 export function StepCurrentSituation({ data, onUpdate }: StepCurrentSituationProps) {
+  // Local state for numeric inputs to allow clearing
+  const [revenueValue, setRevenueValue] = useState(data.currentMonthlyRevenue.toString());
+  const [clientsValue, setClientsValue] = useState(data.currentDirectClients.toString());
+
+  const handleRevenueChange = (value: string) => {
+    setRevenueValue(value);
+    const numValue = parseInt(value) || 0;
+    onUpdate({ currentMonthlyRevenue: numValue });
+  };
+
+  const handleClientsChange = (value: string) => {
+    setClientsValue(value);
+    const numValue = parseInt(value) || 0;
+    onUpdate({ currentDirectClients: numValue });
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -34,10 +51,12 @@ export function StepCurrentSituation({ data, onUpdate }: StepCurrentSituationPro
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                value={data.currentMonthlyRevenue}
-                onChange={(e) => onUpdate({ currentMonthlyRevenue: parseInt(e.target.value) || 0 })}
+              <NumericInput
+                value={revenueValue}
+                onChange={handleRevenueChange}
+                allowEmpty={true}
+                min={0}
+                max={15000}
                 className="text-lg font-semibold"
               />
               <span className="text-lg font-semibold text-muted-foreground">€/mois</span>
@@ -69,10 +88,12 @@ export function StepCurrentSituation({ data, onUpdate }: StepCurrentSituationPro
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                value={data.currentDirectClients}
-                onChange={(e) => onUpdate({ currentDirectClients: parseInt(e.target.value) || 0 })}
+              <NumericInput
+                value={clientsValue}
+                onChange={handleClientsChange}
+                allowEmpty={true}
+                min={0}
+                max={100}
                 className="text-lg font-semibold"
               />
               <span className="text-lg font-semibold text-muted-foreground">clients</span>

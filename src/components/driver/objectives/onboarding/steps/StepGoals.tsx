@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,22 @@ const MAIN_GOALS = [
 ];
 
 export function StepGoals({ data, onUpdate }: StepGoalsProps) {
+  // Local state for numeric inputs to allow clearing
+  const [revenueValue, setRevenueValue] = useState(data.targetMonthlyRevenue.toString());
+  const [clientsValue, setClientsValue] = useState(data.targetDirectClients.toString());
+
+  const handleRevenueChange = (value: string) => {
+    setRevenueValue(value);
+    const numValue = parseInt(value) || 0;
+    onUpdate({ targetMonthlyRevenue: numValue });
+  };
+
+  const handleClientsChange = (value: string) => {
+    setClientsValue(value);
+    const numValue = parseInt(value) || 0;
+    onUpdate({ targetDirectClients: numValue });
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -94,10 +111,12 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                value={data.targetMonthlyRevenue}
-                onChange={(e) => onUpdate({ targetMonthlyRevenue: parseInt(e.target.value) || 0 })}
+              <NumericInput
+                value={revenueValue}
+                onChange={handleRevenueChange}
+                allowEmpty={true}
+                min={1000}
+                max={20000}
                 className="text-lg font-semibold"
               />
               <span className="text-lg font-semibold text-muted-foreground">€/mois</span>
@@ -135,10 +154,12 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                value={data.targetDirectClients}
-                onChange={(e) => onUpdate({ targetDirectClients: parseInt(e.target.value) || 0 })}
+              <NumericInput
+                value={clientsValue}
+                onChange={handleClientsChange}
+                allowEmpty={true}
+                min={0}
+                max={200}
                 className="text-lg font-semibold"
               />
               <span className="text-lg font-semibold text-muted-foreground">clients</span>
