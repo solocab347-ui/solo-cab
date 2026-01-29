@@ -10,9 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
-  FolderOpen, Calendar, Timer, Zap, Calculator, QrCode,
+  FolderOpen, Calendar, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
@@ -31,6 +31,7 @@ interface NavItem {
   shortLabel?: string;
   gradient?: string;
   badge?: number;
+  comingSoon?: boolean;
 }
 
 interface NavGroup {
@@ -86,8 +87,6 @@ export const MobileDriverNav = ({
       gradient: "from-purple-500 to-pink-600",
       items: [
         { value: "planning", icon: Calendar, label: t('driverDashboard.menu.planning') },
-        { value: "queue", icon: Timer, label: "File d'attente" },
-        { value: "dispatch", icon: Zap, label: "Missions dispatch" },
         { value: "calculator", icon: Calculator, label: t('driverDashboard.menu.calculator') },
         { value: "qrcode", icon: QrCode, label: t('driverDashboard.menu.myQRCode') },
       ],
@@ -115,8 +114,8 @@ export const MobileDriverNav = ({
       value: "sharing", 
       icon: Handshake, 
       label: t('driverDashboard.menu.partnerships'), 
-      gradient: "from-amber-500 to-orange-600",
-      badge: partnershipNotificationCount
+      gradient: "from-gray-400 to-gray-500",
+      comingSoon: true
     },
     { value: "settings", icon: Settings, label: t('driverDashboard.menu.settings'), gradient: "from-gray-500 to-slate-600" },
   ];
@@ -124,22 +123,32 @@ export const MobileDriverNav = ({
   const NavButton = ({ item, onClick }: { item: NavItem; onClick: () => void }) => {
     const isActive = activeTab === item.value;
     const Icon = item.icon;
+    const isDisabled = item.comingSoon;
     
     return (
       <button
-        onClick={onClick}
+        onClick={isDisabled ? undefined : onClick}
+        disabled={isDisabled}
         className={cn(
           "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all touch-manipulation",
-          "active:scale-[0.98]",
-          isActive
+          isDisabled 
+            ? "opacity-50 cursor-not-allowed bg-muted/20"
+            : "active:scale-[0.98]",
+          !isDisabled && isActive
             ? `bg-gradient-to-r ${item.gradient || "from-primary to-accent"} text-white shadow-lg`
-            : "bg-white/5 text-gray-300 hover:bg-white/10"
+            : !isDisabled && "bg-white/5 text-gray-300 hover:bg-white/10"
         )}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-left font-medium truncate">{item.label}</span>
-        {item.badge && item.badge > 0 && (
-          <Badge className="bg-red-500 text-white text-xs px-2 py-0.5">
+        {item.comingSoon && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Bientôt
+          </Badge>
+        )}
+        {!item.comingSoon && item.badge && item.badge > 0 && (
+          <Badge className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5">
             {item.badge}
           </Badge>
         )}

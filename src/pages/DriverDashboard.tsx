@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap, Save, Loader2, Target } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -608,14 +608,6 @@ const DriverDashboard = () => {
                     <Calendar className="w-4 h-4" />
                     {t('driverDashboard.menu.planning')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("queue")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Timer className="w-4 h-4" />
-                    File d'attente
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("dispatch")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Zap className="w-4 h-4" />
-                    Missions dispatch
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-muted">
                     <Calculator className="w-4 h-4" />
                     {t('driverDashboard.menu.calculator')}
@@ -672,17 +664,17 @@ const DriverDashboard = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.statistics')}</span>
               </TabsTrigger>
-              <TabsTrigger value="sharing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white relative">
-                <div className="relative">
-                  <Handshake className="w-4 h-4" />
-                  {partnershipNotificationCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-4 min-w-[16px] px-1 bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                      {partnershipNotificationCount}
-                    </Badge>
-                  )}
-                </div>
+              {/* Partenariats - Bientôt disponible */}
+              <button 
+                disabled
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium opacity-50 cursor-not-allowed text-muted-foreground"
+              >
+                <Handshake className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.partnerships')}</span>
-              </TabsTrigger>
+                <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">
+                  Bientôt
+                </Badge>
+              </button>
               <TabsTrigger value="settings" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.settings')}</span>
@@ -713,23 +705,7 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Course Queue Tab - File d'attente intelligente */}
-          <TabsContent value="queue">
-            {driverProfile?.driver?.id && (
-              <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-                    <Timer className="w-5 h-5 text-warning" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">File d'attente intelligente</h2>
-                    <p className="text-sm text-muted-foreground">Gérez les courses en conflit de planning</p>
-                  </div>
-                </div>
-                <CourseQueueManager driverId={driverProfile.driver.id} />
-              </Card>
-            )}
-          </TabsContent>
+          {/* Note: Queue feature moved to Planning integration */}
 
 
           {/* Messages Tab */}
