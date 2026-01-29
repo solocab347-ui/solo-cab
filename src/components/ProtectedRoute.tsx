@@ -142,10 +142,40 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // CRITICAL: Pour les pionniers, vérifier s'ils ont un stripe_customer_id
-      // S'ils n'en ont pas, ils doivent finaliser le paiement
-      if (driver.is_pioneer && !driver.stripe_customer_id) {
-        logger.info("Pionnier sans stripe_customer_id - paiement non finalisé");
+      // PIONNIERS: Ils ont 30 jours gratuits depuis leur inscription
+      // Après 30 jours, ils doivent payer (pas de nouvel essai)
+      if (driver.is_pioneer) {
+        const createdAt = new Date(driver.created_at);
+        const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        const isPioneerTrialActive = now < pioneerTrialEnd;
+        
+        logger.info("Vérification pionnier", { 
+          createdAt: createdAt.toISOString(),
+          pioneerTrialEnd: pioneerTrialEnd.toISOString(),
+          isPioneerTrialActive,
+          hasStripeCustomer: !!driver.stripe_customer_id,
+          subscriptionPaid: driver.subscription_paid
+        });
+        
+        // Si le pionnier a déjà payé, accès accordé
+        if (driver.subscription_paid === true) {
+          logger.info("Pionnier avec abonnement payé - accès accordé");
+          setDriverStatus("validated");
+          setCheckingDriver(false);
+          return;
+        }
+        
+        // Si l'essai pionnier est encore actif (< 30 jours), accès gratuit complet
+        if (isPioneerTrialActive) {
+          logger.info("Pionnier en période d'essai - accès accordé");
+          setDriverStatus("validated");
+          setCheckingDriver(false);
+          return;
+        }
+        
+        // Essai pionnier expiré et pas de paiement = rediriger vers paiement
+        logger.info("Pionnier - essai expiré, paiement requis");
         setDriverStatus("pioneer_payment_required");
         setCheckingDriver(false);
         return;
