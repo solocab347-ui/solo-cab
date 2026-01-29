@@ -48,6 +48,10 @@ serve(async (req) => {
       const isPioneer = metadata.is_pioneer === "true";
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
       
+      // Check if subscription is scheduled for cancellation
+      const cancelAtPeriodEnd = subscription.cancel_at_period_end;
+      const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null;
+      
       // Handle DRIVER subscriptions
       if (driverId && metadata.type !== "fleet_manager_subscription") {
         const effectiveStatus = (subscription.status === "active" || subscription.status === "trialing") ? "active" : subscription.status;
@@ -56,7 +60,16 @@ serve(async (req) => {
           subscription_status: effectiveStatus,
           subscription_stripe_id: subscription.id,
           subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+          // Track cancellation scheduled status
+          subscription_cancel_at_period_end: cancelAtPeriodEnd,
+          subscription_cancel_at: cancelAt,
         };
+        
+        // If cancellation was reversed (user resumed subscription)
+        if (!cancelAtPeriodEnd && subscription.status === "active") {
+          updateData.subscription_canceled_at = null;
+          logStep("Driver subscription resumed - cancellation reversed", { driverId });
+        }
         
         if (customerId) {
           updateData.stripe_customer_id = customerId;
@@ -76,7 +89,38 @@ serve(async (req) => {
         if (error) {
           logStep("ERROR updating driver subscription", { error: error.message });
         } else {
-          logStep("Driver subscription updated", { driverId, status: effectiveStatus, isPioneer });
+          logStep("Driver subscription updated", { 
+            driverId, 
+            status: effectiveStatus, 
+            isPioneer,
+            cancelAtPeriodEnd,
+            cancelAt 
+          });
+          
+          // Send notification if subscription is scheduled for cancellation
+          if (cancelAtPeriodEnd && cancelAt) {
+            try {
+              const { data: driverData } = await supabaseClient
+                .from("drivers")
+                .select("user_id")
+                .eq("id", driverId)
+                .single();
+
+              if (driverData?.user_id) {
+                await supabaseClient.from("notifications").insert({
+                  user_id: driverData.user_id,
+                  type: "subscription_cancelling",
+                  title: "📅 Résiliation programmée",
+                  message: `Votre abonnement prendra fin le ${new Date(cancelAt).toLocaleDateString('fr-FR')}. Vous conservez l'accès complet jusqu'à cette date.`,
+                  priority: "medium",
+                  action_url: "/driver-dashboard?tab=subscription",
+                });
+                logStep("Cancellation notification sent", { userId: driverData.user_id, cancelAt });
+              }
+            } catch (notifError) {
+              logStep("⚠️ Failed to create cancellation notification", { error: String(notifError) });
+            }
+          }
         }
       }
       

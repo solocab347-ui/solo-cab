@@ -40,6 +40,10 @@ interface SubscriptionManagementCardProps {
   nextBillingDate?: string | null;
   /** Montant du prochain prélèvement */
   nextBillingAmount?: number | null;
+  /** Abonnement programmé pour résiliation */
+  cancelAtPeriodEnd?: boolean;
+  /** Date de fin effective si résiliation programmée */
+  cancelAt?: string | null;
   /** Callback optionnel avant d'ouvrir le portal */
   onBeforeOpenPortal?: () => Promise<boolean> | boolean;
   /** Callback après gestion */
@@ -52,6 +56,8 @@ export const SubscriptionManagementCard = ({
   isActive,
   nextBillingDate,
   nextBillingAmount,
+  cancelAtPeriodEnd = false,
+  cancelAt,
   onBeforeOpenPortal,
   onAfterManage
 }: SubscriptionManagementCardProps) => {
@@ -115,6 +121,32 @@ export const SubscriptionManagementCard = ({
     setShowCancelConfirm(false);
     await handleOpenPortal("cancel");
   }, [handleOpenPortal]);
+
+  // Réactiver l'abonnement (annuler la résiliation programmée)
+  const handleReactivateSubscription = useCallback(async () => {
+    setLoading("reactivate");
+    try {
+      const { data, error } = await supabase.functions.invoke("reactivate-subscription");
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("Abonnement réactivé avec succès !", {
+          description: "Votre abonnement continuera normalement."
+        });
+        onAfterManage?.();
+      } else {
+        throw new Error(data?.error || "Erreur lors de la réactivation");
+      }
+    } catch (error: any) {
+      console.error("Error reactivating subscription:", error);
+      toast.error("Erreur lors de la réactivation", {
+        description: error.message || "Veuillez réessayer"
+      });
+    } finally {
+      setLoading(null);
+    }
+  }, [onAfterManage]);
 
   // Ne rien afficher si pas de customer Stripe ou pas actif
   if (!hasStripeCustomer || !isActive) {
@@ -180,14 +212,60 @@ export const SubscriptionManagementCard = ({
                 </p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              Actif
+            <Badge variant="secondary" className={`flex items-center gap-1 ${
+              cancelAtPeriodEnd 
+                ? "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30"
+                : "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30"
+            }`}>
+              {cancelAtPeriodEnd ? (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Résiliation prévue
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3 h-3" />
+                  Actif
+                </>
+              )}
             </Badge>
           </div>
 
-          {/* Prochain prélèvement */}
-          {(nextBillingDate || nextBillingAmount) && (
+          {/* Alerte de résiliation programmée */}
+          {cancelAtPeriodEnd && cancelAt && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium text-orange-700 dark:text-orange-400">
+                    Résiliation programmée
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Votre abonnement prendra fin le{" "}
+                    <span className="font-semibold">
+                      {format(new Date(cancelAt), "d MMMM yyyy", { locale: fr })}
+                    </span>.
+                    Vous conservez l'accès complet jusqu'à cette date.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleReactivateSubscription}
+                disabled={loading !== null}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {loading === "reactivate" ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Annuler la résiliation et continuer
+              </Button>
+            </div>
+          )}
+
+          {/* Prochain prélèvement - Masqué si résiliation programmée */}
+          {!cancelAtPeriodEnd && (nextBillingDate || nextBillingAmount) && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-background/60 rounded-lg border border-border/50">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
@@ -256,22 +334,24 @@ export const SubscriptionManagementCard = ({
             </Button>
           </div>
 
-          {/* Bouton résilier - séparé et accessible */}
-          <div className="pt-3 border-t border-border/50">
-            <Button
-              onClick={handleCancelClick}
-              disabled={loading !== null}
-              variant="ghost"
-              className="w-full h-auto py-4 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all touch-manipulation active:scale-[0.98]"
-            >
-              {loading === "cancel" ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <XCircle className="w-5 h-5 mr-2" />
-              )}
-              <span className="font-medium">Résilier mon abonnement</span>
-            </Button>
-          </div>
+          {/* Bouton résilier - séparé et accessible - Masqué si résiliation déjà programmée */}
+          {!cancelAtPeriodEnd && (
+            <div className="pt-3 border-t border-border/50">
+              <Button
+                onClick={handleCancelClick}
+                disabled={loading !== null}
+                variant="ghost"
+                className="w-full h-auto py-4 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all touch-manipulation active:scale-[0.98]"
+              >
+                {loading === "cancel" ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="w-5 h-5 mr-2" />
+                )}
+                <span className="font-medium">Résilier mon abonnement</span>
+              </Button>
+            </div>
+          )}
 
           {/* Loader global */}
           {loading && (
