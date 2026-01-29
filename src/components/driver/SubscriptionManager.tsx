@@ -650,6 +650,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       </Card>
 
       {/* Section Gestion d'abonnement - Toujours affichée pour permettre la résiliation même en essai */}
+      {/* Masquée pour les accès gratuits admin car pas de prélèvement à gérer */}
       <SubscriptionManagementCard
         userType="driver"
         hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
@@ -661,6 +662,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         nextBillingAmount={isPioneer ? 39.99 : 9.99}
         cancelAtPeriodEnd={driverProfile?.driver?.subscription_cancel_at_period_end}
         cancelAt={driverProfile?.driver?.subscription_cancel_at}
+        hasFreeAccess={hasAdminFreeAccess}
         onBeforeOpenPortal={async () => {
           if (isPioneer && !pioneerStatusLost) {
             setShowPioneerWarning(true);

@@ -206,6 +206,43 @@ export function DriverOnboardingTunnel({
 
       if (error) throw error;
       
+      // Créer/mettre à jour le véhicule dans driver_vehicles si marque renseignée
+      if (settings.vehicleBrand) {
+        // Vérifier si un véhicule existe déjà pour ce chauffeur
+        const { data: existingVehicles } = await supabase
+          .from('driver_vehicles')
+          .select('id')
+          .eq('driver_id', driverId)
+          .eq('is_active', true)
+          .limit(1);
+
+        const vehicleData = {
+          driver_id: driverId,
+          brand: settings.vehicleBrand,
+          model: settings.vehicleBrand, // Utilise la marque comme modèle par défaut
+          color: settings.vehicleColor || null,
+          plate: settings.vehiclePlate || null,
+          year: settings.vehicleYear ? parseInt(settings.vehicleYear) : null,
+          category: 'berline', // Catégorie par défaut
+          max_passengers: settings.maxPassengers ? parseInt(settings.maxPassengers) : 4,
+          is_favorite: true,
+          is_active: true,
+        };
+
+        if (existingVehicles && existingVehicles.length > 0) {
+          // Mettre à jour le véhicule existant
+          await supabase
+            .from('driver_vehicles')
+            .update(vehicleData)
+            .eq('id', existingVehicles[0].id);
+        } else {
+          // Créer un nouveau véhicule
+          await supabase
+            .from('driver_vehicles')
+            .insert(vehicleData);
+        }
+      }
+      
       setCompletedSteps(prev => ({ ...prev, settings: true }));
       toast.success('Réglages enregistrés !');
       return true;
