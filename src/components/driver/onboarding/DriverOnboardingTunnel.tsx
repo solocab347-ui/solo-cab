@@ -33,7 +33,7 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 'settings', title: 'Réglages', icon: Settings },
   { id: 'profile', title: 'Profil', icon: User },
   { id: 'documents', title: 'Documents', icon: FileText },
@@ -48,6 +48,14 @@ export function DriverOnboardingTunnel({
   onComplete,
   initialStep = 0
 }: OnboardingTunnelProps) {
+  // Vérifie si le chauffeur a déjà une plaque OU si une commande est en cours
+  const hasNfcPlate = !!(driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number || driverProfile?.driver?.nfc_plate_order_id);
+  
+  // Filtrer les étapes - masquer l'étape NFC si le chauffeur a déjà une plaque
+  const STEPS = hasNfcPlate 
+    ? ALL_STEPS.filter(step => step.id !== 'nfc')
+    : ALL_STEPS;
+
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [saving, setSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -90,8 +98,7 @@ export function DriverOnboardingTunnel({
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
     nfc: {
-      // Vérifie si le chauffeur a déjà une plaque OU si une commande est en cours
-      hasNfcPlate: !!(driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number || driverProfile?.driver?.nfc_plate_order_id),
+      hasNfcPlate,
       wantsNfcPlate: false,
     }
   });
@@ -160,12 +167,13 @@ export function DriverOnboardingTunnel({
   };
 
   const canProceed = () => {
-    switch (currentStep) {
-      case 0: return isSettingsValid();
-      case 1: return isProfileValid();
-      case 2: return isDocumentsValid();
-      case 3: return true; // NFC est optionnel
-      case 4: return true;
+    const currentStepId = STEPS[currentStep]?.id;
+    switch (currentStepId) {
+      case 'settings': return isSettingsValid();
+      case 'profile': return isProfileValid();
+      case 'documents': return isDocumentsValid();
+      case 'nfc': return true; // NFC est optionnel
+      case 'complete': return true;
       default: return false;
     }
   };
@@ -304,20 +312,21 @@ export function DriverOnboardingTunnel({
   };
 
   const handleNext = async () => {
+    const currentStepId = STEPS[currentStep]?.id;
     let success = false;
     
-    switch (currentStep) {
-      case 0:
+    switch (currentStepId) {
+      case 'settings':
         success = await saveSettings();
         break;
-      case 1:
+      case 'profile':
         success = await saveProfile();
         break;
-      case 2:
+      case 'documents':
         // Documents are saved automatically via DriverDocuments component
         success = true;
         break;
-      case 3:
+      case 'nfc':
         // NFC step - just proceed
         success = true;
         break;
@@ -326,27 +335,13 @@ export function DriverOnboardingTunnel({
     }
 
     if (success && currentStep < STEPS.length - 1) {
-      let nextStep = currentStep + 1;
-      
-      // Si l'étape suivante est NFC (index 3) et le chauffeur a déjà une plaque, sauter à l'étape finale
-      if (nextStep === 3 && stepData.nfc.hasNfcPlate) {
-        nextStep = 4; // Passer directement à "Terminé"
-      }
-      
-      setCurrentStep(nextStep);
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      let prevStep = currentStep - 1;
-      
-      // Si on est à l'étape finale (4) et le chauffeur a déjà une plaque, revenir à documents (2)
-      if (currentStep === 4 && stepData.nfc.hasNfcPlate) {
-        prevStep = 2; // Passer directement aux documents
-      }
-      
-      setCurrentStep(prevStep);
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -377,15 +372,17 @@ export function DriverOnboardingTunnel({
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 0:
+    const currentStepId = STEPS[currentStep]?.id;
+    
+    switch (currentStepId) {
+      case 'settings':
         return (
           <OnboardingSettingsStep 
             data={stepData.settings}
             onUpdate={(updates) => updateStepData('settings', updates)}
           />
         );
-      case 1:
+      case 'profile':
         return (
           <OnboardingProfileStep 
             data={stepData.profile}
@@ -394,7 +391,7 @@ export function DriverOnboardingTunnel({
             onUpdate={(updates) => updateStepData('profile', updates)}
           />
         );
-      case 2:
+      case 'documents':
         return (
           <OnboardingDocumentsStep 
             driverId={driverId}
@@ -402,14 +399,14 @@ export function DriverOnboardingTunnel({
             onStatusChange={(status) => updateStepData('documents', { documentsStatus: status })}
           />
         );
-      case 3:
+      case 'nfc':
         return (
           <OnboardingNfcStep
             hasNfcPlate={stepData.nfc.hasNfcPlate}
             driverId={driverId}
           />
         );
-      case 4:
+      case 'complete':
         return <OnboardingCompleteStep onComplete={handleComplete} loading={saving} />;
       default:
         return null;
@@ -577,7 +574,7 @@ export function DriverOnboardingTunnel({
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
               ) : null}
-              {currentStep === 3 ? 'Terminer' : 'Suivant'}
+              {STEPS[currentStep]?.id === 'nfc' ? 'Terminer' : 'Suivant'}
               {!saving && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>
