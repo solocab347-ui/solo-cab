@@ -51,6 +51,8 @@ interface SubscriptionManagementCardProps {
   cancelAtPeriodEnd?: boolean;
   /** Date de fin effective si résiliation programmée */
   cancelAt?: string | null;
+  /** Accès gratuit accordé par admin */
+  hasFreeAccess?: boolean;
   /** Callback optionnel avant d'ouvrir le portal */
   onBeforeOpenPortal?: () => Promise<boolean> | boolean;
   /** Callback après gestion */
@@ -68,6 +70,7 @@ export const SubscriptionManagementCard = ({
   nextBillingAmount,
   cancelAtPeriodEnd = false,
   cancelAt,
+  hasFreeAccess = false,
   onBeforeOpenPortal,
   onAfterManage
 }: SubscriptionManagementCardProps) => {
@@ -221,7 +224,8 @@ export const SubscriptionManagementCard = ({
   }, [onAfterManage]);
 
   // Afficher la carte dans tous les cas (essai ou abonnement actif ou essai annulé)
-  if (!isActive && !isInTrialPeriod && !trialCancelled) {
+  // SAUF pour les accès gratuits admin qui n'ont pas besoin de cette section
+  if ((!isActive && !isInTrialPeriod && !trialCancelled) || hasFreeAccess) {
     return null;
   }
 

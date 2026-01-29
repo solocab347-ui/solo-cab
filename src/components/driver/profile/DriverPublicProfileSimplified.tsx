@@ -14,7 +14,7 @@ import {
   Eye, Copy, Check, ExternalLink, Camera, 
   Briefcase, CheckCircle2, Save, Loader2
 } from "lucide-react";
-import { DualProfilePhotoUpload } from "../DualProfilePhotoUpload";
+import { SingleProfilePhotoUpload } from "../onboarding/SingleProfilePhotoUpload";
 import { SectorSelector } from "../SectorSelector";
 import { EquipmentSelector } from "../EquipmentSelector";
 import { ServicesSelector } from "../ServicesSelector";
@@ -281,15 +281,19 @@ export const DriverPublicProfileSimplified = memo(({
 
         {/* Tab Identité */}
         <TabsContent value="identity" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          {/* Photos */}
-          <DualProfilePhotoUpload
-            currentProfilePhotoUrl={profilePhotoUrl}
-            currentCardPhotoUrl={cardPhotoUrl}
-            userId={userId}
-            driverName={driverName}
-            onProfilePhotoUpdate={onPhotoUpdate}
-            onCardPhotoUpdate={onCardPhotoUpdate}
-          />
+          {/* Photo unique - utilisée partout (profil et carte) */}
+          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
+            <SingleProfilePhotoUpload
+              currentPhotoUrl={profilePhotoUrl}
+              userId={userId}
+              driverName={driverName}
+              onPhotoUpdate={(url) => {
+                // Mettre à jour les deux URLs en même temps
+                onPhotoUpdate(url);
+                onCardPhotoUpdate(url);
+              }}
+            />
+          </Card>
 
           {/* Affichage nom/entreprise */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
