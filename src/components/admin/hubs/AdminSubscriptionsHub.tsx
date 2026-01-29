@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Activity, Gift, Ticket } from "lucide-react";
+import { Activity, Gift, Ticket, Link2 } from "lucide-react";
 import AdminSubscriptions from "../AdminSubscriptions";
 import AdminFreeAccess from "../AdminFreeAccess";
 import { AdminInvitationTokens } from "../AdminInvitationTokens";
+import AdminSubscriptionSync from "../AdminSubscriptionSync";
 
 const AdminSubscriptionsHub = () => {
-  const [activeTab, setActiveTab] = useState<"subscriptions" | "free" | "tokens">("subscriptions");
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "free" | "tokens" | "sync">("subscriptions");
 
   return (
     <div className="space-y-4">
@@ -21,6 +22,16 @@ const AdminSubscriptionsHub = () => {
           <Activity className="w-4 h-4" />
           <span className="hidden sm:inline">Abonnements</span>
           <span className="sm:hidden">Abos</span>
+        </Button>
+        <Button
+          variant={activeTab === "sync" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("sync")}
+          className="gap-2"
+        >
+          <Link2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Synchronisation</span>
+          <span className="sm:hidden">Sync</span>
         </Button>
         <Button
           variant={activeTab === "free" ? "default" : "ghost"}
@@ -46,6 +57,7 @@ const AdminSubscriptionsHub = () => {
 
       {/* Contenu */}
       {activeTab === "subscriptions" && <AdminSubscriptions />}
+      {activeTab === "sync" && <AdminSubscriptionSync />}
       {activeTab === "free" && <AdminFreeAccess />}
       {activeTab === "tokens" && <AdminInvitationTokens />}
     </div>
