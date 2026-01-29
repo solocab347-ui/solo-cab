@@ -87,9 +87,14 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       freeAccessEndDate && 
       freeAccessEndDate > now;
 
-    // Accès gratuit accordé par admin
+    // Accès gratuit accordé par admin (illimité ou avec période)
+    const freeAccessWithPeriod = freeAccessEndDate && 
+      freeAccessEndDate > now && 
+      driver.free_access_type !== "trial"; // Exclure les trials pioneers
+    
     const hasAdminFreeAccess = driver.free_access_granted === true || 
-      (driver.free_access_type === "unlimited");
+      driver.free_access_type === "unlimited" ||
+      freeAccessWithPeriod;
 
     const hasFullAccess = 
       driver.subscription_status === "active" ||
