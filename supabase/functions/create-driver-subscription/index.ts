@@ -253,37 +253,58 @@ serve(async (req) => {
 
     console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Checkout session created:", session.id);
 
-    // If plate ordered, create nfc_plate_orders entry
-    if (with_plate && shipping_address) {
+    // If plate ordered, create nfc_plate_orders entry (même sans adresse - elle sera complétée plus tard)
+    if (with_plate) {
       try {
         const orderNumber = `NFC-${Date.now().toString(36).toUpperCase()}`;
         
         // Get driver's QR code URL
         const { data: driverData } = await supabaseClient
           .from("drivers")
-          .select("qr_code_url")
+          .select("qr_code_url, user_id")
           .eq("id", driver_id)
           .single();
 
-        await supabaseClient.from("nfc_plate_orders").insert({
-          email: user.email,
-          first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
-          last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-          phone: null,
-          shipping_address: shipping_address,
-          shipping_city: shipping_city,
-          shipping_postal_code: shipping_postal_code,
-          shipping_country: "France",
-          plate_type: plate_type, // "standard" ou "premium"
-          amount: plateAmountCents, // Prix promo en centimes
-          driver_id: driver_id,
-          driver_qr_code_url: driverData?.qr_code_url || null,
-          payment_status: "pending",
-          stripe_checkout_session_id: session.id,
-          order_number: orderNumber,
-        });
+        // Générer le lien QR basé sur le driver_id
+        const siteUrl = Deno.env.get("SITE_URL") || "https://solocab.fr";
+        const qrCodeLink = driverData?.qr_code_url || `${siteUrl}/chauffeur/${driver_id}`;
+
+        const { data: orderData, error: orderError } = await supabaseClient
+          .from("nfc_plate_orders")
+          .insert({
+            email: user.email,
+            first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
+            last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+            phone: null,
+            shipping_address: shipping_address || 'À compléter',
+            shipping_city: shipping_city || 'À compléter',
+            shipping_postal_code: shipping_postal_code || '00000',
+            shipping_country: "France",
+            plate_type: plate_type, // "standard" ou "premium"
+            amount: plateAmountCents, // Prix promo en centimes
+            driver_id: driver_id,
+            qr_code_link: qrCodeLink,
+            payment_status: "pending",
+            delivery_status: shipping_address ? "pending" : "pending_address",
+            stripe_checkout_session_id: session.id,
+            order_number: orderNumber,
+          })
+          .select()
+          .single();
         
-        console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ NFC plate order created:", orderNumber, "Type:", plate_type);
+        if (orderError) throw orderError;
+
+        // Mettre à jour le driver avec la référence de commande
+        await supabaseClient
+          .from("drivers")
+          .update({ 
+            nfc_plate_order_id: orderData.id,
+            pending_wants_plate: true,
+            pending_plate_type: plate_type,
+          })
+          .eq("id", driver_id);
+        
+        console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ NFC plate order created:", orderNumber, "Type:", plate_type, "ID:", orderData.id);
       } catch (orderError) {
         console.error("[CREATE-DRIVER-SUBSCRIPTION] ⚠️ Failed to create plate order:", orderError);
         // Continue anyway - the webhook will handle it

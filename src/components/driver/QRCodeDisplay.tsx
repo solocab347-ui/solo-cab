@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Copy, Share2, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { NfcOrderStatus } from "./NfcOrderStatus";
 
 interface QRCodeDisplayProps {
   qrCode: any;
@@ -195,6 +196,14 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
           </p>
         </div>
       </Card>
+
+      {/* Statut de la commande NFC */}
+      {driverProfile?.driver?.id && (
+        <NfcOrderStatus 
+          driverId={driverProfile.driver.id}
+          nfcPlateOrderId={driverProfile.driver.nfc_plate_order_id}
+        />
+      )}
     </div>
   );
 };
