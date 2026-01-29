@@ -39,8 +39,15 @@ const calculateAccessStatus = (driver: any) => {
     ? Math.ceil((freeAccessEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) 
     : 0;
 
-  const hasFreeAccess = driver.free_access_granted || 
-    (driver.free_access_type === "unlimited");
+  // Accès gratuit: soit illimité (free_access_granted=true OU free_access_type="unlimited")
+  // Soit avec période définie (free_access_end_date dans le futur)
+  const freeAccessWithPeriod = driver.free_access_end_date && 
+    new Date(driver.free_access_end_date) > now &&
+    driver.free_access_type !== "trial"; // Exclure les trials pioneers
+  
+  const hasFreeAccess = driver.free_access_granted === true || 
+    driver.free_access_type === "unlimited" ||
+    freeAccessWithPeriod;
 
   // Vérifier si l'accès est bloqué à cause des documents non soumis
   const isDocumentsBlocked = driver.documents_access_blocked === true;

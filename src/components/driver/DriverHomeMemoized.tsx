@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
 import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidget";
 import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
@@ -231,24 +232,30 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          {/* Partner Courses Shortcut */}
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-lg group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("partnerships-received")}>
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-accent/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
-            {stats.availablePartnerCourses > 0 && (
-              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
-                <Badge className="bg-destructive text-destructive-foreground border-0 text-xs font-bold px-1.5 sm:px-2 py-0.5 animate-pulse">
-                  {stats.availablePartnerCourses}
-                </Badge>
-              </div>
-            )}
+          {/* Partner Courses Shortcut - Coming Soon */}
+          <Card 
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/40 via-card/30 to-card/40 backdrop-blur-xl transition-all cursor-pointer border border-border/30 shadow-lg group touch-manipulation opacity-60" 
+            onClick={() => {
+              toast.info("Bientôt disponible !", {
+                description: "La fonctionnalité de partenariats entre chauffeurs arrive très prochainement."
+              });
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-muted/10 opacity-50"></div>
+            {/* Badge Bientôt */}
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
+              <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-muted-foreground/30 text-muted-foreground bg-background/50">
+                Bientôt
+              </Badge>
+            </div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-secondary to-accent rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Handshake className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-muted to-muted/80 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+                <Handshake className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Partenaires</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {stats.availablePartnerCourses > 0 ? `${stats.availablePartnerCourses} en attente` : 'Courses reçues'}
+                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-muted-foreground">Partenaires</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground/70 hidden sm:block">
+                  Bientôt disponible
                 </p>
               </div>
             </div>
