@@ -486,46 +486,100 @@ serve(async (req) => {
         // Update NFC plate order status if applicable AND update driver has_nfc_plate
         if (metadata.with_plate === "true" && session.id) {
           try {
-            // Récupérer et mettre à jour la commande NFC
-            const { data: plateOrder } = await supabaseClient
+            // Try to find existing order first
+            const { data: existingOrder } = await supabaseClient
               .from("nfc_plate_orders")
-              .update({ 
-                payment_status: "paid",
-                delivery_status: "pending" // Prêt pour expédition si l'adresse est complète
-              })
-              .eq("stripe_checkout_session_id", session.id)
               .select("id, qr_code_link, shipping_address, shipping_city, shipping_postal_code")
+              .eq("stripe_checkout_session_id", session.id)
               .single();
 
-            if (plateOrder) {
-              // Mettre à jour le driver avec has_nfc_plate et nfc_plate_order_id
-              const hasValidAddress = plateOrder.shipping_address && 
-                plateOrder.shipping_address !== 'À compléter' &&
-                plateOrder.shipping_city !== 'À compléter';
+            let plateOrderId: string | null = null;
+
+            // If order doesn't exist, create it using metadata from checkout session
+            if (!existingOrder && metadata.shipping_address) {
+              const orderNumber = `NFC-${Date.now().toString(36).toUpperCase()}`;
               
+              // Get driver info for QR link and profile data
+              const { data: driverInfo } = await supabaseClient
+                .from("drivers")
+                .select("qr_code_url, user_id")
+                .eq("id", driverId)
+                .single();
+
+              // Get user profile for name and phone
+              const { data: profileData } = await supabaseClient
+                .from("profiles")
+                .select("full_name, phone, email")
+                .eq("id", metadata.user_id)
+                .single();
+
+              const fullName = profileData?.full_name || '';
+              const nameParts = fullName.split(' ');
+              const siteUrl = Deno.env.get("SITE_URL") || "https://solocab.fr";
+              const qrCodeLink = driverInfo?.qr_code_url || `${siteUrl}/chauffeur/${driverId}`;
+
+              const hasValidAddress = metadata.shipping_address && 
+                metadata.shipping_address !== '' && 
+                metadata.shipping_city && 
+                metadata.shipping_city !== '';
+
+              const { data: newOrder, error: createError } = await supabaseClient
+                .from("nfc_plate_orders")
+                .insert({
+                  email: profileData?.email || '',
+                  first_name: nameParts[0] || '',
+                  last_name: nameParts.slice(1).join(' ') || '',
+                  phone: profileData?.phone || null,
+                  shipping_address: metadata.shipping_address || 'À compléter',
+                  shipping_city: metadata.shipping_city || 'À compléter',
+                  shipping_postal_code: metadata.shipping_postal_code || '00000',
+                  shipping_country: "France",
+                  plate_type: metadata.plate_type || 'premium',
+                  amount: metadata.plate_type === 'standard' ? 1199 : 2399,
+                  driver_id: driverId,
+                  qr_code_link: qrCodeLink,
+                  payment_status: "paid",
+                  delivery_status: hasValidAddress ? "pending" : "pending_address",
+                  stripe_checkout_session_id: session.id,
+                  order_number: orderNumber,
+                })
+                .select("id")
+                .single();
+
+              if (createError) throw createError;
+              plateOrderId = newOrder?.id;
+              logStep("✅ NFC plate order created from webhook metadata", { orderNumber, plateOrderId });
+            } else if (existingOrder) {
+              // Update existing order to paid
+              const hasValidAddress = existingOrder.shipping_address && 
+                existingOrder.shipping_address !== 'À compléter' &&
+                existingOrder.shipping_city !== 'À compléter';
+
+              await supabaseClient
+                .from("nfc_plate_orders")
+                .update({ 
+                  payment_status: "paid",
+                  delivery_status: hasValidAddress ? "pending" : "pending_address"
+                })
+                .eq("id", existingOrder.id);
+              
+              plateOrderId = existingOrder.id;
+            }
+
+            if (plateOrderId) {
+              // Update driver with has_nfc_plate and nfc_plate_order_id
               await supabaseClient
                 .from("drivers")
                 .update({ 
                   has_nfc_plate: true,
-                  nfc_plate_order_id: plateOrder.id,
+                  nfc_plate_order_id: plateOrderId,
                   nfc_plate_ordered_at: new Date().toISOString(),
                 })
                 .eq("id", driverId);
 
-              // Si l'adresse n'est pas complète, laisser delivery_status à pending_address
-              if (!hasValidAddress) {
-                await supabaseClient
-                  .from("nfc_plate_orders")
-                  .update({ delivery_status: "pending_address" })
-                  .eq("id", plateOrder.id);
-              }
-
-              logStep("✅ NFC plate order marked as paid, driver updated", { 
-                orderId: plateOrder.id, 
-                hasValidAddress 
-              });
+              logStep("✅ NFC plate order marked as paid, driver updated", { plateOrderId });
             } else {
-              logStep("⚠️ NFC plate order not found for session", { sessionId: session.id });
+              logStep("⚠️ NFC plate order could not be found or created", { sessionId: session.id });
             }
           } catch (plateError) {
             logStep("⚠️ Failed to update plate order (non-blocking)", { error: String(plateError) });
