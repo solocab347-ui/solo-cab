@@ -133,10 +133,6 @@ export const ProtectedRoute = ({
         driver.free_access_end_date && 
         new Date(driver.free_access_end_date) > new Date();
 
-      // NOUVEAU: Vérifier si le chauffeur est dans sa période de grâce de 30 jours
-      const isInGracePeriod = driver.created_at && 
-        new Date(driver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
       // CRITICAL: Pour les pionniers, vérifier s'ils ont un stripe_customer_id
       // S'ils n'en ont pas, ils doivent finaliser le paiement
       if (driver.is_pioneer && !driver.stripe_customer_id) {
@@ -146,19 +142,33 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // Accès valide = payé OU accès gratuit illimité OU essai en cours OU période de grâce 30 jours
-      const hasValidAccess = driver.subscription_paid || 
-        driver.free_access_granted || 
-        hasActiveTrialAccess ||
-        isInGracePeriod;
+      // CRITICAL: Vérification stricte du paiement
+      // Un chauffeur doit avoir SOIT:
+      // 1. subscription_paid = true (paiement validé par webhook Stripe)
+      // 2. free_access_granted = true (accès gratuit accordé par admin)
+      // 3. Un essai actif avec stripe_customer_id (empreinte bancaire faite)
+      const hasStripePaid = driver.subscription_paid === true;
+      const hasFreeAccess = driver.free_access_granted === true;
+      const hasTrialWithCard = hasActiveTrialAccess && driver.stripe_customer_id;
+
+      // Log pour debug
+      logger.info("Vérification accès chauffeur", { 
+        hasStripePaid, 
+        hasFreeAccess, 
+        hasActiveTrialAccess,
+        hasTrialWithCard,
+        stripe_customer_id: !!driver.stripe_customer_id 
+      });
+
+      // Accès valide = paiement Stripe confirmé OU accès gratuit admin OU essai avec empreinte
+      const hasValidAccess = hasStripePaid || hasFreeAccess || hasTrialWithCard;
 
       if (!hasValidAccess) {
-        logger.error("Accès refusé : paiement requis");
+        logger.error("Accès refusé : paiement requis - aucune condition remplie");
         setDriverStatus("payment_required");
       } else {
-        // ✅ Accès valide = accès direct au dashboard (PLUS JAMAIS de page d'attente)
-        // Tous les chauffeurs avec un accès valide ont le statut "validated" pour le routage
-        logger.info("Accès accordé : validation automatique (payé, pionnier, essai ou période de grâce 30j)");
+        // ✅ Accès valide = accès direct au dashboard
+        logger.info("Accès accordé : paiement vérifié");
         setDriverStatus("validated");
       }
     } catch (error) {
