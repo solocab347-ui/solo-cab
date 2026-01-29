@@ -7,7 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Prix Stripe - Abonnements
+// MODE TEST: Prix à 0.50€ pour tous les paiements
+const TEST_MODE_ENABLED = true;
+const TEST_PRICE_CENTS = 50; // 0.50€
+
+// Prix Stripe - Abonnements (vrais prix, utilisés si TEST_MODE_ENABLED = false)
 const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SqaBl34nJZKnmmIKC7vYZy5"; // 9.99€/mois
 const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1Srytp34nJZKnmmIcUnFX9DV"; // 101.90€/an
 
@@ -139,13 +143,38 @@ serve(async (req) => {
       throw new Error("Origin header required");
     }
 
-    // Build line items
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ];
+    // Build line items - MODE TEST: utilise price_data avec 0.50€
+    let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
+    
+    if (TEST_MODE_ENABLED) {
+      // Mode test: prix forcé à 0.50€
+      lineItems = [
+        {
+          price_data: {
+            currency: "eur",
+            unit_amount: TEST_PRICE_CENTS, // 0.50€
+            recurring: {
+              interval: subscription_type === "annual" ? "year" : "month",
+            },
+            product_data: {
+              name: subscription_type === "annual" 
+                ? "Abonnement SoloCab Annuel (TEST)" 
+                : "Abonnement SoloCab Mensuel (TEST)",
+            },
+          },
+          quantity: 1,
+        },
+      ];
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] 🧪 TEST MODE: Subscription at", TEST_PRICE_CENTS, "cents");
+    } else {
+      // Mode production: vrais prix
+      lineItems = [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ];
+    }
 
     // Add plate if requested (avec prix promo -20%)
     let platePriceId = null;
@@ -160,10 +189,25 @@ serve(async (req) => {
         plateAmountCents = PLATE_PRICES.premium.promo;
       }
       
-      lineItems.push({
-        price: platePriceId,
-        quantity: 1,
-      });
+      if (TEST_MODE_ENABLED) {
+        // Mode test: plaque aussi à 0.50€
+        lineItems.push({
+          price_data: {
+            currency: "eur",
+            unit_amount: TEST_PRICE_CENTS, // 0.50€
+            product_data: {
+              name: `Plaque NFC ${plate_type === "standard" ? "Bois" : "Premium"} (TEST)`,
+            },
+          },
+          quantity: 1,
+        });
+        console.log("[CREATE-DRIVER-SUBSCRIPTION] 🧪 TEST MODE: Plate at", TEST_PRICE_CENTS, "cents");
+      } else {
+        lineItems.push({
+          price: platePriceId,
+          quantity: 1,
+        });
+      }
       console.log("[CREATE-DRIVER-SUBSCRIPTION] 📦 Added NFC plate:", plate_type, "Price:", plateAmountCents);
     }
 
