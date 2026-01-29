@@ -292,19 +292,46 @@ serve(async (req) => {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata || {};
 
-      // CASE 1: Driver registration payment
-      if (metadata.driver_id && !metadata.devis_id && metadata.type !== "fleet_manager_subscription") {
+      // CASE 1: Driver subscription/registration payment
+      // Handles both "driver_subscription" type and legacy driver registrations
+      const isDriverSubscription = metadata.type === "driver_subscription" || 
+        (metadata.driver_id && !metadata.devis_id && metadata.type !== "fleet_manager_subscription");
+      
+      if (isDriverSubscription && metadata.driver_id) {
         const driverId = metadata.driver_id;
-        logStep("Driver registration payment", { driverId });
+        const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+        const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+        
+        logStep("Driver subscription checkout completed", { 
+          driverId, 
+          customerId,
+          subscriptionId,
+          subscriptionType: metadata.subscription_type,
+          withPlate: metadata.with_plate,
+          paymentStatus: session.payment_status
+        });
+
+        // Prepare update data
+        const updateData: Record<string, unknown> = {
+          subscription_paid: true,
+          subscription_status: "active",
+          registration_step: null,
+          registration_data: null,
+        };
+
+        // Add stripe_customer_id if available
+        if (customerId) {
+          updateData.stripe_customer_id = customerId;
+        }
+
+        // Add subscription ID if available (for subscription mode)
+        if (subscriptionId) {
+          updateData.subscription_stripe_id = subscriptionId;
+        }
 
         const { error: driverError } = await supabaseClient
           .from("drivers")
-          .update({
-            subscription_paid: true,
-            subscription_status: "active",
-            registration_step: null,
-            registration_data: null
-          })
+          .update(updateData)
           .eq("id", driverId);
 
         if (driverError) {
@@ -312,7 +339,24 @@ serve(async (req) => {
           throw driverError;
         }
 
-        logStep("✅ Driver registration payment validated");
+        logStep("✅ Driver subscription payment validated", { 
+          driverId, 
+          customerId, 
+          subscriptionId 
+        });
+
+        // Update NFC plate order status if applicable
+        if (metadata.with_plate === "true" && session.id) {
+          try {
+            await supabaseClient
+              .from("nfc_plate_orders")
+              .update({ payment_status: "paid" })
+              .eq("stripe_checkout_session_id", session.id);
+            logStep("✅ NFC plate order marked as paid");
+          } catch (plateError) {
+            logStep("⚠️ Failed to update plate order (non-blocking)", { error: String(plateError) });
+          }
+        }
 
         // Send emails
         try {
@@ -326,7 +370,7 @@ serve(async (req) => {
           logStep("Email sending error (non-blocking)", { error: String(emailError) });
         }
 
-        return new Response(JSON.stringify({ received: true, type: "driver_registration" }), {
+        return new Response(JSON.stringify({ received: true, type: "driver_subscription" }), {
           headers: { "Content-Type": "application/json" },
           status: 200,
         });
