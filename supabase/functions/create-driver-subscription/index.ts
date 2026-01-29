@@ -11,17 +11,17 @@ const corsHeaders = {
 const TEST_MODE_ENABLED = true;
 const TEST_PRICE_CENTS = 50; // 0.50€
 
-// Prix Stripe - Abonnements (vrais prix, utilisés si TEST_MODE_ENABLED = false)
-const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SqaBl34nJZKnmmIKC7vYZy5"; // 9.99€/mois
-const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1Srytp34nJZKnmmIcUnFX9DV"; // 101.90€/an
+// Prix Stripe - Abonnements (nouveau compte Stripe)
+const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SuwktAdFPYTU471xCl9GBwq"; // 9.99€/mois
+const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1SuwlwAdFPYTU471eTkINbYb"; // 101.90€/an
 
 // Prix Stripe - Plaques NFC (prix plein)
-const NFC_PLATE_STANDARD_PRICE_ID = "price_1Sqdz534nJZKnmmItg1y3Nck"; // 14.99€ (bois)
-const NFC_PLATE_PREMIUM_PRICE_ID = "price_1SqaCu34nJZKnmmIbgUaYK8K"; // 29.99€ (plastique)
+const NFC_PLATE_STANDARD_PRICE_ID = "price_1SuwqvAdFPYTU471lrv1hrEv"; // 14.99€ (bois)
+const NFC_PLATE_PREMIUM_PRICE_ID = "price_1SuwrGAdFPYTU471r5jB69qs"; // 29.99€ (plastique)
 
 // Prix Stripe - Plaques NFC avec réduction -20% (achat avec abonnement)
-const NFC_PLATE_STANDARD_PROMO_PRICE_ID = "price_1SuZ9t34nJZKnmmIFVoOoK3k"; // 11.99€ (bois -20%)
-const NFC_PLATE_PREMIUM_PROMO_PRICE_ID = "price_1SuZDV34nJZKnmmIhr1UaJ5x"; // 23.99€ (plastique -20%)
+const NFC_PLATE_STANDARD_PROMO_PRICE_ID = "price_1SuwriAdFPYTU471oAt7e8OO"; // 11.99€ (bois -20%)
+const NFC_PLATE_PREMIUM_PROMO_PRICE_ID = "price_1Suws3AdFPYTU471pguxBxve"; // 23.99€ (plastique -20%)
 
 // Prix en centimes pour la DB
 const PLATE_PRICES = {

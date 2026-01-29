@@ -12,25 +12,25 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-NFC-PLATE-ORDER] ${step}${detailsStr}`);
 };
 
-// Prix des plaques NFC (prix plein, hors promo inscription)
+// Prix des plaques NFC (prix plein, hors promo inscription) - Nouveau compte Stripe
 const NFC_PLATE_PRICES = {
   small: {
-    priceId: "price_1Sqdz534nJZKnmmItg1y3Nck",
+    priceId: "price_1SuwqvAdFPYTU471lrv1hrEv",
     name: "Plaque NFC Bois (Standard)",
     amount: 14.99,
   },
   standard: {
-    priceId: "price_1Sqdz534nJZKnmmItg1y3Nck",
+    priceId: "price_1SuwqvAdFPYTU471lrv1hrEv",
     name: "Plaque NFC Bois (Standard)",
     amount: 14.99,
   },
   large: {
-    priceId: "price_1SqaCu34nJZKnmmIbgUaYK8K",
+    priceId: "price_1SuwrGAdFPYTU471r5jB69qs",
     name: "Plaque NFC Plastique (Premium)",
     amount: 29.99,
   },
   premium: {
-    priceId: "price_1SqaCu34nJZKnmmIbgUaYK8K",
+    priceId: "price_1SuwrGAdFPYTU471r5jB69qs",
     name: "Plaque NFC Plastique (Premium)",
     amount: 29.99,
   },
