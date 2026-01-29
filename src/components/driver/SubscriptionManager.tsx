@@ -20,6 +20,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
   const [showPioneerWarning, setShowPioneerWarning] = useState(false);
+  const [resubscribing, setResubscribing] = useState(false);
 
   // Pioneer-specific values
   const isPioneer = driverProfile?.driver?.is_pioneer === true;
@@ -160,6 +161,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   const isActive = localAccessStatus.hasFullAccess || effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isInactive = !isActive && effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isPastDue = effectiveStatus === "past_due";
+  const isCanceled = effectiveStatus === "canceled";
   
   // Accès gratuit admin
   const hasAdminFreeAccess = localAccessStatus.hasAdminFreeAccess || driverProfile?.driver?.free_access_granted;
@@ -170,8 +172,39 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
+  
+  // Détection de la résiliation programmée
+  const cancelAtPeriodEnd = driverProfile?.driver?.subscription_cancel_at_period_end;
+  const cancelAt = driverProfile?.driver?.subscription_cancel_at;
 
   const remainingDays = freeAccessEndDate ? differenceInDays(new Date(freeAccessEndDate), new Date()) : null;
+  
+  // Réabonnement après résiliation
+  const handleResubscribe = async (type: "monthly" | "annual") => {
+    setResubscribing(true);
+    try {
+      toast.loading("Redirection vers le paiement...");
+      const { data, error } = await supabase.functions.invoke("resubscribe-driver", {
+        body: { subscription_type: type }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (error: any) {
+      console.error("Error creating resubscription:", error);
+      toast.dismiss();
+      toast.error("Erreur lors de la création de l'abonnement", {
+        description: error.message
+      });
+    } finally {
+      setResubscribing(false);
+    }
+  };
 
   const getDurationLabel = (type: string | null) => {
     switch (type) {
@@ -196,6 +229,66 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         onConfirm={handlePioneerWarningConfirm}
         onCancel={handlePioneerWarningCancel}
       />
+
+      {/* Section Réabonnement après résiliation */}
+      {isCanceled && !isActive && (
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="p-3 bg-primary/20 rounded-xl">
+              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            </div>
+            <div className="flex-1 w-full space-y-4">
+              <div>
+                <h3 className="font-bold text-base sm:text-lg text-foreground mb-2">
+                  Réactiver votre abonnement
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Votre abonnement a été résilié. Reprenez l'accès complet à SoloCab en vous réabonnant.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button
+                  onClick={() => handleResubscribe("monthly")}
+                  disabled={resubscribing}
+                  className="w-full py-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  {resubscribing ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-5 h-5 mr-2" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-bold">Mensuel</div>
+                    <div className="text-xs opacity-80">9,99€/mois</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => handleResubscribe("annual")}
+                  disabled={resubscribing}
+                  variant="outline"
+                  className="w-full py-6 border-2 border-primary/50 hover:bg-primary/10"
+                >
+                  {resubscribing ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Gift className="w-5 h-5 mr-2 text-primary" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-bold">Annuel</div>
+                    <div className="text-xs text-muted-foreground">101,90€/an (-15%)</div>
+                  </div>
+                </Button>
+              </div>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                Paiement immédiat • Accès instantané • Sans engagement
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Pioneer Status Lost Alert */}
       {pioneerStatusLost && (
@@ -563,6 +656,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
           nextBillingDate={driverProfile?.driver?.subscription_end_date}
           nextBillingAmount={9.99}
+          cancelAtPeriodEnd={driverProfile?.driver?.subscription_cancel_at_period_end}
+          cancelAt={driverProfile?.driver?.subscription_cancel_at}
           onBeforeOpenPortal={async () => {
             if (isPioneer && !pioneerStatusLost) {
               setShowPioneerWarning(true);

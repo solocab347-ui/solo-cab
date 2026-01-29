@@ -5925,6 +5925,8 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_paused: boolean | null
           stripe_subscription_paused_at: string | null
+          subscription_cancel_at: string | null
+          subscription_cancel_at_period_end: boolean | null
           subscription_end_date: string | null
           subscription_paid: boolean | null
           subscription_status: string | null
@@ -6072,6 +6074,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
+          subscription_cancel_at?: string | null
+          subscription_cancel_at_period_end?: boolean | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -6219,6 +6223,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
+          subscription_cancel_at?: string | null
+          subscription_cancel_at_period_end?: boolean | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -9551,6 +9557,8 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_paused: boolean | null
           stripe_subscription_paused_at: string | null
+          subscription_cancel_at: string | null
+          subscription_cancel_at_period_end: boolean | null
           subscription_end_date: string | null
           subscription_paid: boolean | null
           subscription_status: string | null
@@ -9637,6 +9645,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
+          subscription_cancel_at?: string | null
+          subscription_cancel_at_period_end?: boolean | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -9723,6 +9733,8 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_paused?: boolean | null
           stripe_subscription_paused_at?: string | null
+          subscription_cancel_at?: string | null
+          subscription_cancel_at_period_end?: boolean | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
