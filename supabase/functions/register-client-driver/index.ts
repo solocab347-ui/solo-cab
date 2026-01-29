@@ -32,7 +32,14 @@ serve(async (req) => {
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get authorization header
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé - Token manquant" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     // Get user from token
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
@@ -56,11 +63,11 @@ serve(async (req) => {
       );
     }
 
-    // Verify driver exists and has full access (validated, pioneer, or within 30-day grace period)
+    // Verify driver exists and has public profile enabled
     // Use SERVICE_ROLE to bypass RLS (driver may have status blocking RLS)
     const { data: driver, error: driverError } = await supabaseService
       .from("drivers")
-      .select("id, public_profile_enabled, status, is_pioneer, free_access_end_date, created_at")
+      .select("id, public_profile_enabled")
       .eq("id", driver_id)
       .single();
 
@@ -72,33 +79,14 @@ serve(async (req) => {
       );
     }
 
-    // Check if driver has full access:
-    // 1. Validated driver
-    // 2. Pioneer with active trial
-    // 3. Any driver within 30 days of registration (grace period)
-    const isValidated = driver.status === "validated";
-    const isPioneerActive = driver.is_pioneer && 
-      driver.free_access_end_date && 
-      new Date(driver.free_access_end_date) > new Date();
-    const isInGracePeriod = driver.created_at && 
-      new Date(driver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) &&
-      (driver.status === "pending" || driver.status === "validated");
-
-    const hasFullAccess = isValidated || isPioneerActive || isInGracePeriod;
-
+    // SIMPLIFICATION: Tout chauffeur avec public_profile_enabled = true est accessible
+    // Plus de conditions restrictives (validated, pioneer, grace period)
     console.log('🔍 Vérification accès chauffeur:', {
       driver_id,
-      status: driver.status,
-      is_pioneer: driver.is_pioneer,
-      free_access_end_date: driver.free_access_end_date,
-      public_profile_enabled: driver.public_profile_enabled,
-      isValidated,
-      isPioneerActive,
-      isInGracePeriod,
-      hasFullAccess
+      public_profile_enabled: driver.public_profile_enabled
     });
 
-    if (!driver.public_profile_enabled || !hasFullAccess) {
+    if (!driver.public_profile_enabled) {
       return new Response(
         JSON.stringify({ error: "Ce chauffeur n'accepte pas de nouveaux clients" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

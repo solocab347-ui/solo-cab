@@ -386,24 +386,35 @@ export const DriverProfileDialog = ({
                 </Button>
               </div>
             ) : (
-              <Button
-                onClick={handleRegisterWithDriver}
-                disabled={registering}
-                size="lg"
-                className="w-full bg-gradient-premium hover:opacity-90"
-              >
-                {registering ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Inscription...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-5 h-5 mr-2" />
-                    S'inscrire avec ce chauffeur
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <Button
+                  onClick={handleRegisterWithDriver}
+                  disabled={registering}
+                  size="lg"
+                  className="flex-1 bg-gradient-premium hover:opacity-90"
+                >
+                  {registering ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Inscription...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5 mr-2" />
+                      S'inscrire
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => navigate(`/reservation-rapide/${driverId}`)}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                >
+                  <Car className="w-5 h-5 mr-2" />
+                  Réserver sans s'inscrire
+                </Button>
+              </div>
             )}
 
             {/* Description */}
