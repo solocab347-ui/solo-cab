@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Sparkles, 
   Users, 
@@ -15,12 +15,13 @@ import {
   Handshake,
   ChevronRight,
   Rocket,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LibertyGuide } from "@/components/onboarding/LibertyGuide";
 
 const FEATURES = [
   {
@@ -76,13 +77,10 @@ const FEATURES = [
 const DriverWelcome = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [showGuide, setShowGuide] = useState(false);
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
   
   const isPioneer = searchParams.get("pioneer") === "true";
   const driverId = searchParams.get("driver_id");
-
-  // Ne pas ouvrir automatiquement le guide - laisser l'utilisateur choisir
 
   // Animation des fonctionnalités
   useEffect(() => {
@@ -92,14 +90,9 @@ const DriverWelcome = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleGoToDashboard = () => {
-    // Marquer comme premier login pour ouvrir le guide
-    localStorage.setItem("liberty-first-login", "true");
+  const handleContinueOnboarding = () => {
+    // Continuer le tunnel d'onboarding
     navigate("/driver-dashboard");
-  };
-
-  const handleOpenGuide = () => {
-    setShowGuide(true);
   };
 
   return (
@@ -160,8 +153,8 @@ const DriverWelcome = () => {
             transition={{ delay: 0.4 }}
             className="text-lg text-white/70 max-w-2xl mx-auto"
           >
-            Votre inscription est confirmée ! Découvrez toutes les fonctionnalités 
-            à votre disposition pour développer votre activité VTC.
+            Votre paiement est confirmé ! Continuez la configuration de votre espace 
+            pour développer votre activité VTC.
           </motion.p>
         </motion.div>
 
@@ -176,11 +169,75 @@ const DriverWelcome = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
               <CheckCircle2 className="w-10 h-10 text-green-400" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Inscription réussie !</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Paiement confirmé !</h2>
             <p className="text-white/70 text-sm">
-              Votre période d'essai de <strong className="text-amber-400">14 jours gratuits</strong> commence maintenant.
-              Profitez-en pour configurer votre espace et attirer vos premiers clients !
+              Finalisez maintenant la configuration de votre espace chauffeur.
             </p>
+          </Card>
+        </motion.div>
+
+        {/* Prochaines étapes - NOUVEAU */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="max-w-2xl mx-auto mb-12"
+        >
+          <Card className="p-6 bg-blue-500/10 border-blue-500/30">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <Info className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Prochaines étapes
+                </h3>
+                <ul className="text-white/70 text-sm space-y-3">
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-amber-400">1</span>
+                    </div>
+                    <span>Configurez vos <strong className="text-white">tarifs et informations</strong> dans le tunnel d'inscription</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-amber-400">2</span>
+                    </div>
+                    <span>Téléversez vos <strong className="text-white">documents professionnels</strong> (obligatoire)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-amber-400">3</span>
+                    </div>
+                    <span>Notre équipe <strong className="text-white">valide votre compte</strong> (24-48h)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                    </div>
+                    <span>Votre <strong className="text-amber-400">essai de 14 jours</strong> démarre à la validation</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Info essai après validation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="max-w-2xl mx-auto mb-12"
+        >
+          <Card className="p-5 bg-amber-500/10 border-amber-500/30">
+            <div className="flex items-center gap-3">
+              <Clock className="w-6 h-6 text-amber-400 flex-shrink-0" />
+              <p className="text-white/80 text-sm">
+                <strong className="text-amber-400">Pas de temps perdu !</strong> Votre période d'essai de 14 jours 
+                ne démarre qu'après la validation de votre compte par notre équipe. Prenez le temps de tout configurer.
+              </p>
+            </div>
           </Card>
         </motion.div>
 
@@ -188,12 +245,12 @@ const DriverWelcome = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.8 }}
           className="mb-12"
         >
           <h2 className="text-2xl font-bold text-center mb-8">
             <Rocket className="inline-block w-6 h-6 mr-2 text-amber-400" />
-            Fonctionnalités disponibles
+            Fonctionnalités disponibles après validation
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,7 +259,7 @@ const DriverWelcome = () => {
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
+                transition={{ delay: 0.9 + index * 0.1 }}
               >
                 <Card className={`
                   p-5 h-full bg-white/5 border-white/10 hover:border-white/20 
@@ -224,78 +281,24 @@ const DriverWelcome = () => {
           </div>
         </motion.div>
 
-        {/* 30 days reminder */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2 }}
-          className="max-w-2xl mx-auto mb-12"
-        >
-          <Card className="p-6 bg-amber-500/10 border-amber-500/30">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-6 h-6 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  14 jours pour compléter vos documents
-                </h3>
-                <p className="text-white/70 text-sm mb-3">
-                  Vous disposez d'un accès complet pendant 14 jours. Profitez-en pour téléverser 
-                  vos documents professionnels (permis, carte VTC, assurance...) via l'onglet "Documents" 
-                  de votre tableau de bord.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="bg-white/5 text-white/80 border-white/20">
-                    <FileText className="w-3 h-3 mr-1" />
-                    Carte VTC
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 text-white/80 border-white/20">
-                    <FileText className="w-3 h-3 mr-1" />
-                    Permis
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 text-white/80 border-white/20">
-                    <FileText className="w-3 h-3 mr-1" />
-                    Assurance
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 text-white/80 border-white/20">
-                    <FileText className="w-3 h-3 mr-1" />
-                    Kbis
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* CTA Buttons */}
+        {/* CTA Button - Un seul bouton */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.4 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-col items-center justify-center gap-4"
         >
           <Button
-            onClick={handleOpenGuide}
+            onClick={handleContinueOnboarding}
             size="lg"
             className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-8 py-6 text-lg rounded-xl shadow-lg shadow-amber-500/25"
           >
-            <Sparkles className="w-5 h-5 mr-2" />
-            Commencer le tutoriel Liberty
-          </Button>
-          
-          <Button
-            onClick={handleGoToDashboard}
-            size="lg"
-            variant="outline"
-            className="w-full sm:w-auto border-white/20 hover:bg-white/10 text-white font-semibold px-8 py-6 text-lg rounded-xl"
-          >
-            Accéder au dashboard
+            Continuer la configuration
             <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         </motion.div>
 
-        {/* Liberty tip */}
+        {/* Tip */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -303,20 +306,11 @@ const DriverWelcome = () => {
           className="text-center mt-8"
         >
           <p className="text-white/50 text-sm flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            Liberty vous guidera pas à pas pour configurer votre espace
+            <Shield className="w-4 h-4 text-amber-400" />
+            Documents obligatoires : Carte VTC, Permis, Pièce d'identité, Carte grise, Assurance, Kbis
           </p>
         </motion.div>
       </div>
-
-      {/* Liberty Guide Modal */}
-      <LibertyGuide
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-        onNavigate={(path) => {
-          navigate("/driver-dashboard");
-        }}
-      />
     </div>
   );
 };
