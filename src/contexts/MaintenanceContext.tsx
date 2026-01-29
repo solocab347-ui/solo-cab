@@ -2,7 +2,7 @@ import { createContext, useContext, ReactNode } from "react";
 
 // MAINTENANCE MODE TOGGLE - Set to true to enable maintenance mode
 // Set to false to disable maintenance mode and restore normal access
-const MAINTENANCE_MODE_ENABLED = true;
+const MAINTENANCE_MODE_ENABLED = false;
 
 // Admin emails that can bypass maintenance mode
 const ADMIN_BYPASS_EMAILS = [
