@@ -86,7 +86,8 @@ export function DriverOnboardingTunnel({
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
     nfc: {
-      hasNfcPlate: driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number ? true : false,
+      // Vérifie si le chauffeur a déjà une plaque OU si une commande est en cours
+      hasNfcPlate: !!(driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number || driverProfile?.driver?.nfc_plate_order_id),
       wantsNfcPlate: false,
     }
   });
@@ -252,13 +253,27 @@ export function DriverOnboardingTunnel({
     }
 
     if (success && currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      let nextStep = currentStep + 1;
+      
+      // Si l'étape suivante est NFC (index 3) et le chauffeur a déjà une plaque, sauter à l'étape finale
+      if (nextStep === 3 && stepData.nfc.hasNfcPlate) {
+        nextStep = 4; // Passer directement à "Terminé"
+      }
+      
+      setCurrentStep(nextStep);
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      let prevStep = currentStep - 1;
+      
+      // Si on est à l'étape finale (4) et le chauffeur a déjà une plaque, revenir à documents (2)
+      if (currentStep === 4 && stepData.nfc.hasNfcPlate) {
+        prevStep = 2; // Passer directement aux documents
+      }
+      
+      setCurrentStep(prevStep);
     }
   };
 

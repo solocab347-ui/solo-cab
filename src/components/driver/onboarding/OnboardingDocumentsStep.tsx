@@ -36,11 +36,11 @@ interface DocumentsData {
 
 const REQUIRED_DOCUMENTS = [
   { key: "vtc_card_recto", label: "Carte VTC (Recto)", required: true },
-  { key: "vtc_card_verso", label: "Carte VTC (Verso)", required: false },
+  { key: "vtc_card_verso", label: "Carte VTC (Verso)", required: true },
   { key: "driving_license_recto", label: "Permis (Recto)", required: true },
-  { key: "driving_license_verso", label: "Permis (Verso)", required: false },
+  { key: "driving_license_verso", label: "Permis (Verso)", required: true },
   { key: "id_card_recto", label: "Pièce d'identité (Recto)", required: true },
-  { key: "id_card_verso", label: "Pièce d'identité (Verso)", required: false },
+  { key: "id_card_verso", label: "Pièce d'identité (Verso)", required: false, hint: "Facultatif si passeport" },
   { key: "vehicle_registration", label: "Carte grise", required: true },
   { key: "insurance", label: "Assurance RC Pro", required: true },
   { key: "kbis", label: "Kbis ou INSEE", required: true },
@@ -229,12 +229,17 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
                     ) : (
                       <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                     )}
-                    <div className="min-w-0 flex items-center gap-1.5">
-                      <p className="text-xs font-medium truncate">{doc.label}</p>
-                      {!doc.required && (
-                        <Badge variant="outline" className="text-[9px] bg-muted/50 px-1 py-0">
-                          Opt.
-                        </Badge>
+                    <div className="min-w-0 flex flex-col">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-medium truncate">{doc.label}</p>
+                        {!doc.required && (
+                          <Badge variant="outline" className="text-[9px] bg-muted/50 px-1 py-0">
+                            Opt.
+                          </Badge>
+                        )}
+                      </div>
+                      {(doc as any).hint && (
+                        <p className="text-[9px] text-muted-foreground">{(doc as any).hint}</p>
                       )}
                     </div>
                   </div>
