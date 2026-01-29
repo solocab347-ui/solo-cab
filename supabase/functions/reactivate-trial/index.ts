@@ -19,18 +19,6 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Utiliser le client avec la clé anon pour l'auth, puis service role pour les opérations
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { 
-        auth: { persistSession: false },
-        global: {
-          headers: { Authorization: req.headers.get("Authorization") ?? "" }
-        }
-      }
-    );
-
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -41,8 +29,12 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
 
-    // Récupérer l'utilisateur via le client avec le token
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    // Extraire le token JWT du header Authorization
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) throw new Error("No token provided");
+
+    // Valider le token avec le client admin
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError) {
       logStep("Auth error details", { error: userError.message, code: userError.code });
       throw new Error(`Authentication error: ${userError.message}`);
