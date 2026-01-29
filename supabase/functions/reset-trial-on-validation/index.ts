@@ -87,13 +87,40 @@ Deno.serve(async (req) => {
 
     console.log('📋 Processing driver:', driver.id, 'Pioneer:', driver.is_pioneer);
 
-    // Si pas d'abonnement Stripe, rien à faire
+    // Calculer la durée d'essai: 30 jours pour pionniers, 14 jours pour les autres
+    const trialDays = driver.is_pioneer ? 30 : 14;
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
+    // Si pas d'abonnement Stripe, définir free_access_end_date pour la période d'essai
     if (!driver.subscription_stripe_id) {
-      console.log('ℹ️ No Stripe subscription found, skipping trial reset');
+      console.log('ℹ️ No Stripe subscription, setting free_access_end_date for trial');
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('drivers')
+        .update({
+          subscription_status: 'active',
+          free_access_granted: true,
+          free_access_start_date: new Date().toISOString(),
+          free_access_end_date: trialEndDate.toISOString(),
+          free_access_type: 'trial',
+        })
+        .eq('id', driver_id);
+
+      if (updateError) {
+        console.error('⚠️ Error updating driver free access:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Erreur mise à jour période d\'essai' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Pas d\'abonnement Stripe à réinitialiser',
+          message: `Période d'essai de ${trialDays} jours activée`,
+          trial_days: trialDays,
+          trial_end: trialEndDate.toISOString(),
           had_subscription: false
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -128,8 +155,7 @@ Deno.serve(async (req) => {
 
     console.log('📊 Current subscription status:', subscription.status);
 
-    // Calculer la durée d'essai: 30 jours pour pionniers, 14 jours pour les autres
-    const trialDays = driver.is_pioneer ? 30 : 14;
+    // Utiliser la durée d'essai déjà calculée
     const newTrialEnd = Math.floor(Date.now() / 1000) + (trialDays * 24 * 60 * 60);
 
     // Mettre à jour l'abonnement Stripe avec une nouvelle date de fin d'essai
