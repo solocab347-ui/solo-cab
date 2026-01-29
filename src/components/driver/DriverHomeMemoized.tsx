@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
 import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidget";
+import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
+import { useProactiveCoach } from "./objectives/hooks/useProactiveCoach";
 
 interface DriverHomeProps {
   driverProfile: any;
@@ -95,8 +97,34 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     ? driverProfile.full_name.split(' ')[0]
     : driverProfile?.driver?.display_name || '';
 
+  // Proactive AI Coach
+  const hasObjectives = stats.monthCourses > 0 || stats.monthClients > 0;
+  const { currentMessage, dismissMessage } = useProactiveCoach({
+    driverId: driverProfile?.driver?.id || '',
+    driverName: displayName,
+    stats: {
+      todayRevenue: stats.todayRevenue,
+      todayCourses: stats.todayCourses,
+      weekRevenue: stats.monthRevenue / 4, // Approximation
+      monthRevenue: stats.monthRevenue,
+      totalClients: stats.monthClients,
+      streakDays: 0, // Would need separate tracking
+      hasObjectives,
+      soloCabPercentage: 0, // Would need calculation
+      partnershipsCount: 0 // Would need separate tracking
+    },
+    enabled: !!driverProfile?.driver?.id
+  });
+
   return (
     <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8">
+      {/* Proactive Coach Popup */}
+      <ProactiveCoachPopup
+        message={currentMessage}
+        onDismiss={dismissMessage}
+        onAction={() => onTabChange("objectives")}
+        driverName={displayName}
+      />
       {/* Welcome Header */}
       <div className="text-left animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
