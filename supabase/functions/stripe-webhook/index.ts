@@ -250,36 +250,130 @@ serve(async (req) => {
     }
 
     // ========================================
-    // INVOICE PAYMENT FAILED
+    // INVOICE PAYMENT FAILED - AUTOMATED RECOVERY
     // ========================================
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
       const subscriptionId = invoice.subscription;
+      const attemptCount = invoice.attempt_count || 1;
+      
+      logStep("💳 Payment failed", { 
+        subscriptionId, 
+        attemptCount, 
+        amountDue: invoice.amount_due,
+        nextAttempt: invoice.next_payment_attempt 
+          ? new Date(invoice.next_payment_attempt * 1000).toISOString() 
+          : 'none'
+      });
       
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
         const metadata = subscription.metadata || {};
         
-        // Fleet manager payment failed
-        if (metadata.type === "fleet_manager_subscription" || metadata.fleet_manager_id) {
-          logStep("Fleet manager payment failed", { 
-            fleetManagerId: metadata.fleet_manager_id, 
-            amount: invoice.amount_due 
-          });
+        // ========== DRIVER PAYMENT FAILED ==========
+        if (metadata.driver_id && metadata.type !== "fleet_manager_subscription") {
+          const driverId = metadata.driver_id;
           
-          // Could send notification email here
+          // 1. Update driver status to past_due
+          const { error: updateError } = await supabaseClient
+            .from("drivers")
+            .update({
+              subscription_status: "past_due",
+              payment_failed_at: new Date().toISOString(),
+              payment_failure_count: attemptCount,
+            })
+            .eq("id", driverId);
+
+          if (updateError) {
+            logStep("ERROR updating driver payment status", { error: updateError.message });
+          } else {
+            logStep("✅ Driver status updated to past_due", { driverId, attemptCount });
+          }
+
+          // 2. Send payment reminder email
+          try {
+            await supabaseClient.functions.invoke("send-payment-reminder-email", {
+              body: { 
+                driver_id: driverId, 
+                reminder_type: "past_due",
+                attempt_count: attemptCount
+              }
+            });
+            logStep("✅ Payment reminder email sent to driver", { driverId });
+          } catch (emailError) {
+            logStep("⚠️ Failed to send payment reminder email", { error: String(emailError) });
+          }
+
+          // 3. Create notification in-app
+          try {
+            // Get driver user_id for notification
+            const { data: driverData } = await supabaseClient
+              .from("drivers")
+              .select("user_id")
+              .eq("id", driverId)
+              .single();
+
+            if (driverData?.user_id) {
+              await supabaseClient.from("notifications").insert({
+                user_id: driverData.user_id,
+                type: "payment_failed",
+                title: "⚠️ Échec de paiement",
+                message: `Votre paiement de 9,99€ n'a pas pu être effectué (tentative ${attemptCount}). Mettez à jour votre carte pour éviter la suspension.`,
+                priority: "high",
+                action_url: "/driver-dashboard?tab=subscription",
+              });
+              logStep("✅ In-app notification created", { userId: driverData.user_id });
+            }
+          } catch (notifError) {
+            logStep("⚠️ Failed to create notification", { error: String(notifError) });
+          }
         }
         
-        // Driver payment failed
-        if (metadata.driver_id && metadata.type !== "fleet_manager_subscription") {
-          logStep("Driver payment failed", { 
-            driverId: metadata.driver_id, 
-            amount: invoice.amount_due 
-          });
+        // ========== FLEET MANAGER PAYMENT FAILED ==========
+        if (metadata.type === "fleet_manager_subscription" || metadata.fleet_manager_id) {
+          const fmId = metadata.fleet_manager_id;
+          
+          // 1. Update fleet manager status
+          const { error: updateError } = await supabaseClient
+            .from("fleet_managers")
+            .update({
+              subscription_status: "past_due",
+              payment_failed_at: new Date().toISOString(),
+              payment_failure_count: attemptCount,
+            })
+            .eq("id", fmId);
+
+          if (updateError) {
+            logStep("ERROR updating fleet manager payment status", { error: updateError.message });
+          } else {
+            logStep("✅ Fleet manager status updated to past_due", { fmId, attemptCount });
+          }
+
+          // 2. Get fleet manager user_id and send notification
+          try {
+            const { data: fmData } = await supabaseClient
+              .from("fleet_managers")
+              .select("user_id")
+              .eq("id", fmId)
+              .single();
+
+            if (fmData?.user_id) {
+              await supabaseClient.from("notifications").insert({
+                user_id: fmData.user_id,
+                type: "payment_failed",
+                title: "⚠️ Échec de paiement flotte",
+                message: `Le paiement de votre abonnement flotte n'a pas pu être effectué (tentative ${attemptCount}). Mettez à jour votre mode de paiement.`,
+                priority: "high",
+                action_url: "/fleet-dashboard?tab=subscription",
+              });
+            }
+          } catch (notifError) {
+            logStep("⚠️ Failed to create fleet manager notification", { error: String(notifError) });
+          }
         }
       }
       
-      return new Response(JSON.stringify({ received: true }), {
+      return new Response(JSON.stringify({ received: true, processed: "payment_failed" }), {
         headers: { "Content-Type": "application/json" },
         status: 200,
       });
