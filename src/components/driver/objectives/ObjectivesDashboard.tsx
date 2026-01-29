@@ -190,6 +190,7 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         isWorkingDay={isWorkingDay}
         streakDays={hook.driverStats.streakDays}
         driverName={driverName}
+        onOpenCoach={() => setActiveTab('coaching')}
       />
 
       {/* Header */}
