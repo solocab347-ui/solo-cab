@@ -5825,10 +5825,15 @@ export type Database = {
           invoice_counter: number | null
           is_demo_account: boolean | null
           is_fleet_driver: boolean | null
+          is_legacy_stripe: boolean | null
           is_pioneer: boolean | null
+          legacy_stripe_customer_id: string | null
+          legacy_trial_end_date: string | null
           license_number: string
           max_daily_courses: number | null
           max_passengers: number
+          migrated_at: string | null
+          migration_required: boolean | null
           minimum_price: number | null
           nfc_plate_order_id: string | null
           nfc_plate_ordered_at: string | null
@@ -5967,10 +5972,15 @@ export type Database = {
           invoice_counter?: number | null
           is_demo_account?: boolean | null
           is_fleet_driver?: boolean | null
+          is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
+          legacy_stripe_customer_id?: string | null
+          legacy_trial_end_date?: string | null
           license_number: string
           max_daily_courses?: number | null
           max_passengers?: number
+          migrated_at?: string | null
+          migration_required?: boolean | null
           minimum_price?: number | null
           nfc_plate_order_id?: string | null
           nfc_plate_ordered_at?: string | null
@@ -6109,10 +6119,15 @@ export type Database = {
           invoice_counter?: number | null
           is_demo_account?: boolean | null
           is_fleet_driver?: boolean | null
+          is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
+          legacy_stripe_customer_id?: string | null
+          legacy_trial_end_date?: string | null
           license_number?: string
           max_daily_courses?: number | null
           max_passengers?: number
+          migrated_at?: string | null
+          migration_required?: boolean | null
           minimum_price?: number | null
           nfc_plate_order_id?: string | null
           nfc_plate_ordered_at?: string | null

@@ -29,7 +29,10 @@ interface DriverSyncStatus {
   subscription_stripe_id: string | null;
   subscription_status: string | null;
   subscription_paid: boolean | null;
-  syncStatus: 'synced' | 'desync' | 'no_stripe' | 'incomplete';
+  is_legacy_stripe: boolean | null;
+  migration_required: boolean | null;
+  migrated_at: string | null;
+  syncStatus: 'synced' | 'desync' | 'no_stripe' | 'incomplete' | 'legacy_pending';
   syncDetails: string;
 }
 
@@ -39,6 +42,7 @@ interface SyncStats {
   desync: number;
   noStripe: number;
   incomplete: number;
+  legacyPending: number;
 }
 
 const AdminSubscriptionSync = () => {
@@ -65,6 +69,9 @@ const AdminSubscriptionSync = () => {
           subscription_stripe_id,
           subscription_status,
           subscription_paid,
+          is_legacy_stripe,
+          migration_required,
+          migrated_at,
           profiles:user_id (
             full_name,
             email
@@ -79,11 +86,14 @@ const AdminSubscriptionSync = () => {
         .filter(d => d.profiles)
         .map(d => {
           const profile = d.profiles as { full_name: string; email: string };
-          let syncStatus: 'synced' | 'desync' | 'no_stripe' | 'incomplete';
+          let syncStatus: 'synced' | 'desync' | 'no_stripe' | 'incomplete' | 'legacy_pending';
           let syncDetails = "";
 
-          // Logique de détermination du statut de sync
-          if (!d.stripe_customer_id && !d.subscription_stripe_id) {
+          // Vérifier d'abord si c'est un chauffeur legacy en attente de migration
+          if (d.is_legacy_stripe && d.migration_required && !d.migrated_at) {
+            syncStatus = 'legacy_pending';
+            syncDetails = "⚠️ Migration requise - Ancien compte Stripe";
+          } else if (!d.stripe_customer_id && !d.subscription_stripe_id) {
             // Pas de lien Stripe du tout
             if (d.status === 'pending' || d.status === 'on_hold') {
               syncStatus = 'incomplete';
@@ -134,6 +144,9 @@ const AdminSubscriptionSync = () => {
             subscription_stripe_id: d.subscription_stripe_id,
             subscription_status: d.subscription_status,
             subscription_paid: d.subscription_paid,
+            is_legacy_stripe: d.is_legacy_stripe,
+            migration_required: d.migration_required,
+            migrated_at: d.migrated_at,
             syncStatus,
             syncDetails,
           };
@@ -148,6 +161,7 @@ const AdminSubscriptionSync = () => {
         desync: driverStatuses.filter(d => d.syncStatus === 'desync').length,
         noStripe: driverStatuses.filter(d => d.syncStatus === 'no_stripe').length,
         incomplete: driverStatuses.filter(d => d.syncStatus === 'incomplete').length,
+        legacyPending: driverStatuses.filter(d => d.syncStatus === 'legacy_pending').length,
       };
       setStats(newStats);
 
@@ -164,7 +178,7 @@ const AdminSubscriptionSync = () => {
     return d.syncStatus === filterStatus;
   });
 
-  const getSyncBadge = (status: 'synced' | 'desync' | 'no_stripe' | 'incomplete') => {
+  const getSyncBadge = (status: 'synced' | 'desync' | 'no_stripe' | 'incomplete' | 'legacy_pending') => {
     switch (status) {
       case 'synced':
         return (
@@ -178,6 +192,13 @@ const AdminSubscriptionSync = () => {
           <Badge className="bg-amber-500 text-xs">
             <AlertTriangle className="w-3 h-3 mr-1" />
             Désynchronisé
+          </Badge>
+        );
+      case 'legacy_pending':
+        return (
+          <Badge className="bg-orange-500 text-xs">
+            <RefreshCw className="w-3 h-3 mr-1" />
+            Migration requise
           </Badge>
         );
       case 'no_stripe':
@@ -225,6 +246,24 @@ const AdminSubscriptionSync = () => {
           </Button>
         </div>
 
+        {/* Alerte si chauffeurs legacy en attente de migration */}
+        {stats && stats.legacyPending > 0 && (
+          <div className="mb-4 p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
+            <div className="flex items-start gap-2">
+              <RefreshCw className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-orange-700 dark:text-orange-400">
+                  {stats.legacyPending} chauffeur(s) en attente de migration Stripe
+                </p>
+                <p className="text-sm text-orange-600 dark:text-orange-300">
+                  Ces chauffeurs étaient enregistrés sur l'ancien compte Stripe. 
+                  À la fin de leur période d'essai, ils devront re-souscrire avec leurs informations bancaires.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Alerte si désynchronisations */}
         {stats && stats.desync > 0 && (
           <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
@@ -255,7 +294,7 @@ const AdminSubscriptionSync = () => {
         )}
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
           <Card 
             className={`p-3 cursor-pointer transition-all ${filterStatus === 'synced' ? 'ring-2 ring-emerald-500' : ''}`}
             onClick={() => setFilterStatus(filterStatus === 'synced' ? 'all' : 'synced')}
@@ -301,6 +340,18 @@ const AdminSubscriptionSync = () => {
               <div>
                 <p className="text-lg font-bold">{stats?.incomplete}</p>
                 <p className="text-xs text-muted-foreground">Incomplets</p>
+              </div>
+            </div>
+          </Card>
+          <Card 
+            className={`p-3 cursor-pointer transition-all ${filterStatus === 'legacy_pending' ? 'ring-2 ring-orange-500' : ''}`}
+            onClick={() => setFilterStatus(filterStatus === 'legacy_pending' ? 'all' : 'legacy_pending')}
+          >
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-orange-500" />
+              <div>
+                <p className="text-lg font-bold">{stats?.legacyPending}</p>
+                <p className="text-xs text-muted-foreground">Migration</p>
               </div>
             </div>
           </Card>

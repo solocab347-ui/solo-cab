@@ -111,7 +111,7 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id, created_at")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id, created_at, is_legacy_stripe, migration_required, migrated_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -132,6 +132,15 @@ export const ProtectedRoute = ({
       const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
         driver.free_access_end_date && 
         new Date(driver.free_access_end_date) > new Date();
+
+      // CRITICAL: Vérifier si le chauffeur est un legacy qui nécessite une migration
+      // Ces chauffeurs avaient un compte Stripe sur l'ancien compte, ils doivent re-souscrire
+      if (driver.is_legacy_stripe && driver.migration_required && !driver.migrated_at) {
+        logger.info("Chauffeur legacy - migration Stripe requise");
+        setDriverStatus("legacy_migration_required");
+        setCheckingDriver(false);
+        return;
+      }
 
       // CRITICAL: Pour les pionniers, vérifier s'ils ont un stripe_customer_id
       // S'ils n'en ont pas, ils doivent finaliser le paiement
@@ -216,6 +225,15 @@ export const ProtectedRoute = ({
   if (requireCompanyEmployee && isCompanyEmployeeChecked && authIsCompanyEmployee === false) {
     // Rediriger vers le client dashboard s'il n'est pas un vrai collaborateur
     return <Navigate to="/client-dashboard" replace />;
+  }
+
+  // Rediriger les chauffeurs legacy vers la page de migration
+  if (
+    requireValidatedDriver &&
+    userRole === "driver" &&
+    driverStatus === "legacy_migration_required"
+  ) {
+    return <Navigate to="/chauffeur/migration" replace />;
   }
 
   // Rediriger les pionniers sans paiement finalisé vers la page de paiement Pioneer
