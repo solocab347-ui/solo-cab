@@ -17,6 +17,8 @@ import { NotificationPermissionPrompt } from "@/components/NotificationPermissio
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
+import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
+import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 
 // Eager load public pages
 import Index from "./pages/Index";
@@ -76,20 +78,22 @@ const App = () => (
     <GlobalSecurityProvider>
       <BrowserRouter>
         <AuthProvider>
-          <PWABannerProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              
-              <PWAInstallBanner />
-              <PushNotificationListener />
-              <NotificationPermissionPrompt />
-              <EmergencyReset />
-              <ConnectionIndicator />
-              <OfflineSyncIndicator />
-              <ErrorBoundary>
-              <Routes>
-              <Route path="/" element={<Index />} />
+          <MaintenanceProvider>
+            <PWABannerProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                
+                <PWAInstallBanner />
+                <PushNotificationListener />
+                <NotificationPermissionPrompt />
+                <EmergencyReset />
+                <ConnectionIndicator />
+                <OfflineSyncIndicator />
+                <MaintenanceGuard>
+                <ErrorBoundary>
+                <Routes>
+                <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/chauffeurs" element={<Chauffeurs />} />
               <Route path="/devenir-chauffeur" element={<ChauffeurLanding />} />
@@ -334,9 +338,11 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ErrorBoundary>
+            </MaintenanceGuard>
             <SafeModeIndicator />
           </TooltipProvider>
           </PWABannerProvider>
+          </MaintenanceProvider>
         </AuthProvider>
       </BrowserRouter>
     </GlobalSecurityProvider>
