@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, FileText, Clock, AlertTriangle } from "lucide-react";
+import { CheckCircle, Loader2, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -195,9 +195,9 @@ const RegistrationSuccess = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8 bg-white text-gray-900">
+      <Card className="w-full max-w-lg p-8 bg-white text-gray-900">
         {loading ? (
-          <>
+          <div className="text-center">
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Validation du paiement...
@@ -205,106 +205,44 @@ const RegistrationSuccess = () => {
             <p className="text-gray-600">
               Veuillez patienter quelques instants
             </p>
-          </>
+          </div>
         ) : error ? (
-          <>
+          <div className="text-center">
             <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-12 h-12 text-red-500" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
               Erreur de validation
             </h1>
-            <p className="text-lg text-gray-700 mb-6">
+            <p className="text-gray-700 mb-6">
               {error}
             </p>
             <Button
               onClick={() => navigate("/login")}
-              className="w-full h-12 text-lg"
+              className="w-full h-12"
             >
               Retour à la page de connexion
             </Button>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="text-center">
             <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Inscription réussie !
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Paiement validé !
             </h1>
-            <p className="text-lg text-gray-700 mb-6">
-              Votre paiement a été validé avec succès.
+            <p className="text-gray-600 mb-6">
+              Redirection vers la configuration de votre espace...
             </p>
-            {/* Documents section */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <FileText className="w-6 h-6 text-amber-600" />
-                <h2 className="text-xl font-bold text-gray-900">
-                  Documents requis
-                </h2>
-              </div>
-              <p className="text-gray-700 mb-4">
-                Vous avez <strong>7 jours</strong> pour soumettre vos documents professionnels via votre espace personnel.
-                Passé ce délai, votre accès sera temporairement bloqué jusqu'à l'envoi de vos documents.
-              </p>
-              <ul className="text-left text-sm text-gray-700 space-y-2">
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Carte professionnelle VTC</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Permis de conduire</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Pièce d'identité</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Carte grise du véhicule</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Attestation d'assurance RC Pro VTC</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                  <span>Extrait Kbis ou INSEE</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Prochaines étapes */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Prochaines étapes
-              </h2>
-              <p className="text-gray-700 mb-4">
-                Une fois vos documents soumis, notre équipe les vérifiera et validera votre compte.
-              </p>
-              <ul className="text-left text-sm text-gray-700 space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Connectez-vous à votre espace</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Téléchargez vos documents dans "Outils &gt; Mes Documents"</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Validation sous 24-48h après soumission</span>
-                </li>
-              </ul>
-            </div>
             <Button
-              onClick={() => navigate("/login")}
-              className="w-full h-12 text-lg"
+              onClick={() => navigate(`/driver-welcome?driver_id=${driverId}&pioneer=false`)}
+              className="w-full h-12"
             >
-              Aller à la page de connexion
+              Continuer
+              <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
-          </>
+          </div>
         )}
       </Card>
     </div>
