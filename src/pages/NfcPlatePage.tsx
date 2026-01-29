@@ -33,14 +33,17 @@ import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
 type PlateType = "premium" | "standard";
 type PurchaseMode = "with_subscription" | "plate_only";
 
+// MODE TEST: Prix à 0.50€
+const TEST_MODE_PRICING = true;
+
 const PLATES = {
   premium: {
     name: "Plaque NFC Premium",
     subtitle: "Plastique noir mat",
     format: "Format carte de visite",
     material: "Plastique",
-    price: 29.99,
-    promoPrice: 23.99,
+    price: TEST_MODE_PRICING ? 0.50 : 29.99,
+    promoPrice: TEST_MODE_PRICING ? 0.50 : 23.99,
     image: nfcPlateLarge,
     features: [
       "Finition noir mat premium",
@@ -55,8 +58,8 @@ const PLATES = {
     subtitle: "Bois naturel écologique",
     format: "Format ovale compact",
     material: "Bois naturel",
-    price: 14.99,
-    promoPrice: 11.99,
+    price: TEST_MODE_PRICING ? 0.50 : 14.99,
+    promoPrice: TEST_MODE_PRICING ? 0.50 : 11.99,
     image: nfcPlateSmall,
     features: [
       "Design naturel",
