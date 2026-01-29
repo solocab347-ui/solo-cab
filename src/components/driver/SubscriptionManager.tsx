@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy, Loader2 } from "lucide-react";
+import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy, Loader2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
@@ -555,11 +555,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </div>
       </Card>
 
-      {/* Section Gestion d'abonnement - Très visible et séparée */}
-      {(isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue) && driverProfile?.driver?.stripe_customer_id && (
+      {/* Section Gestion d'abonnement - Affichée si stripe customer existe OU en essai */}
+      {driverProfile?.driver?.stripe_customer_id ? (
         <SubscriptionManagementCard
           userType="driver"
-          hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
+          hasStripeCustomer={true}
           isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
           nextBillingDate={driverProfile?.driver?.subscription_end_date}
           nextBillingAmount={9.99}
@@ -572,7 +572,41 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           }}
           onAfterManage={onSubscriptionUpdate}
         />
-      )}
+      ) : (isInTrialPeriod || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0)) ? (
+        /* Info pour les utilisateurs en essai sans Stripe Customer ID */
+        <Card className="p-4 sm:p-6 bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-blue-500/20 rounded-xl">
+              <Settings className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">
+                Gestion de l'abonnement
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Disponible après votre période d'essai
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Une fois votre période d'essai terminée et votre abonnement actif, vous pourrez ici :
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+              Modifier votre carte bancaire
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+              Consulter vos factures
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+              Gérer ou résilier votre abonnement
+            </li>
+          </ul>
+        </Card>
+      ) : null}
 
       {/* Comparison - Updated for pioneers */}
       {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && !isPioneer && (
