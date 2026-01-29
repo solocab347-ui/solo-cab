@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -17,11 +17,16 @@ import {
   Rocket,
   CheckCircle2,
   Clock,
-  Info
+  Info,
+  Loader2,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/lib/productionLogger";
 
 const FEATURES = [
   {
@@ -74,13 +79,115 @@ const FEATURES = [
   }
 ];
 
+type VerificationStatus = "checking" | "verified" | "failed" | "timeout";
+
 const DriverWelcome = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("checking");
+  const [checkCount, setCheckCount] = useState(0);
+  const [manualCheckLoading, setManualCheckLoading] = useState(false);
   
   const isPioneer = searchParams.get("pioneer") === "true";
   const driverId = searchParams.get("driver_id");
+  const sessionId = searchParams.get("session_id");
+
+  const MAX_CHECKS = 15; // 15 tentatives x 2s = 30 secondes max
+  const CHECK_INTERVAL = 2000; // 2 secondes
+
+  // Vérification du paiement dans la DB
+  const checkPaymentStatus = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data: driver, error } = await supabase
+        .from("drivers")
+        .select("subscription_paid, stripe_customer_id, subscription_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        logger.error("Erreur vérification paiement", { error });
+        return false;
+      }
+
+      // Paiement confirmé si subscription_paid = true OU stripe_customer_id présent
+      const isPaid = driver?.subscription_paid === true || 
+                     (driver?.stripe_customer_id && driver?.subscription_status === "active");
+      
+      logger.info("Vérification paiement", { 
+        isPaid, 
+        subscription_paid: driver?.subscription_paid,
+        stripe_customer_id: !!driver?.stripe_customer_id,
+        status: driver?.subscription_status
+      });
+
+      return isPaid;
+    } catch (err) {
+      logger.error("Exception vérification paiement", { err });
+      return false;
+    }
+  }, [user]);
+
+  // Appeler l'edge function pour forcer une vérification Stripe
+  const forceStripeCheck = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-driver-subscription");
+      
+      if (error) {
+        logger.error("Erreur check-driver-subscription", { error });
+        return false;
+      }
+
+      return data?.subscribed === true || data?.subscription_status === "active";
+    } catch (err) {
+      logger.error("Exception check-driver-subscription", { err });
+      return false;
+    }
+  }, []);
+
+  // Boucle de vérification du paiement
+  useEffect(() => {
+    if (!user || verificationStatus !== "checking") return;
+
+    const verify = async () => {
+      // D'abord vérifier en DB
+      let isPaid = await checkPaymentStatus();
+      
+      // Si pas payé en DB, forcer une vérification Stripe
+      if (!isPaid) {
+        isPaid = await forceStripeCheck();
+        // Re-vérifier en DB après l'appel Stripe
+        if (!isPaid) {
+          isPaid = await checkPaymentStatus();
+        }
+      }
+
+      if (isPaid) {
+        setVerificationStatus("verified");
+        logger.info("✅ Paiement confirmé !");
+        return;
+      }
+
+      setCheckCount(prev => prev + 1);
+      
+      if (checkCount >= MAX_CHECKS) {
+        setVerificationStatus("timeout");
+        logger.warn("Timeout vérification paiement");
+      }
+    };
+
+    // Premier check immédiat, puis toutes les 2 secondes
+    if (checkCount === 0) {
+      verify();
+    }
+
+    const intervalId = setInterval(verify, CHECK_INTERVAL);
+    
+    return () => clearInterval(intervalId);
+  }, [user, checkCount, verificationStatus, checkPaymentStatus, forceStripeCheck]);
 
   // Animation des fonctionnalités
   useEffect(() => {
@@ -90,11 +197,104 @@ const DriverWelcome = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleManualCheck = async () => {
+    setManualCheckLoading(true);
+    
+    // Forcer une synchro avec Stripe
+    const isPaid = await forceStripeCheck();
+    
+    if (isPaid) {
+      setVerificationStatus("verified");
+    } else {
+      // Réinitialiser le compteur pour réessayer
+      setCheckCount(0);
+      setVerificationStatus("checking");
+    }
+    
+    setManualCheckLoading(false);
+  };
+
   const handleContinueOnboarding = () => {
-    // Continuer le tunnel d'onboarding
     navigate("/driver-dashboard");
   };
 
+  const handleRetryPayment = () => {
+    navigate("/register-driver");
+  };
+
+  // État de vérification en cours
+  if (verificationStatus === "checking") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center space-y-6 p-8">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 mx-auto"
+          >
+            <Loader2 className="w-20 h-20 text-amber-400" />
+          </motion.div>
+          <h2 className="text-2xl font-bold">Vérification du paiement...</h2>
+          <p className="text-white/70 max-w-md">
+            Nous confirmons votre paiement avec Stripe. Cela peut prendre quelques secondes.
+          </p>
+          <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
+            <Clock className="w-4 h-4" />
+            <span>Tentative {checkCount + 1} / {MAX_CHECKS}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Timeout - paiement non trouvé
+  if (verificationStatus === "timeout" || verificationStatus === "failed") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center p-4">
+        <Card className="max-w-md p-8 bg-slate-800/50 border-amber-500/30 text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-amber-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Paiement en attente</h2>
+          <p className="text-white/70">
+            Nous n'avons pas encore reçu la confirmation de votre paiement. 
+            Si vous avez bien effectué le paiement, cliquez sur "Vérifier à nouveau".
+          </p>
+          <div className="space-y-3">
+            <Button 
+              onClick={handleManualCheck}
+              disabled={manualCheckLoading}
+              className="w-full bg-amber-500 hover:bg-amber-600"
+            >
+              {manualCheckLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Vérification...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Vérifier à nouveau
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={handleRetryPayment}
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+            >
+              Recommencer le paiement
+            </Button>
+          </div>
+          <p className="text-white/50 text-xs">
+            Si le problème persiste, contactez notre support à support@solocab.fr
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Paiement vérifié - afficher la page de bienvenue
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
       {/* Background effects */}
@@ -176,7 +376,7 @@ const DriverWelcome = () => {
           </Card>
         </motion.div>
 
-        {/* Prochaines étapes - NOUVEAU */}
+        {/* Prochaines étapes */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -281,7 +481,7 @@ const DriverWelcome = () => {
           </div>
         </motion.div>
 
-        {/* CTA Button - Un seul bouton */}
+        {/* CTA Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
