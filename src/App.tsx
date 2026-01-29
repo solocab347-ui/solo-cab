@@ -48,6 +48,10 @@ import TrackNfcOrder from "./pages/TrackNfcOrder";
 import Tarifs from "./pages/Tarifs";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 
+// Legacy migration pages
+const LegacyMigration = lazy(() => import("./pages/chauffeur/LegacyMigration"));
+const MigrationSuccess = lazy(() => import("./pages/chauffeur/MigrationSuccess"));
+
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
@@ -186,6 +190,27 @@ const App = () => (
               <Route
                 path="/driver-pending-validation"
                 element={<Navigate to="/driver-dashboard" replace />}
+              />
+              {/* Routes de migration legacy Stripe */}
+              <Route
+                path="/chauffeur/migration"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <LegacyMigration />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chauffeur/migration-success"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <MigrationSuccess />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/client-dashboard"
