@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -11,13 +11,16 @@ import {
   Sparkles,
   CheckCircle2,
   Loader2,
-  CreditCard
+  CreditCard,
+  Save
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingCompleteStep } from './OnboardingCompleteStep';
+import { OnboardingAIAssistant } from './OnboardingAIAssistant';
+import { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/logo-solocab.png';
@@ -47,6 +50,7 @@ export function DriverOnboardingTunnel({
 }: OnboardingTunnelProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [saving, setSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [stepData, setStepData] = useState({
@@ -100,12 +104,44 @@ export function DriverOnboardingTunnel({
     nfc: true, // Toujours "complétable" car optionnel
   });
 
+  // Auto-save hook
+  const { autoSave, saveImmediately } = useOnboardingAutoSave(driverId, userId, currentStep);
+
   // Scroll to top when step changes
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentStep]);
+
+  // Auto-save on data changes (for settings and profile steps)
+  useEffect(() => {
+    if (currentStep === 0 || currentStep === 1) {
+      setAutoSaveStatus('saving');
+      autoSave(stepData, currentStep);
+      
+      // Show "saved" status after debounce delay
+      const timeout = setTimeout(() => {
+        setAutoSaveStatus('saved');
+        // Reset to idle after showing "saved"
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      }, 2500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [stepData, currentStep, autoSave]);
+
+  // Save on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentStep === 0 || currentStep === 1) {
+        saveImmediately(stepData, currentStep);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [stepData, currentStep, saveImmediately]);
 
   // Validation de chaque étape - SIMPLIFIÉE pour réduire les abandons
   const isSettingsValid = () => {
@@ -366,10 +402,22 @@ export function DriverOnboardingTunnel({
             <img src={logo} alt="SoloCab" className="h-8 mx-auto" />
           </div>
           
-          {/* Title */}
-          <h1 className="text-lg font-bold text-center">Configuration de votre espace</h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-lg font-bold text-center">Configuration de votre espace</h1>
+            {/* Auto-save indicator */}
+            {autoSaveStatus === 'saving' && (
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin" />
+              </span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className="flex items-center gap-1 text-[10px] text-primary">
+                <Save className="w-3 h-3" />
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground text-xs text-center mt-0.5">
-            Complétez ces étapes pour démarrer votre activité
+            Vos données sont sauvegardées automatiquement
           </p>
 
           {/* Progress */}
@@ -444,6 +492,13 @@ export function DriverOnboardingTunnel({
               </div>
             </div>
           </div>
+
+          {/* AI Assistant */}
+          <OnboardingAIAssistant
+            currentStep={currentStep}
+            stepData={stepData}
+            driverName={driverProfile?.full_name || 'Chauffeur'}
+          />
 
           {/* Step Content */}
           <AnimatePresence mode="wait">

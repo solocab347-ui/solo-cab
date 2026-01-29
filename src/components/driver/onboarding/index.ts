@@ -5,3 +5,5 @@ export { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 export { OnboardingNfcStep } from './OnboardingNfcStep';
 export { OnboardingCompleteStep } from './OnboardingCompleteStep';
 export { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
+export { OnboardingAIAssistant } from './OnboardingAIAssistant';
+export { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
