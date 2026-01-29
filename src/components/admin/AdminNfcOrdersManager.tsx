@@ -227,7 +227,7 @@ const AdminNfcOrdersManager = () => {
     pendingAddress: orders.filter((o) => o.delivery_status === "pending_address" && o.payment_status === "paid").length,
     shipped: orders.filter((o) => o.delivery_status === "shipped").length,
     delivered: orders.filter((o) => o.delivery_status === "delivered").length,
-    revenue: orders.filter((o) => o.payment_status === "paid").reduce((acc, o) => acc + Number(o.amount), 0),
+    revenue: orders.filter((o) => o.payment_status === "paid").reduce((acc, o) => acc + Number(o.amount), 0) / 100, // Convertir centimes en euros
   };
 
   if (loading) {
