@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_token_cache: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       assistant_requests: {
         Row: {
           admin_id: string | null
@@ -10226,6 +10250,36 @@ export type Database = {
           },
         ]
       }
+      geocoding_cache: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          query_hash: string
+          query_text: string
+          query_type: string
+          result: Json
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          query_hash: string
+          query_text: string
+          query_type?: string
+          result: Json
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          query_hash?: string
+          query_text?: string
+          query_type?: string
+          result?: Json
+        }
+        Relationships: []
+      }
       guest_registration_tokens: {
         Row: {
           course_id: string | null
@@ -12710,6 +12764,27 @@ export type Database = {
           request_count?: number | null
           updated_at?: string
           window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_state: {
+        Row: {
+          api_key: string
+          last_request: string | null
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          api_key: string
+          last_request?: string | null
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          api_key?: string
+          last_request?: string | null
+          request_count?: number | null
+          window_start?: string | null
         }
         Relationships: []
       }
@@ -15580,6 +15655,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      cleanup_geocoding_cache: { Args: never; Returns: undefined }
       cleanup_old_security_logs: { Args: never; Returns: undefined }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }

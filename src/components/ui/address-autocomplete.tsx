@@ -21,6 +21,10 @@ interface AddressAutocompleteProps {
   disabled?: boolean;
 }
 
+// Cache local pour éviter les appels répétés
+const localCache = new Map<string, { data: AddressSuggestion[], timestamp: number }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export const AddressAutocomplete = ({
   value,
   onChange,
@@ -32,25 +36,8 @@ export const AddressAutocomplete = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout>();
   const wrapperRef = useRef<HTMLDivElement>(null);
-
-  // Fetch Mapbox token on mount
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-        if (error) throw error;
-        if (data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (error) {
-        console.error("Error fetching Mapbox token:", error);
-      }
-    };
-    fetchToken();
-  }, []);
 
   useEffect(() => {
     setInputValue(value);
@@ -83,47 +70,55 @@ export const AddressAutocomplete = ({
         isFamous: true
       }));
 
-      // If we have famous place matches, prioritize them
+      // Si on a des lieux célèbres, les afficher immédiatement
       if (famousSuggestions.length > 0) {
-        // Still fetch Mapbox for additional suggestions, but only if query is long enough
-        if (query.length >= 3 && mapboxToken) {
-          const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-              query
-            )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=3&types=address,place,locality`
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            const mapboxSuggestions = data.features || [];
-            // Combine: famous places first, then Mapbox results
-            setSuggestions([...famousSuggestions, ...mapboxSuggestions]);
-          } else {
-            // Only show famous places if Mapbox fails
-            setSuggestions(famousSuggestions);
-          }
-        } else {
-          // Query too short for Mapbox, only show famous places
-          setSuggestions(famousSuggestions);
-        }
-      } else if (query.length >= 3 && mapboxToken) {
-        // No famous places matched, use Mapbox normally
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            query
-          )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=5&types=address,place,locality`
-        );
-
-        if (!response.ok) throw new Error("Geocoding failed");
-
-        const data = await response.json();
-        setSuggestions(data.features || []);
-      } else {
-        // Query too short and no famous places
-        setSuggestions([]);
+        setSuggestions(famousSuggestions);
+        setShowSuggestions(true);
       }
 
-      setShowSuggestions(true);
+      // Pour les requêtes >= 3 caractères, chercher aussi via l'API
+      if (query.length >= 3) {
+        // Vérifier le cache local d'abord
+        const cacheKey = `address:${query.toLowerCase().trim()}`;
+        const cached = localCache.get(cacheKey);
+        
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          console.log("📍 Cache local HIT pour:", query);
+          const combined = [...famousSuggestions, ...cached.data.filter(s => !s.isFamous)];
+          setSuggestions(combined);
+          setShowSuggestions(combined.length > 0);
+          return;
+        }
+
+        // Utiliser l'edge function avec cache en DB
+        const { data, error } = await supabase.functions.invoke("geocode-cached", {
+          body: { query, type: 'address' }
+        });
+
+        if (!error && data?.features) {
+          const apiSuggestions = data.features || [];
+          console.log(`📍 Address suggestions: ${apiSuggestions.length} (cached: ${data?.cached || false})`);
+          
+          // Sauvegarder dans le cache local
+          localCache.set(cacheKey, { data: apiSuggestions, timestamp: Date.now() });
+          
+          // Combiner: lieux célèbres d'abord, puis résultats API
+          const combined = [...famousSuggestions, ...apiSuggestions];
+          setSuggestions(combined);
+          setShowSuggestions(combined.length > 0);
+        } else if (famousSuggestions.length === 0) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } else if (famousSuggestions.length === 0) {
+        // Query trop courte et pas de lieux célèbres
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+
+      if (famousSuggestions.length > 0 || query.length >= 3) {
+        setShowSuggestions(true);
+      }
     } catch (error) {
       console.error("Error fetching address suggestions:", error);
       setSuggestions([]);
@@ -143,7 +138,7 @@ export const AddressAutocomplete = ({
 
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 300);
+    }, 350); // Augmenté pour réduire les appels
   };
 
   const handleSelectSuggestion = useCallback((suggestion: AddressSuggestion) => {
