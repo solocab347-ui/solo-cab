@@ -15,7 +15,8 @@ import {
   HeadphonesIcon,
   Wrench,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  FolderOpen
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
@@ -26,6 +27,7 @@ import AdminSupportHub from "@/components/admin/hubs/AdminSupportHub";
 import AdminTechHub from "@/components/admin/hubs/AdminTechHub";
 import AdminCommunicationsHub from "@/components/admin/hubs/AdminCommunicationsHub";
 import AdminSettingsHub from "@/components/admin/hubs/AdminSettingsHub";
+import AdminDocumentsHub from "@/components/admin/hubs/AdminDocumentsHub";
 import { CongressRegistrationsTab } from "@/components/admin/CongressRegistrationsTab";
 
 const AdminDashboard = () => {
@@ -89,6 +91,7 @@ const AdminDashboard = () => {
   const menuItems = [
     { id: "home", label: "Accueil", icon: Home, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
     { id: "users", label: "Utilisateurs", icon: Users, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+    { id: "documents", label: "Documents", icon: FolderOpen, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
     { id: "subscriptions", label: "Abonnements", icon: Activity, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
     { id: "congress", label: "Congrès", icon: Crown, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
     { id: "support", label: "Support", icon: HeadphonesIcon, color: "bg-red-500/10 text-red-600 dark:text-red-400" },
@@ -103,6 +106,8 @@ const AdminDashboard = () => {
         return <AdminHomeHub />;
       case "users":
         return <AdminUsersHub />;
+      case "documents":
+        return <AdminDocumentsHub />;
       case "subscriptions":
         return <AdminSubscriptionsHub />;
       case "congress":
