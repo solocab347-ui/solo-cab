@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCheck, Activity, DollarSign, TrendingUp, Gift, CreditCard, Building2, Truck, Crown, Clock, RefreshCw } from "lucide-react";
+import { Users, UserCheck, Activity, DollarSign, TrendingUp, Gift, CreditCard, Building2, Truck, Crown, Clock, RefreshCw, CalendarDays, Eye, Car, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -36,8 +36,19 @@ interface PlatformStats {
   accepted_devis: number;
 }
 
+interface DailyStats {
+  drivers_today: number;
+  clients_today: number;
+  exclusive_clients_today: number;
+  free_clients_today: number;
+  revenue_today: number;
+  courses_today: number;
+  completed_courses_today: number;
+}
+
 const AdminOverview = () => {
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,13 +58,21 @@ const AdminOverview = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc("get_platform_stats");
       
-      if (error) throw error;
+      // Fetch both platform stats and daily stats in parallel
+      const [platformResult, dailyResult] = await Promise.all([
+        supabase.rpc("get_platform_stats"),
+        supabase.rpc("get_daily_stats")
+      ]);
       
-      // Cast the JSON result to our interface
-      const statsData = data as unknown as PlatformStats;
+      if (platformResult.error) throw platformResult.error;
+      if (dailyResult.error) throw dailyResult.error;
+      
+      const statsData = platformResult.data as unknown as PlatformStats;
+      const dailyData = dailyResult.data as unknown as DailyStats;
+      
       setStats(statsData);
+      setDailyStats(dailyData);
     } catch (error) {
       console.error("Error fetching stats:", error);
       toast.error("Erreur lors du chargement des statistiques");
@@ -94,6 +113,97 @@ const AdminOverview = () => {
           Actualiser
         </Button>
       </div>
+
+      {/* STATISTIQUES DU JOUR - Section prioritaire */}
+      {dailyStats && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <CalendarDays className="w-5 h-5 text-primary" />
+            Statistiques du Jour
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {/* Chauffeurs inscrits aujourd'hui */}
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Chauffeurs inscrits</CardTitle>
+                <Car className="h-5 w-5 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-700 dark:text-blue-400">
+                  {dailyStats.drivers_today}
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                  Aujourd'hui
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Clients inscrits aujourd'hui */}
+            <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Clients inscrits</CardTitle>
+                <UserPlus className="h-5 w-5 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+                  {dailyStats.clients_today}
+                </div>
+                <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
+                  {dailyStats.exclusive_clients_today} exclusifs, {dailyStats.free_clients_today} libres
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Chiffre d'affaires du jour */}
+            <Card className="bg-gradient-to-br from-green-50 to-lime-50 dark:from-green-950/20 dark:to-lime-950/20 border-green-200 dark:border-green-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">CA du jour</CardTitle>
+                <DollarSign className="h-5 w-5 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-700 dark:text-green-400">
+                  {(dailyStats.revenue_today / 100).toFixed(2)}€
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  {dailyStats.completed_courses_today} courses terminées
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Courses du jour */}
+            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Courses du jour</CardTitle>
+                <Activity className="h-5 w-5 text-amber-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">
+                  {dailyStats.courses_today}
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                  Total aujourd'hui
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Visites du site - Placeholder */}
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Visites solocab.fr</CardTitle>
+                <Eye className="h-5 w-5 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-700 dark:text-purple-400">
+                  —
+                </div>
+                <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
+                  Connecter un outil analytics
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Statistiques d'abonnements - PRIORITÉ #1 */}
       <div>
