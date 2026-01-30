@@ -16749,6 +16749,7 @@ export type Database = {
           queue_id: string
         }[]
       }
+      update_devis_tva: { Args: never; Returns: undefined }
       validate_driver_numbering: {
         Args: { _driver_id: string }
         Returns: {
