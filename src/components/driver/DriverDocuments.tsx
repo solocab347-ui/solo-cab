@@ -31,6 +31,12 @@ interface DocumentInfo {
   name: string;
   url: string;
   uploadedAt: string;
+  validated?: boolean;
+  validatedAt?: string;
+  rejected?: boolean;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  isLocked?: boolean;
 }
 
 interface DocumentsData {
@@ -389,21 +395,45 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
                 className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-3"
               >
                 <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0">
-                  {uploadedDoc ? (
+                  {uploadedDoc?.validated ? (
                     <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0 mt-0.5 sm:mt-0" />
+                  ) : uploadedDoc?.rejected ? (
+                    <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive flex-shrink-0 mt-0.5 sm:mt-0" />
+                  ) : uploadedDoc ? (
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0 mt-0.5 sm:mt-0" />
                   ) : (
                     <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0 mt-0.5 sm:mt-0" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-sm sm:text-base truncate">{doc.label}</p>
-                      {(doc as any).optional && (
+                      {uploadedDoc?.validated && (
+                        <Badge className="text-[10px] sm:text-xs bg-success text-success-foreground flex-shrink-0">
+                          Validé
+                        </Badge>
+                      )}
+                      {uploadedDoc?.rejected && (
+                        <Badge variant="destructive" className="text-[10px] sm:text-xs flex-shrink-0">
+                          Rejeté
+                        </Badge>
+                      )}
+                      {uploadedDoc && !uploadedDoc.validated && !uploadedDoc.rejected && (
+                        <Badge className="text-[10px] sm:text-xs bg-amber-500 text-white flex-shrink-0">
+                          En attente
+                        </Badge>
+                      )}
+                      {(doc as any).optional && !uploadedDoc && (
                         <Badge variant="outline" className="text-[10px] sm:text-xs bg-muted/50 flex-shrink-0">
                           Optionnel
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">{doc.description}</p>
+                    {uploadedDoc?.rejected && uploadedDoc.rejectionReason && (
+                      <p className="text-xs text-destructive mt-1">
+                        ❌ {uploadedDoc.rejectionReason}
+                      </p>
+                    )}
                     {uploadedDoc && (
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                         Téléchargé le {format(new Date(uploadedDoc.uploadedAt), "dd/MM/yyyy")}

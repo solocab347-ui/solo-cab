@@ -9,7 +9,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCallback, useMemo } from 'react';
 
-// Helper pour calculer le statut d'accès de manière synchrone
+/**
+ * Helper pour calculer le statut d'accès de manière synchrone
+ * 
+ * RÈGLE D'ACCÈS STRICT:
+ * 1. Inscription + Paiement → Accès UNIQUEMENT aux documents
+ * 2. Documents soumis → En attente de validation admin (toujours accès documents seulement)
+ * 3. Documents VALIDÉS par admin → Accès complet au dashboard
+ * 
+ * L'accès complet est CONDITIONNÉ à la validation admin des documents
+ */
 const calculateAccessStatus = (driver: any) => {
   if (!driver) {
     return {
@@ -21,6 +30,8 @@ const calculateAccessStatus = (driver: any) => {
       pioneerTrialDaysLeft: 0,
       isDocumentsBlocked: false,
       documentsAccessOnly: false,
+      documentsStatus: 'pending',
+      awaitingDocumentValidation: false,
     };
   }
 
@@ -49,21 +60,38 @@ const calculateAccessStatus = (driver: any) => {
     driver.free_access_type === "unlimited" ||
     freeAccessWithPeriod;
 
-  // Vérifier si l'accès est bloqué à cause des documents non soumis
+  // Statut des documents
+  const documentsStatus = driver.documents_status || 'pending';
+  
+  // RÈGLE STRICTE: Documents doivent être VALIDÉS par admin pour avoir accès complet
+  // "submitted" = en attente de validation = PAS d'accès complet
+  const documentsValidated = documentsStatus === 'validated';
+  
+  // Vérifier si documents bloqués explicitement OU si documents non validés
   const isDocumentsBlocked = driver.documents_access_blocked === true;
   
-  // Si documents bloqués, l'utilisateur n'a accès qu'aux documents et abonnement
-  const documentsAccessOnly = isDocumentsBlocked && 
-    driver.documents_status !== "submitted" && 
-    driver.documents_status !== "validated";
+  // L'utilisateur n'a accès qu'aux documents et abonnement SI:
+  // - Blocage explicite (deadline dépassée) ET documents non soumis/validés
+  // - OU documents non encore validés par l'admin (même s'ils sont soumis)
+  const documentsAccessOnly = 
+    (isDocumentsBlocked && documentsStatus !== "submitted" && documentsStatus !== "validated") ||
+    (!documentsValidated && !driver.is_fleet_driver); // Les chauffeurs de flotte sont exemptés
+  
+  // En attente de validation = documents soumis mais pas encore validés
+  const awaitingDocumentValidation = documentsStatus === 'submitted';
 
-  const hasFullAccess = !documentsAccessOnly && (
+  // ACCÈS COMPLET = Documents validés + (abonnement actif OU période de grâce OU accès gratuit)
+  // Les chauffeurs de flotte sont exemptés de la validation documents
+  const hasPaymentAccess = 
     driver.subscription_status === "active" ||
     driver.subscription_paid === true ||
     isInGracePeriod ||
     isPioneerTrialActive ||
-    hasFreeAccess
-  );
+    hasFreeAccess;
+  
+  const hasFullAccess = 
+    (documentsValidated && hasPaymentAccess) || 
+    driver.is_fleet_driver; // Exemption chauffeurs de flotte
 
   return {
     hasFullAccess,
@@ -73,7 +101,9 @@ const calculateAccessStatus = (driver: any) => {
     gracePeriodDaysLeft,
     pioneerTrialDaysLeft,
     isDocumentsBlocked,
-    documentsAccessOnly,
+    documentsAccessOnly: !hasFullAccess && !driver.is_fleet_driver,
+    documentsStatus,
+    awaitingDocumentValidation,
   };
 };
 

@@ -335,12 +335,30 @@ export const AdminDriverDocumentsManagement = () => {
       if (error) throw error;
 
       if (allValidated) {
+        // Notification in-app
         await notificationService.notifySuccess(
           driver.user_id,
           "✅ Documents validés",
-          "Tous vos documents ont été validés. Votre inscription est complète !",
+          "Tous vos documents ont été validés. Votre compte est maintenant actif !",
           "/driver-dashboard"
         );
+        
+        // Envoyer email de validation
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch(`${supabaseUrl}/functions/v1/send-driver-validation-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`
+            },
+            body: JSON.stringify({ driver_id: driver.id, action: 'validated' })
+          });
+        } catch (emailError) {
+          console.error("Error sending validation email:", emailError);
+          // Continue even if email fails
+        }
       }
 
       toast.success(`${DOCUMENT_CONFIG[docKey]?.label} validé${config.canUpdateAfterValidation ? "" : " et verrouillé"}`);
@@ -377,14 +395,31 @@ export const AdminDriverDocumentsManagement = () => {
 
       if (error) throw error;
 
+      // Notification in-app
       await notificationService.notifySuccess(
         driver.user_id,
         "✅ Documents validés",
-        "Tous vos documents ont été validés. Votre inscription est complète !",
+        "Tous vos documents ont été validés. Votre compte est maintenant actif !",
         "/driver-dashboard"
       );
+      
+      // Envoyer email de validation
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(`${supabaseUrl}/functions/v1/send-driver-validation-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({ driver_id: driver.id, action: 'validated' })
+        });
+      } catch (emailError) {
+        console.error("Error sending validation email:", emailError);
+      }
 
-      toast.success("Tous les documents validés");
+      toast.success("Tous les documents validés - Email envoyé");
       fetchDrivers();
     } catch (error) {
       console.error("Error validating all:", error);
@@ -420,14 +455,36 @@ export const AdminDriverDocumentsManagement = () => {
 
       if (error) throw error;
 
+      // Notification in-app
       await notificationService.notifyWarning(
         selectedDriver.user_id,
         "❌ Document rejeté",
         `Votre ${DOCUMENT_CONFIG[rejectingDocType]?.label} a été rejeté: ${rejectionReason}`,
         "/driver-dashboard"
       );
+      
+      // Envoyer email de rejet
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(`${supabaseUrl}/functions/v1/send-driver-validation-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({ 
+            driver_id: selectedDriver.id, 
+            action: 'rejected',
+            document_type: DOCUMENT_CONFIG[rejectingDocType]?.label,
+            rejection_reason: rejectionReason
+          })
+        });
+      } catch (emailError) {
+        console.error("Error sending rejection email:", emailError);
+      }
 
-      toast.success("Document rejeté");
+      toast.success("Document rejeté - Email envoyé");
       setShowRejectDialog(false);
       setRejectionReason("");
       setRejectingDocType("");
