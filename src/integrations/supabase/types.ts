@@ -16213,6 +16213,7 @@ export type Database = {
         Returns: number
       }
       get_current_driver_id: { Args: never; Returns: string }
+      get_daily_stats: { Args: never; Returns: Json }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number
