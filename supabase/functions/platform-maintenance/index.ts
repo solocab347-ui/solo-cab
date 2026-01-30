@@ -179,6 +179,40 @@ serve(async (req) => {
       response.learning_applied.push("Applied default subscription_status for new drivers");
     }
 
+    // Task 6: Send reengagement emails
+    logStep("Task 6: Sending reengagement emails");
+    try {
+      const reengagementResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-reengagement-emails`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+        }
+      );
+      
+      if (reengagementResponse.ok) {
+        const reengagementData = await reengagementResponse.json();
+        const reengagementResult: MaintenanceResult = {
+          task: "reengagement_emails",
+          issues_found: reengagementData.processed || 0,
+          issues_fixed: reengagementData.results?.filter((r: any) => r.success)?.length || 0,
+          details: reengagementData.results || [],
+        };
+        response.tasks.push(reengagementResult);
+        response.total_issues_found += reengagementResult.issues_found;
+        response.total_issues_fixed += reengagementResult.issues_fixed;
+        
+        if (reengagementResult.issues_fixed > 0) {
+          response.learning_applied.push(`Sent ${reengagementResult.issues_fixed} reengagement emails to inactive drivers`);
+        }
+      }
+    } catch (reengagementError) {
+      logStep("Reengagement emails error", { error: String(reengagementError) });
+    }
+
     // Log maintenance run
     logStep("Maintenance completed", {
       total_issues_found: response.total_issues_found,

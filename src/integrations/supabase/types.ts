@@ -12806,6 +12806,123 @@ export type Database = {
         }
         Relationships: []
       }
+      reengagement_campaigns: {
+        Row: {
+          blocked_step: string
+          campaign_end_date: string
+          campaign_started_at: string
+          completed_at: string | null
+          created_at: string
+          driver_id: string
+          email: string
+          emails_sent: number
+          full_name: string | null
+          id: string
+          is_active: boolean
+          last_email_sent_at: string | null
+          next_email_at: string | null
+          phone: string | null
+          resumed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_step: string
+          campaign_end_date?: string
+          campaign_started_at?: string
+          completed_at?: string | null
+          created_at?: string
+          driver_id: string
+          email: string
+          emails_sent?: number
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_email_sent_at?: string | null
+          next_email_at?: string | null
+          phone?: string | null
+          resumed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_step?: string
+          campaign_end_date?: string
+          campaign_started_at?: string
+          completed_at?: string | null
+          created_at?: string
+          driver_id?: string
+          email?: string
+          emails_sent?: number
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_email_sent_at?: string | null
+          next_email_at?: string | null
+          phone?: string | null
+          resumed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_user_deletions: {
         Row: {
           cancelled_at: string | null
