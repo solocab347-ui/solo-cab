@@ -27,8 +27,19 @@ Deno.serve(async (req) => {
 
     const { secret_token } = await req.json();
 
+    // Debug: log more details to diagnose mismatch without exposing full secrets
+    console.log('Token comparison:', {
+      receivedLength: secret_token?.length,
+      expectedLength: ADMIN_INIT_SECRET?.length,
+      receivedFirst6: secret_token?.substring(0, 6),
+      expectedFirst6: ADMIN_INIT_SECRET?.substring(0, 6),
+      receivedLast4: secret_token?.substring(secret_token.length - 4),
+      expectedLast4: ADMIN_INIT_SECRET?.substring(ADMIN_INIT_SECRET.length - 4),
+      match: secret_token === ADMIN_INIT_SECRET
+    });
+
     if (secret_token !== ADMIN_INIT_SECRET) {
-      console.warn('Unauthorized admin init attempt');
+      console.warn('Unauthorized admin init attempt - tokens do not match');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { 
