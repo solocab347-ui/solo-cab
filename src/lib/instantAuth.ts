@@ -397,9 +397,9 @@ export function getNavigationPath(
       // Pionniers: vérifier l'accès
       if (driverData?.is_pioneer) {
         // Accès gratuit permanent (admin) - toujours accès
+        // Accès gratuit permanent : soit pas de date de fin (illimité), soit date future
         const hasPermanentFreeAccess = driverData.free_access_granted === true && 
-          driverData.free_access_end_date && 
-          new Date(driverData.free_access_end_date) > new Date();
+          (!driverData.free_access_end_date || new Date(driverData.free_access_end_date) > new Date());
         
         if (hasPermanentFreeAccess) {
           return driverData.is_fleet_driver && driverData.fleet_manager_id 

@@ -33,7 +33,7 @@ const PioneerPayment = () => {
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("is_pioneer, created_at, subscription_paid, stripe_customer_id")
+        .select("is_pioneer, created_at, subscription_paid, stripe_customer_id, free_access_granted, free_access_end_date")
         .eq("user_id", user.id)
         .single();
 
@@ -47,7 +47,16 @@ const PioneerPayment = () => {
         return;
       }
 
-      // If already paid, redirect to dashboard
+      // Si accès gratuit accordé (illimité ou date future), rediriger vers dashboard
+      const hasFreeAccess = driver.free_access_granted && 
+        (!driver.free_access_end_date || new Date(driver.free_access_end_date) > new Date());
+      
+      if (hasFreeAccess) {
+        navigate("/driver-dashboard");
+        return;
+      }
+
+      // If already paid with Stripe, redirect to dashboard
       if (driver.subscription_paid && driver.stripe_customer_id) {
         navigate("/driver-dashboard");
         return;
