@@ -52,7 +52,8 @@ const RegisterDriverPromo = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
-  // Étape 2 - Choix plaque NFC (promotion intermédiaire)
+  // Étape 2 - Choix plaque NFC (uniquement si venu de la page plaque)
+  // Pour le parcours classique, on ne propose plus la plaque à l'inscription - elle sera proposée après paiement dans le tunnel
   const [wantsPlate, setWantsPlate] = useState(fromPlate);
   const [plateType, setPlateType] = useState<"standard" | "premium">(preselectedPlate || "premium");
 
@@ -73,7 +74,9 @@ const RegisterDriverPromo = () => {
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
 
   // Determine total steps based on entry point
-  const totalSteps = fromPlate ? 2 : 3; // 2 steps if from plate page (skip NFC promo), 3 steps otherwise
+  // Parcours simplifié : 2 étapes pour tous (identité + paiement)
+  // La plaque NFC sera proposée après le paiement dans le tunnel d'onboarding
+  const totalSteps = 2;
 
   // Check URL params for payment failure
   useEffect(() => {
@@ -341,12 +344,8 @@ const RegisterDriverPromo = () => {
 
       toast.success("Compte créé avec succès !");
       
-      // If coming from plate page, skip step 2 (NFC promo) and go directly to step 3
-      if (fromPlate) {
-        setCurrentStep(2); // Step 2 is final when totalSteps = 2
-      } else {
-        setCurrentStep(2); // Go to NFC promo step
-      }
+      // Aller directement à l'étape 2 (paiement) pour tous les parcours
+      setCurrentStep(2);
     } catch (error: any) {
       console.error("Erreur step 1:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";
@@ -507,8 +506,9 @@ const RegisterDriverPromo = () => {
 
   // Determine if we're showing the final payment step
   const isFinalStep = currentStep === totalSteps;
-  // NFC promo step only shown when not from plate page and on step 2
-  const isNfcPromoStep = !fromPlate && currentStep === 2;
+  // NFC promo step seulement si venu de la page plaque et que wantsPlate est true
+  // Pour le parcours classique, on ne montre plus cette étape
+  const isNfcPromoStep = false; // Désactivé - la plaque sera proposée après paiement dans le tunnel
 
   return (
     <>
@@ -968,7 +968,7 @@ const RegisterDriverPromo = () => {
         {isFinalStep && (
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-4">
-              {fromPlate ? "Étape 2" : "Étape 3"} : Votre abonnement
+              Étape 2 : Votre abonnement
             </h2>
             
             {/* Choix du type d'abonnement */}
