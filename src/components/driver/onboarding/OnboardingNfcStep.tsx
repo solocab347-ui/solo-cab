@@ -31,8 +31,8 @@ interface OnboardingNfcStepProps {
 
 type PlateType = 'standard' | 'premium' | null;
 
-// MODE TEST: Prix à 0.50€
-const TEST_MODE_PRICING = true;
+// MODE PRODUCTION: Prix réels
+const TEST_MODE_PRICING = false;
 
 const plates = {
   standard: {
