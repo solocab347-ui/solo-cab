@@ -1,21 +1,30 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, Trash2, Tag, CreditCard, Truck, Settings2 } from "lucide-react";
+import { Users, Trash2, CreditCard, BarChart3 } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
 import AdminUserCleanup from "../AdminUserCleanup";
 import AdminNfcHub from "./AdminNfcHub";
+import AdminDriverOnboardingTracker from "../AdminDriverOnboardingTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const AdminUsersHub = () => {
-  const [activeSection, setActiveSection] = useState<"drivers" | "nfc" | "cleanup">("drivers");
+  const [activeSection, setActiveSection] = useState<"tracking" | "drivers" | "nfc" | "cleanup">("tracking");
   const isMobile = useIsMobile();
 
   return (
     <div className="space-y-4">
       {/* Section Selector - Responsive */}
       <div className="flex flex-wrap gap-2">
+        <Button
+          variant={activeSection === "tracking" ? "default" : "outline"}
+          size={isMobile ? "sm" : "default"}
+          onClick={() => setActiveSection("tracking")}
+          className="gap-2"
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span className={isMobile ? "hidden sm:inline" : ""}>Suivi Inscriptions</span>
+          {isMobile && <span className="sm:hidden">Suivi</span>}
+        </Button>
         <Button
           variant={activeSection === "drivers" ? "default" : "outline"}
           size={isMobile ? "sm" : "default"}
@@ -50,6 +59,7 @@ const AdminUsersHub = () => {
 
       {/* Content */}
       <div className="overflow-x-hidden">
+        {activeSection === "tracking" && <AdminDriverOnboardingTracker />}
         {activeSection === "drivers" && <AdminDriversManagement />}
         {activeSection === "nfc" && <AdminNfcHub />}
         {activeSection === "cleanup" && <AdminUserCleanup />}
