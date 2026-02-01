@@ -7,9 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// MODE TEST: Prix à 0.50€ pour tous les paiements
-const TEST_MODE_ENABLED = true;
-const TEST_PRICE_CENTS = 50; // 0.50€
+// MODE TEST DÉSACTIVÉ - Prix réels
+const TEST_MODE_ENABLED = false;
+const TEST_PRICE_CENTS = 50; // Non utilisé quand TEST_MODE_ENABLED = false
 
 // Prix Stripe - Abonnements (nouveau compte Stripe)
 const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SuwktAdFPYTU471xCl9GBwq"; // 9.99€/mois
