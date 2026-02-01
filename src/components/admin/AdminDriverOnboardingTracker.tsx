@@ -176,7 +176,13 @@ const AdminDriverOnboardingTracker = () => {
     }
   };
 
-  const calculateOnboardingProgress = (driver: DriverOnboarding): { percentage: number; steps: OnboardingStep[] } => {
+  const calculateOnboardingProgress = (driver: DriverOnboarding): { 
+    percentage: number; 
+    steps: OnboardingStep[]; 
+    currentStep: OnboardingStep | null;
+    nextStep: OnboardingStep | null;
+    blockedAt: string;
+  } => {
     const steps: OnboardingStep[] = [
       {
         id: "inscription",
@@ -244,8 +250,38 @@ const AdminDriverOnboardingTracker = () => {
 
     const completedSteps = steps.filter(s => s.isComplete).length;
     const percentage = Math.round((completedSteps / steps.length) * 100);
+    
+    // Find the first incomplete step (where the driver is blocked)
+    const firstIncompleteIndex = steps.findIndex(s => !s.isComplete);
+    const currentStep = firstIncompleteIndex > 0 ? steps[firstIncompleteIndex - 1] : null;
+    const nextStep = firstIncompleteIndex >= 0 ? steps[firstIncompleteIndex] : null;
+    
+    // Create a clear message about where the driver is blocked
+    let blockedAt = "";
+    if (percentage === 100) {
+      blockedAt = "✅ Profil complet";
+    } else if (nextStep) {
+      const stepMessages: Record<string, string> = {
+        payment: "⏳ En attente du paiement",
+        documents: driver.documents_status === "submitted" || driver.documents_status === "pending" 
+          ? "📄 Documents en cours de validation"
+          : "📄 Documents à soumettre",
+        vehicle: "🚗 Véhicule à configurer",
+        profile: driver.profile_photo_url 
+          ? "👤 Description du profil manquante"
+          : driver.service_description 
+            ? "📷 Photo de profil manquante"
+            : "👤 Profil à compléter",
+        pricing: "💰 Tarification à configurer",
+        nfc: driver.nfc_plate_ordered_at 
+          ? "📦 Plaque NFC commandée (en attente)"
+          : "🏷️ Plaque NFC à commander",
+        first_course: "🚀 Prêt - en attente de la 1ère course",
+      };
+      blockedAt = stepMessages[nextStep.id] || `⏸️ Bloqué à: ${nextStep.label}`;
+    }
 
-    return { percentage, steps };
+    return { percentage, steps, currentStep, nextStep, blockedAt };
   };
 
   const getOnboardingStatus = (driver: DriverOnboarding): { label: string; color: string } => {
@@ -257,6 +293,20 @@ const AdminDriverOnboardingTracker = () => {
     if (percentage >= 50) return { label: "En cours", color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20" };
     if (percentage >= 25) return { label: "Débutant", color: "text-orange-500 bg-orange-500/10 border-orange-500/20" };
     return { label: "Nouveau", color: "text-gray-500 bg-gray-500/10 border-gray-500/20" };
+  };
+
+  const getBlockedStepColor = (nextStep: OnboardingStep | null): string => {
+    if (!nextStep) return "text-green-600 bg-green-500/10";
+    switch (nextStep.id) {
+      case "payment": return "text-red-600 bg-red-500/10";
+      case "documents": return nextStep.status === "warning" ? "text-yellow-600 bg-yellow-500/10" : "text-orange-600 bg-orange-500/10";
+      case "vehicle": return "text-blue-600 bg-blue-500/10";
+      case "profile": return "text-purple-600 bg-purple-500/10";
+      case "pricing": return "text-amber-600 bg-amber-500/10";
+      case "nfc": return nextStep.status === "warning" ? "text-yellow-600 bg-yellow-500/10" : "text-cyan-600 bg-cyan-500/10";
+      case "first_course": return "text-green-600 bg-green-500/10";
+      default: return "text-gray-600 bg-gray-500/10";
+    }
   };
 
   const filteredDrivers = drivers.filter(driver => {
@@ -419,9 +469,10 @@ const AdminDriverOnboardingTracker = () => {
                 </div>
               ) : (
                 filteredDrivers.map(driver => {
-                  const { percentage, steps } = calculateOnboardingProgress(driver);
+                  const { percentage, steps, nextStep, blockedAt } = calculateOnboardingProgress(driver);
                   const onboardingStatus = getOnboardingStatus(driver);
                   const isExpanded = expandedDriver === driver.id;
+                  const blockedColor = getBlockedStepColor(nextStep);
 
                   return (
                     <Collapsible
@@ -431,32 +482,38 @@ const AdminDriverOnboardingTracker = () => {
                     >
                       <Card className="overflow-hidden hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
+                          <div className="flex items-start gap-3 sm:gap-4">
                             {/* Avatar */}
                             {driver.profile_photo_url ? (
                               <img
                                 src={driver.profile_photo_url}
                                 alt={driver.full_name}
-                                className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                <User className="w-6 h-6 text-muted-foreground" />
+                              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                <User className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
                               </div>
                             )}
 
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <h4 className="font-semibold truncate">{driver.full_name}</h4>
-                                <Badge variant="outline" className={onboardingStatus.color}>
+                                <h4 className="font-semibold truncate text-sm sm:text-base">{driver.full_name}</h4>
+                                <Badge variant="outline" className={`${onboardingStatus.color} text-xs`}>
                                   {onboardingStatus.label}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground truncate">{driver.email}</p>
-                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <p className="text-xs sm:text-sm text-muted-foreground truncate">{driver.email}</p>
+                              
+                              {/* Blocked Step - Visible directly */}
+                              <div className={`mt-2 px-2 py-1.5 rounded-md text-xs sm:text-sm font-medium ${blockedColor}`}>
+                                {blockedAt}
+                              </div>
+                              
+                              <div className="flex items-center gap-3 sm:gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                                 {driver.company_name && (
-                                  <span>🏢 {driver.company_name}</span>
+                                  <span className="hidden sm:inline">🏢 {driver.company_name}</span>
                                 )}
                                 {driver.vehicle_brand && driver.vehicle_brand !== "À compléter" && (
                                   <span>🚗 {driver.vehicle_brand} {driver.vehicle_model}</span>
@@ -466,16 +523,13 @@ const AdminDriverOnboardingTracker = () => {
                             </div>
 
                             {/* Progress */}
-                            <div className="flex items-center gap-4">
-                              <div className="text-right hidden sm:block">
-                                <p className="text-2xl font-bold">{percentage}%</p>
-                                <p className="text-xs text-muted-foreground">Progression</p>
-                              </div>
-                              <div className="w-24 hidden md:block">
-                                <Progress value={percentage} className="h-2" />
+                            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                              <div className="text-right">
+                                <p className="text-xl sm:text-2xl font-bold">{percentage}%</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Progression</p>
                               </div>
                               <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" className="p-1 sm:p-2">
                                   {isExpanded ? (
                                     <ChevronUp className="w-4 h-4" />
                                   ) : (
@@ -486,12 +540,42 @@ const AdminDriverOnboardingTracker = () => {
                             </div>
                           </div>
 
-                          {/* Progress on mobile */}
-                          <div className="mt-3 sm:hidden">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium">{percentage}%</span>
+                          {/* Progress Bar - Always visible */}
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2">
+                              <Progress value={percentage} className="h-2 flex-1" />
+                              <span className="text-[10px] text-muted-foreground w-16 text-right hidden sm:block">
+                                {steps.filter(s => s.isComplete).length}/{steps.length} étapes
+                              </span>
                             </div>
-                            <Progress value={percentage} className="h-2" />
+                            {/* Step indicators */}
+                            <div className="flex justify-between mt-1.5">
+                              {steps.map((step, idx) => (
+                                <TooltipProvider key={step.id}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div 
+                                        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-colors ${
+                                          step.isComplete 
+                                            ? "bg-green-500" 
+                                            : step.status === "warning"
+                                              ? "bg-yellow-500"
+                                              : idx === steps.findIndex(s => !s.isComplete)
+                                                ? "bg-orange-500 ring-2 ring-orange-500/30"
+                                                : "bg-muted-foreground/30"
+                                        }`}
+                                      />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom">
+                                      <p className="font-medium">{step.label}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {step.isComplete ? "✓ Complété" : step.status === "warning" ? "⏳ En cours" : "✗ À faire"}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ))}
+                            </div>
                           </div>
                         </CardContent>
 
