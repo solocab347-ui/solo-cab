@@ -3526,6 +3526,7 @@ export type Database = {
         Row: {
           auto_dispatch_enabled: boolean | null
           bank_imprint_at: string | null
+          cancellation_by: string | null
           client_id: string | null
           client_payment_confirmation: string | null
           client_payment_confirmation_at: string | null
@@ -3535,6 +3536,13 @@ export type Database = {
           course_number: string | null
           created_at: string
           created_by_user_id: string | null
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          deposit_paid_at: string | null
+          deposit_percentage: number | null
+          deposit_required: boolean | null
+          deposit_status: string | null
+          deposit_stripe_payment_intent_id: string | null
           destination_address: string
           destination_latitude: number | null
           destination_longitude: number | null
@@ -3547,6 +3555,9 @@ export type Database = {
           driver_ids: string[] | null
           duration_minutes: number | null
           employee_declared_paid_at: string | null
+          final_payment_amount: number | null
+          final_payment_status: string | null
+          final_payment_stripe_id: string | null
           fleet_manager_id: string | null
           fleet_manager_name: string | null
           guest_email: string | null
@@ -3581,6 +3592,7 @@ export type Database = {
         Insert: {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
+          cancellation_by?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3590,6 +3602,13 @@ export type Database = {
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          deposit_paid_at?: string | null
+          deposit_percentage?: number | null
+          deposit_required?: boolean | null
+          deposit_status?: string | null
+          deposit_stripe_payment_intent_id?: string | null
           destination_address: string
           destination_latitude?: number | null
           destination_longitude?: number | null
@@ -3602,6 +3621,9 @@ export type Database = {
           driver_ids?: string[] | null
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
+          final_payment_amount?: number | null
+          final_payment_status?: string | null
+          final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
           fleet_manager_name?: string | null
           guest_email?: string | null
@@ -3636,6 +3658,7 @@ export type Database = {
         Update: {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
+          cancellation_by?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3645,6 +3668,13 @@ export type Database = {
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          deposit_paid_at?: string | null
+          deposit_percentage?: number | null
+          deposit_required?: boolean | null
+          deposit_status?: string | null
+          deposit_stripe_payment_intent_id?: string | null
           destination_address?: string
           destination_latitude?: number | null
           destination_longitude?: number | null
@@ -3657,6 +3687,9 @@ export type Database = {
           driver_ids?: string[] | null
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
+          final_payment_amount?: number | null
+          final_payment_status?: string | null
+          final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
           fleet_manager_name?: string | null
           guest_email?: string | null
@@ -3764,6 +3797,148 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposit_transactions: {
+        Row: {
+          amount: number
+          captured_at: string | null
+          client_id: string | null
+          course_id: string | null
+          created_at: string
+          driver_id: string | null
+          forfeited_at: string | null
+          id: string
+          paid_at: string | null
+          percentage: number
+          refund_reason: string | null
+          refunded_at: string | null
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          captured_at?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          forfeited_at?: string | null
+          id?: string
+          paid_at?: string | null
+          percentage: number
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          captured_at?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          forfeited_at?: string | null
+          id?: string
+          paid_at?: string | null
+          percentage?: number
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5821,6 +5996,10 @@ export type Database = {
           course_counter: number | null
           created_at: string
           default_payment_method: string | null
+          deposit_enabled: boolean | null
+          deposit_percentage: number | null
+          deposit_refund_policy: string | null
+          deposit_required_for: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
@@ -5976,6 +6155,10 @@ export type Database = {
           course_counter?: number | null
           created_at?: string
           default_payment_method?: string | null
+          deposit_enabled?: boolean | null
+          deposit_percentage?: number | null
+          deposit_refund_policy?: string | null
+          deposit_required_for?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
@@ -6131,6 +6314,10 @@ export type Database = {
           course_counter?: number | null
           created_at?: string
           default_payment_method?: string | null
+          deposit_enabled?: boolean | null
+          deposit_percentage?: number | null
+          deposit_refund_policy?: string | null
+          deposit_required_for?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
