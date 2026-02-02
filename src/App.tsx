@@ -54,6 +54,7 @@ import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 // Legacy migration pages
 const LegacyMigration = lazy(() => import("./pages/chauffeur/LegacyMigration"));
 const MigrationSuccess = lazy(() => import("./pages/chauffeur/MigrationSuccess"));
+const TrialExpiredSubscribe = lazy(() => import("./pages/chauffeur/TrialExpiredSubscribe"));
 
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
@@ -213,6 +214,17 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["driver"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <MigrationSuccess />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Route pour s'abonner après la fin de l'essai gratuit */}
+              <Route
+                path="/chauffeur/s-abonner"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <TrialExpiredSubscribe />
                     </Suspense>
                   </ProtectedRoute>
                 }
