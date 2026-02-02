@@ -5829,6 +5829,7 @@ export type Database = {
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
+          documents_validated_at: string | null
           driver_code: string | null
           evening_surcharge: number | null
           fleet_documents_deadline: string | null
@@ -5932,7 +5933,11 @@ export type Database = {
           subscription_status: string | null
           subscription_stripe_id: string | null
           total_rides: number | null
+          trial_activated_at: string | null
           trial_cancelled: boolean | null
+          trial_end_date: string | null
+          trial_start_date: string | null
+          trial_status: string | null
           tva_included: boolean
           tva_number: string | null
           tva_rate: number | null
@@ -5979,6 +5984,7 @@ export type Database = {
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          documents_validated_at?: string | null
           driver_code?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
@@ -6082,7 +6088,11 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          trial_activated_at?: string | null
           trial_cancelled?: boolean | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          trial_status?: string | null
           tva_included?: boolean
           tva_number?: string | null
           tva_rate?: number | null
@@ -6129,6 +6139,7 @@ export type Database = {
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          documents_validated_at?: string | null
           driver_code?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
@@ -6232,7 +6243,11 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          trial_activated_at?: string | null
           trial_cancelled?: boolean | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          trial_status?: string | null
           tva_included?: boolean
           tva_number?: string | null
           tva_rate?: number | null
@@ -13766,6 +13781,90 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_emails: {
+        Row: {
+          created_at: string
+          driver_id: string
+          email_type: string
+          id: string
+          scheduled_for: string
+          sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          email_type: string
+          id?: string
+          scheduled_for: string
+          sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          email_type?: string
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_emails_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unassigned_fleet_courses: {
         Row: {
           attempts: number | null
@@ -16661,6 +16760,10 @@ export type Database = {
           issues_fixed: number
           issues_found: number
         }[]
+      }
+      schedule_trial_emails: {
+        Args: { p_driver_id: string; p_trial_start: string }
+        Returns: undefined
       }
       search_available_partners: {
         Args: {
