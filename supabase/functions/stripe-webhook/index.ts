@@ -941,6 +941,156 @@ serve(async (req) => {
           });
         }
       }
+
+      // CASE 6: Deposit payment
+      if (metadata.type === "deposit_payment" && metadata.course_id) {
+        const course_id = metadata.course_id;
+        const driver_id = metadata.driver_id;
+        const deposit_percentage = parseInt(metadata.deposit_percentage || "0");
+        const total_amount = parseFloat(metadata.total_amount || "0");
+        const remaining_amount = parseFloat(metadata.remaining_amount || "0");
+
+        logStep("Deposit payment completed", { 
+          courseId: course_id,
+          depositPercentage: deposit_percentage,
+          remainingAmount: remaining_amount
+        });
+
+        const paymentIntentId = session.payment_intent as string;
+
+        // Update course
+        await supabaseClient
+          .from("courses")
+          .update({
+            deposit_paid: true,
+            deposit_paid_at: new Date().toISOString(),
+            deposit_stripe_payment_intent_id: paymentIntentId,
+            deposit_status: "paid",
+            status: "accepted",
+          })
+          .eq("id", course_id);
+
+        // Update deposit transaction
+        await supabaseClient
+          .from("deposit_transactions")
+          .update({
+            stripe_payment_intent_id: paymentIntentId,
+            status: "paid",
+            paid_at: new Date().toISOString(),
+          })
+          .eq("course_id", course_id)
+          .eq("transaction_type", "deposit");
+
+        // Update devis if exists
+        if (metadata.devis_id) {
+          await supabaseClient
+            .from("devis")
+            .update({ 
+              status: "deposit_paid",
+            })
+            .eq("id", metadata.devis_id);
+        }
+
+        // Notify driver
+        const { data: driverData } = await supabaseClient
+          .from("drivers")
+          .select("user_id")
+          .eq("id", driver_id)
+          .single();
+
+        if (driverData?.user_id) {
+          const depositAmount = (session.amount_total || 0) / 100;
+          await supabaseClient.from("notifications").insert({
+            user_id: driverData.user_id,
+            title: "💳 Acompte reçu",
+            message: `Un client a versé un acompte de ${depositAmount.toFixed(2)}€ (${deposit_percentage}%). Reste à percevoir: ${remaining_amount.toFixed(2)}€`,
+            type: "info",
+          });
+        }
+
+        return new Response(JSON.stringify({ 
+          received: true, 
+          type: "deposit_payment",
+          deposit_percentage 
+        }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // CASE 7: Final payment (after deposit)
+      if (metadata.type === "final_payment" && metadata.course_id) {
+        const course_id = metadata.course_id;
+        const driver_id = metadata.driver_id;
+        const deposit_amount = parseFloat(metadata.deposit_amount || "0");
+
+        logStep("Final payment completed", { 
+          courseId: course_id,
+          depositAmount: deposit_amount
+        });
+
+        const paymentIntentId = session.payment_intent as string;
+        const finalAmount = (session.amount_total || 0) / 100;
+        const totalPaid = deposit_amount + finalAmount;
+
+        // Update course
+        await supabaseClient
+          .from("courses")
+          .update({
+            final_payment_status: "paid",
+            final_payment_stripe_id: paymentIntentId,
+            payment_status: "paid",
+            payment_captured_at: new Date().toISOString(),
+            status: "completed",
+            deposit_status: "captured",
+          })
+          .eq("id", course_id);
+
+        // Update final payment transaction
+        await supabaseClient
+          .from("deposit_transactions")
+          .update({
+            stripe_payment_intent_id: paymentIntentId,
+            status: "paid",
+            paid_at: new Date().toISOString(),
+          })
+          .eq("course_id", course_id)
+          .eq("transaction_type", "final_payment");
+
+        // Generate invoice
+        try {
+          await supabaseClient.functions.invoke("create-facture-auto", {
+            body: { course_id }
+          });
+        } catch (invoiceError) {
+          logStep("Invoice generation error (non-blocking)", { error: String(invoiceError) });
+        }
+
+        // Notify driver
+        const { data: driverData } = await supabaseClient
+          .from("drivers")
+          .select("user_id")
+          .eq("id", driver_id)
+          .single();
+
+        if (driverData?.user_id) {
+          await supabaseClient.from("notifications").insert({
+            user_id: driverData.user_id,
+            title: "✅ Paiement complet reçu",
+            message: `Le client a réglé le solde de ${finalAmount.toFixed(2)}€. Total encaissé: ${totalPaid.toFixed(2)}€`,
+            type: "info",
+          });
+        }
+
+        return new Response(JSON.stringify({ 
+          received: true, 
+          type: "final_payment",
+          total_paid: totalPaid
+        }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

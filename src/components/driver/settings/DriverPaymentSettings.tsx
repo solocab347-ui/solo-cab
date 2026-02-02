@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { StripeConnectInfo } from "./StripeConnectInfo";
+import { DepositSettings } from "./DepositSettings";
 
 const PAYMENT_METHODS = [
   { 
@@ -407,6 +408,15 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         billingType={billingType}
         onStatusChange={loadSettings}
       />
+
+      {/* Deposit Settings - only visible if using SoloCab Stripe */}
+      {billingType === "solocab_stripe" && (
+        <DepositSettings
+          driverId={driverId}
+          stripeConnected={stripeConnected}
+          onUpdate={onUpdate}
+        />
+      )}
 
       {/* Save Button */}
       <Button 
