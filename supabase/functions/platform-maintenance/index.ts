@@ -213,6 +213,70 @@ serve(async (req) => {
       logStep("Reengagement emails error", { error: String(reengagementError) });
     }
 
+    // Task 7: Check expired trials and send trial emails
+    logStep("Task 7: Checking expired trials");
+    try {
+      // Check expired trials
+      const expiredTrialsResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/check-expired-trials`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+        }
+      );
+      
+      if (expiredTrialsResponse.ok) {
+        const expiredData = await expiredTrialsResponse.json();
+        const expiredResult: MaintenanceResult = {
+          task: "expired_trials",
+          issues_found: expiredData.expired_count || 0,
+          issues_fixed: expiredData.expired_count || 0,
+          details: expiredData.results || [],
+        };
+        response.tasks.push(expiredResult);
+        response.total_issues_found += expiredResult.issues_found;
+        response.total_issues_fixed += expiredResult.issues_fixed;
+        
+        if (expiredResult.issues_fixed > 0) {
+          response.learning_applied.push(`Marked ${expiredResult.issues_fixed} trials as expired`);
+        }
+      }
+
+      // Send trial emails
+      const trialEmailsResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-trial-emails`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+        }
+      );
+      
+      if (trialEmailsResponse.ok) {
+        const trialEmailsData = await trialEmailsResponse.json();
+        const trialEmailsResult: MaintenanceResult = {
+          task: "trial_emails",
+          issues_found: trialEmailsData.processed || 0,
+          issues_fixed: trialEmailsData.results?.filter((r: any) => r.success)?.length || 0,
+          details: trialEmailsData.results || [],
+        };
+        response.tasks.push(trialEmailsResult);
+        response.total_issues_found += trialEmailsResult.issues_found;
+        response.total_issues_fixed += trialEmailsResult.issues_fixed;
+        
+        if (trialEmailsResult.issues_fixed > 0) {
+          response.learning_applied.push(`Sent ${trialEmailsResult.issues_fixed} trial reminder emails`);
+        }
+      }
+    } catch (trialError) {
+      logStep("Trial tasks error", { error: String(trialError) });
+    }
+
     // Log maintenance run
     logStep("Maintenance completed", {
       total_issues_found: response.total_issues_found,

@@ -43,10 +43,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check for free access first - INCLUDE created_at for grace period check
+    // Check for driver with trial and subscription info
     const { data: driver } = await supabaseClient
       .from("drivers")
-      .select("id, free_access_granted, free_access_end_date, free_access_type, is_pioneer, created_at, subscription_paid")
+      .select("id, free_access_granted, free_access_end_date, free_access_type, is_pioneer, created_at, subscription_paid, trial_status, trial_start_date, trial_end_date, subscription_status")
       .eq("user_id", user.id)
       .single();
 
@@ -68,45 +68,74 @@ serve(async (req) => {
       isPioneer: driver.is_pioneer,
       freeAccessType: driver.free_access_type,
       createdAt: driver.created_at,
-      subscriptionPaid: driver.subscription_paid
+      subscriptionPaid: driver.subscription_paid,
+      trialStatus: driver.trial_status,
+      trialEndDate: driver.trial_end_date
     });
 
     const now = new Date();
-    const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
-    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
 
-    // NOUVEAU: Vérifier la période de grâce de 30 jours (tous les chauffeurs nouvellement inscrits)
-    const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
-    const isInGracePeriod = gracePeriodEnd && now < gracePeriodEnd;
+    // NOUVEAU SYSTÈME: Vérifier l'essai gratuit de 14 jours
+    if (driver.trial_status === 'active' && driver.trial_end_date) {
+      const trialEnd = new Date(driver.trial_end_date);
+      
+      if (now < trialEnd) {
+        const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        logStep("Driver in 14-day trial period", { 
+          trialEnd: driver.trial_end_date,
+          daysLeft 
+        });
+        
+        return new Response(JSON.stringify({
+          subscribed: true,
+          subscription_status: "trialing",
+          subscription_end: driver.trial_end_date,
+          is_trial: true,
+          trial_days_left: daysLeft,
+          is_free_access: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        // Trial expired - update status
+        logStep("Trial expired, updating status");
+        await supabaseClient
+          .from("drivers")
+          .update({
+            trial_status: "expired",
+            subscription_status: "expired",
+          })
+          .eq("id", driver.id);
+        
+        return new Response(JSON.stringify({
+          subscribed: false,
+          subscription_status: "expired",
+          subscription_end: driver.trial_end_date,
+          is_trial_expired: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
 
-    if (isInGracePeriod) {
-      logStep("Driver in 30-day grace period, granting access", { 
-        createdAt: driver.created_at,
-        gracePeriodEnd: gracePeriodEnd.toISOString(),
-        daysLeft: Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-      });
-      
-      // Ensure subscription_status is active during grace period
-      await supabaseClient
-        .from("drivers")
-        .update({
-          subscription_status: "active",
-          subscription_paid: true,
-        })
-        .eq("id", driver.id);
-      
+    // Check for expired trial (already marked as expired)
+    if (driver.trial_status === 'expired' && !driver.subscription_paid) {
+      logStep("Trial already expired, user needs to subscribe");
       return new Response(JSON.stringify({
-        subscribed: true,
-        subscription_status: "active",
-        subscription_end: gracePeriodEnd.toISOString(),
-        is_free_access: true,
-        is_grace_period: true,
-        grace_period_days_left: Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        subscribed: false,
+        subscription_status: "expired",
+        subscription_end: driver.trial_end_date,
+        is_trial_expired: true
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
+
+    const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
 
     // Check if this is a pioneer with active trial
     const isPioneerTrialActive = driver.is_pioneer && 
