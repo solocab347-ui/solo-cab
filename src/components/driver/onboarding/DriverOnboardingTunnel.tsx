@@ -18,7 +18,7 @@ import {
   Play
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
-import { ImmersiveSettingsFlow } from './ImmersiveSettingsFlow';
+import { CarouselSettingsFlow } from './CarouselSettingsFlow';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingBillingStep } from './OnboardingBillingStep';
@@ -431,7 +431,7 @@ export function DriverOnboardingTunnel({
     switch (currentStepId) {
       case 'settings':
         return (
-          <ImmersiveSettingsFlow 
+          <CarouselSettingsFlow 
             data={stepData.settings}
             driverName={driverProfile?.full_name || 'Chauffeur'}
             onUpdate={(updates) => updateStepData('settings', updates)}
