@@ -6,7 +6,9 @@ import {
   Play,
   Clock,
   CheckCircle2,
-  Package
+  Package,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +19,7 @@ interface OnboardingTrialStartStepProps {
   driverId: string;
   billingType: 'own_equipment' | 'buy_equipment' | 'solocab_stripe';
   stripeAccountStatus?: string;
+  documentsStatus?: string;
   onComplete: () => void;
   loading: boolean;
 }
@@ -25,6 +28,7 @@ export function OnboardingTrialStartStep({
   driverId, 
   billingType,
   stripeAccountStatus,
+  documentsStatus,
   onComplete,
   loading 
 }: OnboardingTrialStartStepProps) {
@@ -37,8 +41,15 @@ export function OnboardingTrialStartStep({
 
   const isStripeReady = isStripeChoice && stripeAccountStatus === 'active';
   const isStripeNotReady = isStripeChoice && stripeAccountStatus !== 'active';
+  
+  // Documents must be submitted (all required docs uploaded)
+  const areDocumentsSubmitted = documentsStatus === 'submitted' || documentsStatus === 'validated';
+  const areDocumentsMissing = !areDocumentsSubmitted;
 
   const canStartTrial = () => {
+    // Documents must be submitted first
+    if (areDocumentsMissing) return false;
+    
     if (isOwnEquipment) return confirmReady;
     if (isEquipmentPurchase) return confirmReady;
     if (isStripeChoice) return isStripeReady;
@@ -118,13 +129,45 @@ export function OnboardingTrialStartStep({
         </p>
       </motion.div>
 
-      {/* Condition card */}
+      {/* Condition cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="w-full max-w-sm mb-6"
+        className="w-full max-w-sm mb-6 space-y-3"
       >
+        {/* Documents status */}
+        <div className={cn(
+          "w-full p-4 rounded-2xl border-2",
+          areDocumentsSubmitted 
+            ? "border-emerald-500 bg-emerald-500/10" 
+            : "border-destructive/50 bg-destructive/10"
+        )}>
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+              areDocumentsSubmitted ? "bg-emerald-500" : "bg-destructive"
+            )}>
+              {areDocumentsSubmitted 
+                ? <CheckCircle2 className="w-4 h-4 text-white" />
+                : <AlertCircle className="w-4 h-4 text-white" />
+              }
+            </div>
+            <div>
+              <h3 className={cn(
+                "font-semibold text-sm",
+                areDocumentsSubmitted ? "text-emerald-400" : "text-destructive"
+              )}>
+                {areDocumentsSubmitted ? "Documents soumis ✓" : "Documents incomplets"}
+              </h3>
+              <p className="text-muted-foreground text-xs mt-1">
+                {areDocumentsSubmitted 
+                  ? "En attente de validation admin" 
+                  : "Complète tous les documents requis"}
+              </p>
+            </div>
+          </div>
+        </div>
         {/* Own equipment or buy equipment */}
         {(isOwnEquipment || isEquipmentPurchase) && (
           <button
@@ -242,17 +285,30 @@ export function OnboardingTrialStartStep({
           </Button>
         ) : (
           <>
-            <Button 
-              onClick={handleSkipAndWait}
-              disabled={loading}
-              variant="outline"
-              className="w-full h-12 border-white/20 text-white hover:bg-white/10"
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              {isStripeNotReady ? 'Attendre Stripe' : 'Attendre mon matériel'}
-            </Button>
-            <p className="text-white/40 text-xs text-center">
-              Tu pourras démarrer depuis ton tableau de bord
+            {areDocumentsMissing ? (
+              <Button 
+                disabled
+                variant="outline"
+                className="w-full h-12 border-destructive/50 text-destructive"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Documents requis
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSkipAndWait}
+                disabled={loading}
+                variant="outline"
+                className="w-full h-12 border-border text-foreground hover:bg-muted"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                {isStripeNotReady ? 'Attendre Stripe' : 'Attendre mon matériel'}
+              </Button>
+            )}
+            <p className="text-muted-foreground text-xs text-center">
+              {areDocumentsMissing 
+                ? "Retourne à l'étape Documents pour continuer"
+                : "Tu pourras démarrer depuis ton tableau de bord"}
             </p>
           </>
         )}
