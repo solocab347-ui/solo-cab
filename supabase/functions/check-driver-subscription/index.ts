@@ -174,13 +174,45 @@ serve(async (req) => {
 
     // If driver has free access granted (admin granted)
     if (driver.free_access_granted) {
-      // Check if free access is still valid (no end date = unlimited, or end date is in future)
+      // Types permanents: TOUJOURS accès, même si end_date passée par erreur
+      const isPermanentAccess = driver.free_access_type === "unlimited" || driver.free_access_type === "administrative";
+      
+      if (isPermanentAccess) {
+        logStep("PERMANENT free access - always valid", { 
+          type: driver.free_access_type,
+          driverId: driver.id 
+        });
+        
+        await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_status: "active",
+            subscription_paid: true,
+          })
+          .eq("id", driver.id);
+        
+        return new Response(JSON.stringify({
+          subscribed: true,
+          subscription_status: "active",
+          subscription_end: null,
+          is_free_access: true,
+          is_permanent: true,
+          free_access_type: driver.free_access_type,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      
+      // Pour les accès temporaires, vérifier la date de fin
       const isFreeAccessValid = !endDate || endDate > now;
       
       if (isFreeAccessValid) {
-        logStep("Free access is valid, returning active status");
+        logStep("Time-limited free access is valid", {
+          endDate: driver.free_access_end_date,
+          type: driver.free_access_type
+        });
         
-        // Update driver status to active in database
         await supabaseClient
           .from("drivers")
           .update({
@@ -194,52 +226,31 @@ serve(async (req) => {
           subscribed: true,
           subscription_status: "active",
           subscription_end: driver.free_access_end_date,
-          is_free_access: true
+          is_free_access: true,
+          is_permanent: false,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       } else {
-        // Free access expired
-        logStep("Free access expired");
+        // Free access temporaire expiré
+        logStep("Time-limited free access expired", {
+          endDate: driver.free_access_end_date,
+          type: driver.free_access_type
+        });
         
-        // PROTECTION: Ne jamais retirer free_access_granted si type = "unlimited"
-        // Les 50 premiers chauffeurs du test ont un accès illimité PERMANENT
-        if (driver.free_access_type !== "unlimited") {
-          // Seulement pour les accès temporaires (1/2/3 mois), on peut retirer
-          await supabaseClient
-            .from("drivers")
-            .update({
-              free_access_granted: false,
-              free_access_end_date: null,
-              free_access_start_date: null,
-              free_access_type: null,
-              subscription_status: "inactive",
-              subscription_paid: false,
-            })
-            .eq("id", driver.id);
-        } else {
-          // Pour "unlimited", on garde free_access_granted à true même si end_date passée
-          logStep("Unlimited free access - keeping it active permanently");
-          await supabaseClient
-            .from("drivers")
-            .update({
-              subscription_status: "active",
-              subscription_paid: true,
-            })
-            .eq("id", driver.id);
-            
-          return new Response(JSON.stringify({
-            subscribed: true,
-            subscription_status: "active",
-            subscription_end: null,
-            is_free_access: true,
-            is_permanent: true
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          });
-        }
+        // Révoquer l'accès temporaire expiré
+        await supabaseClient
+          .from("drivers")
+          .update({
+            free_access_granted: false,
+            free_access_end_date: null,
+            free_access_start_date: null,
+            free_access_type: null,
+            subscription_status: "inactive",
+            subscription_paid: false,
+          })
+          .eq("id", driver.id);
       }
     }
 

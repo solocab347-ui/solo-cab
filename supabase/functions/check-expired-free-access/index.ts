@@ -34,12 +34,13 @@ serve(async (req) => {
 
     // ========================================
     // 1. CHAUFFEURS - Vérifier les accès expirés
+    // IMPORTANT: Ne JAMAIS toucher aux accès "unlimited" ou "administrative"
     // ========================================
     const { data: expiredDrivers, error: driversError } = await supabaseClient
       .from("drivers")
       .select("*")
       .eq("free_access_granted", true)
-      .eq("free_access_type", "time_limited")
+      .not("free_access_type", "in", '("unlimited","administrative")') // PROTECTION: exclure les accès permanents
       .not("free_access_end_date", "is", null)
       .lt("free_access_end_date", now.toISOString());
 
@@ -55,17 +56,23 @@ serve(async (req) => {
 
       for (const driver of expiredDrivers) {
         try {
+          // SÉCURITÉ SUPPLÉMENTAIRE: Double vérification du type
+          if (driver.free_access_type === "unlimited" || driver.free_access_type === "administrative") {
+            logStep("SKIP - Permanent access protected", { driverId: driver.id, type: driver.free_access_type });
+            continue;
+          }
+
           let newStatus = "expired";
           let subscriptionResumed = false;
 
           // Tenter de reprendre l'abonnement Stripe si en pause
-          if (driver.stripe_subscription_id && driver.stripe_subscription_paused) {
+          if (driver.subscription_stripe_id && driver.stripe_subscription_paused) {
             try {
-              await stripe.subscriptions.update(driver.stripe_subscription_id, {
+              await stripe.subscriptions.update(driver.subscription_stripe_id, {
                 pause_collection: null,
               });
               
-              const subscription = await stripe.subscriptions.retrieve(driver.stripe_subscription_id);
+              const subscription = await stripe.subscriptions.retrieve(driver.subscription_stripe_id);
               if (subscription.status === "active") {
                 newStatus = "active";
                 subscriptionResumed = true;
@@ -101,6 +108,7 @@ serve(async (req) => {
           driversProcessed++;
           logStep("Driver free access expired", { 
             driverId: driver.id, 
+            previousType: driver.free_access_type,
             newStatus,
             subscriptionResumed
           });
@@ -198,12 +206,13 @@ serve(async (req) => {
 
     // ========================================
     // 3. CHAUFFEURS PIONEER - Vérifier les trials expirés
+    // IMPORTANT: Protéger les accès "unlimited" et "administrative"
     // ========================================
     const { data: expiredPioneers, error: pioneerError } = await supabaseClient
       .from("drivers")
       .select("*")
       .eq("free_access_granted", true)
-      .eq("free_access_type", "trial")
+      .eq("free_access_type", "trial") // Uniquement les vrais trials, pas unlimited/administrative
       .not("free_access_end_date", "is", null)
       .lt("free_access_end_date", now.toISOString());
 
@@ -218,6 +227,12 @@ serve(async (req) => {
 
       for (const pioneer of expiredPioneers) {
         try {
+          // SÉCURITÉ: Ne jamais toucher aux accès permanents même si marqués pioneer
+          if (pioneer.free_access_type === "unlimited" || pioneer.free_access_type === "administrative") {
+            logStep("SKIP - Pioneer with permanent access protected", { driverId: pioneer.id });
+            continue;
+          }
+
           await supabaseClient
             .from("drivers")
             .update({

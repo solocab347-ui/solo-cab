@@ -370,6 +370,16 @@ export async function instantSignOut(): Promise<void> {
 }
 
 // === NAVIGATION HELPER ===
+/**
+ * Détermine le chemin de navigation pour un utilisateur après connexion.
+ * 
+ * RÈGLES D'ACCÈS CHAUFFEUR (par ordre de priorité) :
+ * 1. Accès gratuit administratif (free_access_granted + type unlimited/administrative) = TOUJOURS accès
+ * 2. Accès gratuit temporaire avec date future = accès
+ * 3. Abonnement payé (subscription_paid = true) = accès
+ * 4. Essai pionnier actif (30 jours depuis création) = accès
+ * 5. Sinon = redirection paiement
+ */
 export function getNavigationPath(
   role: string | null,
   isEmployee: boolean,
@@ -379,8 +389,10 @@ export function getNavigationPath(
     is_pioneer?: boolean; 
     stripe_customer_id?: string;
     free_access_granted?: boolean;
+    free_access_type?: string;
     free_access_end_date?: string;
     subscription_paid?: boolean;
+    subscription_status?: string;
     created_at?: string;
   }
 ): string {
@@ -394,44 +406,70 @@ export function getNavigationPath(
     case "company":
       return "/company-dashboard";
     case "driver":
-      // Pionniers: vérifier l'accès
-      if (driverData?.is_pioneer) {
-        // Accès gratuit permanent (admin) - toujours accès
-        // Accès gratuit permanent : soit pas de date de fin (illimité), soit date future
-        const hasPermanentFreeAccess = driverData.free_access_granted === true && 
-          (!driverData.free_access_end_date || new Date(driverData.free_access_end_date) > new Date());
+      // Helper pour le dashboard approprié
+      const getDriverDashboard = () => {
+        return driverData?.is_fleet_driver && driverData?.fleet_manager_id 
+          ? "/fleet-driver-dashboard" 
+          : "/driver-dashboard";
+      };
+
+      // ========================================
+      // RÈGLE 1: Accès gratuit administratif PERMANENT
+      // Types: "unlimited", "administrative" = JAMAIS de paiement demandé
+      // ========================================
+      if (driverData?.free_access_granted === true) {
+        const isUnlimitedAccess = 
+          driverData.free_access_type === "unlimited" || 
+          driverData.free_access_type === "administrative";
         
-        if (hasPermanentFreeAccess) {
-          return driverData.is_fleet_driver && driverData.fleet_manager_id 
-            ? "/fleet-driver-dashboard" 
-            : "/driver-dashboard";
+        if (isUnlimitedAccess) {
+          // Accès illimité = TOUJOURS accès, même si end_date passée par erreur
+          return getDriverDashboard();
         }
         
-        // Abonnement payé
-        if (driverData.subscription_paid === true) {
-          return driverData.is_fleet_driver && driverData.fleet_manager_id 
-            ? "/fleet-driver-dashboard" 
-            : "/driver-dashboard";
-        }
-        
-        // Essai pionnier encore actif (30 jours depuis création)
-        if (driverData.created_at) {
-          const createdAt = new Date(driverData.created_at);
-          const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-          if (new Date() < pioneerTrialEnd) {
-            return driverData.is_fleet_driver && driverData.fleet_manager_id 
-              ? "/fleet-driver-dashboard" 
-              : "/driver-dashboard";
+        // ========================================
+        // RÈGLE 2: Accès gratuit temporaire (avec date de fin)
+        // ========================================
+        if (driverData.free_access_end_date) {
+          const endDate = new Date(driverData.free_access_end_date);
+          if (endDate > new Date()) {
+            // Date pas encore passée = accès valide
+            return getDriverDashboard();
           }
+          // Date passée mais pas unlimited = continuer vers vérifications payantes
+        } else {
+          // free_access_granted mais pas de date = considérer comme illimité
+          return getDriverDashboard();
         }
-        
-        // Sinon, paiement requis
+      }
+
+      // ========================================
+      // RÈGLE 3: Abonnement payé via Stripe
+      // ========================================
+      if (driverData?.subscription_paid === true) {
+        return getDriverDashboard();
+      }
+
+      // ========================================
+      // RÈGLE 4: Essai pionnier actif (30 jours depuis création)
+      // Uniquement pour les pionniers sans autre accès
+      // ========================================
+      if (driverData?.is_pioneer && driverData.created_at) {
+        const createdAt = new Date(driverData.created_at);
+        const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+        if (new Date() < pioneerTrialEnd) {
+          return getDriverDashboard();
+        }
+        // Essai pionnier expiré = paiement requis
         return "/pioneer-payment";
       }
-      if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
-        return "/fleet-driver-dashboard";
-      }
-      return "/driver-dashboard";
+
+      // ========================================
+      // RÈGLE 5: Chauffeur normal sans accès spécial
+      // Le dashboard vérifiera l'essai 14 jours standard
+      // ========================================
+      return getDriverDashboard();
+      
     case "client":
       return isEmployee ? "/company-employee-dashboard" : "/client-dashboard";
     default:

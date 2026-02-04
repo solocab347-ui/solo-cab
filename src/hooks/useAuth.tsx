@@ -349,12 +349,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Récupérer les données driver si nécessaire pour la navigation
+      // CRITIQUE: Inclure TOUS les champs d'accès pour une navigation correcte
       let driverData: any = null;
       if (result.role === "driver" && result.user) {
         try {
           const { data } = await supabase
             .from("drivers")
-            .select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id")
+            .select(`
+              is_fleet_driver, 
+              fleet_manager_id, 
+              is_pioneer, 
+              stripe_customer_id,
+              free_access_granted,
+              free_access_type,
+              free_access_end_date,
+              subscription_paid,
+              subscription_status,
+              created_at
+            `)
             .eq("user_id", result.user.id)
             .maybeSingle();
           driverData = data;
