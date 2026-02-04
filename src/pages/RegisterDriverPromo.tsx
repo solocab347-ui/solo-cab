@@ -515,78 +515,44 @@ const RegisterDriverPromo = () => {
       {/* Payment redirect overlay - shown immediately when user clicks pay */}
       <PaymentRedirectOverlay isVisible={showPaymentOverlay} />
       
-      <div className="min-h-screen bg-background py-6 px-3 sm:px-4 overflow-x-hidden">
-      <div className="w-full max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <img src={logo} alt="SoloCab" className="w-14 h-14 mx-auto mb-3 object-contain" />
-          
-          <h1 className="text-2xl font-bold mb-1">Inscription Chauffeur VTC</h1>
-          <p className="text-sm text-muted-foreground">Rejoignez SoloCab et développez votre activité</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-6 px-4 sm:px-6 overflow-x-hidden">
+        {/* Decorative gradient orbs */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
         </div>
-
-        {/* AI Coaching Banner - Always visible */}
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-orange-500/10 border border-purple-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-xl" />
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs">
-                  🤖 Coach IA Inclus
-                </Badge>
-              </div>
-            </div>
-            
-            <h3 className="font-semibold text-sm mb-2">Votre assistant personnel pour devenir indépendant</h3>
-            
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Trophy className="w-3 h-3 text-amber-500" />
-                <span>Célébration des victoires</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Target className="w-3 h-3 text-blue-500" />
-                <span>Suivi d'objectifs</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <TrendingUp className="w-3 h-3 text-green-500" />
-                <span>Conseils stratégiques</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <MessageSquare className="w-3 h-3 text-purple-500" />
-                <span>Accompagnement quotidien</span>
-              </div>
-            </div>
+        
+        <div className="relative w-full max-w-md mx-auto">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 object-contain" />
           </div>
-        </div>
 
-        {/* Progress indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-            <div key={step} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                  currentStep >= step
-                    ? "bg-gradient-premium text-premium-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {currentStep > step ? <CheckCircle className="w-4 h-4" /> : step}
-              </div>
-              {step < totalSteps && (
+        {/* Simplified Progress - Only on step 1 */}
+        {currentStep === 1 && (
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
+              <div key={step} className="flex items-center">
                 <div
-                  className={`w-12 h-1 mx-1 ${
-                    currentStep > step ? "bg-gradient-premium" : "bg-muted"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                    currentStep >= step
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                      : "bg-slate-800 text-slate-500 border border-slate-700"
                   }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+                >
+                  {currentStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                </div>
+                {step < totalSteps && (
+                  <div
+                    className={`w-10 sm:w-12 h-1 mx-1 rounded-full transition-all ${
+                      currentStep > step ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-slate-800"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Payment failure alert */}
         {paymentFailed && isFinalStep && (
@@ -602,18 +568,18 @@ const RegisterDriverPromo = () => {
 
         {/* Login mode for returning users */}
         {isLoginMode && currentStep === 1 && (
-          <Card className="p-6 mb-4">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-premium" />
+          <Card className="p-5 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
+            <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 text-white">
+              <RefreshCw className="w-5 h-5 text-emerald-500" />
               Reprendre votre inscription
             </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Vous avez déjà un compte ? Connectez-vous pour finaliser votre inscription.
+            <p className="text-sm text-slate-400 mb-4">
+              Connectez-vous pour finaliser votre inscription.
             </p>
             
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label htmlFor="loginEmail" className="text-sm">Email</Label>
+                <Label htmlFor="loginEmail" className="text-sm text-slate-300">Email</Label>
                 <Input
                   id="loginEmail"
                   type="email"
@@ -621,12 +587,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
                   placeholder="votre@email.com"
-                  className="h-10"
+                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="loginPassword" className="text-sm">Mot de passe</Label>
+                <Label htmlFor="loginPassword" className="text-sm text-slate-300">Mot de passe</Label>
                 <div className="relative">
                   <Input
                     id="loginPassword"
@@ -635,33 +601,38 @@ const RegisterDriverPromo = () => {
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
                     placeholder="Votre mot de passe"
-                    className="h-10 pr-10"
+                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-premium">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              <Button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 Se connecter et continuer
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-4 pt-4 border-t border-slate-800 text-center">
               <Button
-                variant="link"
+                variant="ghost"
                 onClick={() => {
                   setIsLoginMode(false);
                   setLoginEmail("");
                   setLoginPassword("");
                 }}
-                className="text-sm"
+                className="text-slate-400 hover:text-white hover:bg-slate-800"
               >
                 ← Créer un nouveau compte
               </Button>
@@ -671,11 +642,14 @@ const RegisterDriverPromo = () => {
 
         {/* Step 1: Account Info */}
         {currentStep === 1 && !isLoginMode && (
-          <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">Étape 1 : Vos informations</h2>
-            <form onSubmit={handleStep1} className="space-y-4">
+          <Card className="p-5 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
+            <h2 className="text-lg sm:text-xl font-bold mb-1 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-500" />
+              Créez votre compte gratuit
+            </h2>
+            <form onSubmit={handleStep1} className="space-y-4 mt-4">
               <div>
-                <Label htmlFor="fullName" className="text-sm">Nom complet *</Label>
+                <Label htmlFor="fullName" className="text-sm text-slate-300">Nom complet *</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -683,11 +657,25 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Jean Dupont"
-                  className="h-11"
+                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
+              
               <div>
-                <Label htmlFor="phone" className="text-sm">Téléphone *</Label>
+                <Label htmlFor="email" className="text-sm text-slate-300">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="votre@email.com"
+                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone" className="text-sm text-slate-300">Téléphone *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -695,25 +683,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   placeholder="06 12 34 56 78"
-                  className="h-11"
+                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-sm">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="jean@example.com"
-                  className="h-11"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="password" className="text-sm">Mot de passe *</Label>
+                <Label htmlFor="password" className="text-sm text-slate-300">Mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -721,21 +696,22 @@ const RegisterDriverPromo = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="Min. 6 caractères"
+                    placeholder="Minimum 6 caractères"
                     minLength={6}
-                    className="h-11 pr-10"
+                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
+              
               <div>
-                <Label htmlFor="confirmPassword" className="text-sm">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword" className="text-sm text-slate-300">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -743,14 +719,14 @@ const RegisterDriverPromo = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    placeholder="Confirmer le mot de passe"
+                    placeholder="Confirmez votre mot de passe"
                     minLength={6}
-                    className="h-11 pr-10"
+                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -758,25 +734,42 @@ const RegisterDriverPromo = () => {
               </div>
               
               {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
+                <p className="text-xs text-red-400">Les mots de passe ne correspondent pas</p>
               )}
 
-              <Button type="submit" disabled={loading} className="w-full h-11">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Continuer
+              {/* CTA Button - Engaging Independence */}
+              <Button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="w-5 h-5 mr-2" />
+                )}
+                Lancer mon indépendance
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
+              
+              {/* Legal notice */}
+              <p className="text-xs text-slate-500 text-center">
+                En vous inscrivant, vous acceptez nos{" "}
+                <button type="button" className="text-emerald-500 hover:underline">
+                  conditions d'utilisation
+                </button>
+              </p>
             </form>
 
             {/* Link to login for existing users */}
-            <div className="mt-4 pt-4 border-t text-center">
-              <p className="text-sm text-muted-foreground mb-2">Déjà inscrit mais pas finalisé ?</p>
+            <div className="mt-6 pt-4 border-t border-slate-800 text-center">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Déjà inscrit ?</p>
               <Button
                 variant="outline"
                 onClick={() => setIsLoginMode(true)}
-                className="w-full"
+                className="w-full h-12 bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reprendre mon inscription
+                Se connecter
               </Button>
             </div>
           </Card>
@@ -1316,19 +1309,19 @@ const RegisterDriverPromo = () => {
         )}
 
         {/* Benefits footer */}
-        <div className="mt-6 flex justify-center gap-3 flex-wrap">
-          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
-            <Shield className="w-5 h-5 text-premium mx-auto mb-1" />
-            <p className="font-medium text-[10px]">Sécurisé</p>
-          </Card>
-          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
-            <CheckCircle className="w-5 h-5 text-success mx-auto mb-1" />
-            <p className="font-medium text-[10px]">Sans engagement</p>
-          </Card>
-          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
-            <TrendingUp className="w-5 h-5 text-premium mx-auto mb-1" />
-            <p className="font-medium text-[10px]">Accès direct</p>
-          </Card>
+        <div className="mt-6 flex justify-center gap-2 sm:gap-3 flex-wrap">
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Sécurisé</p>
+          </div>
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Sans engagement</p>
+          </div>
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Accès direct</p>
+          </div>
         </div>
       </div>
     </div>
