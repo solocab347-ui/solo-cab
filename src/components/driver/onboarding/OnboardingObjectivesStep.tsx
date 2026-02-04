@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -11,7 +9,8 @@ import {
   Users,
   Clock,
   TrendingUp,
-  CheckCircle
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { StepWelcome } from '@/components/driver/objectives/onboarding/steps/StepWelcome';
 import { StepExperience } from '@/components/driver/objectives/onboarding/steps/StepExperience';
@@ -23,6 +22,7 @@ import { StepChallenges } from '@/components/driver/objectives/onboarding/steps/
 import { StepAIAnalysis } from '@/components/driver/objectives/onboarding/steps/StepAIAnalysis';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export interface DaySchedule {
   dayIndex: number;
@@ -62,11 +62,14 @@ const STEPS = [
   { id: 'rhythm', title: 'Rythme', icon: Clock },
   { id: 'platforms', title: 'Plateformes', icon: Users },
   { id: 'challenges', title: 'Défis', icon: Target },
-  { id: 'analysis', title: 'Analyse IA', icon: Sparkles },
+  { id: 'analysis', title: 'Analyse', icon: Sparkles },
 ];
+
+const SWIPE_THRESHOLD = 50;
 
 export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObjectivesStepProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [direction, setDirection] = useState(0);
   const [data, setData] = useState<OnboardingObjectivesData>({
     experience: '',
     currentMonthlyRevenue: 0,
@@ -88,34 +91,46 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0: return true; // Welcome
+      case 0: return true;
       case 1: return !!data.experience;
-      case 2: return true; // Situation has defaults
+      case 2: return true;
       case 3: return data.targetMonthlyRevenue > 0 && !!data.mainGoal;
       case 4: return data.workHoursPerDay > 0 && data.workDaysPerWeek > 0;
       case 5: return data.platformsUsed.length > 0;
       case 6: return data.challenges.length > 0;
-      case 7: return true; // AI Analysis
+      case 7: return true;
       default: return false;
     }
   };
 
   const nextStep = () => {
     if (currentStep < STEPS.length - 1) {
+      setDirection(1);
       setCurrentStep(prev => prev + 1);
     }
   };
 
   const prevStep = () => {
     if (currentStep > 0) {
+      setDirection(-1);
       setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const handleDragEnd = (event: any, info: PanInfo) => {
+    const swipe = info.offset.x;
+    const velocity = info.velocity.x;
+
+    if (swipe > SWIPE_THRESHOLD || velocity > 500) {
+      prevStep();
+    } else if ((swipe < -SWIPE_THRESHOLD || velocity < -500) && canProceed()) {
+      nextStep();
     }
   };
 
   const handleComplete = async (aiRecommendations: string) => {
     try {
-      // Save objectives data to driver record - use type assertion for new columns
-      const updateData: Record<string, any> = {
+      const updatePayload: Record<string, any> = {
         objectives_completed: true,
         objectives_data: data,
         ai_coaching_recommendations: aiRecommendations,
@@ -124,10 +139,10 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       
       await supabase
         .from('drivers')
-        .update(updateData)
+        .update(updatePayload)
         .eq('id', driverId);
 
-      toast.success('Vos objectifs sont configurés ! Votre coach IA est prêt.');
+      toast.success('Vos objectifs sont configurés !');
       onComplete();
     } catch (error) {
       console.error('Error saving objectives:', error);
@@ -135,95 +150,94 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
     }
   };
 
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+  };
 
   const renderStep = () => {
     switch (currentStep) {
-      case 0:
-        return <StepWelcome onSkip={undefined} />;
-      case 1:
-        return <StepExperience data={data} onUpdate={updateData} />;
-      case 2:
-        return <StepCurrentSituation data={data} onUpdate={updateData} />;
-      case 3:
-        return <StepGoals data={data} onUpdate={updateData} />;
-      case 4:
-        return <StepWorkRhythm data={data} onUpdate={updateData} />;
-      case 5:
-        return <StepPlatforms data={data} onUpdate={updateData} />;
-      case 6:
-        return <StepChallenges data={data} onUpdate={updateData} />;
-      case 7:
-        return <StepAIAnalysis data={data} driverId={driverId} onComplete={handleComplete} />;
-      default:
-        return null;
+      case 0: return <StepWelcome onSkip={undefined} />;
+      case 1: return <StepExperience data={data} onUpdate={updateData} />;
+      case 2: return <StepCurrentSituation data={data} onUpdate={updateData} />;
+      case 3: return <StepGoals data={data} onUpdate={updateData} />;
+      case 4: return <StepWorkRhythm data={data} onUpdate={updateData} />;
+      case 5: return <StepPlatforms data={data} onUpdate={updateData} />;
+      case 6: return <StepChallenges data={data} onUpdate={updateData} />;
+      case 7: return <StepAIAnalysis data={data} driverId={driverId} onComplete={handleComplete} />;
+      default: return null;
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center mb-3">
-          <Target className="w-6 h-6 text-primary-foreground" />
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header compact */}
+      <div className="flex-shrink-0 text-center py-3">
+        <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary to-emerald-500 rounded-full flex items-center justify-center mb-2">
+          <Target className="w-6 h-6 text-white" />
         </div>
-        <h2 className="text-lg font-bold">Définissez vos objectifs</h2>
-        <p className="text-sm text-muted-foreground">
-          Configurez votre coach IA pour maximiser votre réussite
-        </p>
+        <h2 className="text-lg font-bold text-white">Ta Vision</h2>
+        <p className="text-sm text-white/60">Configure ton coach IA</p>
       </div>
 
-      {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            Étape {currentStep + 1} sur {STEPS.length}
-          </span>
-          <span className="font-medium">{STEPS[currentStep].title}</span>
-        </div>
-        <Progress value={progress} className="h-1.5" />
-        
-        {/* Mini step indicators */}
-        <div className="flex justify-between px-1">
-          {STEPS.map((step, index) => (
-            <div 
-              key={step.id}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index < currentStep 
-                  ? 'bg-primary' 
-                  : index === currentStep 
-                    ? 'bg-primary/60 ring-2 ring-primary/30' 
-                    : 'bg-muted'
-              }`}
-            />
-          ))}
-        </div>
+      {/* Progress dots */}
+      <div className="flex-shrink-0 flex justify-center gap-1.5 py-2">
+        {STEPS.map((_, i) => (
+          <div 
+            key={i}
+            className={cn(
+              "w-2 h-2 rounded-full transition-all",
+              i === currentStep ? "bg-primary w-6" : i < currentStep ? "bg-emerald-500" : "bg-white/20"
+            )}
+          />
+        ))}
       </div>
 
-      {/* Step Content */}
-      <Card className="border-primary/20">
-        <CardContent className="p-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderStep()}
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+      {/* Swipeable content */}
+      <motion.div 
+        className="flex-1 overflow-hidden relative"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.1}
+        onDragEnd={handleDragEnd}
+      >
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={currentStep}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'tween', duration: 0.25 }}
+            className="absolute inset-0 overflow-y-auto overflow-x-hidden px-4"
+          >
+            {renderStep()}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Swipe hints */}
+        {currentStep > 0 && (
+          <div className="absolute left-1 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none">
+            <ChevronLeft className="w-6 h-6" />
+          </div>
+        )}
+        {currentStep < STEPS.length - 1 && canProceed() && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none">
+            <ChevronRight className="w-6 h-6" />
+          </div>
+        )}
+      </motion.div>
 
       {/* Navigation */}
       {currentStep < STEPS.length - 1 && (
-        <div className="flex justify-between gap-3">
+        <div className="flex-shrink-0 flex gap-3 px-4 py-3">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={prevStep}
             disabled={currentStep === 0}
-            size="sm"
+            className="flex-1 h-11 text-white/60 hover:bg-white/10"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
             Retour
@@ -232,8 +246,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
           <Button
             onClick={nextStep}
             disabled={!canProceed()}
-            size="sm"
-            className="flex-1"
+            className="flex-1 h-11 bg-primary"
           >
             Suivant
             <ArrowRight className="w-4 h-4 ml-1" />
