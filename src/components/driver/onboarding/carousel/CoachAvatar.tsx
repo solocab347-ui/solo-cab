@@ -26,7 +26,7 @@ export function CoachAvatar({ size = 'md', className, pulse = false }: CoachAvat
         className
       )}
     >
-      S
+      A
       {/* Glow effect */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-accent opacity-50 blur-lg -z-10" />
     </motion.div>
