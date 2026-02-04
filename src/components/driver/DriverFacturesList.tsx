@@ -509,6 +509,16 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     const airportFee = facture.airport_fee || facture.devis?.airport_fee || 0;
 
     if (!forClient) {
+      // Version chauffeur - Afficher la source de tarification si c'est une tarification par ville
+      if (facture.devis?.pricing_source === 'city' && facture.devis?.city_pricing_name) {
+        doc.setFillColor(230, 245, 255);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(41, 128, 185);
+        doc.setFontSize(8);
+        doc.text(`📍 Tarification appliquée: ${facture.devis.city_pricing_name}`, 25, yPos + 5);
+        yPos += 9;
+      }
+      
       // Driver version - detailed breakdown
       doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.rect(20, yPos, 170, 8, 'F');

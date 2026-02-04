@@ -4022,18 +4022,21 @@ export type Database = {
           airport_fee: number | null
           amount: number
           base_price: number
+          city_pricing_name: string | null
           client_id: string | null
           company_employee_id: string | null
           company_id: string | null
           course_id: string
           created_at: string
           discount_amount: number
+          distance_km: number | null
           distance_price: number
           driver_id: string
           evening_surcharge_amount: number | null
           id: string
           notes: string | null
           peak_hours_surcharge_amount: number | null
+          pricing_source: string | null
           promo_code: string | null
           quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
@@ -4050,18 +4053,21 @@ export type Database = {
           airport_fee?: number | null
           amount: number
           base_price: number
+          city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id: string
           created_at?: string
           discount_amount?: number
+          distance_km?: number | null
           distance_price: number
           driver_id: string
           evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
           peak_hours_surcharge_amount?: number | null
+          pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
@@ -4078,18 +4084,21 @@ export type Database = {
           airport_fee?: number | null
           amount?: number
           base_price?: number
+          city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id?: string
           created_at?: string
           discount_amount?: number
+          distance_km?: number | null
           distance_price?: number
           driver_id?: string
           evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
           peak_hours_surcharge_amount?: number | null
+          pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
@@ -7308,6 +7317,8 @@ export type Database = {
         Row: {
           airport_fee: number | null
           amount: number
+          base_price: number | null
+          city_pricing_name: string | null
           client_id: string | null
           company_employee_id: string | null
           company_id: string | null
@@ -7315,22 +7326,31 @@ export type Database = {
           created_at: string
           devis_id: string | null
           discount_amount: number
+          distance_km: number | null
+          distance_price: number | null
           driver_id: string
+          evening_surcharge_amount: number | null
           id: string
           invoice_number: string
           invoice_number_generated: string | null
           paid_at: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          peak_hours_surcharge_amount: number | null
+          pricing_source: string | null
           promo_code: string | null
           stripe_payment_id: string | null
+          time_price: number | null
           tva_amount: number | null
           tva_rate: number | null
           updated_at: string
+          weekend_surcharge_amount: number | null
         }
         Insert: {
           airport_fee?: number | null
           amount: number
+          base_price?: number | null
+          city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
@@ -7338,22 +7358,31 @@ export type Database = {
           created_at?: string
           devis_id?: string | null
           discount_amount?: number
+          distance_km?: number | null
+          distance_price?: number | null
           driver_id: string
+          evening_surcharge_amount?: number | null
           id?: string
           invoice_number: string
           invoice_number_generated?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          peak_hours_surcharge_amount?: number | null
+          pricing_source?: string | null
           promo_code?: string | null
           stripe_payment_id?: string | null
+          time_price?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
           updated_at?: string
+          weekend_surcharge_amount?: number | null
         }
         Update: {
           airport_fee?: number | null
           amount?: number
+          base_price?: number | null
+          city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
@@ -7361,18 +7390,25 @@ export type Database = {
           created_at?: string
           devis_id?: string | null
           discount_amount?: number
+          distance_km?: number | null
+          distance_price?: number | null
           driver_id?: string
+          evening_surcharge_amount?: number | null
           id?: string
           invoice_number?: string
           invoice_number_generated?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          peak_hours_surcharge_amount?: number | null
+          pricing_source?: string | null
           promo_code?: string | null
           stripe_payment_id?: string | null
+          time_price?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
           updated_at?: string
+          weekend_surcharge_amount?: number | null
         }
         Relationships: [
           {

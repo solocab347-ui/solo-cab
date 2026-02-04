@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/collapsible";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { MultiplePeakHours } from "@/components/pricing/MultiplePeakHours";
+import { SectorSelector } from "@/components/shared/SectorSelector";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -488,21 +489,16 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
 
                       {/* Secteurs */}
                       {pricing.city_name && getSectorsForCity(pricing.city_name).length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Secteurs (optionnel - laisser vide pour toute la ville)</Label>
-                          <div className="flex flex-wrap gap-2">
-                            {getSectorsForCity(pricing.city_name).map((sector) => (
-                              <Badge
-                                key={sector.sector_name}
-                                variant={pricing.sectors.includes(sector.sector_name) ? "default" : "outline"}
-                                className="cursor-pointer"
-                                onClick={() => toggleSector(pricing.id!, sector.sector_name)}
-                              >
-                                {sector.sector_name}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
+                        <SectorSelector
+                          sectors={getSectorsForCity(pricing.city_name)}
+                          selectedSectors={pricing.sectors}
+                          onToggle={(sector) => toggleSector(pricing.id!, sector)}
+                          onSelectAll={() => {
+                            const allSectors = getSectorsForCity(pricing.city_name).map(s => s.sector_name);
+                            updatePricing(pricing.id!, { sectors: allSectors });
+                          }}
+                          onDeselectAll={() => updatePricing(pricing.id!, { sectors: [] })}
+                        />
                       )}
                     </div>
 

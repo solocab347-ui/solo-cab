@@ -45,6 +45,9 @@ interface UnifiedQuote {
   scheduled_date: string;
   distance_km: number | null;
   duration_minutes: number | null;
+  // Traçabilité tarification
+  pricing_source: string | null;
+  city_pricing_name: string | null;
   // Client info (null for company quotes)
   client_id: string | null;
   client_name: string | null;
@@ -315,8 +318,10 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             pickup_address: d.courses?.pickup_address || "",
             destination_address: d.courses?.destination_address || "",
             scheduled_date: d.courses?.scheduled_date || d.created_at,
-            distance_km: d.courses?.distance_km,
+            distance_km: d.distance_km || d.courses?.distance_km,
             duration_minutes: d.courses?.duration_minutes,
+            pricing_source: d.pricing_source || null,
+            city_pricing_name: d.city_pricing_name || null,
             client_id: isCompanyDevis ? null : d.clients?.id,
             client_name: isCompanyDevis ? null : d.clients?.profiles?.full_name,
             client_email: isCompanyDevis ? null : d.clients?.profiles?.email,
@@ -387,6 +392,8 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             scheduled_date: req.scheduled_date,
             distance_km: q.distance_km,
             duration_minutes: q.duration_minutes,
+            pricing_source: 'classic',
+            city_pricing_name: null,
             client_id: null,
             client_name: null,
             client_email: null,
@@ -671,6 +678,17 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
     if (!forClient) {
       // Driver version - detailed breakdown
+      
+      // Afficher la source de tarification si c'est une tarification par ville
+      if (devis.pricing_source === 'city' && devis.city_pricing_name) {
+        doc.setFillColor(230, 245, 255);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(41, 128, 185);
+        doc.setFontSize(8);
+        doc.text(`📍 Tarification appliquée: ${devis.city_pricing_name}`, 25, yPos + 5);
+        yPos += 9;
+      }
+      
       doc.setFillColor(41, 128, 185);
       doc.rect(20, yPos, 170, 8, 'F');
       doc.setTextColor(255, 255, 255);
