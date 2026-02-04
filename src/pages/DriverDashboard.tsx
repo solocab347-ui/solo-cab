@@ -46,6 +46,7 @@ import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner
 import { DocumentsBlockedOverlay } from "@/components/driver/DocumentsBlockedOverlay";
 import { PioneerBanner } from "@/components/driver/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
+import { TrialStartBanner } from "@/components/driver/TrialStartBanner";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
@@ -546,6 +547,18 @@ const DriverDashboard = () => {
           />
         )}
 
+        {/* Trial Start Banner - Pour les chauffeurs en attente de matériel/Stripe */}
+        {driverProfile?.driver?.id && (
+          <div className="mb-4">
+            <TrialStartBanner
+              driverId={driverProfile.driver.id}
+              billingType={driverProfile.driver.billing_type}
+              stripeAccountStatus={driverProfile.driver.stripe_connect_status}
+              trialStatus={driverProfile.driver.trial_status}
+              onTrialStarted={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
+            />
+          </div>
+        )}
 
         {/* Course Queue Alert - Alerte file d'attente intelligente */}
         {driverProfile?.driver?.id && (
