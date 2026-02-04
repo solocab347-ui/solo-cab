@@ -4,7 +4,7 @@ import { Users, Trash2, CreditCard, BarChart3 } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
 import AdminUserCleanup from "../AdminUserCleanup";
 import AdminNfcHub from "./AdminNfcHub";
-import AdminDriverOnboardingTracker from "../AdminDriverOnboardingTracker";
+import DriverProgressionTracker from "../DriverProgressionTracker";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const AdminUsersHub = () => {
@@ -59,7 +59,7 @@ const AdminUsersHub = () => {
 
       {/* Content */}
       <div className="overflow-x-hidden">
-        {activeSection === "tracking" && <AdminDriverOnboardingTracker />}
+        {activeSection === "tracking" && <DriverProgressionTracker />}
         {activeSection === "drivers" && <AdminDriversManagement />}
         {activeSection === "nfc" && <AdminNfcHub />}
         {activeSection === "cleanup" && <AdminUserCleanup />}
