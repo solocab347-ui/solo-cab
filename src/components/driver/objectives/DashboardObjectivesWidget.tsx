@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Bot, 
   Target, 
   TrendingUp, 
-  Sparkles, 
   ChevronRight,
   Trophy,
   Flame,
@@ -14,7 +11,9 @@ import {
   Car,
   Calendar,
   CalendarDays,
-  CalendarRange
+  CalendarRange,
+  Edit3,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
