@@ -17,7 +17,14 @@ import {
   Info,
   XCircle,
   Tag,
-  Gift
+  Gift,
+  Trophy,
+  Users,
+  FileText,
+  Car,
+  Star,
+  Heart,
+  Sparkles
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,8 +37,17 @@ interface DriverInfo {
   nfc_tag_number: string | null;
   nfc_plate_order_id: string | null;
   trial_end_date: string | null;
+  trial_start_date: string | null;
   first_name: string | null;
   last_name: string | null;
+}
+
+interface DriverStats {
+  totalClients: number;
+  totalCourses: number;
+  totalQuotes: number;
+  totalRevenue: number;
+  averageRating: number | null;
 }
 
 export default function TrialExpiredSubscribe() {
@@ -42,6 +58,13 @@ export default function TrialExpiredSubscribe() {
   const [wantsNfcPlate, setWantsNfcPlate] = useState(false);
   const [selectedNfcType, setSelectedNfcType] = useState<"plastic" | "wood">("plastic");
   const [driver, setDriver] = useState<DriverInfo | null>(null);
+  const [stats, setStats] = useState<DriverStats>({
+    totalClients: 0,
+    totalCourses: 0,
+    totalQuotes: 0,
+    totalRevenue: 0,
+    averageRating: null
+  });
 
   // Vérifier si le chauffeur a déjà une plaque NFC
   const hasNfcPlate = driver && (
@@ -72,6 +95,7 @@ export default function TrialExpiredSubscribe() {
           nfc_plate_order_id,
           trial_status,
           trial_end_date,
+          trial_start_date,
           subscription_status,
           subscription_paid
         `)
@@ -91,16 +115,59 @@ export default function TrialExpiredSubscribe() {
         return;
       }
 
+      // Récupérer le prénom depuis le profil
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const fullName = profileData?.full_name || "";
+      const firstName = fullName.split(" ")[0] || null;
+
       setDriver({
         ...driverData,
-        first_name: null,
-        last_name: null
+        first_name: firstName,
+        last_name: fullName.split(" ").slice(1).join(" ") || null
       });
+
+      // Récupérer les statistiques d'accomplissement du chauffeur pendant l'essai
+      await fetchDriverStats(driverData.id);
     } catch (err) {
       console.error("Error checking eligibility:", err);
       toast.error("Erreur lors de la vérification");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDriverStats = async (driverId: string) => {
+    try {
+      // Récupérer les clients acquis
+      const { count: clientCount } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .eq("driver_id", driverId);
+
+      // Récupérer les courses effectuées et le CA
+      const { data: coursesData, count: courseCount } = await supabase
+        .from("courses")
+        .select("final_payment_amount, status", { count: "exact" })
+        .eq("driver_id", driverId)
+        .in("status", ["completed", "accepted"]);
+
+      // Calculer le CA total
+      const totalRevenue = coursesData?.reduce((sum, c) => sum + (c.final_payment_amount || 0), 0) || 0;
+
+      setStats({
+        totalClients: clientCount || 0,
+        totalCourses: courseCount || 0,
+        totalQuotes: 0, // Sera affiché seulement si > 0
+        totalRevenue,
+        averageRating: null
+      });
+    } catch (err) {
+      console.error("Error fetching stats:", err);
     }
   };
 
@@ -204,6 +271,88 @@ export default function TrialExpiredSubscribe() {
           </p>
         </div>
 
+        {/* Section Accomplissements pendant l'essai */}
+        {(stats.totalClients > 0 || stats.totalCourses > 0) && (
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-600" />
+                <CardTitle className="text-lg text-amber-800 dark:text-amber-200">
+                  Bravo ! Voici ce que vous avez accompli 🎉
+                </CardTitle>
+              </div>
+              <CardDescription className="text-amber-700/80 dark:text-amber-300/80">
+                Pendant votre période d'essai, vous avez déjà fait des progrès remarquables.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {stats.totalClients > 0 && (
+                  <div className="flex items-center gap-3 bg-white/60 dark:bg-white/10 rounded-lg p-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{stats.totalClients}</p>
+                      <p className="text-xs text-muted-foreground">client{stats.totalClients > 1 ? 's' : ''} acquis</p>
+                    </div>
+                  </div>
+                )}
+                {stats.totalCourses > 0 && (
+                  <div className="flex items-center gap-3 bg-white/60 dark:bg-white/10 rounded-lg p-3">
+                    <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                      <Car className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{stats.totalCourses}</p>
+                      <p className="text-xs text-muted-foreground">course{stats.totalCourses > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                )}
+                {stats.totalRevenue > 0 && (
+                  <div className="flex items-center gap-3 bg-white/60 dark:bg-white/10 rounded-lg p-3">
+                    <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                      <Sparkles className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{stats.totalRevenue.toFixed(0)}€</p>
+                      <p className="text-xs text-muted-foreground">de chiffre d'affaires</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 p-3 bg-white/80 dark:bg-white/5 rounded-lg border border-amber-200/50">
+                <p className="text-sm text-center text-amber-800 dark:text-amber-200">
+                  <Heart className="h-4 w-4 inline-block mr-1 text-red-500" />
+                  Ces résultats sont le fruit de <strong>votre engagement</strong>. 
+                  Continuez à construire votre indépendance avec SoloCab !
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Message bienveillant si pas encore d'activité */}
+        {stats.totalClients === 0 && stats.totalCourses === 0 && (
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/50">
+            <CardContent className="pt-5">
+              <div className="flex items-start gap-3">
+                <Star className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                    L'aventure ne fait que commencer !
+                  </h3>
+                  <p className="text-sm text-blue-700/80 dark:text-blue-300/80">
+                    Vous avez exploré SoloCab pendant votre essai. Maintenant, 
+                    passez à l'action : avec nos outils et l'IA Coach, vous allez 
+                    construire votre clientèle personnelle et devenir vraiment indépendant.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Message de rassurance */}
         <Alert className="border-primary/20 bg-primary/5">
           <Shield className="h-4 w-4 text-primary" />
@@ -243,7 +392,7 @@ export default function TrialExpiredSubscribe() {
                       : "border-muted-foreground"
                   )}>
                     {selectedPlan === plan.id && (
-                      <Check className="h-3 w-3 text-white" />
+                      <Check className="h-3 w-3 text-primary-foreground" />
                     )}
                   </div>
                 </div>
