@@ -1,5 +1,5 @@
 // Service Worker pour gérer les notifications push VAPID
-const SW_VERSION = '2.0.0';
+const SW_VERSION = '2.1.0';
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker v' + SW_VERSION + ': Installé');
@@ -45,17 +45,7 @@ self.addEventListener('push', (event) => {
       timestamp: Date.now()
     },
     requireInteraction: false,
-    vibrate: [200, 100, 200],
-    actions: [
-      {
-        action: 'open',
-        title: 'Ouvrir'
-      },
-      {
-        action: 'close',
-        title: 'Fermer'
-      }
-    ]
+    vibrate: [200, 100, 200]
   };
 
   console.log('Service Worker: Affichage notification:', data.title);
@@ -65,34 +55,36 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Gérer les clics sur les notifications
+// Gérer les clics sur les notifications - CORRIGÉ
 self.addEventListener('notificationclick', (event) => {
-  console.log('Service Worker: Click sur notification', event.action);
+  console.log('Service Worker: Click sur notification');
   
+  // Fermer la notification immédiatement
   event.notification.close();
 
-  if (event.action === 'close') {
-    return;
-  }
-
   const url = event.notification.data?.url || '/';
+  const fullUrl = new URL(url, self.location.origin).href;
+
+  console.log('Service Worker: Navigation vers', fullUrl);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Chercher une fenêtre existante
+        // Chercher une fenêtre existante de l'app
         for (const client of clientList) {
           const clientUrl = new URL(client.url);
-          if (clientUrl.origin === self.location.origin && 'focus' in client) {
-            // Naviguer vers l'URL dans la fenêtre existante
-            client.postMessage({ type: 'NAVIGATE', url: url });
-            return client.focus();
+          if (clientUrl.origin === self.location.origin) {
+            // Naviguer vers l'URL et focus la fenêtre
+            return client.navigate(fullUrl).then(() => client.focus());
           }
         }
         // Sinon, ouvrir une nouvelle fenêtre
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
+        return clients.openWindow(fullUrl);
+      })
+      .catch((error) => {
+        console.error('Service Worker: Erreur navigation:', error);
+        // Fallback: essayer d'ouvrir une nouvelle fenêtre
+        return clients.openWindow(fullUrl);
       })
   );
 });
@@ -120,7 +112,6 @@ self.addEventListener('pushsubscriptionchange', (event) => {
       userVisibleOnly: true
     }).then((subscription) => {
       console.log('Service Worker: Nouvelle subscription créée');
-      // Notifier le client de la nouvelle subscription
       clients.matchAll().then((clientList) => {
         clientList.forEach((client) => {
           client.postMessage({
