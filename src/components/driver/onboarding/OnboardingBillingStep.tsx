@@ -22,9 +22,13 @@ import {
   ArrowRight,
   Gift,
   Clock,
-  Lock
+  Lock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import sumupTpeCard from '@/assets/sumup-tpe-card.jpg';
+import sumupTpeDevice from '@/assets/sumup-tpe-device.jpg';
 
 interface OnboardingBillingStepProps {
   data: {
@@ -87,7 +91,11 @@ const BILLING_OPTIONS = [
 export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepProps) {
   const [showAffiliateInfo, setShowAffiliateInfo] = useState(false);
   const [showStripeInfo, setShowStripeInfo] = useState(false);
+  const [hasOrderedEquipment, setHasOrderedEquipment] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [hasClickedLink, setHasClickedLink] = useState(false);
 
+  const tpeImages = [sumupTpeDevice, sumupTpeCard];
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
 
   return (
@@ -209,17 +217,58 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
               Via notre lien partenaire SumUp, équipez-vous d'un terminal de paiement professionnel pour encaisser vos clients par carte bancaire.
             </p>
             
-            <div className="bg-white/50 dark:bg-background/50 rounded-lg p-3 space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-amber-600" />
-                  <span className="text-xs font-medium">TPE à partir de 24€</span>
+            {/* Image Carousel TPE */}
+            <div className="relative bg-white rounded-xl overflow-hidden">
+              <div className="relative aspect-square max-h-48 flex items-center justify-center p-4">
+                <img 
+                  src={tpeImages[currentImageIndex]} 
+                  alt={`SumUp Solo Lite ${currentImageIndex + 1}`}
+                  className="max-h-full max-w-full object-contain"
+                />
+                {/* Navigation arrows */}
+                <button
+                  onClick={() => setCurrentImageIndex(prev => prev === 0 ? tpeImages.length - 1 : prev - 1)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setCurrentImageIndex(prev => prev === tpeImages.length - 1 ? 0 : prev + 1)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                {/* Dots indicator */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {tpeImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-colors",
+                        idx === currentImageIndex ? "bg-amber-500" : "bg-gray-300"
+                      )}
+                    />
+                  ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground pl-6">
-                  Le modèle le moins cher débute à seulement 24€ TTC.
-                </p>
               </div>
               
+              {/* Product info */}
+              <div className="p-3 bg-gray-50 dark:bg-background/50">
+                <h3 className="font-bold text-base">Solo Lite</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Un terminal de paiement simple et durable qui se connecte à votre smartphone via Bluetooth pour accepter les paiements où que vous soyez.
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-lg font-bold">20 €</span>
+                  <span className="text-sm text-muted-foreground line-through">34 €</span>
+                  <Badge className="bg-purple-600 text-white text-[10px]">41% de réduction</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">24 € TVA incluse</p>
+              </div>
+            </div>
+            
+            <div className="bg-white/50 dark:bg-background/50 rounded-lg p-3 space-y-3">
               <Separator className="my-2" />
               
               <div className="space-y-1.5">
@@ -244,18 +293,45 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
             <Button
               variant="default"
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-              onClick={() => window.open(SUMUP_AFFILIATE_LINK, '_blank')}
+              onClick={() => {
+                window.open(SUMUP_AFFILIATE_LINK, '_blank');
+                setHasClickedLink(true);
+              }}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Commander mon TPE SumUp
             </Button>
 
-            <Alert className="border-primary/30 bg-primary/5">
-              <Info className="h-3.5 w-3.5 text-primary" />
-              <AlertDescription className="text-[11px] text-muted-foreground">
-                En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement. Vous pourrez également activer l'encaissement en ligne plus tard.
-              </AlertDescription>
-            </Alert>
+            {/* Bouton "J'ai commandé" qui apparaît après clic sur le lien */}
+            {hasClickedLink && !hasOrderedEquipment && (
+              <Button
+                variant="outline"
+                className="w-full border-green-500/50 text-green-600 hover:bg-green-500/10"
+                onClick={() => setHasOrderedEquipment(true)}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                J'ai commandé mon matériel
+              </Button>
+            )}
+
+            {hasOrderedEquipment && (
+              <Alert className="border-green-500/30 bg-green-500/10">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                <AlertTitle className="text-xs text-green-700">Commande confirmée !</AlertTitle>
+                <AlertDescription className="text-[11px] text-green-600 mt-1">
+                  Parfait ! En attendant de recevoir votre TPE, vous pourrez encaisser en espèces ou par virement. Passez à l'étape suivante.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!hasOrderedEquipment && (
+              <Alert className="border-primary/30 bg-primary/5">
+                <Info className="h-3.5 w-3.5 text-primary" />
+                <AlertDescription className="text-[11px] text-muted-foreground">
+                  En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement. Vous pourrez également activer l'encaissement en ligne plus tard.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}

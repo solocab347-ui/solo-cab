@@ -98,8 +98,11 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     ? driverProfile.full_name.split(' ')[0]
     : driverProfile?.driver?.display_name || '';
 
-  // Proactive AI Coach
-  const hasObjectives = stats.monthCourses > 0 || stats.monthClients > 0;
+  // Les objectifs sont maintenant remplis à l'onboarding, donc hasObjectives = true par défaut
+  const onboardingObjectivesCompleted = driverProfile?.driver?.onboarding_objectives_completed ?? false;
+
+  // Proactive AI Coach - Les objectifs sont maintenant remplis à l'onboarding
+  const hasObjectives = onboardingObjectivesCompleted || stats.monthCourses > 0 || stats.monthClients > 0;
   const { currentMessage, dismissMessage } = useProactiveCoach({
     driverId: driverProfile?.driver?.id || '',
     driverName: displayName,
@@ -110,7 +113,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
       monthRevenue: stats.monthRevenue,
       totalClients: stats.monthClients,
       streakDays: 0, // Would need separate tracking
-      hasObjectives,
+      hasObjectives: true, // Toujours true car remplis à l'onboarding
       soloCabPercentage: 0, // Would need calculation
       partnershipsCount: 0 // Would need separate tracking
     },
