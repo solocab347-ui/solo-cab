@@ -1,6 +1,6 @@
 export { DriverOnboardingTunnel } from './DriverOnboardingTunnel';
 export { OnboardingSettingsStep } from './OnboardingSettingsStep';
-export { ConversationalSettingsStep } from './ConversationalSettingsStep';
+export { GuidedSettingsFlow } from './GuidedSettingsFlow';
 export { OnboardingProfileStep } from './OnboardingProfileStep';
 export { OnboardingBillingStep } from './OnboardingBillingStep';
 export { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
