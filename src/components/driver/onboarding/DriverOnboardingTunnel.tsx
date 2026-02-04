@@ -12,11 +12,13 @@ import {
   CheckCircle2,
   Loader2,
   CreditCard,
-  Save
+  Save,
+  Wallet
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
+import { OnboardingBillingStep } from './OnboardingBillingStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingCompleteStep } from './OnboardingCompleteStep';
 import { OnboardingAIAssistant } from './OnboardingAIAssistant';
@@ -36,6 +38,7 @@ export interface OnboardingTunnelProps {
 const ALL_STEPS = [
   { id: 'settings', title: 'Réglages', icon: Settings },
   { id: 'profile', title: 'Profil', icon: User },
+  { id: 'billing', title: 'Facturation', icon: Wallet },
   { id: 'documents', title: 'Documents', icon: FileText },
   { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },
   { id: 'complete', title: 'Terminé', icon: Sparkles },
@@ -97,6 +100,9 @@ export function DriverOnboardingTunnel({
     documents: {
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
+    billing: {
+      billingType: (driverProfile?.driver?.billing_type as 'own_equipment' | 'buy_equipment' | 'solocab_stripe') || 'own_equipment',
+    },
     nfc: {
       hasNfcPlate,
       wantsNfcPlate: false,
@@ -107,6 +113,7 @@ export function DriverOnboardingTunnel({
   const [completedSteps, setCompletedSteps] = useState({
     settings: driverProfile?.driver?.onboarding_settings_completed || false,
     profile: driverProfile?.driver?.onboarding_profile_completed || false,
+    billing: true, // Toujours "complétable" - un choix par défaut existe
     documents: driverProfile?.driver?.onboarding_documents_completed || false,
     nfc: true, // Toujours "complétable" car optionnel
   });
@@ -171,6 +178,7 @@ export function DriverOnboardingTunnel({
     switch (currentStepId) {
       case 'settings': return isSettingsValid();
       case 'profile': return isProfileValid();
+      case 'billing': return true; // Billing a toujours un choix par défaut
       case 'documents': return isDocumentsValid();
       case 'nfc': return true; // NFC est optionnel
       case 'complete': return true;
@@ -311,6 +319,37 @@ export function DriverOnboardingTunnel({
     }
   };
 
+  const saveBilling = async () => {
+    setSaving(true);
+    try {
+      const { billing } = stepData;
+      
+      // Map billing type correctly
+      const dbBillingType = billing.billingType === 'buy_equipment' ? 'own_equipment' : billing.billingType;
+      
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          billing_type: dbBillingType,
+          wants_tpe_affiliate: billing.billingType === 'buy_equipment',
+          onboarding_step: 'documents',
+        })
+        .eq('id', driverId);
+
+      if (error) throw error;
+      
+      setCompletedSteps(prev => ({ ...prev, billing: true }));
+      toast.success('Préférences de facturation enregistrées !');
+      return true;
+    } catch (error: any) {
+      console.error('Error saving billing:', error);
+      toast.error('Erreur lors de l\'enregistrement');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleNext = async () => {
     const currentStepId = STEPS[currentStep]?.id;
     let success = false;
@@ -321,6 +360,9 @@ export function DriverOnboardingTunnel({
         break;
       case 'profile':
         success = await saveProfile();
+        break;
+      case 'billing':
+        success = await saveBilling();
         break;
       case 'documents':
         // Documents are saved automatically via DriverDocuments component
@@ -389,6 +431,13 @@ export function DriverOnboardingTunnel({
             driverProfile={driverProfile}
             userId={userId}
             onUpdate={(updates) => updateStepData('profile', updates)}
+          />
+        );
+      case 'billing':
+        return (
+          <OnboardingBillingStep
+            data={stepData.billing}
+            onUpdate={(updates) => updateStepData('billing', updates)}
           />
         );
       case 'documents':
