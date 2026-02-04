@@ -14,8 +14,8 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 
 // Prix Stripe pour chauffeurs (sans essai - paiement immédiat)
 const PRICE_IDS = {
-  monthly: "price_1RUXi6AaegvT9LpCsNpJBNnz",
-  annual: "price_1RUXG3AaegvT9LpC3c5PzDaY",
+  monthly: "price_1Sx4h4AdFPYTU4712RqnULhI",
+  annual: "price_1Sx4iZAdFPYTU471ngc5wmR4",
 };
 
 serve(async (req) => {

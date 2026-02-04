@@ -148,7 +148,7 @@ export default function TrialExpiredSubscribe() {
     {
       id: "monthly" as const,
       name: "Mensuel",
-      price: 9.99,
+      price: 29.99,
       period: "/mois",
       description: "Abonnement sans engagement",
       features: [
@@ -161,15 +161,15 @@ export default function TrialExpiredSubscribe() {
     {
       id: "annual" as const,
       name: "Annuel",
-      price: 101.90,
-      originalPrice: 119.88,
+      price: 305.90,
+      originalPrice: 359.88,
       period: "/an",
       description: "Économisez 15% sur l'année",
       badge: "-15%",
       features: [
         "Accès complet à SoloCab",
         "2 mois offerts",
-        "Économisez 17,98€",
+        "Économisez 53,98€",
         "Support prioritaire",
       ],
     },

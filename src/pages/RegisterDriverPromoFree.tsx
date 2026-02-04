@@ -272,7 +272,7 @@ const RegisterDriverPromoFree = () => {
 
             <div className="mt-3 pt-3 border-t border-green-500/20">
               <p className="text-xs text-muted-foreground">
-                À l'issue des 14 jours, un abonnement à <strong>9,99€/mois</strong> sera nécessaire pour continuer à utiliser SoloCab.
+                À l'issue des 14 jours, un abonnement à <strong>29,99€/mois</strong> sera nécessaire pour continuer à utiliser SoloCab.
               </p>
             </div>
           </div>

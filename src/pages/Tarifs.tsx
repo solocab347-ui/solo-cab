@@ -23,8 +23,8 @@ import SocialLinks from "@/components/SocialLinks";
 
 const Tarifs = () => {
   // Prix des abonnements chauffeurs
-  const monthlyPrice = 9.99;
-  const annualPrice = 101.90;
+  const monthlyPrice = 29.99;
+  const annualPrice = 305.90;
   const annualMonthlyEquiv = (annualPrice / 12).toFixed(2);
   const savings = (monthlyPrice * 12 - annualPrice).toFixed(2);
 
