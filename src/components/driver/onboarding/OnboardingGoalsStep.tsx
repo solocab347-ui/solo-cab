@@ -192,6 +192,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
       await supabase
         .from('drivers')
         .update({
+          onboarding_step: 'settings', // Sauvegarder la prochaine étape
           objectives_data: {
             ...existingData,
             // Current situation

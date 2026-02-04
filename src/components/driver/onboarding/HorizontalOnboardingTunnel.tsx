@@ -120,17 +120,47 @@ export function HorizontalOnboardingTunnel({
     }
   });
 
-  const [completedSteps, setCompletedSteps] = useState({
-    vision: driverProfile?.driver?.onboarding_objectives_completed || false,
-    goals: !!(driverProfile?.driver?.objectives_data?.target_monthly_revenue),
-    settings: driverProfile?.driver?.onboarding_settings_completed || false,
-    profile: driverProfile?.driver?.onboarding_profile_completed || false,
-    billing: true,
-    documents: driverProfile?.driver?.onboarding_documents_completed || false,
-    nfc: true,
-  });
+  // Calculer les étapes complétées basées sur l'étape sauvegardée
+  const getCompletedStepsFromSavedStep = () => {
+    const stepOrder = ['vision', 'goals', 'settings', 'profile', 'documents', 'nfc', 'billing', 'trial_start'];
+    const savedStep = driverProfile?.driver?.onboarding_step;
+    const savedIndex = savedStep ? stepOrder.indexOf(savedStep) : -1;
+    
+    return {
+      vision: savedIndex > 0 || driverProfile?.driver?.onboarding_objectives_completed || false,
+      goals: savedIndex > 1 || !!(driverProfile?.driver?.objectives_data?.target_monthly_revenue),
+      settings: savedIndex > 2 || driverProfile?.driver?.onboarding_settings_completed || false,
+      profile: savedIndex > 3 || driverProfile?.driver?.onboarding_profile_completed || false,
+      billing: true,
+      documents: savedIndex > 4 || driverProfile?.driver?.onboarding_documents_completed || false,
+      nfc: true,
+    };
+  };
+
+  const [completedSteps, setCompletedSteps] = useState(getCompletedStepsFromSavedStep);
 
   const { autoSave, saveImmediately } = useOnboardingAutoSave(driverId, userId, currentStep);
+  
+  // Sauvegarder l'étape courante dans la base à chaque changement
+  const saveCurrentStep = useCallback(async (stepId: string) => {
+    try {
+      await supabase
+        .from('drivers')
+        .update({ onboarding_step: stepId })
+        .eq('id', driverId);
+      console.log('Étape sauvegardée:', stepId);
+    } catch (error) {
+      console.error('Erreur sauvegarde étape:', error);
+    }
+  }, [driverId]);
+  
+  // Sauvegarder à chaque changement d'étape
+  useEffect(() => {
+    const currentStepId = STEPS[currentStep]?.id;
+    if (currentStepId) {
+      saveCurrentStep(currentStepId);
+    }
+  }, [currentStep, STEPS, saveCurrentStep]);
 
   // Handle swipe gestures
   const handleDragEnd = useCallback((event: any, info: PanInfo) => {

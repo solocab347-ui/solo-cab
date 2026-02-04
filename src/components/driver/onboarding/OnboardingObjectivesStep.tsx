@@ -139,6 +139,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
         .update({
           objectives_completed: true,
           onboarding_objectives_completed: true,
+          onboarding_step: 'goals', // Sauvegarder la prochaine étape
           objectives_data: {
             why_solocab: selectedWhys,
             core_values: selectedValues,
