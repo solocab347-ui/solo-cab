@@ -29,7 +29,6 @@ interface OnboardingObjectivesStepProps {
   onComplete: () => void;
 }
 
-// Étapes simplifiées et recentrées sur l'identité SoloCab
 const VISION_STEPS = [
   { id: 'why', title: 'Pourquoi' },
   { id: 'values', title: 'Valeurs' },
@@ -76,18 +75,34 @@ const SWIPE_THRESHOLD = 50;
 export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObjectivesStepProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [selectedWhy, setSelectedWhy] = useState<string>('');
+  const [selectedWhys, setSelectedWhys] = useState<string[]>([]);
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [motivation, setMotivation] = useState<'high' | 'medium' | 'low' | ''>('');
   const [saving, setSaving] = useState(false);
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0: return !!selectedWhy;
+      case 0: return selectedWhys.length > 0;
       case 1: return selectedValues.length >= 2;
       case 2: return !!motivation;
       case 3: return true;
       default: return false;
+    }
+  };
+
+  const toggleWhy = (whyId: string) => {
+    setSelectedWhys(prev => 
+      prev.includes(whyId) 
+        ? prev.filter(w => w !== whyId)
+        : [...prev, whyId]
+    );
+  };
+
+  const selectAllWhys = () => {
+    if (selectedWhys.length === WHY_SOLOCAB.length) {
+      setSelectedWhys([]);
+    } else {
+      setSelectedWhys(WHY_SOLOCAB.map(w => w.id));
     }
   };
 
@@ -125,7 +140,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
           objectives_completed: true,
           onboarding_objectives_completed: true,
           objectives_data: {
-            why_solocab: selectedWhy,
+            why_solocab: selectedWhys,
             core_values: selectedValues,
             motivation_level: motivation,
             completed_at: new Date().toISOString()
@@ -162,79 +177,106 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       case 0:
         return (
           <div className="flex flex-col h-full justify-center">
-            {/* Header */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-4"
+                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
               >
-                <Compass className="w-8 h-8 text-white" />
+                <Compass className="w-7 h-7 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="text-xl font-bold text-foreground mb-1">
                 Pourquoi SoloCab ?
               </h2>
-              <p className="text-sm text-white/60">
-                Qu'est-ce qui t'amène ici aujourd'hui ?
+              <p className="text-sm text-muted-foreground">
+                Qu'est-ce qui t'amène ici ? (Plusieurs choix possibles)
               </p>
             </div>
 
-            {/* Options Grid */}
-            <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+            {/* Bouton Tout sélectionner */}
+            <div className="flex justify-center mb-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAllWhys}
+                className={cn(
+                  "text-xs",
+                  selectedWhys.length === WHY_SOLOCAB.length && "bg-primary text-primary-foreground"
+                )}
+              >
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                {selectedWhys.length === WHY_SOLOCAB.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
               {WHY_SOLOCAB.map((option) => {
                 const Icon = option.icon;
-                const isSelected = selectedWhy === option.id;
+                const isSelected = selectedWhys.includes(option.id);
                 return (
                   <motion.button
                     key={option.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    onClick={() => setSelectedWhy(option.id)}
+                    onClick={() => toggleWhy(option.id)}
                     className={cn(
-                      "p-4 rounded-xl border-2 text-left transition-all",
+                      "p-3 rounded-xl border-2 text-left transition-all relative",
                       isSelected 
-                        ? "border-primary bg-primary/20" 
-                        : "border-white/10 bg-white/5 hover:border-white/30"
+                        ? "border-primary bg-primary/10" 
+                        : "border-border bg-card hover:border-primary/50"
                     )}
                   >
+                    {isSelected && (
+                      <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-primary" />
+                    )}
                     <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center mb-2",
-                      isSelected ? "bg-primary" : "bg-white/10"
+                      "w-9 h-9 rounded-lg flex items-center justify-center mb-2",
+                      isSelected ? "bg-primary" : "bg-muted"
                     )}>
-                      <Icon className={cn("w-5 h-5", isSelected ? "text-white" : "text-white/60")} />
+                      <Icon className={cn("w-4 h-4", isSelected ? "text-primary-foreground" : "text-muted-foreground")} />
                     </div>
-                    <h3 className="font-semibold text-white text-sm">{option.title}</h3>
-                    <p className="text-xs text-white/50 mt-1">{option.description}</p>
+                    <h3 className="font-semibold text-foreground text-sm">{option.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{option.description}</p>
                   </motion.button>
                 );
               })}
             </div>
+
+            {selectedWhys.length > 0 && (
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-xs text-primary mt-3"
+              >
+                {selectedWhys.length} sélectionné{selectedWhys.length > 1 ? 's' : ''}
+              </motion.p>
+            )}
           </div>
         );
 
       case 1:
         return (
           <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-4"
+                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
               >
-                <Star className="w-8 h-8 text-white" />
+                <Star className="w-7 h-7 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="text-xl font-bold text-foreground mb-1">
                 Tes valeurs
               </h2>
-              <p className="text-sm text-white/60">
-                Choisis ce qui compte le plus pour toi
+              <p className="text-sm text-muted-foreground">
+                Ce qui compte le plus pour toi
               </p>
-              <Badge className="mt-2 bg-primary/20 text-primary border-primary/30">
+              <Badge className="mt-2 bg-primary/10 text-primary border-primary/20">
                 Sélectionne au moins 2 valeurs
               </Badge>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 max-w-sm mx-auto">
+            <div className="flex flex-wrap justify-center gap-2 max-w-sm mx-auto">
               {CORE_VALUES.map((value) => {
                 const Icon = value.icon;
                 const isSelected = selectedValues.includes(value.id);
@@ -247,12 +289,12 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     className={cn(
                       "flex items-center gap-2 px-4 py-3 rounded-full border-2 transition-all",
                       isSelected 
-                        ? "border-primary bg-primary/20" 
-                        : "border-white/10 bg-white/5 hover:border-white/30"
+                        ? "border-primary bg-primary/10" 
+                        : "border-border bg-card hover:border-primary/50"
                     )}
                   >
-                    <Icon className={cn("w-4 h-4", isSelected ? "text-primary" : "text-white/60")} />
-                    <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-white/80")}>
+                    <Icon className={cn("w-4 h-4", isSelected ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
                       {value.label}
                     </span>
                     {isSelected && <CheckCircle2 className="w-4 h-4 text-primary" />}
@@ -266,23 +308,23 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       case 2:
         return (
           <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-4"
+                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
               >
-                <Lightbulb className="w-8 h-8 text-white" />
+                <Lightbulb className="w-7 h-7 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="text-xl font-bold text-foreground mb-1">
                 Ton niveau d'engagement
               </h2>
-              <p className="text-sm text-white/60">
-                Combien es-tu prêt à investir dans ton indépendance ?
+              <p className="text-sm text-muted-foreground">
+                Combien es-tu prêt à investir ?
               </p>
             </div>
 
-            <div className="space-y-3 max-w-sm mx-auto">
+            <div className="space-y-2 max-w-sm mx-auto">
               {[
                 { id: 'high', label: 'Tout donner', desc: 'Je suis prêt à m\'investir à 100%', emoji: '🔥' },
                 { id: 'medium', label: 'Progresser', desc: 'J\'avance à mon rythme', emoji: '📈' },
@@ -294,16 +336,16 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                   animate={{ opacity: 1, x: 0 }}
                   onClick={() => setMotivation(option.id as any)}
                   className={cn(
-                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                    "w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
                     motivation === option.id 
-                      ? "border-primary bg-primary/20" 
-                      : "border-white/10 bg-white/5 hover:border-white/30"
+                      ? "border-primary bg-primary/10" 
+                      : "border-border bg-card hover:border-primary/50"
                   )}
                 >
-                  <span className="text-2xl">{option.emoji}</span>
+                  <span className="text-xl">{option.emoji}</span>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-white">{option.label}</h3>
-                    <p className="text-xs text-white/50">{option.desc}</p>
+                    <h3 className="font-semibold text-foreground text-sm">{option.label}</h3>
+                    <p className="text-xs text-muted-foreground">{option.desc}</p>
                   </div>
                   {motivation === option.id && (
                     <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -317,43 +359,42 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       case 3:
         return (
           <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-4"
+                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
               >
-                <Sparkles className="w-10 h-10 text-white" />
+                <Sparkles className="w-8 h-8 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <h2 className="text-xl font-bold text-foreground mb-2">
                 Bienvenue dans la communauté !
               </h2>
-              <p className="text-white/60 text-sm max-w-xs mx-auto">
-                Tu rejoins des chauffeurs qui ont fait le choix de l'indépendance. 
-                SoloCab est là pour t'accompagner.
+              <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                Tu rejoins des chauffeurs qui ont fait le choix de l'indépendance.
               </p>
             </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-br from-primary/10 to-emerald-500/10 border border-primary/20 rounded-xl p-4 max-w-sm mx-auto mb-6"
+              className="bg-primary/5 border border-primary/20 rounded-xl p-4 max-w-sm mx-auto mb-4"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <HandHeart className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-white text-sm">Notre engagement</span>
+              <div className="flex items-center gap-2 mb-2">
+                <HandHeart className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-foreground text-sm">Notre engagement</span>
               </div>
-              <ul className="space-y-2 text-sm text-white/80">
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                   <span>Pas de commission sur tes courses</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                   <span>Tes clients t'appartiennent</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                   <span>Support et coaching personnalisé</span>
                 </li>
               </ul>
@@ -363,7 +404,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               onClick={handleComplete}
               disabled={saving}
               size="lg"
-              className="mx-auto bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white font-semibold px-8"
+              className="mx-auto"
             >
               {saving ? 'Enregistrement...' : 'Commencer l\'aventure'}
               <ArrowRight className="w-5 h-5 ml-2" />
@@ -379,13 +420,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Progress dots */}
-      <div className="flex-shrink-0 flex justify-center gap-2 py-4">
+      <div className="flex-shrink-0 flex justify-center gap-2 py-3">
         {VISION_STEPS.map((_, i) => (
           <div 
             key={i}
             className={cn(
               "h-2 rounded-full transition-all duration-300",
-              i === currentStep ? "w-8 bg-primary" : i < currentStep ? "w-2 bg-emerald-500" : "w-2 bg-white/20"
+              i === currentStep ? "w-8 bg-primary" : i < currentStep ? "w-2 bg-emerald-500" : "w-2 bg-muted"
             )}
           />
         ))}
@@ -414,27 +455,26 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
           </motion.div>
         </AnimatePresence>
 
-        {/* Swipe hints */}
         {currentStep > 0 && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none">
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
             <ChevronLeft className="w-6 h-6" />
           </div>
         )}
         {currentStep < VISION_STEPS.length - 1 && canProceed() && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
             <ChevronRight className="w-6 h-6" />
           </div>
         )}
       </motion.div>
 
-      {/* Navigation - sauf dernière étape */}
+      {/* Navigation */}
       {currentStep < VISION_STEPS.length - 1 && (
-        <div className="flex-shrink-0 flex gap-3 px-4 py-4">
+        <div className="flex-shrink-0 flex gap-3 px-4 py-3">
           <Button
             variant="ghost"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex-1 h-12 text-white/60 hover:bg-white/10"
+            className="flex-1 h-11"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Retour
@@ -443,7 +483,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
           <Button
             onClick={nextStep}
             disabled={!canProceed()}
-            className="flex-1 h-12 bg-primary hover:bg-primary/90"
+            className="flex-1 h-11"
           >
             Suivant
             <ArrowRight className="w-4 h-4 ml-2" />
