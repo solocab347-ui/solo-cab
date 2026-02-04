@@ -128,6 +128,36 @@ export const ProtectedRoute = ({
         return;
       }
 
+      // ========== PRIORITÉ ABSOLUE: ACCÈS GRATUIT ADMINISTRATIF OU ILLIMITÉ ==========
+      // Ces accès sont PROTÉGÉS et ne peuvent JAMAIS être bloqués par d'autres règles
+      const hasAdministrativeFreeAccess = driver.free_access_granted === true && 
+        (driver.free_access_type === 'administrative' || driver.free_access_type === 'unlimited');
+      
+      if (hasAdministrativeFreeAccess) {
+        logger.info("Accès administratif/illimité détecté - accès accordé immédiatement", {
+          type: driver.free_access_type,
+          endDate: driver.free_access_end_date
+        });
+        setDriverStatus("validated");
+        setCheckingDriver(false);
+        return;
+      }
+
+      // ========== PRIORITÉ 2: ACCÈS GRATUIT TEMPORAIRE (time_limited) ==========
+      const hasTimeLimitedAccess = driver.free_access_granted === true && 
+        driver.free_access_type === 'time_limited' && 
+        driver.free_access_end_date && 
+        new Date(driver.free_access_end_date) > new Date();
+      
+      if (hasTimeLimitedAccess) {
+        logger.info("Accès gratuit temporaire valide - accès accordé", {
+          endDate: driver.free_access_end_date
+        });
+        setDriverStatus("validated");
+        setCheckingDriver(false);
+        return;
+      }
+
       // Vérifier si l'essai gratuit (trial) est encore valide
       const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
         driver.free_access_end_date && 
@@ -135,6 +165,7 @@ export const ProtectedRoute = ({
 
       // CRITICAL: Vérifier si le chauffeur est un legacy qui nécessite une migration
       // Ces chauffeurs avaient un compte Stripe sur l'ancien compte, ils doivent re-souscrire
+      // SAUF s'ils ont un accès gratuit (déjà vérifié ci-dessus)
       if (driver.is_legacy_stripe && driver.migration_required && !driver.migrated_at) {
         logger.info("Chauffeur legacy - migration Stripe requise");
         setDriverStatus("legacy_migration_required");
