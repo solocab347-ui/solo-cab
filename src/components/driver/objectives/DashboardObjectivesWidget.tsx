@@ -231,58 +231,8 @@ export function DashboardObjectivesWidget({
     );
   }
 
-  // No objectives set - Show onboarding CTA
-  if (!summary?.hasObjectives) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card 
-          className="relative overflow-hidden p-4 sm:p-6 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 backdrop-blur-xl border border-primary/20 cursor-pointer hover:scale-[1.01] transition-all group"
-          onClick={onNavigateToObjectives}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-50"></div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-2xl"></div>
-          
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-              </div>
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Badge className="bg-primary/20 text-primary border-0 text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Coach IA
-                </Badge>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">
-                {driverName ? `${driverName}, ` : ''}Commencez votre parcours
-              </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                Définissez vos objectifs et laissez votre assistant IA vous guider vers l'indépendance
-              </p>
-            </div>
-
-            <div className="flex-shrink-0 hidden sm:block">
-              <Button 
-                variant="default" 
-                size="sm"
-                className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
-              >
-                Commencer
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-    );
-  }
+  // Note: Les objectifs sont maintenant définis à l'inscription, 
+  // donc on affiche toujours les stats même sans objectifs explicites
 
   // Has objectives - Show progress summary with full SoloCab stats
   const progressColor = summary.dailyProgress >= 100 ? 'bg-success' : 
