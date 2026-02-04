@@ -11,6 +11,7 @@ export { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 export { OnboardingNfcStep } from './OnboardingNfcStep';
 export { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
 export { OnboardingGoalsStep } from './OnboardingGoalsStep';
+export { OnboardingPlanningStep } from './OnboardingPlanningStep';
 export { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 export { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 export { OnboardingAIAssistant } from './OnboardingAIAssistant';
