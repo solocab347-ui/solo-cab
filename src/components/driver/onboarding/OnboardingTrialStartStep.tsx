@@ -42,9 +42,12 @@ export function OnboardingTrialStartStep({
   const isStripeReady = isStripeChoice && stripeAccountStatus === 'active';
   const isStripeNotReady = isStripeChoice && stripeAccountStatus !== 'active';
   
-  // Documents must be VALIDATED by admin (not just submitted)
+  // Documents status check
+  // - 'validated' = admin has approved
+  // - 'submitted' = all docs uploaded, waiting for admin validation
+  // - anything else = docs missing/incomplete
   const areDocumentsValidated = documentsStatus === 'validated';
-  const areDocumentsPending = documentsStatus === 'submitted'; // Submitted but waiting admin
+  const areDocumentsPending = documentsStatus === 'submitted'; // All docs uploaded, waiting admin
   const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
   const canStartTrial = () => {
