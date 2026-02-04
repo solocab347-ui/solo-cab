@@ -190,19 +190,34 @@ const AdminSubscriptions = () => {
       }
 
       let endDate: Date | null = null;
+      // IMPORTANT: Utiliser "time_limited" pour tous les accès temporaires
+      // et "unlimited" ou "administrative" pour les accès permanents
+      let accessType: string;
 
       if (freeAccessDuration === "1_month") {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 1);
+        accessType = "time_limited"; // Type normalisé pour le cron job
       } else if (freeAccessDuration === "2_months") {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 2);
+        accessType = "time_limited";
       } else if (freeAccessDuration === "3_months") {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 3);
+        accessType = "time_limited";
       } else if (freeAccessDuration === "custom") {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + parseInt(customMonths));
+        accessType = "time_limited";
+      } else if (freeAccessDuration === "administrative") {
+        // Accès administratif = JAMAIS de paiement, protégé
+        accessType = "administrative";
+        endDate = null; // Pas de date de fin
+      } else {
+        // "unlimited" = accès pionnier permanent
+        accessType = "unlimited";
+        endDate = null; // Pas de date de fin
       }
 
       const { error } = await supabase
@@ -211,12 +226,16 @@ const AdminSubscriptions = () => {
           free_access_granted: true,
           free_access_start_date: startDate.toISOString(),
           free_access_end_date: endDate ? endDate.toISOString() : null,
-          free_access_type: freeAccessDuration,
+          free_access_type: accessType,
+          // Garantir l'accès immédiat
+          subscription_status: "active",
+          subscription_paid: true,
         })
         .eq("id", selectedDriver.id);
 
       if (error) throw error;
 
+      // Mettre en pause l'abonnement Stripe si existant et accès commence maintenant
       if (selectedDriver.subscription_stripe_id && startDate <= new Date()) {
         const { error: stripeError } = await supabase.functions.invoke("manage-driver-subscription", {
           body: {
@@ -239,7 +258,8 @@ const AdminSubscriptions = () => {
         else if (freeAccessDuration === "2_months") durationText = "2 mois";
         else if (freeAccessDuration === "3_months") durationText = "3 mois";
         else if (freeAccessDuration === "custom") durationText = `${customMonths} mois`;
-        else durationText = "Illimité";
+        else if (freeAccessDuration === "administrative") durationText = "Illimité (Administratif)";
+        else durationText = "Illimité (Pionnier)";
 
         await supabase.functions.invoke("send-email", {
           body: {
@@ -287,11 +307,11 @@ const AdminSubscriptions = () => {
     }
 
     if (driver.free_access_granted) {
-      const isLifetime = driver.free_access_type === "unlimited";
+      const isLifetime = driver.free_access_type === "unlimited" || driver.free_access_type === "administrative";
       return (
-        <Badge className="bg-emerald-500 text-xs">
+        <Badge className={`text-xs ${isLifetime ? 'bg-purple-500' : 'bg-emerald-500'}`}>
           <Gift className="w-3 h-3 mr-1" />
-          {isLifetime ? "Accès Illimité" : "Accès Gratuit"}
+          {driver.free_access_type === "administrative" ? "Accès Admin" : isLifetime ? "Accès Illimité" : "Accès Gratuit"}
         </Badge>
       );
     }
@@ -517,12 +537,16 @@ const AdminSubscriptions = () => {
                           setSelectedDriver(driver);
                           setDialogOpen(true);
                         }}
-                        disabled={driver.free_access_granted && driver.free_access_type === 'unlimited'}
+                        disabled={driver.free_access_granted && (driver.free_access_type === 'unlimited' || driver.free_access_type === 'administrative')}
                         className="flex-1 sm:flex-none"
                       >
                         <Gift className="w-4 h-4 mr-1" />
                         <span className={isMobile ? "text-xs" : ""}>
-                          {driver.free_access_granted ? "Modifier" : "Accès Gratuit"}
+                          {driver.free_access_granted && (driver.free_access_type === 'unlimited' || driver.free_access_type === 'administrative') 
+                            ? "Protégé" 
+                            : driver.free_access_granted 
+                              ? "Modifier" 
+                              : "Accès Gratuit"}
                         </span>
                       </Button>
                       <Button
@@ -570,7 +594,8 @@ const AdminSubscriptions = () => {
                     <SelectItem value="2_months">2 mois</SelectItem>
                     <SelectItem value="3_months">3 mois</SelectItem>
                     <SelectItem value="custom">Personnalisé</SelectItem>
-                    <SelectItem value="unlimited">Illimité (pionnier)</SelectItem>
+                    <SelectItem value="unlimited">Illimité (Pionnier)</SelectItem>
+                    <SelectItem value="administrative">Illimité (Administratif - Protégé)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

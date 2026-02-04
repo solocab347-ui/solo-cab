@@ -87,9 +87,24 @@ serve(async (req) => {
     if (action === "grant") {
       const now = new Date();
       let endDate = null;
-
+      
+      // Déterminer le type d'accès normalisé
+      // Types permanents: "unlimited", "administrative" - JAMAIS de paiement
+      // Types temporaires: "time_limited" - avec date de fin
+      let normalizedType = free_access_type || "unlimited";
+      
       if (free_access_type === "time_limited" && free_access_duration_days) {
         endDate = new Date(now.getTime() + (free_access_duration_days * 24 * 60 * 60 * 1000));
+        normalizedType = "time_limited";
+      } else if (free_access_type !== "unlimited" && free_access_type !== "administrative") {
+        // Si un type non reconnu est passé avec une durée, le traiter comme time_limited
+        if (free_access_duration_days) {
+          endDate = new Date(now.getTime() + (free_access_duration_days * 24 * 60 * 60 * 1000));
+          normalizedType = "time_limited";
+        } else {
+          // Sinon, considérer comme illimité
+          normalizedType = "unlimited";
+        }
       }
 
       // Mettre en pause l'abonnement Stripe si existant
@@ -117,7 +132,7 @@ serve(async (req) => {
           free_access_granted: true,
           free_access_start_date: now.toISOString(),
           free_access_end_date: endDate ? endDate.toISOString() : null,
-          free_access_type: free_access_type || "unlimited",
+          free_access_type: normalizedType,
           subscription_status: "active",
           subscription_paid: true,
           stripe_subscription_paused: !!driver.stripe_subscription_id,
@@ -127,20 +142,22 @@ serve(async (req) => {
         .eq("id", driver_id);
 
       logStep("Free access granted", {
-        type: free_access_type || "unlimited",
+        type: normalizedType,
         endDate: endDate?.toISOString(),
+        isPermanent: normalizedType === "unlimited" || normalizedType === "administrative",
       });
 
       return new Response(JSON.stringify({
         success: true,
-        message: free_access_type === "unlimited" 
-          ? "Accès gratuit illimité accordé" 
+        message: normalizedType === "unlimited" || normalizedType === "administrative"
+          ? "Accès gratuit PERMANENT accordé (protégé)" 
           : `Accès gratuit accordé pour ${free_access_duration_days} jours`,
         free_access: {
           granted: true,
-          type: free_access_type || "unlimited",
+          type: normalizedType,
           start_date: now.toISOString(),
           end_date: endDate?.toISOString() || null,
+          is_permanent: normalizedType === "unlimited" || normalizedType === "administrative",
         },
         subscription_paused: !!driver.stripe_subscription_id,
       }), {
