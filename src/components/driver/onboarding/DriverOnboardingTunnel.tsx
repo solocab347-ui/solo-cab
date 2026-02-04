@@ -39,14 +39,15 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
+// Ordre psychologique : Projection → Construction → Lancement
 const ALL_STEPS = [
-  { id: 'settings', title: 'Réglages', icon: Settings },
-  { id: 'profile', title: 'Profil', icon: User },
-  { id: 'billing', title: 'Facturation', icon: Wallet },
-  { id: 'documents', title: 'Documents', icon: FileText },
-  { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },
-  { id: 'objectives', title: 'Objectifs', icon: Target },
-  { id: 'trial_start', title: 'Démarrer', icon: Play },
+  { id: 'objectives', title: 'Ta Vision', icon: Target },      // 1. PROJECTION - Engager émotionnellement
+  { id: 'settings', title: 'Tes Tarifs', icon: Settings },     // 2. CONSTRUCTION - Configurer le business
+  { id: 'profile', title: 'Ton Profil', icon: User },          // 3. CONSTRUCTION - Image publique
+  { id: 'billing', title: 'Facturation', icon: Wallet },       // 4. ÉQUIPEMENT - Mode de paiement
+  { id: 'documents', title: 'Documents', icon: FileText },     // 5. VALIDATION - Conformité
+  { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },        // 6. ÉQUIPEMENT - Outil marketing
+  { id: 'trial_start', title: 'Lancer', icon: Play },          // 7. LANCEMENT - Démarrer l'essai
 ];
 
 export function DriverOnboardingTunnel({ 
