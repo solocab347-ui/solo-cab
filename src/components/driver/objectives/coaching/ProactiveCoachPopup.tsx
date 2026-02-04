@@ -256,20 +256,9 @@ export function generateContextualMessage(
   const hour = new Date().getHours();
   const name = driverName ? `${driverName}, ` : '';
 
-  // Priority 1: No objectives set
-  if (!stats.hasObjectives) {
-    return {
-      id: 'set-objectives',
-      type: 'reminder',
-      title: `${name}Définissons vos objectifs !`,
-      message: 'Pour vous accompagner efficacement vers l\'indépendance, j\'ai besoin de connaître vos ambitions. Ça ne prend que 2 minutes !',
-      emoji: '🎯',
-      actionLabel: 'Définir mes objectifs',
-      priority: 'high',
-      dismissable: false
-    };
-  }
-
+  // Note: Les objectifs sont maintenant remplis à l'inscription, donc on ne demande plus de les définir
+  // Priority 1: No objectives set - DÉSACTIVÉ car remplis à l'onboarding
+  // if (!stats.hasObjectives) { ... }
   // Priority 2: First client celebration
   if (stats.totalClients === 1) {
     return {
