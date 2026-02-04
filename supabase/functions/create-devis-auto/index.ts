@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
     // Déterminer quel type de tarification appliquer (ville ou classique)
     let pricing = null;
     let pricingType = 'classic';
+    let cityPricingName: string | null = null;
     
     // Vérifier si une tarification par ville s'applique
     const { data: applicablePricing, error: applicablePricingError } = await supabaseClient
@@ -137,9 +138,10 @@ Deno.serve(async (req) => {
     if (!applicablePricingError && applicablePricing && applicablePricing.length > 0) {
       const pricingInfo = applicablePricing[0];
       pricingType = pricingInfo.pricing_type;
+      cityPricingName = pricingInfo.city_name || null;
       
       if (pricingType === 'city' && pricingInfo.city_pricing_id) {
-        console.log('🏙️ Utilisation de la tarification par ville:', pricingInfo.city_pricing_id);
+        console.log('🏙️ Utilisation de la tarification par ville:', pricingInfo.city_pricing_id, cityPricingName);
         
         // Calculer avec la tarification par ville
         const { data: cityPriceData, error: cityPriceError } = await supabaseClient
@@ -156,6 +158,7 @@ Deno.serve(async (req) => {
         } else {
           console.warn('⚠️ Erreur calcul prix ville, fallback sur classique:', cityPriceError);
           pricingType = 'classic';
+          cityPricingName = null;
         }
       }
     }
@@ -322,6 +325,10 @@ Deno.serve(async (req) => {
             peak_hours_surcharge_amount: pricing.peak_adjustment || 0, // Majoration heures de pointe
             valid_until: validUntil.toISOString(),
             status: devisStatus, // 'accepted' pour guest, 'pending' sinon
+            // TRAÇABILITÉ: Source de tarification
+            pricing_source: pricingType,
+            city_pricing_name: cityPricingName,
+            distance_km: course.distance_km || 0,
           })
           .select()
           .single();
