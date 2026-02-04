@@ -218,7 +218,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       case "2_months": return "2 mois";
       case "3_months": return "3 mois";
       case "trial": return "14 jours d'essai";
-      case "unlimited": return "Illimité";
+      case "unlimited": return "Illimité (permanent)";
+      case "administrative": return "Illimité (administratif)";
+      case "time_limited": return "Accès temporaire offert";
       case "custom": return "Personnalisé";
       default: return "Non défini";
     }
@@ -394,21 +396,37 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Admin Free Access Alert - Only for admin-granted free access (not trial) */}
       {hasAdminFreeAccess && !isPioneer && (
-        <Card className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/10 border-green-500">
+        <Card className={`p-4 sm:p-6 border-2 ${
+          freeAccessType === 'administrative' || freeAccessType === 'unlimited' || !freeAccessEndDate
+            ? 'bg-purple-50 dark:bg-purple-900/10 border-purple-500'
+            : 'bg-green-50 dark:bg-green-900/10 border-green-500'
+        }`}>
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
+            <Gift className={`w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 ${
+              freeAccessType === 'administrative' || freeAccessType === 'unlimited' || !freeAccessEndDate
+                ? 'text-purple-500'
+                : 'text-green-500'
+            }`} />
             <div className="flex-1 w-full">
-              <h3 className="font-bold text-base sm:text-lg text-green-700 dark:text-green-500 mb-2">
-                🎁 Accès Gratuit Actif
+              <h3 className={`font-bold text-base sm:text-lg mb-2 ${
+                freeAccessType === 'administrative' || freeAccessType === 'unlimited' || !freeAccessEndDate
+                  ? 'text-purple-700 dark:text-purple-400'
+                  : 'text-green-700 dark:text-green-500'
+              }`}>
+                {freeAccessType === 'administrative' || freeAccessType === 'unlimited' || !freeAccessEndDate
+                  ? '👑 Accès Illimité Permanent'
+                  : '🎁 Accès Gratuit Temporaire'}
               </h3>
               <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                 <p>
-                  <span className="font-medium">Durée :</span> {getDurationLabel(freeAccessType)}
+                  <span className="font-medium">Type :</span> {getDurationLabel(freeAccessType)}
                 </p>
-                {freeAccessEndDate && (
+                
+                {/* Affichage pour accès TEMPORAIRE (time_limited) avec date de fin */}
+                {freeAccessEndDate && freeAccessType === 'time_limited' && (
                   <>
                     <p>
-                      <span className="font-medium">Expire le :</span>{" "}
+                      <span className="font-medium">Valide jusqu'au :</span>{" "}
                       {format(new Date(freeAccessEndDate), "d MMMM yyyy", { locale: fr })}
                     </p>
                     {remainingDays !== null && remainingDays > 0 && (
@@ -416,16 +434,23 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                         {remainingDays} jour{remainingDays > 1 ? "s" : ""} restant{remainingDays > 1 ? "s" : ""}
                       </Badge>
                     )}
+                    <p className="pt-2 text-amber-600 dark:text-amber-400">
+                      À l'expiration de cette période, vous devrez souscrire à un abonnement pour continuer.
+                    </p>
                   </>
                 )}
-                {!freeAccessEndDate && (
-                  <Badge className="bg-green-500 mt-2">
-                    Accès gratuit illimité
-                  </Badge>
+                
+                {/* Affichage pour accès ILLIMITÉ (administrative/unlimited) */}
+                {(freeAccessType === 'administrative' || freeAccessType === 'unlimited' || !freeAccessEndDate) && (
+                  <>
+                    <Badge className="bg-purple-500 mt-2">
+                      ✨ Accès gratuit à vie
+                    </Badge>
+                    <p className="pt-2 text-purple-700 dark:text-purple-400">
+                      Vous bénéficiez d'un accès permanent à toutes les fonctionnalités de SoloCab sans jamais avoir à payer.
+                    </p>
+                  </>
                 )}
-                <p className="pt-2 text-green-700 dark:text-green-400">
-                  Vous bénéficiez d'un accès complet à toutes les fonctionnalités de la plateforme sans frais.
-                </p>
               </div>
             </div>
           </div>
