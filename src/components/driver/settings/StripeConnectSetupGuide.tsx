@@ -326,7 +326,7 @@ export function StripeConnectSetupGuide({ driverId, onStatusChange }: StripeConn
           <Euro className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-xs text-amber-700">Frais de transaction</AlertTitle>
           <AlertDescription className="text-[11px] text-amber-600 space-y-1">
-            <p><strong>0,50€</strong> par course encaissée via SoloCab</p>
+            <p><strong>0,50€</strong> frais de gestion par transaction (hébergement paiement)</p>
             <p><strong>+ Frais Stripe</strong> (environ 1,5% + 0,25€ par transaction)</p>
             <p className="mt-1 text-[10px]">Ces frais sont automatiquement déduits avant le virement sur votre compte.</p>
           </AlertDescription>

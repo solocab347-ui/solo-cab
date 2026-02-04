@@ -100,9 +100,9 @@ export function StripeConnectInfo({ driverId, billingType, onStatusChange }: Str
         {/* Fee Information */}
         <Alert className="border-amber-500/30 bg-amber-500/10">
           <Calculator className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700">Frais applicables</AlertTitle>
+          <AlertTitle className="text-amber-700">Frais de transaction</AlertTitle>
           <AlertDescription className="text-amber-600 text-sm space-y-1">
-            <p><strong>0,50€</strong> par course encaissée via SoloCab</p>
+            <p><strong>0,50€</strong> frais de gestion par transaction (hébergement paiement)</p>
             <p><strong>+ Frais Stripe</strong> (env. 1,5% + 0,25€ par transaction)</p>
             <p className="text-xs mt-2">Ces frais sont déduits automatiquement du montant versé sur votre compte.</p>
           </AlertDescription>

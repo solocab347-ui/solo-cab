@@ -287,7 +287,7 @@ export function StripePaymentDialog({
               <Alert className="border-amber-500/30 bg-amber-500/10">
                 <Euro className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-600 text-xs">
-                  <strong>Frais :</strong> 0,50€ SoloCab + ~1,5% + 0,25€ Stripe seront déduits du virement.
+                  <strong>Frais de transaction :</strong> 0,50€ (gestion paiement) + ~1,5% + 0,25€ Stripe seront déduits du virement.
                 </AlertDescription>
               </Alert>
             </>
