@@ -141,10 +141,10 @@ const GuestBooking = () => {
     fetchDriver();
   }, [driverId, navigate]);
 
-  // Calculate price when addresses change
+  // Calculate price when addresses change - using RPC for proper surcharge calculation
   useEffect(() => {
     const calculatePrice = async () => {
-      if (!pickupCoords || !destinationCoords || !driver) return;
+      if (!pickupCoords || !destinationCoords || !driver || !scheduledDate) return;
       
       setCalculating(true);
       try {
@@ -153,17 +153,33 @@ const GuestBooking = () => {
           setDistance(route.distance_km);
           setDuration(route.duration_minutes);
           
-          // Calculate estimated price
-          const baseFare = driver.base_fare || 0;
-          const perKmRate = driver.per_km_rate || 0;
-          const minimumPrice = driver.minimum_price || 0;
-          
-          let price = baseFare + (route.distance_km * perKmRate);
-          if (minimumPrice > 0 && price < minimumPrice) {
-            price = minimumPrice;
+          // Use RPC to calculate price with all surcharges (evening, weekend, airport, peak hours)
+          const { data: priceData, error: priceError } = await supabase
+            .rpc('calculate_course_price', {
+              _driver_id: driver.id,
+              _distance_km: route.distance_km,
+              _duration_minutes: route.duration_minutes,
+              _use_hourly_rate: false,
+              _scheduled_date: new Date(scheduledDate).toISOString(),
+              _pickup_address: pickupAddress || null,
+              _destination_address: destinationAddress || null,
+            });
+
+          if (priceError || !priceData || priceData.length === 0) {
+            console.error("Price calculation error:", priceError);
+            // Fallback to simple calculation
+            const baseFare = driver.base_fare || 0;
+            const perKmRate = driver.per_km_rate || 0;
+            const minimumPrice = driver.minimum_price || 0;
+            let price = baseFare + (route.distance_km * perKmRate);
+            if (minimumPrice > 0 && price < minimumPrice) {
+              price = minimumPrice;
+            }
+            setEstimatedPrice(Math.round(price * 100) / 100);
+          } else {
+            // Use the properly calculated price with all surcharges
+            setEstimatedPrice(Math.round(priceData[0].total_price * 100) / 100);
           }
-          
-          setEstimatedPrice(Math.round(price * 100) / 100);
         }
       } catch (error) {
         console.error("Error calculating route:", error);
@@ -173,7 +189,7 @@ const GuestBooking = () => {
     };
 
     calculatePrice();
-  }, [pickupCoords, destinationCoords, driver]);
+  }, [pickupCoords, destinationCoords, driver, scheduledDate, pickupAddress, destinationAddress]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
