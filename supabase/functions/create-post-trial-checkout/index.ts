@@ -14,8 +14,8 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 
 // Prix Stripe pour chauffeurs (paiement immédiat après essai)
 const SUBSCRIPTION_PRICES = {
-  monthly: "price_1RUXi6AaegvT9LpCsNpJBNnz",
-  annual: "price_1RUXG3AaegvT9LpC3c5PzDaY",
+  monthly: "price_1Sx4h4AdFPYTU4712RqnULhI",
+  annual: "price_1Sx4iZAdFPYTU471ngc5wmR4",
 };
 
 // Prix NFC avec réduction -20% (pour achat avec abonnement)

@@ -12,8 +12,8 @@ const TEST_MODE_ENABLED = false;
 const TEST_PRICE_CENTS = 50; // Non utilisé en production
 
 // Prix Stripe - Abonnements (nouveau compte Stripe)
-const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1SuwktAdFPYTU471xCl9GBwq"; // 9.99€/mois
-const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1SuwlwAdFPYTU471eTkINbYb"; // 101.90€/an
+const SUBSCRIPTION_MONTHLY_PRICE_ID = "price_1Sx4h4AdFPYTU4712RqnULhI"; // 29.99€/mois
+const SUBSCRIPTION_ANNUAL_PRICE_ID = "price_1Sx4iZAdFPYTU471ngc5wmR4"; // 305.90€/an
 
 // Prix Stripe - Plaques NFC (prix plein)
 const NFC_PLATE_STANDARD_PRICE_ID = "price_1SuwqvAdFPYTU471lrv1hrEv"; // 14.99€ (bois)

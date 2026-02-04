@@ -76,7 +76,7 @@ serve(async (req) => {
           
           <p>${urgencyText}</p>
           
-          <p>Nous avons tenté de prélever votre abonnement mensuel SoloCab de <strong>9,99€</strong>, mais le paiement n'a pas pu être effectué.</p>
+          <p>Nous avons tenté de prélever votre abonnement mensuel SoloCab de <strong>29,99€</strong>, mais le paiement n'a pas pu être effectué.</p>
           
           <div style="background: ${isUrgent ? '#fef2f2' : '#fef9c3'}; border: 2px solid ${isUrgent ? '#dc2626' : '#ca8a04'}; padding: 20px; border-radius: 12px; margin: 24px 0;">
             <h3 style="color: ${isUrgent ? '#dc2626' : '#ca8a04'}; margin-top: 0;">${urgencyEmoji} Action requise immédiatement</h3>
@@ -139,7 +139,7 @@ serve(async (req) => {
 
           <h2 style="color: #1a1a1a;">Bonjour ${driver.profiles.full_name},</h2>
           
-          <p>Votre prochain prélèvement mensuel SoloCab de <strong>9,99€</strong> aura lieu dans 3 jours.</p>
+          <p>Votre prochain prélèvement mensuel SoloCab de <strong>29,99€</strong> aura lieu dans 3 jours.</p>
           
           <div style="background: #f0fdf4; border: 2px solid #16a34a; padding: 20px; border-radius: 12px; margin: 24px 0;">
             <h3 style="color: #16a34a; margin-top: 0;">✅ Simple rappel</h3>
@@ -156,7 +156,7 @@ serve(async (req) => {
           <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-top: 24px;">
             <h4 style="margin-top: 0; color: #1e40af;">📊 Votre abonnement</h4>
             <p style="margin: 0; color: #1e40af;">
-              <strong>Tarif :</strong> 9,99€/mois<br>
+              <strong>Tarif :</strong> 29,99€/mois<br>
               <strong>Avantages :</strong> 0% de commission, clients illimités, QR code personnalisé, profil public
             </p>
           </div>

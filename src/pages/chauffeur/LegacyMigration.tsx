@@ -115,7 +115,7 @@ export default function LegacyMigration() {
     {
       id: "monthly" as const,
       name: "Mensuel",
-      price: 9.99,
+      price: 29.99,
       period: "/mois",
       description: "Facturation mensuelle, sans engagement",
       features: [
@@ -127,8 +127,8 @@ export default function LegacyMigration() {
     {
       id: "annual" as const,
       name: "Annuel",
-      price: 101.90,
-      originalPrice: 119.88,
+      price: 305.90,
+      originalPrice: 359.88,
       period: "/an",
       description: "Économisez 15% avec le forfait annuel",
       badge: "-15%",

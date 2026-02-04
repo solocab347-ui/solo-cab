@@ -264,9 +264,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                   ) : (
                     <CreditCard className="w-5 h-5 mr-2" />
                   )}
-                  <div className="text-left">
+                    <div className="text-left">
                     <div className="font-bold">Mensuel</div>
-                    <div className="text-xs opacity-80">9,99€/mois</div>
+                    <div className="text-xs opacity-80">29,99€/mois</div>
                   </div>
                 </Button>
                 
@@ -283,7 +283,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                   )}
                   <div className="text-left">
                     <div className="font-bold">Annuel</div>
-                    <div className="text-xs text-muted-foreground">101,90€/an (-15%)</div>
+                    <div className="text-xs text-muted-foreground">305,90€/an (-15%)</div>
                   </div>
                 </Button>
               </div>
@@ -444,13 +444,13 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Votre accès à la plateforme est limité. Souscrivez à l'abonnement pour activer toutes les fonctionnalités et commencer à recevoir des clients.
               </p>
-              <Button 
-                onClick={handleSubscribe} 
-                disabled={loading} 
+              <Button
+                onClick={handleSubscribe}
+                disabled={loading}
                 className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">14 jours d'essai gratuit puis 9,99€/mois</span>
+                <span className="truncate">14 jours d'essai gratuit puis 29,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -570,7 +570,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel Pionnier</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm line-through text-gray-500">9,99€</span>
+            <span className="text-xs sm:text-sm line-through text-gray-500">29,99€</span>
                 <span className="font-bold text-sm sm:text-base text-amber-400">Tarif préférentiel</span>
               </div>
             </div>
@@ -579,7 +579,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <span className="text-xs sm:text-sm text-gray-300">Période d'essai</span>
               <div className="flex flex-col items-end">
                 <Badge className="bg-blue-500 mb-1">{trialDaysLeft} jour{trialDaysLeft > 1 ? 's' : ''} restant{trialDaysLeft > 1 ? 's' : ''}</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 9,99€ / mois</span>
+                <span className="font-bold text-sm sm:text-base text-white">puis 29,99€ / mois</span>
               </div>
             </div>
           ) : !hasAdminFreeAccess && (
@@ -587,7 +587,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <span className="text-xs sm:text-sm text-gray-300">Offre</span>
               <div className="flex flex-col items-end">
                 <Badge className="bg-green-500 mb-1">14 jours d'essai gratuit</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 9,99€ / mois</span>
+                <span className="font-bold text-sm sm:text-base text-white">puis 29,99€ / mois</span>
               </div>
             </div>
           )}
@@ -647,7 +647,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">
-                {isPioneer ? 'Activer - Offre Pionnier' : '14 jours gratuits puis 9,99€/mois'}
+                {isPioneer ? 'Activer - Offre Pionnier' : '14 jours gratuits puis 29,99€/mois'}
               </span>
             </Button>
           )}
@@ -664,7 +664,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         trialEndDate={isInTrialPeriod ? trialEndDate : (isPioneer ? new Date(pioneerTrialEnd!) : undefined)}
         trialCancelled={trialCancelled}
         nextBillingDate={driverProfile?.driver?.subscription_end_date}
-        nextBillingAmount={isPioneer ? 39.99 : 9.99}
+        nextBillingAmount={isPioneer ? 39.99 : 29.99}
         cancelAtPeriodEnd={driverProfile?.driver?.subscription_cancel_at_period_end}
         cancelAt={driverProfile?.driver?.subscription_cancel_at}
         hasFreeAccess={hasAdminFreeAccess}
@@ -694,7 +694,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
               <p className="text-lg sm:text-2xl font-bold text-premium break-words">
                 <span className="text-green-400 text-sm">14 jours gratuits</span>
-                <br />9,99€/mois
+                <br />29,99€/mois
               </p>
               <p className="text-premium/70 text-xs">0% commission</p>
             </div>

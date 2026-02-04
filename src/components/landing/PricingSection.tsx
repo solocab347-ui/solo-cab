@@ -6,9 +6,9 @@ import { Link } from "react-router-dom";
 
 const PricingSection = () => {
   // Prix calculés
-  const monthlyPrice = 9.99;
-  const annualPrice = 101.90; // 9.99 * 12 * 0.85 = 101.90€ (15% de réduction)
-  const annualMonthlyEquiv = (annualPrice / 12).toFixed(2); // ~8.49€/mois
+  const monthlyPrice = 29.99;
+  const annualPrice = 305.90; // 29.99 * 12 * 0.85 = 305.90€ (15% de réduction)
+  const annualMonthlyEquiv = (annualPrice / 12).toFixed(2); // ~25.49€/mois
   const savings = (monthlyPrice * 12 - annualPrice).toFixed(2); // ~17.98€ économisés
 
   return (
