@@ -5980,6 +5980,7 @@ export type Database = {
       drivers: {
         Row: {
           accepted_payment_methods: string[] | null
+          ai_coaching_recommendations: string | null
           airport_surcharge: number | null
           auto_accept_from_partners: boolean | null
           base_fare: number | null
@@ -6010,6 +6011,7 @@ export type Database = {
           documents_submitted_at: string | null
           documents_validated_at: string | null
           driver_code: string | null
+          equipment_received_at: string | null
           evening_surcharge: number | null
           fleet_documents_deadline: string | null
           fleet_documents_status: string | null
@@ -6042,9 +6044,12 @@ export type Database = {
           nfc_plate_order_id: string | null
           nfc_plate_ordered_at: string | null
           nfc_tag_number: string | null
+          objectives_completed: boolean | null
+          objectives_data: Json | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           onboarding_documents_completed: boolean | null
+          onboarding_objectives_completed: boolean | null
           onboarding_profile_completed: boolean | null
           onboarding_settings_completed: boolean | null
           onboarding_step: string | null
@@ -6115,6 +6120,7 @@ export type Database = {
           trial_activated_at: string | null
           trial_cancelled: boolean | null
           trial_end_date: string | null
+          trial_ready_to_start: boolean | null
           trial_start_date: string | null
           trial_status: string | null
           tva_included: boolean
@@ -6139,6 +6145,7 @@ export type Database = {
         }
         Insert: {
           accepted_payment_methods?: string[] | null
+          ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
           base_fare?: number | null
@@ -6169,6 +6176,7 @@ export type Database = {
           documents_submitted_at?: string | null
           documents_validated_at?: string | null
           driver_code?: string | null
+          equipment_received_at?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
@@ -6201,9 +6209,12 @@ export type Database = {
           nfc_plate_order_id?: string | null
           nfc_plate_ordered_at?: string | null
           nfc_tag_number?: string | null
+          objectives_completed?: boolean | null
+          objectives_data?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_documents_completed?: boolean | null
+          onboarding_objectives_completed?: boolean | null
           onboarding_profile_completed?: boolean | null
           onboarding_settings_completed?: boolean | null
           onboarding_step?: string | null
@@ -6274,6 +6285,7 @@ export type Database = {
           trial_activated_at?: string | null
           trial_cancelled?: boolean | null
           trial_end_date?: string | null
+          trial_ready_to_start?: boolean | null
           trial_start_date?: string | null
           trial_status?: string | null
           tva_included?: boolean
@@ -6298,6 +6310,7 @@ export type Database = {
         }
         Update: {
           accepted_payment_methods?: string[] | null
+          ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
           base_fare?: number | null
@@ -6328,6 +6341,7 @@ export type Database = {
           documents_submitted_at?: string | null
           documents_validated_at?: string | null
           driver_code?: string | null
+          equipment_received_at?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
@@ -6360,9 +6374,12 @@ export type Database = {
           nfc_plate_order_id?: string | null
           nfc_plate_ordered_at?: string | null
           nfc_tag_number?: string | null
+          objectives_completed?: boolean | null
+          objectives_data?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_documents_completed?: boolean | null
+          onboarding_objectives_completed?: boolean | null
           onboarding_profile_completed?: boolean | null
           onboarding_settings_completed?: boolean | null
           onboarding_step?: string | null
@@ -6433,6 +6450,7 @@ export type Database = {
           trial_activated_at?: string | null
           trial_cancelled?: boolean | null
           trial_end_date?: string | null
+          trial_ready_to_start?: boolean | null
           trial_start_date?: string | null
           trial_status?: string | null
           tva_included?: boolean

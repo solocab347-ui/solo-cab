@@ -13,14 +13,17 @@ import {
   Loader2,
   CreditCard,
   Save,
-  Wallet
+  Wallet,
+  Target,
+  Play
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingBillingStep } from './OnboardingBillingStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
-import { OnboardingCompleteStep } from './OnboardingCompleteStep';
+import { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
+import { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 import { OnboardingAIAssistant } from './OnboardingAIAssistant';
 import { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +44,8 @@ const ALL_STEPS = [
   { id: 'billing', title: 'Facturation', icon: Wallet },
   { id: 'documents', title: 'Documents', icon: FileText },
   { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },
-  { id: 'complete', title: 'Terminé', icon: Sparkles },
+  { id: 'objectives', title: 'Objectifs', icon: Target },
+  { id: 'trial_start', title: 'Démarrer', icon: Play },
 ];
 
 export function DriverOnboardingTunnel({ 
@@ -181,9 +185,16 @@ export function DriverOnboardingTunnel({
       case 'billing': return true; // Billing a toujours un choix par défaut
       case 'documents': return isDocumentsValid();
       case 'nfc': return true; // NFC est optionnel
-      case 'complete': return true;
+      case 'objectives': return false; // Géré par son propre bouton
+      case 'trial_start': return false; // Géré par son propre bouton
       default: return false;
     }
+  };
+
+  // Les étapes qui gèrent leur propre navigation
+  const isSelfNavigatedStep = () => {
+    const currentStepId = STEPS[currentStep]?.id;
+    return currentStepId === 'objectives' || currentStepId === 'trial_start';
   };
 
   const updateStepData = (step: string, updates: any) => {
@@ -455,8 +466,25 @@ export function DriverOnboardingTunnel({
             driverId={driverId}
           />
         );
-      case 'complete':
-        return <OnboardingCompleteStep onComplete={handleComplete} loading={saving} />;
+      case 'objectives':
+        return (
+          <OnboardingObjectivesStep
+            driverId={driverId}
+            onComplete={() => {
+              setCurrentStep(currentStep + 1);
+            }}
+          />
+        );
+      case 'trial_start':
+        return (
+          <OnboardingTrialStartStep
+            driverId={driverId}
+            billingType={stepData.billing.billingType}
+            stripeAccountStatus={driverProfile?.driver?.stripe_account_status}
+            onComplete={handleComplete}
+            loading={saving}
+          />
+        );
       default:
         return null;
     }
@@ -598,8 +626,8 @@ export function DriverOnboardingTunnel({
         </div>
       </div>
 
-      {/* Fixed Footer Navigation */}
-      {currentStep < STEPS.length - 1 && (
+      {/* Fixed Footer Navigation - Masqué pour les étapes auto-gérées */}
+      {!isSelfNavigatedStep() && currentStep < STEPS.length - 1 && (
         <div 
           className="flex-shrink-0 border-t bg-background/95 backdrop-blur px-4 py-3"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
@@ -623,7 +651,7 @@ export function DriverOnboardingTunnel({
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
               ) : null}
-              {STEPS[currentStep]?.id === 'nfc' ? 'Terminer' : 'Suivant'}
+              Suivant
               {!saving && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>
