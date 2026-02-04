@@ -67,8 +67,13 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
   // Handle onboarding completion
   const handleOnboardingComplete = async (data: OnboardingData, aiRecommendations: string) => {
     try {
-      // Save objectives for all periods
-      const periods = ['daily', 'weekly', 'monthly', 'yearly'] as const;
+      // First, delete any existing data for this driver to avoid conflicts
+      await Promise.all([
+        supabase.from('driver_objectives').delete().eq('driver_id', driverId),
+        supabase.from('driver_work_schedules').delete().eq('driver_id', driverId),
+      ]);
+
+      // Prepare objectives for all periods
       const multipliers = {
         daily: { revenue: 1/22, clients: 1/22, hours: 1 },
         weekly: { revenue: 1/4, clients: 1/4, hours: data.workDaysPerWeek },
@@ -76,54 +81,95 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         yearly: { revenue: 12, clients: 12, hours: data.workDaysPerWeek * 4 * 12 }
       };
 
-      for (const period of periods) {
+      const objectivesToInsert = (['daily', 'weekly', 'monthly', 'yearly'] as const).map(period => {
         const mult = multipliers[period];
-        await hook.upsertObjective({
+        return {
+          driver_id: driverId,
           period_type: period,
           revenue_target: Math.round(data.targetMonthlyRevenue * mult.revenue),
           new_clients_target: Math.round(data.targetDirectClients * mult.clients),
           hours_target: Math.round(data.workHoursPerDay * mult.hours),
-          courses_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25), // Estimate 25€/course
-          km_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25 * 15), // Estimate 15km/course
+          courses_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25),
+          km_target: Math.round((data.targetMonthlyRevenue * mult.revenue) / 25 * 15),
           is_active: true
-        });
-      }
-
-      // Save work schedule
-      const scheduleDefaults: Record<string, { start: string; end: string }> = {
-        early: { start: '06:00', end: '14:00' },
-        standard: { start: '08:00', end: '18:00' },
-        late: { start: '16:00', end: '00:00' },
-        flexible: { start: '09:00', end: '19:00' }
-      };
-      const schedule = scheduleDefaults[data.preferredSchedule] || scheduleDefaults.standard;
-      
-      for (let day = 0; day < 7; day++) {
-        const isWorkDay = day !== 0 && day <= data.workDaysPerWeek;
-        await hook.upsertSchedule(day, {
-          is_working_day: isWorkDay,
-          start_time: schedule.start,
-          end_time: schedule.end,
-          target_hours: isWorkDay ? data.workHoursPerDay : 0
-        });
-      }
-
-      // Save platforms
-      for (const platform of data.platformsUsed) {
-        await hook.addPlatform(platform.charAt(0).toUpperCase() + platform.slice(1), 'car');
-      }
-
-      // Store AI recommendations as coaching message
-      await supabase.from('driver_coaching_messages').insert({
-        driver_id: driverId,
-        message_type: 'suggestion',
-        title: '🎯 Votre plan personnalisé',
-        content: aiRecommendations,
-        is_read: false
+        };
       });
 
+      // Prepare work schedules
+      const schedulesToInsert = [];
+      
+      if (data.weekSchedule && data.weekSchedule.length > 0) {
+        for (const daySchedule of data.weekSchedule) {
+          const startH = parseInt(daySchedule.startTime.split(':')[0]);
+          const endH = parseInt(daySchedule.endTime.split(':')[0]);
+          let hours = endH - startH;
+          if (hours < 0) hours += 24;
+          
+          schedulesToInsert.push({
+            driver_id: driverId,
+            day_of_week: daySchedule.dayIndex,
+            is_working_day: daySchedule.isWorking,
+            start_time: daySchedule.startTime,
+            end_time: daySchedule.endTime,
+            target_hours: daySchedule.isWorking ? Math.max(1, hours) : 0
+          });
+        }
+      } else {
+        const scheduleDefaults: Record<string, { start: string; end: string }> = {
+          early: { start: '06:00', end: '14:00' },
+          standard: { start: '08:00', end: '18:00' },
+          late: { start: '16:00', end: '00:00' },
+          flexible: { start: '09:00', end: '19:00' }
+        };
+        const schedule = scheduleDefaults[data.preferredSchedule] || scheduleDefaults.standard;
+        
+        for (let day = 0; day < 7; day++) {
+          const isWorkDay = day !== 0 && day <= data.workDaysPerWeek;
+          schedulesToInsert.push({
+            driver_id: driverId,
+            day_of_week: day,
+            is_working_day: isWorkDay,
+            start_time: schedule.start,
+            end_time: schedule.end,
+            target_hours: isWorkDay ? data.workHoursPerDay : 0
+          });
+        }
+      }
+
+      // Platforms to insert (avoid duplicates)
+      const platformsToInsert = data.platformsUsed.map((platform, index) => ({
+        driver_id: driverId,
+        platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
+        platform_icon: 'car',
+        display_order: index
+      }));
+
+      // Execute all inserts in parallel
+      const results = await Promise.allSettled([
+        supabase.from('driver_objectives').insert(objectivesToInsert),
+        supabase.from('driver_work_schedules').insert(schedulesToInsert),
+        platformsToInsert.length > 0 ? supabase.from('driver_platforms').insert(platformsToInsert) : Promise.resolve({ error: null }),
+        supabase.from('driver_coaching_messages').insert({
+          driver_id: driverId,
+          message_type: 'suggestion',
+          title: '🎯 Votre plan personnalisé',
+          content: aiRecommendations,
+          is_read: false
+        })
+      ]);
+
+      // Check for errors
+      const errors = results.filter(r => 
+        r.status === 'rejected' || 
+        (r.status === 'fulfilled' && r.value && typeof r.value === 'object' && 'error' in r.value && r.value.error)
+      );
+      
+      if (errors.length > 0) {
+        console.error('Some saves failed:', errors);
+      }
+
       setShowOnboarding(false);
-      toast.success('Configuration terminée ! Bienvenue dans votre Centre d\'Objectifs');
+      toast.success('Configuration terminée ! Votre coach IA est prêt.');
       
       // Refresh data
       hook.fetchAll?.();
