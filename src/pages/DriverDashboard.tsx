@@ -39,7 +39,7 @@ import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { PioneerBadge } from "@/components/ui/PioneerBadge";
-import { DriverOnboardingTunnel } from "@/components/driver/onboarding";
+import { HorizontalOnboardingTunnel } from "@/components/driver/onboarding";
 import { useDriverProfileCompletion } from "@/hooks/useDriverProfileCompletion";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
@@ -419,20 +419,18 @@ const DriverDashboard = () => {
     );
   }
 
-  // TUNNEL D'ONBOARDING - Bloque l'accès au dashboard tant que non complété
+  // TUNNEL D'ONBOARDING HORIZONTAL - Bloque l'accès au dashboard tant que non complété
   if (showOnboardingTunnel && driverProfile?.driver?.id && user?.id) {
     return (
-      <div className="min-h-screen bg-background">
-        <DriverOnboardingTunnel
-          driverId={driverProfile.driver.id}
-          userId={user.id}
-          driverProfile={driverProfile}
-          onComplete={() => {
-            setShowOnboardingTunnel(false);
-            queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
-          }}
-        />
-      </div>
+      <HorizontalOnboardingTunnel
+        driverId={driverProfile.driver.id}
+        userId={user.id}
+        driverProfile={driverProfile}
+        onComplete={() => {
+          setShowOnboardingTunnel(false);
+          queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+        }}
+      />
     );
   }
 

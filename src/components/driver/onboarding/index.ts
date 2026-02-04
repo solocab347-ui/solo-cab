@@ -1,8 +1,10 @@
 export { DriverOnboardingTunnel } from './DriverOnboardingTunnel';
+export { HorizontalOnboardingTunnel } from './HorizontalOnboardingTunnel';
 export { OnboardingSettingsStep } from './OnboardingSettingsStep';
 export { GuidedSettingsFlow } from './GuidedSettingsFlow';
 export { ImmersiveSettingsFlow } from './ImmersiveSettingsFlow';
 export { CarouselSettingsFlow } from './CarouselSettingsFlow';
+export { HorizontalSettingsFlow } from './HorizontalSettingsFlow';
 export { OnboardingProfileStep } from './OnboardingProfileStep';
 export { OnboardingBillingStep } from './OnboardingBillingStep';
 export { OnboardingDocumentsStep } from './OnboardingDocumentsStep';

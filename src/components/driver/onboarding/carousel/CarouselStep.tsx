@@ -10,13 +10,15 @@ interface CarouselStepProps {
 export function CarouselStep({ children, className }: CarouselStepProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 50 }}
+      initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      exit={{ opacity: 0, x: -100 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className={cn(
-        "w-full h-full flex flex-col overflow-y-auto",
-        "px-4 py-6 pb-32", // padding bottom for navigation buttons
+        // Full viewport, NO vertical scroll
+        "w-full h-full flex flex-col",
+        "overflow-hidden", // CRITICAL: No scroll
+        "px-4 py-4",
         className
       )}
     >
