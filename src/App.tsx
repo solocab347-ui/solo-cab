@@ -74,6 +74,7 @@ const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
+const ImmediateRide = lazy(() => import("./pages/ImmediateRide"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -121,6 +122,11 @@ const App = () => (
               <Route path="/plaque-nfc/success" element={<NfcPlateOrderSuccess />} />
               <Route path="/suivi-plaque-nfc" element={<TrackNfcOrder />} />
               <Route path="/tarifs" element={<Tarifs />} />
+              <Route path="/course-immediate" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <ImmediateRide />
+                </Suspense>
+              } />
               
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
