@@ -26,6 +26,7 @@ import { OnboardingBillingStep } from './OnboardingBillingStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
 import { OnboardingGoalsStep } from './OnboardingGoalsStep';
+import { OnboardingPlanningStep } from './OnboardingPlanningStep';
 import { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 import { HorizontalSettingsFlow } from './HorizontalSettingsFlow';
 import { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
@@ -41,10 +42,11 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
-// Ordre: Vision → Objectifs → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
+// Ordre: Vision → Objectifs → Planning → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
 const ALL_STEPS = [
   { id: 'vision', title: 'Vision', icon: Compass },
   { id: 'goals', title: 'Objectifs', icon: TrendingUp },
+  { id: 'planning', title: 'Planning', icon: Target },
   { id: 'settings', title: 'Tarifs', icon: Settings },
   { id: 'profile', title: 'Profil', icon: User },
   { id: 'documents', title: 'Docs', icon: FileText },
@@ -122,6 +124,7 @@ export function HorizontalOnboardingTunnel({
   const [completedSteps, setCompletedSteps] = useState({
     vision: driverProfile?.driver?.onboarding_objectives_completed || false,
     goals: !!(driverProfile?.driver?.objectives_data?.target_monthly_revenue),
+    planning: !!(driverProfile?.driver?.objectives_data?.planning_completed_at),
     settings: driverProfile?.driver?.onboarding_settings_completed || false,
     profile: driverProfile?.driver?.onboarding_profile_completed || false,
     billing: true,
@@ -171,6 +174,7 @@ export function HorizontalOnboardingTunnel({
     switch (currentStepId) {
       case 'vision': return true;
       case 'goals': return true;
+      case 'planning': return true; // Self-navigated
       case 'settings': return isSettingsValid();
       case 'profile': return isProfileValid();
       case 'billing': return true;
@@ -183,7 +187,7 @@ export function HorizontalOnboardingTunnel({
 
   const isSelfNavigatedStep = () => {
     const currentStepId = STEPS[currentStep]?.id;
-    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'trial_start' || currentStepId === 'settings';
+    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'planning' || currentStepId === 'trial_start' || currentStepId === 'settings';
   };
 
   const saveSettings = async () => {
@@ -385,6 +389,17 @@ export function HorizontalOnboardingTunnel({
             driverId={driverId}
             onComplete={() => {
               setCompletedSteps(prev => ({ ...prev, goals: true }));
+              setDirection(1);
+              setCurrentStep(prev => prev + 1);
+            }}
+          />
+        );
+      case 'planning':
+        return (
+          <OnboardingPlanningStep
+            driverId={driverId}
+            onComplete={() => {
+              setCompletedSteps(prev => ({ ...prev, planning: true }));
               setDirection(1);
               setCurrentStep(prev => prev + 1);
             }}
