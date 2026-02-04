@@ -190,21 +190,21 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
                 <Rocket className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-primary">Vers l'indépendance</span>
               </div>
-              {data.targetDirectClients * 12 >= 50 ? (
+              {data.targetDirectClients * 12 >= 70 ? (
                 <p className="text-xs text-muted-foreground">
                   ✅ Avec <strong>{data.targetDirectClients * 12} clients</strong> sur l'année, tu seras en bonne voie pour te libérer des plateformes !
                   <span className="block mt-1 text-green-600 font-medium">
-                    50+ clients fidèles = indépendance réelle
+                    70+ clients fidèles = indépendance réelle
                   </span>
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  💡 Objectif indépendance : <strong>50 clients fidèles minimum</strong>.
+                  💡 Objectif indépendance : <strong>70 clients fidèles minimum</strong>.
                   <span className="block mt-1">
                     Avec {data.targetDirectClients}/mois, tu auras {data.targetDirectClients * 12} clients en fin d'année.
                     {data.targetDirectClients > 0 && (
                       <span className="text-amber-600 font-medium block">
-                        Vise au moins {Math.ceil(50 / 12)} clients/mois pour l'indépendance !
+                        Vise au moins {Math.ceil(70 / 12)} clients/mois pour l'indépendance !
                       </span>
                     )}
                   </span>
