@@ -25,7 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { StripeConnectInfo } from "./StripeConnectInfo";
+import { StripeConnectSetupGuide } from "./StripeConnectSetupGuide";
 import { DepositSettings } from "./DepositSettings";
 
 const PAYMENT_METHODS = [
@@ -70,16 +70,17 @@ const BILLING_TYPES = [
   {
     value: "own_equipment",
     label: "Mon propre matériel",
-    description: "Vous disposez de votre propre TPE, terminal de paiement ou solution d'encaissement",
+    description: "Vous utilisez votre propre TPE ou solution d'encaissement",
     icon: Smartphone,
-    features: ["TPE personnel", "Facturation autonome", "Gestion indépendante"]
+    features: ["TPE personnel", "Facturation autonome", "Sans frais SoloCab"]
   },
   {
     value: "solocab_stripe",
-    label: "SoloCab Stripe Connect",
-    description: "Encaissements en ligne via la plateforme SoloCab avec Stripe",
+    label: "Encaissement en ligne SoloCab",
+    description: "Acceptez les paiements CB en ligne via Stripe Connect",
     icon: Zap,
-    features: ["Paiement en ligne CB", "Gestion automatisée", "Commission optimisée"]
+    features: ["Paiement CB en ligne", "Acomptes automatiques", "Virements directs"],
+    requiresSetup: true
   }
 ];
 
@@ -402,12 +403,13 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
-      {/* Stripe Connect Info - shows if billing type is solocab_stripe */}
-      <StripeConnectInfo 
-        driverId={driverId} 
-        billingType={billingType}
-        onStatusChange={loadSettings}
-      />
+      {/* Stripe Connect Setup Guide - shows if billing type is solocab_stripe */}
+      {billingType === "solocab_stripe" && (
+        <StripeConnectSetupGuide 
+          driverId={driverId} 
+          onStatusChange={loadSettings}
+        />
+      )}
 
       {/* Deposit Settings - only visible if using SoloCab Stripe */}
       {billingType === "solocab_stripe" && (
