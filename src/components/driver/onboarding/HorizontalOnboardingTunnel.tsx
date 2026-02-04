@@ -41,7 +41,7 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
-// Ordre: Vision → Objectifs → Tarifs → Profil → Documents → NFC → Paiement → Lancement
+// Ordre: Vision → Objectifs → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
 const ALL_STEPS = [
   { id: 'vision', title: 'Vision', icon: Compass },
   { id: 'goals', title: 'Objectifs', icon: TrendingUp },
@@ -49,7 +49,7 @@ const ALL_STEPS = [
   { id: 'profile', title: 'Profil', icon: User },
   { id: 'documents', title: 'Docs', icon: FileText },
   { id: 'nfc', title: 'NFC', icon: CreditCard },
-  { id: 'billing', title: 'Paiement', icon: Wallet },
+  { id: 'billing', title: 'Encaissements', icon: Wallet },
   { id: 'trial_start', title: 'Lancer', icon: Play },
 ];
 
@@ -174,9 +174,9 @@ export function HorizontalOnboardingTunnel({
       case 'settings': return isSettingsValid();
       case 'profile': return isProfileValid();
       case 'billing': return true;
-      case 'documents': return isDocumentsValid();
+      case 'documents': return true; // Can pass even without all docs, blocked at launch
       case 'nfc': return true;
-      case 'trial_start': return false;
+      case 'trial_start': return false; // Self-navigated
       default: return false;
     }
   };
@@ -436,6 +436,7 @@ export function HorizontalOnboardingTunnel({
             driverId={driverId}
             billingType={stepData.billing.billingType}
             stripeAccountStatus={driverProfile?.driver?.stripe_account_status}
+            documentsStatus={stepData.documents.documentsStatus}
             onComplete={handleComplete}
             loading={saving}
           />
