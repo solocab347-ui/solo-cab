@@ -42,13 +42,14 @@ export function OnboardingTrialStartStep({
   const isStripeReady = isStripeChoice && stripeAccountStatus === 'active';
   const isStripeNotReady = isStripeChoice && stripeAccountStatus !== 'active';
   
-  // Documents must be submitted (all required docs uploaded)
-  const areDocumentsSubmitted = documentsStatus === 'submitted' || documentsStatus === 'validated';
-  const areDocumentsMissing = !areDocumentsSubmitted;
+  // Documents must be VALIDATED by admin (not just submitted)
+  const areDocumentsValidated = documentsStatus === 'validated';
+  const areDocumentsPending = documentsStatus === 'submitted'; // Submitted but waiting admin
+  const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
   const canStartTrial = () => {
-    // Documents must be submitted first
-    if (areDocumentsMissing) return false;
+    // Documents must be validated by admin first
+    if (!areDocumentsValidated) return false;
     
     if (isOwnEquipment) return confirmReady;
     if (isEquipmentPurchase) return confirmReady;
@@ -139,31 +140,41 @@ export function OnboardingTrialStartStep({
         {/* Documents status */}
         <div className={cn(
           "w-full p-4 rounded-2xl border-2",
-          areDocumentsSubmitted 
+          areDocumentsValidated 
             ? "border-emerald-500 bg-emerald-500/10" 
-            : "border-destructive/50 bg-destructive/10"
+            : areDocumentsPending
+              ? "border-amber-500/50 bg-amber-500/10"
+              : "border-muted bg-muted/10"
         )}>
           <div className="flex items-start gap-3">
             <div className={cn(
               "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-              areDocumentsSubmitted ? "bg-emerald-500" : "bg-destructive"
+              areDocumentsValidated ? "bg-emerald-500" : areDocumentsPending ? "bg-amber-500" : "bg-muted"
             )}>
-              {areDocumentsSubmitted 
+              {areDocumentsValidated 
                 ? <CheckCircle2 className="w-4 h-4 text-white" />
-                : <AlertCircle className="w-4 h-4 text-white" />
+                : areDocumentsPending
+                  ? <Clock className="w-4 h-4 text-white" />
+                  : <FileText className="w-4 h-4 text-muted-foreground" />
               }
             </div>
             <div>
               <h3 className={cn(
                 "font-semibold text-sm",
-                areDocumentsSubmitted ? "text-emerald-400" : "text-destructive"
+                areDocumentsValidated ? "text-emerald-400" : areDocumentsPending ? "text-amber-400" : "text-muted-foreground"
               )}>
-                {areDocumentsSubmitted ? "Documents soumis ✓" : "Documents incomplets"}
+                {areDocumentsValidated 
+                  ? "Documents validés ✓" 
+                  : areDocumentsPending 
+                    ? "En attente de validation admin"
+                    : "Documents à déposer"}
               </h3>
               <p className="text-muted-foreground text-xs mt-1">
-                {areDocumentsSubmitted 
-                  ? "En attente de validation admin" 
-                  : "Complète tous les documents requis"}
+                {areDocumentsValidated 
+                  ? "Tes documents sont validés" 
+                  : areDocumentsPending
+                    ? "L'admin valide sous 24-48h"
+                    : "Dépose tes documents pour validation"}
               </p>
             </div>
           </div>
@@ -285,14 +296,15 @@ export function OnboardingTrialStartStep({
           </Button>
         ) : (
           <>
-            {areDocumentsMissing ? (
+            {!areDocumentsValidated ? (
               <Button 
-                disabled
+                onClick={handleSkipAndWait}
+                disabled={loading}
                 variant="outline"
-                className="w-full h-12 border-destructive/50 text-destructive"
+                className="w-full h-12 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
               >
-                <FileText className="w-4 h-4 mr-2" />
-                Documents requis
+                <Clock className="w-4 h-4 mr-2" />
+                {areDocumentsPending ? 'En attente validation admin' : 'Déposer mes documents'}
               </Button>
             ) : (
               <Button 
@@ -306,8 +318,10 @@ export function OnboardingTrialStartStep({
               </Button>
             )}
             <p className="text-muted-foreground text-xs text-center">
-              {areDocumentsMissing 
-                ? "Retourne à l'étape Documents pour continuer"
+              {!areDocumentsValidated 
+                ? areDocumentsPending 
+                  ? "Tu pourras démarrer dès validation par l'admin"
+                  : "Dépose tes documents pour continuer"
                 : "Tu pourras démarrer depuis ton tableau de bord"}
             </p>
           </>
