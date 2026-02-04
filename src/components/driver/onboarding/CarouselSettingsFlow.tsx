@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Rocket, Target, Sparkles, Euro, Building2, Car } from 'lucide-react';
+import { Rocket, Target, Sparkles, Euro, Building2, Car, Clock } from 'lucide-react';
 import {
   CarouselStep,
   CarouselNav,
@@ -148,18 +148,30 @@ export function CarouselSettingsFlow({
       case 'welcome':
         return (
           <CarouselStep>
-            <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+            <div className="flex-1 flex flex-col items-center justify-center space-y-6">
               <CoachSpeech
-                title={`Bienvenue ${firstName} !`}
-                message="Je suis Sam, ton coach SoloCab. Je vais t'aider à configurer ton activité VTC"
-                highlight="en quelques minutes."
+                title={`Salut ${firstName} !`}
+                message="Je suis Alex, ton coach SoloCab. Ensemble, on va construire"
+                highlight="les fondations de ton indépendance."
               />
+              
+              {/* Time estimation */}
+              <div className="bg-accent/10 border border-accent/30 rounded-2xl p-4 text-center max-w-sm">
+                <div className="flex items-center justify-center gap-2 text-accent mb-2">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-semibold">≈ 5-8 minutes</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Prends un moment calme pour remplir ce parcours. C'est le temps qu'il te faut pour poser 
+                  <span className="text-foreground font-medium"> les bases de ta réussite</span>.
+                </p>
+              </div>
               
               <div className="space-y-3 w-full max-w-sm">
                 {[
-                  { icon: <Target className="w-5 h-5" />, text: "Une question à la fois" },
+                  { icon: <Target className="w-5 h-5" />, text: "Une question à la fois, sans pression" },
                   { icon: <Sparkles className="w-5 h-5" />, text: "Tout est sauvegardé automatiquement" },
-                  { icon: <Rocket className="w-5 h-5" />, text: "Tu gardes le contrôle total" },
+                  { icon: <Rocket className="w-5 h-5" />, text: "Tu gardes le contrôle total de tes tarifs" },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -170,6 +182,10 @@ export function CarouselSettingsFlow({
                   </div>
                 ))}
               </div>
+
+              <TipBox type="tip" delay={3} className="max-w-sm">
+                💡 Si tu n'as pas le temps maintenant, reviens quand tu seras disponible. Ton parcours t'attendra !
+              </TipBox>
             </div>
           </CarouselStep>
         );

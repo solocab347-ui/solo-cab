@@ -12,7 +12,7 @@ interface CoachMessageProps {
 }
 
 export function CoachMessage({
-  name = "Sam",
+  name = "Alex",
   role = "Coach SoloCab",
   message,
   highlight,
@@ -32,7 +32,7 @@ export function CoachMessage({
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shrink-0">
-          S
+          A
         </div>
         
         {/* Content */}
