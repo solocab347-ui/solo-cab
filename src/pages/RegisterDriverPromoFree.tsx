@@ -155,15 +155,17 @@ const RegisterDriverPromoFree = () => {
         .update({ phone })
         .eq("id", newUserId);
 
-      // Create driver profile with trial pending status
+      // Create driver profile - NO trial yet, just access to submit documents
+      // Trial starts only after admin validates documents
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
           user_id: newUserId,
-          status: "on_hold",
-          subscription_status: "pending",
+          status: "on_hold", // Awaiting document submission
+          subscription_status: "pending", // Will become 'trialing' after admin validation
           subscription_paid: false,
-          trial_status: "pending",
+          trial_status: "pending", // Will become 'active' after admin validation
+          documents_status: "pending", // Documents need to be submitted
           registration_step: 1,
           license_number: "À_COMPLÉTER",
           vehicle_brand: "À compléter",
@@ -184,17 +186,17 @@ const RegisterDriverPromoFree = () => {
           role: "driver",
         });
 
-      // Activate trial immediately
+      // Send welcome email (NOT activating trial yet)
       try {
-        await supabase.functions.invoke("activate-driver-trial", {
+        await supabase.functions.invoke("send-driver-welcome-new", {
           body: { driver_id: driverData.id },
         });
-      } catch (trialError) {
-        console.error("Trial activation error:", trialError);
-        // Don't block registration if trial activation fails
+      } catch (emailError) {
+        console.error("Welcome email error:", emailError);
+        // Don't block registration if email fails
       }
 
-      toast.success("Compte créé ! Bienvenue dans votre essai gratuit de 14 jours 🎉");
+      toast.success("Compte créé ! Soumettez vos documents pour activer votre essai gratuit de 14 jours 🎉");
       
       // Redirect to dashboard
       navigate("/driver-dashboard");

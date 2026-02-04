@@ -335,11 +335,30 @@ export const AdminDriverDocumentsManagement = () => {
       if (error) throw error;
 
       if (allValidated) {
+        // 🚀 CRITICAL: Démarrer la période d'essai de 14 jours
+        // L'essai commence maintenant que les documents sont validés
+        try {
+          console.log("🔄 Activating 14-day trial for validated driver...");
+          const { data: { session } } = await supabase.auth.getSession();
+          const trialResponse = await supabase.functions.invoke("reset-trial-on-validation", {
+            body: { driver_id: driver.id }
+          });
+          
+          if (trialResponse.error) {
+            console.error("⚠️ Trial activation error:", trialResponse.error);
+          } else {
+            console.log("✅ Trial period activated:", trialResponse.data);
+          }
+        } catch (trialErr) {
+          console.error("⚠️ Trial activation failed:", trialErr);
+          // Continue even if trial activation fails
+        }
+
         // Notification in-app
         await notificationService.notifySuccess(
           driver.user_id,
           "✅ Documents validés",
-          "Tous vos documents ont été validés. Votre compte est maintenant actif !",
+          "Tous vos documents ont été validés. Votre essai gratuit de 14 jours commence maintenant !",
           "/driver-dashboard"
         );
         
@@ -395,11 +414,29 @@ export const AdminDriverDocumentsManagement = () => {
 
       if (error) throw error;
 
+      // 🚀 CRITICAL: Démarrer la période d'essai de 14 jours
+      // L'essai commence maintenant que les documents sont validés
+      try {
+        console.log("🔄 Activating 14-day trial for validated driver...");
+        const trialResponse = await supabase.functions.invoke("reset-trial-on-validation", {
+          body: { driver_id: driver.id }
+        });
+        
+        if (trialResponse.error) {
+          console.error("⚠️ Trial activation error:", trialResponse.error);
+        } else {
+          console.log("✅ Trial period activated:", trialResponse.data);
+        }
+      } catch (trialErr) {
+        console.error("⚠️ Trial activation failed:", trialErr);
+        // Continue even if trial activation fails
+      }
+
       // Notification in-app
       await notificationService.notifySuccess(
         driver.user_id,
         "✅ Documents validés",
-        "Tous vos documents ont été validés. Votre compte est maintenant actif !",
+        "Tous vos documents ont été validés. Votre essai gratuit de 14 jours commence maintenant !",
         "/driver-dashboard"
       );
       
@@ -419,7 +456,7 @@ export const AdminDriverDocumentsManagement = () => {
         console.error("Error sending validation email:", emailError);
       }
 
-      toast.success("Tous les documents validés - Email envoyé");
+      toast.success("Documents validés - Essai de 14 jours activé !");
       fetchDrivers();
     } catch (error) {
       console.error("Error validating all:", error);

@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, XCircle, FileText } from "lucide-react";
+import { AlertTriangle, XCircle, FileText, Clock, CheckCircle } from "lucide-react";
 import { differenceInDays } from "date-fns";
 
 interface DocumentWarningBannerProps {
@@ -14,13 +14,39 @@ export const DocumentWarningBanner = ({
   documentsDeadline,
   onNavigateToDocuments,
 }: DocumentWarningBannerProps) => {
-  // Ne rien afficher si les documents sont validés ou soumis
-  if (documentsStatus === "validated" || documentsStatus === "submitted") {
+  // Ne rien afficher si les documents sont validés
+  if (documentsStatus === "validated") {
     return null;
   }
 
   const deadline = documentsDeadline ? new Date(documentsDeadline) : null;
   const daysRemaining = deadline ? differenceInDays(deadline, new Date()) : null;
+
+  // Documents soumis - en attente de validation admin
+  // L'essai de 14 jours commencera après validation
+  if (documentsStatus === "submitted") {
+    return (
+      <Alert className="mb-4 sm:mb-6 bg-blue-500/10 border-blue-500/30">
+        <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
+        <AlertTitle className="text-blue-500 text-sm sm:text-base">Documents en cours de vérification</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <span className="text-xs sm:text-sm">
+            Vos documents ont été soumis et sont en cours d'examen par notre équipe (24-48h).
+            <strong className="block mt-1">Votre essai gratuit de 14 jours commencera dès la validation.</strong>
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNavigateToDocuments}
+            className="whitespace-nowrap w-full sm:w-auto text-xs sm:text-sm mt-2"
+          >
+            <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+            Voir mes documents
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   // Deadline expirée
   if (daysRemaining !== null && daysRemaining < 0) {
@@ -72,16 +98,16 @@ export const DocumentWarningBanner = ({
     );
   }
 
-  // Plus de 7 jours ou rappel simple
+  // Plus de 7 jours ou rappel simple - documents non soumis
   if (documentsStatus === "pending") {
-    const displayDays = daysRemaining !== null ? daysRemaining : 7;
     return (
       <Alert className="mb-4 sm:mb-6 bg-amber-500/10 border-amber-500/30">
         <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-        <AlertTitle className="text-amber-500 text-sm sm:text-base">Documents en attente</AlertTitle>
+        <AlertTitle className="text-amber-500 text-sm sm:text-base">📋 Étape 1 : Soumettez vos documents</AlertTitle>
         <AlertDescription className="flex flex-col gap-3">
           <span className="text-xs sm:text-sm">
-            Vous avez {displayDays} jour{displayDays > 1 ? "s" : ""} pour soumettre vos documents professionnels et finaliser votre inscription.
+            Pour activer votre essai gratuit de <strong>14 jours</strong>, soumettez vos documents professionnels.
+            Notre équipe les validera sous 24-48h.
           </span>
           <Button
             variant="outline"
@@ -90,7 +116,7 @@ export const DocumentWarningBanner = ({
             className="whitespace-nowrap w-full sm:w-auto text-xs sm:text-sm"
           >
             <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-            Mes documents
+            Soumettre mes documents
           </Button>
         </AlertDescription>
       </Alert>

@@ -111,7 +111,7 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id, created_at, is_legacy_stripe, migration_required, migrated_at")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id, created_at, is_legacy_stripe, migration_required, migrated_at, documents_status, trial_status")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -124,6 +124,24 @@ export const ProtectedRoute = ({
       if (!driver) {
         logger.error("Aucun profil chauffeur trouvé");
         setDriverStatus("no_profile");
+        setCheckingDriver(false);
+        return;
+      }
+
+      // ========== PRIORITÉ 0: NOUVEAUX INSCRITS EN ATTENTE DE DOCUMENTS ==========
+      // Les chauffeurs qui viennent de s'inscrire peuvent accéder au dashboard
+      // pour soumettre leurs documents AVANT que l'admin valide et active l'essai
+      const isAwaitingDocumentValidation = 
+        (driver.documents_status === 'pending' || driver.documents_status === 'submitted') &&
+        driver.trial_status === 'pending' &&
+        !driver.subscription_paid;
+      
+      if (isAwaitingDocumentValidation) {
+        logger.info("Nouveau chauffeur en attente de validation des documents - accès accordé pour soumettre documents", {
+          documents_status: driver.documents_status,
+          trial_status: driver.trial_status
+        });
+        setDriverStatus("validated");
         setCheckingDriver(false);
         return;
       }
