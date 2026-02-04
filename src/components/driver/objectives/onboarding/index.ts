@@ -1,2 +1,2 @@
 export { OnboardingWizard } from './OnboardingWizard';
-export type { OnboardingData } from './OnboardingWizard';
+export type { OnboardingData, DaySchedule } from './OnboardingWizard';

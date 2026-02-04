@@ -23,6 +23,15 @@ import { StepChallenges } from './steps/StepChallenges';
 import { StepAIAnalysis } from './steps/StepAIAnalysis';
 import { toast } from 'sonner';
 
+export interface DaySchedule {
+  dayIndex: number;
+  label: string;
+  shortLabel: string;
+  isWorking: boolean;
+  startTime: string;
+  endTime: string;
+}
+
 export interface OnboardingData {
   experience: string;
   currentMonthlyRevenue: number;
@@ -32,6 +41,7 @@ export interface OnboardingData {
   workHoursPerDay: number;
   workDaysPerWeek: number;
   preferredSchedule: string;
+  weekSchedule?: DaySchedule[];
   platformsUsed: string[];
   soloCabPercentage: number;
   mainGoal: string;
