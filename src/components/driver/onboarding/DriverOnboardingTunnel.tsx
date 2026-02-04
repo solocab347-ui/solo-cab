@@ -44,9 +44,9 @@ const ALL_STEPS = [
   { id: 'objectives', title: 'Ta Vision', icon: Target },      // 1. PROJECTION - Engager émotionnellement
   { id: 'settings', title: 'Tes Tarifs', icon: Settings },     // 2. CONSTRUCTION - Configurer le business
   { id: 'profile', title: 'Ton Profil', icon: User },          // 3. CONSTRUCTION - Image publique
-  { id: 'billing', title: 'Facturation', icon: Wallet },       // 4. ÉQUIPEMENT - Mode de paiement
-  { id: 'documents', title: 'Documents', icon: FileText },     // 5. VALIDATION - Conformité
-  { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },        // 6. ÉQUIPEMENT - Outil marketing
+  { id: 'documents', title: 'Documents', icon: FileText },     // 4. VALIDATION - Conformité
+  { id: 'nfc', title: 'Plaque NFC', icon: CreditCard },        // 5. ÉQUIPEMENT - Outil marketing
+  { id: 'billing', title: 'Facturation', icon: Wallet },       // 6. ÉQUIPEMENT - Choix mode paiement (peut bloquer)
   { id: 'trial_start', title: 'Lancer', icon: Play },          // 7. LANCEMENT - Démarrer l'essai
 ];
 
