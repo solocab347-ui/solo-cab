@@ -18,6 +18,7 @@ import {
   Play
 } from 'lucide-react';
 import { OnboardingSettingsStep } from './OnboardingSettingsStep';
+import { ConversationalSettingsStep } from './ConversationalSettingsStep';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingBillingStep } from './OnboardingBillingStep';
@@ -430,8 +431,9 @@ export function DriverOnboardingTunnel({
     switch (currentStepId) {
       case 'settings':
         return (
-          <OnboardingSettingsStep 
+          <ConversationalSettingsStep 
             data={stepData.settings}
+            driverName={driverProfile?.full_name || 'Chauffeur'}
             onUpdate={(updates) => updateStepData('settings', updates)}
           />
         );
@@ -588,28 +590,32 @@ export function DriverOnboardingTunnel({
           paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        <div className="max-w-lg mx-auto pb-4">
-          {/* Step Header Card */}
-          <div className="bg-card border rounded-lg p-3 mb-3 mt-3 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                {(() => {
-                  const Icon = STEPS[currentStep].icon;
-                  return <Icon className="w-4 h-4 text-primary" />;
-                })()}
-              </div>
-              <div>
-                <h2 className="text-base font-semibold">{STEPS[currentStep].title}</h2>
+        <div className="max-w-lg mx-auto pb-4 h-full flex flex-col">
+          {/* Step Header Card - Hide for conversational settings */}
+          {STEPS[currentStep].id !== 'settings' && (
+            <div className="bg-card border rounded-lg p-3 mb-3 mt-3 shadow-sm shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  {(() => {
+                    const Icon = STEPS[currentStep].icon;
+                    return <Icon className="w-4 h-4 text-primary" />;
+                  })()}
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold">{STEPS[currentStep].title}</h2>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* AI Assistant */}
-          <OnboardingAIAssistant
-            currentStep={currentStep}
-            stepData={stepData}
-            driverName={driverProfile?.full_name || 'Chauffeur'}
-          />
+          {/* AI Assistant - Hide for conversational settings (it's built-in) */}
+          {STEPS[currentStep].id !== 'settings' && (
+            <OnboardingAIAssistant
+              currentStep={currentStep}
+              stepData={stepData}
+              driverName={driverProfile?.full_name || 'Chauffeur'}
+            />
+          )}
 
           {/* Step Content */}
           <AnimatePresence mode="wait">
@@ -619,6 +625,7 @@ export function DriverOnboardingTunnel({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
+              className={STEPS[currentStep].id === 'settings' ? 'flex-1 flex flex-col min-h-0 mt-3' : ''}
             >
               {renderStep()}
             </motion.div>
