@@ -33,6 +33,8 @@ interface OnboardingBillingStepProps {
   onUpdate: (updates: Partial<OnboardingBillingStepProps['data']>) => void;
 }
 
+const SUMUP_AFFILIATE_LINK = 'https://join.sumup.com/4oCL6MY3?share_id=t9y754T4ocl6my3';
+
 const BILLING_OPTIONS = [
   {
     value: 'own_equipment' as const,
@@ -53,11 +55,12 @@ const BILLING_OPTIONS = [
     title: 'Je veux acheter du matériel',
     subtitle: 'TPE avec réduction partenaire SoloCab',
     icon: ShoppingCart,
-    description: 'SoloCab vous propose un partenariat avec des fournisseurs de TPE pour vous équiper à tarif préférentiel.',
+    description: 'Via notre lien partenaire SumUp, vous pouvez vous équiper d\'un terminal de paiement professionnel.',
     features: [
-      { text: 'Réduction exclusive sur les TPE partenaires', icon: Gift },
-      { text: 'Matériel professionnel de qualité', icon: CheckCircle2 },
-      { text: 'Support et conseil pour votre choix', icon: Info },
+      { text: 'TPE à partir de 24€ seulement', icon: Gift },
+      { text: 'Encaissez vos clients en CB', icon: CreditCard },
+      { text: 'Envoyez des liens de paiement & acomptes', icon: Euro },
+      { text: 'Bénéficiez d\'un compte professionnel', icon: Shield },
     ],
     highlight: true,
     highlightText: 'Réduction exclusive',
@@ -198,23 +201,54 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
           <CardHeader className="p-3 pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-amber-600" />
-              Offre partenaire TPE
+              Offre partenaire SumUp
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
             <p className="text-xs text-muted-foreground">
-              Grâce à notre partenariat, vous pouvez acquérir un terminal de paiement professionnel à prix réduit.
+              Via notre lien partenaire SumUp, équipez-vous d'un terminal de paiement professionnel pour encaisser vos clients par carte bancaire.
             </p>
             
-            <div className="bg-white/50 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-medium">Réduction exclusive SoloCab</span>
+            <div className="bg-white/50 dark:bg-background/50 rounded-lg p-3 space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-medium">TPE à partir de 24€</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground pl-6">
+                  Le modèle le moins cher débute à seulement 24€ TTC.
+                </p>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Le lien vers notre partenaire TPE vous sera envoyé par email après la création de votre compte.
-              </p>
+              
+              <Separator className="my-2" />
+              
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-medium">Ce que vous pourrez faire avec SumUp :</p>
+                <ul className="space-y-1 text-[11px] text-muted-foreground">
+                  <li className="flex items-center gap-1.5">
+                    <CreditCard className="w-3 h-3 text-primary" />
+                    Encaisser vos clients par carte bancaire
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Euro className="w-3 h-3 text-primary" />
+                    Envoyer des liens de paiement (acomptes, pré-paiements)
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Shield className="w-3 h-3 text-primary" />
+                    Bénéficier d'un compte professionnel gratuit
+                  </li>
+                </ul>
+              </div>
             </div>
+
+            <Button
+              variant="default"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              onClick={() => window.open(SUMUP_AFFILIATE_LINK, '_blank')}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Commander mon TPE SumUp
+            </Button>
 
             <Alert className="border-primary/30 bg-primary/5">
               <Info className="h-3.5 w-3.5 text-primary" />

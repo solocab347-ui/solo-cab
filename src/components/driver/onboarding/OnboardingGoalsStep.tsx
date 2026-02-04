@@ -642,7 +642,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       {/* Swipeable content */}
       <motion.div 
-        className="flex-1 overflow-hidden relative px-4"
+        className="flex-1 overflow-y-auto relative px-4 pb-4"
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.1}
@@ -657,7 +657,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
             animate="center"
             exit="exit"
             transition={{ type: 'tween', duration: 0.25 }}
-            className="absolute inset-0 flex flex-col"
+            className="flex flex-col min-h-full"
           >
             {renderStep()}
           </motion.div>
@@ -677,7 +677,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       {/* Navigation - only for non-final steps */}
       {currentStep < GOALS_STEPS.length - 1 && (
-        <div className="flex-shrink-0 flex gap-3 px-4 py-3">
+        <div className="flex-shrink-0 flex gap-3 px-4 py-3 border-t border-border/50 bg-background">
           <Button
             variant="ghost"
             onClick={prevStep}

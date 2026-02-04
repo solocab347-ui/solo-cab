@@ -271,16 +271,42 @@ export function HorizontalOnboardingTunnel({
     setSaving(true);
     try {
       const { billing } = stepData;
+      // Map UI billing type to DB billing type
+      // 'buy_equipment' is stored as 'own_equipment' with wants_tpe_affiliate = true
       const dbBillingType = billing.billingType === 'buy_equipment' ? 'own_equipment' : billing.billingType;
+      
+      // Build update object with only columns that exist
+      const updateData: Record<string, any> = {
+        billing_type: dbBillingType,
+        onboarding_step: 'trial_start',
+      };
+      
+      // wants_tpe_affiliate might not exist - handle gracefully
+      if (billing.billingType === 'buy_equipment') {
+        updateData.wants_tpe_affiliate = true;
+      }
+      
       const { error } = await supabase
         .from('drivers')
-        .update({
-          billing_type: dbBillingType,
-          wants_tpe_affiliate: billing.billingType === 'buy_equipment',
-          onboarding_step: 'trial_start',
-        })
+        .update(updateData)
         .eq('id', driverId);
-      if (error) throw error;
+        
+      if (error) {
+        // If error is about unknown column, try without it
+        if (error.message?.includes('wants_tpe_affiliate')) {
+          const { error: retryError } = await supabase
+            .from('drivers')
+            .update({
+              billing_type: dbBillingType,
+              onboarding_step: 'trial_start',
+            })
+            .eq('id', driverId);
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
+      
       setCompletedSteps(prev => ({ ...prev, billing: true }));
       return true;
     } catch (error: any) {
