@@ -5,8 +5,6 @@ import {
   Rocket, 
   Play, 
   Loader2, 
-  Package,
-  CreditCard,
   CheckCircle2,
   Clock
 } from 'lucide-react';
@@ -28,6 +26,10 @@ interface TrialStartBannerProps {
   billingType?: string;
   stripeAccountStatus?: string;
   trialStatus?: string;
+  subscriptionPaid?: boolean;
+  freeAccessGranted?: boolean;
+  freeAccessEndDate?: string | null;
+  trialStartDate?: string | null;
   onTrialStarted?: () => void;
 }
 
@@ -36,20 +38,65 @@ export function TrialStartBanner({
   billingType,
   stripeAccountStatus,
   trialStatus,
+  subscriptionPaid,
+  freeAccessGranted,
+  freeAccessEndDate,
+  trialStartDate,
   onTrialStarted
 }: TrialStartBannerProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activating, setActivating] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  // Ne pas afficher si l'essai est déjà actif ou si ce n'est pas en attente
+  // ========== LOGIQUE DE VISIBILITÉ ==========
+  
+  // 1. NE PAS AFFICHER si l'utilisateur a un abonnement payé
+  if (subscriptionPaid) {
+    return null;
+  }
+
+  // 2. NE PAS AFFICHER si l'utilisateur a un accès gratuit permanent (fin en 2099 ou null = illimité)
+  if (freeAccessGranted) {
+    const endDate = freeAccessEndDate ? new Date(freeAccessEndDate) : null;
+    const isUnlimited = !endDate || endDate.getFullYear() >= 2099;
+    
+    if (isUnlimited) {
+      // Accès gratuit illimité - pas besoin de période d'essai
+      return null;
+    }
+    
+    // Accès gratuit temporaire - vérifier s'il est encore valide
+    const now = new Date();
+    if (endDate && endDate > now) {
+      // Accès gratuit temporaire encore valide - pas besoin de période d'essai
+      return null;
+    }
+  }
+
+  // 3. NE PAS AFFICHER si l'essai est déjà démarré
+  if (trialStartDate) {
+    return null;
+  }
+
+  // 4. Afficher UNIQUEMENT si le statut d'essai est "pending" ou "pending_equipment"
   if (trialStatus !== 'pending_equipment' && trialStatus !== 'pending') {
     return null;
   }
 
-  const isStripeChoice = billingType === 'solocab_stripe';
+  const isStripeChoice = billingType === 'solocab_stripe' || billingType === 'stripe_connect';
   const isEquipmentPurchase = billingType === 'buy_equipment';
+  const isOwnEquipment = billingType === 'own_equipment' && !isEquipmentPurchase;
   const isStripeReady = stripeAccountStatus === 'active';
+
+  // Déterminer si le bouton peut être activé
+  const canStartTrial = (() => {
+    if (isStripeChoice) {
+      // Pour Stripe, doit être actif
+      return isStripeReady;
+    }
+    // Pour matériel propre ou acheté, toujours activable (confirmation dans le dialog)
+    return true;
+  })();
 
   const handleStartTrial = async () => {
     if (!confirmed) {
@@ -78,6 +125,28 @@ export function TrialStartBanner({
     }
   };
 
+  const getSubtitle = () => {
+    if (isStripeChoice) {
+      return isStripeReady 
+        ? 'Votre compte Stripe est validé !' 
+        : 'En attente de la validation Stripe';
+    }
+    if (isEquipmentPurchase) {
+      return 'Confirmez la réception de votre matériel de paiement';
+    }
+    return 'Démarrez vos 14 jours gratuits dès maintenant';
+  };
+
+  const getConfirmationText = () => {
+    if (isEquipmentPurchase) {
+      return 'Je confirme avoir reçu mon terminal de paiement et être prêt à encaisser mes clients.';
+    }
+    if (isStripeChoice) {
+      return 'Je confirme que mon compte Stripe est configuré et prêt à recevoir des paiements.';
+    }
+    return 'Je confirme que mon matériel d\'encaissement est prêt et fonctionnel.';
+  };
+
   return (
     <>
       <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
@@ -90,13 +159,7 @@ export function TrialStartBanner({
               <div>
                 <h3 className="font-semibold text-sm">Prêt à démarrer votre essai gratuit ?</h3>
                 <p className="text-xs text-muted-foreground">
-                  {isStripeChoice 
-                    ? (isStripeReady 
-                        ? 'Votre compte Stripe est validé !' 
-                        : 'En attente de la validation Stripe')
-                    : isEquipmentPurchase 
-                      ? 'Confirmez la réception de votre matériel'
-                      : 'Démarrez vos 14 jours gratuits dès maintenant'}
+                  {getSubtitle()}
                 </p>
               </div>
             </div>
@@ -105,7 +168,7 @@ export function TrialStartBanner({
               onClick={() => setDialogOpen(true)}
               size="sm"
               className="gap-2"
-              disabled={isStripeChoice && !isStripeReady}
+              disabled={!canStartTrial}
             >
               <Play className="w-4 h-4" />
               Démarrer
@@ -166,11 +229,7 @@ export function TrialStartBanner({
                 onCheckedChange={(checked) => setConfirmed(checked === true)}
               />
               <Label htmlFor="confirm-ready" className="text-sm cursor-pointer">
-                {isEquipmentPurchase 
-                  ? 'Je confirme avoir reçu mon terminal de paiement et être prêt à encaisser mes clients.'
-                  : isStripeChoice
-                    ? 'Je confirme que mon compte Stripe est configuré et prêt à recevoir des paiements.'
-                    : 'Je confirme que mon matériel d\'encaissement est prêt et fonctionnel.'}
+                {getConfirmationText()}
               </Label>
             </div>
           </div>
