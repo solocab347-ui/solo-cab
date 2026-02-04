@@ -136,7 +136,7 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
           </CardContent>
         </Card>
 
-        {/* Target Direct Clients */}
+        {/* Target Direct Clients - MENSUEL */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3 mb-4">
@@ -144,14 +144,12 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
                 <Users className="w-5 h-5 text-blue-500" />
               </div>
               <div className="flex-1">
-                <Label className="font-semibold">Objectif clients directs</Label>
-                <p className="text-xs text-muted-foreground">Base de clients fidèles à construire</p>
+                <Label className="font-semibold">Objectif clients / mois</Label>
+                <p className="text-xs text-muted-foreground">Nouveaux clients fidèles chaque mois</p>
               </div>
-              {data.targetDirectClients > data.currentDirectClients && (
-                <Badge className="bg-blue-500/10 text-blue-600 text-[10px]">
-                  +{data.targetDirectClients - data.currentDirectClients} clients
-                </Badge>
-              )}
+              <Badge className="bg-blue-500/10 text-blue-600 text-[10px]">
+                MENSUEL
+              </Badge>
             </div>
             <div className="flex items-center gap-3">
               <NumericInput
@@ -162,7 +160,7 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
                 max={200}
                 className="text-lg font-semibold"
               />
-              <span className="text-lg font-semibold text-muted-foreground">clients</span>
+              <span className="text-lg font-semibold text-muted-foreground">clients/mois</span>
             </div>
             <Slider
               value={[data.targetDirectClients]}
@@ -171,6 +169,48 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
               step={5}
               className="mt-3"
             />
+            
+            {/* Projection annuelle et indépendance */}
+            <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-semibold text-green-600">Projection annuelle</span>
+              </div>
+              <p className="text-lg font-bold text-foreground">
+                {data.targetDirectClients * 12} clients fidèles en 1 an
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.targetDirectClients} clients/mois × 12 mois
+              </p>
+            </div>
+            
+            {/* Indicateur d'indépendance */}
+            <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-primary/10 to-amber-500/10 border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Rocket className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Vers l'indépendance</span>
+              </div>
+              {data.targetDirectClients * 12 >= 50 ? (
+                <p className="text-xs text-muted-foreground">
+                  ✅ Avec <strong>{data.targetDirectClients * 12} clients</strong> sur l'année, tu seras en bonne voie pour te libérer des plateformes !
+                  <span className="block mt-1 text-green-600 font-medium">
+                    50+ clients fidèles = indépendance réelle
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  💡 Objectif indépendance : <strong>50 clients fidèles minimum</strong>.
+                  <span className="block mt-1">
+                    Avec {data.targetDirectClients}/mois, tu auras {data.targetDirectClients * 12} clients en fin d'année.
+                    {data.targetDirectClients > 0 && (
+                      <span className="text-amber-600 font-medium block">
+                        Vise au moins {Math.ceil(50 / 12)} clients/mois pour l'indépendance !
+                      </span>
+                    )}
+                  </span>
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
