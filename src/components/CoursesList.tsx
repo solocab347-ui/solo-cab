@@ -2684,7 +2684,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - BLOQUÉ pour courses gestionnaire flotte */}
+                  {/* Bouton Partager avec Partenaire - DÉSACTIVÉ temporairement (fonctionnalité bientôt disponible) */}
+                  {/* TODO: Réactiver quand les partenariats seront disponibles
                   {course.status === 'accepted' && !course.fleet_manager_id && (
                     <Button
                       variant="outline"
@@ -2699,6 +2700,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Partager avec un partenaire
                     </Button>
                   )}
+                  */}
                   
                   {/* Bouton Renvoyer au gestionnaire - uniquement pour courses flotte acceptées */}
                   {course.status === 'accepted' && course.fleet_manager_id && course.fleet_managers && (
@@ -3015,7 +3017,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - BLOQUÉ pour courses gestionnaire flotte */}
+                  {/* Bouton Partager avec Partenaire - DÉSACTIVÉ temporairement (fonctionnalité bientôt disponible) */}
+                  {/* TODO: Réactiver quand les partenariats seront disponibles
                   {course.status === 'accepted' && !shareLockStatus && !course.fleet_manager_id && (
                     <Button
                       variant="outline"
@@ -3030,6 +3033,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Partager avec un partenaire
                     </Button>
                   )}
+                  */}
                   
                   {/* Bouton Renvoyer au gestionnaire - uniquement pour courses flotte acceptées */}
                   {course.status === 'accepted' && course.fleet_manager_id && course.fleet_managers && !isActivelySharingOrHandled && (
