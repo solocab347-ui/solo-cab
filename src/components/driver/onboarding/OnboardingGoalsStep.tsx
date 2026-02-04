@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   TrendingUp,
   Users,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Target,
@@ -17,7 +16,8 @@ import {
   AlertTriangle,
   Sparkles,
   Smartphone,
-  UserCheck
+  UserCheck,
+  Check
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,7 +32,18 @@ const GOALS_STEPS = [
   { id: 'current', title: 'Aujourd\'hui' },
   { id: 'revenue', title: 'Objectif CA' },
   { id: 'clients', title: 'Clients' },
-  { id: 'time', title: 'Rythme' },
+  { id: 'planning', title: 'Planning' },
+  { id: 'summary', title: 'Récap' },
+];
+
+const DAYS_OF_WEEK = [
+  { id: 'lundi', label: 'Lun', fullLabel: 'Lundi', weight: 0.7 },
+  { id: 'mardi', label: 'Mar', fullLabel: 'Mardi', weight: 0.85 },
+  { id: 'mercredi', label: 'Mer', fullLabel: 'Mercredi', weight: 0.95 },
+  { id: 'jeudi', label: 'Jeu', fullLabel: 'Jeudi', weight: 0.95 },
+  { id: 'vendredi', label: 'Ven', fullLabel: 'Vendredi', weight: 1.15 },
+  { id: 'samedi', label: 'Sam', fullLabel: 'Samedi', weight: 1.2 },
+  { id: 'dimanche', label: 'Dim', fullLabel: 'Dimanche', weight: 1.2 },
 ];
 
 const SWIPE_THRESHOLD = 50;
@@ -70,7 +81,6 @@ const getCoachAdvice = (
     warnings.push(`+${clientGrowth} nouveaux clients d'un coup, ça demande beaucoup d'énergie !`);
     suggestions.push(`Je te conseille de viser +10-15 clients d'abord.`);
   } else if (clientGrowth > 15 && currentClients === 0) {
-    // Acceptable for beginners
     suggestions.push(`${targetClients} clients fidèles en objectif, c'est réaliste avec du travail ! 🎯`);
   }
   
@@ -100,11 +110,34 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   const [revenueValue, setRevenueValue] = useState('5000');
   const [targetClients, setTargetClients] = useState(15);
   const [clientsValue, setClientsValue] = useState('15');
+
+  // Planning data
+  const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
   const [workHoursPerDay, setWorkHoursPerDay] = useState(8);
-  const [workDaysPerWeek, setWorkDaysPerWeek] = useState(5);
 
   // Coach advice state
   const [coachAdvice, setCoachAdvice] = useState<{ warnings: string[]; suggestions: string[] }>({ warnings: [], suggestions: [] });
+
+  // Calculations
+  const solocabPercentage = 100 - platformPercentage;
+  const weeklyRevenue = Math.round(targetRevenue / 4);
+
+  // Calculate daily targets with AI weighting
+  const dailyTargets = useMemo(() => {
+    const selectedDayData = DAYS_OF_WEEK.filter(d => selectedDays.includes(d.id));
+    if (selectedDayData.length === 0) return [];
+    
+    const totalWeight = selectedDayData.reduce((sum, d) => sum + d.weight, 0);
+    
+    return selectedDayData.map(day => {
+      const dayShare = day.weight / totalWeight;
+      const dailyTarget = Math.round(weeklyRevenue * dayShare);
+      return {
+        ...day,
+        dailyTarget,
+      };
+    });
+  }, [selectedDays, weeklyRevenue]);
 
   // Update coach advice when values change
   useEffect(() => {
@@ -112,12 +145,21 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     setCoachAdvice(advice);
   }, [currentRevenue, targetRevenue, currentClients, targetClients, platformPercentage]);
 
+  const toggleDay = (dayId: string) => {
+    setSelectedDays(prev => 
+      prev.includes(dayId) 
+        ? prev.filter(d => d !== dayId)
+        : [...prev, dayId]
+    );
+  };
+
   const canProceed = () => {
     switch (currentStep) {
       case 0: return true; // Current situation has defaults
       case 1: return targetRevenue >= 1000;
       case 2: return targetClients >= 5;
-      case 3: return workHoursPerDay >= 4 && workDaysPerWeek >= 3;
+      case 3: return selectedDays.length >= 3; // Planning step
+      case 4: return true; // Summary
       default: return false;
     }
   };
@@ -176,9 +218,17 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   const handleComplete = async () => {
     setSaving(true);
     try {
-      const totalHoursMonthly = workHoursPerDay * workDaysPerWeek * 4;
+      const totalHoursMonthly = workHoursPerDay * selectedDays.length * 4;
       const estimatedHourlyTarget = Math.round(targetRevenue / totalHoursMonthly);
-      const solocabPercentage = 100 - platformPercentage;
+
+      // Prepare daily targets map
+      const dailyTargetsMap: Record<string, { target: number; weight: number }> = {};
+      dailyTargets.forEach(day => {
+        dailyTargetsMap[day.id] = {
+          target: day.dailyTarget,
+          weight: day.weight,
+        };
+      });
 
       // Fetch existing objectives_data to merge
       const { data: existingDriver } = await supabase
@@ -192,7 +242,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
       await supabase
         .from('drivers')
         .update({
-          onboarding_step: 'settings', // Sauvegarder la prochaine étape
+          onboarding_step: 'settings',
           objectives_data: {
             ...existingData,
             // Current situation
@@ -202,9 +252,13 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
             solocab_percentage: solocabPercentage,
             // Targets
             target_monthly_revenue: targetRevenue,
+            target_weekly_revenue: weeklyRevenue,
             target_direct_clients: targetClients,
+            // Planning
             work_hours_per_day: workHoursPerDay,
-            work_days_per_week: workDaysPerWeek,
+            work_days_per_week: selectedDays.length,
+            selected_work_days: selectedDays,
+            daily_targets: dailyTargetsMap,
             estimated_hourly_target: estimatedHourlyTarget,
             // Meta
             goals_completed_at: new Date().toISOString()
@@ -212,7 +266,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         })
         .eq('id', driverId);
 
-      toast.success('Tes objectifs sont enregistrés !');
+      toast.success('Tes objectifs et ton planning sont enregistrés !');
       onComplete();
     } catch (error) {
       console.error('Error saving goals:', error);
@@ -229,10 +283,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   };
 
   // Calculate estimates
-  const totalHoursPerMonth = workHoursPerDay * workDaysPerWeek * 4;
+  const totalHoursPerMonth = workHoursPerDay * selectedDays.length * 4;
   const estimatedHourlyTarget = totalHoursPerMonth > 0 ? Math.round(targetRevenue / totalHoursPerMonth) : 0;
   const estimatedPerClient = targetClients > 0 ? Math.round(targetRevenue / targetClients) : 0;
-  const solocabPercentage = 100 - platformPercentage;
 
   const renderCoachFeedback = () => {
     if (coachAdvice.warnings.length === 0 && coachAdvice.suggestions.length === 0) return null;
@@ -530,17 +583,46 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                 animate={{ scale: 1, opacity: 1 }}
                 className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-3"
               >
-                <Clock className="w-7 h-7 text-white" />
+                <Calendar className="w-7 h-7 text-white" />
               </motion.div>
               <h2 className="text-xl font-bold text-foreground mb-1">
-                Ton rythme de travail
+                Ton planning de travail
               </h2>
               <p className="text-sm text-muted-foreground">
-                Définis ton équilibre idéal
+                Quels jours travailles-tu ?
               </p>
             </div>
 
             <div className="max-w-sm mx-auto w-full space-y-4">
+              {/* Day selector */}
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="grid grid-cols-7 gap-1">
+                  {DAYS_OF_WEEK.map(day => (
+                    <button
+                      key={day.id}
+                      onClick={() => toggleDay(day.id)}
+                      className={cn(
+                        "flex flex-col items-center p-2 rounded-xl transition-all",
+                        selectedDays.includes(day.id)
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <span className="text-xs font-medium">{day.label}</span>
+                      {selectedDays.includes(day.id) && (
+                        <Check className="w-3 h-3 mt-1" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                {selectedDays.length < 3 && (
+                  <p className="text-xs text-destructive text-center mt-2">
+                    Sélectionne au moins 3 jours
+                  </p>
+                )}
+              </div>
+
               {/* Hours per day */}
               <div className="bg-card border border-border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -563,54 +645,137 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                 </div>
               </div>
 
-              {/* Days per week */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Jours par semaine</span>
-                  </div>
-                  <span className="text-lg font-bold text-primary">{workDaysPerWeek}j</span>
-                </div>
-                <Slider
-                  value={[workDaysPerWeek]}
-                  onValueChange={([v]) => setWorkDaysPerWeek(v)}
-                  min={3}
-                  max={7}
-                  step={1}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>3 jours</span>
-                  <span>7 jours</span>
+              {/* Activity level hints */}
+              <div className="bg-card border border-border rounded-xl p-3">
+                <p className="text-xs text-muted-foreground mb-2">Potentiel de CA par jour :</p>
+                <div className="flex gap-1">
+                  {DAYS_OF_WEEK.map(day => (
+                    <div 
+                      key={day.id}
+                      className="flex-1 flex flex-col items-center"
+                    >
+                      <div 
+                        className={cn(
+                          "w-full rounded transition-all",
+                          day.weight >= 1.15 ? "bg-emerald-500" : 
+                          day.weight >= 0.9 ? "bg-amber-500" : "bg-muted"
+                        )}
+                        style={{ height: `${day.weight * 24}px` }}
+                      />
+                      <span className="text-[10px] text-muted-foreground mt-1">{day.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Summary */}
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-lg p-4"
+                className="bg-primary/10 border border-primary/20 rounded-lg p-3"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Récapitulatif</span>
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold">Alex :</span> Ven/Sam/Dim ont le meilleur potentiel CA. Je vais répartir tes objectifs selon l'activité de chaque jour ! 📊
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <p className="text-xl font-bold text-primary">~{estimatedHourlyTarget}€/h</p>
-                    <p className="text-[10px] text-muted-foreground">Objectif horaire</p>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-emerald-500">{totalHoursPerMonth}h</p>
-                    <p className="text-[10px] text-muted-foreground">Par mois</p>
-                  </div>
+              </motion.div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="flex flex-col h-full justify-center">
+            <div className="text-center mb-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-3"
+              >
+                <Target className="w-7 h-7 text-white" />
+              </motion.div>
+              <h2 className="text-xl font-bold text-foreground mb-1">
+                Ton plan de réussite
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Tes objectifs calculés par Alex
+              </p>
+            </div>
+
+            <div className="max-w-sm mx-auto w-full space-y-3">
+              {/* Weekly summary */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-center">
+                  <TrendingUp className="w-4 h-4 text-primary mx-auto mb-1" />
+                  <p className="text-lg font-bold text-primary">{weeklyRevenue}€</p>
+                  <p className="text-xs text-muted-foreground">CA / semaine</p>
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
+                  <Clock className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-emerald-500">~{estimatedHourlyTarget}€/h</p>
+                  <p className="text-xs text-muted-foreground">Objectif horaire</p>
+                </div>
+              </div>
+
+              {/* Daily breakdown */}
+              <div className="bg-card border border-border rounded-xl p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Répartition intelligente sur {selectedDays.length} jours :
+                </p>
+                <div className="space-y-2">
+                  {dailyTargets.map(day => (
+                    <div key={day.id} className="flex items-center gap-2">
+                      <span className={cn(
+                        "w-12 text-xs font-medium",
+                        day.weight >= 1.15 ? "text-emerald-500" : "text-foreground"
+                      )}>
+                        {day.fullLabel}
+                      </span>
+                      <div className="flex-1 h-4 rounded-full bg-muted overflow-hidden">
+                        <motion.div 
+                          className={cn(
+                            "h-full rounded-full",
+                            day.weight >= 1.15 ? "bg-emerald-500" : 
+                            day.weight >= 0.9 ? "bg-primary" : "bg-amber-500"
+                          )}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(day.dailyTarget / weeklyRevenue) * 100 * selectedDays.length}%` }}
+                          transition={{ delay: 0.2, duration: 0.5 }}
+                        />
+                      </div>
+                      <span className="text-sm font-bold w-14 text-right">{day.dailyTarget}€</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Annual projection */}
+              <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-xl p-3 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Projection annuelle</p>
+                <p className="text-2xl font-bold text-primary">{(targetRevenue * 12).toLocaleString('fr-FR')}€</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  avec {targetClients} clients fidèles 🎯
+                </p>
+              </div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3"
+              >
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-foreground">
+                    <span className="font-semibold">Alex :</span> J'ai réparti ton CA selon le potentiel de chaque jour. Les jours les plus forts auront des objectifs plus élevés. Tu es prêt ! 🚀
+                  </p>
                 </div>
               </motion.div>
 
               {/* Complete button */}
               <Button
                 onClick={handleComplete}
-                disabled={saving || !canProceed()}
+                disabled={saving}
                 size="lg"
                 className="w-full"
               >
