@@ -184,7 +184,7 @@ export function CarouselSettingsFlow({
               </div>
 
               <TipBox type="tip" delay={3} className="max-w-sm">
-                💡 Si tu n'as pas le temps maintenant, reviens quand tu seras disponible. Ton parcours t'attendra !
+                🔥 Tu es au bon endroit, au bon moment. Allons-y ensemble !
               </TipBox>
             </div>
           </CarouselStep>
