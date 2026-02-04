@@ -83,10 +83,10 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
   }, [pickupCoordinates, destinationCoordinates, courseType, driverProfile]);
 
   useEffect(() => {
-    if (driverProfile) {
+    if (driverProfile && (distanceKm || durationHours)) {
       calculateEstimatedPrice();
     }
-  }, [distanceKm, durationMinutes, durationHours, courseType, driverProfile]);
+  }, [distanceKm, durationMinutes, durationHours, courseType, driverProfile, scheduledDate]);
 
   const fetchDriverProfile = async () => {
     if (!user) return;
@@ -129,7 +129,42 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
     }
   };
 
-  const calculateEstimatedPrice = () => {
+  const calculateEstimatedPrice = async () => {
+    if (!driverProfile) return;
+
+    setCalculating(true);
+    
+    try {
+      // Utiliser le RPC calculate_course_price pour garantir la cohérence avec le backend
+      const { data: priceResult, error } = await supabase.rpc('calculate_course_price', {
+        _driver_id: driverProfile.id,
+        _distance_km: courseType === "classic" ? (distanceKm || 0) : 0,
+        _duration_minutes: courseType === "hourly" ? (parseFloat(durationHours || "0") * 60) : (durationMinutes || 0),
+        _scheduled_date: scheduledDate ? new Date(scheduledDate).toISOString() : new Date().toISOString(),
+        _use_hourly_rate: courseType === "hourly"
+      });
+
+      if (error) {
+        console.error("Error calculating price via RPC:", error);
+        // Fallback au calcul local en cas d'erreur
+        calculateLocalPrice();
+        return;
+      }
+
+      if (priceResult && priceResult.length > 0) {
+        const result = priceResult[0];
+        setCalculatedPrice(parseFloat(result.total_price?.toFixed(2) || "0"));
+      }
+    } catch (err) {
+      console.error("Exception calculating price:", err);
+      calculateLocalPrice();
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  // Calcul local en fallback uniquement
+  const calculateLocalPrice = () => {
     if (!driverProfile) return;
 
     let estimatedPrice = 0;
@@ -154,7 +189,6 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
         subtotal = rawSubtotal + tva;
       }
       
-      // APPLIQUER LE PRIX MINIMUM pour les courses classiques
       if (minimumPrice > 0 && subtotal < minimumPrice) {
         estimatedPrice = minimumPrice;
       } else {
@@ -174,7 +208,6 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
         const tva = subtotal * (tvaRate / 100);
         estimatedPrice = subtotal + tva;
       }
-      // Note: Le prix minimum ne s'applique pas aux mises à disposition
     }
 
     setCalculatedPrice(estimatedPrice > 0 ? parseFloat(estimatedPrice.toFixed(2)) : null);

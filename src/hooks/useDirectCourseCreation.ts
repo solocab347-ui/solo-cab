@@ -157,27 +157,42 @@ export function useDirectCourseCreation() {
         durationMinutes = durationHours * 60;
       }
 
-      // CALCUL DU PRIX avec prix minimum
+      // CALCUL DU PRIX via RPC pour garantir la cohérence avec l'affichage
       let finalPrice = estimatedPrice || 0;
-      const minimumPrice = driverData.minimum_price || 0;
       
-      if (courseType === "classic" && distanceKm !== null && !estimatedPrice) {
-        const baseFare = driverData.base_fare || 0;
-        const perKmRate = driverData.per_km_rate || 0;
-        const tvaRate = 10;
-        
-        let subtotal = 0;
-        if (driverData.tva_included) {
-          const baseFareHT = baseFare / (1 + tvaRate / 100);
-          const perKmRateHT = perKmRate / (1 + tvaRate / 100);
-          const subtotalHT = baseFareHT + (distanceKm * perKmRateHT);
-          subtotal = subtotalHT * (1 + tvaRate / 100);
+      if (!estimatedPrice) {
+        const { data: priceResult, error: priceError } = await supabase.rpc('calculate_course_price', {
+          _driver_id: driverId,
+          _distance_km: distanceKm || 0,
+          _duration_minutes: durationMinutes || 0,
+          _scheduled_date: new Date(scheduledDate).toISOString(),
+          _use_hourly_rate: courseType === "hourly"
+        });
+
+        if (!priceError && priceResult && priceResult.length > 0) {
+          finalPrice = priceResult[0].total_price || 0;
         } else {
-          subtotal = (baseFare + (distanceKm * perKmRate)) * (1 + tvaRate / 100);
+          // Fallback au calcul local si le RPC échoue
+          const minimumPrice = driverData.minimum_price || 0;
+          
+          if (courseType === "classic" && distanceKm !== null) {
+            const baseFare = driverData.base_fare || 0;
+            const perKmRate = driverData.per_km_rate || 0;
+            const tvaRate = 10;
+            
+            let subtotal = 0;
+            if (driverData.tva_included) {
+              const baseFareHT = baseFare / (1 + tvaRate / 100);
+              const perKmRateHT = perKmRate / (1 + tvaRate / 100);
+              const subtotalHT = baseFareHT + (distanceKm * perKmRateHT);
+              subtotal = subtotalHT * (1 + tvaRate / 100);
+            } else {
+              subtotal = (baseFare + (distanceKm * perKmRate)) * (1 + tvaRate / 100);
+            }
+            
+            finalPrice = minimumPrice > 0 && subtotal < minimumPrice ? minimumPrice : subtotal;
+          }
         }
-        
-        // Appliquer le prix minimum
-        finalPrice = minimumPrice > 0 && subtotal < minimumPrice ? minimumPrice : subtotal;
       }
 
       // CRÉATION: Course confirmée directement pour client non inscrit
