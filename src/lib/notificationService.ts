@@ -137,134 +137,146 @@ export const notificationService = {
   },
 
   /**
-   * Notifications pour les COURSES
+   * Notifications pour les COURSES - AVEC IDs GRANULAIRES
    */
-  async notifyNewCourseRequest(driverId: string, driverUserId: string, clientName: string, courseDate: string) {
+  async notifyNewCourseRequest(driverId: string, driverUserId: string, clientName: string, courseDate: string, courseId?: string) {
     return this.create({
       userId: driverUserId,
       title: '🚗 Nouvelle demande de course',
       message: `${clientName} a demandé une course pour le ${courseDate}`,
       type: 'course',
-      link: '/driver-dashboard'
+      link: courseId ? `/driver-dashboard?tab=courses&courseId=${courseId}` : '/driver-dashboard?tab=courses',
+      category: 'course_request'
     });
   },
 
-  async notifyCourseAccepted(clientUserId: string, driverName: string) {
+  async notifyCourseAccepted(clientUserId: string, driverName: string, courseId?: string) {
     return this.create({
       userId: clientUserId,
       title: '✅ Course acceptée',
       message: `${driverName} a accepté votre demande de course`,
       type: 'success',
-      link: '/client-dashboard'
+      link: courseId ? `/client-dashboard?tab=courses&courseId=${courseId}` : '/client-dashboard?tab=courses',
+      category: 'course_accepted'
     });
   },
 
-  async notifyCourseRejected(clientUserId: string, driverName: string) {
+  async notifyCourseRejected(clientUserId: string, driverName: string, courseId?: string) {
     return this.create({
       userId: clientUserId,
       title: '❌ Course refusée',
       message: `${driverName} n'est pas disponible pour votre course`,
       type: 'warning',
-      link: '/client-dashboard'
+      link: courseId ? `/client-dashboard?tab=courses&courseId=${courseId}` : '/client-dashboard?tab=courses',
+      category: 'course_cancelled'
     });
   },
 
-  async notifyCourseCancelled(userId: string, cancelledBy: string) {
+  async notifyCourseCancelled(userId: string, cancelledBy: string, courseId?: string, isDriver: boolean = false) {
     return this.create({
       userId,
       title: '🚫 Course annulée',
       message: `La course a été annulée par ${cancelledBy}`,
       type: 'warning',
-      link: userId.includes('driver') ? '/driver-dashboard' : '/client-dashboard'
+      link: isDriver 
+        ? (courseId ? `/driver-dashboard?tab=courses&courseId=${courseId}` : '/driver-dashboard?tab=courses')
+        : (courseId ? `/client-dashboard?tab=courses&courseId=${courseId}` : '/client-dashboard?tab=courses'),
+      category: 'course_cancelled'
     });
   },
 
-  async notifyCourseCompleted(clientUserId: string) {
+  async notifyCourseCompleted(clientUserId: string, courseId?: string) {
     return this.create({
       userId: clientUserId,
       title: '🏁 Course terminée',
       message: 'Votre course a été effectuée avec succès. Merci !',
       type: 'success',
-      link: '/client-dashboard'
+      link: courseId ? `/client-dashboard?tab=courses&courseId=${courseId}` : '/client-dashboard?tab=courses',
+      category: 'course_completed'
     });
   },
 
-  async notifyCourseStarted(clientUserId: string, driverName: string) {
+  async notifyCourseStarted(clientUserId: string, driverName: string, courseId?: string) {
     return this.create({
       userId: clientUserId,
       title: '🚕 Course en cours',
       message: `${driverName} est en route pour votre course`,
       type: 'info',
-      link: '/client-dashboard'
+      link: courseId ? `/client-dashboard?tab=courses&courseId=${courseId}` : '/client-dashboard?tab=courses'
     });
   },
 
   /**
    * Notifications pour les DEVIS
    */
-  async notifyNewDevis(clientUserId: string, driverName: string, amount: number) {
+  async notifyNewDevis(clientUserId: string, driverName: string, amount: number, devisId?: string, courseId?: string) {
     return this.create({
       userId: clientUserId,
       title: '💶 Nouveau devis reçu',
       message: `${driverName} vous a envoyé un devis de ${amount.toFixed(2)}€`,
       type: 'devis',
-      link: '/client-dashboard'
+      link: devisId ? `/client-dashboard?tab=devis&devisId=${devisId}` : '/client-dashboard?tab=devis',
+      category: 'devis'
     });
   },
 
-  async notifyDevisAccepted(driverUserId: string, clientName: string, amount: number) {
+  async notifyDevisAccepted(driverUserId: string, clientName: string, amount: number, courseId?: string) {
     return this.create({
       userId: driverUserId,
       title: '✅ Devis accepté',
       message: `${clientName} a accepté votre devis de ${amount.toFixed(2)}€`,
       type: 'success',
-      link: '/driver-dashboard'
+      link: courseId ? `/driver-dashboard?tab=courses&courseId=${courseId}` : '/driver-dashboard?tab=courses',
+      category: 'devis'
     });
   },
 
-  async notifyDevisRejected(driverUserId: string, clientName: string) {
+  async notifyDevisRejected(driverUserId: string, clientName: string, courseId?: string) {
     return this.create({
       userId: driverUserId,
       title: '❌ Devis refusé',
       message: `${clientName} a refusé votre devis`,
       type: 'warning',
-      link: '/driver-dashboard'
+      link: courseId ? `/driver-dashboard?tab=courses&courseId=${courseId}` : '/driver-dashboard?tab=courses',
+      category: 'devis'
     });
   },
 
   /**
    * Notifications pour les FACTURES
    */
-  async notifyNewFacture(clientUserId: string, driverName: string, amount: number, invoiceNumber: string) {
+  async notifyNewFacture(clientUserId: string, driverName: string, amount: number, invoiceNumber: string, invoiceId?: string) {
     return this.create({
       userId: clientUserId,
       title: '📄 Nouvelle facture',
       message: `Facture ${invoiceNumber} de ${amount.toFixed(2)}€ de ${driverName}`,
       type: 'facture',
-      link: '/client-dashboard'
+      link: invoiceId ? `/client-dashboard?tab=invoices&invoiceId=${invoiceId}` : '/client-dashboard?tab=invoices',
+      category: 'facture'
     });
   },
 
-  async notifyFacturePaid(driverUserId: string, clientName: string, amount: number) {
+  async notifyFacturePaid(driverUserId: string, clientName: string, amount: number, invoiceId?: string) {
     return this.create({
       userId: driverUserId,
       title: '💰 Paiement reçu',
       message: `${clientName} a payé ${amount.toFixed(2)}€`,
       type: 'payment',
-      link: '/driver-dashboard'
+      link: invoiceId ? `/driver-dashboard?tab=invoices&invoiceId=${invoiceId}` : '/driver-dashboard?tab=invoices',
+      category: 'payment'
     });
   },
 
   /**
-   * Notifications pour les CLIENTS
+   * Notifications pour les CLIENTS - AVEC ID
    */
-  async notifyNewClient(driverUserId: string, clientName: string) {
+  async notifyNewClient(driverUserId: string, clientName: string, clientId?: string) {
     return this.create({
       userId: driverUserId,
       title: '👤 Nouveau client',
       message: `${clientName} s'est inscrit via votre profil`,
       type: 'client',
-      link: '/driver-dashboard'
+      link: clientId ? `/driver-dashboard?tab=clients&clientId=${clientId}` : '/driver-dashboard?tab=clients'
     });
   },
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,21 +7,49 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Bell, ArrowLeft, Check, Trash2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Bell, ArrowLeft, Check, Trash2, ExternalLink, Calendar, DollarSign, MessageSquare, Users, AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  link?: string;
+  category?: string;
+  created_at: string;
+}
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
     }
   }, [user]);
+
+  // Scroll vers une notification spécifique si ID passé en paramètre
+  useEffect(() => {
+    const notificationId = searchParams.get('id');
+    if (notificationId && notifications.length > 0) {
+      const element = document.getElementById(`notification-${notificationId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-primary');
+        }, 2000);
+      }
+    }
+  }, [searchParams, notifications]);
 
   const fetchNotifications = async () => {
     try {
@@ -55,7 +83,6 @@ const Notifications = () => {
       ));
     } catch (error: any) {
       console.error("Error marking notification as read:", error);
-      toast.error("Erreur lors de la mise à jour");
     }
   };
 
@@ -77,7 +104,8 @@ const Notifications = () => {
     }
   };
 
-  const deleteNotification = async (notificationId: string) => {
+  const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       const { error } = await supabase
         .from("notifications")
@@ -94,12 +122,39 @@ const Notifications = () => {
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
+    // Marquer comme lu
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
+    
+    // ✅ NAVIGATION VERS LE LIEN SPÉCIFIQUE
     if (notification.link) {
       navigate(notification.link);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return <CheckCircle2 className="w-5 h-5 text-success" />;
+      case "warning":
+        return <AlertTriangle className="w-5 h-5 text-warning" />;
+      case "error":
+        return <XCircle className="w-5 h-5 text-destructive" />;
+      case "course":
+        return <Calendar className="w-5 h-5 text-primary" />;
+      case "devis":
+      case "facture":
+      case "payment":
+        return <DollarSign className="w-5 h-5 text-success" />;
+      case "client":
+      case "driver":
+        return <Users className="w-5 h-5 text-accent" />;
+      case "message":
+        return <MessageSquare className="w-5 h-5 text-accent" />;
+      default:
+        return <Info className="w-5 h-5 text-primary" />;
     }
   };
 
@@ -116,7 +171,20 @@ const Notifications = () => {
     }
   };
 
+  const filteredNotifications = filter 
+    ? notifications.filter(n => n.type === filter || n.category === filter)
+    : notifications;
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const filterOptions = [
+    { key: null, label: 'Tous', count: notifications.length },
+    { key: 'course', label: 'Courses', count: notifications.filter(n => n.type === 'course').length },
+    { key: 'devis', label: 'Devis', count: notifications.filter(n => n.type === 'devis').length },
+    { key: 'facture', label: 'Factures', count: notifications.filter(n => n.type === 'facture').length },
+    { key: 'success', label: 'Succès', count: notifications.filter(n => n.type === 'success').length },
+    { key: 'warning', label: 'Alertes', count: notifications.filter(n => n.type === 'warning').length },
+  ];
 
   if (loading) {
     return (
@@ -131,7 +199,7 @@ const Notifications = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -166,11 +234,31 @@ const Notifications = () => {
               </Button>
             )}
           </div>
+
+          {/* Filtres */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {filterOptions.map(opt => (
+              <Button
+                key={opt.key || 'all'}
+                variant={filter === opt.key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(opt.key)}
+                className="gap-1"
+              >
+                {opt.label}
+                {opt.count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                    {opt.count}
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </div>
         </Card>
 
         {/* Notifications List */}
         <Card className="p-0 bg-card/80 backdrop-blur-sm border-primary/20 overflow-hidden">
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Bell className="h-16 w-16 mx-auto mb-4 opacity-20 text-white" />
               <p className="text-white">Aucune notification</p>
@@ -178,27 +266,31 @@ const Notifications = () => {
           ) : (
             <ScrollArea className="h-[600px]">
               <div className="divide-y divide-border">
-                {notifications.map((notification) => (
+                {filteredNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-6 hover:bg-muted/10 cursor-pointer transition-colors relative ${
-                      !notification.is_read ? "bg-primary/5" : ""
+                    id={`notification-${notification.id}`}
+                    className={`p-6 hover:bg-muted/10 cursor-pointer transition-all duration-200 relative group ${
+                      !notification.is_read ? "bg-primary/5 border-l-4 border-l-primary" : ""
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-4">
-                      <div
-                        className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                          !notification.is_read ? "bg-primary" : "bg-muted"
-                        }`}
-                      />
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
                       
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-2 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-white">
-                              {notification.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-white">
+                                {notification.title}
+                              </p>
+                              {!notification.is_read && (
+                                <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               {notification.message}
                             </p>
@@ -209,28 +301,47 @@ const Notifications = () => {
                             {notification.type === "warning" && "Attention"}
                             {notification.type === "error" && "Erreur"}
                             {notification.type === "info" && "Info"}
+                            {notification.type === "course" && "Course"}
+                            {notification.type === "devis" && "Devis"}
+                            {notification.type === "facture" && "Facture"}
+                            {notification.type === "payment" && "Paiement"}
+                            {notification.type === "client" && "Client"}
+                            {notification.type === "driver" && "Chauffeur"}
+                            {notification.type === "partnership" && "Partenariat"}
+                            {notification.type === "fleet" && "Flotte"}
+                            {notification.type === "message" && "Message"}
                           </Badge>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(notification.created_at), {
-                              addSuffix: true,
-                              locale: fr,
-                            })}
-                          </p>
+                          <div className="flex items-center gap-3">
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(notification.created_at), {
+                                addSuffix: true,
+                                locale: fr,
+                              })}
+                            </p>
+                            <span className="text-xs text-muted-foreground/50">
+                              {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                            </span>
+                          </div>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteNotification(notification.id);
-                            }}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {notification.link && (
+                              <span className="text-xs text-primary/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                <ExternalLink className="w-3 h-3" />
+                                Voir détails
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => deleteNotification(notification.id, e)}
+                              className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

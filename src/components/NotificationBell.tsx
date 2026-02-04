@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Bell, CheckCircle2, AlertTriangle, XCircle, Info, Calendar, MessageSquare, DollarSign, Settings } from "lucide-react";
+import { Bell, CheckCircle2, AlertTriangle, XCircle, Info, Calendar, MessageSquare, DollarSign, Settings, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
@@ -19,23 +19,33 @@ export const NotificationBell = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  // Show only first 3 notifications
-  const displayedNotifications = notifications.slice(0, 3);
-  const hasMore = notifications.length > 3;
+  // ✅ Augmenté à 10 notifications pour éviter l'impression de "disparition"
+  const displayedNotifications = notifications.slice(0, 10);
+  const hasMore = notifications.length > 10;
 
-  const handleNotificationClick = (notification: any, e: React.MouseEvent) => {
+  const handleNotificationClick = (notification: Notification, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    markAsRead(notification.id);
+    // Marquer comme lu
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // ✅ NAVIGATION AMÉLIORÉE - Fermer et naviguer vers le lien spécifique
+    setOpen(false);
     
     if (notification.link) {
-      setOpen(false);
-      // Petit délai pour laisser le popover se fermer avant navigation
+      // Délai court pour laisser le popover se fermer
       setTimeout(() => {
-        navigate(notification.link);
-      }, 50);
+        navigate(notification.link!);
+      }, 100);
     }
+  };
+
+  const handleViewAll = () => {
+    setOpen(false);
+    navigate("/notifications");
   };
 
   const getNotificationIcon = (type: string) => {
@@ -51,6 +61,8 @@ export const NotificationBell = () => {
       case "message":
         return <MessageSquare className="h-5 w-5 text-accent" />;
       case "payment":
+      case "facture":
+      case "devis":
         return <DollarSign className="h-5 w-5 text-success" />;
       default:
         return <Info className="h-5 w-5 text-primary" />;
@@ -91,7 +103,7 @@ export const NotificationBell = () => {
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-in zoom-in-50"
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 99 ? "99+" : unreadCount}
             </Badge>
           )}
         </Button>
@@ -119,7 +131,7 @@ export const NotificationBell = () => {
           )}
         </div>
 
-        <ScrollArea className="h-[450px]">
+        <ScrollArea className="h-[500px]">
           {displayedNotifications.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/30 flex items-center justify-center">
@@ -134,7 +146,7 @@ export const NotificationBell = () => {
                 <div
                   key={notification.id}
                   className={cn(
-                    "p-4 hover:bg-muted/50 cursor-pointer transition-all duration-200 hover:shadow-sm",
+                    "p-4 hover:bg-muted/50 cursor-pointer transition-all duration-200 hover:shadow-sm group",
                     getNotificationBg(notification.type, notification.is_read),
                     !notification.is_read && "border-l-4 border-l-primary"
                   )}
@@ -152,9 +164,14 @@ export const NotificationBell = () => {
                         )}>
                           {notification.title}
                         </p>
-                        {!notification.is_read && (
-                          <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                        )}
+                        <div className="flex items-center gap-1">
+                          {notification.link && (
+                            <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                         {notification.message}
@@ -166,6 +183,11 @@ export const NotificationBell = () => {
                             locale: fr,
                           })}
                         </p>
+                        {notification.link && (
+                          <span className="text-xs text-primary/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Cliquer pour voir →
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -180,12 +202,18 @@ export const NotificationBell = () => {
             <Button
               variant="ghost"
               className="w-full hover:bg-primary/10 font-medium"
-              onClick={() => {
-                navigate("/notifications");
-                setOpen(false);
-              }}
+              onClick={handleViewAll}
             >
               Voir toutes les notifications ({notifications.length})
+            </Button>
+          )}
+          {!hasMore && notifications.length > 0 && (
+            <Button
+              variant="ghost"
+              className="w-full hover:bg-primary/10 font-medium"
+              onClick={handleViewAll}
+            >
+              Voir toutes les notifications
             </Button>
           )}
           <Button

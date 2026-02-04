@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,11 @@ import {
   MessageSquare,
   CheckCircle,
   Clock,
-  Loader2
+  Loader2,
+  ExternalLink,
+  Users,
+  Building2,
+  CreditCard
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -34,7 +39,7 @@ interface AdminNotificationCenterProps {
   onNavigate?: (section: string, tab?: string) => void;
 }
 
-const getCategoryIcon = (category: string | null) => {
+const getCategoryIcon = (category: string | null, type?: string) => {
   switch (category) {
     case 'driver_registration':
     case 'driver_documents':
@@ -50,6 +55,12 @@ const getCategoryIcon = (category: string | null) => {
     case 'dispute':
     case 'partnership_dispute':
       return <AlertTriangle className="w-4 h-4" />;
+    case 'subscription':
+      return <CreditCard className="w-4 h-4" />;
+    case 'company':
+      return <Building2 className="w-4 h-4" />;
+    case 'client_registration':
+      return <Users className="w-4 h-4" />;
     default:
       return <Bell className="w-4 h-4" />;
   }
@@ -68,13 +79,21 @@ const getCategoryColor = (category: string | null) => {
     case 'suggestion':
       return 'bg-green-500/10 text-green-500 border-green-500/20';
     case 'dispute':
+    case 'partnership_dispute':
       return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+    case 'subscription':
+      return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+    case 'company':
+      return 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
+    case 'client_registration':
+      return 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20';
     default:
       return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
   }
 };
 
 export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,13 +154,47 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     
-    // Parse link to navigate
-    if (onNavigate && notification.link) {
+    // ✅ NAVIGATION GRANULAIRE AMÉLIORÉE
+    if (notification.link) {
       const url = new URL(notification.link, window.location.origin);
       const section = url.searchParams.get('section');
       const tab = url.searchParams.get('tab');
-      if (section) {
+      
+      // Extraire les IDs pour une navigation précise
+      const driverId = url.searchParams.get('driverId');
+      const clientId = url.searchParams.get('clientId');
+      const companyId = url.searchParams.get('companyId');
+      const courseId = url.searchParams.get('courseId');
+      const disputeId = url.searchParams.get('disputeId');
+      const errorId = url.searchParams.get('errorId');
+      const feedbackId = url.searchParams.get('feedbackId');
+      const fleetManagerId = url.searchParams.get('fleetManagerId');
+      const view = url.searchParams.get('view');
+
+      // Si onNavigate est fourni (navigation interne admin), l'utiliser
+      if (onNavigate && section) {
+        // Construire les paramètres pour la navigation interne
+        const params = new URLSearchParams();
+        if (tab) params.set('tab', tab);
+        if (driverId) params.set('driverId', driverId);
+        if (clientId) params.set('clientId', clientId);
+        if (companyId) params.set('companyId', companyId);
+        if (courseId) params.set('courseId', courseId);
+        if (disputeId) params.set('disputeId', disputeId);
+        if (errorId) params.set('errorId', errorId);
+        if (feedbackId) params.set('feedbackId', feedbackId);
+        if (fleetManagerId) params.set('fleetManagerId', fleetManagerId);
+        if (view) params.set('view', view);
+        
+        // Appeler onNavigate avec section et tab
         onNavigate(section, tab || undefined);
+        
+        // Mettre à jour l'URL avec tous les paramètres pour le deep linking
+        const fullUrl = `${url.pathname}?${params.toString()}`;
+        window.history.replaceState(null, '', fullUrl);
+      } else {
+        // Navigation directe via React Router
+        navigate(notification.link);
       }
     }
   };
@@ -154,7 +207,8 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
     { key: 'driver_documents', label: 'Documents', count: notifications.filter(n => n.category === 'driver_documents' || n.category === 'vehicle_documents').length },
     { key: 'error', label: 'Erreurs', count: notifications.filter(n => n.category === 'error').length },
     { key: 'feedback', label: 'Feedbacks', count: notifications.filter(n => n.category === 'feedback' || n.category === 'suggestion').length },
-    { key: 'dispute', label: 'Litiges', count: notifications.filter(n => n.category === 'dispute').length },
+    { key: 'dispute', label: 'Litiges', count: notifications.filter(n => n.category === 'dispute' || n.category === 'partnership_dispute').length },
+    { key: 'subscription', label: 'Abonnements', count: notifications.filter(n => n.category === 'subscription').length },
   ];
 
   if (loading) {
@@ -215,13 +269,13 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
                 <div
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 group ${
                     !notification.is_read ? 'bg-primary/5 border-primary/20' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-full ${getCategoryColor(notification.category)}`}>
-                      {getCategoryIcon(notification.category)}
+                      {getCategoryIcon(notification.category, notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -231,17 +285,27 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
                         {!notification.is_read && (
                           <div className="w-2 h-2 rounded-full bg-primary" />
                         )}
+                        {notification.link && (
+                          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(notification.created_at), { 
-                          addSuffix: true, 
-                          locale: fr 
-                        })}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDistanceToNow(new Date(notification.created_at), { 
+                            addSuffix: true, 
+                            locale: fr 
+                          })}
+                        </p>
+                        {notification.link && (
+                          <span className="text-xs text-primary/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Cliquer pour voir →
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

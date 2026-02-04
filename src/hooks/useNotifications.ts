@@ -10,6 +10,7 @@ export interface Notification {
   type: string;
   is_read: boolean;
   link?: string;
+  category?: string;
   created_at: string;
 }
 
@@ -28,24 +29,16 @@ export const useNotifications = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(50); // Limiter pour performance
+        .limit(100); // Augmenté pour voir plus de notifications
 
       if (error) throw error;
 
-      // Dédupliquer les notifications par titre + message + date (même jour)
-      const seen = new Map<string, boolean>();
-      const uniqueNotifications = (data || []).filter((n) => {
-        const dateKey = new Date(n.created_at).toDateString();
-        const key = `${n.title}-${n.message}-${dateKey}`;
-        if (seen.has(key)) {
-          return false;
-        }
-        seen.set(key, true);
-        return true;
-      });
+      // ✅ PLUS DE DÉDUPLICATION - Afficher TOUTES les notifications
+      // Chaque notification est unique et importante
+      const allNotifications = data || [];
 
-      setNotifications(uniqueNotifications);
-      setUnreadCount(uniqueNotifications.filter((n) => !n.is_read).length);
+      setNotifications(allNotifications);
+      setUnreadCount(allNotifications.filter((n) => !n.is_read).length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
@@ -54,7 +47,7 @@ export const useNotifications = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
-    // Mise à jour optimiste IMMÉDIATE pour éviter les réapparitions
+    // Mise à jour optimiste IMMÉDIATE
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
@@ -67,9 +60,8 @@ export const useNotifications = () => {
         .eq("id", notificationId);
 
       if (error) {
-        // Rollback en cas d'erreur
         console.error("Error marking notification as read:", error);
-        await fetchNotifications();
+        // Pas de rollback pour éviter les sauts d'UI
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -79,6 +71,10 @@ export const useNotifications = () => {
   const markAllAsRead = async () => {
     if (!user) return;
 
+    // Mise à jour optimiste
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+
     try {
       const { error } = await supabase
         .from("notifications")
@@ -87,11 +83,28 @@ export const useNotifications = () => {
         .eq("is_read", false);
 
       if (error) throw error;
-
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all as read:", error);
+    }
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    // Mise à jour optimiste
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", notificationId);
+
+      if (error) {
+        console.error("Error deleting notification:", error);
+        // Recharger en cas d'erreur
+        await fetchNotifications();
+      }
+    } catch (error) {
+      console.error("Error deleting notification:", error);
     }
   };
 
@@ -108,14 +121,14 @@ export const useNotifications = () => {
 
     loadNotifications();
 
-    // Subscribe to realtime notifications avec subscriptionManager
+    // Subscribe to realtime notifications
     const cleanup = subscriptionManager.subscribe(
       `notifications-${user.id}`,
       {
         table: "notifications",
         event: "*",
         filter: `user_id=eq.${user.id}`,
-        debounceMs: 1000
+        debounceMs: 500 // Réduit pour une réactivité accrue
       },
       () => {
         if (isMounted) {
@@ -136,6 +149,7 @@ export const useNotifications = () => {
     loading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     refresh: fetchNotifications,
   };
 };
