@@ -421,11 +421,36 @@ const DriverDashboard = () => {
 
   // TUNNEL D'ONBOARDING HORIZONTAL - Bloque l'accès au dashboard tant que non complété
   if (showOnboardingTunnel && driverProfile?.driver?.id && user?.id) {
+    // Calculer l'étape initiale basée sur onboarding_step sauvegardé
+    const onboardingStepMap: Record<string, number> = {
+      'vision': 0,
+      'objectives': 0,
+      'goals': 1,
+      'settings': 2,
+      'profile': 3,
+      'documents': 4,
+      'nfc': 5,
+      'billing': 6,
+      'trial_start': 7,
+      'encaissements': 6,
+    };
+    
+    const savedStep = driverProfile?.driver?.onboarding_step;
+    const hasNfcPlate = !!(driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number || driverProfile?.driver?.nfc_plate_order_id);
+    
+    let initialStep = savedStep ? (onboardingStepMap[savedStep] ?? 0) : 0;
+    
+    // Ajuster si le chauffeur a déjà une plaque NFC (on saute l'étape NFC)
+    if (hasNfcPlate && initialStep >= 5) {
+      initialStep = Math.max(0, initialStep - 1);
+    }
+    
     return (
       <HorizontalOnboardingTunnel
         driverId={driverProfile.driver.id}
         userId={user.id}
         driverProfile={driverProfile}
+        initialStep={initialStep}
         onComplete={() => {
           setShowOnboardingTunnel(false);
           queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
