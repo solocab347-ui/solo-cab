@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -339,20 +340,43 @@ export function StripeConnectSetupGuide({
             </div>
 
             {/* Lien Stripe Dashboard */}
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                Vous avez déjà un compte Stripe Express via SoloCab ?
-              </p>
-              <a
-                href="https://connect.stripe.com/express_login"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                <Globe className="h-3 w-3" />
-                Accéder à mon tableau de bord Stripe
-                <ExternalLink className="h-3 w-3" />
-              </a>
+            <div className="bg-muted/50 rounded-lg p-3 space-y-3">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Vous avez déjà un compte Stripe Express via SoloCab ?
+                </p>
+                <a
+                  href="https://connect.stripe.com/express_login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Globe className="h-3 w-3" />
+                  Accéder à mon tableau de bord Stripe
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+              
+              <Separator />
+              
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">
+                  <strong>Première configuration ?</strong> Inscrivez-vous directement sur Stripe :
+                </p>
+                <a
+                  href="https://dashboard.stripe.com/connect/accounts/overview"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs font-medium hover:from-indigo-700 hover:to-purple-700 transition-all"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  S'inscrire sur Stripe Connect
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Ce lien vous amène directement à la page d'inscription Stripe
+                </p>
+              </div>
             </div>
           </div>
         </ScrollArea>
