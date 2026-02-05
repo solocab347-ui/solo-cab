@@ -20,12 +20,13 @@ import {
   Save,
   Loader2,
   Info,
-  Zap
+  Zap,
+  ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { StripeConnectSetupGuide } from "./StripeConnectSetupGuide";
+import { StripeConnectCard } from "./StripeConnectCard";
 import { DepositSettings } from "./DepositSettings";
 
 const PAYMENT_METHODS = [
@@ -403,9 +404,9 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
-      {/* Stripe Connect Setup Guide - shows if billing type is solocab_stripe */}
+      {/* Stripe Connect Card - shows if billing type is solocab_stripe */}
       {billingType === "solocab_stripe" && (
-        <StripeConnectSetupGuide 
+        <StripeConnectCard 
           driverId={driverId} 
           onStatusChange={loadSettings}
         />

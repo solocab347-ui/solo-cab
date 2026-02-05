@@ -72,16 +72,17 @@ const BILLING_OPTIONS = [
   },
   {
     value: 'solocab_stripe' as const,
-    title: 'Encaisser en ligne via SoloCab',
-    subtitle: 'Paiement CB en ligne via Stripe Connect',
+    title: 'Encaissement en ligne via SoloCab',
+    subtitle: 'Paiement CB sécurisé via Stripe Connect',
     icon: Zap,
-    description: 'Vos clients peuvent payer par carte en ligne. Les fonds sont versés directement sur votre compte bancaire.',
+    description: 'Permettez à vos clients de payer par carte bancaire et automatisez la facturation de vos courses. Les fonds sont versés directement sur votre compte bancaire.',
     features: [
-      { text: 'Paiement sécurisé en ligne', icon: Lock },
-      { text: 'Demande d\'acomptes automatisée', icon: Clock },
-      { text: 'Virements directs sur votre compte', icon: Euro },
+      { text: 'Paiement CB sécurisé', icon: Lock },
+      { text: 'Factures automatiques', icon: Euro },
+      { text: 'Virements directs sur votre compte', icon: Banknote },
+      { text: 'Aucun abonnement supplémentaire', icon: Shield },
     ],
-    fees: '0,50€/course + frais Stripe (~1,5% + 0,25€)',
+    fees: 'Frais SoloCab : 0,50€/transaction + frais Stripe (~1,5% + 0,25€)',
     highlight: false,
     availableNow: true,
     requiresSetup: true,
@@ -410,6 +411,16 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                 <Lock className="w-3.5 h-3.5 text-primary" />
                 <span>Empreinte bancaire</span>
               </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-3 mt-3">
+              <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+                <strong>SoloCab n'est pas une plateforme de réservation.</strong>
+                <br />
+                Vous encaissez vos clients. SoloCab fournit l'infrastructure et les outils.
+                <br />
+                <span className="text-primary font-medium">Les frais sont fixes, clairs et visibles.</span>
+              </p>
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center">
