@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FlaskConical, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Bug, Database, Shield, FlaskConical, CheckCircle, XCircle, Loader2, FileText } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
+import AdminDocumentation from "../AdminDocumentation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
@@ -23,7 +24,7 @@ interface TestSuite {
 }
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"errors" | "integrity" | "rls" | "tests">("errors");
+  const [activeTab, setActiveTab] = useState<"errors" | "integrity" | "rls" | "tests" | "docs">("errors");
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState<TestSuite[] | null>(null);
 
@@ -138,12 +139,23 @@ const AdminTechHub = () => {
           <span className="hidden sm:inline">Tests Virtuels</span>
           <span className="sm:hidden">Tests</span>
         </Button>
+        <Button
+          variant={activeTab === "docs" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("docs")}
+          className="gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          <span className="hidden sm:inline">Documentation</span>
+          <span className="sm:hidden">Docs</span>
+        </Button>
       </div>
 
       {/* Contenu */}
       {activeTab === "errors" && <AdminErrorReports />}
       {activeTab === "integrity" && <AdminDataIntegrity />}
       {activeTab === "rls" && <AdminRLSAudit />}
+      {activeTab === "docs" && <AdminDocumentation />}
       {activeTab === "tests" && (
         <div className="space-y-4">
           <Card>
