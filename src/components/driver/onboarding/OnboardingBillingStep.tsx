@@ -24,11 +24,14 @@ import {
   Clock,
   Lock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BookOpen,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sumupTpeCard from '@/assets/sumup-tpe-card.jpg';
 import sumupTpeDevice from '@/assets/sumup-tpe-device.jpg';
+import { StripeConnectSetupGuide } from '@/components/driver/settings/StripeConnectSetupGuide';
 
 interface OnboardingBillingStepProps {
   data: {
@@ -95,6 +98,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   const [hasOrderedEquipment, setHasOrderedEquipment] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hasClickedLink, setHasClickedLink] = useState(false);
+  const [showStripeGuide, setShowStripeGuide] = useState(false);
 
   const tpeImages = [sumupTpeDevice, sumupTpeCard];
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
@@ -346,6 +350,17 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
+            {/* Bouton principal pour voir le guide complet */}
+            <Button
+              variant="default"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              onClick={() => setShowStripeGuide(true)}
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Voir le guide complet de configuration
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+
             <Alert className="border-amber-500/30 bg-amber-500/10">
               <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
               <AlertTitle className="text-xs text-amber-700">Configuration requise après l'inscription</AlertTitle>
@@ -429,6 +444,16 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
           </CardContent>
         </Card>
       )}
+
+      {/* Guide Stripe Connect Modal */}
+      <StripeConnectSetupGuide
+        open={showStripeGuide}
+        onOpenChange={setShowStripeGuide}
+        onStartSetup={() => {
+          // Dans l'onboarding, on ferme juste le guide car ils n'ont pas encore de compte
+          setShowStripeGuide(false);
+        }}
+      />
 
       {data.billingType === 'own_equipment' && (
         <div className="text-center p-3 bg-muted/30 rounded-lg">
