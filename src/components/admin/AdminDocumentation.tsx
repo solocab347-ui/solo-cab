@@ -1,10 +1,12 @@
  import { useState } from "react";
+import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { ScrollArea } from "@/components/ui/scroll-area";
  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  import { 
    FileText, 
+  Download,
    UserPlus, 
    Target, 
    BarChart3, 
@@ -17,6 +19,233 @@
    Lightbulb
  } from "lucide-react";
  
+const generateDocumentText = (): string => {
+  return `================================================================================
+RAPPORT COMPLET - PARCOURS CHAUFFEUR SOLOCAB
+================================================================================
+Version 2.0 - 5 Février 2026
+Documentation exhaustive du parcours chauffeur pour audit et amélioration
+
+================================================================================
+1. VUE GÉNÉRALE
+================================================================================
+
+FLUX PRINCIPAL
+--------------
+INSCRIPTION → VALIDATION ADMIN → ONBOARDING (8 étapes) → OBJECTIFS → SUIVI QUOTIDIEN → RAPPORTS
+
+STATUTS CHAUFFEUR
+-----------------
+• pending    : Inscription soumise, en attente - Aucune action
+• validated  : Validé par admin - Accès tunnel onboarding
+• active     : Onboarding terminé - Toutes fonctionnalités
+• suspended  : Compte suspendu - Aucune action
+• rejected   : Inscription refusée - Peut re-soumettre
+
+FICHIERS CLÉS
+-------------
+• Auth.tsx - Inscription/connexion
+• HorizontalOnboardingTunnel.tsx - Contrôleur onboarding
+• OnboardingGoalsStep.tsx - Définition objectifs
+• ObjectivesDashboard.tsx - Dashboard suivi
+• DailyActivityInput.tsx - Saisie quotidienne
+• ObjectivesEditor.tsx - Modification post-onboarding
+• send-daily-report/index.ts - Edge Function rapports
+
+================================================================================
+2. TUNNEL D'ONBOARDING - 8 ÉTAPES
+================================================================================
+
+Progression sauvegardée dans: drivers.current_onboarding_step
+
+Étape 0 - Vision SoloCab (1-2 min)
+  Présentation philosophie, avantages indépendance
+
+Étape 1 - Définition Objectifs ⭐ CRITIQUE (5-10 min)
+  CA mensuel, clients cibles, planning pondéré, Coach Alex IA
+
+Étape 2 - Configuration Tarification (3-5 min)
+  Base, km, horaire, majorations (soirée, weekend, aéroport)
+
+Étape 3 - Profil Public (5-10 min)
+  Photo, bio, secteurs, véhicule, services, langues
+
+Étape 4 - Upload Documents (10-15 min)
+  9 documents requis (voir section Documents)
+
+Étape 5 - Plaque NFC (2-3 min)
+  Commander plaque NFC ou utiliser QR Code
+
+Étape 6 - Configuration Paiement (10-20 min)
+  Stripe Connect, SumUp, espèces, virement
+
+Étape 7 - Lancement Essai (2-3 min)
+  Récapitulatif, période essai 30 jours, activation
+
+DOCUMENTS REQUIS (9)
+--------------------
+1. Carte VTC (recto)
+2. Carte VTC (verso)
+3. Pièce d'identité (recto)
+4. Pièce d'identité (verso)
+5. Permis de conduire
+6. Carte grise
+7. Attestation assurance
+8. KBIS / INSEE
+9. RIB
+
+Stockage: Supabase Storage bucket driver-documents/{driver_id}/*
+
+================================================================================
+3. SYSTÈME D'OBJECTIFS
+================================================================================
+
+TABLE: driver_objectives
+-------------------------
+• revenue_target      - Objectif de CA
+• courses_target      - Nombre de courses
+• new_clients_target  - Nouveaux clients
+• hours_target        - Heures de travail
+• km_target           - Kilomètres parcourus
+• rating_target       - Note moyenne
+
+PÉRIODES SUPPORTÉES
+-------------------
+• daily (quotidien)
+• weekly (hebdomadaire)
+• monthly (mensuel)
+• yearly (annuel)
+
+LOGIQUE DE PONDÉRATION JOURNALIÈRE
+----------------------------------
+Les objectifs quotidiens sont calculés avec des coefficients par jour:
+
+| Jour      | Coefficient | Explication      |
+|-----------|-------------|------------------|
+| Lundi     | 0.70        | Jour calme       |
+| Mardi     | 0.85        | -                |
+| Mercredi  | 0.90        | -                |
+| Jeudi     | 1.00        | Référence        |
+| Vendredi  | 1.15        | Jour fort        |
+| Samedi    | 1.20        | Jour très fort   |
+| Dimanche  | 1.20        | Jour très fort   |
+
+Formule: dailyTarget = (weeklyGoal × dayWeight) / totalWeeklyWeight
+
+MODIFICATION POST-ONBOARDING (ObjectivesEditor.tsx)
+---------------------------------------------------
+Sections modifiables indépendamment:
+• CA Mensuel - Modifier l'objectif de revenus
+• Clients Cibles - Nombre de clients fidèles
+• Ratio Indépendance - % SoloCab vs Plateformes
+• Planning - Jours travaillés et pondération
+• Niveau Coaching - Intensité des notifications
+
+================================================================================
+4. SUIVI QUOTIDIEN
+================================================================================
+
+SOURCES DE DONNÉES
+------------------
+• Automatique (SoloCab): CA, courses, clients, km
+• Manuel (Plateformes): Uber, Bolt, Heetch...
+• Manuel (Travail): Heures, km parcourus
+
+TABLE: driver_daily_entries
+---------------------------
+• entry_date
+• platform_id
+• is_solocab
+• revenue
+• courses_count
+• new_clients_count
+• hours_worked
+• km_driven
+
+RAPPORTS AUTOMATISÉS
+--------------------
+Edge Function: send-daily-report
+Schedule: CRON 0 7 * * * (chaque matin à 7h)
+
+Contenu:
+• Résumé veille
+• Objectifs du jour
+• Message de coaching personnalisé
+• Conseils selon météo/événements
+
+================================================================================
+5. ARCHITECTURE TECHNIQUE
+================================================================================
+
+TABLES PRINCIPALES
+------------------
+• drivers - Données chauffeur, statut, onboarding
+• driver_objectives - Objectifs multi-période
+• driver_daily_entries - Suivi quotidien multi-plateforme
+• driver_coaching_profiles - Préférences coaching
+• courses - Courses effectuées
+• clients - Clients fidèles
+
+COLONNES CLÉS (drivers)
+-----------------------
+• status: pending | validated | active | suspended | rejected
+• current_onboarding_step: 0-7
+• trial_ends_at: Date fin période essai
+• objectives_data: JSONB config objectifs
+• work_rhythm_data: JSONB planning semaine
+
+EDGE FUNCTIONS
+--------------
+• send-daily-report - Rapports quotidiens
+• process-coaching-notification - Notifications coaching
+• calculate-driver-stats - Calcul statistiques
+
+================================================================================
+6. POINTS D'AMÉLIORATION
+================================================================================
+
+POINTS CRITIQUES (URGENT)
+-------------------------
+[!] Pas de rapport hebdomadaire/mensuel automatisé
+[!] Pas d'export PDF des performances
+[!] Historique objectifs non visualisable
+
+AMÉLIORATIONS SUGGÉRÉES
+-----------------------
+[+] Ajouter rapports hebdo/mensuel
+[+] Dashboard comparatif périodes
+[+] Export données PDF/Excel
+[+] Prédictions IA revenus
+[+] Alertes objectifs manqués
+
+FONCTIONNALITÉS FUTURES
+-----------------------
+[ ] Analyse prédictive IA
+[ ] Comparaison anonyme confrères
+[ ] Suggestions horaires optimaux
+[ ] Intégration météo avancée
+[ ] Gamification (badges, niveaux)
+
+================================================================================
+FIN DU RAPPORT
+================================================================================
+Document généré automatiquement depuis SoloCab Admin Dashboard
+`;
+};
+
+const handleDownload = () => {
+  const content = generateDocumentText();
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'SoloCab_Rapport_Parcours_Chauffeur.txt';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
  const AdminDocumentation = () => {
    return (
      <div className="space-y-6">
@@ -29,9 +258,18 @@
            <CardDescription>
              Documentation exhaustive du parcours chauffeur pour audit et amélioration
            </CardDescription>
-           <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
              <Badge variant="outline">Version 2.0</Badge>
              <Badge variant="secondary">5 Février 2026</Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownload}
+              className="ml-auto gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Télécharger (.txt)
+            </Button>
            </div>
          </CardHeader>
        </Card>
