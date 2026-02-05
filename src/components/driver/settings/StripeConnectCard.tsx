@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import {
   Zap,
   CheckCircle2,
@@ -22,12 +21,14 @@ import {
   Banknote,
   Timer,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  HelpCircle
 } from "lucide-react";
 import { useStripeConnectStatus } from "@/hooks/useStripeConnectStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { StripeConnectSetupGuide } from "./StripeConnectSetupGuide";
 
 interface StripeConnectCardProps {
   driverId: string;
@@ -46,6 +47,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
   const { status, loading, isReady, isPending, isNotConnected, refresh } = useStripeConnectStatus(driverId);
   const [connecting, setConnecting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const handleConnectStripe = async () => {
     try {
@@ -236,29 +238,45 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             </div>
           </div>
 
-          {/* CTA Principal */}
-          <Button 
-            onClick={handleConnectStripe}
-            disabled={connecting || loading}
-            className="w-full h-12 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
-          >
-            {connecting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Redirection...
-              </>
-            ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2" />
-                Connecter mon compte Stripe
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </>
-            )}
-          </Button>
+          {/* CTA Principal avec guide */}
+          <div className="space-y-2">
+            <Button 
+              onClick={() => setShowGuide(true)}
+              disabled={connecting || loading}
+              className="w-full h-12 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+            >
+              {connecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Redirection...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Configurer les paiements en ligne
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
 
-          <p className="text-[10px] text-center text-muted-foreground">
-            Redirection vers Stripe.com (plateforme sécurisée)
-          </p>
+            {/* Lien direct pour les utilisateurs avancés */}
+            <button
+              onClick={handleConnectStripe}
+              disabled={connecting || loading}
+              className="w-full text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Accès direct (utilisateurs avancés)
+            </button>
+          </div>
+
+          {/* Guide modal */}
+          <StripeConnectSetupGuide
+            open={showGuide}
+            onOpenChange={setShowGuide}
+            onStartSetup={handleConnectStripe}
+            isConnecting={connecting}
+          />
 
           {/* Toggle détails */}
           <button 

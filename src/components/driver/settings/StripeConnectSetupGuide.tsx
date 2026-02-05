@@ -1,330 +1,248 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import {
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  ExternalLink,
-  Loader2,
-  Euro,
-  Shield,
-  Clock,
-  CreditCard,
-  FileText,
-  Building2,
-  UserCheck,
-  ArrowRight,
-  RefreshCw,
-  Info,
-  Lock,
-  Smartphone,
-  Wallet,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Banknote,
-  Timer,
-  Receipt
-} from "lucide-react";
-import { useStripeConnectStatus } from "@/hooks/useStripeConnectStatus";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  ExternalLink,
+  FileText,
+  CreditCard,
+  Building2,
+  User,
+  CheckCircle2,
+  Info,
+  ArrowRight,
+  Shield,
+  Clock,
+  HelpCircle,
+  ChevronRight,
+  Banknote,
+  Smartphone,
+  Globe,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StripeConnectSetupGuideProps {
-  driverId: string;
-  onStatusChange?: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onStartSetup: () => void;
+  isConnecting?: boolean;
 }
 
 const SETUP_STEPS = [
   {
-    id: 1,
-    title: "Créer votre compte Stripe Express",
-    description: "Inscription gratuite sur la plateforme Stripe",
-    icon: UserCheck,
-    duration: "~2 min",
+    number: 1,
+    title: "Créez votre compte Stripe",
+    icon: User,
+    description: "Inscription rapide avec votre email",
+    details: [
+      "Utilisez votre email professionnel",
+      "Choisissez un mot de passe sécurisé",
+      "Confirmez votre email via le lien reçu",
+    ],
+    time: "2 min",
   },
   {
-    id: 2,
-    title: "Vérifier votre identité",
-    description: "Pièce d'identité et informations personnelles",
+    number: 2,
+    title: "Vérifiez votre identité",
     icon: FileText,
-    duration: "~2 min",
+    description: "Pièce d'identité requise",
+    details: [
+      "Carte d'identité ou passeport valide",
+      "Photo recto/verso lisible",
+      "Vérification automatique en quelques secondes",
+    ],
+    time: "1 min",
   },
   {
-    id: 3,
-    title: "Ajouter votre compte bancaire",
-    description: "RIB pour recevoir vos paiements",
+    number: 3,
+    title: "Ajoutez votre compte bancaire",
     icon: Building2,
-    duration: "~1 min",
+    description: "Pour recevoir vos paiements",
+    details: [
+      "IBAN de votre compte professionnel",
+      "Nom du titulaire du compte",
+      "Les virements arrivent en 2 jours ouvrés",
+    ],
+    time: "1 min",
   },
   {
-    id: 4,
-    title: "Activer les paiements",
-    description: "Stripe valide votre compte automatiquement",
+    number: 4,
+    title: "Activez votre compte",
     icon: CheckCircle2,
-    duration: "Automatique",
+    description: "Validation finale",
+    details: [
+      "Stripe vérifie vos informations (24h max)",
+      "Vous recevez une confirmation par email",
+      "Vous pouvez commencer à encaisser !",
+    ],
+    time: "Automatique",
+  },
+];
+
+const DOCUMENTS_REQUIRED = [
+  {
+    icon: User,
+    title: "Pièce d'identité",
+    description: "CNI ou Passeport valide",
+  },
+  {
+    icon: Building2,
+    title: "RIB / IBAN",
+    description: "Compte bancaire professionnel",
+  },
+  {
+    icon: FileText,
+    title: "Numéro SIRET",
+    description: "De votre entreprise VTC",
+  },
+  {
+    icon: Smartphone,
+    title: "Numéro de téléphone",
+    description: "Pour la vérification",
   },
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "Combien de temps prend l'inscription ?",
-    answer: "L'inscription prend environ 5 minutes. Vous aurez besoin de votre pièce d'identité, de votre RIB et des informations de votre entreprise (SIRET). La validation par Stripe est généralement instantanée, mais peut prendre jusqu'à 24h dans certains cas."
-  },
-  {
-    question: "Quels sont les frais prélevés ?",
-    answer: "Pour chaque paiement en ligne, les frais sont : 0,50€ de frais de gestion SoloCab + environ 1,5% + 0,25€ de frais Stripe. Par exemple, pour un encaissement de 50€, vous recevrez environ 48,50€ sur votre compte."
+    question: "Combien coûte Stripe Connect ?",
+    answer:
+      "SoloCab prélève 0,50€ par transaction pour l'hébergement du paiement. Stripe prend environ 1,5% + 0,25€ par transaction. Aucun abonnement mensuel. Vous ne payez que quand vous encaissez !",
   },
   {
     question: "Quand vais-je recevoir mes paiements ?",
-    answer: "Les fonds sont virés automatiquement sur votre compte bancaire sous 2 jours ouvrés après chaque paiement encaissé. Vous pouvez suivre tous vos paiements depuis le tableau de bord Stripe."
+    answer:
+      "Les virements sont automatiques et arrivent sur votre compte en 2 jours ouvrés après la course. Stripe effectue les virements quotidiennement.",
   },
   {
-    question: "Puis-je demander des acomptes à mes clients ?",
-    answer: "Oui ! Une fois votre compte Stripe actif, vous pouvez configurer la demande d'acompte automatique (10% à 30% du prix de la course). L'acompte est capturé à la réservation et le reste est débité en fin de course."
+    question: "Est-ce sécurisé ?",
+    answer:
+      "Stripe est leader mondial des paiements en ligne, utilisé par des millions d'entreprises (Uber, Amazon, Google...). Vos données sont cryptées et protégées selon les normes PCI-DSS les plus strictes.",
   },
   {
-    question: "Mes données sont-elles sécurisées ?",
-    answer: "Absolument. Stripe est certifié PCI DSS niveau 1, la norme de sécurité la plus stricte du secteur des paiements. Vos coordonnées bancaires sont cryptées et SoloCab n'y a jamais accès."
+    question: "Puis-je utiliser mon compte Stripe existant ?",
+    answer:
+      "Non, SoloCab crée un compte Stripe Express dédié pour gérer vos paiements VTC. C'est plus simple et sécurisé car SoloCab gère l'infrastructure technique.",
   },
   {
-    question: "Que se passe-t-il si le client annule ?",
-    answer: "Si vous annulez la course, l'acompte est remboursé automatiquement au client. Si le client annule, l'acompte vous est conservé pour compenser le préjudice (règle anti no-show)."
-  }
+    question: "Que se passe-t-il si un client conteste un paiement ?",
+    answer:
+      "Stripe gère les litiges automatiquement. En cas de contestation, vous serez notifié et pourrez fournir des preuves (trajet GPS, confirmation client). SoloCab vous accompagne dans ce processus.",
+  },
+  {
+    question: "Puis-je revenir à mon propre TPE plus tard ?",
+    answer:
+      "Oui, vous pouvez à tout moment modifier vos paramètres d'encaissement dans SoloCab pour utiliser votre propre équipement. Les deux modes peuvent même coexister.",
+  },
 ];
 
-export function StripeConnectSetupGuide({ driverId, onStatusChange }: StripeConnectSetupGuideProps) {
-  const { status, loading, isReady, isPending, isNotConnected, refresh } = useStripeConnectStatus(driverId);
-  const [connecting, setConnecting] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-
-  const handleConnectStripe = async () => {
-    try {
-      setConnecting(true);
-      const { data, error } = await supabase.functions.invoke("stripe-connect-onboarding");
-      
-      if (error) throw error;
-      
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        toast.success("Redirection vers Stripe...", {
-          description: "Complétez votre inscription dans le nouvel onglet"
-        });
-      }
-    } catch (err: any) {
-      console.error("Stripe Connect error:", err);
-      toast.error(err.message || "Erreur lors de la connexion Stripe");
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    await refresh();
-    onStatusChange?.();
-    toast.success("Statut mis à jour");
-  };
-
-  // Calculate progress
-  const getProgress = () => {
-    if (isReady) return 100;
-    if (isPending) return 75;
-    if (status?.details_submitted) return 50;
-    if (status?.connected) return 25;
-    return 0;
-  };
-
-  const getCurrentStep = () => {
-    if (isReady) return 5;
-    if (isPending) return 4;
-    if (status?.details_submitted) return 3;
-    if (status?.connected) return 2;
-    return 1;
-  };
+export function StripeConnectSetupGuide({
+  open,
+  onOpenChange,
+  onStartSetup,
+  isConnecting = false,
+}: StripeConnectSetupGuideProps) {
+  const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <Zap className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Encaissement en ligne Stripe</CardTitle>
-              <CardDescription className="text-xs">
-                Acceptez les paiements CB de vos clients
-              </CardDescription>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          </Button>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Status Overview */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progression</span>
-            <span className="font-medium">{getProgress()}%</span>
-          </div>
-          <Progress value={getProgress()} className="h-2" />
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+          <DialogTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Guide de configuration Stripe Connect
+          </DialogTitle>
+          <DialogDescription className="text-white/90 text-sm">
+            Tout ce que vous devez savoir pour activer les paiements en ligne
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Current Status Badge */}
-        <div className="flex items-center gap-2">
-          {loading ? (
-            <Badge variant="outline" className="gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Vérification...
-            </Badge>
-          ) : isReady ? (
-            <Badge className="bg-green-500/10 text-green-700 border-green-500/30 gap-1">
-              <CheckCircle2 className="h-3 w-3" />
-              Compte actif - Prêt à encaisser
-            </Badge>
-          ) : isPending ? (
-            <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 gap-1">
-              <Clock className="h-3 w-3" />
-              Vérification en cours par Stripe
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              Configuration requise
-            </Badge>
-          )}
-        </div>
-
-        {/* Not Ready State - Full Experience */}
-        {!isReady && (
-          <>
-            {/* Value Proposition Cards */}
-            <div className="grid grid-cols-3 gap-2 py-2">
-              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 text-center">
-                <Timer className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-emerald-700">5 min</p>
-                <p className="text-[10px] text-emerald-600">d'inscription</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-lg p-3 text-center">
-                <Banknote className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-blue-700">J+2</p>
-                <p className="text-[10px] text-blue-600">virements</p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 rounded-lg p-3 text-center">
-                <Shield className="h-5 w-5 text-purple-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-purple-700">100%</p>
-                <p className="text-[10px] text-purple-600">sécurisé</p>
-              </div>
+        <ScrollArea className="max-h-[70vh]">
+          <div className="p-4 space-y-6">
+            {/* Temps estimé */}
+            <div className="flex items-center justify-center gap-2 bg-primary/10 rounded-lg p-3">
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                Configuration en <strong>5 minutes</strong>
+              </span>
             </div>
 
-            <Separator />
-
-            {/* How it works section */}
+            {/* Étapes visuelles */}
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-primary" />
-                Comment ça fonctionne
-              </h4>
-              
-              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">1</div>
-                  <div>
-                    <p className="text-xs font-medium">Votre client réserve en ligne</p>
-                    <p className="text-[11px] text-muted-foreground">Il entre sa carte bancaire sur votre page de réservation</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">2</div>
-                  <div>
-                    <p className="text-xs font-medium">Empreinte bancaire sécurisée</p>
-                    <p className="text-[11px] text-muted-foreground">Le montant est réservé (ou l'acompte prélevé selon vos réglages)</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <p className="text-xs font-medium">Course terminée = paiement capturé</p>
-                    <p className="text-[11px] text-muted-foreground">Quand vous marquez la course comme terminée, le paiement est finalisé</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="bg-green-500/10 text-green-600 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">€</div>
-                  <div>
-                    <p className="text-xs font-medium text-green-700">Virement automatique</p>
-                    <p className="text-[11px] text-muted-foreground">Les fonds arrivent sur votre compte en 2 jours ouvrés</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <ArrowRight className="h-4 w-4 text-primary" />
+                Les 4 étapes de la configuration
+              </h3>
 
-            <Separator />
-            
-            {/* Setup Steps */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Étapes de configuration
-              </h4>
-              
               <div className="space-y-2">
-                {SETUP_STEPS.map((step) => {
-                  const isCompleted = step.id < getCurrentStep();
-                  const isCurrent = step.id === getCurrentStep();
+                {SETUP_STEPS.map((step, index) => {
                   const Icon = step.icon;
-                  
+                  const isActive = activeStep === index;
                   return (
-                    <div 
-                      key={step.id}
+                    <div
+                      key={step.number}
                       className={cn(
-                        "flex items-start gap-3 p-2 rounded-lg transition-colors",
-                        isCompleted && "bg-green-500/5",
-                        isCurrent && "bg-primary/5 border border-primary/20"
+                        "border rounded-lg p-3 cursor-pointer transition-all",
+                        isActive
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/50"
                       )}
+                      onClick={() => setActiveStep(index)}
                     >
-                      <div className={cn(
-                        "rounded-full p-1.5 shrink-0",
-                        isCompleted 
-                          ? "bg-green-500 text-white" 
-                          : isCurrent 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted text-muted-foreground"
-                      )}>
-                        {isCompleted ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <Icon className="h-3.5 w-3.5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={cn(
-                            "text-xs font-medium",
-                            isCompleted && "text-green-700",
-                            isCurrent && "text-primary"
-                          )}>
-                            {step.title}
-                          </p>
-                          <span className="text-[10px] text-muted-foreground shrink-0">
-                            {step.duration}
-                          </span>
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {step.number}
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{step.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-medium text-sm">{step.title}</h4>
+                            <Badge variant="secondary" className="text-[10px] shrink-0">
+                              {step.time}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {step.description}
+                          </p>
+
+                          {isActive && (
+                            <ul className="mt-2 space-y-1">
+                              {step.details.map((detail, i) => (
+                                <li
+                                  key={i}
+                                  className="flex items-start gap-2 text-xs text-muted-foreground"
+                                >
+                                  <CheckCircle2 className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                                  <span>{detail}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        <ChevronRight
+                          className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                            isActive && "rotate-90"
+                          )}
+                        />
                       </div>
                     </div>
                   );
@@ -332,67 +250,87 @@ export function StripeConnectSetupGuide({ driverId, onStatusChange }: StripeConn
               </div>
             </div>
 
-            {/* Requirements Info */}
-            <Alert className="border-blue-500/30 bg-blue-500/10">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertTitle className="text-xs text-blue-700">Ce dont vous aurez besoin</AlertTitle>
-              <AlertDescription className="text-[11px] text-blue-600 space-y-1">
-                <p>✓ Une pièce d'identité valide (carte d'identité ou passeport)</p>
-                <p>✓ Votre RIB (IBAN) pour les virements</p>
-                <p>✓ Les informations de votre entreprise (SIRET)</p>
-              </AlertDescription>
-            </Alert>
+            {/* Documents à préparer */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Documents à préparer
+              </h3>
 
-            {/* Main CTA Button */}
-            <Button 
-              onClick={handleConnectStripe}
-              disabled={connecting}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
-              size="lg"
-            >
-              {connecting ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Redirection vers Stripe...
-                </>
-              ) : isPending ? (
-                <>
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Compléter mon inscription Stripe
-                </>
-              ) : (
-                <>
-                  <Zap className="h-5 w-5 mr-2" />
-                  Activer les paiements en ligne
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </>
-              )}
-            </Button>
+              <div className="grid grid-cols-2 gap-2">
+                {DOCUMENTS_REQUIRED.map((doc, index) => {
+                  const Icon = doc.icon;
+                  return (
+                    <div
+                      key={index}
+                      className="bg-muted/50 rounded-lg p-3 flex items-start gap-2"
+                    >
+                      <div className="bg-primary/10 p-1.5 rounded-lg shrink-0">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium">{doc.title}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {doc.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-            <p className="text-[10px] text-center text-muted-foreground">
-              Vous serez redirigé vers Stripe.com (plateforme sécurisée) dans un nouvel onglet
-            </p>
+            {/* Sécurité */}
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Shield className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-green-700">
+                    100% sécurisé
+                  </p>
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Stripe est le leader mondial des paiements en ligne. Vos
+                    données sont cryptées et jamais partagées avec SoloCab.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            {/* FAQ Section */}
-            <Separator />
-            
+            {/* Transparence frais */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Banknote className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-700">
+                    Frais transparents
+                  </p>
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    <strong>0,50€</strong> par transaction (hébergement SoloCab)
+                    <br />+ <strong>~1,5% + 0,25€</strong> (frais Stripe
+                    standard)
+                    <br />
+                    <span className="text-blue-500">
+                      Aucun abonnement, vous payez uniquement quand vous encaissez
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* FAQ */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
                 <HelpCircle className="h-4 w-4 text-primary" />
                 Questions fréquentes
-              </h4>
-              
-              <Accordion type="single" collapsible className="space-y-1">
+              </h3>
+
+              <Accordion type="single" collapsible className="w-full">
                 {FAQ_ITEMS.map((item, index) => (
-                  <AccordionItem 
-                    key={index} 
-                    value={`item-${index}`}
-                    className="border border-muted rounded-lg px-3 py-0"
-                  >
-                    <AccordionTrigger className="text-xs font-medium hover:no-underline py-2">
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-xs text-left py-2">
                       {item.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-[11px] text-muted-foreground pb-2">
+                    <AccordionContent className="text-xs text-muted-foreground">
                       {item.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -400,82 +338,50 @@ export function StripeConnectSetupGuide({ driverId, onStatusChange }: StripeConn
               </Accordion>
             </div>
 
-            {/* Alternatives while waiting */}
-            <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-              <p className="text-xs font-medium flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-muted-foreground" />
-                En attendant...
+            {/* Lien Stripe Dashboard */}
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-2">
+                Vous avez déjà un compte Stripe Express via SoloCab ?
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                Vous pouvez continuer à encaisser vos clients par espèces, virement ou avec votre propre TPE. L'encaissement en ligne sera disponible dès la validation de votre compte Stripe.
-              </p>
+              <a
+                href="https://connect.stripe.com/express_login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Globe className="h-3 w-3" />
+                Accéder à mon tableau de bord Stripe
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
-          </>
-        )}
+          </div>
+        </ScrollArea>
 
-        {/* Ready State Benefits */}
-        {isReady && (
-          <>
-            <Separator />
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 text-center">
-                <CreditCard className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                <p className="text-xs font-medium text-green-700">Paiements CB</p>
-                <p className="text-[10px] text-green-600">Activés</p>
-              </div>
-              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 text-center">
-                <Euro className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                <p className="text-xs font-medium text-green-700">Virements</p>
-                <p className="text-[10px] text-green-600">Sous 2 jours</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold">Fonctionnalités disponibles</h4>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  <span>Encaissement en ligne sécurisé</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  <span>Demande d'acompte automatique</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  <span>Empreinte bancaire à la réservation</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  <span>Capture automatique en fin de course</span>
-                </div>
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleConnectStripe}
-              variant="outline"
-              className="w-full"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Accéder à mon tableau de bord Stripe
-            </Button>
-          </>
-        )}
-
-        {/* Fees Information - Always visible */}
-        <Alert className="border-amber-500/30 bg-amber-500/10">
-          <Euro className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-xs text-amber-700">Frais de transaction</AlertTitle>
-          <AlertDescription className="text-[11px] text-amber-600 space-y-1">
-            <p><strong>0,50€</strong> frais de gestion par transaction (hébergement paiement)</p>
-            <p><strong>+ Frais Stripe</strong> (environ 1,5% + 0,25€ par transaction)</p>
-            <p className="mt-1 text-[10px]">Ces frais sont automatiquement déduits avant le virement sur votre compte.</p>
-          </AlertDescription>
-        </Alert>
-      </CardContent>
-    </Card>
+        {/* CTA Footer */}
+        <div className="p-4 border-t bg-background">
+          <Button
+            onClick={() => {
+              onStartSetup();
+              onOpenChange(false);
+            }}
+            disabled={isConnecting}
+            className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+          >
+            {isConnecting ? (
+              "Redirection en cours..."
+            ) : (
+              <>
+                Commencer la configuration
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
+          <p className="text-[10px] text-center text-muted-foreground mt-2">
+            Vous serez redirigé vers Stripe.com pour compléter l'inscription
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
