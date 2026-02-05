@@ -170,28 +170,27 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
 
   // État: Non connecté - CTA principal
   return (
-    <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+    <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden shadow-lg">
       <CardContent className="p-0">
-        {/* Header avec gradient */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-          <div className="flex items-start gap-4">
-            <div className="bg-white/20 p-3 rounded-xl backdrop-blur">
-              <Zap className="h-8 w-8" />
+        {/* Header avec gradient - Responsive */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
+          <div className="flex items-start gap-3">
+            <div className="bg-white/20 p-2 rounded-lg backdrop-blur shrink-0">
+              <Zap className="h-6 w-6" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold mb-1">Encaissement en ligne via SoloCab</h3>
-              <p className="text-white/90 text-sm">
-                Permettez à vos clients de payer par carte bancaire<br />
-                et automatisez la facturation de vos courses.
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold mb-1">Encaissement en ligne</h3>
+              <p className="text-white/90 text-xs leading-relaxed">
+                Paiement CB et facturation automatique
               </p>
             </div>
           </div>
         </div>
 
-        {/* Contenu principal */}
-        <div className="p-6 space-y-5">
-          {/* Avantages - Bullet points clairs */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* Contenu principal - Mobile first */}
+        <div className="p-4 space-y-4">
+          {/* Avantages - Grille responsive */}
+          <div className="grid grid-cols-1 gap-2">
             {BENEFITS.map((benefit, idx) => {
               const Icon = benefit.icon;
               return (
@@ -199,154 +198,123 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
                   key={idx}
                   className="flex items-center gap-2 text-sm"
                 >
-                  <div className="bg-green-500/10 p-1.5 rounded-full">
-                    <Icon className="h-4 w-4 text-green-600" />
+                  <div className="bg-green-500/10 p-1.5 rounded-full shrink-0">
+                    <Icon className="h-3.5 w-3.5 text-green-600" />
                   </div>
-                  <span className="text-muted-foreground">{benefit.label}</span>
+                  <span className="text-muted-foreground text-xs">{benefit.label}</span>
                 </div>
               );
             })}
           </div>
 
-          {/* Frais - Mise en avant claire */}
-          <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/20 p-2 rounded-lg">
-                <Receipt className="h-5 w-5 text-emerald-600" />
+          {/* Frais - Compact */}
+          <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <div className="bg-emerald-500/20 p-1.5 rounded-lg shrink-0">
+                <Receipt className="h-4 w-4 text-emerald-600" />
               </div>
-              <div>
-                <p className="font-semibold text-emerald-700">Frais SoloCab : 0,50 € par transaction</p>
-                <p className="text-xs text-emerald-600">+ frais Stripe standards (~1,5% + 0,25€)</p>
+              <div className="min-w-0">
+                <p className="font-semibold text-emerald-700 text-sm">0,50 € / transaction</p>
+                <p className="text-[10px] text-emerald-600">+ frais Stripe (~1,5% + 0,25€)</p>
               </div>
             </div>
           </div>
 
-          {/* Stats rapides */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <Timer className="h-5 w-5 text-primary mx-auto mb-1" />
-              <p className="text-xs font-semibold">5 min</p>
-              <p className="text-[10px] text-muted-foreground">d'inscription</p>
+          {/* Stats - Compact horizontal */}
+          <div className="flex justify-between gap-2">
+            <div className="bg-muted/50 rounded-lg p-2 text-center flex-1">
+              <Timer className="h-4 w-4 text-primary mx-auto mb-0.5" />
+              <p className="text-[10px] font-semibold">5 min</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <Banknote className="h-5 w-5 text-primary mx-auto mb-1" />
-              <p className="text-xs font-semibold">J+2</p>
-              <p className="text-[10px] text-muted-foreground">virements</p>
+            <div className="bg-muted/50 rounded-lg p-2 text-center flex-1">
+              <Banknote className="h-4 w-4 text-primary mx-auto mb-0.5" />
+              <p className="text-[10px] font-semibold">J+2</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <Shield className="h-5 w-5 text-primary mx-auto mb-1" />
-              <p className="text-xs font-semibold">100%</p>
-              <p className="text-[10px] text-muted-foreground">sécurisé</p>
+            <div className="bg-muted/50 rounded-lg p-2 text-center flex-1">
+              <Shield className="h-4 w-4 text-primary mx-auto mb-0.5" />
+              <p className="text-[10px] font-semibold">Sécurisé</p>
             </div>
           </div>
 
-          {/* CTA Principal - TRÈS visible */}
+          {/* CTA Principal */}
           <Button 
             onClick={handleConnectStripe}
             disabled={connecting || loading}
-            className="w-full h-14 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+            className="w-full h-12 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
           >
             {connecting ? (
               <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Redirection vers Stripe...
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Redirection...
               </>
             ) : (
               <>
-                <Zap className="h-5 w-5 mr-2" />
+                <Zap className="h-4 w-4 mr-2" />
                 Connecter mon compte Stripe
-                <ArrowRight className="h-5 w-5 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-2" />
               </>
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Vous serez redirigé vers Stripe.com (plateforme sécurisée)
+          <p className="text-[10px] text-center text-muted-foreground">
+            Redirection vers Stripe.com (plateforme sécurisée)
           </p>
 
-          {/* Détails supplémentaires (toggle) */}
+          {/* Toggle détails */}
           <button 
             onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+            className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors py-1"
           >
             {showDetails ? (
               <>
-                <ChevronUp className="h-4 w-4" />
-                Masquer les détails
+                <ChevronUp className="h-3 w-3" />
+                Masquer
               </>
             ) : (
               <>
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
                 Comment ça fonctionne ?
               </>
             )}
           </button>
 
           {showDetails && (
-            <div className="space-y-4 pt-2">
-              <Separator />
-              
-              {/* Étapes de fonctionnement */}
-              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-primary" />
-                  Comment ça fonctionne
-                </h4>
-                
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">1</div>
-                    <div>
-                      <p className="text-xs font-medium">Votre client réserve en ligne</p>
-                      <p className="text-[11px] text-muted-foreground">Il entre sa carte bancaire sur votre page de réservation</p>
+            <div className="space-y-3 pt-2 border-t">
+              {/* Étapes compactes */}
+              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                {[
+                  { num: "1", text: "Client réserve en ligne" },
+                  { num: "2", text: "Empreinte bancaire sécurisée" },
+                  { num: "3", text: "Course terminée = paiement capturé" },
+                  { num: "€", text: "Virement en 2 jours ouvrés", green: true },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={cn(
+                      "text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0",
+                      step.green ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"
+                    )}>
+                      {step.num}
                     </div>
+                    <p className={cn("text-xs", step.green && "text-green-700 font-medium")}>{step.text}</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">2</div>
-                    <div>
-                      <p className="text-xs font-medium">Empreinte bancaire sécurisée</p>
-                      <p className="text-[11px] text-muted-foreground">Le montant est réservé ou l'acompte prélevé</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary/10 text-primary text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">3</div>
-                    <div>
-                      <p className="text-xs font-medium">Course terminée = paiement capturé</p>
-                      <p className="text-[11px] text-muted-foreground">Quand vous marquez la course comme terminée</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-green-500/10 text-green-600 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">€</div>
-                    <div>
-                      <p className="text-xs font-medium text-green-700">Virement automatique</p>
-                      <p className="text-[11px] text-muted-foreground">Les fonds arrivent sur votre compte en 2 jours ouvrés</p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {/* Ce dont vous avez besoin */}
-              <Alert className="border-blue-500/30 bg-blue-500/10">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-700 text-xs space-y-1">
-                  <p className="font-medium">Ce dont vous aurez besoin :</p>
-                  <p>✓ Une pièce d'identité valide</p>
-                  <p>✓ Votre RIB (IBAN) pour les virements</p>
-                  <p>✓ Les informations de votre entreprise (SIRET)</p>
+              {/* Documents requis */}
+              <Alert className="border-blue-500/30 bg-blue-500/10 py-2">
+                <Info className="h-3 w-3 text-blue-600" />
+                <AlertDescription className="text-blue-700 text-[10px]">
+                  Préparez : pièce d'identité, RIB et SIRET
                 </AlertDescription>
               </Alert>
             </div>
           )}
         </div>
 
-        {/* Footer - Message de transparence */}
-        <div className="bg-muted/30 border-t p-4">
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            <strong>SoloCab n'est pas une plateforme de réservation.</strong>
-            <br />
-            Vous encaissez vos clients. SoloCab fournit l'infrastructure et les outils.
-            <br />
-            <span className="text-primary font-medium">Les frais sont fixes, clairs et visibles.</span>
+        {/* Footer compact */}
+        <div className="bg-muted/30 border-t px-3 py-2">
+          <p className="text-[10px] text-muted-foreground text-center">
+            <strong>SoloCab = infrastructure.</strong> Vous encaissez vos clients.
           </p>
         </div>
       </CardContent>
