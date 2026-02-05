@@ -254,13 +254,16 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
                     </div>
                   </Label>
                   
-                  {isStripeDisabled && (
-                    <Alert className="mt-2 border-amber-500/30 bg-amber-500/10">
-                      <Info className="h-4 w-4 text-amber-600" />
-                      <AlertDescription className="text-amber-600 text-sm">
-                        Connectez votre compte Stripe Connect pour activer cette option
-                      </AlertDescription>
-                    </Alert>
+                  {type.value === "solocab_stripe" && (
+                    <div className="mt-3">
+                      <StripeConnectCard 
+                        driverId={driverId} 
+                        onStatusChange={() => {
+                          loadSettings();
+                          onUpdate?.();
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -404,13 +407,6 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
-      {/* Stripe Connect Card - shows if billing type is solocab_stripe */}
-      {billingType === "solocab_stripe" && (
-        <StripeConnectCard 
-          driverId={driverId} 
-          onStatusChange={loadSettings}
-        />
-      )}
 
       {/* Deposit Settings - only visible if using SoloCab Stripe */}
       {billingType === "solocab_stripe" && (
