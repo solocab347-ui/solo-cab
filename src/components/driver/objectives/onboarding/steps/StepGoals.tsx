@@ -4,8 +4,9 @@ import { NumericInput } from '@/components/ui/numeric-input';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, Target, Rocket, Shield, Heart, Coins } from 'lucide-react';
+ import { TrendingUp, Users, Target, Rocket, Shield, Heart, Coins, Quote } from 'lucide-react';
 import type { OnboardingData } from '../OnboardingWizard';
+ import { motivationTranslations } from '@/lib/i18n/translations/motivation';
 
 interface StepGoalsProps {
   data: OnboardingData;
@@ -40,6 +41,9 @@ const MAIN_GOALS = [
 ];
 
 export function StepGoals({ data, onUpdate }: StepGoalsProps) {
+   const lang = 'fr'; // TODO: get from context
+   const objectives = motivationTranslations.objectives;
+   
   // Local state for numeric inputs to allow clearing
   const [revenueValue, setRevenueValue] = useState(data.targetMonthlyRevenue.toString());
   const [clientsValue, setClientsValue] = useState(data.targetDirectClients.toString());
@@ -58,12 +62,22 @@ export function StepGoals({ data, onUpdate }: StepGoalsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
+       <div className="text-center mb-6">
         <h2 className="text-xl font-bold mb-2">Vos objectifs</h2>
-        <p className="text-muted-foreground">
-          Où voulez-vous aller ? Définissons des objectifs ambitieux mais réalistes
+         <p className="text-sm text-muted-foreground whitespace-pre-line">
+           {objectives.intro[lang]}
         </p>
       </div>
+ 
+       {/* Key Phrase - Motivation */}
+       <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-4 text-center max-w-md mx-auto">
+         <div className="flex items-center justify-center gap-2 mb-2">
+           <Quote className="w-4 h-4 text-primary" />
+         </div>
+         <p className="text-sm font-semibold text-foreground whitespace-pre-line italic">
+           {objectives.keyPhrase[lang]}
+         </p>
+       </div>
 
       <div className="space-y-6 max-w-md mx-auto">
         {/* Main Goal Selection */}

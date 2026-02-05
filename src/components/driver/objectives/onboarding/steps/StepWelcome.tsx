@@ -14,12 +14,17 @@ import {
   HandHeart,
   Compass
 } from 'lucide-react';
+ import { motivationTranslations } from '@/lib/i18n/translations/motivation';
 
 interface StepWelcomeProps {
   onSkip?: () => void;
 }
 
 export function StepWelcome({ onSkip }: StepWelcomeProps) {
+   const lang = 'fr'; // TODO: get from context
+   const vision = motivationTranslations.vision;
+   const signatures = motivationTranslations.signatures;
+ 
   const commitments = [
     {
       icon: Shield,
@@ -58,7 +63,7 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         
         <Badge className="bg-primary/10 text-primary border-primary/20">
           <Sparkles className="w-3 h-3 mr-1" />
-          Bienvenue sur SoloCab
+           {vision.title[lang]}
         </Badge>
         
         <h1 className="text-2xl md:text-3xl font-bold">
@@ -66,41 +71,46 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         </h1>
       </motion.div>
 
-      {/* Important Notice */}
+       {/* Vision Description */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <Alert className="bg-amber-500/10 border-amber-500/30 text-left">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          <AlertDescription className="text-sm">
-            <strong className="text-amber-600 dark:text-amber-400">Important :</strong> SoloCab ne vous donnera pas de courses. 
-            Notre mission est de vous aider à <strong>construire votre propre clientèle</strong> et à vous 
-            <strong> libérer définitivement des plateformes</strong> qui prennent vos commissions.
-          </AlertDescription>
-        </Alert>
+         <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border/50 text-left">
+           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+             {vision.description[lang]}
+           </p>
+         </div>
       </motion.div>
 
-      {/* Philosophy Message */}
+       {/* Responsibility Message */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-4 text-left space-y-3"
+         className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4 text-left"
       >
-        <div className="flex items-center gap-2">
-          <Compass className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-primary">La philosophie SoloCab</h3>
+         <div className="flex items-start gap-3">
+           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+           <p className="text-sm font-medium text-foreground whitespace-pre-line">
+             {vision.responsibility[lang]}
+           </p>
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Être vraiment indépendant, ça demande de l'<strong className="text-foreground">engagement</strong> et de la <strong className="text-foreground">persévérance</strong>. 
-          Ce n'est pas facile, mais c'est <strong className="text-foreground">possible</strong>. 
-          Nous sommes là pour vous donner tous les outils nécessaires et vous guider <strong className="text-foreground">pas à pas</strong> vers votre liberté.
-        </p>
-        <div className="flex items-center gap-2 pt-2 border-t border-primary/10">
-          <HandHeart className="w-4 h-4 text-primary" />
-          <span className="text-xs text-primary font-medium">Votre réussite est notre mission</span>
+       </motion.div>
+ 
+       {/* Signature Quote */}
+       <motion.div
+         initial={{ y: 20, opacity: 0 }}
+         animate={{ y: 0, opacity: 1 }}
+         transition={{ delay: 0.35 }}
+         className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-4"
+       >
+         <div className="flex items-center gap-2 justify-center">
+           <Compass className="w-4 h-4 text-primary" />
+           <p className="text-sm font-semibold text-primary italic">
+             "{signatures.partnership[lang]}"
+           </p>
         </div>
       </motion.div>
 

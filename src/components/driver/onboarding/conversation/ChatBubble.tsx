@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+ import { motivationTranslations } from '@/lib/i18n/translations/motivation';
 
 interface ChatBubbleProps {
   message: string;
@@ -12,6 +13,7 @@ interface ChatBubbleProps {
   userName?: string;
   className?: string;
   children?: React.ReactNode;
+   showSignature?: boolean;
 }
 
 export function ChatBubble({ 
@@ -22,8 +24,14 @@ export function ChatBubble({
   avatarUrl,
   userName,
   className,
-  children
+   children,
+   showSignature = false
 }: ChatBubbleProps) {
+   const lang = 'fr';
+   const signatures = motivationTranslations.signatures;
+   const signatureKeys = Object.keys(signatures) as Array<keyof typeof signatures>;
+   const randomSignature = signatures[signatureKeys[Math.floor(Math.random() * signatureKeys.length)]];
+ 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -85,6 +93,11 @@ export function ChatBubble({
           <div className="space-y-2">
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message}</p>
             {children}
+             {showSignature && isBot && (
+               <p className="text-xs text-primary/70 italic pt-2 border-t border-border/30 mt-2">
+                 "{randomSignature[lang]}"
+               </p>
+             )}
           </div>
         )}
       </div>

@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+ import { motivationTranslations } from '@/lib/i18n/translations/motivation';
 
 interface OnboardingAIAssistantProps {
   currentStep: number;
@@ -100,6 +101,9 @@ export function OnboardingAIAssistant({
   stepData, 
   driverName 
 }: OnboardingAIAssistantProps) {
+   const lang = 'fr';
+   const assistant = motivationTranslations.assistant;
+ 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -201,6 +205,13 @@ export function OnboardingAIAssistant({
                     </div>
                   </div>
                 )}
+ 
+                 {/* Assistant Intro */}
+                 <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg p-2.5 border border-primary/10">
+                   <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+                     {assistant.intro[lang]}
+                   </p>
+                 </div>
 
                 {/* Benefits */}
                 {benefits.length > 0 && (
