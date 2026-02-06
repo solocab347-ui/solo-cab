@@ -16984,6 +16984,48 @@ export type Database = {
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       get_admin_company_id: { Args: { _user_id: string }; Returns: string }
+      get_admin_drivers_progression: {
+        Args: never
+        Returns: {
+          base_fare: number
+          billing_type: string
+          company_address: string
+          company_name: string
+          created_at: string
+          documents_status: string
+          email: string
+          free_access_granted: boolean
+          full_name: string
+          has_nfc_plate: boolean
+          hourly_rate: number
+          id: string
+          max_passengers: number
+          nfc_plate_ordered_at: string
+          objectives_completed: boolean
+          onboarding_objectives_completed: boolean
+          onboarding_step: string
+          per_km_rate: number
+          phone: string
+          profile_photo_url: string
+          registration_step: number
+          service_description: string
+          siret: string
+          status: string
+          stripe_connect_status: string
+          subscription_paid: boolean
+          subscription_status: string
+          tpe_received_at: string
+          trial_ready_to_start: boolean
+          trial_started_at: string
+          user_id: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
+          wants_tpe_affiliate: boolean
+          working_sectors: string[]
+        }[]
+      }
       get_all_partnership_disputes: {
         Args: never
         Returns: {
