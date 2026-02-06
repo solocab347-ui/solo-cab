@@ -149,48 +149,18 @@ const DriverProgressionTracker = () => {
   const { data: drivers = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-driver-progression"],
     queryFn: async () => {
+      // Use SECURITY DEFINER RPC function to bypass RLS circular dependency
       const { data, error } = await supabase
-        .from("drivers")
-        .select(`
-          id,
-          user_id,
-          company_name,
-          created_at,
-          subscription_status,
-          subscription_paid,
-          has_nfc_plate,
-          nfc_plate_ordered_at,
-          vehicle_brand,
-          vehicle_model,
-          vehicle_plate,
-          vehicle_color,
-          base_fare,
-          per_km_rate,
-          hourly_rate,
-          working_sectors,
-          service_description,
-          siret,
-          company_address,
-          max_passengers,
-          registration_step,
-          status,
-          documents_status,
-          free_access_granted,
-          billing_type,
-          stripe_connect_status,
-          wants_tpe_affiliate,
-          tpe_received_at,
-          trial_started_at,
-          trial_ready_to_start,
-          objectives_completed,
-          onboarding_objectives_completed,
-          onboarding_step,
-          profiles!inner(full_name, profile_photo_url, phone, email)
-        `)
-        .eq("is_demo_account", false)
-        .order("created_at", { ascending: false });
+        .rpc('get_admin_drivers_progression');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching drivers:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
 
       // Fetch stats for each driver
       const driversWithStats = await Promise.all(
@@ -251,10 +221,7 @@ const DriverProgressionTracker = () => {
 
           return {
             ...driver,
-            full_name: driver.profiles.full_name,
-            profile_photo_url: driver.profiles.profile_photo_url,
-            phone: driver.profiles.phone,
-            email: driver.profiles.email,
+            // full_name, profile_photo_url, phone, email are already at root level from RPC
             total_courses: coursesCount || 0,
             total_clients: clientsCount || 0,
             total_scans: qrCount || 0,
