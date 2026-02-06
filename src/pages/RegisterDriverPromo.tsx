@@ -123,43 +123,19 @@ const RegisterDriverPromo = () => {
             console.log("[RegisterDriverPromo] Driver profile found:", existingDriver);
             setDriverId(existingDriver.id);
             
-            // If subscription already paid and active, redirect to dashboard
-            if (existingDriver.subscription_paid === true && 
-                (existingDriver.subscription_status === "active" || existingDriver.subscription_status === "trialing")) {
-              toast.info("Vous avez déjà un abonnement actif");
+            // If subscription already paid and active, OR trial active, redirect to dashboard
+            if ((existingDriver.subscription_paid === true && 
+                (existingDriver.subscription_status === "active" || existingDriver.subscription_status === "trialing")) ||
+                existingDriver.trial_status === 'active') {
+              toast.info("Vous avez déjà un compte actif");
               navigate("/driver-dashboard");
               return;
             }
             
-            // Restore saved choices if any
-            if (existingDriver.pending_subscription_type) {
-              setSubscriptionType(existingDriver.pending_subscription_type as "monthly" | "annual");
-            }
-            if (existingDriver.pending_wants_plate) {
-              setWantsPlate(true);
-            }
-            if (existingDriver.pending_plate_type) {
-              setPlateType(existingDriver.pending_plate_type as "standard" | "premium");
-            }
-            if (existingDriver.shipping_address) {
-              setShippingAddress(existingDriver.shipping_address);
-            }
-            if (existingDriver.shipping_city) {
-              setShippingCity(existingDriver.shipping_city);
-            }
-            if (existingDriver.shipping_postal_code) {
-              setShippingPostalCode(existingDriver.shipping_postal_code);
-            }
-            
-            // Check for previous payment failure
-            if (existingDriver.payment_failed_at) {
-              setPaymentFailed(true);
-              setPaymentFailedReason(existingDriver.payment_failed_reason || "Votre dernier paiement a échoué. Veuillez réessayer.");
-            }
-            
-            // Go to final step for payment (registration incomplete)
+            // NOUVEAU FLUX: Si compte créé mais pas encore finalisé, rediriger vers le tunnel
             toast.info("Reprenez votre inscription là où vous l'avez laissée");
-            setCurrentStep(totalSteps);
+            navigate("/driver-welcome");
+            return;
           }
         }
       } catch (error) {
@@ -210,42 +186,18 @@ const RegisterDriverPromo = () => {
         if (driverData) {
           setDriverId(driverData.id);
           
-          // Already has active subscription
-          if (driverData.subscription_paid && 
-              (driverData.subscription_status === "active" || driverData.subscription_status === "trialing")) {
+          // Already has active subscription or active trial
+          if ((driverData.subscription_paid && 
+              (driverData.subscription_status === "active" || driverData.subscription_status === "trialing")) ||
+              driverData.trial_status === 'active') {
             toast.success("Bienvenue ! Redirection vers votre tableau de bord...");
             navigate("/driver-dashboard");
             return;
           }
           
-          // Restore saved choices
-          if (driverData.pending_subscription_type) {
-            setSubscriptionType(driverData.pending_subscription_type as "monthly" | "annual");
-          }
-          if (driverData.pending_wants_plate) {
-            setWantsPlate(true);
-          }
-          if (driverData.pending_plate_type) {
-            setPlateType(driverData.pending_plate_type as "standard" | "premium");
-          }
-          if (driverData.shipping_address) {
-            setShippingAddress(driverData.shipping_address);
-          }
-          if (driverData.shipping_city) {
-            setShippingCity(driverData.shipping_city);
-          }
-          if (driverData.shipping_postal_code) {
-            setShippingPostalCode(driverData.shipping_postal_code);
-          }
-          
-          // Check payment failure
-          if (driverData.payment_failed_at) {
-            setPaymentFailed(true);
-            setPaymentFailedReason(driverData.payment_failed_reason || "Votre dernier paiement a échoué.");
-          }
-          
-          toast.success("Connexion réussie ! Finalisez votre inscription.");
-          setCurrentStep(totalSteps);
+          // NOUVEAU FLUX: Rediriger vers le tunnel d'onboarding
+          toast.success("Connexion réussie ! Continuez votre inscription.");
+          navigate("/driver-welcome");
         } else {
           // User exists but no driver profile - shouldn't happen but handle it
           toast.error("Aucun profil chauffeur trouvé. Créez un nouveau compte.");
@@ -306,12 +258,13 @@ const RegisterDriverPromo = () => {
 
       if (profileError) throw profileError;
 
-      // Create driver profile with all required fields
+      // Create driver profile - NO PAYMENT REQUIRED, trial starts after admin validation
       const driverInsertData: any = {
         user_id: newUserId,
-        status: "on_hold",
+        status: "pending", // En attente de validation documents
         subscription_status: "inactive",
         subscription_paid: false,
+        trial_status: "pending", // Essai démarrera après validation admin
         registration_step: 2,
         license_number: "À_COMPLÉTER",
         vehicle_brand: "À compléter",
@@ -342,10 +295,10 @@ const RegisterDriverPromo = () => {
         throw roleError;
       }
 
-      toast.success("Compte créé avec succès !");
+      toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
       
-      // Aller directement à l'étape 2 (paiement) pour tous les parcours
-      setCurrentStep(2);
+      // NOUVEAU FLUX: Rediriger directement vers le tunnel d'onboarding (pas de paiement)
+      navigate("/driver-welcome");
     } catch (error: any) {
       console.error("Erreur step 1:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";

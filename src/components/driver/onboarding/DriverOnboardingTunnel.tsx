@@ -485,6 +485,7 @@ export function DriverOnboardingTunnel({
             driverId={driverId}
             billingType={stepData.billing.billingType}
             stripeAccountStatus={driverProfile?.driver?.stripe_account_status}
+            documentsStatus={stepData.documents.documentsStatus}
             onComplete={handleComplete}
             loading={saving}
           />

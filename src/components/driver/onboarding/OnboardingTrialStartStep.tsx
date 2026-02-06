@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 interface OnboardingTrialStartStepProps {
   driverId: string;
-  billingType: 'own_equipment' | 'buy_equipment' | 'solocab_stripe';
+  billingType?: 'own_equipment' | 'buy_equipment' | 'solocab_stripe';
   stripeAccountStatus?: string;
   documentsStatus?: string;
   onComplete: () => void;
@@ -37,7 +37,7 @@ export function OnboardingTrialStartStep({
 
   const isStripeChoice = billingType === 'solocab_stripe';
   const isEquipmentPurchase = billingType === 'buy_equipment';
-  const isOwnEquipment = billingType === 'own_equipment';
+  const isOwnEquipment = billingType === 'own_equipment' || !billingType;
 
   const isStripeReady = isStripeChoice && stripeAccountStatus === 'active';
   const isStripeNotReady = isStripeChoice && stripeAccountStatus !== 'active';
@@ -50,14 +50,20 @@ export function OnboardingTrialStartStep({
   const areDocumentsPending = documentsStatus === 'submitted'; // All docs uploaded, waiting admin
   const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
+  // NOUVEAU: L'essai peut démarrer dès que les documents sont validés par l'admin
+  // Plus de condition de paiement - l'essai est GRATUIT pendant 14 jours
   const canStartTrial = () => {
-    // Documents must be validated by admin first
+    // Documents must be validated by admin first - SEULE condition obligatoire
     if (!areDocumentsValidated) return false;
     
-    if (isOwnEquipment) return confirmReady;
-    if (isEquipmentPurchase) return confirmReady;
-    if (isStripeChoice) return isStripeReady;
-    return false;
+    // Pour Stripe Connect, attendre que le compte soit activé
+    if (isStripeChoice && !isStripeReady) return false;
+    
+    // Pour équipement propre ou acheté, confirmer la disponibilité
+    if (isOwnEquipment || isEquipmentPurchase) return confirmReady;
+    
+    // Si Stripe ready, on peut démarrer
+    return true;
   };
 
   const handleStartTrial = async () => {

@@ -80,11 +80,20 @@ const calculateAccessStatus = (driver: any) => {
   // En attente de validation = documents soumis mais pas encore validés
   const awaitingDocumentValidation = documentsStatus === 'submitted';
 
-  // ACCÈS COMPLET = Documents validés + (abonnement actif OU période de grâce OU accès gratuit)
+  // Vérifier si essai 14 jours actif
+  const trialEndDate = driver.trial_end_date ? new Date(driver.trial_end_date) : null;
+  const isTrialActive = driver.trial_status === 'active' && trialEndDate && trialEndDate > now;
+  const trialDaysLeft = isTrialActive && trialEndDate 
+    ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) 
+    : 0;
+
+  // ACCÈS COMPLET = Documents validés + (abonnement actif OU essai 14j actif OU période de grâce OU accès gratuit)
   // Les chauffeurs de flotte sont exemptés de la validation documents
   const hasPaymentAccess = 
     driver.subscription_status === "active" ||
+    driver.subscription_status === "trialing" ||
     driver.subscription_paid === true ||
+    isTrialActive ||
     isInGracePeriod ||
     isPioneerTrialActive ||
     hasFreeAccess;
@@ -98,6 +107,8 @@ const calculateAccessStatus = (driver: any) => {
     isInGracePeriod,
     isPioneerTrialActive,
     hasFreeAccess,
+    isTrialActive,
+    trialDaysLeft,
     gracePeriodDaysLeft,
     pioneerTrialDaysLeft,
     isDocumentsBlocked,
