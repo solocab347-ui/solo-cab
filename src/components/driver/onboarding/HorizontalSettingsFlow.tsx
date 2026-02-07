@@ -122,19 +122,19 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
       case 'welcome':
         return (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-6 px-2">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center">
-              <Rocket className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center">
+              <Euro className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Salut {firstName} !</h2>
+              <h2 className="text-2xl font-bold text-white">Passons à tes tarifs, {firstName} !</h2>
               <p className="text-white/60 mt-2">
-                Je suis Alex, ton coach SoloCab.
+                On continue ensemble pour configurer ta grille tarifaire.
               </p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4 max-w-sm">
               <p className="text-white/80 text-sm">
-                Ensemble, on va configurer tes tarifs en <strong className="text-primary">2 minutes</strong>. 
-                Swipe vers la gauche pour avancer →
+                <strong className="text-primary">2 minutes</strong> pour définir tes prix. 
+                Swipe vers la gauche pour commencer →
               </p>
             </div>
             <div className="flex items-center gap-2 text-white/40 text-xs">
