@@ -96,8 +96,13 @@ const REQUIRED_DOCUMENTS = [
   },
   {
     key: "insurance",
-    label: "Attestation d'assurance",
+    label: "Assurance RC Pro",
     description: "Assurance RC Pro VTC en cours de validité",
+  },
+  {
+    key: "insurance_circulation",
+    label: "Assurance RC Circulation",
+    description: "Assurance responsabilité civile circulation en cours de validité",
   },
   {
     key: "kbis",
