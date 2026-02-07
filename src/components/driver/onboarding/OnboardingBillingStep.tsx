@@ -26,12 +26,15 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sumupTpeCard from '@/assets/sumup-tpe-card.jpg';
 import sumupTpeDevice from '@/assets/sumup-tpe-device.jpg';
 import { StripeConnectSetupGuide } from '@/components/driver/settings/StripeConnectSetupGuide';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface OnboardingBillingStepProps {
   data: {
@@ -99,6 +102,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hasClickedLink, setHasClickedLink] = useState(false);
   const [showStripeGuide, setShowStripeGuide] = useState(false);
+  const [stripeOnboardingLoading, setStripeOnboardingLoading] = useState(false);
 
   const tpeImages = [sumupTpeDevice, sumupTpeCard];
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
@@ -106,6 +110,26 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   // Mode : sélection initiale ou option déjà choisie
   const hasSelectedOption = data.billingType !== null;
   const [showAllOptions, setShowAllOptions] = useState(!hasSelectedOption);
+
+  // Fonction pour démarrer l'onboarding Stripe Connect
+  const startStripeOnboarding = async () => {
+    setStripeOnboardingLoading(true);
+    try {
+      const { data: onboardingData, error } = await supabase.functions.invoke('stripe-connect-onboarding');
+      
+      if (error) throw error;
+      
+      if (onboardingData?.url) {
+        window.open(onboardingData.url, '_blank');
+        toast.info('Fenêtre Stripe ouverte. Complétez votre inscription puis revenez ici.');
+      }
+    } catch (error: any) {
+      console.error('Error starting Stripe onboarding:', error);
+      toast.error(error.message || 'Erreur lors du démarrage de l\'inscription Stripe');
+    } finally {
+      setStripeOnboardingLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -377,11 +401,16 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
               <Button
                 size="lg"
                 className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                onClick={() => setShowStripeGuide(true)}
+                onClick={startStripeOnboarding}
+                disabled={stripeOnboardingLoading}
               >
-                <CreditCard className="w-5 h-5 mr-2" />
-                Commencer la configuration
-                <ArrowRight className="w-5 h-5 ml-2" />
+                {stripeOnboardingLoading ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="w-5 h-5 mr-2" />
+                )}
+                {stripeOnboardingLoading ? 'Chargement...' : 'Commencer la configuration'}
+                {!stripeOnboardingLoading && <ArrowRight className="w-5 h-5 ml-2" />}
               </Button>
               
               <p className="text-center text-xs text-muted-foreground mt-2">
