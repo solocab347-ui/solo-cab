@@ -103,110 +103,111 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   const tpeImages = [sumupTpeDevice, sumupTpeCard];
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
 
+  // Mode : sélection initiale ou option déjà choisie
+  const hasSelectedOption = data.billingType !== null;
+  const [showAllOptions, setShowAllOptions] = useState(!hasSelectedOption);
+
   return (
     <div className="space-y-4">
-      {/* Message d'introduction */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-3">
-        <div className="flex items-start gap-2">
-          <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-sm">Comment souhaitez-vous être payé ?</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-              Choisissez la solution qui vous convient le mieux. Vous pourrez toujours modifier ce choix plus tard dans vos paramètres.
-            </p>
+      {/* Message d'introduction - seulement si on montre toutes les options */}
+      {showAllOptions && (
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-sm">Comment souhaitez-vous être payé ?</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                Choisissez la solution qui vous convient le mieux. Vous pourrez toujours modifier ce choix plus tard.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Options de facturation */}
-      <RadioGroup 
-        value={data.billingType} 
-        onValueChange={(value) => onUpdate({ billingType: value as typeof data.billingType })}
-        className="space-y-3"
-      >
-        {BILLING_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const isSelected = data.billingType === option.value;
-          
-          return (
-            <div key={option.value} className="relative">
-              <RadioGroupItem
-                value={option.value}
-                id={`billing-${option.value}`}
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor={`billing-${option.value}`}
-                className={cn(
-                  "flex flex-col rounded-xl border-2 p-4 cursor-pointer transition-all",
-                  isSelected 
-                    ? "border-primary bg-primary/5 shadow-md" 
-                    : "border-muted hover:border-muted-foreground/30 hover:bg-muted/30",
-                  option.highlight && !isSelected && "border-amber-500/30 bg-amber-500/5"
-                )}
-              >
-                {option.highlight && (
-                  <Badge className="absolute -top-2 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px]">
-                    <Gift className="w-3 h-3 mr-1" />
-                    {option.highlightText}
-                  </Badge>
-                )}
-                
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "rounded-lg p-2 shrink-0",
-                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
-                  )}>
-                    <Icon className="h-5 w-5" />
-                  </div>
+      {/* Options de facturation - Mode sélection */}
+      {showAllOptions ? (
+        <RadioGroup 
+          value={data.billingType} 
+          onValueChange={(value) => {
+            onUpdate({ billingType: value as typeof data.billingType });
+            setShowAllOptions(false); // Masquer les autres options après sélection
+          }}
+          className="space-y-3"
+        >
+          {BILLING_OPTIONS.map((option) => {
+            const Icon = option.icon;
+            
+            return (
+              <div key={option.value} className="relative">
+                <RadioGroupItem
+                  value={option.value}
+                  id={`billing-${option.value}`}
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor={`billing-${option.value}`}
+                  className={cn(
+                    "flex flex-col rounded-xl border-2 p-4 cursor-pointer transition-all",
+                    "border-muted hover:border-muted-foreground/30 hover:bg-muted/30",
+                    option.highlight && "border-amber-500/30 bg-amber-500/5"
+                  )}
+                >
+                  {option.highlight && (
+                    <Badge className="absolute -top-2 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px]">
+                      <Gift className="w-3 h-3 mr-1" />
+                      {option.highlightText}
+                    </Badge>
+                  )}
                   
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm">{option.title}</span>
-                      {isSelected && (
-                        <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
-                          <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                          Sélectionné
-                        </Badge>
-                      )}
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg p-2 bg-muted shrink-0">
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{option.subtitle}</p>
                     
-                    {isSelected && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {option.description}
-                        </p>
-                        
-                        <div className="space-y-1.5 mt-2">
-                          {option.features.map((feature, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs">
-                              <feature.icon className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <span>{feature.text}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {option.fees && (
-                          <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <Euro className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-xs font-medium text-amber-700">Frais applicables</p>
-                                <p className="text-[11px] text-amber-600">{option.fees}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm block">{option.title}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{option.subtitle}</p>
+                    </div>
                   </div>
+                </Label>
+              </div>
+            );
+          })}
+        </RadioGroup>
+      ) : (
+        /* Mode option sélectionnée - Affichage compact avec bouton modifier */
+        <div className="space-y-3">
+          {/* Récapitulatif de la sélection */}
+          <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg p-2 bg-primary text-primary-foreground shrink-0">
+                {selectedOption && <selectedOption.icon className="h-5 w-5" />}
+              </div>
+              <div>
+                <span className="font-semibold text-sm">{selectedOption?.title}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                  <span className="text-xs text-primary font-medium">Sélectionné</span>
                 </div>
-              </Label>
+              </div>
             </div>
-          );
-        })}
-      </RadioGroup>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAllOptions(true)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Modifier
+            </Button>
+          </div>
+
+          {/* Indication de scroll */}
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground animate-pulse">
+            <ArrowRight className="w-3 h-3 rotate-90" />
+            <span>Voir les détails ci-dessous</span>
+          </div>
+        </div>
+      )}
 
       {/* Détails supplémentaires selon le choix */}
       {data.billingType === 'buy_equipment' && (
@@ -322,9 +323,18 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
             {hasOrderedEquipment && (
               <Alert className="border-green-500/30 bg-green-500/10">
                 <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                <AlertTitle className="text-xs text-green-700">Commande confirmée !</AlertTitle>
-                <AlertDescription className="text-[11px] text-green-600 mt-1">
-                  Parfait ! En attendant de recevoir votre TPE, vous pourrez encaisser en espèces ou par virement. Passez à l'étape suivante.
+                <AlertTitle className="text-xs text-green-700">Commande confirmée ! 🎉</AlertTitle>
+                <AlertDescription className="text-[11px] text-green-600 mt-1 space-y-2">
+                  <p>Parfait ! Votre TPE sera livré sous quelques jours.</p>
+                  <div className="bg-white/50 dark:bg-background/30 rounded p-2 mt-2">
+                    <p className="font-medium text-green-700 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" />
+                      Bon à savoir
+                    </p>
+                    <p className="text-green-600 mt-1">
+                      Vos <strong>14 jours d'essai gratuit</strong> ne démarrent qu'après la validation de vos documents par notre équipe. Vous aurez le temps de recevoir votre matériel avant de commencer !
+                    </p>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -332,8 +342,11 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
             {!hasOrderedEquipment && (
               <Alert className="border-primary/30 bg-primary/5">
                 <Info className="h-3.5 w-3.5 text-primary" />
-                <AlertDescription className="text-[11px] text-muted-foreground">
-                  En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement. Vous pourrez également activer l'encaissement en ligne plus tard.
+                <AlertDescription className="text-[11px] text-muted-foreground space-y-1.5">
+                  <p>En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement.</p>
+                  <p className="font-medium text-foreground">
+                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents — vous aurez le temps de recevoir votre TPE !
+                  </p>
                 </AlertDescription>
               </Alert>
             )}
