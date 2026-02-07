@@ -40,30 +40,43 @@ export function OnboardingTrialStartStep({
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Polling rapide + Realtime pour mise à jour instantanée
+  // Polling rapide + Realtime pour mise à jour INSTANTANÉE
   useEffect(() => {
-    // Fonction de fetch direct
+    let isMounted = true;
+    
+    // Fonction de fetch direct - vérifie la BDD directement
     const fetchStatus = async () => {
-      const { data } = await supabase
-        .from('drivers')
-        .select('documents_status')
-        .eq('id', driverId)
-        .single();
-      
-      if (data?.documents_status && data.documents_status !== documentsStatus) {
-        setDocumentsStatus(data.documents_status);
-        if (data.documents_status === 'validated') {
-          toast.success('🎉 Vos documents ont été validés !');
+      try {
+        const { data, error } = await supabase
+          .from('drivers')
+          .select('documents_status')
+          .eq('id', driverId)
+          .single();
+        
+        if (!isMounted || error) return;
+        
+        const newStatus = data?.documents_status;
+        if (newStatus && newStatus !== documentsStatus) {
+          console.log('[TrialStartStep] Document status changed:', documentsStatus, '->', newStatus);
+          setDocumentsStatus(newStatus);
+          if (newStatus === 'validated') {
+            toast.success('🎉 Vos documents ont été validés ! Vous pouvez démarrer votre essai.');
+          }
         }
+      } catch (err) {
+        console.error('Error fetching status:', err);
       }
     };
 
-    // Polling toutes les 3 secondes pour réactivité maximale
-    const interval = setInterval(fetchStatus, 3000);
+    // Fetch immédiat au chargement - données fraîches dès le départ
+    fetchStatus();
 
-    // Écouter les changements en temps réel (backup)
+    // Polling RAPIDE toutes les 2 secondes pour réactivité maximale
+    const interval = setInterval(fetchStatus, 2000);
+
+    // Écouter les changements en temps réel (méthode principale)
     const channel = supabase
-      .channel(`driver-docs-${driverId}`)
+      .channel(`driver-docs-realtime-${driverId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -73,22 +86,27 @@ export function OnboardingTrialStartStep({
           filter: `id=eq.${driverId}`,
         },
         (payload) => {
+          if (!isMounted) return;
           const newDocStatus = (payload.new as any)?.documents_status;
+          console.log('[TrialStartStep] Realtime update received:', newDocStatus);
           if (newDocStatus && newDocStatus !== documentsStatus) {
             setDocumentsStatus(newDocStatus);
             if (newDocStatus === 'validated') {
-              toast.success('🎉 Vos documents ont été validés !');
+              toast.success('🎉 Vos documents ont été validés ! Vous pouvez démarrer votre essai.');
             }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[TrialStartStep] Realtime channel status:', status);
+      });
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [driverId, documentsStatus]);
+  }, [driverId]); // Removed documentsStatus to avoid re-creating interval
 
   // Rafraîchir manuellement le statut
   const refreshStatus = async () => {
