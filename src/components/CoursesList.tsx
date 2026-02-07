@@ -41,6 +41,7 @@ import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicat
 import { FleetCourseIndicator } from "@/components/driver/FleetCourseIndicator";
 import { ReturnToFleetManagerDialog } from "@/components/driver/ReturnToFleetManagerDialog";
 import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
+import { CoursePaymentDialogContent } from "@/components/driver/CoursePaymentDialogContent";
 
 interface CoursesListProps {
   driverId: string;
@@ -711,6 +712,27 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     const companyCourse = companyCoursesData.find(cc => cc.course_id === selectedCourseId);
     return !!(companyCourse?.employeeName);
   }, [selectedCourseId, companyCoursesData]);
+
+  // Récupérer les infos détaillées de la course sélectionnée pour le paiement Stripe
+  const selectedCourseDetails = useMemo(() => {
+    if (!selectedCourseId) return null;
+    const course = courses.find(c => c.id === selectedCourseId);
+    if (!course) return null;
+    
+    const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
+    const amount = acceptedDevis?.amount || course.final_price || course.estimated_price || 0;
+    
+    return {
+      id: course.id,
+      amount,
+      depositPaid: course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0,
+      depositStatus: course.deposit_status,
+      clientEmail: course.clients?.profiles?.email,
+      clientName: course.clients?.profiles?.full_name,
+      guestName: course.guest_name,
+      isGuestBooking: course.is_guest_booking,
+    };
+  }, [selectedCourseId, courses]);
 
   const handleCompleteCourse = async () => {
     if (!selectedCourseId || !paymentMethod) {
@@ -3449,32 +3471,25 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Carte bancaire" id="card" />
-                <Label htmlFor="card">Carte bancaire</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Espèces" id="cash" />
-                <Label htmlFor="cash">Espèces</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Virement" id="transfer" />
-                <Label htmlFor="transfer">Virement</Label>
-              </div>
-            </RadioGroup>
-
-            {/* Section spécifique pour les courses entreprise */}
-            {isSelectedCourseCompany && (
-              <CompanyPaymentStatusSelector
-                value={companyPaymentStatus}
-                onChange={setCompanyPaymentStatus}
-                companyName={selectedCourseCompanyName}
-                hasInvitation={selectedCourseHasInvitation}
-              />
-            )}
-          </div>
+          {selectedCourseDetails && (
+            <CoursePaymentDialogContent
+              courseId={selectedCourseId!}
+              driverId={driverId}
+              courseAmount={selectedCourseDetails.amount}
+              depositPaid={selectedCourseDetails.depositPaid}
+              depositStatus={selectedCourseDetails.depositStatus}
+              clientEmail={selectedCourseDetails.clientEmail}
+              clientName={selectedCourseDetails.clientName}
+              guestName={selectedCourseDetails.guestName}
+              isGuestBooking={selectedCourseDetails.isGuestBooking}
+              isCompanyCourse={isSelectedCourseCompany}
+              companyName={selectedCourseCompanyName}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
+              companyPaymentStatus={companyPaymentStatus}
+              onCompanyPaymentStatusChange={setCompanyPaymentStatus}
+            />
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
