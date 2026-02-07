@@ -685,6 +685,25 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         );
 
       case 4:
+        // Calculate realistic transition plan based on current platform dependency
+        const currentPlatformRevenue = Math.round((currentRevenue * platformPercentage) / 100);
+        const currentPrivateRevenue = currentRevenue - currentPlatformRevenue;
+        
+        // Target: reduce platform dependency by 10-15% per month (realistic)
+        const targetPlatformPercentage = Math.max(platformPercentage - 15, 30); // Don't go below 30% in first month
+        const targetPrivatePercentage = 100 - targetPlatformPercentage;
+        
+        // Calculate how much of target revenue should come from each source
+        const targetPlatformRevenue = Math.round((targetRevenue * targetPlatformPercentage) / 100);
+        const targetPrivateRevenue = targetRevenue - targetPlatformRevenue;
+        
+        // Weekly breakdown
+        const weeklyPlatformTarget = Math.round(targetPlatformRevenue / 4);
+        const weeklyPrivateTarget = Math.round(targetPrivateRevenue / 4);
+        
+        // Realistic client acquisition: 3-5 new clients per month is achievable
+        const realisticNewClients = Math.min(Math.max(targetClients - currentClients, 0), 5);
+        
         return (
           <div className="flex flex-col h-full justify-center py-2 sm:py-4">
             <div className="text-center mb-3 sm:mb-4">
@@ -696,78 +715,103 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                 <Target className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
-                Ton plan de réussite
+                Ton plan progressif
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Tes objectifs calculés par Alex
+                Une transition réaliste vers l'indépendance
               </p>
             </div>
 
             <div className="w-full max-w-sm mx-auto space-y-2.5 sm:space-y-3 px-1">
-              {/* Weekly summary */}
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                <div className="bg-primary/10 border border-primary/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
-                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mx-auto mb-0.5 sm:mb-1" />
-                  <p className="text-base sm:text-lg font-bold text-primary">{weeklyRevenue}€</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">CA / semaine</p>
+              {/* Revenue sources breakdown */}
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-2">
+                  🎯 Objectif semaine 1 : {weeklyRevenue}€
+                </p>
+                
+                {/* Visual bar showing platform vs private */}
+                <div className="flex gap-0.5 h-6 sm:h-8 rounded-lg overflow-hidden mb-2">
+                  <motion.div 
+                    className="bg-destructive/80 flex items-center justify-center"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${targetPlatformPercentage}%` }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    <span className="text-[9px] sm:text-[10px] text-white font-medium">{weeklyPlatformTarget}€</span>
+                  </motion.div>
+                  <motion.div 
+                    className="bg-primary flex items-center justify-center"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${targetPrivatePercentage}%` }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    <span className="text-[9px] sm:text-[10px] text-white font-medium">{weeklyPrivateTarget}€</span>
+                  </motion.div>
                 </div>
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
-                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 mx-auto mb-0.5 sm:mb-1" />
-                  <p className="text-base sm:text-lg font-bold text-emerald-500">~{estimatedHourlyTarget}€/h</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Objectif horaire</p>
+                
+                <div className="flex justify-between text-[9px] sm:text-[10px]">
+                  <span className="text-destructive">📱 Applis: {targetPlatformPercentage}%</span>
+                  <span className="text-primary">👤 Privé: {targetPrivatePercentage}%</span>
                 </div>
               </div>
 
-              {/* Daily breakdown */}
+              {/* Transition explanation */}
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3">
+                <div className="flex items-start gap-2">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-[10px] sm:text-xs text-foreground leading-tight">
+                    <p className="font-semibold mb-1">Ta transition progressive :</p>
+                    <p>Tu es à <span className="text-destructive font-bold">{platformPercentage}%</span> plateformes aujourd'hui.</p>
+                    <p className="mt-0.5">Objectif mois 1 : passer à <span className="text-primary font-bold">{targetPlatformPercentage}%</span> applis / <span className="text-primary font-bold">{targetPrivatePercentage}%</span> privé.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Realistic weekly targets */}
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                <div className="bg-primary/10 border border-primary/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-base sm:text-lg font-bold text-primary">~{estimatedHourlyTarget}€/h</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Objectif horaire</p>
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-base sm:text-lg font-bold text-emerald-500">+{realisticNewClients}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Nouveaux clients/mois</p>
+                </div>
+              </div>
+
+              {/* Daily breakdown - simplified */}
               <div className="bg-card border border-border rounded-lg sm:rounded-xl p-2.5 sm:p-3">
                 <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-1.5 sm:mb-2">
-                  Répartition intelligente sur {selectedDays.length} jours :
+                  📅 Tes {selectedDays.length} jours de travail :
                 </p>
-                <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex flex-wrap gap-1">
                   {dailyTargets.map(day => (
-                    <div key={day.id} className="flex items-center gap-1.5 sm:gap-2">
-                      <span className={cn(
-                        "w-10 sm:w-12 text-[10px] sm:text-xs font-medium",
-                        day.weight >= 1.15 ? "text-emerald-500" : "text-foreground"
-                      )}>
-                        {day.fullLabel}
-                      </span>
-                      <div className="flex-1 h-3 sm:h-4 rounded-full bg-muted overflow-hidden">
-                        <motion.div 
-                          className={cn(
-                            "h-full rounded-full",
-                            day.weight >= 1.15 ? "bg-emerald-500" : 
-                            day.weight >= 0.9 ? "bg-primary" : "bg-amber-500"
-                          )}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(day.dailyTarget / weeklyRevenue) * 100 * selectedDays.length}%` }}
-                          transition={{ delay: 0.2, duration: 0.5 }}
-                        />
-                      </div>
-                      <span className="text-xs sm:text-sm font-bold w-12 sm:w-14 text-right">{day.dailyTarget}€</span>
+                    <div 
+                      key={day.id} 
+                      className={cn(
+                        "flex-1 min-w-[40px] text-center p-1.5 sm:p-2 rounded-lg",
+                        day.weight >= 1.15 ? "bg-emerald-500/20" : 
+                        day.weight >= 0.9 ? "bg-primary/20" : "bg-muted"
+                      )}
+                    >
+                      <p className="text-[9px] sm:text-[10px] text-muted-foreground">{day.label}</p>
+                      <p className="text-xs sm:text-sm font-bold">{day.dailyTarget}€</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Annual projection */}
-              <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">Projection annuelle</p>
-                <p className="text-xl sm:text-2xl font-bold text-primary">{(targetRevenue * 12).toLocaleString('fr-FR')}€</p>
-                <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1">
-                  avec {targetClients} clients fidèles 🎯
-                </p>
-              </div>
-
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-2.5 sm:p-3"
+                className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-lg p-2.5 sm:p-3"
               >
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
                   <p className="text-[10px] sm:text-xs text-foreground leading-tight">
-                    <span className="font-semibold">Alex :</span> J'ai réparti ton CA selon le potentiel de chaque jour. Les jours les plus forts auront des objectifs plus élevés. Tu es prêt ! 🚀
+                    <span className="font-semibold">Alex :</span> Continue sur les applis pour maintenir ton CA, mais chaque nouveau client privé te rapproche de l'indépendance. On y va progressivement ! 💪
                   </p>
                 </div>
               </motion.div>
@@ -779,7 +823,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                 size="lg"
                 className="w-full h-10 sm:h-12 text-sm"
               >
-                {saving ? 'Enregistrement...' : 'Valider mes objectifs'}
+                {saving ? 'Enregistrement...' : 'Valider mon plan'}
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
             </div>
