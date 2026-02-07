@@ -211,38 +211,38 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
 
       {/* Détails supplémentaires selon le choix */}
       {data.billingType === 'buy_equipment' && (
-        <Card className="border-amber-500/50 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
+        <Card className="border-border bg-card">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-amber-800 dark:text-amber-300">
-              <ShoppingCart className="w-5 h-5" />
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-amber-500" />
               Offre partenaire SumUp
             </CardTitle>
-            <CardDescription className="text-amber-700/80 dark:text-amber-400/80">
+            <CardDescription>
               Équipez-vous d'un terminal de paiement professionnel
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2 space-y-4">
             
-            {/* Image Carousel TPE - Plus grand */}
-            <div className="relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg border border-amber-200 dark:border-amber-800">
-              <div className="relative aspect-[4/3] flex items-center justify-center p-6 bg-gradient-to-b from-white to-amber-50 dark:from-slate-900 dark:to-slate-800">
+            {/* Image Carousel TPE - Design épuré */}
+            <div className="relative bg-muted/30 rounded-xl overflow-hidden border border-border">
+              <div className="relative aspect-[4/3] flex items-center justify-center p-8 bg-white dark:bg-slate-900">
                 <img 
                   src={tpeImages[currentImageIndex]} 
                   alt={`SumUp Solo Lite ${currentImageIndex + 1}`}
-                  className="max-h-full max-w-full object-contain drop-shadow-xl"
+                  className="max-h-full max-w-full object-contain"
                 />
-                {/* Navigation arrows - Plus visibles */}
+                {/* Navigation arrows */}
                 <button
                   onClick={() => setCurrentImageIndex(prev => prev === 0 ? tpeImages.length - 1 : prev - 1)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-lg transition-colors"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-md transition-colors"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setCurrentImageIndex(prev => prev === tpeImages.length - 1 ? 0 : prev + 1)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-lg transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-md transition-colors"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-5 h-5" />
                 </button>
                 {/* Dots indicator */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
@@ -251,50 +251,50 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
                       className={cn(
-                        "w-3 h-3 rounded-full transition-all shadow",
+                        "w-2.5 h-2.5 rounded-full transition-all",
                         idx === currentImageIndex 
-                          ? "bg-amber-500 scale-110" 
-                          : "bg-white/80 hover:bg-white"
+                          ? "bg-amber-500" 
+                          : "bg-muted-foreground/30"
                       )}
                     />
                   ))}
                 </div>
               </div>
               
-              {/* Product info - Fond contrasté */}
-              <div className="p-4 bg-slate-800 dark:bg-slate-950 text-white">
-                <h3 className="font-bold text-lg">Solo Lite</h3>
-                <p className="text-sm text-slate-300 mt-1 leading-relaxed">
-                  Terminal de paiement Bluetooth qui se connecte à votre smartphone pour encaisser partout.
+              {/* Product info */}
+              <div className="p-4 bg-muted/50 border-t border-border">
+                <h3 className="font-bold text-base">Solo Lite</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Terminal de paiement Bluetooth qui se connecte à votre smartphone.
                 </p>
                 <div className="flex items-center gap-3 mt-3">
-                  <span className="text-2xl font-bold text-amber-400">24 €</span>
-                  <span className="text-base text-slate-400 line-through">34 €</span>
-                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1">
+                  <span className="text-xl font-bold text-amber-600 dark:text-amber-500">24 €</span>
+                  <span className="text-sm text-muted-foreground line-through">34 €</span>
+                  <Badge className="bg-amber-500 text-white text-xs">
                     -41%
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">TVA incluse • Livraison gratuite</p>
+                <p className="text-xs text-muted-foreground mt-1">TVA incluse • Livraison gratuite</p>
               </div>
             </div>
             
-            {/* Avantages - Fond contrasté visible */}
-            <div className="bg-slate-800 dark:bg-slate-900 rounded-xl p-4 text-white">
+            {/* Avantages - Style simple */}
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
                 Ce que vous pourrez faire :
               </p>
               <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm">
-                  <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CreditCard className="w-4 h-4 text-foreground shrink-0" />
                   <span>Encaisser par carte bancaire</span>
                 </li>
-                <li className="flex items-center gap-2 text-sm">
-                  <Euro className="w-4 h-4 text-amber-400 shrink-0" />
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Euro className="w-4 h-4 text-foreground shrink-0" />
                   <span>Envoyer des liens de paiement</span>
                 </li>
-                <li className="flex items-center gap-2 text-sm">
-                  <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="w-4 h-4 text-foreground shrink-0" />
                   <span>Compte professionnel gratuit</span>
                 </li>
               </ul>
@@ -302,7 +302,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
 
             <Button
               variant="default"
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold"
               onClick={() => {
                 window.open(SUMUP_AFFILIATE_LINK, '_blank');
                 setHasClickedLink(true);
@@ -326,30 +326,24 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
 
             {hasOrderedEquipment && (
               <Alert className="border-green-500/30 bg-green-500/10">
-                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                <AlertTitle className="text-xs text-green-700">Commande confirmée ! 🎉</AlertTitle>
-                <AlertDescription className="text-[11px] text-green-600 mt-1 space-y-2">
-                  <p>Parfait ! Votre TPE sera livré sous quelques jours.</p>
-                  <div className="bg-white/50 dark:bg-background/30 rounded p-2 mt-2">
-                    <p className="font-medium text-green-700 flex items-center gap-1.5">
-                      <Clock className="w-3 h-3" />
-                      Bon à savoir
-                    </p>
-                    <p className="text-green-600 mt-1">
-                      Vos <strong>14 jours d'essai gratuit</strong> ne démarrent qu'après la validation de vos documents par notre équipe. Vous aurez le temps de recevoir votre matériel avant de commencer !
-                    </p>
-                  </div>
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-sm text-green-700">Commande confirmée ! 🎉</AlertTitle>
+                <AlertDescription className="text-xs text-green-600 mt-1">
+                  <p>Votre TPE sera livré sous quelques jours.</p>
+                  <p className="mt-2 font-medium">
+                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents — vous aurez le temps de recevoir votre matériel !
+                  </p>
                 </AlertDescription>
               </Alert>
             )}
 
             {!hasOrderedEquipment && (
-              <Alert className="border-primary/30 bg-primary/5">
-                <Info className="h-3.5 w-3.5 text-primary" />
-                <AlertDescription className="text-[11px] text-muted-foreground space-y-1.5">
+              <Alert className="border-border bg-muted/50">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <AlertDescription className="text-xs text-muted-foreground">
                   <p>En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement.</p>
-                  <p className="font-medium text-foreground">
-                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents — vous aurez le temps de recevoir votre TPE !
+                  <p className="font-medium text-foreground mt-1.5">
+                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents.
                   </p>
                 </AlertDescription>
               </Alert>
