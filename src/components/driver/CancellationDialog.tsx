@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertTriangle, Clock, XCircle, User, Car } from "lucide-react";
+import { Loader2, AlertTriangle, Clock, XCircle, User, Car, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -43,6 +43,11 @@ const CANCELLATION_REASONS = {
   ],
 };
 
+// Constantes selon le cahier des charges
+const FREE_CANCELLATION_HOURS_WITH_DEPOSIT = 4; // T-4h avec acompte
+const FREE_CANCELLATION_HOURS_NO_DEPOSIT = 2; // T-2h sans acompte
+const CANCELLATION_FEE_NO_DEPOSIT = 10; // 10€ sans acompte
+
 export function CancellationDialog({
   open,
   onOpenChange,
@@ -60,30 +65,66 @@ export function CancellationDialog({
 
   // Calculate hours until pickup
   const hoursUntilPickup = (new Date(scheduledDate).getTime() - Date.now()) / (1000 * 60 * 60);
-  const isWithinPenaltyWindow = hoursUntilPickup <= 2;
+  
+  // Déterminer la fenêtre d'annulation selon le type de course
+  const freeCancellationHours = hasDeposit 
+    ? FREE_CANCELLATION_HOURS_WITH_DEPOSIT 
+    : FREE_CANCELLATION_HOURS_NO_DEPOSIT;
+  
+  const isWithinPenaltyWindow = hoursUntilPickup <= freeCancellationHours;
 
   const getWarningMessage = () => {
     if (cancelledBy === "driver") {
+      // Le chauffeur annule → toujours remboursement client
       if (hasDeposit) {
-        return `En annulant, l'acompte de ${depositAmount?.toFixed(2)}€ sera remboursé au client.`;
+        return {
+          type: "info" as const,
+          message: `En annulant, l'acompte de ${depositAmount?.toFixed(2)}€ sera remboursé au client.`,
+        };
       }
-      return "Aucun frais pour le client.";
+      return {
+        type: "info" as const,
+        message: "Aucun frais pour le client.",
+      };
     }
 
-    // Client cancelling
-    if (isWithinPenaltyWindow) {
-      if (hasCardHold) {
-        return `⚠️ Vous annulez moins de 2h avant la course. Des frais de 15€ seront prélevés.`;
-      }
-      return "⚠️ Annulation tardive (moins de 2h avant).";
-    }
-
+    // Client qui annule
     if (hasDeposit) {
-      return `L'acompte de ${depositAmount?.toFixed(2)}€ n'est pas remboursable.`;
+      // Course avec acompte
+      if (hoursUntilPickup > freeCancellationHours) {
+        return {
+          type: "info" as const,
+          message: `Annulation gratuite. Votre acompte de ${depositAmount?.toFixed(2)}€ sera remboursé.`,
+        };
+      } else {
+        return {
+          type: "warning" as const,
+          message: `⚠️ Annulation moins de ${freeCancellationHours}h avant la course. L'acompte de ${depositAmount?.toFixed(2)}€ n'est pas remboursable.`,
+        };
+      }
+    } else {
+      // Course sans acompte
+      if (hoursUntilPickup > freeCancellationHours) {
+        return {
+          type: "info" as const,
+          message: "Annulation gratuite.",
+        };
+      } else {
+        if (hasCardHold) {
+          return {
+            type: "warning" as const,
+            message: `⚠️ Annulation moins de ${freeCancellationHours}h avant la course. Des frais de ${CANCELLATION_FEE_NO_DEPOSIT}€ seront prélevés.`,
+          };
+        }
+        return {
+          type: "warning" as const,
+          message: `⚠️ Annulation tardive (moins de ${freeCancellationHours}h avant).`,
+        };
+      }
     }
-
-    return "Annulation gratuite.";
   };
+
+  const warningInfo = getWarningMessage();
 
   const handleSubmit = async () => {
     if (!selectedReason) {
@@ -112,7 +153,9 @@ export function CancellationDialog({
 
       if (error) throw error;
 
-      if (data.fee_charged) {
+      if (data.deposit_forfeited) {
+        toast.warning(`Course annulée. L'acompte de ${depositAmount?.toFixed(2)}€ est conservé par le chauffeur.`);
+      } else if (data.fee_charged) {
         toast.warning(`Course annulée. Frais de ${data.fee_amount}€ prélevés.`);
       } else if (data.deposit_refunded) {
         toast.success("Course annulée. L'acompte a été remboursé.");
@@ -178,10 +221,32 @@ export function CancellationDialog({
             </span>
           </div>
 
+          {/* Policy reminder */}
+          <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+            <p className="font-medium mb-1">Politique d'annulation :</p>
+            {hasDeposit ? (
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Avant T-{FREE_CANCELLATION_HOURS_WITH_DEPOSIT}h : remboursement intégral</li>
+                <li>Après T-{FREE_CANCELLATION_HOURS_WITH_DEPOSIT}h : acompte non remboursable</li>
+                <li>Si le chauffeur annule : remboursement complet</li>
+              </ul>
+            ) : (
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Avant T-{FREE_CANCELLATION_HOURS_NO_DEPOSIT}h : aucun frais</li>
+                <li>Après T-{FREE_CANCELLATION_HOURS_NO_DEPOSIT}h : {CANCELLATION_FEE_NO_DEPOSIT}€ de frais</li>
+                <li>Si le chauffeur annule : aucun frais</li>
+              </ul>
+            )}
+          </div>
+
           {/* Warning/Info */}
-          <Alert variant={isWithinPenaltyWindow && cancelledBy === "client" ? "destructive" : "default"}>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{getWarningMessage()}</AlertDescription>
+          <Alert variant={warningInfo.type === "warning" ? "destructive" : "default"}>
+            {warningInfo.type === "warning" ? (
+              <AlertTriangle className="h-4 w-4" />
+            ) : (
+              <Info className="h-4 w-4" />
+            )}
+            <AlertDescription>{warningInfo.message}</AlertDescription>
           </Alert>
 
           {/* Reason selection */}
