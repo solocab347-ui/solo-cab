@@ -99,11 +99,11 @@ serve(async (req) => {
         .eq("id", driver.id);
     }
 
-    // Create onboarding link
+    // Create onboarding link - IMPORTANT: Return to driver-welcome (onboarding page)
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/driver-dashboard?stripe_connect=refresh`,
-      return_url: `${origin}/driver-dashboard?stripe_connect=success`,
+      refresh_url: `${origin}/driver-welcome?stripe_connect=refresh`,
+      return_url: `${origin}/driver-welcome?stripe_connect=success`,
       type: "account_onboarding",
     });
 

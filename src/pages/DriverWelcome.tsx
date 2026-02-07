@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Sparkles, 
   Loader2,
   Rocket,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,17 +15,42 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { HorizontalOnboardingTunnel } from "@/components/driver/onboarding";
 import { logger } from "@/lib/productionLogger";
-
+import { toast } from "sonner";
 const DriverWelcome = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [driverData, setDriverData] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [stripeConnectSuccess, setStripeConnectSuccess] = useState(false);
   const mountedRef = useRef(true);
   const fetchAttemptRef = useRef(0);
+
+  // Handle Stripe Connect callback
+  useEffect(() => {
+    const stripeParam = searchParams.get("stripe_connect");
+    
+    if (stripeParam === "success") {
+      setStripeConnectSuccess(true);
+      toast.success("🎉 Compte Stripe Connect créé avec succès !", {
+        description: "Votre compte est en cours de vérification par Stripe.",
+        duration: 6000,
+      });
+      // Clean URL without reload
+      setSearchParams({});
+      // Skip intro and go directly to the tunnel
+      setShowIntro(false);
+    } else if (stripeParam === "refresh") {
+      toast.info("Session expirée. Veuillez recommencer la configuration Stripe.", {
+        duration: 5000,
+      });
+      setSearchParams({});
+      setShowIntro(false);
+    }
+  }, [searchParams, setSearchParams]);
 
   // Timeout de sécurité pour éviter le chargement infini
   useEffect(() => {
