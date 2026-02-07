@@ -196,10 +196,10 @@ const RegisterDriverPromoFree = () => {
         // Don't block registration if email fails
       }
 
-      toast.success("Compte créé ! Soumettez vos documents pour activer votre essai gratuit de 14 jours 🎉");
+      toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
       
-      // Redirect to dashboard
-      navigate("/driver-dashboard");
+      // Rediriger vers le tunnel d'onboarding
+      navigate("/driver-welcome");
     } catch (error: any) {
       console.error("Erreur inscription:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";

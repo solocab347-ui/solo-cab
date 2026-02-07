@@ -56,7 +56,7 @@ import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { MobileDriverNav } from "@/components/driver/MobileDriverNav";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { useLocale } from "@/hooks/useLocale";
@@ -74,6 +74,7 @@ import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 const DriverDashboard = () => {
   const { t } = useLocale();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   useUserLanguage(); // Sync language with user profile
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
@@ -88,15 +89,13 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   
-  // Vérifier si l'onboarding doit être affiché
+  // REDIRECTION AUTOMATIQUE vers le tunnel d'onboarding si non complété
   useEffect(() => {
     if (driverProfile?.driver && !driverProfile.driver.onboarding_completed) {
-      // Chauffeur n'a pas complété l'onboarding - afficher le tunnel
-      setShowOnboardingTunnel(true);
-    } else {
-      setShowOnboardingTunnel(false);
+      // Chauffeur n'a pas complété l'onboarding - rediriger vers le tunnel
+      navigate("/driver-welcome", { replace: true });
     }
-  }, [driverProfile?.driver?.onboarding_completed]);
+  }, [driverProfile?.driver?.onboarding_completed, navigate]);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);

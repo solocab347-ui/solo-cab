@@ -1,516 +1,221 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Sparkles, 
-  Users, 
-  Calendar, 
-  Euro, 
-  Car, 
-  FileText, 
-  Star, 
-  Shield,
-  MapPin,
-  MessageSquare,
-  Handshake,
-  ChevronRight,
-  Rocket,
-  CheckCircle2,
-  Clock,
-  Info,
   Loader2,
-  AlertTriangle,
-  RefreshCw
+  Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { HorizontalOnboardingTunnel } from "@/components/driver/onboarding";
 import { logger } from "@/lib/productionLogger";
-
-const FEATURES = [
-  {
-    icon: <Users className="w-6 h-6" />,
-    title: "Gestion des clients",
-    description: "Fidélisez vos clients avec un système de gestion complet et des suivis personnalisés.",
-    color: "from-blue-500 to-cyan-500"
-  },
-  {
-    icon: <Calendar className="w-6 h-6" />,
-    title: "Planning intelligent",
-    description: "Gérez vos réservations et votre emploi du temps avec notre calendrier interactif.",
-    color: "from-green-500 to-emerald-500"
-  },
-  {
-    icon: <Euro className="w-6 h-6" />,
-    title: "Tarification flexible",
-    description: "Définissez vos tarifs par zone, avec majorations automatiques aux heures de pointe.",
-    color: "from-amber-500 to-orange-500"
-  },
-  {
-    icon: <Car className="w-6 h-6" />,
-    title: "Vitrine publique",
-    description: "Créez votre profil professionnel visible par les clients potentiels.",
-    color: "from-purple-500 to-pink-500"
-  },
-  {
-    icon: <FileText className="w-6 h-6" />,
-    title: "Facturation automatique",
-    description: "Générez des factures professionnelles en un clic pour chaque course.",
-    color: "from-rose-500 to-red-500"
-  },
-  {
-    icon: <Handshake className="w-6 h-6" />,
-    title: "Partenariats chauffeurs",
-    description: "Partagez vos courses avec d'autres chauffeurs de confiance.",
-    color: "from-indigo-500 to-violet-500"
-  },
-  {
-    icon: <MapPin className="w-6 h-6" />,
-    title: "Secteurs géographiques",
-    description: "Définissez vos zones d'intervention pour être trouvé par les bons clients.",
-    color: "from-teal-500 to-cyan-500"
-  },
-  {
-    icon: <MessageSquare className="w-6 h-6" />,
-    title: "Assistant personnel",
-    description: "Un assistant intégré pour vous aider dans toutes vos démarches.",
-    color: "from-fuchsia-500 to-pink-500"
-  }
-];
-
-type VerificationStatus = "checking" | "verified" | "failed" | "timeout";
 
 const DriverWelcome = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { user } = useAuth();
-  const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("checking");
-  const [checkCount, setCheckCount] = useState(0);
-  const [manualCheckLoading, setManualCheckLoading] = useState(false);
-  
-  const isPioneer = searchParams.get("pioneer") === "true";
-  const driverId = searchParams.get("driver_id");
-  const sessionId = searchParams.get("session_id");
+  const { user, loading: authLoading } = useAuth();
+  const [driverData, setDriverData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showIntro, setShowIntro] = useState(true);
 
-  const MAX_CHECKS = 15; // 15 tentatives x 2s = 30 secondes max
-  const CHECK_INTERVAL = 2000; // 2 secondes
-
-  // Vérification du paiement dans la DB
-  const checkPaymentStatus = useCallback(async (): Promise<boolean> => {
-    if (!user) return false;
-    
-    try {
-      const { data: driver, error } = await supabase
-        .from("drivers")
-        .select("subscription_paid, stripe_customer_id, subscription_status")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        logger.error("Erreur vérification paiement", { error });
-        return false;
-      }
-
-      // Paiement confirmé si subscription_paid = true OU stripe_customer_id présent
-      const isPaid = driver?.subscription_paid === true || 
-                     (driver?.stripe_customer_id && driver?.subscription_status === "active");
-      
-      logger.info("Vérification paiement", { 
-        isPaid, 
-        subscription_paid: driver?.subscription_paid,
-        stripe_customer_id: !!driver?.stripe_customer_id,
-        status: driver?.subscription_status
-      });
-
-      return isPaid;
-    } catch (err) {
-      logger.error("Exception vérification paiement", { err });
-      return false;
-    }
-  }, [user]);
-
-  // Appeler l'edge function pour forcer une vérification Stripe
-  const forceStripeCheck = useCallback(async (): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.functions.invoke("check-driver-subscription");
-      
-      if (error) {
-        logger.error("Erreur check-driver-subscription", { error });
-        return false;
-      }
-
-      return data?.subscribed === true || data?.subscription_status === "active";
-    } catch (err) {
-      logger.error("Exception check-driver-subscription", { err });
-      return false;
-    }
-  }, []);
-
-  // Boucle de vérification du paiement
+  // Charger les données du chauffeur
   useEffect(() => {
-    if (!user || verificationStatus !== "checking") return;
+    const fetchDriverData = async () => {
+      if (!user) return;
 
-    const verify = async () => {
-      // D'abord vérifier en DB
-      let isPaid = await checkPaymentStatus();
-      
-      // Si pas payé en DB, forcer une vérification Stripe
-      if (!isPaid) {
-        isPaid = await forceStripeCheck();
-        // Re-vérifier en DB après l'appel Stripe
-        if (!isPaid) {
-          isPaid = await checkPaymentStatus();
+      try {
+        const { data: driver, error } = await supabase
+          .from("drivers")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          logger.error("Erreur chargement driver", { error });
+          return;
         }
-      }
 
-      if (isPaid) {
-        setVerificationStatus("verified");
-        logger.info("✅ Paiement confirmé !");
-        return;
-      }
+        if (!driver) {
+          // Pas de profil chauffeur - rediriger vers l'inscription
+          navigate("/register-driver-promo");
+          return;
+        }
 
-      setCheckCount(prev => prev + 1);
-      
-      if (checkCount >= MAX_CHECKS) {
-        setVerificationStatus("timeout");
-        logger.warn("Timeout vérification paiement");
+        // Charger aussi le profil
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        setDriverData(driver);
+        setProfileData(profile);
+
+        // Si l'onboarding est déjà terminé, rediriger vers le dashboard
+        if (driver.onboarding_completed) {
+          navigate("/driver-dashboard", { replace: true });
+          return;
+        }
+      } catch (err) {
+        logger.error("Exception fetchDriverData", { err });
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    // Premier check immédiat, puis toutes les 2 secondes
-    if (checkCount === 0) {
-      verify();
+    if (!authLoading) {
+      fetchDriverData();
     }
+  }, [user, authLoading, navigate]);
 
-    const intervalId = setInterval(verify, CHECK_INTERVAL);
-    
-    return () => clearInterval(intervalId);
-  }, [user, checkCount, verificationStatus, checkPaymentStatus, forceStripeCheck]);
-
-  // Animation des fonctionnalités
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) => (prev + 1) % FEATURES.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleManualCheck = async () => {
-    setManualCheckLoading(true);
-    
-    // Forcer une synchro avec Stripe
-    const isPaid = await forceStripeCheck();
-    
-    if (isPaid) {
-      setVerificationStatus("verified");
-    } else {
-      // Réinitialiser le compteur pour réessayer
-      setCheckCount(0);
-      setVerificationStatus("checking");
-    }
-    
-    setManualCheckLoading(false);
-  };
-
-  const handleContinueOnboarding = () => {
-    navigate("/driver-dashboard");
-  };
-
-  const handleRetryPayment = () => {
-    navigate("/register-driver");
-  };
-
-  // État de vérification en cours
-  if (verificationStatus === "checking") {
+  // Afficher un loader pendant le chargement
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
-        <div className="text-center space-y-6 p-8">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-20 h-20 mx-auto"
-          >
-            <Loader2 className="w-20 h-20 text-amber-400" />
-          </motion.div>
-          <h2 className="text-2xl font-bold">Vérification du paiement...</h2>
-          <p className="text-white/70 max-w-md">
-            Nous confirmons votre paiement avec Stripe. Cela peut prendre quelques secondes.
-          </p>
-          <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
-            <Clock className="w-4 h-4" />
-            <span>Tentative {checkCount + 1} / {MAX_CHECKS}</span>
-          </div>
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-emerald-400" />
+          <p className="text-white/70">Chargement de votre espace...</p>
         </div>
       </div>
     );
   }
 
-  // Timeout - paiement non trouvé
-  if (verificationStatus === "timeout" || verificationStatus === "failed") {
+  // Si pas connecté, rediriger
+  if (!user) {
+    navigate("/auth");
+    return null;
+  }
+
+  // Si pas de données chauffeur, afficher un loader (la redirection est gérée dans useEffect)
+  if (!driverData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 bg-slate-800/50 border-amber-500/30 text-center space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center">
-            <AlertTriangle className="w-10 h-10 text-amber-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white">Paiement en attente</h2>
-          <p className="text-white/70">
-            Nous n'avons pas encore reçu la confirmation de votre paiement. 
-            Si vous avez bien effectué le paiement, cliquez sur "Vérifier à nouveau".
-          </p>
-          <div className="space-y-3">
-            <Button 
-              onClick={handleManualCheck}
-              disabled={manualCheckLoading}
-              className="w-full bg-amber-500 hover:bg-amber-600"
-            >
-              {manualCheckLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Vérification...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Vérifier à nouveau
-                </>
-              )}
-            </Button>
-            <Button 
-              onClick={handleRetryPayment}
-              variant="outline"
-              className="w-full border-white/20 text-white hover:bg-white/10"
-            >
-              Recommencer le paiement
-            </Button>
-          </div>
-          <p className="text-white/50 text-xs">
-            Si le problème persiste, contactez notre support à support@solocab.fr
-          </p>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-emerald-400" />
+          <p className="text-white/70">Préparation de votre espace...</p>
+        </div>
       </div>
     );
   }
 
-  // Paiement vérifié - afficher la page de bienvenue
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-      </div>
+  // Page d'introduction avant le tunnel
+  if (showIntro) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-60 sm:w-96 h-60 sm:h-96 bg-emerald-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-60 sm:w-96 h-60 sm:h-96 bg-purple-500/20 rounded-full blur-3xl" />
+        </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-1"
-            >
-              <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-amber-400" />
-              </div>
-            </motion.div>
-          </div>
-
-          <motion.h1 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-4xl md:text-5xl font-bold mb-4"
+        <div className="relative z-10 container mx-auto px-4 py-8 min-h-screen flex flex-col items-center justify-center">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
           >
-            Bienvenue sur{" "}
-            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-              SoloCab
-            </span>
-            {" "}!
-          </motion.h1>
-
-          {isPioneer && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 mb-4"
-            >
-              <Star className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-400 font-semibold">Membre Pioneer</span>
-            </motion.div>
-          )}
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-lg text-white/70 max-w-2xl mx-auto"
-          >
-            Votre paiement est confirmé ! Continuez la configuration de votre espace 
-            pour développer votre activité VTC.
-          </motion.p>
-        </motion.div>
-
-        {/* Success card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="max-w-md mx-auto mb-12"
-        >
-          <Card className="p-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/30 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
-              <CheckCircle2 className="w-10 h-10 text-green-400" />
-            </div>
-            <h2 className="text-xl font-bold text-white mb-2">Paiement confirmé !</h2>
-            <p className="text-white/70 text-sm">
-              Finalisez maintenant la configuration de votre espace chauffeur.
-            </p>
-          </Card>
-        </motion.div>
-
-        {/* Prochaines étapes */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="max-w-2xl mx-auto mb-12"
-        >
-          <Card className="p-6 bg-blue-500/10 border-blue-500/30">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <Info className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  Prochaines étapes
-                </h3>
-                <ul className="text-white/70 text-sm space-y-3">
-                  <li className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-amber-400">1</span>
-                    </div>
-                    <span>Configurez vos <strong className="text-white">tarifs et informations</strong> dans le tunnel d'inscription</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-amber-400">2</span>
-                    </div>
-                    <span>Téléversez vos <strong className="text-white">documents professionnels</strong> (obligatoire)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-amber-400">3</span>
-                    </div>
-                    <span>Notre équipe <strong className="text-white">valide votre compte</strong> (24-48h)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-3 h-3 text-green-400" />
-                    </div>
-                    <span>Votre <strong className="text-amber-400">essai de 14 jours</strong> démarre à la validation</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Info essai après validation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="max-w-2xl mx-auto mb-12"
-        >
-          <Card className="p-5 bg-amber-500/10 border-amber-500/30">
-            <div className="flex items-center gap-3">
-              <Clock className="w-6 h-6 text-amber-400 flex-shrink-0" />
-              <p className="text-white/80 text-sm">
-                <strong className="text-amber-400">Pas de temps perdu !</strong> Votre période d'essai de 14 jours 
-                ne démarre qu'après la validation de votre compte par notre équipe. Prenez le temps de tout configurer.
-              </p>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Features grid */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mb-12"
-        >
-          <h2 className="text-2xl font-bold text-center mb-8">
-            <Rocket className="inline-block w-6 h-6 mr-2 text-amber-400" />
-            Fonctionnalités disponibles après validation
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURES.map((feature, index) => (
+            <div className="flex items-center justify-center gap-3 mb-4">
               <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + index * 0.1 }}
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-teal-500 p-1"
               >
-                <Card className={`
-                  p-5 h-full bg-white/5 border-white/10 hover:border-white/20 
-                  hover:bg-white/10 transition-all cursor-pointer group
-                  ${currentFeatureIndex === index ? 'ring-2 ring-amber-500/50' : ''}
-                `}>
-                  <div className={`
-                    w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} 
-                    flex items-center justify-center mb-4 text-white
-                    group-hover:scale-110 transition-transform
-                  `}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="font-semibold text-white mb-2">{feature.title}</h3>
-                  <p className="text-sm text-white/60">{feature.description}</p>
-                </Card>
+                <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-emerald-400" />
+                </div>
               </motion.div>
-            ))}
-          </div>
-        </motion.div>
+            </div>
 
-        {/* CTA Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4 }}
-          className="flex flex-col items-center justify-center gap-4"
-        >
-          <Button
-            onClick={handleContinueOnboarding}
-            size="lg"
-            className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-8 py-6 text-lg rounded-xl shadow-lg shadow-amber-500/25"
+            <motion.h1 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
+              Bienvenue sur{" "}
+              <span className="bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent">
+                SoloCab
+              </span>
+              {" "}!
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-base sm:text-lg text-white/70 max-w-2xl mx-auto mb-6"
+            >
+              Vous êtes à quelques étapes de lancer votre indépendance.<br />
+              Configurez votre espace chauffeur en quelques minutes.
+            </motion.p>
+          </motion.div>
+
+          {/* Card de bienvenue */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="max-w-md w-full mx-auto"
           >
-            Continuer la configuration
-            <ChevronRight className="w-5 h-5 ml-2" />
-          </Button>
-        </motion.div>
+            <Card className="p-6 sm:p-8 bg-slate-800/50 backdrop-blur-lg border-emerald-500/30 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
+                <Rocket className="w-8 h-8 text-white" />
+              </div>
+              
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                Prêt à démarrer ?
+              </h2>
+              
+              <p className="text-white/70 text-sm sm:text-base mb-6">
+                Complétez votre profil pour accéder à toutes les fonctionnalités de SoloCab.
+                <br />
+                <span className="text-emerald-400 font-medium">
+                  14 jours d'essai gratuit inclus !
+                </span>
+              </p>
 
-        {/* Tip */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.6 }}
-          className="text-center mt-8"
-        >
-          <p className="text-white/50 text-sm flex items-center justify-center gap-2">
-            <Shield className="w-4 h-4 text-amber-400" />
-            Documents obligatoires : Carte VTC, Permis, Pièce d'identité, Carte grise, Assurance, Kbis
-          </p>
-        </motion.div>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => setShowIntro(false)}
+                  size="lg"
+                  className="w-full h-14 text-base font-semibold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
+                >
+                  <Rocket className="w-5 h-5 mr-2" />
+                  Configurer mon espace
+                </Button>
+              </div>
+
+              <p className="mt-4 text-xs text-white/50">
+                Aucun paiement requis • Résiliable à tout moment
+              </p>
+            </Card>
+          </motion.div>
+        </div>
       </div>
+    );
+  }
+
+  // Construire le driverProfile attendu par le tunnel
+  const driverProfile = {
+    driver: driverData,
+    profile: profileData
+  };
+
+  // Afficher le tunnel d'onboarding
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <HorizontalOnboardingTunnel 
+        driverId={driverData.id}
+        userId={user.id}
+        driverProfile={driverProfile}
+        onComplete={() => {
+          navigate("/driver-dashboard", { replace: true });
+        }}
+      />
     </div>
   );
 };
