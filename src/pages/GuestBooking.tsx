@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro, CreditCard } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logo from "@/assets/logo-solocab.png";
 import { useSubmitProtection, generateSubmitKey } from "@/hooks/useSubmitProtection";
 import { withRetry } from "@/lib/asyncUtils";
 import { handleError } from "@/lib/errorHandler";
+import { GuestReservationWithCardHold } from "@/components/payment/GuestReservationWithCardHold";
 
 interface DriverInfo {
   id: string;
@@ -70,6 +71,12 @@ const GuestBooking = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [calculating, setCalculating] = useState(false);
+  
+  // Card hold flow state
+  const [showCardHoldFlow, setShowCardHoldFlow] = useState(false);
+  const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const [createdTrackingToken, setCreatedTrackingToken] = useState<string | null>(null);
+  const [requiresCardHold, setRequiresCardHold] = useState(false);
 
   useEffect(() => {
     const fetchDriver = async () => {
@@ -268,14 +275,41 @@ const GuestBooking = () => {
         console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
       });
 
-      toast.success("Demande de réservation envoyée !");
+      // Check if driver requires card hold (uses Stripe Connect)
+      const { data: driverPayment } = await supabase
+        .from('drivers')
+        .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
+        .eq('id', driver.id)
+        .single();
+
+      const driverUsesStripe = 
+        driverPayment?.billing_type === 'solocab_stripe' &&
+        driverPayment?.stripe_connect_account_id &&
+        driverPayment?.stripe_connect_charges_enabled;
+
+      if (driverUsesStripe) {
+        // Show card hold flow
+        setCreatedCourseId(data.id);
+        setCreatedTrackingToken(data.guest_tracking_token);
+        setRequiresCardHold(true);
+        setShowCardHoldFlow(true);
+        toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
+      } else {
+        // No card hold required, go directly to tracking
+        toast.success("Demande de réservation envoyée !");
+        navigate(`/reservation-suivi/${data.guest_tracking_token}`);
+      }
       
-      // Redirect to tracking page
-      navigate(`/reservation-suivi/${data.guest_tracking_token}`);
       return data;
     }).catch((error) => {
       handleError(error, "Création réservation invité");
     });
+  };
+
+  const handleCardHoldComplete = () => {
+    if (createdTrackingToken) {
+      navigate(`/reservation-suivi/${createdTrackingToken}`);
+    }
   };
 
   const getDriverDisplayName = () => {
@@ -298,6 +332,52 @@ const GuestBooking = () => {
 
   if (!driver) {
     return null;
+  }
+
+  // Show card hold flow if required
+  if (showCardHoldFlow && createdCourseId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+        <NavigationHeader />
+        <div className="container max-w-2xl mx-auto px-4 py-8">
+          {/* Driver Info Header */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                  {driver.profile_photo_url || driver.card_photo_url ? (
+                    <img 
+                      src={driver.profile_photo_url || driver.card_photo_url || ''} 
+                      alt={getDriverDisplayName()}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Car className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{getDriverDisplayName()}</h2>
+                  <p className="text-muted-foreground">Confirmation de réservation</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card Hold Flow */}
+          <GuestReservationWithCardHold
+            driverId={driver.id}
+            courseId={createdCourseId}
+            clientEmail={guestEmail}
+            clientName={guestName}
+            estimatedAmount={estimatedPrice || 0}
+            trackingToken={createdTrackingToken || ""}
+            onComplete={handleCardHoldComplete}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -508,8 +588,8 @@ const GuestBooking = () => {
               )}
 
               {/* Warning */}
-              <Alert variant="default" className="border-amber-500/50 bg-amber-500/5">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <Alert variant="default" className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 <AlertDescription className="text-sm">
                   En réservant sans inscription, vous recevrez un lien de suivi et le chauffeur pourra vous contacter directement. 
                   Pour un suivi complet et des avantages exclusifs, nous vous recommandons de vous inscrire.

@@ -336,6 +336,106 @@ export type Database = {
           },
         ]
       }
+      cancellation_fees_config: {
+        Row: {
+          cancellation_fee_amount: number | null
+          card_hold_for_new_clients_only: boolean | null
+          created_at: string | null
+          driver_id: string | null
+          fleet_manager_id: string | null
+          free_cancellation_hours: number | null
+          id: string
+          require_card_hold: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          cancellation_fee_amount?: number | null
+          card_hold_for_new_clients_only?: boolean | null
+          created_at?: string | null
+          driver_id?: string | null
+          fleet_manager_id?: string | null
+          free_cancellation_hours?: number | null
+          id?: string
+          require_card_hold?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          cancellation_fee_amount?: number | null
+          card_hold_for_new_clients_only?: boolean | null
+          created_at?: string | null
+          driver_id?: string | null
+          fleet_manager_id?: string | null
+          free_cancellation_hours?: number | null
+          id?: string
+          require_card_hold?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_fees_config_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       city_pricing: {
         Row: {
           airport_surcharge: number | null
@@ -3527,6 +3627,14 @@ export type Database = {
           auto_dispatch_enabled: boolean | null
           bank_imprint_at: string | null
           cancellation_by: string | null
+          cancellation_fee_amount: number | null
+          cancellation_fee_charged: boolean | null
+          cancellation_fee_charged_at: string | null
+          cancellation_fee_stripe_id: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          card_hold_amount: number | null
           card_hold_confirmed_at: string | null
           card_hold_status: string | null
           client_id: string | null
@@ -3568,6 +3676,7 @@ export type Database = {
           guest_notified_at: string | null
           guest_phone: string | null
           guest_tracking_token: string | null
+          hours_before_cancellation: number | null
           id: string
           is_guest_booking: boolean | null
           last_dispatched_at: string | null
@@ -3597,6 +3706,14 @@ export type Database = {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
+          cancellation_fee_amount?: number | null
+          cancellation_fee_charged?: boolean | null
+          cancellation_fee_charged_at?: string | null
+          cancellation_fee_stripe_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          card_hold_amount?: number | null
           card_hold_confirmed_at?: string | null
           card_hold_status?: string | null
           client_id?: string | null
@@ -3638,6 +3755,7 @@ export type Database = {
           guest_notified_at?: string | null
           guest_phone?: string | null
           guest_tracking_token?: string | null
+          hours_before_cancellation?: number | null
           id?: string
           is_guest_booking?: boolean | null
           last_dispatched_at?: string | null
@@ -3667,6 +3785,14 @@ export type Database = {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
+          cancellation_fee_amount?: number | null
+          cancellation_fee_charged?: boolean | null
+          cancellation_fee_charged_at?: string | null
+          cancellation_fee_stripe_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          card_hold_amount?: number | null
           card_hold_confirmed_at?: string | null
           card_hold_status?: string | null
           client_id?: string | null
@@ -3708,6 +3834,7 @@ export type Database = {
           guest_notified_at?: string | null
           guest_phone?: string | null
           guest_tracking_token?: string | null
+          hours_before_cancellation?: number | null
           id?: string
           is_guest_booking?: boolean | null
           last_dispatched_at?: string | null
@@ -16543,6 +16670,10 @@ export type Database = {
           total_issues_fixed: number
           total_issues_found: number
         }[]
+      }
+      calculate_cancellation_fee: {
+        Args: { p_cancelled_by: string; p_course_id: string }
+        Returns: Json
       }
       calculate_city_course_price: {
         Args: {

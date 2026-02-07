@@ -42,6 +42,7 @@ import { FleetCourseIndicator } from "@/components/driver/FleetCourseIndicator";
 import { ReturnToFleetManagerDialog } from "@/components/driver/ReturnToFleetManagerDialog";
 import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
 import { CoursePaymentDialogContent } from "@/components/driver/CoursePaymentDialogContent";
+import { CancellationDialog } from "@/components/driver/CancellationDialog";
 
 interface CoursesListProps {
   driverId: string;
@@ -958,6 +959,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .from("courses")
         .update({ 
           status: "cancelled",
+          cancelled_by: "driver",
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: finalReason,
           notes: `Motif de refus: ${finalReason}\n\n${courses.find(c => c.id === courseToReject)?.notes || ''}`
         })
         .eq("id", courseToReject);
@@ -1020,6 +1024,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .from("courses")
         .update({ 
           status: "cancelled",
+          cancelled_by: "driver",
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: finalReason,
           notes: `Annulé par le chauffeur - ${finalReason}\n\n${course?.notes || ''}`
         })
         .eq("id", courseToCancelPending);
