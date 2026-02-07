@@ -139,7 +139,7 @@ const RegisterDriverPromoFree = () => {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}/driver-dashboard`,
+          emailRedirectTo: `${window.location.origin}/driver-welcome`,
         },
       });
 
@@ -148,6 +148,20 @@ const RegisterDriverPromoFree = () => {
 
       const newUserId = authData.user.id;
       setUserId(newUserId);
+
+      // Vérifier si une session a été créée (auto-confirm activé)
+      // Si non, on connecte l'utilisateur manuellement
+      if (!authData.session) {
+        console.log("[RegisterDriverPromoFree] No session after signup, attempting sign in...");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          console.error("Auto sign-in failed:", signInError);
+          // Continuer quand même - la page d'accueil gèrera l'état
+        }
+      }
 
       // Update profile with phone
       await supabase
@@ -198,8 +212,11 @@ const RegisterDriverPromoFree = () => {
 
       toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
       
+      // Attendre un court instant pour que la session soit propagée
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Rediriger vers le tunnel d'onboarding
-      navigate("/driver-welcome");
+      navigate("/driver-welcome", { replace: true });
     } catch (error: any) {
       console.error("Erreur inscription:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";
