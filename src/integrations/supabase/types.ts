@@ -6060,9 +6060,11 @@ export type Database = {
           nfc_tag_number: string | null
           objectives_completed: boolean | null
           objectives_data: Json | null
+          onboarding_billing_completed: boolean | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           onboarding_documents_completed: boolean | null
+          onboarding_nfc_completed: boolean | null
           onboarding_objectives_completed: boolean | null
           onboarding_profile_completed: boolean | null
           onboarding_settings_completed: boolean | null
@@ -6233,9 +6235,11 @@ export type Database = {
           nfc_tag_number?: string | null
           objectives_completed?: boolean | null
           objectives_data?: Json | null
+          onboarding_billing_completed?: boolean | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_documents_completed?: boolean | null
+          onboarding_nfc_completed?: boolean | null
           onboarding_objectives_completed?: boolean | null
           onboarding_profile_completed?: boolean | null
           onboarding_settings_completed?: boolean | null
@@ -6406,9 +6410,11 @@ export type Database = {
           nfc_tag_number?: string | null
           objectives_completed?: boolean | null
           objectives_data?: Json | null
+          onboarding_billing_completed?: boolean | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_documents_completed?: boolean | null
+          onboarding_nfc_completed?: boolean | null
           onboarding_objectives_completed?: boolean | null
           onboarding_profile_completed?: boolean | null
           onboarding_settings_completed?: boolean | null
