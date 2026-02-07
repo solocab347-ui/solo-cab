@@ -106,11 +106,12 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   const [currentClientsValue, setCurrentClientsValue] = useState('');
   const [platformPercentage, setPlatformPercentage] = useState(80);
 
-  // Goals data
-  const [targetRevenue, setTargetRevenue] = useState(5000);
-  const [revenueValue, setRevenueValue] = useState('5000');
-  const [targetClients, setTargetClients] = useState(15);
-  const [clientsValue, setClientsValue] = useState('15');
+  // Goals data - initialized to 0, will be set based on currentRevenue
+  const [targetRevenue, setTargetRevenue] = useState(0);
+  const [revenueValue, setRevenueValue] = useState('');
+  const [targetRevenueInitialized, setTargetRevenueInitialized] = useState(false);
+  const [targetClients, setTargetClients] = useState(10);
+  const [clientsValue, setClientsValue] = useState('10');
 
   // Planning data
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
@@ -256,13 +257,18 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
           }
           
           // Charger les objectifs
-          if (mergedData.target_monthly_revenue !== undefined) {
+          if (mergedData.target_monthly_revenue !== undefined && mergedData.target_monthly_revenue > 0) {
             setTargetRevenue(mergedData.target_monthly_revenue);
             setRevenueValue(mergedData.target_monthly_revenue.toString());
+            setTargetRevenueInitialized(true); // Mark as initialized from saved data
           }
           if (mergedData.target_clients !== undefined) {
             setTargetClients(mergedData.target_clients);
             setClientsValue(mergedData.target_clients.toString());
+          }
+          if (mergedData.target_direct_clients !== undefined) {
+            setTargetClients(mergedData.target_direct_clients);
+            setClientsValue(mergedData.target_direct_clients.toString());
           }
           
           // Charger le planning
@@ -319,6 +325,27 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
       };
     });
   }, [selectedDays, weeklyRevenue]);
+
+  // Smart initialization of targetRevenue based on currentRevenue
+  useEffect(() => {
+    if (!targetRevenueInitialized && dataLoaded && currentRevenue > 0) {
+      // Suggest +25% growth, rounded to nearest 500€
+      const suggestedTarget = Math.max(
+        roundToNearestFive(currentRevenue * 1.25),
+        currentRevenue + 500 // Minimum +500€ increase
+      );
+      // Round to nearest 500 for cleaner numbers
+      const roundedTarget = Math.round(suggestedTarget / 500) * 500;
+      setTargetRevenue(roundedTarget);
+      setRevenueValue(roundedTarget.toString());
+      setTargetRevenueInitialized(true);
+    } else if (!targetRevenueInitialized && dataLoaded && currentRevenue === 0) {
+      // If no current revenue, suggest a modest starting target
+      setTargetRevenue(3000);
+      setRevenueValue('3000');
+      setTargetRevenueInitialized(true);
+    }
+  }, [currentRevenue, dataLoaded, targetRevenueInitialized]);
 
   // Update coach advice when values change
   useEffect(() => {
