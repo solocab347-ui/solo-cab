@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,19 +11,15 @@ import {
   User,
   CreditCard,
   FileText,
-  Car,
-  DollarSign,
   CheckCircle2,
   XCircle,
   Clock,
-  AlertCircle,
   ChevronDown,
   ChevronUp,
   Activity,
   RefreshCw,
   Users,
   Loader2,
-  Eye,
   Target,
   PlayCircle,
   ScanLine,
@@ -35,8 +31,8 @@ import {
   Flame,
   Minus,
   Settings,
-  Image,
-  MapPin,
+  Compass,
+  Wallet,
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -71,18 +67,10 @@ interface DriverFullData {
   has_nfc_plate: boolean;
   nfc_plate_ordered_at: string | null;
   vehicle_brand: string | null;
-  vehicle_model: string | null;
   vehicle_plate: string | null;
-  vehicle_color: string | null;
   base_fare: number | null;
   per_km_rate: number | null;
-  hourly_rate: number | null;
-  working_sectors: string[] | null;
-  service_description: string | null;
   siret: string | null;
-  company_address: string | null;
-  max_passengers: number | null;
-  registration_step: number | null;
   status: string;
   documents_status: string | null;
   profile_photo_url: string | null;
@@ -92,13 +80,15 @@ interface DriverFullData {
   free_access_granted: boolean;
   billing_type: string | null;
   stripe_connect_status: string | null;
-  wants_tpe_affiliate: boolean;
-  tpe_received_at: string | null;
   trial_started_at: string | null;
-  trial_ready_to_start: boolean;
+  trial_status: string | null;
   objectives_completed: boolean;
   onboarding_objectives_completed: boolean;
+  onboarding_settings_completed: boolean;
+  onboarding_profile_completed: boolean;
+  onboarding_documents_completed: boolean;
   onboarding_step: string | null;
+  onboarding_completed: boolean;
   total_courses: number;
   total_clients: number;
   total_scans: number;
@@ -108,14 +98,30 @@ interface DriverFullData {
   first_client_at: string | null;
 }
 
+// Les 8 vraies étapes du tunnel d'onboarding
+const TUNNEL_STEPS = [
+  { id: "vision", label: "Vision", icon: Compass },
+  { id: "goals", label: "Objectifs", icon: TrendingUp },
+  { id: "settings", label: "Tarifs", icon: Settings },
+  { id: "profile", label: "Profil", icon: User },
+  { id: "documents", label: "Documents", icon: FileText },
+  { id: "nfc", label: "NFC", icon: CreditCard },
+  { id: "billing", label: "Encaissements", icon: Wallet },
+  { id: "trial_start", label: "Lancement", icon: PlayCircle },
+];
+
+// Étapes post-onboarding
+const POST_STEPS = [
+  { id: "first_scan", label: "1er scan", icon: ScanLine },
+  { id: "first_client", label: "1er client", icon: UserPlus },
+  { id: "first_course", label: "1re course", icon: Activity },
+];
+
 interface OnboardingStep {
   id: string;
   label: string;
-  description: string;
-  icon: React.ReactNode;
   isComplete: boolean;
-  status: "complete" | "incomplete" | "warning" | "pending";
-  completedAt?: string | null;
+  status: "complete" | "incomplete" | "current" | "pending";
   details?: string;
 }
 
@@ -146,36 +152,42 @@ const DriverCardSkeleton = () => (
   </Card>
 );
 
+// Calcul de l'étape actuelle basé sur onboarding_step
+const getStepIndex = (stepId: string | null): number => {
+  if (!stepId) return 0;
+  const idx = TUNNEL_STEPS.findIndex(s => s.id === stepId);
+  return idx >= 0 ? idx : 0;
+};
+
 const DriverProgressionTracker = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"onboarding" | "evolution">("onboarding");
 
-  // Optimized single-query fetch
+  // Fetch optimisé
   const { data: drivers = [], isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["admin-driver-progression-optimized"],
+    queryKey: ["admin-driver-progression-v2"],
     queryFn: async () => {
-      // Use new optimized RPC function
-      const { data, error } = await supabase.rpc('get_admin_drivers_with_stats');
+      // D'abord, essayer la RPC optimisée
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_drivers_with_stats');
       
-      if (!error && data && data.length > 0) {
-        return data as DriverFullData[];
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        return rpcData as unknown as DriverFullData[];
       }
       
-      // Fallback to basic query without stats if RPC fails
-      console.warn("Optimized RPC failed, using basic fallback:", error?.message);
+      // Fallback: requête directe
+      console.warn("RPC failed, using fallback query:", rpcError?.message);
       
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
         .select(`
           id, user_id, company_name, created_at, subscription_status, subscription_paid,
-          has_nfc_plate, nfc_plate_ordered_at, vehicle_brand, vehicle_model, vehicle_plate,
-          vehicle_color, base_fare, per_km_rate, hourly_rate, working_sectors,
-          service_description, siret, company_address, max_passengers, registration_step,
-          status, documents_status, free_access_granted, billing_type, stripe_connect_status,
-          wants_tpe_affiliate, tpe_received_at, trial_activated_at, trial_ready_to_start,
-          objectives_completed, onboarding_objectives_completed, onboarding_step
+          has_nfc_plate, nfc_plate_ordered_at, vehicle_brand, vehicle_plate,
+          base_fare, per_km_rate, siret, status, documents_status, free_access_granted, 
+          billing_type, stripe_connect_status, trial_activated_at, trial_status,
+          objectives_completed, onboarding_objectives_completed, onboarding_settings_completed,
+          onboarding_profile_completed, onboarding_documents_completed, onboarding_step, onboarding_completed
         `)
         .eq("is_demo_account", false)
         .order("created_at", { ascending: false })
@@ -194,6 +206,11 @@ const DriverProgressionTracker = () => {
       return (driversData || []).map(driver => ({
         ...driver,
         trial_started_at: driver.trial_activated_at,
+        trial_status: (driver as any).trial_status || 'pending',
+        onboarding_settings_completed: (driver as any).onboarding_settings_completed || false,
+        onboarding_profile_completed: (driver as any).onboarding_profile_completed || false,
+        onboarding_documents_completed: (driver as any).onboarding_documents_completed || false,
+        onboarding_completed: (driver as any).onboarding_completed || false,
         full_name: profilesMap.get(driver.user_id)?.full_name || 'Non renseigné',
         profile_photo_url: profilesMap.get(driver.user_id)?.profile_photo_url,
         phone: profilesMap.get(driver.user_id)?.phone,
@@ -205,192 +222,135 @@ const DriverProgressionTracker = () => {
         first_course_at: null,
         first_scan_at: null,
         first_client_at: null,
-      })) as DriverFullData[];
+      })) as unknown as DriverFullData[];
     },
-    staleTime: 60000, // 1 minute cache
+    staleTime: 60000,
     retry: 1,
   });
 
+  // Calculer les étapes basées sur le vrai tunnel
   const calculateOnboardingSteps = (driver: DriverFullData): OnboardingStep[] => {
+    const currentStepIndex = getStepIndex(driver.onboarding_step);
+    const isComplete = driver.onboarding_completed;
+    
+    // Le paiement réel = trial démarré OU abonnement actif avec subscription_paid ET pas en trial pending
+    const hasRealPayment = !!driver.trial_started_at || 
+      (driver.subscription_paid && driver.trial_status === 'active') ||
+      driver.free_access_granted;
+    
     return [
       {
-        id: "inscription",
-        label: "Inscription",
-        description: "Compte créé",
-        icon: <User className="w-4 h-4" />,
-        isComplete: true,
-        status: "complete",
-        completedAt: driver.created_at,
+        id: "vision",
+        label: "Vision",
+        isComplete: currentStepIndex > 0 || driver.onboarding_objectives_completed,
+        status: currentStepIndex === 0 && !isComplete ? "current" : 
+          (currentStepIndex > 0 || driver.onboarding_objectives_completed) ? "complete" : "incomplete",
       },
       {
-        id: "profile_basic",
-        label: "Infos",
-        description: "Nom, téléphone",
-        icon: <User className="w-4 h-4" />,
-        isComplete: !!driver.full_name && !!driver.phone,
-        status: (driver.full_name && driver.phone) ? "complete" : "incomplete",
-        details: !driver.phone ? "Téléphone manquant" : undefined,
+        id: "goals",
+        label: "Objectifs",
+        isComplete: currentStepIndex > 1 || driver.objectives_completed,
+        status: currentStepIndex === 1 && !isComplete ? "current" :
+          (currentStepIndex > 1 || driver.objectives_completed) ? "complete" : "incomplete",
       },
       {
-        id: "profile_photo",
-        label: "Photo",
-        description: "Photo profil",
-        icon: <Image className="w-4 h-4" />,
-        isComplete: !!driver.profile_photo_url,
-        status: driver.profile_photo_url ? "complete" : "incomplete",
-      },
-      {
-        id: "company_info",
-        label: "Entreprise",
-        description: "SIRET",
-        icon: <FileText className="w-4 h-4" />,
-        isComplete: !!driver.siret && !!driver.company_address,
-        status: (driver.siret && driver.company_address) ? "complete" : 
-          (driver.siret || driver.company_address) ? "warning" : "incomplete",
-        details: !driver.siret ? "SIRET manquant" : !driver.company_address ? "Adresse manquante" : undefined,
-      },
-      {
-        id: "vehicle",
-        label: "Véhicule",
-        description: "Immatriculation",
-        icon: <Car className="w-4 h-4" />,
-        isComplete: !!driver.vehicle_brand && driver.vehicle_brand !== "À compléter" && !!driver.vehicle_plate,
-        status: (driver.vehicle_brand && driver.vehicle_brand !== "À compléter" && driver.vehicle_plate) ? "complete" :
-          (driver.vehicle_brand || driver.vehicle_plate) ? "warning" : "incomplete",
-        details: !driver.vehicle_plate ? "Immat. manquante" : undefined,
-      },
-      {
-        id: "sectors",
-        label: "Secteurs",
-        description: "Zones travail",
-        icon: <MapPin className="w-4 h-4" />,
-        isComplete: !!driver.working_sectors && driver.working_sectors.length > 0,
-        status: (driver.working_sectors && driver.working_sectors.length > 0) ? "complete" : "incomplete",
-      },
-      {
-        id: "billing_choice",
-        label: "Paiement",
-        description: "Mode facturation",
-        icon: <CreditCard className="w-4 h-4" />,
-        isComplete: !!driver.billing_type,
-        status: driver.billing_type ? "complete" : "incomplete",
-        details: driver.billing_type === "stripe_connect" ? "Stripe" : 
-          driver.billing_type === "own_equipment" ? "TPE" : undefined,
-      },
-      {
-        id: "stripe_setup",
-        label: "Stripe",
-        description: "Configuration",
-        icon: <CreditCard className="w-4 h-4" />,
-        isComplete: driver.billing_type !== "stripe_connect" || driver.stripe_connect_status === "active",
-        status: driver.billing_type !== "stripe_connect" ? "complete" :
-          driver.stripe_connect_status === "active" ? "complete" :
-          driver.stripe_connect_status === "pending" ? "pending" : "incomplete",
-        details: driver.billing_type === "stripe_connect" ? 
-          (driver.stripe_connect_status === "active" ? "Actif" : "En attente") : "N/A",
-      },
-      {
-        id: "pricing",
+        id: "settings",
         label: "Tarifs",
-        description: "Prix configurés",
-        icon: <DollarSign className="w-4 h-4" />,
-        isComplete: !!driver.base_fare || !!driver.per_km_rate || !!driver.hourly_rate,
-        status: (driver.base_fare || driver.per_km_rate || driver.hourly_rate) ? "complete" : "incomplete",
+        isComplete: currentStepIndex > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate),
+        status: currentStepIndex === 2 && !isComplete ? "current" :
+          (currentStepIndex > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate)) ? "complete" : "incomplete",
+        details: driver.base_fare ? `${driver.base_fare}€ base` : undefined,
+      },
+      {
+        id: "profile",
+        label: "Profil",
+        isComplete: currentStepIndex > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url,
+        status: currentStepIndex === 3 && !isComplete ? "current" :
+          (currentStepIndex > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url) ? "complete" : "incomplete",
       },
       {
         id: "documents",
         label: "Documents",
-        description: "Pièces",
-        icon: <FileText className="w-4 h-4" />,
         isComplete: driver.documents_status === "validated",
         status: driver.documents_status === "validated" ? "complete" :
-          driver.documents_status === "submitted" || driver.documents_status === "pending" ? "pending" : "incomplete",
+          driver.documents_status === "submitted" ? "pending" :
+          currentStepIndex === 4 && !isComplete ? "current" : "incomplete",
         details: driver.documents_status === "validated" ? "Validés" :
-          driver.documents_status === "submitted" ? "Soumis" : "À soumettre",
-      },
-      {
-        id: "objectives",
-        label: "Objectifs",
-        description: "Définis",
-        icon: <Target className="w-4 h-4" />,
-        isComplete: driver.objectives_completed || driver.onboarding_objectives_completed,
-        status: (driver.objectives_completed || driver.onboarding_objectives_completed) ? "complete" : "incomplete",
+          driver.documents_status === "submitted" ? "En attente admin" : "À déposer",
       },
       {
         id: "nfc",
         label: "NFC",
-        description: "Plaque",
-        icon: <CreditCard className="w-4 h-4" />,
         isComplete: driver.has_nfc_plate,
-        status: driver.has_nfc_plate ? "complete" : driver.nfc_plate_ordered_at ? "pending" : "incomplete",
+        status: driver.has_nfc_plate ? "complete" : 
+          driver.nfc_plate_ordered_at ? "pending" :
+          currentStepIndex === 5 && !isComplete ? "current" : "incomplete",
         details: driver.has_nfc_plate ? "Reçue" : driver.nfc_plate_ordered_at ? "Commandée" : "Non",
       },
       {
-        id: "trial",
-        label: "Essai",
-        description: "Période",
-        icon: <PlayCircle className="w-4 h-4" />,
-        isComplete: !!driver.trial_started_at,
-        status: driver.trial_started_at ? "complete" : driver.trial_ready_to_start ? "pending" : "incomplete",
-        completedAt: driver.trial_started_at,
-        details: driver.trial_started_at ? "Démarré" : driver.trial_ready_to_start ? "Prêt" : "En attente",
+        id: "billing",
+        label: "Encaissements",
+        isComplete: !!driver.billing_type,
+        status: driver.billing_type ? "complete" :
+          currentStepIndex === 6 && !isComplete ? "current" : "incomplete",
+        details: driver.billing_type === "solocab_stripe" ? "Stripe" : 
+          driver.billing_type === "own_equipment" ? "TPE propre" : undefined,
       },
       {
-        id: "payment",
-        label: "Abo",
-        description: "Payé",
-        icon: <CreditCard className="w-4 h-4" />,
-        isComplete: driver.subscription_paid || driver.free_access_granted,
-        status: (driver.subscription_paid || driver.free_access_granted) ? "complete" : "incomplete",
-        details: driver.subscription_paid ? "Payé" : driver.free_access_granted ? "Gratuit" : "Non",
+        id: "trial_start",
+        label: "Lancement",
+        isComplete: hasRealPayment,
+        status: hasRealPayment ? "complete" :
+          currentStepIndex === 7 && !isComplete ? "current" :
+          driver.documents_status !== "validated" ? "incomplete" : "pending",
+        details: hasRealPayment ? (driver.free_access_granted ? "Gratuit" : "Essai actif") : 
+          driver.documents_status !== "validated" ? "Docs requis" : "Prêt à lancer",
       },
+    ];
+  };
+
+  // Calculer les étapes post-onboarding
+  const calculatePostSteps = (driver: DriverFullData): OnboardingStep[] => {
+    return [
       {
         id: "first_scan",
         label: "1er scan",
-        description: "QR",
-        icon: <ScanLine className="w-4 h-4" />,
-        isComplete: !!driver.first_scan_at,
-        status: driver.first_scan_at ? "complete" : "incomplete",
-        completedAt: driver.first_scan_at,
+        isComplete: !!driver.first_scan_at || driver.total_scans > 0,
+        status: (driver.first_scan_at || driver.total_scans > 0) ? "complete" : "incomplete",
       },
       {
         id: "first_client",
         label: "1er client",
-        description: "Ajouté",
-        icon: <UserPlus className="w-4 h-4" />,
-        isComplete: !!driver.first_client_at,
-        status: driver.first_client_at ? "complete" : "incomplete",
-        completedAt: driver.first_client_at,
+        isComplete: !!driver.first_client_at || driver.total_clients > 0,
+        status: (driver.first_client_at || driver.total_clients > 0) ? "complete" : "incomplete",
       },
       {
         id: "first_course",
         label: "1re course",
-        description: "Réalisée",
-        icon: <Activity className="w-4 h-4" />,
-        isComplete: !!driver.first_course_at,
-        status: driver.first_course_at ? "complete" : "incomplete",
-        completedAt: driver.first_course_at,
+        isComplete: !!driver.first_course_at || driver.total_courses > 0,
+        status: (driver.first_course_at || driver.total_courses > 0) ? "complete" : "incomplete",
       },
     ];
   };
 
   const getBlockedInfo = (steps: OnboardingStep[]): { step: OnboardingStep | null; message: string } => {
-    const incompleteStep = steps.find(s => !s.isComplete && s.status !== "pending");
+    const currentStep = steps.find(s => s.status === "current");
     const pendingStep = steps.find(s => s.status === "pending");
+    const allComplete = steps.every(s => s.isComplete);
     
-    if (!incompleteStep && !pendingStep) {
-      return { step: null, message: "✅ Parcours complet" };
+    if (allComplete) {
+      return { step: null, message: "✅ Tunnel complet" };
     }
     
-    if (pendingStep && (!incompleteStep || steps.indexOf(pendingStep) < steps.indexOf(incompleteStep))) {
+    if (pendingStep) {
       return { step: pendingStep, message: `⏳ ${pendingStep.label} - ${pendingStep.details || "En attente"}` };
     }
     
-    if (incompleteStep) {
-      return { step: incompleteStep, message: `⏸️ ${incompleteStep.label} - ${incompleteStep.details || "À compléter"}` };
+    if (currentStep) {
+      return { step: currentStep, message: `📍 ${currentStep.label}${currentStep.details ? ` - ${currentStep.details}` : ""}` };
     }
     
-    return { step: null, message: "✅ Parcours complet" };
+    return { step: null, message: "❓ État inconnu" };
   };
 
   const filteredDrivers = useMemo(() => {
@@ -407,15 +367,20 @@ const DriverProgressionTracker = () => {
       const steps = calculateOnboardingSteps(driver);
       const completedCount = steps.filter(s => s.isComplete).length;
       const percentage = Math.round((completedCount / steps.length) * 100);
+      
+      // Vrai calcul du paiement
+      const hasRealPayment = !!driver.trial_started_at || 
+        (driver.subscription_paid && driver.trial_status === 'active') ||
+        driver.free_access_granted;
 
       switch (statusFilter) {
         case "new": return matchesSearch && percentage < 25;
-        case "beginner": return matchesSearch && percentage >= 25 && percentage < 50;
-        case "inprogress": return matchesSearch && percentage >= 50 && percentage < 75;
-        case "advanced": return matchesSearch && percentage >= 75 && percentage < 100;
+        case "inprogress": return matchesSearch && percentage >= 25 && percentage < 100;
         case "complete": return matchesSearch && percentage === 100;
-        case "active": return matchesSearch && driver.total_courses > 0;
-        case "inactive": return matchesSearch && driver.total_courses === 0 && differenceInDays(new Date(), new Date(driver.created_at)) > 7;
+        case "paid": return matchesSearch && hasRealPayment;
+        case "unpaid": return matchesSearch && !hasRealPayment;
+        case "docs_pending": return matchesSearch && driver.documents_status === "submitted";
+        case "docs_missing": return matchesSearch && driver.documents_status === "pending";
         default: return matchesSearch;
       }
     });
@@ -423,133 +388,157 @@ const DriverProgressionTracker = () => {
 
   const stats = useMemo(() => {
     const total = drivers.length;
-    const complete = drivers.filter(d => {
+    const tunnelComplete = drivers.filter(d => {
       const steps = calculateOnboardingSteps(d);
       return steps.every(s => s.isComplete);
     }).length;
-    const active = drivers.filter(d => d.total_courses > 0).length;
-    const pendingPayment = drivers.filter(d => !d.subscription_paid && !d.free_access_granted).length;
     
-    return { total, complete, active, pendingPayment };
+    // VRAI calcul du paiement
+    const realPaid = drivers.filter(d => 
+      !!d.trial_started_at || 
+      (d.subscription_paid && d.trial_status === 'active') ||
+      d.free_access_granted
+    ).length;
+    
+    const unpaid = total - realPaid;
+    const docsPending = drivers.filter(d => d.documents_status === "submitted").length;
+    
+    return { total, tunnelComplete, realPaid, unpaid, docsPending };
   }, [drivers]);
 
   return (
     <div className="space-y-4">
-      {/* Stats Cards - Compact Grid */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      {/* Stats Cards - 4 colonnes sur desktop, 2 sur mobile */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Card className="bg-card/50">
-          <CardContent className="p-3 flex items-center gap-2">
+          <CardContent className="p-2.5 flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">
               <Users className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-xl font-bold">{isLoading ? "-" : stats.total}</p>
+              <p className="text-lg font-bold">{isLoading ? "-" : stats.total}</p>
               <p className="text-[10px] text-muted-foreground">Total</p>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
-          <CardContent className="p-3 flex items-center gap-2">
+          <CardContent className="p-2.5 flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-green-500/10">
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">{isLoading ? "-" : stats.complete}</p>
-              <p className="text-[10px] text-muted-foreground">Complets</p>
+              <p className="text-lg font-bold">{isLoading ? "-" : stats.realPaid}</p>
+              <p className="text-[10px] text-muted-foreground">Payés réels</p>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
-          <CardContent className="p-3 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10">
-              <Activity className="w-4 h-4 text-blue-500" />
+          <CardContent className="p-2.5 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-amber-500/10">
+              <Clock className="w-4 h-4 text-amber-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">{isLoading ? "-" : stats.active}</p>
-              <p className="text-[10px] text-muted-foreground">Actifs</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50">
-          <CardContent className="p-3 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-orange-500/10">
-              <AlertCircle className="w-4 h-4 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-xl font-bold">{isLoading ? "-" : stats.pendingPayment}</p>
+              <p className="text-lg font-bold">{isLoading ? "-" : stats.unpaid}</p>
               <p className="text-[10px] text-muted-foreground">Sans paiement</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50">
+          <CardContent className="p-2.5 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-500/10">
+              <FileText className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-lg font-bold">{isLoading ? "-" : stats.docsPending}</p>
+              <p className="text-[10px] text-muted-foreground">Docs à valider</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content */}
+      {/* Main Card */}
       <Card>
-        <CardHeader className="p-3 pb-2">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
-              <Eye className="w-4 h-4" />
+        <CardContent className="p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
               Suivi complet des chauffeurs
-            </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="h-7 px-2 text-xs"
+              className="h-7 w-7 p-0"
             >
-              <RefreshCw className={`w-3 h-3 ${isRefetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-          <CardDescription className="text-xs">
+
+          <p className="text-xs text-muted-foreground">
             Parcours d'inscription et évolution
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
+          </p>
+
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mb-3">
-            <TabsList className="grid w-full grid-cols-2 h-8">
-              <TabsTrigger value="onboarding" className="text-xs gap-1 px-2">
-                <Settings className="w-3 h-3" />
-                <span className="hidden xs:inline">Parcours</span> inscription
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="grid grid-cols-2 h-9">
+              <TabsTrigger value="onboarding" className="text-xs">
+                <Settings className="w-3 h-3 mr-1" />
+                inscription
               </TabsTrigger>
-              <TabsTrigger value="evolution" className="text-xs gap-1 px-2">
-                <TrendingUp className="w-3 h-3" />
-                Évolution <span className="hidden xs:inline">activité</span>
+              <TabsTrigger value="evolution" className="text-xs">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Évolution
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Filters - Compact */}
-          <div className="flex gap-2 mb-3">
+          {/* Search and Filter */}
+          <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-8 text-sm"
+                className="pl-8 h-9 text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-28 sm:w-36 h-8 text-xs">
-                <SelectValue placeholder="Filtrer" />
+              <SelectTrigger className="w-32 h-9 text-xs">
+                <SelectValue placeholder="Filtre" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="new">&lt;25%</SelectItem>
-                <SelectItem value="beginner">25-49%</SelectItem>
-                <SelectItem value="inprogress">50-74%</SelectItem>
-                <SelectItem value="advanced">75-99%</SelectItem>
-                <SelectItem value="complete">100%</SelectItem>
-                <SelectItem value="active">Avec courses</SelectItem>
-                <SelectItem value="inactive">Inactifs</SelectItem>
+                <SelectItem value="new">Nouveaux</SelectItem>
+                <SelectItem value="inprogress">En cours</SelectItem>
+                <SelectItem value="complete">Terminé</SelectItem>
+                <SelectItem value="paid">Payés</SelectItem>
+                <SelectItem value="unpaid">Non payés</SelectItem>
+                <SelectItem value="docs_pending">Docs en attente</SelectItem>
+                <SelectItem value="docs_missing">Docs manquants</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Drivers List */}
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto overscroll-contain">
+          {/* Légende des étapes */}
+          <div className="flex flex-wrap gap-1">
+            {TUNNEL_STEPS.map((step, idx) => (
+              <Badge 
+                key={step.id} 
+                variant="outline" 
+                className="text-[9px] px-1.5 py-0.5 gap-0.5"
+              >
+                <span className="w-3 h-3 rounded-full bg-muted inline-flex items-center justify-center text-[8px] font-bold">
+                  {idx + 1}
+                </span>
+                {step.label}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Driver List */}
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {isLoading ? (
               <>
                 <DriverCardSkeleton />
@@ -563,99 +552,97 @@ const DriverProgressionTracker = () => {
             ) : (
               filteredDrivers.map(driver => {
                 const steps = calculateOnboardingSteps(driver);
+                const postSteps = calculatePostSteps(driver);
                 const completedCount = steps.filter(s => s.isComplete).length;
                 const percentage = Math.round((completedCount / steps.length) * 100);
-                const { message: blockedMessage } = getBlockedInfo(steps);
+                const blockedInfo = getBlockedInfo(steps);
                 const isExpanded = expandedDriver === driver.id;
-
-                const coursesLevel = getEvolutionLevel(driver.total_courses);
-                const clientsLevel = getEvolutionLevel(driver.total_clients);
-                const scansLevel = getEvolutionLevel(driver.total_scans);
+                
+                // Vrai calcul du paiement
+                const hasRealPayment = !!driver.trial_started_at || 
+                  (driver.subscription_paid && driver.trial_status === 'active') ||
+                  driver.free_access_granted;
 
                 return (
-                  <Collapsible
-                    key={driver.id}
-                    open={isExpanded}
-                    onOpenChange={() => setExpandedDriver(isExpanded ? null : driver.id)}
-                  >
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-3">
+                  <Card key={driver.id} className="overflow-hidden">
+                    <Collapsible open={isExpanded} onOpenChange={() => setExpandedDriver(isExpanded ? null : driver.id)}>
+                      <CardContent className="p-2.5">
                         <div className="flex items-start gap-2">
-                          {/* Avatar - Smaller */}
-                          {driver.profile_photo_url ? (
-                            <img
-                              src={driver.profile_photo_url}
-                              alt={driver.full_name}
-                              className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                              <User className="w-4 h-4 text-muted-foreground" />
+                          {/* Avatar */}
+                          <div className="relative flex-shrink-0">
+                            {driver.profile_photo_url ? (
+                              <img 
+                                src={driver.profile_photo_url} 
+                                alt={driver.full_name}
+                                className="w-9 h-9 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            {/* Indicateur paiement */}
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background flex items-center justify-center ${
+                              hasRealPayment ? 'bg-green-500' : 'bg-amber-500'
+                            }`}>
+                              {hasRealPayment ? (
+                                <CheckCircle2 className="w-2 h-2 text-white" />
+                              ) : (
+                                <XCircle className="w-2 h-2 text-white" />
+                              )}
                             </div>
-                          )}
+                          </div>
 
-                          {/* Info - Compact */}
+                          {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <h4 className="font-medium truncate text-sm leading-tight">{driver.full_name}</h4>
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-sm truncate">{driver.full_name}</span>
+                              <Badge 
+                                variant={percentage === 100 ? "default" : "secondary"} 
+                                className="text-[9px] px-1 py-0 h-4"
+                              >
                                 {percentage}%
                               </Badge>
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate leading-tight">{driver.email}</p>
-                            
-                            {/* Blocked step or Evolution */}
-                            {activeTab === "onboarding" ? (
-                              <div className={`mt-1.5 px-1.5 py-1 rounded text-[10px] font-medium leading-tight ${
-                                percentage === 100 ? "bg-green-500/10 text-green-600" : "bg-orange-500/10 text-orange-600"
-                              }`}>
-                                {blockedMessage}
-                              </div>
-                            ) : (
-                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                <Badge variant="secondary" className={`${coursesLevel.color} text-[9px] px-1 py-0 h-4 gap-0.5`}>
-                                  {coursesLevel.icon}
-                                  {coursesLevel.level}
-                                </Badge>
-                                <Badge variant="secondary" className={`${clientsLevel.color} text-[9px] px-1 py-0 h-4 gap-0.5`}>
-                                  {clientsLevel.icon}
-                                  {clientsLevel.level}
-                                </Badge>
-                                <Badge variant="secondary" className={`${scansLevel.color} text-[9px] px-1 py-0 h-4 gap-0.5`}>
-                                  {scansLevel.icon}
-                                  {scansLevel.level}
-                                </Badge>
-                              </div>
-                            )}
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {driver.email}
+                            </p>
+                            {/* Bloqué où */}
+                            <p className={`text-[10px] mt-0.5 ${
+                              blockedInfo.step?.status === 'pending' ? 'text-amber-500' :
+                              blockedInfo.step?.status === 'current' ? 'text-blue-500' :
+                              'text-green-500'
+                            }`}>
+                              {blockedInfo.message}
+                            </p>
                           </div>
 
-                          {/* Expand */}
+                          {/* Toggle */}
                           <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="p-1.5 h-auto">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </Button>
                           </CollapsibleTrigger>
                         </div>
 
-                        {/* Progress Bar - Compact */}
-                        <div className="mt-2">
+                        {/* Progress bar avec points colorés */}
+                        <div className="mt-2 relative">
                           <Progress value={percentage} className="h-1.5" />
-                          <div className="flex justify-between mt-0.5">
+                          <div className="absolute top-0 left-0 w-full flex justify-between" style={{ transform: 'translateY(-2px)' }}>
                             {steps.map((step, idx) => (
                               <TooltipProvider key={step.id}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <div 
-                                      className={`w-1 h-1 rounded-full ${
-                                        step.isComplete ? "bg-green-500" :
-                                        step.status === "pending" ? "bg-yellow-500" :
-                                        idx === steps.findIndex(s => !s.isComplete && s.status !== "pending")
-                                          ? "bg-orange-500"
-                                          : "bg-muted-foreground/30"
+                                      className={`w-2.5 h-2.5 rounded-full border-2 border-background ${
+                                        step.status === 'complete' ? 'bg-green-500' :
+                                        step.status === 'current' ? 'bg-blue-500' :
+                                        step.status === 'pending' ? 'bg-amber-500' :
+                                        'bg-muted'
                                       }`}
                                     />
                                   </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="text-xs">
+                                  <TooltipContent side="top" className="text-xs">
                                     <p className="font-medium">{step.label}</p>
                                     {step.details && <p className="text-muted-foreground">{step.details}</p>}
                                   </TooltipContent>
@@ -667,92 +654,89 @@ const DriverProgressionTracker = () => {
                       </CardContent>
 
                       <CollapsibleContent>
-                        <div className="px-3 pb-3 border-t pt-3 bg-muted/30">
-                          {activeTab === "onboarding" ? (
+                        <div className="px-2.5 pb-2.5 space-y-2">
+                          {/* Étapes détaillées */}
+                          <div className="text-[10px] font-medium text-muted-foreground">
+                            Étapes ({completedCount}/{steps.length})
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {steps.map(step => {
+                              const StepIcon = TUNNEL_STEPS.find(s => s.id === step.id)?.icon || Target;
+                              return (
+                                <div 
+                                  key={step.id}
+                                  className={`flex items-center gap-1 text-[10px] px-1.5 py-1 rounded ${
+                                    step.status === 'complete' ? 'bg-green-500/10 text-green-600' :
+                                    step.status === 'current' ? 'bg-blue-500/10 text-blue-600 font-medium' :
+                                    step.status === 'pending' ? 'bg-amber-500/10 text-amber-600' :
+                                    'bg-muted/50 text-muted-foreground'
+                                  }`}
+                                >
+                                  {step.status === 'complete' ? (
+                                    <CheckCircle2 className="w-3 h-3" />
+                                  ) : step.status === 'pending' ? (
+                                    <Clock className="w-3 h-3" />
+                                  ) : (
+                                    <XCircle className="w-3 h-3" />
+                                  )}
+                                  {step.label}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Évolution (si tab active) */}
+                          {activeTab === "evolution" && (
                             <>
-                              <p className="text-xs font-medium mb-2">Étapes ({completedCount}/{steps.length})</p>
-                              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
-                                {steps.map(step => (
-                                  <TooltipProvider key={step.id}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className={`flex items-center gap-1 p-1.5 rounded border text-[10px] ${
-                                          step.isComplete ? "bg-green-500/10 border-green-500/20 text-green-600" :
-                                          step.status === "pending" ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-600" :
-                                          "bg-muted border-border text-muted-foreground"
-                                        }`}>
-                                          {step.isComplete ? <CheckCircle2 className="w-2.5 h-2.5 flex-shrink-0" /> :
-                                           step.status === "pending" ? <Clock className="w-2.5 h-2.5 flex-shrink-0" /> :
-                                           <XCircle className="w-2.5 h-2.5 flex-shrink-0" />}
-                                          <span className="truncate">{step.label}</span>
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className="font-medium">{step.label}</p>
-                                        <p className="text-xs">{step.description}</p>
-                                        {step.details && <p className="text-xs text-muted-foreground">{step.details}</p>}
-                                        {step.completedAt && (
-                                          <p className="text-xs text-muted-foreground">
-                                            {format(new Date(step.completedAt), "d MMM yyyy", { locale: fr })}
-                                          </p>
-                                        )}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                              <div className="text-[10px] font-medium text-muted-foreground mt-2">
+                                Après onboarding
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                {postSteps.map(step => (
+                                  <div 
+                                    key={step.id}
+                                    className={`flex items-center gap-1 text-[10px] px-1.5 py-1 rounded ${
+                                      step.isComplete ? 'bg-green-500/10 text-green-600' : 'bg-muted/50 text-muted-foreground'
+                                    }`}
+                                  >
+                                    {step.isComplete ? (
+                                      <CheckCircle2 className="w-3 h-3" />
+                                    ) : (
+                                      <XCircle className="w-3 h-3" />
+                                    )}
+                                    {step.label}
+                                  </div>
                                 ))}
                               </div>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-xs font-medium mb-2">Activité</p>
-                              <div className="grid grid-cols-3 gap-2">
-                                <div className="p-2 rounded border bg-background text-center">
-                                  <Activity className="w-3.5 h-3.5 mx-auto text-primary mb-1" />
-                                  <Badge className={`${coursesLevel.color} bg-transparent border text-[9px] px-1`}>
-                                    {coursesLevel.level}
-                                  </Badge>
-                                  {driver.first_course_at && (
-                                    <p className="text-[9px] text-muted-foreground mt-1">
-                                      {format(new Date(driver.first_course_at), "d/MM", { locale: fr })}
-                                    </p>
-                                  )}
+
+                              {/* Stats activité */}
+                              <div className="flex gap-2 mt-1 text-[10px]">
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Activity className="w-3 h-3" />
+                                  {driver.total_courses} courses
                                 </div>
-                                <div className="p-2 rounded border bg-background text-center">
-                                  <UserPlus className="w-3.5 h-3.5 mx-auto text-primary mb-1" />
-                                  <Badge className={`${clientsLevel.color} bg-transparent border text-[9px] px-1`}>
-                                    {clientsLevel.level}
-                                  </Badge>
-                                  {driver.first_client_at && (
-                                    <p className="text-[9px] text-muted-foreground mt-1">
-                                      {format(new Date(driver.first_client_at), "d/MM", { locale: fr })}
-                                    </p>
-                                  )}
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Users className="w-3 h-3" />
+                                  {driver.total_clients} clients
                                 </div>
-                                <div className="p-2 rounded border bg-background text-center">
-                                  <ScanLine className="w-3.5 h-3.5 mx-auto text-primary mb-1" />
-                                  <Badge className={`${scansLevel.color} bg-transparent border text-[9px] px-1`}>
-                                    {scansLevel.level}
-                                  </Badge>
-                                  {driver.first_scan_at && (
-                                    <p className="text-[9px] text-muted-foreground mt-1">
-                                      {format(new Date(driver.first_scan_at), "d/MM", { locale: fr })}
-                                    </p>
-                                  )}
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <ScanLine className="w-3 h-3" />
+                                  {driver.total_scans} scans
                                 </div>
-                              </div>
-                              
-                              <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                                <Clock className="w-3 h-3" />
-                                Dernière activité: {driver.last_activity 
-                                  ? formatDistanceToNow(new Date(driver.last_activity), { addSuffix: true, locale: fr })
-                                  : "Aucune"}
                               </div>
                             </>
                           )}
+
+                          {/* Infos supplémentaires */}
+                          <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/50">
+                            <span>Inscrit {formatDistanceToNow(new Date(driver.created_at), { locale: fr, addSuffix: true })}</span>
+                            {driver.company_name && <span>• {driver.company_name}</span>}
+                            {driver.phone && <span>• {driver.phone}</span>}
+                          </div>
                         </div>
                       </CollapsibleContent>
-                    </Card>
-                  </Collapsible>
+                    </Collapsible>
+                  </Card>
                 );
               })
             )}
