@@ -7,8 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_CANCELLATION_FEE = 15.00; // 15€
-const DEFAULT_FREE_CANCELLATION_HOURS = 2; // 2 hours before
+// Defaults selon le cahier des charges
+const DEFAULT_CANCELLATION_FEE_NO_DEPOSIT = 10.00; // 10€ sans acompte
+const DEFAULT_FREE_CANCELLATION_HOURS_NO_DEPOSIT = 2; // T-2h sans acompte
+const DEFAULT_FREE_CANCELLATION_HOURS_WITH_DEPOSIT = 4; // T-4h avec acompte
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -63,10 +65,15 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
+    // Déterminer si la course a un acompte
+    const hasDeposit = course.deposit_status === "paid" && course.deposit_amount > 0;
+
     logStep("Course found", { 
       status: course.status,
       cardHoldStatus: course.card_hold_status,
       depositStatus: course.deposit_status,
+      depositAmount: course.deposit_amount,
+      hasDeposit,
       scheduledDate: course.scheduled_date 
     });
 
@@ -77,36 +84,65 @@ serve(async (req) => {
       .eq("driver_id", course.driver_id)
       .maybeSingle();
 
-    const cancellationFee = config?.cancellation_fee_amount || DEFAULT_CANCELLATION_FEE;
-    const freeCancellationHours = config?.free_cancellation_hours || DEFAULT_FREE_CANCELLATION_HOURS;
+    // Appliquer les règles selon le type de course
+    const freeCancellationHours = hasDeposit 
+      ? (config?.free_cancellation_hours_with_deposit || DEFAULT_FREE_CANCELLATION_HOURS_WITH_DEPOSIT)
+      : (config?.free_cancellation_hours_no_deposit || DEFAULT_FREE_CANCELLATION_HOURS_NO_DEPOSIT);
+    
+    const cancellationFee = hasDeposit 
+      ? 0 // Avec acompte, l'acompte EST la pénalité
+      : (config?.cancellation_fee_no_deposit || DEFAULT_CANCELLATION_FEE_NO_DEPOSIT);
 
     // Calculate hours until pickup
     const scheduledDate = new Date(course.scheduled_date);
     const now = new Date();
     const hoursUntilPickup = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    logStep("Time calculations", { hoursUntilPickup, freeCancellationHours });
+    logStep("Time calculations", { 
+      hoursUntilPickup, 
+      freeCancellationHours,
+      hasDeposit,
+      cancellationFee
+    });
 
     let shouldChargeFee = false;
     let feeAmount = 0;
     let shouldRefundDeposit = false;
+    let depositForfeited = false;
     let refundResult = null;
     let chargeResult = null;
     let message = "";
 
-    // RÈGLES DE FRAIS D'ANNULATION
-    // 1. Si le chauffeur annule → pas de frais pour le client, remboursement acompte
-    // 2. Si le client annule > 2h avant → pas de frais, mais acompte gardé par chauffeur
-    // 3. Si le client annule < 2h avant → frais de 15€ prélevés via empreinte bancaire
-    // 4. Si le système annule → pas de frais, remboursement acompte
+    /*
+     * RÈGLES D'ANNULATION - CAHIER DES CHARGES
+     * 
+     * ══════════════════════════════════════════════
+     * AVEC ACOMPTE (fenêtre = T-4h)
+     * ══════════════════════════════════════════════
+     * 
+     * 🔹 CHAUFFEUR ANNULE → Acompte remboursé au client (toujours)
+     * 🔹 CLIENT ANNULE AVANT T-4h → Acompte remboursé, aucun frais
+     * 🔹 CLIENT ANNULE APRÈS T-4h → Acompte conservé par le chauffeur (pas de débit supplémentaire)
+     * 
+     * ══════════════════════════════════════════════
+     * SANS ACOMPTE (fenêtre = T-2h)
+     * ══════════════════════════════════════════════
+     * 
+     * 🔹 CHAUFFEUR ANNULE → Aucun frais pour le client
+     * 🔹 CLIENT ANNULE AVANT T-2h → Aucun frais
+     * 🔹 CLIENT ANNULE APRÈS T-2h → Frais de 10€ via empreinte bancaire
+     */
 
     if (cancelled_by === "driver") {
+      // ═══════════════════════════════════════════════════════════════
+      // ANNULATION PAR LE CHAUFFEUR → Toujours rembourser le client
+      // ═══════════════════════════════════════════════════════════════
       shouldChargeFee = false;
-      shouldRefundDeposit = true;
       message = "Annulation par le chauffeur - aucun frais pour le client.";
       
-      // Refund deposit if paid
-      if (course.deposit_status === "paid" && course.deposit_stripe_payment_intent_id) {
+      // Rembourser l'acompte si payé
+      if (hasDeposit && course.deposit_stripe_payment_intent_id) {
+        shouldRefundDeposit = true;
         try {
           const paymentIntent = await stripe.paymentIntents.retrieve(course.deposit_stripe_payment_intent_id);
           if (paymentIntent.latest_charge) {
@@ -120,77 +156,128 @@ serve(async (req) => {
               metadata: {
                 course_id,
                 cancelled_by,
-                reason: "Driver cancelled",
+                reason: "Driver cancelled - full refund",
               },
             });
-            logStep("Deposit refunded", { refundId: refundResult.id });
+            logStep("Deposit refunded (driver cancelled)", { refundId: refundResult.id });
+            message += ` Acompte de ${course.deposit_amount}€ remboursé.`;
           }
         } catch (refundError: any) {
           logStep("Deposit refund error", { error: refundError.message });
+          message += " (Erreur lors du remboursement de l'acompte)";
         }
       }
+      
     } else if (cancelled_by === "client") {
-      // Check if within penalty window
-      if (hoursUntilPickup <= freeCancellationHours) {
-        shouldChargeFee = true;
-        feeAmount = cancellationFee;
-        shouldRefundDeposit = false;
-        message = `Annulation client moins de ${freeCancellationHours}h avant - frais de ${feeAmount}€ appliqués.`;
+      // ═══════════════════════════════════════════════════════════════
+      // ANNULATION PAR LE CLIENT
+      // ═══════════════════════════════════════════════════════════════
+      
+      if (hasDeposit) {
+        // ─────────────────────────────────────────────────────────────
+        // COURSE AVEC ACOMPTE
+        // ─────────────────────────────────────────────────────────────
+        if (hoursUntilPickup > freeCancellationHours) {
+          // AVANT T-4h → Remboursement de l'acompte
+          shouldRefundDeposit = true;
+          message = `Annulation client plus de ${freeCancellationHours}h avant - acompte remboursé.`;
+          
+          if (course.deposit_stripe_payment_intent_id) {
+            try {
+              const paymentIntent = await stripe.paymentIntents.retrieve(course.deposit_stripe_payment_intent_id);
+              if (paymentIntent.latest_charge) {
+                const chargeId = typeof paymentIntent.latest_charge === 'string' 
+                  ? paymentIntent.latest_charge 
+                  : paymentIntent.latest_charge.id;
 
-        // Try to charge using card hold
-        if (course.card_hold_status === "confirmed" && course.stripe_payment_method_id) {
-          try {
-            // Create PaymentIntent with the stored payment method
-            const paymentIntent = await stripe.paymentIntents.create({
-              amount: Math.round(feeAmount * 100), // Convert to cents
-              currency: "eur",
-              payment_method: course.stripe_payment_method_id,
-              confirm: true,
-              off_session: true,
-              description: `Frais d'annulation - Course VTC`,
-              metadata: {
-                course_id,
-                type: "cancellation_fee",
-                cancelled_by,
-              },
-              transfer_data: course.driver.stripe_connect_account_id ? {
-                destination: course.driver.stripe_connect_account_id,
-              } : undefined,
-              // No application fee for cancellation fees - driver gets full amount
-            });
-
-            chargeResult = paymentIntent;
-            logStep("Cancellation fee charged", { 
-              paymentIntentId: paymentIntent.id,
-              amount: feeAmount 
-            });
-          } catch (chargeError: any) {
-            logStep("Cancellation fee charge failed", { error: chargeError.message });
-            // Mark as failed but continue with cancellation
-            message += " (échec du prélèvement)";
+                refundResult = await stripe.refunds.create({
+                  charge: chargeId,
+                  reason: "requested_by_customer",
+                  metadata: {
+                    course_id,
+                    cancelled_by,
+                    reason: "Client cancelled before deadline",
+                  },
+                });
+                logStep("Deposit refunded (client cancelled early)", { refundId: refundResult.id });
+              }
+            } catch (refundError: any) {
+              logStep("Deposit refund error", { error: refundError.message });
+            }
           }
         } else {
-          logStep("No card hold available for charging fee");
-          message += " (pas d'empreinte bancaire)";
+          // APRÈS T-4h → Acompte conservé par le chauffeur
+          depositForfeited = true;
+          feeAmount = course.deposit_amount;
+          message = `Annulation client moins de ${freeCancellationHours}h avant - l'acompte de ${course.deposit_amount}€ est conservé par le chauffeur.`;
+          logStep("Deposit forfeited to driver", { amount: course.deposit_amount });
         }
-      } else {
-        // Outside penalty window - no fee, but deposit is kept by driver
-        shouldChargeFee = false;
-        shouldRefundDeposit = false;
-        message = `Annulation client plus de ${freeCancellationHours}h avant - aucun frais supplémentaire.`;
         
-        // Note: deposit is kept by driver (forfeited)
-        if (course.deposit_status === "paid") {
-          message += " L'acompte reste acquis au chauffeur.";
+      } else {
+        // ─────────────────────────────────────────────────────────────
+        // COURSE SANS ACOMPTE
+        // ─────────────────────────────────────────────────────────────
+        if (hoursUntilPickup > freeCancellationHours) {
+          // AVANT T-2h → Aucun frais
+          shouldChargeFee = false;
+          message = `Annulation client plus de ${freeCancellationHours}h avant - aucun frais.`;
+        } else {
+          // APRÈS T-2h → Frais de 10€
+          shouldChargeFee = true;
+          feeAmount = cancellationFee;
+          message = `Annulation client moins de ${freeCancellationHours}h avant - frais de ${feeAmount}€ appliqués.`;
+
+          // Débiter via l'empreinte bancaire
+          if (course.card_hold_status === "confirmed" && course.stripe_payment_method_id) {
+            try {
+              const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+                amount: Math.round(feeAmount * 100),
+                currency: "eur",
+                payment_method: course.stripe_payment_method_id,
+                confirm: true,
+                off_session: true,
+                description: `Frais d'annulation - Course VTC`,
+                metadata: {
+                  course_id,
+                  type: "cancellation_fee",
+                  cancelled_by,
+                },
+              };
+
+              // Transfer to driver if Stripe Connect is configured
+              if (course.driver?.stripe_connect_account_id) {
+                paymentIntentParams.transfer_data = {
+                  destination: course.driver.stripe_connect_account_id,
+                };
+              }
+
+              const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+
+              chargeResult = paymentIntent;
+              logStep("Cancellation fee charged", { 
+                paymentIntentId: paymentIntent.id,
+                amount: feeAmount 
+              });
+            } catch (chargeError: any) {
+              logStep("Cancellation fee charge failed", { error: chargeError.message });
+              message += " (échec du prélèvement)";
+            }
+          } else {
+            logStep("No card hold available for charging fee");
+            message += " (pas d'empreinte bancaire)";
+          }
         }
       }
+      
     } else if (cancelled_by === "system") {
+      // ═══════════════════════════════════════════════════════════════
+      // ANNULATION SYSTÈME → Toujours rembourser
+      // ═══════════════════════════════════════════════════════════════
       shouldChargeFee = false;
       shouldRefundDeposit = true;
       message = "Annulation système - aucun frais, remboursement complet.";
       
-      // Refund deposit if paid
-      if (course.deposit_status === "paid" && course.deposit_stripe_payment_intent_id) {
+      if (hasDeposit && course.deposit_stripe_payment_intent_id) {
         try {
           const paymentIntent = await stripe.paymentIntents.retrieve(course.deposit_stripe_payment_intent_id);
           if (paymentIntent.latest_charge) {
@@ -221,7 +308,7 @@ serve(async (req) => {
       cancelled_at: new Date().toISOString(),
       cancellation_reason: reason,
       hours_before_cancellation: hoursUntilPickup,
-      cancellation_fee_amount: shouldChargeFee ? feeAmount : 0,
+      cancellation_fee_amount: feeAmount,
       cancellation_fee_charged: shouldChargeFee && !!chargeResult,
     };
 
@@ -232,7 +319,7 @@ serve(async (req) => {
 
     if (shouldRefundDeposit && refundResult) {
       updateData.deposit_status = "refunded";
-    } else if (course.deposit_status === "paid" && !shouldRefundDeposit) {
+    } else if (depositForfeited) {
       updateData.deposit_status = "forfeited";
     }
 
@@ -257,13 +344,20 @@ serve(async (req) => {
 
     // Notify driver
     if (course.driver?.user_id) {
-      const driverMessage = cancelled_by === "driver" 
-        ? `Vous avez annulé la course.`
-        : cancelled_by === "client"
-          ? shouldChargeFee && chargeResult
-            ? `Le client a annulé. Frais de ${feeAmount}€ prélevés en votre faveur.`
-            : `Le client a annulé la course.`
-          : `La course a été annulée par le système.`;
+      let driverMessage = "";
+      if (cancelled_by === "driver") {
+        driverMessage = `Vous avez annulé la course.${shouldRefundDeposit && refundResult ? " L'acompte a été remboursé au client." : ""}`;
+      } else if (cancelled_by === "client") {
+        if (depositForfeited) {
+          driverMessage = `Le client a annulé. L'acompte de ${course.deposit_amount}€ vous est acquis.`;
+        } else if (shouldChargeFee && chargeResult) {
+          driverMessage = `Le client a annulé. Frais de ${feeAmount}€ prélevés en votre faveur.`;
+        } else {
+          driverMessage = `Le client a annulé la course.`;
+        }
+      } else {
+        driverMessage = `La course a été annulée par le système.`;
+      }
 
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
@@ -276,13 +370,22 @@ serve(async (req) => {
 
     // Notify client
     if (course.client?.user_id) {
-      const clientMessage = cancelled_by === "driver"
-        ? `Le chauffeur a annulé la course.${refundResult ? " Votre acompte a été remboursé." : ""}`
-        : cancelled_by === "client"
-          ? shouldChargeFee && chargeResult
-            ? `Annulation confirmée. Des frais de ${feeAmount}€ ont été prélevés.`
-            : `Annulation confirmée.${course.deposit_status === "paid" ? " L'acompte reste acquis au chauffeur." : ""}`
-          : `La course a été annulée.${refundResult ? " Votre acompte a été remboursé." : ""}`;
+      let clientMessage = "";
+      if (cancelled_by === "driver") {
+        clientMessage = `Le chauffeur a annulé la course.${refundResult ? " Votre acompte a été remboursé." : ""}`;
+      } else if (cancelled_by === "client") {
+        if (depositForfeited) {
+          clientMessage = `Annulation confirmée. L'acompte de ${course.deposit_amount}€ n'est pas remboursable.`;
+        } else if (shouldChargeFee && chargeResult) {
+          clientMessage = `Annulation confirmée. Des frais de ${feeAmount}€ ont été prélevés.`;
+        } else if (refundResult) {
+          clientMessage = `Annulation confirmée. Votre acompte a été remboursé.`;
+        } else {
+          clientMessage = `Annulation confirmée.`;
+        }
+      } else {
+        clientMessage = `La course a été annulée.${refundResult ? " Votre acompte a été remboursé." : ""}`;
+      }
 
       await supabaseClient.from("notifications").insert({
         user_id: course.client.user_id,
@@ -294,6 +397,8 @@ serve(async (req) => {
     }
 
     logStep("Cancellation processed successfully", { 
+      hasDeposit,
+      depositForfeited,
       shouldChargeFee, 
       feeAmount,
       charged: !!chargeResult,
@@ -304,8 +409,10 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         cancelled_by,
+        has_deposit: hasDeposit,
         fee_charged: shouldChargeFee && !!chargeResult,
-        fee_amount: shouldChargeFee ? feeAmount : 0,
+        fee_amount: feeAmount,
+        deposit_forfeited: depositForfeited,
         deposit_refunded: !!refundResult,
         message,
         charge_id: chargeResult?.id,

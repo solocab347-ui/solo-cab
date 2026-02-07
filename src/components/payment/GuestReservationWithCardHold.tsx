@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CardHoldForm } from "./CardHoldForm";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DepositPaymentForm } from "./DepositPaymentForm";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, CreditCard, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, CreditCard, XCircle, Shield, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GuestReservationWithCardHoldProps {
@@ -15,6 +16,8 @@ interface GuestReservationWithCardHoldProps {
   onComplete: () => void;
 }
 
+type Step = "checking" | "deposit" | "card_hold" | "complete" | "no_hold_required";
+
 export function GuestReservationWithCardHold({
   driverId,
   courseId,
@@ -24,52 +27,77 @@ export function GuestReservationWithCardHold({
   trackingToken,
   onComplete,
 }: GuestReservationWithCardHoldProps) {
-  const [step, setStep] = useState<"checking" | "card_hold" | "complete" | "no_hold_required">("checking");
-  const [requiresCardHold, setRequiresCardHold] = useState(false);
+  const [step, setStep] = useState<Step>("checking");
+  const [driverConfig, setDriverConfig] = useState<{
+    hasStripeConnect: boolean;
+    depositEnabled: boolean;
+    depositPercentage: number;
+  } | null>(null);
 
-  useEffect(() => {
-    checkIfCardHoldRequired();
-  }, [driverId]);
+  // Check driver config on mount
+  useState(() => {
+    const checkDriverConfig = async () => {
+      try {
+        const { data: driver } = await supabase
+          .from("drivers")
+          .select(`
+            billing_type, 
+            stripe_connect_account_id, 
+            stripe_connect_charges_enabled,
+            deposit_enabled,
+            deposit_percentage
+          `)
+          .eq("id", driverId)
+          .single();
 
-  const checkIfCardHoldRequired = async () => {
-    try {
-      // Check if driver uses Stripe Connect
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("billing_type, stripe_connect_account_id, stripe_connect_charges_enabled")
-        .eq("id", driverId)
-        .single();
+        const hasStripeConnect = 
+          driver?.billing_type === "solocab_stripe" &&
+          driver?.stripe_connect_account_id &&
+          driver?.stripe_connect_charges_enabled;
 
-      const hasStripeConnect = 
-        driver?.billing_type === "solocab_stripe" &&
-        driver?.stripe_connect_account_id &&
-        driver?.stripe_connect_charges_enabled;
+        if (!hasStripeConnect) {
+          // Pas de Stripe Connect → pas d'empreinte requise
+          setStep("no_hold_required");
+          setTimeout(onComplete, 1500);
+          return;
+        }
 
-      if (hasStripeConnect) {
-        setRequiresCardHold(true);
-        setStep("card_hold");
-      } else {
-        setRequiresCardHold(false);
+        setDriverConfig({
+          hasStripeConnect,
+          depositEnabled: driver?.deposit_enabled || false,
+          depositPercentage: driver?.deposit_percentage || 20,
+        });
+
+        // Si le chauffeur demande un acompte, afficher le formulaire d'acompte
+        if (driver?.deposit_enabled) {
+          setStep("deposit");
+        } else {
+          // Sinon, empreinte bancaire seule
+          setStep("card_hold");
+        }
+      } catch (error) {
+        console.error("Error checking driver config:", error);
         setStep("no_hold_required");
-        // Auto-complete after a brief delay
-        setTimeout(() => {
-          onComplete();
-        }, 1500);
+        setTimeout(onComplete, 1500);
       }
-    } catch (error) {
-      console.error("Error checking card hold requirement:", error);
-      setStep("no_hold_required");
-      setTimeout(() => {
-        onComplete();
-      }, 1500);
-    }
+    };
+
+    checkDriverConfig();
+  });
+
+  const handleDepositSuccess = () => {
+    setStep("complete");
+    setTimeout(onComplete, 2000);
   };
 
   const handleCardHoldSuccess = () => {
     setStep("complete");
-    setTimeout(() => {
-      onComplete();
-    }, 2000);
+    setTimeout(onComplete, 2000);
+  };
+
+  const handleSkipDeposit = () => {
+    // Si le client ne veut pas payer d'acompte, passer à l'empreinte bancaire seule
+    setStep("card_hold");
   };
 
   if (step === "checking") {
@@ -112,7 +140,7 @@ export function GuestReservationWithCardHold({
             <CheckCircle className="h-12 w-12 text-primary mx-auto" />
             <h3 className="font-semibold text-foreground">Réservation confirmée !</h3>
             <p className="text-sm text-muted-foreground">
-              Votre empreinte bancaire a été validée. Aucun montant n'a été prélevé.
+              Votre réservation est sécurisée.
             </p>
             <p className="text-xs text-muted-foreground">
               Redirection vers le suivi...
@@ -123,14 +151,53 @@ export function GuestReservationWithCardHold({
     );
   }
 
+  if (step === "deposit" && driverConfig) {
+    const depositAmount = Math.round((estimatedAmount * driverConfig.depositPercentage) / 100 * 100) / 100;
+    
+    return (
+      <div className="space-y-4">
+        <Card className="bg-muted/50">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <Wallet className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Acompte de réservation</p>
+                <p className="text-sm text-muted-foreground">
+                  Un acompte de {driverConfig.depositPercentage}% est demandé pour confirmer votre réservation.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <DepositPaymentForm
+          courseId={courseId}
+          driverId={driverId}
+          depositAmount={depositAmount}
+          totalAmount={estimatedAmount}
+          clientEmail={clientEmail}
+          clientName={clientName}
+          onSuccess={handleDepositSuccess}
+        />
+
+        <div className="text-center">
+          <Button variant="ghost" size="sm" onClick={handleSkipDeposit}>
+            Continuer sans acompte (empreinte bancaire uniquement)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Card hold step
   return (
     <div className="space-y-4">
       <Card className="bg-muted/50">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center gap-3">
-            <CreditCard className="h-5 w-5 text-primary" />
+            <Shield className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Étape finale : empreinte bancaire</p>
+              <p className="font-medium">Empreinte bancaire sécurisée</p>
               <p className="text-sm text-muted-foreground">
                 Une empreinte de 0€ est requise pour garantir votre réservation.
               </p>

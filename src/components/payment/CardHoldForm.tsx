@@ -237,14 +237,14 @@ export function CardHoldForm({
           </AlertDescription>
         </Alert>
 
-        {/* Cancellation policy */}
+        {/* Cancellation policy - Sans acompte = T-2h, 10€ de frais */}
         <Alert className="bg-warning/10 border-warning/30">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="text-foreground text-sm">
             <strong>Politique d'annulation :</strong>
             <ul className="list-disc list-inside mt-1 space-y-1">
               <li>Annulation gratuite jusqu'à 2h avant la course</li>
-              <li>Annulation moins de 2h avant : frais de 15€</li>
+              <li>Annulation moins de 2h avant : frais de 10€</li>
               <li>Si le chauffeur annule : aucun frais pour vous</li>
             </ul>
           </AlertDescription>
