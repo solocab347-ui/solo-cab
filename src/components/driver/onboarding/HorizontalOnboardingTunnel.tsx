@@ -69,11 +69,31 @@ export function HorizontalOnboardingTunnel({
     ? ALL_STEPS.filter(step => step.id !== 'nfc')
     : ALL_STEPS;
 
-  const [currentStep, setCurrentStep] = useState(initialStep);
+  // FORCER le démarrage au début (étape 0) pour les anciens utilisateurs du tunnel précédent
+  // Les données restent enregistrées, mais on recommence la navigation depuis le début
+  const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const [saving, setSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Mettre à jour last_seen_at à chaque connexion au tunnel
+  useEffect(() => {
+    const updateLastSeen = async () => {
+      try {
+        await supabase
+          .from('drivers')
+          .update({ 
+            last_seen_at: new Date().toISOString(),
+            onboarding_step: 'vision' // Reset au début du tunnel
+          })
+          .eq('id', driverId);
+      } catch (error) {
+        console.error('Erreur mise à jour last_seen_at:', error);
+      }
+    };
+    updateLastSeen();
+  }, [driverId]);
   
   const [stepData, setStepData] = useState({
     settings: {

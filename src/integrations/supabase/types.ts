@@ -6046,6 +6046,7 @@ export type Database = {
           is_legacy_stripe: boolean | null
           is_pioneer: boolean | null
           last_location_update: string | null
+          last_seen_at: string | null
           legacy_stripe_customer_id: string | null
           legacy_trial_end_date: string | null
           license_number: string
@@ -6218,6 +6219,7 @@ export type Database = {
           is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
           last_location_update?: string | null
+          last_seen_at?: string | null
           legacy_stripe_customer_id?: string | null
           legacy_trial_end_date?: string | null
           license_number: string
@@ -6390,6 +6392,7 @@ export type Database = {
           is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
           last_location_update?: string | null
+          last_seen_at?: string | null
           legacy_stripe_customer_id?: string | null
           legacy_trial_end_date?: string | null
           license_number?: string
@@ -17040,7 +17043,6 @@ export type Database = {
         Returns: {
           base_fare: number
           billing_type: string
-          company_address: string
           company_name: string
           created_at: string
           documents_status: string
@@ -17051,19 +17053,20 @@ export type Database = {
           free_access_granted: boolean
           full_name: string
           has_nfc_plate: boolean
-          hourly_rate: number
           id: string
           last_activity: string
-          max_passengers: number
+          last_seen_at: string
           nfc_plate_ordered_at: string
           objectives_completed: boolean
+          onboarding_completed: boolean
+          onboarding_documents_completed: boolean
           onboarding_objectives_completed: boolean
+          onboarding_profile_completed: boolean
+          onboarding_settings_completed: boolean
           onboarding_step: string
           per_km_rate: number
           phone: string
           profile_photo_url: string
-          registration_step: number
-          service_description: string
           siret: string
           status: string
           stripe_connect_status: string
@@ -17072,16 +17075,11 @@ export type Database = {
           total_clients: number
           total_courses: number
           total_scans: number
-          tpe_received_at: string
-          trial_ready_to_start: boolean
           trial_started_at: string
+          trial_status: string
           user_id: string
           vehicle_brand: string
-          vehicle_color: string
-          vehicle_model: string
           vehicle_plate: string
-          wants_tpe_affiliate: boolean
-          working_sectors: string[]
         }[]
       }
       get_all_partnership_disputes: {

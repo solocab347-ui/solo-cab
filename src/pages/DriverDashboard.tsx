@@ -69,6 +69,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useQueryClient } from "@tanstack/react-query";
 import { logger } from "@/lib/productionLogger";
 import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificationCount";
+import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -77,6 +78,9 @@ const DriverDashboard = () => {
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating, accessStatus } = useOptimizedDriverProfile(user?.id);
+  
+  // Mettre à jour last_seen_at à chaque visite du dashboard
+  useUpdateLastSeen(driverProfile?.driver?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);

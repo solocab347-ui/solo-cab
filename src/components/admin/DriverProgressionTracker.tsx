@@ -89,6 +89,7 @@ interface DriverFullData {
   onboarding_documents_completed: boolean;
   onboarding_step: string | null;
   onboarding_completed: boolean;
+  last_seen_at: string | null;
   total_courses: number;
   total_clients: number;
   total_scans: number;
@@ -215,6 +216,7 @@ const DriverProgressionTracker = () => {
         profile_photo_url: profilesMap.get(driver.user_id)?.profile_photo_url,
         phone: profilesMap.get(driver.user_id)?.phone,
         email: profilesMap.get(driver.user_id)?.email || 'email@inconnu.com',
+        last_seen_at: (driver as any).last_seen_at || null,
         total_courses: 0,
         total_clients: 0,
         total_scans: 0,
@@ -730,6 +732,11 @@ const DriverProgressionTracker = () => {
                           {/* Infos supplémentaires */}
                           <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/50">
                             <span>Inscrit {formatDistanceToNow(new Date(driver.created_at), { locale: fr, addSuffix: true })}</span>
+                            {driver.last_seen_at && (
+                              <span className="text-primary font-medium">
+                                • Vu {formatDistanceToNow(new Date(driver.last_seen_at), { locale: fr, addSuffix: true })}
+                              </span>
+                            )}
                             {driver.company_name && <span>• {driver.company_name}</span>}
                             {driver.phone && <span>• {driver.phone}</span>}
                           </div>
