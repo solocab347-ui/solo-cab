@@ -48,7 +48,8 @@ const DAYS_OF_WEEK = [
 
 const SWIPE_THRESHOLD = 50;
 
-// Coach advice system
+// Helper function to round to nearest 5 for readability
+const roundToNearestFive = (value: number): number => Math.round(value / 5) * 5;
 const getCoachAdvice = (
   currentRevenue: number,
   targetRevenue: number,
@@ -183,11 +184,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     loadSavedData();
   }, [driverId]);
 
-  // Calculations
+  // Calculations - rounded to nearest 5
   const solocabPercentage = 100 - platformPercentage;
-  const weeklyRevenue = Math.round(targetRevenue / 4);
+  const weeklyRevenue = roundToNearestFive(targetRevenue / 4);
 
-  // Calculate daily targets with AI weighting
+  // Calculate daily targets with AI weighting - rounded to nearest 5
   const dailyTargets = useMemo(() => {
     const selectedDayData = DAYS_OF_WEEK.filter(d => selectedDays.includes(d.id));
     if (selectedDayData.length === 0) return [];
@@ -196,7 +197,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     
     return selectedDayData.map(day => {
       const dayShare = day.weight / totalWeight;
-      const dailyTarget = Math.round(weeklyRevenue * dayShare);
+      const dailyTarget = roundToNearestFive(weeklyRevenue * dayShare);
       return {
         ...day,
         dailyTarget,
@@ -347,10 +348,10 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
   };
 
-  // Calculate estimates
+  // Calculate estimates - rounded to nearest 5 for readability
   const totalHoursPerMonth = workHoursPerDay * selectedDays.length * 4;
-  const estimatedHourlyTarget = totalHoursPerMonth > 0 ? Math.round(targetRevenue / totalHoursPerMonth) : 0;
-  const estimatedPerClient = targetClients > 0 ? Math.round(targetRevenue / targetClients) : 0;
+  const estimatedHourlyTarget = totalHoursPerMonth > 0 ? roundToNearestFive(targetRevenue / totalHoursPerMonth) : 0;
+  const estimatedPerClient = targetClients > 0 ? roundToNearestFive(targetRevenue / targetClients) : 0;
 
   const renderCoachFeedback = () => {
     if (coachAdvice.warnings.length === 0 && coachAdvice.suggestions.length === 0) return null;
@@ -841,20 +842,20 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       case 4:
         // Calculate realistic transition plan based on current platform dependency
-        const currentPlatformRevenue = Math.round((currentRevenue * platformPercentage) / 100);
+        const currentPlatformRevenue = roundToNearestFive((currentRevenue * platformPercentage) / 100);
         const currentPrivateRevenue = currentRevenue - currentPlatformRevenue;
         
         // Target: reduce platform dependency by 10-15% per month (realistic)
         const targetPlatformPercentage = Math.max(platformPercentage - 15, 30); // Don't go below 30% in first month
         const targetPrivatePercentage = 100 - targetPlatformPercentage;
         
-        // Calculate how much of target revenue should come from each source
-        const targetPlatformRevenue = Math.round((targetRevenue * targetPlatformPercentage) / 100);
-        const targetPrivateRevenue = targetRevenue - targetPlatformRevenue;
+        // Calculate how much of target revenue should come from each source - rounded to nearest 5
+        const targetPlatformRevenue = roundToNearestFive((targetRevenue * targetPlatformPercentage) / 100);
+        const targetPrivateRevenue = roundToNearestFive(targetRevenue - targetPlatformRevenue);
         
-        // Weekly breakdown
-        const weeklyPlatformTarget = Math.round(targetPlatformRevenue / 4);
-        const weeklyPrivateTarget = Math.round(targetPrivateRevenue / 4);
+        // Weekly breakdown - rounded to nearest 5
+        const weeklyPlatformTarget = roundToNearestFive(targetPlatformRevenue / 4);
+        const weeklyPrivateTarget = roundToNearestFive(targetPrivateRevenue / 4);
         
         // Realistic client acquisition: 3-5 new clients per month is achievable
         const realisticNewClients = Math.min(Math.max(targetClients - currentClients, 0), 5);
