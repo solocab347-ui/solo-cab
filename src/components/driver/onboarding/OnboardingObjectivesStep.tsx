@@ -18,7 +18,18 @@ import {
   ChevronRight,
   Compass,
   Lightbulb,
-  TrendingUp
+  TrendingUp,
+  XCircle,
+  AlertTriangle,
+  Zap,
+  Crown,
+  Phone,
+  QrCode,
+  Calendar,
+  PiggyBank,
+  UserCheck,
+  Clock,
+  Ban
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,44 +41,64 @@ interface OnboardingObjectivesStepProps {
 }
 
 const VISION_STEPS = [
-  { id: 'why', title: 'Pourquoi' },
-  { id: 'values', title: 'Valeurs' },
-  { id: 'motivation', title: 'Motivation' },
-  { id: 'commitment', title: 'Engagement' },
+  { id: 'problem', title: 'Le problème' },
+  { id: 'solution', title: 'La solution' },
+  { id: 'motivation', title: 'Ton profil' },
+  { id: 'commitment', title: 'C\'est parti' },
 ];
 
-const WHY_SOLOCAB = [
-  {
-    id: 'freedom',
-    icon: Rocket,
-    title: 'La liberté',
-    description: 'Gérer mon activité comme je le souhaite'
-  },
-  {
-    id: 'clients',
-    icon: Users,
-    title: 'Mes clients',
-    description: 'Construire ma propre clientèle fidèle'
-  },
-  {
-    id: 'revenue',
-    icon: TrendingUp,
-    title: 'Mes revenus',
-    description: 'Garder 100% de ce que je gagne'
-  },
-  {
-    id: 'balance',
-    icon: Heart,
-    title: 'Mon équilibre',
-    description: 'Concilier travail et vie personnelle'
-  }
+const PLATFORM_PROBLEMS = [
+  { icon: PiggyBank, text: 'Commissions de 20 à 30% sur chaque course' },
+  { icon: XCircle, text: 'Clients qui ne te rappellent jamais' },
+  { icon: Clock, text: 'Dépendance totale aux algorithmes' },
+  { icon: Ban, text: 'Aucune visibilité sur ton avenir' },
 ];
 
-const CORE_VALUES = [
-  { id: 'independence', icon: Shield, label: 'Indépendance' },
-  { id: 'quality', icon: Star, label: 'Qualité de service' },
-  { id: 'trust', icon: HandHeart, label: 'Confiance client' },
-  { id: 'growth', icon: TrendingUp, label: 'Croissance' },
+const SOLOCAB_SOLUTIONS = [
+  { 
+    icon: Crown, 
+    title: '0% de commission', 
+    desc: 'Tu gardes 100% de ce que tu gagnes'
+  },
+  { 
+    icon: Users, 
+    title: 'Tes clients, pour toujours', 
+    desc: 'Ils te retrouvent facilement et te recommandent'
+  },
+  { 
+    icon: QrCode, 
+    title: 'Plaque NFC intelligente', 
+    desc: 'Un simple scan = nouveau client fidélisé'
+  },
+  { 
+    icon: Calendar, 
+    title: 'Réservations directes', 
+    desc: 'Ton agenda en ligne, sans intermédiaire'
+  },
+];
+
+const DRIVER_PROFILES = [
+  { 
+    id: 'pioneer', 
+    emoji: '🚀', 
+    title: 'Le Pionnier', 
+    desc: 'Je veux sortir des plateformes maintenant',
+    motivation: 'high'
+  },
+  { 
+    id: 'builder', 
+    emoji: '🏗️', 
+    title: 'Le Bâtisseur', 
+    desc: 'Je construis ma clientèle progressivement',
+    motivation: 'medium'
+  },
+  { 
+    id: 'explorer', 
+    emoji: '🔍', 
+    title: 'L\'Explorateur', 
+    desc: 'Je découvre et j\'apprends',
+    motivation: 'low'
+  },
 ];
 
 const SWIPE_THRESHOLD = 50;
@@ -75,34 +106,16 @@ const SWIPE_THRESHOLD = 50;
 export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObjectivesStepProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [selectedWhys, setSelectedWhys] = useState<string[]>([]);
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [motivation, setMotivation] = useState<'high' | 'medium' | 'low' | ''>('');
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0: return selectedWhys.length > 0;
-      case 1: return selectedValues.length >= 2;
-      case 2: return !!motivation;
+      case 0: return true; // Problem awareness
+      case 1: return true; // Solution discovery
+      case 2: return !!selectedProfile;
       case 3: return true;
       default: return false;
-    }
-  };
-
-  const toggleWhy = (whyId: string) => {
-    setSelectedWhys(prev => 
-      prev.includes(whyId) 
-        ? prev.filter(w => w !== whyId)
-        : [...prev, whyId]
-    );
-  };
-
-  const selectAllWhys = () => {
-    if (selectedWhys.length === WHY_SOLOCAB.length) {
-      setSelectedWhys([]);
-    } else {
-      setSelectedWhys(WHY_SOLOCAB.map(w => w.id));
     }
   };
 
@@ -134,22 +147,23 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
   const handleComplete = async () => {
     setSaving(true);
     try {
+      const profile = DRIVER_PROFILES.find(p => p.id === selectedProfile);
+      
       await supabase
         .from('drivers')
         .update({
           objectives_completed: true,
           onboarding_objectives_completed: true,
-          onboarding_step: 'goals', // Sauvegarder la prochaine étape
+          onboarding_step: 'goals',
           objectives_data: {
-            why_solocab: selectedWhys,
-            core_values: selectedValues,
-            motivation_level: motivation,
+            driver_profile: selectedProfile,
+            motivation_level: profile?.motivation || 'medium',
             completed_at: new Date().toISOString()
           }
         })
         .eq('id', driverId);
 
-      toast.success('Ta vision est enregistrée !');
+      toast.success('Parfait ! Passons à la suite');
       onComplete();
     } catch (error) {
       console.error('Error saving vision:', error);
@@ -157,14 +171,6 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
     } finally {
       setSaving(false);
     }
-  };
-
-  const toggleValue = (valueId: string) => {
-    setSelectedValues(prev => 
-      prev.includes(valueId) 
-        ? prev.filter(v => v !== valueId)
-        : [...prev, valueId]
-    );
   };
 
   const slideVariants = {
@@ -175,137 +181,138 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
 
   const renderStep = () => {
     switch (currentStep) {
+      // STEP 0: LE PROBLÈME
       case 0:
         return (
           <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+            <div className="text-center mb-6">
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", duration: 0.8 }}
+                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mb-4 shadow-lg"
               >
-                <Compass className="w-7 h-7 text-primary-foreground" />
+                <AlertTriangle className="w-8 h-8 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
-                Pourquoi SoloCab ?
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Qu'est-ce qui t'amène ici ? (Plusieurs choix possibles)
-              </p>
-            </div>
-
-            {/* Bouton Tout sélectionner */}
-            <div className="flex justify-center mb-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={selectAllWhys}
-                className={cn(
-                  "text-xs",
-                  selectedWhys.length === WHY_SOLOCAB.length && "bg-primary text-primary-foreground"
-                )}
+              <motion.h2 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-2xl font-bold text-foreground mb-2"
               >
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                {selectedWhys.length === WHY_SOLOCAB.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-              </Button>
+                Le piège des plateformes
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-muted-foreground text-sm"
+              >
+                Tu travailles dur, mais pour qui ?
+              </motion.p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-              {WHY_SOLOCAB.map((option) => {
-                const Icon = option.icon;
-                const isSelected = selectedWhys.includes(option.id);
+            <div className="space-y-3 max-w-sm mx-auto">
+              {PLATFORM_PROBLEMS.map((problem, index) => {
+                const Icon = problem.icon;
                 return (
-                  <motion.button
-                    key={option.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => toggleWhy(option.id)}
-                    className={cn(
-                      "p-3 rounded-xl border-2 text-left transition-all relative",
-                      isSelected 
-                        ? "border-primary bg-primary/10" 
-                        : "border-border bg-card hover:border-primary/50"
-                    )}
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20"
                   >
-                    {isSelected && (
-                      <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-primary" />
-                    )}
-                    <div className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center mb-2",
-                      isSelected ? "bg-primary" : "bg-muted"
-                    )}>
-                      <Icon className={cn("w-4 h-4", isSelected ? "text-primary-foreground" : "text-muted-foreground")} />
+                    <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 text-red-500" />
                     </div>
-                    <h3 className="font-semibold text-foreground text-sm">{option.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{option.description}</p>
-                  </motion.button>
+                    <p className="text-sm text-foreground font-medium">{problem.text}</p>
+                  </motion.div>
                 );
               })}
             </div>
 
-            {selectedWhys.length > 0 && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-xs text-primary mt-3"
-              >
-                {selectedWhys.length} sélectionné{selectedWhys.length > 1 ? 's' : ''}
-              </motion.p>
-            )}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="text-center mt-6"
+            >
+              <p className="text-lg font-bold text-red-500">
+                Stop. Il y a mieux.
+              </p>
+            </motion.div>
           </div>
         );
 
+      // STEP 1: LA SOLUTION SOLOCAB
       case 1:
         return (
           <div className="flex flex-col h-full justify-center">
             <div className="text-center mb-4">
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.6 }}
+                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3 shadow-lg"
               >
-                <Star className="w-7 h-7 text-primary-foreground" />
+                <Zap className="w-8 h-8 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
-                Tes valeurs
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Ce qui compte le plus pour toi
-              </p>
-              <Badge className="mt-2 bg-primary/10 text-primary border-primary/20">
-                Sélectionne au moins 2 valeurs
-              </Badge>
+              <motion.h2 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-2xl font-bold text-foreground mb-1"
+              >
+                SoloCab, c'est quoi ?
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-muted-foreground text-sm max-w-xs mx-auto"
+              >
+                L'outil des chauffeurs qui veulent reprendre le contrôle
+              </motion.p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-2 max-w-sm mx-auto">
-              {CORE_VALUES.map((value) => {
-                const Icon = value.icon;
-                const isSelected = selectedValues.includes(value.id);
+            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+              {SOLOCAB_SOLUTIONS.map((solution, index) => {
+                const Icon = solution.icon;
                 return (
-                  <motion.button
-                    key={value.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => toggleValue(value.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-3 rounded-full border-2 transition-all",
-                      isSelected 
-                        ? "border-primary bg-primary/10" 
-                        : "border-border bg-card hover:border-primary/50"
-                    )}
+                    transition={{ delay: 0.2 + index * 0.1 }}
+                    className="p-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-colors"
                   >
-                    <Icon className={cn("w-4 h-4", isSelected ? "text-primary" : "text-muted-foreground")} />
-                    <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
-                      {value.label}
-                    </span>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-primary" />}
-                  </motion.button>
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2">
+                      <Icon className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                    <h3 className="font-bold text-foreground text-sm mb-0.5">{solution.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-tight">{solution.desc}</p>
+                  </motion.div>
                 );
               })}
             </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mt-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 max-w-sm mx-auto"
+            >
+              <p className="text-center text-sm font-semibold text-primary">
+                🎯 14 jours d'essai gratuit
+              </p>
+              <p className="text-center text-xs text-muted-foreground mt-1">
+                Puis 29,99€/mois • Sans engagement
+              </p>
+            </motion.div>
           </div>
         );
 
+      // STEP 2: PROFIL DU CHAUFFEUR
       case 2:
         return (
           <div className="flex flex-col h-full justify-center">
@@ -315,101 +322,145 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 animate={{ scale: 1, opacity: 1 }}
                 className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
               >
-                <Lightbulb className="w-7 h-7 text-primary-foreground" />
+                <UserCheck className="w-7 h-7 text-primary-foreground" />
               </motion.div>
               <h2 className="text-xl font-bold text-foreground mb-1">
-                Ton niveau d'engagement
+                Quel chauffeur es-tu ?
               </h2>
               <p className="text-sm text-muted-foreground">
-                Combien es-tu prêt à investir ?
+                On adapte ton parcours à ton rythme
               </p>
             </div>
 
-            <div className="space-y-2 max-w-sm mx-auto">
-              {[
-                { id: 'high', label: 'Tout donner', desc: 'Je suis prêt à m\'investir à 100%', emoji: '🔥' },
-                { id: 'medium', label: 'Progresser', desc: 'J\'avance à mon rythme', emoji: '📈' },
-                { id: 'low', label: 'Découvrir', desc: 'Je veux d\'abord tester', emoji: '🔍' },
-              ].map((option) => (
-                <motion.button
-                  key={option.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={() => setMotivation(option.id as any)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-                    motivation === option.id 
-                      ? "border-primary bg-primary/10" 
-                      : "border-border bg-card hover:border-primary/50"
-                  )}
-                >
-                  <span className="text-xl">{option.emoji}</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground text-sm">{option.label}</h3>
-                    <p className="text-xs text-muted-foreground">{option.desc}</p>
-                  </div>
-                  {motivation === option.id && (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                  )}
-                </motion.button>
-              ))}
+            <div className="space-y-3 max-w-sm mx-auto">
+              {DRIVER_PROFILES.map((profile, index) => {
+                const isSelected = selectedProfile === profile.id;
+                return (
+                  <motion.button
+                    key={profile.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => setSelectedProfile(profile.id)}
+                    className={cn(
+                      "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                      isSelected 
+                        ? "border-primary bg-primary/10 shadow-md" 
+                        : "border-border bg-card hover:border-primary/50"
+                    )}
+                  >
+                    <span className="text-3xl">{profile.emoji}</span>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-foreground">{profile.title}</h3>
+                      <p className="text-sm text-muted-foreground">{profile.desc}</p>
+                    </div>
+                    {isSelected && (
+                      <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                    )}
+                  </motion.button>
+                );
+              })}
             </div>
+
+            {selectedProfile && (
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center text-sm text-primary mt-4 font-medium"
+              >
+                ✨ Parfait, on va t'accompagner !
+              </motion.p>
+            )}
           </div>
         );
 
+      // STEP 3: ENGAGEMENT FINAL
       case 3:
         return (
           <div className="flex flex-col h-full justify-center">
             <div className="text-center mb-4">
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", duration: 0.8 }}
+                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary via-emerald-500 to-green-500 flex items-center justify-center mb-4 shadow-xl"
               >
-                <Sparkles className="w-8 h-8 text-primary-foreground" />
+                <Rocket className="w-10 h-10 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Bienvenue dans la communauté !
-              </h2>
-              <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                Tu rejoins des chauffeurs qui ont fait le choix de l'indépendance.
-              </p>
+              <motion.h2 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-2xl font-bold text-foreground mb-2"
+              >
+                Prêt à te libérer ?
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-muted-foreground text-sm max-w-xs mx-auto"
+              >
+                En quelques minutes, ton espace chauffeur sera configuré
+              </motion.p>
             </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-primary/5 border border-primary/20 rounded-xl p-4 max-w-sm mx-auto mb-4"
+              transition={{ delay: 0.3 }}
+              className="bg-card border border-border rounded-xl p-4 max-w-sm mx-auto mb-4"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <HandHeart className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground text-sm">Notre engagement</span>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span className="font-bold text-foreground">Ce qui t'attend</span>
               </div>
-              <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>Pas de commission sur tes courses</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>Tes clients t'appartiennent</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>Support et coaching personnalisé</span>
-                </li>
+              <ul className="space-y-2">
+                {[
+                  { icon: Target, text: 'Définir tes objectifs de revenus' },
+                  { icon: TrendingUp, text: 'Configurer tes tarifs' },
+                  { icon: Users, text: 'Créer ton profil public' },
+                  { icon: QrCode, text: 'Commander ta plaque NFC' },
+                ].map((item, i) => (
+                  <motion.li 
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.1 }}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <item.icon className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground">{item.text}</span>
+                  </motion.li>
+                ))}
               </ul>
             </motion.div>
 
-            <Button
-              onClick={handleComplete}
-              disabled={saving}
-              size="lg"
-              className="mx-auto"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
             >
-              {saving ? 'Enregistrement...' : 'Commencer l\'aventure'}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+              <Button
+                onClick={handleComplete}
+                disabled={saving}
+                size="lg"
+                className="w-full max-w-sm mx-auto h-14 text-base font-bold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 shadow-lg"
+              >
+                {saving ? (
+                  'Préparation...'
+                ) : (
+                  <>
+                    Lancer ma configuration
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+              <p className="text-center text-xs text-muted-foreground mt-3">
+                ⏱️ Environ 5 minutes • Données modifiables à tout moment
+              </p>
+            </motion.div>
           </div>
         );
 
