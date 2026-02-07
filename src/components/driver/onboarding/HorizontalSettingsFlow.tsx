@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowRight, 
   ArrowLeft, 
@@ -34,6 +35,7 @@ interface HorizontalSettingsFlowProps {
     siren: string;
     tvaNumber: string;
     vehicleBrand: string;
+    vehicleModel: string;
     vehicleYear: string;
     vehicleColor: string;
     vehiclePlate: string;
@@ -42,6 +44,22 @@ interface HorizontalSettingsFlowProps {
   onUpdate: (updates: Partial<HorizontalSettingsFlowProps['data']>) => void;
   onComplete?: () => void;
 }
+
+// Liste des couleurs de véhicules courantes
+const VEHICLE_COLORS = [
+  { value: 'noir', label: 'Noir', hex: '#1a1a1a' },
+  { value: 'blanc', label: 'Blanc', hex: '#ffffff' },
+  { value: 'gris', label: 'Gris', hex: '#6b7280' },
+  { value: 'argent', label: 'Argent', hex: '#c0c0c0' },
+  { value: 'bleu', label: 'Bleu', hex: '#3b82f6' },
+  { value: 'bleu-marine', label: 'Bleu marine', hex: '#1e3a5f' },
+  { value: 'rouge', label: 'Rouge', hex: '#ef4444' },
+  { value: 'bordeaux', label: 'Bordeaux', hex: '#722f37' },
+  { value: 'vert', label: 'Vert', hex: '#22c55e' },
+  { value: 'beige', label: 'Beige', hex: '#d4c4a8' },
+  { value: 'marron', label: 'Marron', hex: '#7c5c42' },
+  { value: 'or', label: 'Or / Champagne', hex: '#d4af37' },
+];
 
 type StepId = 'welcome' | 'base_fare' | 'per_km' | 'hourly' | 'minimum' | 'company' | 'vehicle' | 'recap';
 
@@ -69,7 +87,7 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
         return !!data.companyName.trim() && 
                !!data.siret.trim() && data.siret.replace(/\s/g, '').length === 14 &&
                !!data.companyAddress.trim();
-      case 'vehicle': return !!data.vehicleBrand.trim();
+      case 'vehicle': return !!data.vehicleBrand.trim() && !!data.vehicleModel.trim();
       case 'recap': return true;
       default: return true;
     }
@@ -400,28 +418,29 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
 
       case 'vehicle':
         return (
-          <div className="h-full flex flex-col justify-center space-y-6 px-2">
+          <div className="h-full flex flex-col justify-center space-y-4 px-2 overflow-y-auto py-4">
             <div className="text-center">
-              <Car className="w-10 h-10 text-primary mx-auto mb-3" />
+              <Car className="w-10 h-10 text-primary mx-auto mb-2" />
               <h2 className="text-xl font-bold text-white">Ton véhicule</h2>
               <p className="text-white/60 text-sm mt-1">
                 Aide tes clients à te reconnaître
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
+              {/* Marque avec suggestions rapides */}
               <div>
                 <Label className="text-white/60 text-sm">Marque *</Label>
                 <Input
                   value={data.vehicleBrand}
                   onChange={(e) => onUpdate({ vehicleBrand: e.target.value })}
                   placeholder="Ex: Mercedes, Tesla..."
-                  className="h-12 bg-white/10 border-white/20 text-white mt-1"
+                  className="h-11 bg-white/10 border-white/20 text-white mt-1"
                 />
               </div>
               
               <div className="flex flex-wrap justify-center gap-2">
-                {['Mercedes', 'Tesla', 'BMW', 'Audi', 'Peugeot'].map(v => (
+                {['Mercedes', 'Tesla', 'BMW', 'Audi', 'Peugeot', 'Volkswagen'].map(v => (
                   <QuickOption 
                     key={v} 
                     value={v} 
@@ -431,26 +450,71 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
                   />
                 ))}
               </div>
+
+              {/* Modèle */}
+              <div>
+                <Label className="text-white/60 text-sm">Modèle *</Label>
+                <Input
+                  value={data.vehicleModel}
+                  onChange={(e) => onUpdate({ vehicleModel: e.target.value })}
+                  placeholder="Ex: Classe E, Model S, Série 5..."
+                  className="h-11 bg-white/10 border-white/20 text-white mt-1"
+                />
+              </div>
               
+              {/* Année et Couleur sur une ligne */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-white/60 text-sm">Couleur</Label>
+                  <Label className="text-white/60 text-sm">Année</Label>
                   <Input
-                    value={data.vehicleColor}
-                    onChange={(e) => onUpdate({ vehicleColor: e.target.value })}
-                    placeholder="Noir"
+                    type="number"
+                    value={data.vehicleYear}
+                    onChange={(e) => onUpdate({ vehicleYear: e.target.value })}
+                    placeholder="2023"
+                    min="2000"
+                    max="2030"
                     className="h-10 bg-white/10 border-white/20 text-white mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-white/60 text-sm">Plaque</Label>
-                  <Input
-                    value={data.vehiclePlate}
-                    onChange={(e) => onUpdate({ vehiclePlate: e.target.value })}
-                    placeholder="AB-123-CD"
-                    className="h-10 bg-white/10 border-white/20 text-white mt-1"
-                  />
+                  <Label className="text-white/60 text-sm">Couleur</Label>
+                  <Select 
+                    value={data.vehicleColor} 
+                    onValueChange={(value) => onUpdate({ vehicleColor: value })}
+                  >
+                    <SelectTrigger className="h-10 bg-white/10 border-white/20 text-white mt-1">
+                      <SelectValue placeholder="Choisir..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      {VEHICLE_COLORS.map(color => (
+                        <SelectItem 
+                          key={color.value} 
+                          value={color.label}
+                          className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full border border-white/30" 
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <span>{color.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              {/* Plaque */}
+              <div>
+                <Label className="text-white/60 text-sm">Plaque d'immatriculation</Label>
+                <Input
+                  value={data.vehiclePlate}
+                  onChange={(e) => onUpdate({ vehiclePlate: e.target.value.toUpperCase() })}
+                  placeholder="AB-123-CD"
+                  className="h-10 bg-white/10 border-white/20 text-white mt-1 uppercase font-mono"
+                />
               </div>
             </div>
           </div>
