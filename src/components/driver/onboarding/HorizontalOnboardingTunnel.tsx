@@ -545,6 +545,10 @@ export function HorizontalOnboardingTunnel({
           <OnboardingNfcStep
             hasNfcPlate={stepData.nfc.hasNfcPlate}
             driverId={driverId}
+            onSkip={() => {
+              setDirection(1);
+              setCurrentStep(currentStep + 1);
+            }}
           />
         );
       case 'trial_start':

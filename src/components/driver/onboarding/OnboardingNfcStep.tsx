@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 interface OnboardingNfcStepProps {
   hasNfcPlate: boolean;
   driverId: string;
+  onSkip?: () => void;
 }
 
 type PlateType = 'standard' | 'premium' | null;
@@ -66,7 +67,7 @@ const plates = {
   }
 };
 
-export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepProps) {
+export function OnboardingNfcStep({ hasNfcPlate, driverId, onSkip }: OnboardingNfcStepProps) {
   const [selectedPlate, setSelectedPlate] = useState<PlateType>(null);
   const [ordering, setOrdering] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -518,10 +519,26 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
         </div>
       </motion.div>
 
-      {/* Skip option */}
-      <p className="text-center text-[10px] text-muted-foreground pt-2">
-        💡 Vous pouvez aussi passer cette étape et commander plus tard dans votre espace chauffeur.
-      </p>
+      {/* Skip option - Bouton en évidence */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="pt-3"
+      >
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onSkip}
+          className="w-full h-12 border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all"
+        >
+          <ArrowRight className="w-4 h-4 mr-2" />
+          Je ne souhaite pas commander pour l'instant
+        </Button>
+        <p className="text-center text-[9px] text-muted-foreground mt-2">
+          💡 Vous pourrez commander plus tard depuis votre tableau de bord
+        </p>
+      </motion.div>
     </div>
   );
 }
