@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,7 @@ const VISION_STEPS = [
 ];
 
 const PLATFORM_PROBLEMS = [
-  { icon: PiggyBank, text: 'Commissions de 20 à 30% sur chaque course' },
+  { icon: PiggyBank, text: 'Commissions de 18% à 45%, parfois plus !' },
   { icon: XCircle, text: 'Clients qui ne te rappellent jamais' },
   { icon: Clock, text: 'Dépendance totale aux algorithmes' },
   { icon: Ban, text: 'Aucune visibilité sur ton avenir' },
@@ -108,6 +108,53 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
   const [direction, setDirection] = useState(0);
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  
+  // Charger le profil sauvegardé au montage
+  useEffect(() => {
+    const loadSavedProfile = async () => {
+      try {
+        const { data } = await supabase
+          .from('drivers')
+          .select('objectives_data')
+          .eq('id', driverId)
+          .single();
+        
+        const objectivesData = data?.objectives_data as Record<string, any> | null;
+        if (objectivesData?.driver_profile) {
+          setSelectedProfile(objectivesData.driver_profile);
+        }
+      } catch (error) {
+        console.error('Erreur chargement profil:', error);
+      }
+    };
+    loadSavedProfile();
+  }, [driverId]);
+  
+  // Auto-sauvegarder le profil sélectionné immédiatement
+  const saveProfileSelection = useCallback(async (profileId: string) => {
+    try {
+      const profile = DRIVER_PROFILES.find(p => p.id === profileId);
+      await supabase
+        .from('drivers')
+        .update({
+          objectives_data: {
+            driver_profile: profileId,
+            motivation_level: profile?.motivation || 'medium',
+            updated_at: new Date().toISOString()
+          }
+        })
+        .eq('id', driverId);
+      console.log('Profil auto-sauvegardé:', profileId);
+    } catch (error) {
+      console.error('Erreur auto-save profil:', error);
+    }
+  }, [driverId]);
+  
+  // Sauvegarder à chaque changement de profil
+  const handleProfileSelect = (profileId: string) => {
+    setSelectedProfile(profileId);
+    saveProfileSelection(profileId);
+  };
 
   const canProceed = () => {
     switch (currentStep) {
@@ -341,7 +388,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    onClick={() => setSelectedProfile(profile.id)}
+                    onClick={() => handleProfileSelect(profile.id)}
                     className={cn(
                       "w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 text-left transition-all",
                       isSelected 
