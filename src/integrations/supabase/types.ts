@@ -3527,6 +3527,8 @@ export type Database = {
           auto_dispatch_enabled: boolean | null
           bank_imprint_at: string | null
           cancellation_by: string | null
+          card_hold_confirmed_at: string | null
+          card_hold_status: string | null
           client_id: string | null
           client_payment_confirmation: string | null
           client_payment_confirmation_at: string | null
@@ -3587,12 +3589,16 @@ export type Database = {
           status: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
+          stripe_payment_method_id: string | null
+          stripe_setup_intent_id: string | null
           updated_at: string
         }
         Insert: {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
+          card_hold_confirmed_at?: string | null
+          card_hold_status?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3653,12 +3659,16 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_setup_intent_id?: string | null
           updated_at?: string
         }
         Update: {
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
+          card_hold_confirmed_at?: string | null
+          card_hold_status?: string | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3719,6 +3729,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_setup_intent_id?: string | null
           updated_at?: string
         }
         Relationships: [
