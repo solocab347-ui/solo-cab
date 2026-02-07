@@ -73,15 +73,15 @@ const getCoachAdvice = (
     suggestions.push(`+${Math.round(revenueGrowth)}% de croissance, c'est faisable avec de l'engagement ! 💪`);
   }
   
-  // Check client acquisition
-  if (currentClients === 0 && targetClients > 20) {
-    warnings.push(`Passer de 0 à ${targetClients} clients en quelques semaines, c'est très ambitieux.`);
-    suggestions.push(`La confiance client se construit petit à petit. Commence par viser 10-15 clients réguliers.`);
-  } else if (clientGrowth > 30 && currentClients > 0) {
-    warnings.push(`+${clientGrowth} nouveaux clients d'un coup, ça demande beaucoup d'énergie !`);
-    suggestions.push(`Je te conseille de viser +10-15 clients d'abord.`);
-  } else if (clientGrowth > 15 && currentClients === 0) {
-    suggestions.push(`${targetClients} clients fidèles en objectif, c'est réaliste avec du travail ! 🎯`);
+  // Check monthly client acquisition
+  if (targetClients > 30) {
+    warnings.push(`${targetClients} nouveaux clients par mois, c'est très ambitieux ! 📊`);
+    suggestions.push(`Commence par 10-15 nouveaux clients/mois, tu pourras augmenter ensuite.`);
+  } else if (targetClients >= 15 && targetClients <= 30) {
+    const estimatedFaithful = Math.round(targetClients * 0.35);
+    suggestions.push(`${targetClients} nouveaux/mois = ~${estimatedFaithful} fidèles. Objectif réaliste avec du travail ! 🎯`);
+  } else if (targetClients > 0 && targetClients < 5) {
+    suggestions.push(`${targetClients} nouveau(x)/mois, c'est un bon début prudent. Tu pourras augmenter au fil du temps ! 💪`);
   }
   
   // Check platform dependency target
@@ -222,7 +222,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     switch (currentStep) {
       case 0: return true; // Current situation has defaults
       case 1: return targetRevenue >= 1000;
-      case 2: return targetClients >= 5;
+      case 2: return targetClients >= 1; // Objectif nouveaux clients/mois (min 1)
       case 3: return selectedDays.length >= 3; // Planning step
       case 4: return true; // Summary
       default: return false;
@@ -564,36 +564,44 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         );
 
       case 2:
+        // Calculs pédagogiques pour la fidélisation
+        const estimatedScansPerMonth = targetClients * 3; // 3x plus de scans que de fidèles
+        const retentionRate = 35; // ~35% des nouveaux clients deviennent fidèles
+        const estimatedFaithfulClients = Math.round(targetClients * (retentionRate / 100));
+        const annualNewClients = targetClients * 12;
+        const annualFaithfulClients = Math.round(annualNewClients * (retentionRate / 100));
+        
         return (
-          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
-            <div className="text-center mb-3 sm:mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4 overflow-y-auto">
+            <div className="text-center mb-2 sm:mb-3">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-2"
               >
                 <Users className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
-                Ton objectif clients
+              <h2 className="text-base sm:text-xl font-bold text-foreground mb-0.5">
+                Objectif nouveaux clients / mois
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Combien de clients fidèles veux-tu avoir ?
+              <p className="text-[10px] sm:text-sm text-muted-foreground px-2">
+                Combien de <span className="font-semibold text-primary">nouveaux clients</span> veux-tu acquérir chaque mois ?
               </p>
             </div>
 
-            <div className="w-full max-w-sm mx-auto space-y-3 sm:space-y-4 px-1">
-              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
-                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+            <div className="w-full max-w-sm mx-auto space-y-2 sm:space-y-3 px-1">
+              {/* Monthly target input */}
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-2.5 sm:p-4">
+                <div className="flex items-center justify-center gap-2 mb-2 sm:mb-3">
                   <NumericInput
                     value={clientsValue}
                     onChange={handleClientsChange}
                     allowEmpty={true}
-                    min={5}
-                    max={100}
-                    className="text-xl sm:text-2xl font-bold text-center w-20 sm:w-24"
+                    min={1}
+                    max={50}
+                    className="text-xl sm:text-2xl font-bold text-center w-16 sm:w-20"
                   />
-                  <span className="text-lg sm:text-xl font-semibold text-muted-foreground">clients</span>
+                  <span className="text-sm sm:text-lg font-semibold text-muted-foreground">nouveaux clients/mois</span>
                 </div>
                 
                 <Slider
@@ -602,36 +610,118 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     setTargetClients(v);
                     setClientsValue(v.toString());
                   }}
-                  min={5}
-                  max={100}
-                  step={5}
-                  className="mt-2 sm:mt-3"
+                  min={1}
+                  max={50}
+                  step={1}
+                  className="mt-1 sm:mt-2"
                 />
-                <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">
-                  <span>5 clients</span>
-                  <span>100 clients</span>
+                <div className="flex justify-between text-[9px] sm:text-xs text-muted-foreground mt-1">
+                  <span>1/mois</span>
+                  <span>50/mois</span>
+                </div>
+
+                {/* Quick select buttons */}
+                <div className="flex justify-center gap-1.5 mt-2">
+                  {[5, 10, 15, 20].map(val => (
+                    <button
+                      key={val}
+                      onClick={() => {
+                        setTargetClients(val);
+                        setClientsValue(val.toString());
+                      }}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-xs font-medium transition-all",
+                        targetClients === val
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {val}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {estimatedPerClient > 0 && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2.5 sm:p-3 text-center">
-                  <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
-                    📊 ~{estimatedPerClient}€ de CA moyen par client/mois
-                  </p>
+              {/* Pedagogical conversion explanation */}
+              <motion.div 
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-2.5 sm:p-3"
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <Smartphone className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                      📱 Comment ça fonctionne ?
+                    </p>
+                    <p className="text-[9px] sm:text-[11px] text-foreground/80 leading-relaxed">
+                      Quand un passager scanne ton <strong>QR code</strong> ou ta <strong>plaque NFC</strong>, il s'inscrit comme nouveau client.
+                      Mais attention : tous ne seront pas fidèles !
+                    </p>
+                  </div>
                 </div>
-              )}
+              </motion.div>
+
+              {/* Retention stats */}
+              <div className="bg-card border border-border rounded-lg p-2.5 sm:p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <UserCheck className="w-4 h-4 text-emerald-500" />
+                  <span className="text-[10px] sm:text-xs font-semibold">Taux de fidélisation moyen : ~{retentionRate}%</span>
+                </div>
+                
+                <div className="space-y-1.5">
+                  {/* Scans → New clients → Faithful */}
+                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px]">
+                    <span className="w-20 sm:w-24 text-muted-foreground">Scans estimés</span>
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-400 w-full" />
+                    </div>
+                    <span className="font-medium text-blue-500">~{estimatedScansPerMonth}/mois</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px]">
+                    <span className="w-20 sm:w-24 text-muted-foreground">Nouveaux inscrits</span>
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary w-2/3" />
+                    </div>
+                    <span className="font-medium text-primary">{targetClients}/mois</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px]">
+                    <span className="w-20 sm:w-24 text-muted-foreground">Clients fidèles</span>
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 w-1/3" />
+                    </div>
+                    <span className="font-medium text-emerald-500">~{estimatedFaithfulClients}/mois</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Annual projection */}
+              <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20 rounded-lg p-2.5 sm:p-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      📈 Projection sur 1 an
+                    </p>
+                    <p className="text-[9px] sm:text-[11px] text-foreground/80">
+                      {targetClients} nouveaux/mois × 12 = <strong>{annualNewClients} inscrits</strong> → <strong className="text-emerald-600">~{annualFaithfulClients} clients fidèles</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {renderCoachFeedback()}
 
+              {/* Coach advice */}
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/10 border border-primary/20 rounded-lg p-2.5 sm:p-3"
+                className="bg-primary/10 border border-primary/20 rounded-lg p-2 sm:p-2.5"
               >
                 <div className="flex items-start gap-2">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">
-                    <span className="font-semibold">Alex :</span> Un client fidèle vaut 3 à 5 fois plus qu'une course plateforme. Mieux vaut 15 bons clients que 50 qui commandent une fois !
+                  <p className="text-[9px] sm:text-[11px] text-foreground leading-relaxed">
+                    <span className="font-semibold">Alex :</span> Vise {targetClients} nouveaux clients/mois. Certains ne reviendront pas, mais les ~{estimatedFaithfulClients} fidèles valent 3 à 5 fois plus qu'une course plateforme ! 🎯
                   </p>
                 </div>
               </motion.div>
