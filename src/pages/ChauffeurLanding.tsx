@@ -151,18 +151,16 @@ const ChauffeurLanding = () => {
         <div className="container mx-auto max-w-2xl">
           <Card className="p-5 sm:p-8 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-bl-lg">
-              14 JOURS OFFERTS
+              SANS ENGAGEMENT
             </div>
             
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Abonnement SoloCab</h3>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              <span className="text-green-400">14 jours gratuits</span>
+            </h3>
+            <p className="text-lg sm:text-xl text-white mb-1">pour tester SoloCab</p>
             
-            <div className="mb-3 sm:mb-4">
-              <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white">{monthlyPrice.toFixed(2)}€</span>
-              <span className="text-gray-400 text-base sm:text-lg">/mois</span>
-            </div>
-
-            <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
-              14 jours gratuits • Sans engagement
+            <p className="text-gray-400 mb-4 sm:mb-6 text-xs sm:text-sm">
+              Après les 14 jours, si je reste : <span className="text-white font-medium">{monthlyPrice.toFixed(2)}€/mois</span>
             </p>
 
             <Link to="/register-driver-promo" className="block">
