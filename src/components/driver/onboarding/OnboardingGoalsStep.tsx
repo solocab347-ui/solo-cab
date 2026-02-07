@@ -117,6 +117,71 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
   // Coach advice state
   const [coachAdvice, setCoachAdvice] = useState<{ warnings: string[]; suggestions: string[] }>({ warnings: [], suggestions: [] });
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // *** IMPORTANT: Charger les données sauvegardées au montage ***
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const { data } = await supabase
+          .from('drivers')
+          .select('objectives_data')
+          .eq('id', driverId)
+          .single();
+        
+        const objectivesData = data?.objectives_data as Record<string, any> | null;
+        if (objectivesData) {
+          // Charger les données de situation actuelle
+          if (objectivesData.current_monthly_revenue !== undefined) {
+            setCurrentRevenue(objectivesData.current_monthly_revenue);
+            setCurrentRevenueValue(objectivesData.current_monthly_revenue.toString());
+          }
+          if (objectivesData.current_clients !== undefined) {
+            setCurrentClients(objectivesData.current_clients);
+            setCurrentClientsValue(objectivesData.current_clients.toString());
+          }
+          if (objectivesData.platform_percentage !== undefined) {
+            setPlatformPercentage(objectivesData.platform_percentage);
+          }
+          
+          // Charger les objectifs
+          if (objectivesData.target_monthly_revenue !== undefined) {
+            setTargetRevenue(objectivesData.target_monthly_revenue);
+            setRevenueValue(objectivesData.target_monthly_revenue.toString());
+          }
+          if (objectivesData.target_clients !== undefined) {
+            setTargetClients(objectivesData.target_clients);
+            setClientsValue(objectivesData.target_clients.toString());
+          }
+          
+          // Charger le planning
+          if (objectivesData.selected_work_days && Array.isArray(objectivesData.selected_work_days)) {
+            setSelectedDays(objectivesData.selected_work_days);
+          }
+          if (objectivesData.work_hours_per_day !== undefined) {
+            setWorkHoursPerDay(objectivesData.work_hours_per_day);
+          }
+          
+          // Charger les clients (aussi appelé current_direct_clients et target_direct_clients)
+          if (objectivesData.current_direct_clients !== undefined) {
+            setCurrentClients(objectivesData.current_direct_clients);
+            setCurrentClientsValue(objectivesData.current_direct_clients.toString());
+          }
+          if (objectivesData.target_direct_clients !== undefined) {
+            setTargetClients(objectivesData.target_direct_clients);
+            setClientsValue(objectivesData.target_direct_clients.toString());
+          }
+          
+          console.log('📊 Données objectifs chargées:', objectivesData);
+        }
+      } catch (error) {
+        console.error('Erreur chargement objectifs:', error);
+      } finally {
+        setDataLoaded(true);
+      }
+    };
+    loadSavedData();
+  }, [driverId]);
 
   // Calculations
   const solocabPercentage = 100 - platformPercentage;

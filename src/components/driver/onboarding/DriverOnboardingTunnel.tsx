@@ -84,6 +84,7 @@ export function DriverOnboardingTunnel({
       siren: driverProfile?.driver?.siren || '',
       tvaNumber: driverProfile?.driver?.tva_number || '',
       vehicleBrand: driverProfile?.driver?.vehicle_brand || '',
+      vehicleModel: driverProfile?.driver?.vehicle_model || '',
       vehicleYear: driverProfile?.driver?.vehicle_year?.toString() || '',
       vehicleColor: driverProfile?.driver?.vehicle_color || '',
       vehiclePlate: driverProfile?.driver?.vehicle_plate || '',
@@ -136,9 +137,10 @@ export function DriverOnboardingTunnel({
 
   // Auto-save on data changes (for settings and profile steps)
   useEffect(() => {
-    if (currentStep === 0 || currentStep === 1) {
+    const stepId = currentStep === 0 ? 'settings' : currentStep === 1 ? 'profile' : null;
+    if (stepId) {
       setAutoSaveStatus('saving');
-      autoSave(stepData, currentStep);
+      autoSave(stepData, stepId);
       
       // Show "saved" status after debounce delay
       const timeout = setTimeout(() => {
@@ -154,8 +156,9 @@ export function DriverOnboardingTunnel({
   // Save on page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentStep === 0 || currentStep === 1) {
-        saveImmediately(stepData, currentStep);
+      const stepId = currentStep === 0 ? 'settings' : currentStep === 1 ? 'profile' : null;
+      if (stepId) {
+        saveImmediately(stepData, stepId);
       }
     };
 
