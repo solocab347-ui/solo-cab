@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,8 @@ import {
   ChevronRight,
   BookOpen,
   HelpCircle,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sumupTpeCard from '@/assets/sumup-tpe-card.jpg';
@@ -96,6 +98,7 @@ const BILLING_OPTIONS = [
 ];
 
 export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepProps) {
+  const [searchParams] = useSearchParams();
   const [showAffiliateInfo, setShowAffiliateInfo] = useState(false);
   const [showStripeInfo, setShowStripeInfo] = useState(false);
   const [hasOrderedEquipment, setHasOrderedEquipment] = useState(false);
@@ -103,6 +106,13 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   const [hasClickedLink, setHasClickedLink] = useState(false);
   const [showStripeGuide, setShowStripeGuide] = useState(false);
   const [stripeOnboardingLoading, setStripeOnboardingLoading] = useState(false);
+  const [stripeStatusLoading, setStripeStatusLoading] = useState(false);
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<{
+    connected: boolean;
+    status: string;
+    charges_enabled: boolean;
+    details_submitted: boolean;
+  } | null>(null);
 
   const tpeImages = [sumupTpeDevice, sumupTpeCard];
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
@@ -111,6 +121,48 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   // IMPORTANT: Toujours afficher toutes les options si aucune n'est sélectionnée
   const hasSelectedOption = data.billingType !== null && data.billingType !== undefined;
   const [showAllOptions, setShowAllOptions] = useState(true); // Toujours montrer les options au chargement
+
+  // Vérifier automatiquement le statut Stripe après retour du callback
+  const checkStripeStatus = async () => {
+    setStripeStatusLoading(true);
+    try {
+      const { data: statusData, error } = await supabase.functions.invoke('stripe-connect-status');
+      
+      if (error) throw error;
+      
+      setStripeConnectStatus(statusData);
+      
+      if (statusData?.connected) {
+        if (statusData.details_submitted) {
+          toast.success('✅ Votre compte Stripe Connect est configuré !', {
+            description: statusData.charges_enabled 
+              ? 'Vous pouvez maintenant recevoir des paiements.'
+              : 'En attente de vérification par Stripe.',
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error checking Stripe status:', error);
+    } finally {
+      setStripeStatusLoading(false);
+    }
+  };
+
+  // Auto-check Stripe status when component mounts with solocab_stripe selected
+  useEffect(() => {
+    if (data.billingType === 'solocab_stripe') {
+      checkStripeStatus();
+    }
+  }, [data.billingType]);
+
+  // Check if user just returned from Stripe Connect
+  useEffect(() => {
+    const stripeParam = searchParams.get('stripe_connect');
+    if (stripeParam === 'success' && data.billingType === 'solocab_stripe') {
+      // User just returned from Stripe - refresh status
+      checkStripeStatus();
+    }
+  }, [searchParams, data.billingType]);
 
   // Fonction pour démarrer l'onboarding Stripe Connect
   const startStripeOnboarding = async () => {
@@ -390,35 +442,103 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
           </CardHeader>
           <CardContent className="p-4 pt-2 space-y-4">
             
-            {/* CTA Principal - Design épuré */}
-            <div className="bg-muted/50 border border-border rounded-xl p-4">
-              <div className="text-center mb-3">
-                <h3 className="font-bold text-base">Créez votre compte Stripe</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Configuration gratuite en 5 minutes
+            {/* Statut du compte Stripe Connect */}
+            {stripeConnectStatus?.connected ? (
+              <Alert className={cn(
+                "border",
+                stripeConnectStatus.details_submitted 
+                  ? stripeConnectStatus.charges_enabled 
+                    ? "border-green-500/30 bg-green-500/10" 
+                    : "border-amber-500/30 bg-amber-500/10"
+                  : "border-amber-500/30 bg-amber-500/10"
+              )}>
+                {stripeConnectStatus.details_submitted && stripeConnectStatus.charges_enabled ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Clock className="h-4 w-4 text-amber-600" />
+                )}
+                <AlertTitle className={cn(
+                  "text-sm font-semibold",
+                  stripeConnectStatus.details_submitted && stripeConnectStatus.charges_enabled
+                    ? "text-green-700"
+                    : "text-amber-700"
+                )}>
+                  {stripeConnectStatus.details_submitted && stripeConnectStatus.charges_enabled
+                    ? "✅ Compte Stripe Connect actif"
+                    : stripeConnectStatus.details_submitted
+                    ? "⏳ Vérification en cours par Stripe"
+                    : "⚠️ Configuration incomplète"}
+                </AlertTitle>
+                <AlertDescription className={cn(
+                  "text-xs mt-1",
+                  stripeConnectStatus.details_submitted && stripeConnectStatus.charges_enabled
+                    ? "text-green-600"
+                    : "text-amber-600"
+                )}>
+                  {stripeConnectStatus.details_submitted && stripeConnectStatus.charges_enabled
+                    ? "Vous pouvez recevoir des paiements par carte bancaire !"
+                    : stripeConnectStatus.details_submitted
+                    ? "Stripe vérifie vos informations. Cela peut prendre quelques minutes à 24h."
+                    : "Complétez votre inscription Stripe pour activer les paiements."}
+                </AlertDescription>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={checkStripeStatus}
+                    disabled={stripeStatusLoading}
+                    className="text-xs"
+                  >
+                    {stripeStatusLoading ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                    )}
+                    Actualiser le statut
+                  </Button>
+                  {!stripeConnectStatus.details_submitted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={startStripeOnboarding}
+                      disabled={stripeOnboardingLoading}
+                      className="text-xs"
+                    >
+                      Reprendre la configuration
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            ) : (
+              /* CTA Principal - Design épuré - seulement si pas encore connecté */
+              <div className="bg-muted/50 border border-border rounded-xl p-4">
+                <div className="text-center mb-3">
+                  <h3 className="font-bold text-base">Créez votre compte Stripe</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Configuration gratuite en 5 minutes
+                  </p>
+                </div>
+                
+                <Button
+                  size="lg"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  onClick={startStripeOnboarding}
+                  disabled={stripeOnboardingLoading}
+                >
+                  {stripeOnboardingLoading ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-5 h-5 mr-2" />
+                  )}
+                  {stripeOnboardingLoading ? 'Chargement...' : 'Commencer la configuration'}
+                  {!stripeOnboardingLoading && <ArrowRight className="w-5 h-5 ml-2" />}
+                </Button>
+                
+                <p className="text-center text-xs text-muted-foreground mt-2">
+                  Redirection sécurisée vers Stripe.com
                 </p>
               </div>
-              
-              <Button
-                size="lg"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                onClick={startStripeOnboarding}
-                disabled={stripeOnboardingLoading}
-              >
-                {stripeOnboardingLoading ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                ) : (
-                  <CreditCard className="w-5 h-5 mr-2" />
-                )}
-                {stripeOnboardingLoading ? 'Chargement...' : 'Commencer la configuration'}
-                {!stripeOnboardingLoading && <ArrowRight className="w-5 h-5 ml-2" />}
-              </Button>
-              
-              <p className="text-center text-xs text-muted-foreground mt-2">
-                Redirection sécurisée vers Stripe.com
-              </p>
-            </div>
-
+            )}
             {/* Guide secondaire */}
             <Button
               variant="outline"
