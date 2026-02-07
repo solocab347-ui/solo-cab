@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -108,11 +108,24 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
   const [direction, setDirection] = useState(0);
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Charger le profil sauvegardé au montage
+  // Charger le profil sauvegardé au montage (y compris currentStep)
   useEffect(() => {
     const loadSavedProfile = async () => {
       try {
+        // Check localStorage backup first
+        const localBackup = localStorage.getItem(`onboarding_vision_${driverId}`);
+        let localData: Record<string, any> | null = null;
+        if (localBackup) {
+          try {
+            localData = JSON.parse(localBackup);
+          } catch (e) {
+            console.warn('Impossible de parser le backup local vision');
+          }
+        }
+
         const { data } = await supabase
           .from('drivers')
           .select('objectives_data')
@@ -120,40 +133,106 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
           .single();
         
         const objectivesData = data?.objectives_data as Record<string, any> | null;
-        if (objectivesData?.driver_profile) {
-          setSelectedProfile(objectivesData.driver_profile);
+        const mergedData = { ...localData, ...objectivesData };
+        
+        if (mergedData?.driver_profile) {
+          setSelectedProfile(mergedData.driver_profile);
         }
+        if (mergedData?.vision_current_step !== undefined) {
+          setCurrentStep(mergedData.vision_current_step);
+        }
+        
+        // Clear localStorage backup after successful load
+        if (localBackup) {
+          localStorage.removeItem(`onboarding_vision_${driverId}`);
+        }
+        
+        console.log('📊 Données vision chargées:', mergedData);
       } catch (error) {
         console.error('Erreur chargement profil:', error);
+      } finally {
+        setDataLoaded(true);
       }
     };
     loadSavedProfile();
   }, [driverId]);
   
-  // Auto-sauvegarder le profil sélectionné immédiatement
-  const saveProfileSelection = useCallback(async (profileId: string) => {
+  // Auto-save continuous - sauvegarde le step et le profil sélectionné
+  const autoSaveData = useCallback(async () => {
+    if (!dataLoaded) return;
+    
     try {
-      const profile = DRIVER_PROFILES.find(p => p.id === profileId);
+      const { data: existingDriver } = await supabase
+        .from('drivers')
+        .select('objectives_data')
+        .eq('id', driverId)
+        .single();
+
+      const existingData = (existingDriver?.objectives_data as Record<string, any>) || {};
+      const profile = DRIVER_PROFILES.find(p => p.id === selectedProfile);
+
       await supabase
         .from('drivers')
         .update({
           objectives_data: {
-            driver_profile: profileId,
-            motivation_level: profile?.motivation || 'medium',
-            updated_at: new Date().toISOString()
+            ...existingData,
+            driver_profile: selectedProfile || (existingData.driver_profile as string) || '',
+            motivation_level: profile?.motivation || (existingData.motivation_level as string) || 'medium',
+            vision_current_step: currentStep,
+            last_auto_save_vision: new Date().toISOString(),
           }
         })
         .eq('id', driverId);
-      console.log('Profil auto-sauvegardé:', profileId);
+
+      console.log('✅ Vision auto-sauvegardée - step:', currentStep, 'profile:', selectedProfile);
     } catch (error) {
-      console.error('Erreur auto-save profil:', error);
+      console.error('❌ Erreur auto-save vision:', error);
     }
-  }, [driverId]);
+  }, [driverId, dataLoaded, currentStep, selectedProfile]);
+
+  // Auto-save with debounce whenever data changes
+  useEffect(() => {
+    if (!dataLoaded) return;
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced save (800ms delay)
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSaveData();
+    }, 800);
+
+    // Cleanup
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [dataLoaded, currentStep, selectedProfile, autoSaveData]);
+
+  // Save immediately on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      // Store in localStorage as backup
+      const dataToSave = {
+        driver_profile: selectedProfile,
+        vision_current_step: currentStep,
+      };
+      localStorage.setItem(`onboarding_vision_${driverId}`, JSON.stringify(dataToSave));
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [driverId, currentStep, selectedProfile]);
   
   // Sauvegarder à chaque changement de profil
   const handleProfileSelect = (profileId: string) => {
     setSelectedProfile(profileId);
-    saveProfileSelection(profileId);
   };
 
   const canProceed = () => {
