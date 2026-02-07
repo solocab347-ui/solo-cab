@@ -49,24 +49,24 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
   ];
 
   return (
-    <div className="text-center space-y-6">
+    <div className="text-center space-y-4 sm:space-y-6 px-1">
       {/* Hero */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="space-y-4"
+        className="space-y-3 sm:space-y-4"
       >
-        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center">
-          <Rocket className="w-10 h-10 text-white" />
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center">
+          <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
         </div>
         
-        <Badge className="bg-primary/10 text-primary border-primary/20">
-          <Sparkles className="w-3 h-3 mr-1" />
+        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
            {vision.title[lang]}
         </Badge>
         
-        <h1 className="text-2xl md:text-3xl font-bold">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
           Devenez un <span className="text-primary">chauffeur indépendant</span>
         </h1>
       </motion.div>
@@ -77,8 +77,8 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-         <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border/50 text-left">
-           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+         <div className="bg-card/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50 text-left">
+           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
              {vision.description[lang]}
            </p>
          </div>
@@ -89,11 +89,11 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-         className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4 text-left"
+         className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-left"
       >
-         <div className="flex items-start gap-3">
-           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-           <p className="text-sm font-medium text-foreground whitespace-pre-line">
+         <div className="flex items-start gap-2 sm:gap-3">
+           <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0 mt-0.5" />
+           <p className="text-xs sm:text-sm font-medium text-foreground whitespace-pre-line leading-tight">
              {vision.responsibility[lang]}
            </p>
         </div>
@@ -104,11 +104,11 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
          initial={{ y: 20, opacity: 0 }}
          animate={{ y: 0, opacity: 1 }}
          transition={{ delay: 0.35 }}
-         className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-4"
+         className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-4"
        >
          <div className="flex items-center gap-2 justify-center">
-           <Compass className="w-4 h-4 text-primary" />
-           <p className="text-sm font-semibold text-primary italic">
+           <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+           <p className="text-xs sm:text-sm font-semibold text-primary italic">
              "{signatures.partnership[lang]}"
            </p>
         </div>
@@ -119,7 +119,7 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="grid grid-cols-2 gap-3"
+        className="grid grid-cols-2 gap-2 sm:gap-3"
       >
         {commitments.map((item, index) => {
           const Icon = item.icon;
@@ -129,13 +129,13 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 + index * 0.1 }}
-              className="p-3 rounded-xl bg-muted/50 text-left"
+              className="p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-muted/50 text-left"
             >
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-                <Icon className="w-4 h-4 text-primary" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-1.5 sm:mb-2">
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
               </div>
-              <h3 className="font-semibold text-xs">{item.title}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{item.description}</p>
+              <h3 className="font-semibold text-[11px] sm:text-xs">{item.title}</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{item.description}</p>
             </motion.div>
           );
         })}
@@ -146,14 +146,14 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
-        className="space-y-3 pt-2"
+        className="space-y-2 sm:space-y-3 pt-1 sm:pt-2"
       >
-        <p className="text-sm font-medium text-primary">
+        <p className="text-xs sm:text-sm font-medium text-primary">
           Êtes-vous prêt à devenir maître de votre activité ?
         </p>
         
         {onSkip && (
-          <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground text-xs">
             Configurer plus tard
           </Button>
         )}

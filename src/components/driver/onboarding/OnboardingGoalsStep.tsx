@@ -295,7 +295,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "rounded-xl p-3 border",
+          "rounded-lg sm:rounded-xl p-2.5 sm:p-3 border",
           coachAdvice.warnings.length > 0 
             ? "bg-amber-500/10 border-amber-500/20" 
             : "bg-emerald-500/10 border-emerald-500/20"
@@ -303,18 +303,18 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
       >
         <div className="flex items-start gap-2">
           {coachAdvice.warnings.length > 0 ? (
-            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 mt-0.5 flex-shrink-0" />
           ) : (
-            <Sparkles className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
           )}
-          <div className="space-y-1">
+          <div className="space-y-0.5 sm:space-y-1">
             {coachAdvice.warnings.map((warning, i) => (
-              <p key={`w-${i}`} className="text-xs text-amber-600 dark:text-amber-400">
+              <p key={`w-${i}`} className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 leading-tight">
                 ⚠️ {warning}
               </p>
             ))}
             {coachAdvice.suggestions.map((suggestion, i) => (
-              <p key={`s-${i}`} className="text-xs text-foreground/80">
+              <p key={`s-${i}`} className="text-[10px] sm:text-xs text-foreground/80 leading-tight">
                 💡 {suggestion}
               </p>
             ))}
@@ -328,29 +328,29 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     switch (currentStep) {
       case 0:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <TrendingUp className="w-7 h-7 text-white" />
+                <TrendingUp className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ta situation aujourd'hui
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 D'où tu pars pour mieux te guider
               </p>
             </div>
 
-            <div className="max-w-sm mx-auto w-full space-y-4">
+            <div className="w-full max-w-sm mx-auto space-y-3 sm:space-y-4 px-1">
               {/* Current revenue */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">CA mensuel actuel</span>
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                  <span className="text-xs sm:text-sm font-medium">CA mensuel actuel</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <NumericInput
@@ -359,18 +359,18 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     allowEmpty={true}
                     min={0}
                     max={30000}
-                    className="text-2xl font-bold text-center w-28"
+                    className="text-xl sm:text-2xl font-bold text-center w-24 sm:w-28"
                     placeholder="0"
                   />
-                  <span className="text-lg text-muted-foreground">€/mois</span>
+                  <span className="text-base sm:text-lg text-muted-foreground">€/mois</span>
                 </div>
               </div>
 
               {/* Current clients */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Clients directs actuels</span>
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                  <span className="text-xs sm:text-sm font-medium">Clients directs actuels</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <NumericInput
@@ -379,21 +379,21 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     allowEmpty={true}
                     min={0}
                     max={200}
-                    className="text-2xl font-bold text-center w-20"
+                    className="text-xl sm:text-2xl font-bold text-center w-16 sm:w-20"
                     placeholder="0"
                   />
-                  <span className="text-lg text-muted-foreground">clients</span>
+                  <span className="text-base sm:text-lg text-muted-foreground">clients</span>
                 </div>
               </div>
 
               {/* Platform dependency */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
                   <div className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-destructive" />
-                    <span className="text-sm font-medium">Dépendance plateformes</span>
+                    <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
+                    <span className="text-xs sm:text-sm font-medium">Dépendance plateformes</span>
                   </div>
-                  <span className="text-lg font-bold text-destructive">{platformPercentage}%</span>
+                  <span className="text-base sm:text-lg font-bold text-destructive">{platformPercentage}%</span>
                 </div>
                 <Slider
                   value={[platformPercentage]}
@@ -403,7 +403,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                   step={5}
                   className="mb-2"
                 />
-                <div className="flex gap-1 h-3 rounded-full overflow-hidden">
+                <div className="flex gap-1 h-2.5 sm:h-3 rounded-full overflow-hidden">
                   <motion.div 
                     className="bg-destructive"
                     animate={{ width: `${platformPercentage}%` }}
@@ -413,7 +413,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     animate={{ width: `${solocabPercentage}%` }}
                   />
                 </div>
-                <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+                <div className="flex justify-between mt-1 text-[9px] sm:text-[10px] text-muted-foreground">
                   <span className="text-destructive">Apps: {platformPercentage}%</span>
                   <span className="text-primary">Privé: {solocabPercentage}%</span>
                 </div>
@@ -422,11 +422,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/10 border border-primary/20 rounded-lg p-3"
+                className="bg-primary/10 border border-primary/20 rounded-lg p-2.5 sm:p-3"
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
-                  <p className="text-xs text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">
                     <span className="font-semibold">Alex :</span> Pas de jugement, on part d'où tu es. L'important c'est où tu veux aller ! 🚀
                   </p>
                 </div>
@@ -437,35 +437,35 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       case 1:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Target className="w-7 h-7 text-white" />
+                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton objectif de revenus
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Combien veux-tu générer avec ta clientèle privée ?
               </p>
             </div>
 
-            <div className="max-w-sm mx-auto w-full space-y-4">
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-full max-w-sm mx-auto space-y-3 sm:space-y-4 px-1">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
                   <NumericInput
                     value={revenueValue}
                     onChange={handleRevenueChange}
                     allowEmpty={true}
                     min={1000}
                     max={20000}
-                    className="text-2xl font-bold text-center w-32"
+                    className="text-xl sm:text-2xl font-bold text-center w-24 sm:w-32"
                   />
-                  <span className="text-xl font-semibold text-muted-foreground">€/mois</span>
+                  <span className="text-lg sm:text-xl font-semibold text-muted-foreground">€/mois</span>
                 </div>
                 
                 <Slider
@@ -477,17 +477,17 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                   min={1000}
                   max={20000}
                   step={250}
-                  className="mt-3"
+                  className="mt-2 sm:mt-3"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">
                   <span>1 000€</span>
                   <span>20 000€</span>
                 </div>
               </div>
 
               {currentRevenue > 0 && targetRevenue > currentRevenue && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
                     📈 +{Math.round(((targetRevenue - currentRevenue) / currentRevenue) * 100)}% de croissance visée
                   </p>
                 </div>
@@ -500,35 +500,35 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       case 2:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Users className="w-7 h-7 text-white" />
+                <Users className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton objectif clients
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Combien de clients fidèles veux-tu avoir ?
               </p>
             </div>
 
-            <div className="max-w-sm mx-auto w-full space-y-4">
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-full max-w-sm mx-auto space-y-3 sm:space-y-4 px-1">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
                   <NumericInput
                     value={clientsValue}
                     onChange={handleClientsChange}
                     allowEmpty={true}
                     min={5}
                     max={100}
-                    className="text-2xl font-bold text-center w-24"
+                    className="text-xl sm:text-2xl font-bold text-center w-20 sm:w-24"
                   />
-                  <span className="text-xl font-semibold text-muted-foreground">clients</span>
+                  <span className="text-lg sm:text-xl font-semibold text-muted-foreground">clients</span>
                 </div>
                 
                 <Slider
@@ -540,17 +540,17 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                   min={5}
                   max={100}
                   step={5}
-                  className="mt-3"
+                  className="mt-2 sm:mt-3"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">
                   <span>5 clients</span>
                   <span>100 clients</span>
                 </div>
               </div>
 
               {estimatedPerClient > 0 && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
-                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2.5 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                     📊 ~{estimatedPerClient}€ de CA moyen par client/mois
                   </p>
                 </div>
@@ -561,11 +561,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/10 border border-primary/20 rounded-lg p-3"
+                className="bg-primary/10 border border-primary/20 rounded-lg p-2.5 sm:p-3"
               >
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">
                     <span className="font-semibold">Alex :</span> Un client fidèle vaut 3 à 5 fois plus qu'une course plateforme. Mieux vaut 15 bons clients que 50 qui commandent une fois !
                   </p>
                 </div>
@@ -576,61 +576,61 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       case 3:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Calendar className="w-7 h-7 text-white" />
+                <Calendar className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton planning de travail
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Quels jours travailles-tu ?
               </p>
             </div>
 
-            <div className="max-w-sm mx-auto w-full space-y-4">
+            <div className="w-full max-w-sm mx-auto space-y-3 sm:space-y-4 px-1">
               {/* Day selector */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="grid grid-cols-7 gap-1">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                   {DAYS_OF_WEEK.map(day => (
                     <button
                       key={day.id}
                       onClick={() => toggleDay(day.id)}
                       className={cn(
-                        "flex flex-col items-center p-2 rounded-xl transition-all",
+                        "flex flex-col items-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all",
                         selectedDays.includes(day.id)
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted/50 text-muted-foreground hover:bg-muted"
                       )}
                     >
-                      <span className="text-xs font-medium">{day.label}</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{day.label}</span>
                       {selectedDays.includes(day.id) && (
-                        <Check className="w-3 h-3 mt-1" />
+                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-0.5 sm:mt-1" />
                       )}
                     </button>
                   ))}
                 </div>
                 
                 {selectedDays.length < 3 && (
-                  <p className="text-xs text-destructive text-center mt-2">
+                  <p className="text-[10px] sm:text-xs text-destructive text-center mt-1.5 sm:mt-2">
                     Sélectionne au moins 3 jours
                   </p>
                 )}
               </div>
 
               {/* Hours per day */}
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Heures par jour</span>
+                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    <span className="text-xs sm:text-sm font-medium">Heures par jour</span>
                   </div>
-                  <span className="text-lg font-bold text-primary">{workHoursPerDay}h</span>
+                  <span className="text-base sm:text-lg font-bold text-primary">{workHoursPerDay}h</span>
                 </div>
                 <Slider
                   value={[workHoursPerDay]}
@@ -639,16 +639,16 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                   max={12}
                   step={1}
                 />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1">
                   <span>4h</span>
                   <span>12h</span>
                 </div>
               </div>
 
               {/* Activity level hints */}
-              <div className="bg-card border border-border rounded-xl p-3">
-                <p className="text-xs text-muted-foreground mb-2">Potentiel de CA par jour :</p>
-                <div className="flex gap-1">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2">Potentiel de CA par jour :</p>
+                <div className="flex gap-0.5 sm:gap-1">
                   {DAYS_OF_WEEK.map(day => (
                     <div 
                       key={day.id}
@@ -660,9 +660,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                           day.weight >= 1.15 ? "bg-emerald-500" : 
                           day.weight >= 0.9 ? "bg-amber-500" : "bg-muted"
                         )}
-                        style={{ height: `${day.weight * 24}px` }}
+                        style={{ height: `${day.weight * 20}px` }}
                       />
-                      <span className="text-[10px] text-muted-foreground mt-1">{day.label}</span>
+                      <span className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5 sm:mt-1">{day.label}</span>
                     </div>
                   ))}
                 </div>
@@ -671,11 +671,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/10 border border-primary/20 rounded-lg p-3"
+                className="bg-primary/10 border border-primary/20 rounded-lg p-2.5 sm:p-3"
               >
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">
                     <span className="font-semibold">Alex :</span> Ven/Sam/Dim ont le meilleur potentiel CA. Je vais répartir tes objectifs selon l'activité de chaque jour ! 📊
                   </p>
                 </div>
@@ -686,53 +686,53 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       case 4:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Target className="w-7 h-7 text-white" />
+                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton plan de réussite
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Tes objectifs calculés par Alex
               </p>
             </div>
 
-            <div className="max-w-sm mx-auto w-full space-y-3">
+            <div className="w-full max-w-sm mx-auto space-y-2.5 sm:space-y-3 px-1">
               {/* Weekly summary */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-center">
-                  <TrendingUp className="w-4 h-4 text-primary mx-auto mb-1" />
-                  <p className="text-lg font-bold text-primary">{weeklyRevenue}€</p>
-                  <p className="text-xs text-muted-foreground">CA / semaine</p>
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                <div className="bg-primary/10 border border-primary/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-base sm:text-lg font-bold text-primary">{weeklyRevenue}€</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">CA / semaine</p>
                 </div>
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-                  <Clock className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
-                  <p className="text-lg font-bold text-emerald-500">~{estimatedHourlyTarget}€/h</p>
-                  <p className="text-xs text-muted-foreground">Objectif horaire</p>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-base sm:text-lg font-bold text-emerald-500">~{estimatedHourlyTarget}€/h</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Objectif horaire</p>
                 </div>
               </div>
 
               {/* Daily breakdown */}
-              <div className="bg-card border border-border rounded-xl p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
+              <div className="bg-card border border-border rounded-lg sm:rounded-xl p-2.5 sm:p-3">
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-1.5 sm:mb-2">
                   Répartition intelligente sur {selectedDays.length} jours :
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {dailyTargets.map(day => (
-                    <div key={day.id} className="flex items-center gap-2">
+                    <div key={day.id} className="flex items-center gap-1.5 sm:gap-2">
                       <span className={cn(
-                        "w-12 text-xs font-medium",
+                        "w-10 sm:w-12 text-[10px] sm:text-xs font-medium",
                         day.weight >= 1.15 ? "text-emerald-500" : "text-foreground"
                       )}>
                         {day.fullLabel}
                       </span>
-                      <div className="flex-1 h-4 rounded-full bg-muted overflow-hidden">
+                      <div className="flex-1 h-3 sm:h-4 rounded-full bg-muted overflow-hidden">
                         <motion.div 
                           className={cn(
                             "h-full rounded-full",
@@ -744,17 +744,17 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                           transition={{ delay: 0.2, duration: 0.5 }}
                         />
                       </div>
-                      <span className="text-sm font-bold w-14 text-right">{day.dailyTarget}€</span>
+                      <span className="text-xs sm:text-sm font-bold w-12 sm:w-14 text-right">{day.dailyTarget}€</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Annual projection */}
-              <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-xl p-3 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Projection annuelle</p>
-                <p className="text-2xl font-bold text-primary">{(targetRevenue * 12).toLocaleString('fr-FR')}€</p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+              <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-center">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">Projection annuelle</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">{(targetRevenue * 12).toLocaleString('fr-FR')}€</p>
+                <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1">
                   avec {targetClients} clients fidèles 🎯
                 </p>
               </div>
@@ -762,11 +762,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3"
+                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-2.5 sm:p-3"
               >
                 <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">
                     <span className="font-semibold">Alex :</span> J'ai réparti ton CA selon le potentiel de chaque jour. Les jours les plus forts auront des objectifs plus élevés. Tu es prêt ! 🚀
                   </p>
                 </div>
@@ -777,10 +777,10 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                 onClick={handleComplete}
                 disabled={saving}
                 size="lg"
-                className="w-full"
+                className="w-full h-10 sm:h-12 text-sm"
               >
                 {saving ? 'Enregistrement...' : 'Valider mes objectifs'}
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
             </div>
           </div>
@@ -794,13 +794,13 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Progress dots */}
-      <div className="flex-shrink-0 flex justify-center gap-2 py-3">
+      <div className="flex-shrink-0 flex justify-center gap-1.5 sm:gap-2 py-2 sm:py-3">
         {GOALS_STEPS.map((step, i) => (
           <div 
             key={i}
             className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              i === currentStep ? "w-8 bg-primary" : i < currentStep ? "w-2 bg-emerald-500" : "w-2 bg-muted"
+              "h-1.5 sm:h-2 rounded-full transition-all duration-300",
+              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-emerald-500" : "w-1.5 sm:w-2 bg-muted"
             )}
           />
         ))}
@@ -808,7 +808,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
 
       {/* Swipeable content */}
       <motion.div 
-        className="flex-1 overflow-y-auto relative px-4 pb-4"
+        className="flex-1 overflow-y-auto overflow-x-hidden relative px-2 sm:px-4 pb-2 sm:pb-4"
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.1}
@@ -830,37 +830,37 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         </AnimatePresence>
 
         {currentStep > 0 && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronLeft className="w-6 h-6" />
+          <div className="absolute left-0.5 sm:left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
         {currentStep < GOALS_STEPS.length - 1 && canProceed() && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronRight className="w-6 h-6" />
+          <div className="absolute right-0.5 sm:right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
       </motion.div>
 
       {/* Navigation - only for non-final steps */}
       {currentStep < GOALS_STEPS.length - 1 && (
-        <div className="flex-shrink-0 flex gap-3 px-4 py-3 border-t border-border/50 bg-background">
+        <div className="flex-shrink-0 flex gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-t border-border/50 bg-background">
           <Button
             variant="ghost"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex-1 h-11"
+            className="flex-1 h-10 sm:h-11 text-sm"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
             Retour
           </Button>
           
           <Button
             onClick={nextStep}
             disabled={!canProceed()}
-            className="flex-1 h-11"
+            className="flex-1 h-10 sm:h-11 text-sm"
           >
             Suivant
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
           </Button>
         </div>
       )}

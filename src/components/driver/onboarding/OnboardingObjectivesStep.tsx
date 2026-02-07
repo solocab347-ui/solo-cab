@@ -184,21 +184,21 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       // STEP 0: LE PROBLÈME
       case 0:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-6">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-4 sm:mb-6">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", duration: 0.8 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mb-4 shadow-lg"
+                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mb-3 sm:mb-4 shadow-lg"
               >
-                <AlertTriangle className="w-8 h-8 text-white" />
+                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </motion.div>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-2xl font-bold text-foreground mb-2"
+                className="text-xl sm:text-2xl font-bold text-foreground mb-1 sm:mb-2"
               >
                 Le piège des plateformes
               </motion.h2>
@@ -206,13 +206,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-muted-foreground text-sm"
+                className="text-muted-foreground text-xs sm:text-sm"
               >
                 Tu travailles dur, mais pour qui ?
               </motion.p>
             </div>
 
-            <div className="space-y-3 max-w-sm mx-auto">
+            <div className="space-y-2 sm:space-y-3 w-full max-w-sm mx-auto px-1">
               {PLATFORM_PROBLEMS.map((problem, index) => {
                 const Icon = problem.icon;
                 return (
@@ -221,12 +221,12 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20"
+                    className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/20"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-red-500" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
                     </div>
-                    <p className="text-sm text-foreground font-medium">{problem.text}</p>
+                    <p className="text-xs sm:text-sm text-foreground font-medium leading-tight">{problem.text}</p>
                   </motion.div>
                 );
               })}
@@ -236,9 +236,9 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="text-center mt-6"
+              className="text-center mt-4 sm:mt-6"
             >
-              <p className="text-lg font-bold text-red-500">
+              <p className="text-base sm:text-lg font-bold text-red-500">
                 Stop. Il y a mieux.
               </p>
             </motion.div>
@@ -248,20 +248,20 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       // STEP 1: LA SOLUTION SOLOCAB
       case 1:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", duration: 0.6 }}
-                className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3 shadow-lg"
+                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2 sm:mb-3 shadow-lg"
               >
-                <Zap className="w-8 h-8 text-primary-foreground" />
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
               </motion.div>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-2xl font-bold text-foreground mb-1"
+                className="text-xl sm:text-2xl font-bold text-foreground mb-0.5 sm:mb-1"
               >
                 SoloCab, c'est quoi ?
               </motion.h2>
@@ -269,13 +269,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-muted-foreground text-sm max-w-xs mx-auto"
+                className="text-muted-foreground text-xs sm:text-sm max-w-xs mx-auto px-2"
               >
                 L'outil des chauffeurs qui veulent reprendre le contrôle
               </motion.p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 w-full max-w-sm mx-auto px-1">
               {SOLOCAB_SOLUTIONS.map((solution, index) => {
                 const Icon = solution.icon;
                 return (
@@ -284,13 +284,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 + index * 0.1 }}
-                    className="p-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-colors"
+                    className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2">
-                      <Icon className="w-5 h-5 text-primary-foreground" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-1.5 sm:mb-2">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                     </div>
-                    <h3 className="font-bold text-foreground text-sm mb-0.5">{solution.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-tight">{solution.desc}</p>
+                    <h3 className="font-bold text-foreground text-xs sm:text-sm mb-0.5 leading-tight">{solution.title}</h3>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{solution.desc}</p>
                   </motion.div>
                 );
               })}
@@ -300,12 +300,12 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="mt-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 max-w-sm mx-auto"
+              className="mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 w-full max-w-sm mx-auto"
             >
-              <p className="text-center text-sm font-semibold text-primary">
+              <p className="text-center text-xs sm:text-sm font-semibold text-primary">
                 🎯 14 jours d'essai gratuit
               </p>
-              <p className="text-center text-xs text-muted-foreground mt-1">
+              <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                 Puis 29,99€/mois • Sans engagement
               </p>
             </motion.div>
@@ -315,24 +315,24 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       // STEP 2: PROFIL DU CHAUFFEUR
       case 2:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2 sm:mb-3"
               >
-                <UserCheck className="w-7 h-7 text-primary-foreground" />
+                <UserCheck className="w-5 h-5 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Quel chauffeur es-tu ?
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 On adapte ton parcours à ton rythme
               </p>
             </div>
 
-            <div className="space-y-3 max-w-sm mx-auto">
+            <div className="space-y-2 sm:space-y-3 w-full max-w-sm mx-auto px-1">
               {DRIVER_PROFILES.map((profile, index) => {
                 const isSelected = selectedProfile === profile.id;
                 return (
@@ -343,19 +343,19 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     transition={{ delay: index * 0.1 }}
                     onClick={() => setSelectedProfile(profile.id)}
                     className={cn(
-                      "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                      "w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 text-left transition-all",
                       isSelected 
                         ? "border-primary bg-primary/10 shadow-md" 
                         : "border-border bg-card hover:border-primary/50"
                     )}
                   >
-                    <span className="text-3xl">{profile.emoji}</span>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-foreground">{profile.title}</h3>
-                      <p className="text-sm text-muted-foreground">{profile.desc}</p>
+                    <span className="text-2xl sm:text-3xl">{profile.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-foreground text-sm sm:text-base">{profile.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-tight">{profile.desc}</p>
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
                     )}
                   </motion.button>
                 );
@@ -366,7 +366,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               <motion.p 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center text-sm text-primary mt-4 font-medium"
+                className="text-center text-xs sm:text-sm text-primary mt-3 sm:mt-4 font-medium"
               >
                 ✨ Parfait, on va t'accompagner !
               </motion.p>
@@ -377,20 +377,20 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
       // STEP 3: ENGAGEMENT FINAL
       case 3:
         return (
-          <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-4">
+          <div className="flex flex-col h-full justify-center py-2 sm:py-4">
+            <div className="text-center mb-3 sm:mb-4">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", duration: 0.8 }}
-                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary via-emerald-500 to-green-500 flex items-center justify-center mb-4 shadow-xl"
+                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-br from-primary via-emerald-500 to-green-500 flex items-center justify-center mb-3 sm:mb-4 shadow-xl"
               >
-                <Rocket className="w-10 h-10 text-white" />
+                <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </motion.div>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-2xl font-bold text-foreground mb-2"
+                className="text-xl sm:text-2xl font-bold text-foreground mb-1 sm:mb-2"
               >
                 Prêt à te libérer ?
               </motion.h2>
@@ -398,7 +398,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-muted-foreground text-sm max-w-xs mx-auto"
+                className="text-muted-foreground text-xs sm:text-sm max-w-xs mx-auto px-2"
               >
                 En quelques minutes, ton espace chauffeur sera configuré
               </motion.p>
@@ -408,13 +408,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-card border border-border rounded-xl p-4 max-w-sm mx-auto mb-4"
+              className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4 w-full max-w-sm mx-auto mb-3 sm:mb-4"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span className="font-bold text-foreground">Ce qui t'attend</span>
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="font-bold text-foreground text-sm sm:text-base">Ce qui t'attend</span>
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5 sm:space-y-2">
                 {[
                   { icon: Target, text: 'Définir tes objectifs de revenus' },
                   { icon: TrendingUp, text: 'Configurer tes tarifs' },
@@ -426,10 +426,10 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + i * 0.1 }}
-                    className="flex items-center gap-2 text-sm"
+                    className="flex items-center gap-2 text-xs sm:text-sm"
                   >
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <item.icon className="w-3.5 h-3.5 text-primary" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                     </div>
                     <span className="text-muted-foreground">{item.text}</span>
                   </motion.li>
@@ -441,23 +441,24 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
+              className="w-full max-w-sm mx-auto px-1"
             >
               <Button
                 onClick={handleComplete}
                 disabled={saving}
                 size="lg"
-                className="w-full max-w-sm mx-auto h-14 text-base font-bold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 shadow-lg"
+                className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 shadow-lg"
               >
                 {saving ? (
                   'Préparation...'
                 ) : (
                   <>
                     Lancer ma configuration
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                   </>
                 )}
               </Button>
-              <p className="text-center text-xs text-muted-foreground mt-3">
+              <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
                 ⏱️ Environ 5 minutes • Données modifiables à tout moment
               </p>
             </motion.div>
@@ -472,13 +473,13 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Progress dots */}
-      <div className="flex-shrink-0 flex justify-center gap-2 py-3">
+      <div className="flex-shrink-0 flex justify-center gap-1.5 sm:gap-2 py-2 sm:py-3">
         {VISION_STEPS.map((_, i) => (
           <div 
             key={i}
             className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              i === currentStep ? "w-8 bg-primary" : i < currentStep ? "w-2 bg-emerald-500" : "w-2 bg-muted"
+              "h-1.5 sm:h-2 rounded-full transition-all duration-300",
+              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-emerald-500" : "w-1.5 sm:w-2 bg-muted"
             )}
           />
         ))}
@@ -486,7 +487,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
 
       {/* Swipeable content */}
       <motion.div 
-        className="flex-1 overflow-hidden relative px-4"
+        className="flex-1 overflow-y-auto overflow-x-hidden relative px-2 sm:px-4"
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.1}
@@ -501,44 +502,44 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
             animate="center"
             exit="exit"
             transition={{ type: 'tween', duration: 0.25 }}
-            className="absolute inset-0 flex flex-col"
+            className="min-h-full flex flex-col"
           >
             {renderStep()}
           </motion.div>
         </AnimatePresence>
 
         {currentStep > 0 && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronLeft className="w-6 h-6" />
+          <div className="absolute left-0.5 sm:left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
         {currentStep < VISION_STEPS.length - 1 && canProceed() && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronRight className="w-6 h-6" />
+          <div className="absolute right-0.5 sm:right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
       </motion.div>
 
       {/* Navigation */}
       {currentStep < VISION_STEPS.length - 1 && (
-        <div className="flex-shrink-0 flex gap-3 px-4 py-3">
+        <div className="flex-shrink-0 flex gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-t border-border/50">
           <Button
             variant="ghost"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex-1 h-11"
+            className="flex-1 h-10 sm:h-11 text-sm"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
             Retour
           </Button>
           
           <Button
             onClick={nextStep}
             disabled={!canProceed()}
-            className="flex-1 h-11"
+            className="flex-1 h-10 sm:h-11 text-sm"
           >
             Suivant
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
           </Button>
         </div>
       )}
