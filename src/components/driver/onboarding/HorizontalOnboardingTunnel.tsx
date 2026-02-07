@@ -140,20 +140,34 @@ export function HorizontalOnboardingTunnel({
     }
   });
 
-  // Calculer les étapes complétées basées sur l'étape sauvegardée
+  // Calculer les étapes complétées basées sur l'étape sauvegardée et les données réelles
   const getCompletedStepsFromSavedStep = () => {
     const stepOrder = ['vision', 'goals', 'settings', 'profile', 'documents', 'nfc', 'billing', 'trial_start'];
     const savedStep = driverProfile?.driver?.onboarding_step;
     const savedIndex = savedStep ? stepOrder.indexOf(savedStep) : -1;
+    
+    // NFC est complété seulement si le chauffeur a déjà une plaque OU a fait un choix explicite
+    const nfcCompleted = !!(
+      driverProfile?.driver?.has_nfc_plate || 
+      driverProfile?.driver?.nfc_tag_number || 
+      driverProfile?.driver?.nfc_plate_order_id ||
+      driverProfile?.driver?.onboarding_nfc_completed
+    );
+    
+    // Billing est complété seulement si un type de facturation a été explicitement choisi
+    const billingCompleted = !!(
+      driverProfile?.driver?.onboarding_billing_completed ||
+      (savedIndex > stepOrder.indexOf('billing'))
+    );
     
     return {
       vision: savedIndex > 0 || driverProfile?.driver?.onboarding_objectives_completed || false,
       goals: savedIndex > 1 || !!(driverProfile?.driver?.objectives_data?.target_monthly_revenue),
       settings: savedIndex > 2 || driverProfile?.driver?.onboarding_settings_completed || false,
       profile: savedIndex > 3 || driverProfile?.driver?.onboarding_profile_completed || false,
-      billing: true,
       documents: savedIndex > 4 || driverProfile?.driver?.onboarding_documents_completed || false,
-      nfc: true,
+      nfc: nfcCompleted,
+      billing: billingCompleted,
     };
   };
 
@@ -329,6 +343,7 @@ export function HorizontalOnboardingTunnel({
       const updateData: Record<string, any> = {
         billing_type: dbBillingType,
         onboarding_step: 'trial_start',
+        onboarding_billing_completed: true,
       };
       
       // wants_tpe_affiliate might not exist - handle gracefully
@@ -343,7 +358,7 @@ export function HorizontalOnboardingTunnel({
         
       if (error) {
         // If error is about unknown column, try without it
-        if (error.message?.includes('wants_tpe_affiliate')) {
+        if (error.message?.includes('wants_tpe_affiliate') || error.message?.includes('onboarding_billing_completed')) {
           const { error: retryError } = await supabase
             .from('drivers')
             .update({
@@ -368,6 +383,23 @@ export function HorizontalOnboardingTunnel({
     }
   };
 
+  const saveNfc = async () => {
+    try {
+      await supabase
+        .from('drivers')
+        .update({
+          onboarding_nfc_completed: true,
+          onboarding_step: 'billing',
+        })
+        .eq('id', driverId);
+      setCompletedSteps(prev => ({ ...prev, nfc: true }));
+      return true;
+    } catch (error) {
+      console.error('Error saving NFC step:', error);
+      return true; // Don't block progression
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep >= STEPS.length - 1) return;
     
@@ -380,6 +412,9 @@ export function HorizontalOnboardingTunnel({
         break;
       case 'profile':
         success = await saveProfile();
+        break;
+      case 'nfc':
+        success = await saveNfc();
         break;
       case 'billing':
         success = await saveBilling();
