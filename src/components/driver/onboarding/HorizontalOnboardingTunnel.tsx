@@ -503,10 +503,12 @@ export function HorizontalOnboardingTunnel({
           />
         );
       case 'settings':
+        // Récupérer le prénom depuis full_name (profil utilisateur)
+        const settingsFirstName = driverProfile?.full_name?.split(' ')[0] || '';
         return (
           <HorizontalSettingsFlow 
             data={stepData.settings}
-            driverName={driverProfile?.full_name || 'Chauffeur'}
+            driverName={settingsFirstName}
             onUpdate={(updates) => updateStepData('settings', updates)}
             onComplete={handleNext}
           />

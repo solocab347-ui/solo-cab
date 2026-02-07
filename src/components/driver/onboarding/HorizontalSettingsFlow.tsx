@@ -52,7 +52,9 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   
-  const firstName = driverName?.split(' ')[0] || 'Chauffeur';
+  // Prénom propre : soit le premier mot du nom complet, soit rien (pas de fallback "Chauffeur")
+  const firstName = driverName?.trim()?.split(' ')[0] || '';
+  const hasFirstName = firstName.length > 0;
   const step = STEPS[currentStep];
 
   const canProceed = (): boolean => {
@@ -126,7 +128,12 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
               <Euro className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Passons à tes tarifs, {firstName} !</h2>
+              <h2 className="text-2xl font-bold text-white">
+                {hasFirstName 
+                  ? `Passons à tes tarifs, ${firstName} !`
+                  : `Passons à tes tarifs !`
+                }
+              </h2>
               <p className="text-white/60 mt-2">
                 On continue ensemble pour configurer ta grille tarifaire.
               </p>
