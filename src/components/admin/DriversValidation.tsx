@@ -56,10 +56,12 @@ const DriversValidation = () => {
 
   const handleValidate = async (driverId: string) => {
     try {
+      // IMPORTANT: Mettre à jour AUSSI documents_status en plus du status
       const { error } = await supabase
         .from("drivers")
         .update({ 
           status: "validated",
+          documents_status: "validated", // Permet au chauffeur de lancer son essai
           validation_date: new Date().toISOString()
         })
         .eq("id", driverId);
@@ -71,7 +73,7 @@ const DriversValidation = () => {
         body: { driver_id: driverId, action: "validated" },
       });
 
-      toast.success("Chauffeur validé avec succès");
+      toast.success("Chauffeur et documents validés avec succès");
       fetchDrivers();
     } catch (error: any) {
       console.error("Error validating driver:", error);
