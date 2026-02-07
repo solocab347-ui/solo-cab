@@ -64,7 +64,11 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
       case 'per_km': return !!data.perKmRate && parseFloat(data.perKmRate) > 0;
       case 'hourly': return true;
       case 'minimum': return !!data.minimumPrice;
-      case 'company': return !!data.companyName.trim();
+      // SIRET (14 chiffres) et adresse obligatoires pour la facturation
+      case 'company': 
+        return !!data.companyName.trim() && 
+               !!data.siret.trim() && data.siret.replace(/\s/g, '').length === 14 &&
+               !!data.companyAddress.trim();
       case 'vehicle': return !!data.vehicleBrand.trim();
       case 'recap': return true;
       default: return true;
@@ -318,17 +322,28 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
         );
 
       case 'company':
+        const siretClean = data.siret.replace(/\s/g, '');
+        const siretValid = siretClean.length === 14 && /^\d+$/.test(siretClean);
         return (
-          <div className="h-full flex flex-col justify-center space-y-6 px-2">
+          <div className="h-full flex flex-col justify-center space-y-4 px-2 overflow-y-auto py-4">
             <div className="text-center">
-              <Building2 className="w-10 h-10 text-primary mx-auto mb-3" />
+              <Building2 className="w-10 h-10 text-primary mx-auto mb-2" />
               <h2 className="text-xl font-bold text-white">Ton entreprise</h2>
               <p className="text-white/60 text-sm mt-1">
-                Apparaîtra sur tes factures
+                Informations légales pour tes factures
+              </p>
+            </div>
+
+            {/* Explication légale */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-amber-200 text-xs leading-relaxed">
+                <strong>📋 Obligation légale :</strong> En tant que professionnel VTC, 
+                tu dois mentionner ton SIRET et ton adresse sur toutes tes factures. 
+                Ces informations sont requises par la loi.
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <Label className="text-white/60 text-sm">Nom commercial *</Label>
                 <Input
@@ -340,12 +355,43 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
               </div>
               
               <div>
-                <Label className="text-white/60 text-sm">SIRET (optionnel)</Label>
+                <Label className="text-white/60 text-sm">SIRET * <span className="text-white/40">(14 chiffres)</span></Label>
                 <Input
                   value={data.siret}
-                  onChange={(e) => onUpdate({ siret: e.target.value })}
+                  onChange={(e) => {
+                    // Nettoyer et formater le SIRET (seulement chiffres)
+                    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 14);
+                    onUpdate({ siret: cleaned });
+                  }}
                   placeholder="12345678901234"
+                  maxLength={14}
+                  className={`h-12 bg-white/10 border-white/20 text-white mt-1 font-mono ${
+                    data.siret && !siretValid ? 'border-red-500/50' : ''
+                  }`}
+                />
+                {data.siret && !siretValid && (
+                  <p className="text-red-400 text-xs mt-1">Le SIRET doit contenir exactement 14 chiffres</p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-white/60 text-sm">Adresse de facturation *</Label>
+                <Input
+                  value={data.companyAddress}
+                  onChange={(e) => onUpdate({ companyAddress: e.target.value })}
+                  placeholder="123 Rue de Paris, 75001 Paris"
                   className="h-12 bg-white/10 border-white/20 text-white mt-1"
+                />
+                <p className="text-white/40 text-xs mt-1">Adresse complète avec code postal et ville</p>
+              </div>
+              
+              <div>
+                <Label className="text-white/60 text-sm">N° TVA intracommunautaire <span className="text-white/40">(optionnel)</span></Label>
+                <Input
+                  value={data.tvaNumber}
+                  onChange={(e) => onUpdate({ tvaNumber: e.target.value })}
+                  placeholder="FR12345678901"
+                  className="h-10 bg-white/10 border-white/20 text-white mt-1"
                 />
               </div>
             </div>

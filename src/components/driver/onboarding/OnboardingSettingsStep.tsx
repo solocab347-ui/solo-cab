@@ -35,10 +35,12 @@ interface OnboardingSettingsStepProps {
 }
 
 export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsStepProps) {
-  // Seuls les tarifs de base sont vraiment requis - le reste peut être complété plus tard
+  // SIRET et adresse sont obligatoires pour la facturation légale
   const isPricingComplete = !!(data.baseFare && data.perKmRate);
-  const isCompanyComplete = !!data.companyName; // Simplifié - SIRET/adresse peuvent être ajoutés plus tard
-  const isVehicleComplete = !!data.vehicleBrand; // Simplifié - plaque peut être ajoutée plus tard
+  const siretClean = data.siret.replace(/\s/g, '');
+  const siretValid = siretClean.length === 14 && /^\d+$/.test(siretClean);
+  const isCompanyComplete = !!data.companyName && siretValid && !!data.companyAddress;
+  const isVehicleComplete = !!data.vehicleBrand;
 
   return (
     <div className="space-y-3">
@@ -145,8 +147,18 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               </Badge>
             )}
           </CardTitle>
+          <CardDescription className="text-xs">
+            Informations légales obligatoires pour tes factures
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-3 pt-0 space-y-2">
+          {/* Explication légale */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 mb-2">
+            <p className="text-amber-600 dark:text-amber-200 text-[10px] leading-relaxed">
+              <strong>📋 Obligation légale :</strong> Le SIRET et l'adresse sont requis sur toutes les factures professionnelles.
+            </p>
+          </div>
+
           <div className="space-y-1">
             <Label className="text-xs">Nom de l'entreprise *</Label>
             <Input
@@ -156,45 +168,52 @@ export function OnboardingSettingsStep({ data, onUpdate }: OnboardingSettingsSte
               className="h-9"
             />
           </div>
+          <div className="space-y-1">
+            <Label className="text-xs">SIRET * <span className="text-muted-foreground">(14 chiffres)</span></Label>
+            <Input
+              value={data.siret}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 14);
+                onUpdate({ siret: cleaned });
+              }}
+              placeholder="12345678901234"
+              maxLength={14}
+              className={`h-9 font-mono ${data.siret && !siretValid ? 'border-destructive' : ''}`}
+            />
+            {data.siret && !siretValid && (
+              <p className="text-destructive text-[10px]">Le SIRET doit contenir exactement 14 chiffres</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Adresse de facturation *</Label>
+            <Input
+              value={data.companyAddress}
+              onChange={(e) => onUpdate({ companyAddress: e.target.value })}
+              placeholder="123 Rue..., 75001 Paris"
+              className="h-9"
+            />
+            <p className="text-[10px] text-muted-foreground">Adresse complète avec code postal et ville</p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">SIRET</Label>
-              <Input
-                value={data.siret}
-                onChange={(e) => onUpdate({ siret: e.target.value })}
-                placeholder="14 chiffres (optionnel)"
-                maxLength={14}
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">ou SIREN</Label>
+              <Label className="text-xs">SIREN <span className="text-muted-foreground">(optionnel)</span></Label>
               <Input
                 value={data.siren}
                 onChange={(e) => onUpdate({ siren: e.target.value })}
-                placeholder="9 chiffres (optionnel)"
+                placeholder="9 chiffres"
                 maxLength={9}
                 className="h-9"
               />
             </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">N° TVA (optionnel)</Label>
-            <Input
-              value={data.tvaNumber}
-              onChange={(e) => onUpdate({ tvaNumber: e.target.value })}
-              placeholder="FR12345678901"
-              className="h-9"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Adresse</Label>
-            <Input
-              value={data.companyAddress}
-              onChange={(e) => onUpdate({ companyAddress: e.target.value })}
-              placeholder="123 Rue..., 75001 Paris (optionnel)"
-              className="h-9"
-            />
+            <div className="space-y-1">
+              <Label className="text-xs">N° TVA <span className="text-muted-foreground">(optionnel)</span></Label>
+              <Input
+                value={data.tvaNumber}
+                onChange={(e) => onUpdate({ tvaNumber: e.target.value })}
+                placeholder="FR12345678901"
+                className="h-9"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
