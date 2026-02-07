@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Sparkles, 
   Loader2,
-  Rocket
+  Rocket,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,56 +22,110 @@ const DriverWelcome = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const mountedRef = useRef(true);
+  const fetchAttemptRef = useRef(0);
 
-  // Charger les données du chauffeur
+  // Timeout de sécurité pour éviter le chargement infini
   useEffect(() => {
-    const fetchDriverData = async () => {
-      if (!user) return;
-
-      try {
-        const { data: driver, error } = await supabase
-          .from("drivers")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          logger.error("Erreur chargement driver", { error });
-          return;
-        }
-
-        if (!driver) {
-          // Pas de profil chauffeur - rediriger vers l'inscription
-          navigate("/register-driver-promo");
-          return;
-        }
-
-        // Charger aussi le profil
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        setDriverData(driver);
-        setProfileData(profile);
-
-        // Si l'onboarding est déjà terminé, rediriger vers le dashboard
-        if (driver.onboarding_completed) {
-          navigate("/driver-dashboard", { replace: true });
-          return;
-        }
-      } catch (err) {
-        logger.error("Exception fetchDriverData", { err });
-      } finally {
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current && isLoading) {
+        setLoadingTimeout(true);
         setIsLoading(false);
       }
-    };
+    }, 8000); // 8 secondes max de chargement
 
+    return () => {
+      clearTimeout(timeoutId);
+      mountedRef.current = false;
+    };
+  }, [isLoading]);
+
+  // Charger les données du chauffeur - avec retry
+  const fetchDriverData = async (retryCount = 0) => {
+    // Si on n'a pas d'utilisateur, vérifier directement la session Supabase
+    let currentUser = user;
+    
+    if (!currentUser) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      currentUser = sessionData.session?.user || null;
+    }
+    
+    if (!currentUser) {
+      // Attendre un peu et réessayer si on vient de s'inscrire
+      if (retryCount < 3) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        fetchAttemptRef.current++;
+        return fetchDriverData(retryCount + 1);
+      }
+      
+      if (mountedRef.current) {
+        setIsLoading(false);
+        setLoadingTimeout(true);
+      }
+      return;
+    }
+
+    try {
+      const { data: driver, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (!mountedRef.current) return;
+
+      if (error) {
+        logger.error("Erreur chargement driver", { error });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!driver) {
+        // Pas de profil chauffeur - rediriger vers l'inscription
+        navigate("/register-driver-promo");
+        return;
+      }
+
+      // Charger aussi le profil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      if (!mountedRef.current) return;
+
+      setDriverData(driver);
+      setProfileData(profile);
+
+      // Si l'onboarding est déjà terminé, rediriger vers le dashboard
+      if (driver.onboarding_completed) {
+        navigate("/driver-dashboard", { replace: true });
+        return;
+      }
+    } catch (err) {
+      logger.error("Exception fetchDriverData", { err });
+    } finally {
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
     if (!authLoading) {
       fetchDriverData();
     }
   }, [user, authLoading, navigate]);
+
+  // Retry function
+  const handleRetry = () => {
+    setIsLoading(true);
+    setLoadingTimeout(false);
+    fetchAttemptRef.current = 0;
+    fetchDriverData();
+  };
 
   // Afficher un loader pendant le chargement
   if (authLoading || isLoading) {
@@ -83,8 +139,39 @@ const DriverWelcome = () => {
     );
   }
 
-  // Si pas connecté, rediriger
-  if (!user) {
+  // Si timeout de chargement - afficher message d'erreur avec option de réessayer
+  if (loadingTimeout && !driverData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center px-4">
+        <Card className="max-w-md p-6 bg-slate-800/50 backdrop-blur-lg border-amber-500/30 text-center">
+          <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Session non trouvée</h2>
+          <p className="text-white/70 text-sm mb-4">
+            Votre session n'a pas été détectée. Cela peut arriver après une inscription récente.
+          </p>
+          <div className="space-y-3">
+            <Button 
+              onClick={handleRetry}
+              className="w-full bg-gradient-to-r from-emerald-500 to-green-600"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Réessayer
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/auth")}
+              className="w-full border-white/20 text-white hover:bg-white/10"
+            >
+              Se connecter
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Si pas connecté mais pas de timeout, rediriger
+  if (!user && !driverData) {
     navigate("/auth");
     return null;
   }
