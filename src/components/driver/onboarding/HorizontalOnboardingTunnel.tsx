@@ -134,7 +134,8 @@ export function HorizontalOnboardingTunnel({
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
     billing: {
-      billingType: (driverProfile?.driver?.billing_type as 'own_equipment' | 'buy_equipment' | 'solocab_stripe') || 'own_equipment',
+      // Ne pas pré-sélectionner - laisser null si non défini en base
+      billingType: (driverProfile?.driver?.billing_type as 'own_equipment' | 'buy_equipment' | 'solocab_stripe') || null,
     },
     nfc: {
       hasNfcPlate,

@@ -40,8 +40,28 @@ export function OnboardingTrialStartStep({
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Écouter les changements en temps réel du statut des documents
+  // Polling rapide + Realtime pour mise à jour instantanée
   useEffect(() => {
+    // Fonction de fetch direct
+    const fetchStatus = async () => {
+      const { data } = await supabase
+        .from('drivers')
+        .select('documents_status')
+        .eq('id', driverId)
+        .single();
+      
+      if (data?.documents_status && data.documents_status !== documentsStatus) {
+        setDocumentsStatus(data.documents_status);
+        if (data.documents_status === 'validated') {
+          toast.success('🎉 Vos documents ont été validés !');
+        }
+      }
+    };
+
+    // Polling toutes les 3 secondes pour réactivité maximale
+    const interval = setInterval(fetchStatus, 3000);
+
+    // Écouter les changements en temps réel (backup)
     const channel = supabase
       .channel(`driver-docs-${driverId}`)
       .on(
@@ -65,6 +85,7 @@ export function OnboardingTrialStartStep({
       .subscribe();
 
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [driverId, documentsStatus]);
