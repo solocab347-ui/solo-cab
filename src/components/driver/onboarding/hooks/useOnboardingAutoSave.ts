@@ -1,38 +1,42 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
+interface SettingsData {
+  baseFare: string;
+  perKmRate: string;
+  hourlyRate: string;
+  minimumPrice: string;
+  maxPassengers: string;
+  tvaIncluded: boolean;
+  companyName: string;
+  companyAddress: string;
+  siret: string;
+  siren: string;
+  tvaNumber: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleYear: string;
+  vehicleColor: string;
+  vehiclePlate: string;
+}
+
+interface ProfileData {
+  profilePhotoUrl: string | null;
+  cardPhotoUrl: string | null;
+  serviceDescription: string;
+  workingSectors: string[];
+  vehicleEquipment: string[];
+  servicesOffered: string[];
+  vehicleCategories: string[];
+  displayDriverName: boolean;
+  displayCompanyName: boolean;
+  homeAddress: string;
+  homeCoordinates: { latitude: number; longitude: number } | null;
+}
 
 interface AutoSaveData {
-  settings: {
-    baseFare: string;
-    perKmRate: string;
-    hourlyRate: string;
-    minimumPrice: string;
-    maxPassengers: string;
-    tvaIncluded: boolean;
-    companyName: string;
-    companyAddress: string;
-    siret: string;
-    siren: string;
-    tvaNumber: string;
-    vehicleBrand: string;
-    vehicleYear: string;
-    vehicleColor: string;
-    vehiclePlate: string;
-  };
-  profile: {
-    profilePhotoUrl: string | null;
-    cardPhotoUrl: string | null;
-    serviceDescription: string;
-    workingSectors: string[];
-    vehicleEquipment: string[];
-    servicesOffered: string[];
-    vehicleCategories: string[];
-    displayDriverName: boolean;
-    displayCompanyName: boolean;
-    homeAddress: string;
-    homeCoordinates: { latitude: number; longitude: number } | null;
-  };
+  settings: SettingsData;
+  profile: ProfileData;
 }
 
 export function useOnboardingAutoSave(
@@ -43,7 +47,7 @@ export function useOnboardingAutoSave(
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>('');
 
-  const saveSettings = useCallback(async (data: AutoSaveData['settings']) => {
+  const saveSettings = useCallback(async (data: SettingsData) => {
     try {
       const { error } = await supabase
         .from('drivers')
@@ -60,10 +64,10 @@ export function useOnboardingAutoSave(
           siren: data.siren || null,
           tva_number: data.tvaNumber || null,
           vehicle_brand: data.vehicleBrand || null,
+          vehicle_model: data.vehicleModel || null,
           vehicle_year: data.vehicleYear ? parseInt(data.vehicleYear) : null,
           vehicle_color: data.vehicleColor || null,
           vehicle_plate: data.vehiclePlate || null,
-          onboarding_step: 'settings',
         })
         .eq('id', driverId);
 
@@ -75,7 +79,7 @@ export function useOnboardingAutoSave(
     }
   }, [driverId]);
 
-  const saveProfile = useCallback(async (data: AutoSaveData['profile']) => {
+  const saveProfile = useCallback(async (data: ProfileData) => {
     try {
       // Update profile photo in profiles table
       if (data.profilePhotoUrl) {
@@ -100,7 +104,6 @@ export function useOnboardingAutoSave(
           home_address: data.homeAddress || null,
           home_latitude: data.homeCoordinates?.latitude || null,
           home_longitude: data.homeCoordinates?.longitude || null,
-          onboarding_step: 'profile',
         })
         .eq('id', driverId);
 
@@ -112,7 +115,9 @@ export function useOnboardingAutoSave(
     }
   }, [driverId, userId]);
 
-  const autoSave = useCallback((stepData: AutoSaveData, step: number) => {
+  // Auto-save based on step ID, not step index
+  // Step mapping: 0=vision, 1=goals, 2=settings, 3=profile, 4=documents, 5=nfc, 6=billing, 7=trial_start
+  const autoSave = useCallback((stepData: AutoSaveData, stepId: string) => {
     // Serialize current data for comparison
     const dataString = JSON.stringify(stepData);
     
@@ -130,16 +135,15 @@ export function useOnboardingAutoSave(
     saveTimeoutRef.current = setTimeout(async () => {
       let success = false;
       
-      if (step === 0) {
+      if (stepId === 'settings') {
         success = await saveSettings(stepData.settings);
-      } else if (step === 1) {
+      } else if (stepId === 'profile') {
         success = await saveProfile(stepData.profile);
       }
 
       if (success) {
         lastSavedDataRef.current = dataString;
-        // Silent save - no toast to avoid spam
-        console.log('Auto-saved onboarding data');
+        console.log('Auto-saved onboarding data for step:', stepId);
       }
     }, 2000);
   }, [saveSettings, saveProfile]);
@@ -154,15 +158,15 @@ export function useOnboardingAutoSave(
   }, []);
 
   // Save immediately on step change or page unload
-  const saveImmediately = useCallback(async (stepData: AutoSaveData, step: number) => {
+  const saveImmediately = useCallback(async (stepData: AutoSaveData, stepId: string) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
     let success = false;
-    if (step === 0) {
+    if (stepId === 'settings') {
       success = await saveSettings(stepData.settings);
-    } else if (step === 1) {
+    } else if (stepId === 'profile') {
       success = await saveProfile(stepData.profile);
     }
 
@@ -172,5 +176,5 @@ export function useOnboardingAutoSave(
     return success;
   }, [saveSettings, saveProfile]);
 
-  return { autoSave, saveImmediately };
+  return { autoSave, saveImmediately, saveSettings, saveProfile };
 }
