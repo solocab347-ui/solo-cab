@@ -830,14 +830,26 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         </AnimatePresence>
 
         {currentStep > 0 && (
-          <div className="absolute left-0.5 sm:left-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
+          <button 
+            onClick={prevStep}
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 flex items-center justify-center bg-gradient-to-r from-background/90 to-transparent hover:from-background transition-all active:scale-95 z-10"
+            aria-label="Page précédente"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shadow-sm hover:bg-primary/20 transition-colors">
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            </div>
+          </button>
         )}
         {currentStep < GOALS_STEPS.length - 1 && canProceed() && (
-          <div className="absolute right-0.5 sm:right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
+          <button 
+            onClick={nextStep}
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 flex items-center justify-center bg-gradient-to-l from-background/90 to-transparent hover:from-background transition-all active:scale-95 z-10"
+            aria-label="Page suivante"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shadow-sm hover:bg-primary/20 transition-colors">
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            </div>
+          </button>
         )}
       </motion.div>
 
