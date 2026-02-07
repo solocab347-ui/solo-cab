@@ -388,16 +388,30 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
           </motion.div>
         </div>
 
-        {/* Message clé */}
-        <div className="bg-background/80 rounded-lg p-2.5 sm:p-3 border border-primary/10">
-          <p className="text-[10px] sm:text-xs text-center leading-relaxed">
-            <span className="font-semibold text-primary">Vos clients, pas ceux de SoloCab !</span>
-            <br />
-            <span className="text-muted-foreground">
-              Accédez à leurs coordonnées, envoyez des promotions personnalisées
-              et construisez votre propre clientèle fidèle.
-            </span>
-          </p>
+        {/* Message clé - QR Code disponible immédiatement */}
+        <div className="bg-background/80 rounded-lg p-2.5 sm:p-3 border border-primary/10 space-y-2">
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/15 rounded-full flex items-center justify-center shrink-0">
+              <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] sm:text-xs font-medium text-primary">
+                En attendant votre plaque ? Utilisez votre QR Code !
+              </p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">
+                Disponible dès maintenant dans votre tableau de bord. Faites-le scanner à vos clients pour une mise en relation instantanée.
+              </p>
+            </div>
+          </div>
+          
+          <div className="border-t border-primary/10 pt-2">
+            <p className="text-[10px] sm:text-xs text-center leading-relaxed">
+              <span className="font-semibold text-primary">Vos clients, pas ceux de SoloCab !</span>
+              <span className="text-muted-foreground block mt-0.5">
+                Coordonnées, promotions, fidélisation — tout est pensé pour vous.
+              </span>
+            </p>
+          </div>
         </div>
       </motion.div>
 
