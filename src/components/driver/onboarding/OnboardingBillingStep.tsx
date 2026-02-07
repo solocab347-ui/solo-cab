@@ -428,7 +428,25 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
               Voir le guide détaillé
             </Button>
 
-            {/* Info importante */}
+            {/* Info importante - Essai 14 jours */}
+            <Alert className="border-primary/30 bg-primary/5">
+              <Clock className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-xs text-foreground font-semibold">🎁 Vos 14 jours d'essai gratuit</AlertTitle>
+              <AlertDescription className="text-xs text-muted-foreground mt-1 space-y-1.5">
+                <p>
+                  <strong className="text-foreground">Vous ne perdez aucun jour !</strong> Votre essai ne démarrera que lorsque :
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 ml-1">
+                  <li>Vos documents seront validés par notre équipe</li>
+                  <li>Vous appuierez sur le bouton "Lancer mon indépendance"</li>
+                </ul>
+                <p className="text-foreground font-medium pt-1">
+                  → À la fin des 14 jours, vous pourrez souscrire à l'abonnement (29,99€/mois) pour continuer.
+                </p>
+              </AlertDescription>
+            </Alert>
+
+            {/* Info après inscription */}
             <Alert className="border-green-500/30 bg-green-500/10">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-xs text-green-700 font-semibold">Après votre inscription SoloCab</AlertTitle>
