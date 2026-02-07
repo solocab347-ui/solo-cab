@@ -17618,6 +17618,16 @@ export type Database = {
         Args: { p_fleet_partner_course_ids: string[] }
         Returns: undefined
       }
+      notify_all_admins: {
+        Args: {
+          p_category?: string
+          p_link?: string
+          p_message: string
+          p_title: string
+          p_type?: string
+        }
+        Returns: undefined
+      }
       notify_overdue_company_payments: { Args: never; Returns: undefined }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
