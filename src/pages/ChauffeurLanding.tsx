@@ -147,40 +147,49 @@ const ChauffeurLanding = () => {
       </section>
 
       {/* Tarification claire */}
-      <section className="py-8 sm:py-10 px-3 sm:px-4 bg-[#1a2942]">
+      <section className="py-10 sm:py-14 px-3 sm:px-4 bg-[#1a2942]">
         <div className="container mx-auto max-w-2xl">
-          <Card className="p-5 sm:p-8 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 text-center relative overflow-hidden">
+          <Card className="p-6 sm:p-10 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-bl-lg">
               SANS ENGAGEMENT
             </div>
             
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            <h3 className="text-3xl sm:text-4xl font-bold text-white mb-3">
               <span className="text-green-400">14 jours gratuits</span>
             </h3>
-            <p className="text-lg sm:text-xl text-white mb-1">pour tester SoloCab</p>
+            <p className="text-lg sm:text-2xl text-white mb-4">pour tester SoloCab</p>
             
-            <p className="text-gray-400 mb-4 sm:mb-6 text-xs sm:text-sm">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3 mb-5">
+              <p className="text-green-400 font-medium text-sm sm:text-base">
+                🎉 Aucune carte bancaire requise
+              </p>
+              <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                Aucun paiement avant la fin de l'essai
+              </p>
+            </div>
+            
+            <p className="text-gray-400 mb-5 sm:mb-6 text-xs sm:text-sm">
               Après les 14 jours, si je reste : <span className="text-white font-medium">{monthlyPrice.toFixed(2)}€/mois</span>
             </p>
 
             <Link to="/register-driver-promo" className="block">
-              <Button size="lg" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-base sm:text-lg py-5 sm:py-6">
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Démarrer mon essai gratuit
+              <Button size="lg" className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-base sm:text-lg py-6 sm:py-7">
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                Essayer gratuitement 14 jours
               </Button>
             </Link>
 
-            <div className="mt-4 sm:mt-6 space-y-1.5 sm:space-y-2 text-left">
-              <p className="text-xs sm:text-sm flex items-center gap-2 text-gray-300">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+            <div className="mt-5 sm:mt-8 space-y-2 sm:space-y-3 text-left">
+              <p className="text-sm sm:text-base flex items-center gap-2 text-gray-300">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
                 0% de commission sur toutes vos courses
               </p>
-              <p className="text-xs sm:text-sm flex items-center gap-2 text-gray-300">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+              <p className="text-sm sm:text-base flex items-center gap-2 text-gray-300">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
                 Accès à toutes les fonctionnalités
               </p>
-              <p className="text-xs sm:text-sm flex items-center gap-2 text-gray-300">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+              <p className="text-sm sm:text-base flex items-center gap-2 text-gray-300">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
                 Résiliable depuis votre espace en 1 clic
               </p>
             </div>
