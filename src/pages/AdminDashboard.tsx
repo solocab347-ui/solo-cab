@@ -31,18 +31,25 @@ import AdminDocumentsHub from "@/components/admin/hubs/AdminDocumentsHub";
 import { CongressRegistrationsTab } from "@/components/admin/CongressRegistrationsTab";
 
 const AdminDashboard = () => {
-  const { signOut, user } = useAuth();
+  const { signOut, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
+    // CRITIQUE: Attendre que l'authentification soit complètement chargée
+    if (authLoading) {
+      return; // Ne rien faire pendant le chargement auth
+    }
+    
     checkAdminAccess();
-  }, [user]);
+  }, [user, authLoading]);
 
   const checkAdminAccess = async () => {
+    // CRITIQUE: Ne pas rediriger si l'auth est encore en cours
     if (!user) {
+      setLoading(false);
       navigate("/login");
       return;
     }
@@ -55,7 +62,26 @@ const AdminDashboard = () => {
         .eq("role", "admin")
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error checking admin role:", error);
+        // Ne pas rediriger immédiatement en cas d'erreur réseau
+        // Réessayer une fois après un court délai
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: retryData, error: retryError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+          
+        if (retryError || !retryData) {
+          toast.error("Accès non autorisé");
+          navigate("/");
+          return;
+        }
+        setIsAdmin(true);
+        return;
+      }
 
       if (!data) {
         toast.error("Accès non autorisé");
@@ -73,7 +99,7 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
