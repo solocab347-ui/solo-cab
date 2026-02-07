@@ -146,97 +146,172 @@ const DriverProgressionTracker = () => {
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"onboarding" | "evolution">("onboarding");
 
-  const { data: drivers = [], isLoading, refetch, isRefetching } = useQuery({
+  const { data: drivers = [], isLoading, refetch, isRefetching, error: queryError } = useQuery({
     queryKey: ["admin-driver-progression"],
     queryFn: async () => {
-      // Use SECURITY DEFINER RPC function to bypass RLS circular dependency
-      const { data, error } = await supabase
-        .rpc('get_admin_drivers_progression');
-
-      if (error) {
-        console.error("Error fetching drivers:", error);
-        throw error;
+      // Essayer d'abord avec la fonction RPC
+      try {
+        const { data, error } = await supabase.rpc('get_admin_drivers_progression');
+        
+        if (!error && data && data.length > 0) {
+          return await enrichDriversWithStats(data);
+        }
+        
+        // Si RPC échoue ou retourne vide, utiliser requête directe
+        console.warn("RPC failed or empty, using direct query:", error?.message);
+      } catch (rpcError) {
+        console.warn("RPC exception, falling back to direct query:", rpcError);
       }
-
-      if (!data || data.length === 0) {
-        return [];
+      
+      // FALLBACK: Requête directe (admin vérifié côté frontend)
+      const { data: driversData, error: driversError } = await supabase
+        .from("drivers")
+        .select(`
+          id,
+          user_id,
+          company_name,
+          created_at,
+          subscription_status,
+          subscription_paid,
+          has_nfc_plate,
+          nfc_plate_ordered_at,
+          vehicle_brand,
+          vehicle_model,
+          vehicle_plate,
+          vehicle_color,
+          base_fare,
+          per_km_rate,
+          hourly_rate,
+          working_sectors,
+          service_description,
+          siret,
+          company_address,
+          max_passengers,
+          registration_step,
+          status,
+          documents_status,
+          free_access_granted,
+          billing_type,
+          stripe_connect_status,
+          wants_tpe_affiliate,
+          tpe_received_at,
+          trial_activated_at,
+          trial_ready_to_start,
+          objectives_completed,
+          onboarding_objectives_completed,
+          onboarding_step
+        `)
+        .eq("is_demo_account", false)
+        .order("created_at", { ascending: false });
+        
+      if (driversError) {
+        console.error("Direct query failed:", driversError);
+        throw driversError;
       }
-
-      // Fetch stats for each driver
-      const driversWithStats = await Promise.all(
-        (data || []).map(async (driver: any) => {
-          // Courses count
-          const { count: coursesCount } = await supabase
-            .from("courses")
-            .select("*", { count: "exact", head: true })
-            .eq("driver_id", driver.id);
-
-          // Clients count
-          const { count: clientsCount } = await supabase
-            .from("clients")
-            .select("*", { count: "exact", head: true })
-            .eq("driver_id", driver.id);
-
-          // QR codes count (as proxy for scans/visibility)
-          const { count: qrCount } = await supabase
-            .from("qr_codes")
-            .select("*", { count: "exact", head: true })
-            .eq("driver_id", driver.id);
-
-          // First course
-          const { data: firstCourse } = await supabase
-            .from("courses")
-            .select("created_at")
-            .eq("driver_id", driver.id)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          // Last activity
-          const { data: lastCourse } = await supabase
-            .from("courses")
-            .select("created_at")
-            .eq("driver_id", driver.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          // First QR code (as first scan proxy)
-          const { data: firstQr } = await supabase
-            .from("qr_codes")
-            .select("created_at")
-            .eq("driver_id", driver.id)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          // First client
-          const { data: firstClient } = await supabase
-            .from("clients")
-            .select("created_at")
-            .eq("driver_id", driver.id)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          return {
-            ...driver,
-            // full_name, profile_photo_url, phone, email are already at root level from RPC
-            total_courses: coursesCount || 0,
-            total_clients: clientsCount || 0,
-            total_scans: qrCount || 0,
-            last_activity: lastCourse?.created_at || null,
-            first_course_at: firstCourse?.created_at || null,
-            first_scan_at: firstQr?.created_at || null,
-            first_client_at: firstClient?.created_at || null,
-          };
-        })
-      );
-
-      return driversWithStats as DriverFullData[];
+      
+      // Récupérer les profils séparément
+      const userIds = driversData?.map(d => d.user_id).filter(Boolean) || [];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name, profile_photo_url, phone, email")
+        .in("id", userIds);
+        
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      
+      // Fusionner les données
+      const mergedData = (driversData || []).map(driver => {
+        const profile = profilesMap.get(driver.user_id);
+        return {
+          ...driver,
+          trial_started_at: driver.trial_activated_at, // Mapper le nom de colonne
+          full_name: profile?.full_name || 'Non renseigné',
+          profile_photo_url: profile?.profile_photo_url,
+          phone: profile?.phone,
+          email: profile?.email || 'email@inconnu.com',
+        };
+      });
+      
+      return await enrichDriversWithStats(mergedData);
     },
     staleTime: 30000,
+    retry: 2,
   });
+  
+  // Fonction helper pour enrichir avec les stats
+  const enrichDriversWithStats = async (data: any[]) => {
+    if (!data || data.length === 0) return [];
+    
+    const driversWithStats = await Promise.all(
+      data.map(async (driver: any) => {
+        // Courses count
+        const { count: coursesCount } = await supabase
+          .from("courses")
+          .select("*", { count: "exact", head: true })
+          .eq("driver_id", driver.id);
+
+        // Clients count
+        const { count: clientsCount } = await supabase
+          .from("clients")
+          .select("*", { count: "exact", head: true })
+          .eq("driver_id", driver.id);
+
+        // QR codes count
+        const { count: qrCount } = await supabase
+          .from("qr_codes")
+          .select("*", { count: "exact", head: true })
+          .eq("driver_id", driver.id);
+
+        // First course
+        const { data: firstCourse } = await supabase
+          .from("courses")
+          .select("created_at")
+          .eq("driver_id", driver.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        // Last activity
+        const { data: lastCourse } = await supabase
+          .from("courses")
+          .select("created_at")
+          .eq("driver_id", driver.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        // First QR code
+        const { data: firstQr } = await supabase
+          .from("qr_codes")
+          .select("created_at")
+          .eq("driver_id", driver.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        // First client
+        const { data: firstClient } = await supabase
+          .from("clients")
+          .select("created_at")
+          .eq("driver_id", driver.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        return {
+          ...driver,
+          total_courses: coursesCount || 0,
+          total_clients: clientsCount || 0,
+          total_scans: qrCount || 0,
+          last_activity: lastCourse?.created_at || null,
+          first_course_at: firstCourse?.created_at || null,
+          first_scan_at: firstQr?.created_at || null,
+          first_client_at: firstClient?.created_at || null,
+        };
+      })
+    );
+
+    return driversWithStats as DriverFullData[];
+  };
 
   // Calculate ALL onboarding steps
   const calculateOnboardingSteps = (driver: DriverFullData): OnboardingStep[] => {

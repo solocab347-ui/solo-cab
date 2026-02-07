@@ -6136,6 +6136,7 @@ export type Database = {
           trial_end_date: string | null
           trial_ready_to_start: boolean | null
           trial_start_date: string | null
+          trial_started_at: string | null
           trial_status: string | null
           tva_included: boolean
           tva_number: string | null
@@ -6307,6 +6308,7 @@ export type Database = {
           trial_end_date?: string | null
           trial_ready_to_start?: boolean | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           trial_status?: string | null
           tva_included?: boolean
           tva_number?: string | null
@@ -6478,6 +6480,7 @@ export type Database = {
           trial_end_date?: string | null
           trial_ready_to_start?: boolean | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           trial_status?: string | null
           tva_included?: boolean
           tva_number?: string | null
