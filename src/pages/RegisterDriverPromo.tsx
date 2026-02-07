@@ -15,6 +15,7 @@ import logo from "@/assets/logo-solocab.png";
 import { PaymentRedirectOverlay } from "@/components/PaymentRedirectOverlay";
 import nfcPlateLarge from "@/assets/nfc-plate-large-clean.png";
 import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
+import { notifyRegistrationError } from "@/utils/notifyRegistrationError";
 
 // Prix des plaques NFC - MODE PRODUCTION
 const TEST_MODE_PRICING = false;
@@ -207,6 +208,17 @@ const RegisterDriverPromo = () => {
       }
     } catch (error: any) {
       console.error("Login error:", error);
+      
+      // Notifier l'admin en cas d'erreur de connexion (sauf identifiants incorrects)
+      if (!error.message?.includes("Invalid login credentials")) {
+        notifyRegistrationError({
+          step: "Connexion utilisateur existant",
+          email: loginEmail,
+          errorMessage: error.message || "Erreur de connexion inconnue",
+          errorCode: error.code,
+        });
+      }
+      
       if (error.message?.includes("Invalid login credentials")) {
         toast.error("Email ou mot de passe incorrect");
       } else {
@@ -302,6 +314,18 @@ const RegisterDriverPromo = () => {
     } catch (error: any) {
       console.error("Erreur step 1:", error);
       let errorMessage = error.message || "Erreur lors de la création du compte";
+      
+      // Notifier l'admin de l'erreur d'inscription
+      notifyRegistrationError({
+        step: "Création compte (Step 1)",
+        email,
+        phone,
+        fullName,
+        errorMessage: error.message || "Erreur inconnue",
+        errorCode: error.code,
+        userId: userId || undefined,
+      });
+      
       if (error.message?.includes("User already registered")) {
         errorMessage = "Cet email est déjà utilisé. Connectez-vous pour reprendre votre inscription.";
         setIsLoginMode(true);
@@ -404,6 +428,15 @@ const RegisterDriverPromo = () => {
     } catch (error: any) {
       console.error("Erreur paiement:", error);
       setShowPaymentOverlay(false);
+      
+      // Notifier l'admin de l'erreur de paiement
+      notifyRegistrationError({
+        step: "Paiement Stripe",
+        errorMessage: error.message || "Erreur de paiement inconnue",
+        errorCode: error.code,
+        userId: userId || undefined,
+        driverId: driverId || undefined,
+      });
       
       // Record payment failure
       if (driverId) {
