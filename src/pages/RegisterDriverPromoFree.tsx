@@ -474,11 +474,11 @@ const RegisterDriverPromoFree = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-lg font-semibold"
+                className="w-full h-12 sm:h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Gift className="w-5 h-5 mr-2" />}
-                Commencer mes 14 jours gratuits
-                <ArrowRight className="w-5 h-5 ml-2" />
+                {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin flex-shrink-0" /> : <Gift className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />}
+                <span className="truncate">Essayer 14 jours gratuits</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
               </Button>
               
               <p className="text-xs text-center text-muted-foreground">
