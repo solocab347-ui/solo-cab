@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Loader2,
@@ -8,12 +8,14 @@ import {
   CheckCircle2,
   Package,
   FileText,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WelcomeVideoModal } from '../WelcomeVideoModal';
 
 interface OnboardingTrialStartStepProps {
   driverId: string;
@@ -28,12 +30,69 @@ export function OnboardingTrialStartStep({
   driverId, 
   billingType,
   stripeAccountStatus,
-  documentsStatus,
+  documentsStatus: initialDocumentsStatus,
   onComplete,
   loading 
 }: OnboardingTrialStartStepProps) {
   const [activating, setActivating] = useState(false);
   const [confirmReady, setConfirmReady] = useState(false);
+  const [documentsStatus, setDocumentsStatus] = useState(initialDocumentsStatus);
+  const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Écouter les changements en temps réel du statut des documents
+  useEffect(() => {
+    const channel = supabase
+      .channel(`driver-docs-${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drivers',
+          filter: `id=eq.${driverId}`,
+        },
+        (payload) => {
+          const newDocStatus = (payload.new as any)?.documents_status;
+          if (newDocStatus && newDocStatus !== documentsStatus) {
+            setDocumentsStatus(newDocStatus);
+            if (newDocStatus === 'validated') {
+              toast.success('🎉 Vos documents ont été validés !');
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driverId, documentsStatus]);
+
+  // Rafraîchir manuellement le statut
+  const refreshStatus = async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('documents_status')
+        .eq('id', driverId)
+        .single();
+
+      if (data && !error) {
+        setDocumentsStatus(data.documents_status);
+        if (data.documents_status === 'validated') {
+          toast.success('Documents validés ! Vous pouvez démarrer votre essai.');
+        } else {
+          toast.info('Statut actualisé : ' + (data.documents_status === 'submitted' ? 'en attente de validation' : 'documents incomplets'));
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const isStripeChoice = billingType === 'solocab_stripe';
   const isEquipmentPurchase = billingType === 'buy_equipment';
@@ -64,6 +123,16 @@ export function OnboardingTrialStartStep({
     
     // Si Stripe ready, on peut démarrer
     return true;
+  };
+
+  // Afficher la vidéo de bienvenue puis lancer l'essai
+  const handleLaunchWithVideo = () => {
+    setShowWelcomeVideo(true);
+  };
+
+  const handleVideoComplete = () => {
+    setShowWelcomeVideo(false);
+    handleStartTrial();
   };
 
   const handleStartTrial = async () => {
@@ -131,11 +200,30 @@ export function OnboardingTrialStartStep({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="mb-6"
+        className="mb-4"
       >
         <h2 className="text-2xl font-bold text-white">Prêt à démarrer ? 🚀</h2>
         <p className="text-white/60 text-sm mt-1">
           14 jours gratuits pour développer ta clientèle
+        </p>
+      </motion.div>
+
+      {/* Info explicative sur la période d'essai */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="w-full max-w-sm mb-4 p-3 rounded-xl bg-primary/10 border border-primary/30"
+      >
+        <p className="text-xs text-white/80 text-left">
+          <strong className="text-primary">🎁 Vos 14 jours ne démarrent que lorsque :</strong>
+        </p>
+        <ul className="text-xs text-white/60 mt-1 space-y-0.5 text-left list-disc ml-4">
+          <li>Vos documents sont validés par notre équipe</li>
+          <li>Vous appuyez sur "Lancer mon indépendance"</li>
+        </ul>
+        <p className="text-xs text-emerald-400 mt-1.5 text-left font-medium">
+          → Vous ne perdez aucun jour !
         </p>
       </motion.div>
 
@@ -290,7 +378,7 @@ export function OnboardingTrialStartStep({
       >
         {canStartTrial() ? (
           <Button 
-            onClick={handleStartTrial} 
+            onClick={handleLaunchWithVideo} 
             disabled={activating || loading}
             className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-emerald-500"
           >
@@ -306,15 +394,26 @@ export function OnboardingTrialStartStep({
         ) : (
           <>
             {!areDocumentsValidated ? (
-              <Button 
-                onClick={handleSkipAndWait}
-                disabled={loading}
-                variant="outline"
-                className="w-full h-12 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                {areDocumentsPending ? 'En attente validation admin' : 'Déposer mes documents'}
-              </Button>
+              <>
+                <Button 
+                  onClick={refreshStatus}
+                  disabled={refreshing}
+                  variant="outline"
+                  className="w-full h-12 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                >
+                  {refreshing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  {areDocumentsPending ? 'Actualiser le statut' : 'Vérifier mes documents'}
+                </Button>
+                <p className="text-muted-foreground text-xs text-center">
+                  {areDocumentsPending 
+                    ? "Vos documents sont en cours de validation par l'admin. Vous serez notifié automatiquement."
+                    : "Déposez vos documents pour continuer"}
+                </p>
+              </>
             ) : (
               <Button 
                 onClick={handleSkipAndWait}
@@ -326,16 +425,17 @@ export function OnboardingTrialStartStep({
                 {isStripeNotReady ? 'Attendre Stripe' : 'Attendre mon matériel'}
               </Button>
             )}
-            <p className="text-muted-foreground text-xs text-center">
-              {!areDocumentsValidated 
-                ? areDocumentsPending 
-                  ? "Tu pourras démarrer dès validation par l'admin"
-                  : "Dépose tes documents pour continuer"
-                : "Tu pourras démarrer depuis ton tableau de bord"}
-            </p>
           </>
         )}
       </motion.div>
+
+      {/* Modal vidéo de bienvenue obligatoire */}
+      <WelcomeVideoModal
+        open={showWelcomeVideo}
+        onOpenChange={setShowWelcomeVideo}
+        driverId={driverId}
+        onComplete={handleVideoComplete}
+      />
     </div>
   );
 }

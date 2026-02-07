@@ -5782,6 +5782,97 @@ export type Database = {
           },
         ]
       }
+      driver_video_views: {
+        Row: {
+          completed: boolean | null
+          driver_id: string
+          id: string
+          video_id: string
+          watch_percentage: number | null
+          watched_at: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          driver_id: string
+          id?: string
+          video_id: string
+          watch_percentage?: number | null
+          watched_at?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          driver_id?: string
+          id?: string
+          video_id?: string
+          watch_percentage?: number | null
+          watched_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "training_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_work_schedule: {
         Row: {
           created_at: string
@@ -6160,6 +6251,8 @@ export type Database = {
           visible_to_fleet_managers: boolean | null
           wants_tpe_affiliate: boolean | null
           weekend_surcharge: number | null
+          welcome_video_watched: boolean | null
+          welcome_video_watched_at: string | null
           working_sectors: string[] | null
         }
         Insert: {
@@ -6335,6 +6428,8 @@ export type Database = {
           visible_to_fleet_managers?: boolean | null
           wants_tpe_affiliate?: boolean | null
           weekend_surcharge?: number | null
+          welcome_video_watched?: boolean | null
+          welcome_video_watched_at?: string | null
           working_sectors?: string[] | null
         }
         Update: {
@@ -6510,6 +6605,8 @@ export type Database = {
           visible_to_fleet_managers?: boolean | null
           wants_tpe_affiliate?: boolean | null
           weekend_surcharge?: number | null
+          welcome_video_watched?: boolean | null
+          welcome_video_watched_at?: string | null
           working_sectors?: string[] | null
         }
         Relationships: [
@@ -14289,6 +14386,51 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      training_videos: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          duration_seconds: number | null
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_url: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string
         }
         Relationships: []
       }
