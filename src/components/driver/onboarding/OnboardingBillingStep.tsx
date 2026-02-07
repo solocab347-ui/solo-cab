@@ -353,31 +353,30 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
       )}
 
       {data.billingType === 'solocab_stripe' && (
-        <Card className="border-primary/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/20">
+        <Card className="border-border bg-card">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-indigo-800 dark:text-indigo-300">
-              <Zap className="w-5 h-5" />
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
               Encaissement en ligne Stripe Connect
             </CardTitle>
-            <CardDescription className="text-indigo-700/80 dark:text-indigo-400/80">
+            <CardDescription>
               Recevez les paiements CB directement sur votre compte bancaire
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2 space-y-4">
             
-            {/* CTA Principal - Créer le compte */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 text-white">
+            {/* CTA Principal - Design épuré */}
+            <div className="bg-muted/50 border border-border rounded-xl p-4">
               <div className="text-center mb-3">
-                <h3 className="font-bold text-lg">Créez votre compte Stripe</h3>
-                <p className="text-sm text-white/80 mt-1">
+                <h3 className="font-bold text-base">Créez votre compte Stripe</h3>
+                <p className="text-sm text-muted-foreground mt-1">
                   Configuration gratuite en 5 minutes
                 </p>
               </div>
               
               <Button
-                variant="secondary"
                 size="lg"
-                className="w-full h-14 bg-white hover:bg-white/90 text-indigo-700 font-bold text-base shadow-lg"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 onClick={() => setShowStripeGuide(true)}
               >
                 <CreditCard className="w-5 h-5 mr-2" />
@@ -385,7 +384,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               
-              <p className="text-center text-xs text-white/70 mt-2">
+              <p className="text-center text-xs text-muted-foreground mt-2">
                 Redirection sécurisée vers Stripe.com
               </p>
             </div>
@@ -393,7 +392,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
             {/* Guide secondaire */}
             <Button
               variant="outline"
-              className="w-full border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+              className="w-full"
               onClick={() => setShowStripeGuide(true)}
             >
               <BookOpen className="w-4 h-4 mr-2" />
@@ -409,56 +408,56 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
               </AlertDescription>
             </Alert>
 
-            {/* Résumé rapide */}
-            <div className="bg-slate-800 dark:bg-slate-900 rounded-xl p-4 text-white">
+            {/* Résumé rapide - Style simple */}
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Info className="w-4 h-4 text-indigo-400" />
+                <Info className="w-4 h-4 text-muted-foreground" />
                 Comment ça marche ?
               </p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">1</div>
-                  <span>Inscription Stripe</span>
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <span className="text-muted-foreground">Inscription Stripe</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">2</div>
-                  <span>Vérification ID</span>
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <span className="text-muted-foreground">Vérification ID</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">3</div>
-                  <span>Ajout RIB</span>
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <span className="text-muted-foreground">Ajout RIB</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-xs font-bold">✓</div>
-                  <span>Encaissez !</span>
+                  <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold">✓</div>
+                  <span className="text-muted-foreground">Encaissez !</span>
                 </div>
               </div>
             </div>
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-primary" />
+                <Shield className="w-3.5 h-3.5 text-foreground" />
                 <span>Paiements sécurisés</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
+                <Clock className="w-3.5 h-3.5 text-foreground" />
                 <span>Acomptes automatiques</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Euro className="w-3.5 h-3.5 text-primary" />
+                <Euro className="w-3.5 h-3.5 text-foreground" />
                 <span>Virements J+2</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-primary" />
+                <Lock className="w-3.5 h-3.5 text-foreground" />
                 <span>Empreinte bancaire</span>
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-3 mt-3">
-              <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-                <strong>SoloCab n'est pas une plateforme de réservation.</strong>
+            <div className="bg-muted/30 rounded-lg p-3">
+              <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                <strong className="text-foreground">SoloCab n'est pas une plateforme de réservation.</strong>
                 <br />
                 Vous encaissez vos clients. SoloCab fournit l'infrastructure et les outils.
                 <br />
@@ -466,7 +465,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
               </p>
             </div>
 
-            <p className="text-[10px] text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center">
               En attendant la configuration Stripe, vous pourrez encaisser vos clients par espèces, virement ou avec votre propre TPE.
             </p>
           </CardContent>
