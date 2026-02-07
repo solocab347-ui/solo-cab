@@ -211,89 +211,93 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
 
       {/* Détails supplémentaires selon le choix */}
       {data.billingType === 'buy_equipment' && (
-        <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
-          <CardHeader className="p-3 pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-amber-600" />
+        <Card className="border-amber-500/50 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-800 dark:text-amber-300">
+              <ShoppingCart className="w-5 h-5" />
               Offre partenaire SumUp
             </CardTitle>
+            <CardDescription className="text-amber-700/80 dark:text-amber-400/80">
+              Équipez-vous d'un terminal de paiement professionnel
+            </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Via notre lien partenaire SumUp, équipez-vous d'un terminal de paiement professionnel pour encaisser vos clients par carte bancaire.
-            </p>
+          <CardContent className="p-4 pt-2 space-y-4">
             
-            {/* Image Carousel TPE */}
-            <div className="relative bg-white rounded-xl overflow-hidden">
-              <div className="relative aspect-square max-h-48 flex items-center justify-center p-4">
+            {/* Image Carousel TPE - Plus grand */}
+            <div className="relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg border border-amber-200 dark:border-amber-800">
+              <div className="relative aspect-[4/3] flex items-center justify-center p-6 bg-gradient-to-b from-white to-amber-50 dark:from-slate-900 dark:to-slate-800">
                 <img 
                   src={tpeImages[currentImageIndex]} 
                   alt={`SumUp Solo Lite ${currentImageIndex + 1}`}
-                  className="max-h-full max-w-full object-contain"
+                  className="max-h-full max-w-full object-contain drop-shadow-xl"
                 />
-                {/* Navigation arrows */}
+                {/* Navigation arrows - Plus visibles */}
                 <button
                   onClick={() => setCurrentImageIndex(prev => prev === 0 ? tpeImages.length - 1 : prev - 1)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-lg transition-colors"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                   onClick={() => setCurrentImageIndex(prev => prev === tpeImages.length - 1 ? 0 : prev + 1)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 flex items-center justify-center text-white shadow-lg transition-colors"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-6 h-6" />
                 </button>
                 {/* Dots indicator */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
                   {tpeImages.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
                       className={cn(
-                        "w-2 h-2 rounded-full transition-colors",
-                        idx === currentImageIndex ? "bg-amber-500" : "bg-gray-300"
+                        "w-3 h-3 rounded-full transition-all shadow",
+                        idx === currentImageIndex 
+                          ? "bg-amber-500 scale-110" 
+                          : "bg-white/80 hover:bg-white"
                       )}
                     />
                   ))}
                 </div>
               </div>
               
-              {/* Product info */}
-              <div className="p-3 bg-gray-50 dark:bg-background/50">
-                <h3 className="font-bold text-base">Solo Lite</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Un terminal de paiement simple et durable qui se connecte à votre smartphone via Bluetooth pour accepter les paiements où que vous soyez.
+              {/* Product info - Fond contrasté */}
+              <div className="p-4 bg-slate-800 dark:bg-slate-950 text-white">
+                <h3 className="font-bold text-lg">Solo Lite</h3>
+                <p className="text-sm text-slate-300 mt-1 leading-relaxed">
+                  Terminal de paiement Bluetooth qui se connecte à votre smartphone pour encaisser partout.
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-lg font-bold">20 €</span>
-                  <span className="text-sm text-muted-foreground line-through">34 €</span>
-                  <Badge className="bg-purple-600 text-white text-[10px]">41% de réduction</Badge>
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="text-2xl font-bold text-amber-400">24 €</span>
+                  <span className="text-base text-slate-400 line-through">34 €</span>
+                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1">
+                    -41%
+                  </Badge>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">24 € TVA incluse</p>
+                <p className="text-xs text-slate-400 mt-1">TVA incluse • Livraison gratuite</p>
               </div>
             </div>
             
-            <div className="bg-white/50 dark:bg-background/50 rounded-lg p-3 space-y-3">
-              <Separator className="my-2" />
-              
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-medium">Ce que vous pourrez faire avec SumUp :</p>
-                <ul className="space-y-1 text-[11px] text-muted-foreground">
-                  <li className="flex items-center gap-1.5">
-                    <CreditCard className="w-3 h-3 text-primary" />
-                    Encaisser vos clients par carte bancaire
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Euro className="w-3 h-3 text-primary" />
-                    Envoyer des liens de paiement (acomptes, pré-paiements)
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Shield className="w-3 h-3 text-primary" />
-                    Bénéficier d'un compte professionnel gratuit
-                  </li>
-                </ul>
-              </div>
+            {/* Avantages - Fond contrasté visible */}
+            <div className="bg-slate-800 dark:bg-slate-900 rounded-xl p-4 text-white">
+              <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                Ce que vous pourrez faire :
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm">
+                  <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Encaisser par carte bancaire</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <Euro className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Envoyer des liens de paiement</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Compte professionnel gratuit</span>
+                </li>
+              </ul>
             </div>
 
             <Button
