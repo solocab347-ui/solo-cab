@@ -359,67 +359,84 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
       )}
 
       {data.billingType === 'solocab_stripe' && (
-        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardHeader className="p-3 pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" />
+        <Card className="border-primary/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/20">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-indigo-800 dark:text-indigo-300">
+              <Zap className="w-5 h-5" />
               Encaissement en ligne Stripe Connect
             </CardTitle>
+            <CardDescription className="text-indigo-700/80 dark:text-indigo-400/80">
+              Recevez les paiements CB directement sur votre compte bancaire
+            </CardDescription>
           </CardHeader>
-          <CardContent className="p-3 pt-0 space-y-3">
-            {/* Bouton principal pour voir le guide complet */}
+          <CardContent className="p-4 pt-2 space-y-4">
+            
+            {/* CTA Principal - Créer le compte */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 text-white">
+              <div className="text-center mb-3">
+                <h3 className="font-bold text-lg">Créez votre compte Stripe</h3>
+                <p className="text-sm text-white/80 mt-1">
+                  Configuration gratuite en 5 minutes
+                </p>
+              </div>
+              
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full h-14 bg-white hover:bg-white/90 text-indigo-700 font-bold text-base shadow-lg"
+                onClick={() => setShowStripeGuide(true)}
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                Commencer la configuration
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              
+              <p className="text-center text-xs text-white/70 mt-2">
+                Redirection sécurisée vers Stripe.com
+              </p>
+            </div>
+
+            {/* Guide secondaire */}
             <Button
-              variant="default"
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              variant="outline"
+              className="w-full border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
               onClick={() => setShowStripeGuide(true)}
             >
               <BookOpen className="w-4 h-4 mr-2" />
-              Voir le guide complet de configuration
-              <ArrowRight className="w-4 h-4 ml-2" />
+              Voir le guide détaillé
             </Button>
 
-            <Alert className="border-amber-500/30 bg-amber-500/10">
-              <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
-              <AlertTitle className="text-xs text-amber-700">Configuration requise après l'inscription</AlertTitle>
-              <AlertDescription className="text-[11px] text-amber-600 mt-1">
-                Pour encaisser en ligne, vous devrez créer un compte Stripe Express gratuit. Ce processus prend environ 5 minutes et nécessite une pièce d'identité.
+            {/* Info importante */}
+            <Alert className="border-green-500/30 bg-green-500/10">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-xs text-green-700 font-semibold">Après votre inscription SoloCab</AlertTitle>
+              <AlertDescription className="text-xs text-green-600 mt-1">
+                Vous pourrez finaliser la connexion Stripe depuis votre tableau de bord → Paramètres → Encaissements
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold">Comment ça marche ?</h4>
-              
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <div className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                  <div className="text-xs">
-                    <p className="font-medium">Terminez votre inscription SoloCab</p>
-                    <p className="text-muted-foreground text-[11px]">Complétez d'abord les étapes de création de compte</p>
-                  </div>
+            {/* Résumé rapide */}
+            <div className="bg-slate-800 dark:bg-slate-900 rounded-xl p-4 text-white">
+              <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Info className="w-4 h-4 text-indigo-400" />
+                Comment ça marche ?
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">1</div>
+                  <span>Inscription Stripe</span>
                 </div>
-                
-                <div className="flex items-start gap-2">
-                  <div className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                  <div className="text-xs">
-                    <p className="font-medium">Activez Stripe Connect</p>
-                    <p className="text-muted-foreground text-[11px]">Dans Paramètres → Paiements, cliquez sur "Connecter Stripe"</p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">2</div>
+                  <span>Vérification ID</span>
                 </div>
-                
-                <div className="flex items-start gap-2">
-                  <div className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                  <div className="text-xs">
-                    <p className="font-medium">Complétez la vérification Stripe</p>
-                    <p className="text-muted-foreground text-[11px]">Identité + RIB (inscription gratuite, ~5 min)</p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">3</div>
+                  <span>Ajout RIB</span>
                 </div>
-                
-                <div className="flex items-start gap-2">
-                  <div className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
-                  <div className="text-xs">
-                    <p className="font-medium">C'est prêt !</p>
-                    <p className="text-muted-foreground text-[11px]">Vos clients peuvent payer en ligne, les fonds arrivent sur votre compte bancaire</p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-xs font-bold">✓</div>
+                  <span>Encaissez !</span>
                 </div>
               </div>
             </div>
