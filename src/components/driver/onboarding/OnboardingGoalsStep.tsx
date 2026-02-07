@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -119,11 +119,117 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   // Coach advice state
   const [coachAdvice, setCoachAdvice] = useState<{ warnings: string[]; suggestions: string[] }>({ warnings: [], suggestions: [] });
   const [dataLoaded, setDataLoaded] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedRef = useRef<string>('');
+
+  // *** SAUVEGARDE AUTOMATIQUE CONTINUE ***
+  const autoSaveData = useCallback(async () => {
+    if (!dataLoaded) return; // Don't save before data is loaded
+    
+    const dataToSave = {
+      current_monthly_revenue: currentRevenue,
+      current_direct_clients: currentClients,
+      platform_percentage: platformPercentage,
+      solocab_percentage: 100 - platformPercentage,
+      target_monthly_revenue: targetRevenue,
+      target_direct_clients: targetClients,
+      selected_work_days: selectedDays,
+      work_hours_per_day: workHoursPerDay,
+      work_days_per_week: selectedDays.length,
+      last_auto_save: new Date().toISOString(),
+    };
+
+    // Check if data actually changed
+    const dataHash = JSON.stringify(dataToSave);
+    if (dataHash === lastSavedRef.current) return;
+
+    try {
+      const { data: existingDriver } = await supabase
+        .from('drivers')
+        .select('objectives_data')
+        .eq('id', driverId)
+        .single();
+
+      const existingData = (existingDriver?.objectives_data as Record<string, unknown>) || {};
+
+      await supabase
+        .from('drivers')
+        .update({
+          objectives_data: {
+            ...existingData,
+            ...dataToSave,
+          }
+        })
+        .eq('id', driverId);
+
+      lastSavedRef.current = dataHash;
+      console.log('✅ Objectifs auto-sauvegardés');
+    } catch (error) {
+      console.error('❌ Erreur auto-sauvegarde objectifs:', error);
+    }
+  }, [driverId, dataLoaded, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay]);
+
+  // Auto-save with debounce whenever data changes
+  useEffect(() => {
+    if (!dataLoaded) return;
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced save (1 second delay)
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSaveData();
+    }, 1000);
+
+    // Cleanup
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [dataLoaded, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay, autoSaveData]);
+
+  // Save immediately on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      // Use synchronous approach for unload
+      const dataToSave = {
+        current_monthly_revenue: currentRevenue,
+        current_direct_clients: currentClients,
+        platform_percentage: platformPercentage,
+        target_monthly_revenue: targetRevenue,
+        target_direct_clients: targetClients,
+        selected_work_days: selectedDays,
+        work_hours_per_day: workHoursPerDay,
+      };
+      // Store in localStorage as backup
+      localStorage.setItem(`onboarding_goals_${driverId}`, JSON.stringify(dataToSave));
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [driverId, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay]);
 
   // *** IMPORTANT: Charger les données sauvegardées au montage ***
   useEffect(() => {
     const loadSavedData = async () => {
       try {
+        // First check localStorage backup
+        const localBackup = localStorage.getItem(`onboarding_goals_${driverId}`);
+        let localData: Record<string, any> | null = null;
+        if (localBackup) {
+          try {
+            localData = JSON.parse(localBackup);
+          } catch (e) {
+            console.warn('Impossible de parser le backup local');
+          }
+        }
+
         const { data } = await supabase
           .from('drivers')
           .select('objectives_data')
@@ -131,49 +237,58 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
           .single();
         
         const objectivesData = data?.objectives_data as Record<string, any> | null;
-        if (objectivesData) {
+        
+        // Merge: prefer DB data, fallback to localStorage
+        const mergedData = { ...localData, ...objectivesData };
+        
+        if (mergedData && Object.keys(mergedData).length > 0) {
           // Charger les données de situation actuelle
-          if (objectivesData.current_monthly_revenue !== undefined) {
-            setCurrentRevenue(objectivesData.current_monthly_revenue);
-            setCurrentRevenueValue(objectivesData.current_monthly_revenue.toString());
+          if (mergedData.current_monthly_revenue !== undefined) {
+            setCurrentRevenue(mergedData.current_monthly_revenue);
+            setCurrentRevenueValue(mergedData.current_monthly_revenue.toString());
           }
-          if (objectivesData.current_clients !== undefined) {
-            setCurrentClients(objectivesData.current_clients);
-            setCurrentClientsValue(objectivesData.current_clients.toString());
+          if (mergedData.current_clients !== undefined) {
+            setCurrentClients(mergedData.current_clients);
+            setCurrentClientsValue(mergedData.current_clients.toString());
           }
-          if (objectivesData.platform_percentage !== undefined) {
-            setPlatformPercentage(objectivesData.platform_percentage);
+          if (mergedData.platform_percentage !== undefined) {
+            setPlatformPercentage(mergedData.platform_percentage);
           }
           
           // Charger les objectifs
-          if (objectivesData.target_monthly_revenue !== undefined) {
-            setTargetRevenue(objectivesData.target_monthly_revenue);
-            setRevenueValue(objectivesData.target_monthly_revenue.toString());
+          if (mergedData.target_monthly_revenue !== undefined) {
+            setTargetRevenue(mergedData.target_monthly_revenue);
+            setRevenueValue(mergedData.target_monthly_revenue.toString());
           }
-          if (objectivesData.target_clients !== undefined) {
-            setTargetClients(objectivesData.target_clients);
-            setClientsValue(objectivesData.target_clients.toString());
+          if (mergedData.target_clients !== undefined) {
+            setTargetClients(mergedData.target_clients);
+            setClientsValue(mergedData.target_clients.toString());
           }
           
           // Charger le planning
-          if (objectivesData.selected_work_days && Array.isArray(objectivesData.selected_work_days)) {
-            setSelectedDays(objectivesData.selected_work_days);
+          if (mergedData.selected_work_days && Array.isArray(mergedData.selected_work_days)) {
+            setSelectedDays(mergedData.selected_work_days);
           }
-          if (objectivesData.work_hours_per_day !== undefined) {
-            setWorkHoursPerDay(objectivesData.work_hours_per_day);
+          if (mergedData.work_hours_per_day !== undefined) {
+            setWorkHoursPerDay(mergedData.work_hours_per_day);
           }
           
           // Charger les clients (aussi appelé current_direct_clients et target_direct_clients)
-          if (objectivesData.current_direct_clients !== undefined) {
-            setCurrentClients(objectivesData.current_direct_clients);
-            setCurrentClientsValue(objectivesData.current_direct_clients.toString());
+          if (mergedData.current_direct_clients !== undefined) {
+            setCurrentClients(mergedData.current_direct_clients);
+            setCurrentClientsValue(mergedData.current_direct_clients.toString());
           }
-          if (objectivesData.target_direct_clients !== undefined) {
-            setTargetClients(objectivesData.target_direct_clients);
-            setClientsValue(objectivesData.target_direct_clients.toString());
+          if (mergedData.target_direct_clients !== undefined) {
+            setTargetClients(mergedData.target_direct_clients);
+            setClientsValue(mergedData.target_direct_clients.toString());
           }
           
-          console.log('📊 Données objectifs chargées:', objectivesData);
+          console.log('📊 Données objectifs chargées:', mergedData);
+          
+          // Clear localStorage backup after successful load
+          if (localBackup) {
+            localStorage.removeItem(`onboarding_goals_${driverId}`);
+          }
         }
       } catch (error) {
         console.error('Erreur chargement objectifs:', error);
