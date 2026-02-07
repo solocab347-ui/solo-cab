@@ -176,12 +176,19 @@ const DOCUMENT_CONFIG: Record<string, {
     legacyKeys: ['registration']
   },
   insurance: {
-    label: "Attestation d'assurance",
+    label: "Assurance RC Pro",
     description: "Assurance RC Pro VTC - peut être mise à jour",
     isRequired: true,
     hasVerso: false,
     canUpdateAfterValidation: true, // Can be updated (renewal)
     legacyKeys: ['vehicle_insurance']
+  },
+  insurance_circulation: {
+    label: "Assurance RC Circulation",
+    description: "Assurance responsabilité civile circulation - peut être mise à jour",
+    isRequired: true,
+    hasVerso: false,
+    canUpdateAfterValidation: true // Can be updated (renewal)
   },
   kbis: {
     label: "Extrait Kbis ou INSEE",

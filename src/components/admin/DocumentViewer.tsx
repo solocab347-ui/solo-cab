@@ -56,7 +56,13 @@ const DOCUMENT_GROUPS: DocumentGroup[] = [
   { 
     groupLabel: "Attestation d'assurance RC Pro VTC",
     documents: [
-      { key: "insurance", label: "Assurance", legacyKey: "vehicle_insurance" },
+      { key: "insurance", label: "RC Pro", legacyKey: "vehicle_insurance" },
+    ]
+  },
+  { 
+    groupLabel: "Attestation d'assurance RC Circulation",
+    documents: [
+      { key: "insurance_circulation", label: "RC Circulation" },
     ]
   },
   { 

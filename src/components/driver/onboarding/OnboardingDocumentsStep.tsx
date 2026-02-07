@@ -43,6 +43,7 @@ const REQUIRED_DOCUMENTS = [
   { key: "id_card_verso", label: "Pièce d'identité (Verso)", required: false, hint: "Facultatif si passeport" },
   { key: "vehicle_registration", label: "Carte grise", required: true },
   { key: "insurance", label: "Assurance RC Pro", required: true },
+  { key: "insurance_circulation", label: "Assurance RC Circulation", required: true },
   { key: "kbis", label: "Kbis ou INSEE", required: true },
 ];
 

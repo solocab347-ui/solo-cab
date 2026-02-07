@@ -66,7 +66,8 @@ const DOCUMENT_CONFIG: Record<string, { label: string; icon: string }> = {
   driving_license_recto: { label: "Permis de conduire (Recto)", icon: "license" },
   driving_license_verso: { label: "Permis de conduire (Verso)", icon: "license" },
   vehicle_registration: { label: "Carte grise", icon: "car" },
-  insurance: { label: "Attestation d'assurance", icon: "insurance" },
+  insurance: { label: "Assurance RC Pro", icon: "insurance" },
+  insurance_circulation: { label: "Assurance RC Circulation", icon: "insurance" },
   kbis: { label: "Extrait Kbis", icon: "company" }
 };
 
