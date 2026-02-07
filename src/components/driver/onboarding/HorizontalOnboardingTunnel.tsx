@@ -591,27 +591,42 @@ export function HorizontalOnboardingTunnel({
           {/* Progress bar */}
           <Progress value={progress} className="h-0.5 sm:h-1" />
           
-          {/* Step indicators - horizontal scroll */}
+          {/* Step indicators - horizontal scroll - cliquables pour navigation */}
           <div className="flex justify-between mt-1.5 sm:mt-2 gap-0.5 sm:gap-1 overflow-x-auto pb-0.5 sm:pb-1 scrollbar-hide">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
               const isCompleted = index < currentStep || completedSteps[step.id as keyof typeof completedSteps];
               const isCurrent = index === currentStep;
+              // On peut cliquer sur les étapes déjà visitées (complétées ou précédentes)
+              const isClickable = index < currentStep || isCompleted;
+              
+              const handleStepClick = () => {
+                if (isClickable && index !== currentStep) {
+                  setDirection(index < currentStep ? -1 : 1);
+                  setCurrentStep(index);
+                }
+              };
               
               return (
-                <div 
+                <button
+                  type="button"
                   key={step.id}
-                  className={`flex flex-col items-center flex-shrink-0 ${
+                  onClick={handleStepClick}
+                  disabled={!isClickable || isCurrent}
+                  className={cn(
+                    "flex flex-col items-center flex-shrink-0 transition-all",
+                    isClickable && !isCurrent ? "cursor-pointer hover:scale-105 active:scale-95" : "cursor-default",
                     isCurrent ? 'text-primary' : isCompleted ? 'text-emerald-400' : 'text-white/30'
-                  }`}
+                  )}
                 >
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all ${
+                  <div className={cn(
+                    "w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all",
                     isCompleted && !isCurrent
-                      ? 'bg-emerald-500/20' 
+                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30' 
                       : isCurrent 
                         ? 'bg-primary/20 ring-1 sm:ring-2 ring-primary' 
                         : 'bg-white/5'
-                  }`}>
+                  )}>
                     {isCompleted && !isCurrent ? (
                       <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     ) : (
@@ -619,7 +634,7 @@ export function HorizontalOnboardingTunnel({
                     )}
                   </div>
                   <span className="text-[7px] sm:text-[8px] mt-0.5 font-medium truncate max-w-[36px] sm:max-w-[40px]">{step.title}</span>
-                </div>
+                </button>
               );
             })}
           </div>
