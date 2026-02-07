@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 
 interface OnboardingBillingStepProps {
   data: {
-    billingType: 'own_equipment' | 'buy_equipment' | 'solocab_stripe';
+    billingType: 'own_equipment' | 'buy_equipment' | 'solocab_stripe' | null;
   };
   onUpdate: (updates: Partial<OnboardingBillingStepProps['data']>) => void;
 }
@@ -108,8 +108,9 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
   const selectedOption = BILLING_OPTIONS.find(o => o.value === data.billingType);
 
   // Mode : sélection initiale ou option déjà choisie
-  const hasSelectedOption = data.billingType !== null;
-  const [showAllOptions, setShowAllOptions] = useState(!hasSelectedOption);
+  // IMPORTANT: Toujours afficher toutes les options si aucune n'est sélectionnée
+  const hasSelectedOption = data.billingType !== null && data.billingType !== undefined;
+  const [showAllOptions, setShowAllOptions] = useState(true); // Toujours montrer les options au chargement
 
   // Fonction pour démarrer l'onboarding Stripe Connect
   const startStripeOnboarding = async () => {
