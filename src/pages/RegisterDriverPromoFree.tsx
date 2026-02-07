@@ -162,7 +162,7 @@ const RegisterDriverPromoFree = () => {
         .insert({
           user_id: newUserId,
           status: "on_hold", // Awaiting document submission
-          subscription_status: "pending", // Will become 'trialing' after admin validation
+          subscription_status: "inactive", // Will become 'trialing' after admin validation
           subscription_paid: false,
           trial_status: "pending", // Will become 'active' after admin validation
           documents_status: "pending", // Documents need to be submitted
