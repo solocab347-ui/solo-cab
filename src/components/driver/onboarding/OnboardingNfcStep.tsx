@@ -325,44 +325,79 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId }: OnboardingNfcStepPr
         </p>
       </motion.div>
 
-      {/* How it works */}
+      {/* How it works - Detailed */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 rounded-xl border border-primary/20"
+        className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 sm:p-4 rounded-xl border border-primary/20"
       >
-        <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+        <h4 className="text-xs sm:text-sm font-semibold mb-3 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
           Comment ça marche ?
         </h4>
-        <div className="flex items-center gap-2 text-xs">
+        
+        {/* Étapes visuelles - responsive grid */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-start sm:gap-1 text-xs mb-3">
           <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
-            className="flex-1 text-center p-2 bg-background rounded-lg"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0 }}
+            className="text-center p-2 sm:p-2.5 bg-background rounded-lg flex-1"
           >
-            <Smartphone className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-            <span className="text-[10px]">Client scanne</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 bg-blue-500/20 rounded-full flex items-center justify-center">
+              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-medium block">1. Client scanne</span>
+            <span className="text-[8px] sm:text-[9px] text-muted-foreground">NFC ou QR Code</span>
           </motion.div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+          
           <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-            className="flex-1 text-center p-2 bg-background rounded-lg"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            className="text-center p-2 sm:p-2.5 bg-background rounded-lg flex-1"
           >
-            <Users className="w-5 h-5 mx-auto mb-1 text-green-500" />
-            <span className="text-[10px]">Accède à votre profil</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 bg-green-500/20 rounded-full flex items-center justify-center">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-medium block">2. Accède à votre profil</span>
+            <span className="text-[8px] sm:text-[9px] text-muted-foreground">Voit vos services</span>
           </motion.div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+          
           <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
-            className="flex-1 text-center p-2 bg-background rounded-lg"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+            className="text-center p-2 sm:p-2.5 bg-background rounded-lg flex-1"
           >
-            <Star className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-            <span className="text-[10px]">Vous recontacte</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 bg-amber-500/20 rounded-full flex items-center justify-center">
+              <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-medium block">3. S'inscrit</span>
+            <span className="text-[8px] sm:text-[9px] text-muted-foreground">Devient VOTRE client</span>
           </motion.div>
+          
+          <motion.div 
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+            className="text-center p-2 sm:p-2.5 bg-background rounded-lg flex-1"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1.5 bg-primary/20 rounded-full flex items-center justify-center">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-medium block">4. Vous le fidélisez</span>
+            <span className="text-[8px] sm:text-[9px] text-muted-foreground">Promos & contact</span>
+          </motion.div>
+        </div>
+
+        {/* Message clé */}
+        <div className="bg-background/80 rounded-lg p-2.5 sm:p-3 border border-primary/10">
+          <p className="text-[10px] sm:text-xs text-center leading-relaxed">
+            <span className="font-semibold text-primary">Vos clients, pas ceux de SoloCab !</span>
+            <br />
+            <span className="text-muted-foreground">
+              Accédez à leurs coordonnées, envoyez des promotions personnalisées
+              et construisez votre propre clientèle fidèle.
+            </span>
+          </p>
         </div>
       </motion.div>
 
