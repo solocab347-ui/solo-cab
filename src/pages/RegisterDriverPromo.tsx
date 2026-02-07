@@ -501,36 +501,36 @@ const RegisterDriverPromo = () => {
       {/* Payment redirect overlay - shown immediately when user clicks pay */}
       <PaymentRedirectOverlay isVisible={showPaymentOverlay} />
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-6 px-4 sm:px-6 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-4 sm:py-6 px-3 sm:px-6 overflow-x-hidden">
         {/* Decorative gradient orbs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-emerald-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-purple-500/10 rounded-full blur-3xl" />
         </div>
         
         <div className="relative w-full max-w-md mx-auto">
           {/* Header */}
-          <div className="text-center mb-6">
-            <img src={logo} alt="SoloCab" className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 object-contain" />
+          <div className="text-center mb-4 sm:mb-6">
+            <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 object-contain" />
           </div>
 
         {/* Simplified Progress - Only on step 1 */}
         {currentStep === 1 && (
-          <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">
             {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm transition-all ${
                     currentStep >= step
                       ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                       : "bg-slate-800 text-slate-500 border border-slate-700"
                   }`}
                 >
-                  {currentStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                  {currentStep > step ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : step}
                 </div>
                 {step < totalSteps && (
                   <div
-                    className={`w-10 sm:w-12 h-1 mx-1 rounded-full transition-all ${
+                    className={`w-8 sm:w-12 h-0.5 sm:h-1 mx-0.5 sm:mx-1 rounded-full transition-all ${
                       currentStep > step ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-slate-800"
                     }`}
                   />
@@ -628,14 +628,14 @@ const RegisterDriverPromo = () => {
 
         {/* Step 1: Account Info */}
         {currentStep === 1 && !isLoginMode && (
-          <Card className="p-5 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
-            <h2 className="text-lg sm:text-xl font-bold mb-1 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-500" />
+          <Card className="p-4 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
+            <h2 className="text-base sm:text-xl font-bold mb-1 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
               Créez votre compte gratuit
             </h2>
-            <form onSubmit={handleStep1} className="space-y-4 mt-4">
+            <form onSubmit={handleStep1} className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
               <div>
-                <Label htmlFor="fullName" className="text-sm text-slate-300">Nom complet *</Label>
+                <Label htmlFor="fullName" className="text-xs sm:text-sm text-slate-300">Nom complet *</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -643,12 +643,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Jean Dupont"
-                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-sm text-slate-300">Email *</Label>
+                <Label htmlFor="email" className="text-xs sm:text-sm text-slate-300">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -656,12 +656,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="votre@email.com"
-                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="phone" className="text-sm text-slate-300">Téléphone *</Label>
+                <Label htmlFor="phone" className="text-xs sm:text-sm text-slate-300">Téléphone *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -669,12 +669,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   placeholder="06 12 34 56 78"
-                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="password" className="text-sm text-slate-300">Mot de passe *</Label>
+                <Label htmlFor="password" className="text-xs sm:text-sm text-slate-300">Mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -684,20 +684,20 @@ const RegisterDriverPromo = () => {
                     required
                     placeholder="Minimum 6 caractères"
                     minLength={6}
-                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="confirmPassword" className="text-sm text-slate-300">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-slate-300">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -707,14 +707,14 @@ const RegisterDriverPromo = () => {
                     required
                     placeholder="Confirmez votre mot de passe"
                     minLength={6}
-                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                 </div>
               </div>
@@ -727,19 +727,19 @@ const RegisterDriverPromo = () => {
               <Button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin mr-2" />
                 ) : (
-                  <Sparkles className="w-5 h-5 mr-2" />
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 )}
                 Lancer mon indépendance
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
               
               {/* Legal notice */}
-              <p className="text-xs text-slate-500 text-center">
+              <p className="text-[10px] sm:text-xs text-slate-500 text-center">
                 En vous inscrivant, vous acceptez nos{" "}
                 <button type="button" className="text-emerald-500 hover:underline">
                   conditions d'utilisation
@@ -748,12 +748,12 @@ const RegisterDriverPromo = () => {
             </form>
 
             {/* Link to login for existing users */}
-            <div className="mt-6 pt-4 border-t border-slate-800 text-center">
-              <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Déjà inscrit ?</p>
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-800 text-center">
+              <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide mb-2 sm:mb-3">Déjà inscrit ?</p>
               <Button
                 variant="outline"
                 onClick={() => setIsLoginMode(true)}
-                className="w-full h-12 bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600"
+                className="w-full h-10 sm:h-12 text-sm bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600"
               >
                 Se connecter
               </Button>
