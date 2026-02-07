@@ -123,20 +123,40 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
-  // *** SAUVEGARDE AUTOMATIQUE CONTINUE ***
+  // *** REFS pour éviter les closures obsolètes ***
+  const currentRevenueRef = useRef(currentRevenue);
+  const currentClientsRef = useRef(currentClients);
+  const platformPercentageRef = useRef(platformPercentage);
+  const targetRevenueRef = useRef(targetRevenue);
+  const targetClientsRef = useRef(targetClients);
+  const selectedDaysRef = useRef(selectedDays);
+  const workHoursPerDayRef = useRef(workHoursPerDay);
+  const dataLoadedRef = useRef(dataLoaded);
+
+  // *** Garder les refs synchronisées avec le state ***
+  useEffect(() => { currentRevenueRef.current = currentRevenue; }, [currentRevenue]);
+  useEffect(() => { currentClientsRef.current = currentClients; }, [currentClients]);
+  useEffect(() => { platformPercentageRef.current = platformPercentage; }, [platformPercentage]);
+  useEffect(() => { targetRevenueRef.current = targetRevenue; }, [targetRevenue]);
+  useEffect(() => { targetClientsRef.current = targetClients; }, [targetClients]);
+  useEffect(() => { selectedDaysRef.current = selectedDays; }, [selectedDays]);
+  useEffect(() => { workHoursPerDayRef.current = workHoursPerDay; }, [workHoursPerDay]);
+  useEffect(() => { dataLoadedRef.current = dataLoaded; }, [dataLoaded]);
+
+  // *** SAUVEGARDE AUTOMATIQUE CONTINUE - utilise les refs ***
   const autoSaveData = useCallback(async () => {
-    if (!dataLoaded) return; // Don't save before data is loaded
+    if (!dataLoadedRef.current) return; // Don't save before data is loaded
     
     const dataToSave = {
-      current_monthly_revenue: currentRevenue,
-      current_direct_clients: currentClients,
-      platform_percentage: platformPercentage,
-      solocab_percentage: 100 - platformPercentage,
-      target_monthly_revenue: targetRevenue,
-      target_direct_clients: targetClients,
-      selected_work_days: selectedDays,
-      work_hours_per_day: workHoursPerDay,
-      work_days_per_week: selectedDays.length,
+      current_monthly_revenue: currentRevenueRef.current,
+      current_direct_clients: currentClientsRef.current,
+      platform_percentage: platformPercentageRef.current,
+      solocab_percentage: 100 - platformPercentageRef.current,
+      target_monthly_revenue: targetRevenueRef.current,
+      target_direct_clients: targetClientsRef.current,
+      selected_work_days: selectedDaysRef.current,
+      work_hours_per_day: workHoursPerDayRef.current,
+      work_days_per_week: selectedDaysRef.current.length,
       last_auto_save: new Date().toISOString(),
     };
 
@@ -164,11 +184,11 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
         .eq('id', driverId);
 
       lastSavedRef.current = dataHash;
-      console.log('✅ Objectifs auto-sauvegardés');
+      console.log('✅ Objectifs auto-sauvegardés:', dataToSave);
     } catch (error) {
       console.error('❌ Erreur auto-sauvegarde objectifs:', error);
     }
-  }, [driverId, dataLoaded, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay]);
+  }, [driverId]); // Seulement driverId en dépendance - les refs sont toujours à jour
 
   // Auto-save with debounce whenever data changes
   useEffect(() => {
@@ -192,29 +212,30 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
     };
   }, [dataLoaded, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay, autoSaveData]);
 
-  // Save immediately on page unload
+  // Save immediately on page unload - utilise les refs pour éviter les closures obsolètes
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      // Use synchronous approach for unload
+      // Use synchronous approach for unload - lecture depuis les refs
       const dataToSave = {
-        current_monthly_revenue: currentRevenue,
-        current_direct_clients: currentClients,
-        platform_percentage: platformPercentage,
-        target_monthly_revenue: targetRevenue,
-        target_direct_clients: targetClients,
-        selected_work_days: selectedDays,
-        work_hours_per_day: workHoursPerDay,
+        current_monthly_revenue: currentRevenueRef.current,
+        current_direct_clients: currentClientsRef.current,
+        platform_percentage: platformPercentageRef.current,
+        target_monthly_revenue: targetRevenueRef.current,
+        target_direct_clients: targetClientsRef.current,
+        selected_work_days: selectedDaysRef.current,
+        work_hours_per_day: workHoursPerDayRef.current,
       };
       // Store in localStorage as backup
       localStorage.setItem(`onboarding_goals_${driverId}`, JSON.stringify(dataToSave));
+      console.log('💾 Backup localStorage sauvegardé:', dataToSave);
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [driverId, currentRevenue, currentClients, platformPercentage, targetRevenue, targetClients, selectedDays, workHoursPerDay]);
+  }, [driverId]); // Seulement driverId en dépendance - les refs sont toujours à jour
 
   // *** IMPORTANT: Charger les données sauvegardées au montage ***
   useEffect(() => {
