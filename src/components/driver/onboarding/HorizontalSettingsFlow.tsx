@@ -612,16 +612,28 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
           </motion.div>
         </AnimatePresence>
 
-        {/* Swipe hints */}
+        {/* Navigation arrows - Highly visible and clickable */}
         {currentStep > 0 && (
-          <div className="absolute left-1 top-1/2 -translate-y-1/2 text-white/10">
-            <ChevronLeft className="w-6 h-6" />
-          </div>
+          <button
+            onClick={goBack}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-r from-slate-900/90 to-transparent group"
+            aria-label="Étape précédente"
+          >
+            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/50 group-active:scale-90 transition-all">
+              <ChevronLeft className="w-6 h-6 text-white/80 group-hover:text-primary" />
+            </div>
+          </button>
         )}
         {currentStep < STEPS.length - 1 && canProceed() && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 text-white/10">
-            <ChevronRight className="w-6 h-6" />
-          </div>
+          <button
+            onClick={goNext}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-l from-slate-900/90 to-transparent group"
+            aria-label="Étape suivante"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm border border-primary/40 flex items-center justify-center group-hover:bg-primary/30 group-hover:border-primary group-active:scale-90 transition-all animate-pulse">
+              <ChevronRight className="w-6 h-6 text-primary" />
+            </div>
+          </button>
         )}
       </motion.div>
 

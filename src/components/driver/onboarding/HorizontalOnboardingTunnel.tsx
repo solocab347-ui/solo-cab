@@ -20,6 +20,7 @@ import {
   Compass,
   TrendingUp
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingBillingStep } from './OnboardingBillingStep';
@@ -652,16 +653,38 @@ export function HorizontalOnboardingTunnel({
           </motion.div>
         </AnimatePresence>
 
-        {/* Swipe indicators */}
+        {/* Navigation arrows - Highly visible and clickable */}
         {currentStep > 0 && (
-          <div className="absolute left-0.5 sm:left-2 top-1/2 -translate-y-1/2 text-white/20">
-            <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
-          </div>
+          <button
+            onClick={handlePrev}
+            disabled={saving}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-24 bg-gradient-to-r from-slate-900/90 to-transparent group disabled:opacity-50"
+            aria-label="Étape précédente"
+          >
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/50 group-active:scale-90 transition-all shadow-lg">
+              <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 text-white/80 group-hover:text-primary" />
+            </div>
+          </button>
         )}
         {currentStep < STEPS.length - 1 && !isSelfNavigatedStep() && (
-          <div className="absolute right-0.5 sm:right-2 top-1/2 -translate-y-1/2 text-white/20">
-            <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
-          </div>
+          <button
+            onClick={handleNext}
+            disabled={!canProceed() || saving}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-24 bg-gradient-to-l from-slate-900/90 to-transparent group disabled:opacity-50"
+            aria-label="Étape suivante"
+          >
+            <div className={cn(
+              "w-10 h-10 sm:w-12 sm:h-12 rounded-full backdrop-blur-sm flex items-center justify-center group-active:scale-90 transition-all shadow-lg",
+              canProceed() 
+                ? "bg-primary/20 border border-primary/40 group-hover:bg-primary/30 group-hover:border-primary animate-pulse" 
+                : "bg-white/5 border border-white/10"
+            )}>
+              <ChevronRight className={cn(
+                "w-6 h-6 sm:w-7 sm:h-7",
+                canProceed() ? "text-primary" : "text-white/30"
+              )} />
+            </div>
+          </button>
         )}
       </motion.div>
 
