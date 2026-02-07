@@ -6130,6 +6130,7 @@ export type Database = {
           subscription_status: string | null
           subscription_stripe_id: string | null
           total_rides: number | null
+          tpe_received_at: string | null
           trial_activated_at: string | null
           trial_cancelled: boolean | null
           trial_end_date: string | null
@@ -6153,6 +6154,7 @@ export type Database = {
           visible_to_companies: boolean | null
           visible_to_drivers: boolean | null
           visible_to_fleet_managers: boolean | null
+          wants_tpe_affiliate: boolean | null
           weekend_surcharge: number | null
           working_sectors: string[] | null
         }
@@ -6299,6 +6301,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          tpe_received_at?: string | null
           trial_activated_at?: string | null
           trial_cancelled?: boolean | null
           trial_end_date?: string | null
@@ -6322,6 +6325,7 @@ export type Database = {
           visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
           visible_to_fleet_managers?: boolean | null
+          wants_tpe_affiliate?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
@@ -6468,6 +6472,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          tpe_received_at?: string | null
           trial_activated_at?: string | null
           trial_cancelled?: boolean | null
           trial_end_date?: string | null
@@ -6491,6 +6496,7 @@ export type Database = {
           visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
           visible_to_fleet_managers?: boolean | null
+          wants_tpe_affiliate?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
