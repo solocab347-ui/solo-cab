@@ -29,7 +29,10 @@ import {
   BookOpen,
   HelpCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Star,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sumupTpeCard from '@/assets/sumup-tpe-card.jpg';
@@ -48,6 +51,30 @@ interface OnboardingBillingStepProps {
 const SUMUP_AFFILIATE_LINK = 'https://join.sumup.com/4oCL6MY3?share_id=t9y754T4ocl6my3';
 
 const BILLING_OPTIONS = [
+  {
+    value: 'solocab_stripe' as const,
+    title: 'Encaissement en ligne SoloCab',
+    subtitle: 'La solution tout-en-un recommandée',
+    icon: Zap,
+    description: 'Permettez à vos clients de payer par carte bancaire et automatisez la facturation de vos courses. Les fonds sont versés directement sur votre compte bancaire.',
+    features: [
+      { text: 'Demandez des acomptes automatiquement', icon: Lock },
+      { text: 'Factures & devis générés pour vous', icon: Euro },
+      { text: 'Partage de courses entre chauffeurs (bientôt)', icon: Users },
+      { text: 'Gestion simplifiée de votre clientèle', icon: Shield },
+      { text: 'Virements directs J+2 sur votre compte', icon: Banknote },
+    ],
+    fees: 'Frais transparents : 0,50€/course + frais Stripe (~1,5% + 0,25€)',
+    highlight: true,
+    highlightText: 'Recommandé',
+    availableNow: true,
+    requiresSetup: true,
+    whyRecommended: [
+      'Plus besoin d\'envoyer des liens manuellement',
+      'Protégez-vous des no-shows avec les acomptes',
+      'Fiscalité simplifiée avec le détail des frais',
+    ],
+  },
   {
     value: 'own_equipment' as const,
     title: 'J\'ai mon propre matériel',
@@ -74,26 +101,9 @@ const BILLING_OPTIONS = [
       { text: 'Envoyez des liens de paiement & acomptes', icon: Euro },
       { text: 'Bénéficiez d\'un compte professionnel', icon: Shield },
     ],
-    highlight: true,
+    highlight: false,
     highlightText: 'Réduction exclusive',
     availableNow: true,
-  },
-  {
-    value: 'solocab_stripe' as const,
-    title: 'Encaissement en ligne via SoloCab',
-    subtitle: 'Paiement CB sécurisé via Stripe Connect',
-    icon: Zap,
-    description: 'Permettez à vos clients de payer par carte bancaire et automatisez la facturation de vos courses. Les fonds sont versés directement sur votre compte bancaire.',
-    features: [
-      { text: 'Paiement CB sécurisé', icon: Lock },
-      { text: 'Factures automatiques', icon: Euro },
-      { text: 'Virements directs sur votre compte', icon: Banknote },
-      { text: 'Aucun abonnement supplémentaire', icon: Shield },
-    ],
-    fees: 'Frais SoloCab : 0,50€/transaction + frais Stripe (~1,5% + 0,25€)',
-    highlight: false,
-    availableNow: true,
-    requiresSetup: true,
   },
 ];
 
@@ -211,8 +221,9 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
           }}
           className="space-y-3"
         >
-          {BILLING_OPTIONS.map((option) => {
+          {BILLING_OPTIONS.map((option, index) => {
             const Icon = option.icon;
+            const isRecommended = option.highlight;
             
             return (
               <div key={option.value} className="relative">
@@ -226,18 +237,21 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                   className={cn(
                     "flex flex-col rounded-xl border-2 p-4 cursor-pointer transition-all",
                     "border-muted hover:border-muted-foreground/30 hover:bg-muted/30",
-                    option.highlight && "border-amber-500/30 bg-amber-500/5"
+                    isRecommended && "border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10 hover:border-primary/70 ring-1 ring-primary/20"
                   )}
                 >
-                  {option.highlight && (
-                    <Badge className="absolute -top-2 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px]">
-                      <Gift className="w-3 h-3 mr-1" />
+                  {isRecommended && (
+                    <Badge className="absolute -top-2.5 left-4 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[10px] px-2.5 py-0.5 shadow-md">
+                      <Sparkles className="w-3 h-3 mr-1" />
                       {option.highlightText}
                     </Badge>
                   )}
                   
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg p-2 bg-muted shrink-0">
+                    <div className={cn(
+                      "rounded-lg p-2 shrink-0",
+                      isRecommended ? "bg-primary text-primary-foreground" : "bg-muted"
+                    )}>
                       <Icon className="h-5 w-5" />
                     </div>
                     
@@ -246,6 +260,24 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                       <p className="text-xs text-muted-foreground mt-0.5">{option.subtitle}</p>
                     </div>
                   </div>
+
+                  {/* Avantages détaillés pour l'option recommandée */}
+                  {isRecommended && option.whyRecommended && (
+                    <div className="mt-3 pt-3 border-t border-primary/10">
+                      <p className="text-[10px] font-medium text-primary mb-1.5 flex items-center gap-1">
+                        <Star className="w-3 h-3" />
+                        Pourquoi choisir cette option ?
+                      </p>
+                      <ul className="space-y-1">
+                        {option.whyRecommended.map((reason, idx) => (
+                          <li key={idx} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Label>
               </div>
             );
