@@ -175,6 +175,13 @@ serve(async (req) => {
       throw new Error(`Échec du paiement: ${stripeError.message}`);
     }
 
+    // Calculer les frais pour traçabilité
+    const STRIPE_PERCENTAGE = 0.015;
+    const STRIPE_FIXED_FEE = 0.25;
+    const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+    const totalFees = SOLOCAB_FEE_CENTS / 100 + stripeFee;
+    const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+
     // Traiter selon le statut du PaymentIntent
     if (paymentIntent.status === "succeeded") {
       // Paiement réussi !
@@ -188,19 +195,40 @@ serve(async (req) => {
           final_payment_amount: remainingAmount,
           final_payment_at: new Date().toISOString(),
           payment_captured_at: new Date().toISOString(),
+          // Traçabilité des frais
+          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+          stripe_fee_amount: stripeFee,
+          total_fees_amount: totalFees,
+          net_amount_to_driver: netToDriver,
         })
         .eq("id", course_id);
+
+      // Créer l'enregistrement de transaction Stripe
+      await supabaseClient
+        .from("stripe_transactions")
+        .insert({
+          course_id,
+          driver_id: course.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          transaction_type: depositPaid > 0 ? "final_payment" : "full_payment",
+          gross_amount: totalAmount,
+          stripe_fee_amount: stripeFee,
+          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+          net_amount: netToDriver,
+          status: "succeeded",
+          description: `Course finalisée - ${course.pickup_address} → ${course.destination_address}`,
+        });
 
       // Créer la facture automatiquement
       await supabaseClient.functions.invoke("create-facture-auto", {
         body: { course_id }
       });
 
-      // Notifier le chauffeur
+      // Notifier le chauffeur avec détail des frais
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
         title: "💰 Paiement encaissé",
-        message: `Le paiement de ${remainingAmount.toFixed(2)}€ a été encaissé pour la course.`,
+        message: `Paiement de ${remainingAmount.toFixed(2)}€ encaissé. Net après frais: ${netToDriver.toFixed(2)}€`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
@@ -215,7 +243,12 @@ serve(async (req) => {
         });
       }
 
-      logStep("Payment succeeded", { amount: remainingAmount });
+      logStep("Payment succeeded", { 
+        amount: remainingAmount, 
+        stripeFee, 
+        solocabFee: SOLOCAB_FEE_CENTS / 100,
+        netToDriver 
+      });
 
       return new Response(
         JSON.stringify({
@@ -223,6 +256,12 @@ serve(async (req) => {
           status: "succeeded",
           payment_intent_id: paymentIntent.id,
           amount_charged: remainingAmount,
+          fees: {
+            stripe_fee: stripeFee,
+            solocab_fee: SOLOCAB_FEE_CENTS / 100,
+            total_fees: totalFees,
+            net_to_driver: netToDriver,
+          },
           message: "Paiement encaissé avec succès",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }

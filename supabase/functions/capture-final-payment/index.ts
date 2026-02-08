@@ -178,11 +178,20 @@ serve(async (req) => {
 
     logStep("Final payment checkout session created", { sessionId: session.id });
 
+    // Calculer les frais pour information
+    const STRIPE_PERCENTAGE = 0.015;
+    const STRIPE_FIXED_FEE = 0.25;
+    const totalAmount = (course.deposit_amount || 0) + finalAmount;
+    const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+    const totalFees = SOLOCAB_FEE_CENTS / 100 + stripeFee;
+    const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+
     // Update course
     await supabaseClient
       .from("courses")
       .update({
         final_payment_status: "pending",
+        final_payment_amount: finalAmount,
       })
       .eq("id", course_id);
 
@@ -206,7 +215,13 @@ serve(async (req) => {
         session_id: session.id,
         amount: finalAmount,
         deposit_paid: course.deposit_amount,
-        total_amount: (course.deposit_amount || 0) + finalAmount,
+        total_amount: totalAmount,
+        fees: {
+          solocab_fee: SOLOCAB_FEE_CENTS / 100,
+          stripe_fee_estimated: stripeFee,
+          total_fees_estimated: totalFees,
+          net_to_driver_estimated: netToDriver,
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

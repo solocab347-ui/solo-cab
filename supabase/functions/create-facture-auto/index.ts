@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SOLOCAB_FEE = 0.50; // 0.50€ par course
+const STRIPE_PERCENTAGE = 0.015; // 1.5%
+const STRIPE_FIXED_FEE = 0.25; // 0.25€
+
+// Helper to calculate Stripe fees
+function calculateStripeFee(amount: number): number {
+  return Math.round((amount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+}
+
 // Simple in-memory rate limiter
 const rateLimiter = new Map<string, { count: number; resetTime: number }>();
 
@@ -107,10 +116,10 @@ serve(async (req) => {
     const isCompanyCourse = !!companyCourse;
     console.log("[CREATE-FACTURE-AUTO] Company course:", isCompanyCourse, companyCourse);
 
-    // Get driver user_id
+    // Get driver user_id and billing type
     const { data: driverData } = await supabase
       .from("drivers")
-      .select("user_id")
+      .select("user_id, billing_type, stripe_connect_account_id, stripe_connect_charges_enabled")
       .eq("id", courseCheck.driver_id)
       .maybeSingle();
 
@@ -186,41 +195,26 @@ serve(async (req) => {
       );
     }
 
-    // Get course details with devis - use LEFT JOIN for clients to support company courses
-    let course: any;
-    let courseError: any;
+    // Get full course details with devis and payment info
+    const { data: course, error: courseError } = await supabase
+      .from("courses")
+      .select(`
+        *,
+        devis(
+          id, amount, base_price, distance_price, time_price, 
+          status, quote_number, discount_amount, promo_code, 
+          created_at, company_id, evening_surcharge_amount, 
+          weekend_surcharge_amount, peak_hours_surcharge_amount,
+          pricing_source, city_pricing_name, distance_km,
+          deposit_required, deposit_percentage, deposit_amount
+        )
+      `)
+      .eq("id", course_id)
+      .single();
 
-    if (isCompanyCourse) {
-      // For company courses, don't require client
-      const result = await supabase
-        .from("courses")
-        .select(`
-          *,
-          devis(id, amount, base_price, distance_price, time_price, status, quote_number, discount_amount, promo_code, created_at, company_id)
-        `)
-        .eq("id", course_id)
-        .single();
-      
-      course = result.data;
-      courseError = result.error;
-    } else {
-      // For regular courses, require client
-      const result = await supabase
-        .from("courses")
-        .select(`
-          *,
-          devis(id, amount, base_price, distance_price, time_price, status, quote_number, discount_amount, promo_code, created_at),
-          clients!inner(user_id)
-        `)
-        .eq("id", course_id)
-        .single();
-      
-      course = result.data;
-      courseError = result.error;
+    if (courseError || !course) {
+      throw new Error("Course not found");
     }
-
-    if (courseError) throw courseError;
-    if (!course) throw new Error("Course not found");
 
     // Get accepted devis or the most recent one
     let acceptedDevis = course.devis?.find((d: any) => d.status === "accepted");
@@ -229,14 +223,12 @@ serve(async (req) => {
     if (!acceptedDevis && course.devis && course.devis.length > 0) {
       console.log("[CREATE-FACTURE-AUTO] ⚠️ No accepted devis, auto-accepting most recent");
       
-      // Trier par date de création (le plus récent en premier)
       const sortedDevis = course.devis.sort((a: any, b: any) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       const mostRecentDevis = sortedDevis[0];
       
-      // Accepter automatiquement le devis le plus récent
-      const { error: updateError } = await supabase
+      await supabase
         .from("devis")
         .update({ 
           status: "accepted", 
@@ -244,33 +236,20 @@ serve(async (req) => {
         })
         .eq("id", mostRecentDevis.id);
       
-      if (updateError) {
-        console.error("[CREATE-FACTURE-AUTO] Error auto-accepting devis:", updateError);
-        throw new Error("Impossible d'accepter le devis automatiquement");
-      }
-      
-      // Utiliser ce devis
       acceptedDevis = { ...mostRecentDevis, status: "accepted" };
       console.log("[CREATE-FACTURE-AUTO] ✅ Auto-accepted devis:", acceptedDevis.id);
     }
     
     // For company courses without devis, create one from the company quote
     if (!acceptedDevis && isCompanyCourse) {
-      console.log("[CREATE-FACTURE-AUTO] 🏢 No devis found for company course, checking company_course_quotes");
+      console.log("[CREATE-FACTURE-AUTO] 🏢 No devis found for company course");
       
-      // Get the company course request to find the quote
       const { data: request } = await supabase
         .from("company_course_requests")
         .select(`
           id,
           company_course_quotes(
-            id, 
-            total_price, 
-            base_price, 
-            distance_price, 
-            time_price,
-            driver_id,
-            status
+            id, total_price, base_price, distance_price, time_price, driver_id, status
           )
         `)
         .eq("final_course_id", course_id)
@@ -283,12 +262,8 @@ serve(async (req) => {
         const acceptedQuote = quotes.find((q: any) => q.status === 'accepted' && q.driver_id === course.driver_id);
         
         if (acceptedQuote) {
-          console.log("[CREATE-FACTURE-AUTO] 🏢 Found company quote, creating devis:", acceptedQuote.id);
-          
-          // Generate quote number
           const quoteNumber = `ENT-${acceptedQuote.id.slice(0, 8).toUpperCase()}`;
           
-          // Create a devis from the company quote
           const { data: newDevis, error: devisError } = await supabase
             .from("devis")
             .insert({
@@ -309,22 +284,17 @@ serve(async (req) => {
             .select()
             .single();
           
-          if (devisError) {
-            console.error("[CREATE-FACTURE-AUTO] Error creating devis from company quote:", devisError);
-            throw new Error("Impossible de créer le devis à partir du quote entreprise");
+          if (!devisError && newDevis) {
+            acceptedDevis = newDevis;
           }
-          
-          acceptedDevis = newDevis;
-          console.log("[CREATE-FACTURE-AUTO] ✅ Created devis from company quote:", newDevis.id);
         }
       }
     }
     
-    // ROBUSTESSE: Pour les courses sans devis (guest bookings ou autres), créer automatiquement un devis
+    // Emergency devis creation if still none
     if (!acceptedDevis) {
-      console.log("[CREATE-FACTURE-AUTO] ⚠️ No devis found, attempting to create one automatically");
+      console.log("[CREATE-FACTURE-AUTO] ⚠️ No devis found, creating emergency");
       
-      // Récupérer les tarifs du chauffeur pour calculer un prix
       const { data: driverInfo } = await supabase
         .from("drivers")
         .select("rate_per_km, base_rate, hourly_rate, tva_rate, reservation_counter")
@@ -333,24 +303,18 @@ serve(async (req) => {
       
       if (driverInfo) {
         const distanceKm = course.distance_km || 0;
-        const durationMinutes = course.duration_minutes || 0;
-        
-        // Calcul simple du prix
         const basePrice = driverInfo.base_rate || 5;
         const distancePrice = distanceKm * (driverInfo.rate_per_km || 2.5);
         const totalPrice = course.guest_estimated_price || (basePrice + distancePrice);
         
-        // Générer un numéro de réservation
         const counter = (driverInfo.reservation_counter || 0) + 1;
         const quoteNumber = `RES-${String(counter).padStart(3, '0')}`;
         
-        // Incrémenter le compteur
         await supabase
           .from("drivers")
           .update({ reservation_counter: counter })
           .eq("id", course.driver_id);
         
-        // Créer le devis
         const { data: emergencyDevis, error: emergencyDevisError } = await supabase
           .from("devis")
           .insert({
@@ -370,61 +334,105 @@ serve(async (req) => {
           .select()
           .single();
         
-        if (emergencyDevisError) {
-          console.error("[CREATE-FACTURE-AUTO] Emergency devis creation failed:", emergencyDevisError);
-          throw new Error("Impossible de créer un devis automatique pour cette course");
+        if (!emergencyDevisError && emergencyDevis) {
+          await supabase
+            .from("courses")
+            .update({ course_number: quoteNumber })
+            .eq("id", course_id);
+          
+          acceptedDevis = emergencyDevis;
         }
-        
-        // Mettre à jour la course avec le numéro
-        await supabase
-          .from("courses")
-          .update({ course_number: quoteNumber })
-          .eq("id", course_id);
-        
-        acceptedDevis = emergencyDevis;
-        console.log("[CREATE-FACTURE-AUTO] ✅ Emergency devis created:", emergencyDevis.id, quoteNumber);
-      } else {
-        throw new Error("Aucun devis trouvé et impossible de récupérer les tarifs du chauffeur");
       }
     }
 
-    // Use the SAME reservation number as the devis for the invoice
-    const invoiceNumber = acceptedDevis.quote_number;
-    
-    if (!invoiceNumber) {
-      throw new Error("Devis has no quote_number, cannot generate invoice");
+    if (!acceptedDevis) {
+      throw new Error("Aucun devis trouvé pour cette course");
     }
 
-    console.log("[CREATE-FACTURE-AUTO] Using reservation number:", invoiceNumber, "from devis:", acceptedDevis.quote_number);
+    const invoiceNumber = acceptedDevis.quote_number;
+    if (!invoiceNumber) {
+      throw new Error("Devis has no quote_number");
+    }
 
-    // Create facture with promo code and discount
-    // For company courses, use company_id instead of client_id
+    // ===== CALCUL DES FRAIS DÉTAILLÉS =====
+    const isStripePayment = driverData?.billing_type === "solocab_stripe" && 
+                            driverData?.stripe_connect_account_id && 
+                            driverData?.stripe_connect_charges_enabled;
+    
+    const grossAmount = acceptedDevis.amount || 0;
+    const depositAmount = course.deposit_amount || 0;
+    const finalPaymentAmount = grossAmount - depositAmount;
+    
+    // Frais SoloCab: 0.50€ par course (pour Stripe Connect uniquement)
+    const solocabFee = isStripePayment ? SOLOCAB_FEE : 0;
+    
+    // Frais Stripe estimés (~1.5% + 0.25€ sur le montant brut)
+    const stripeFee = isStripePayment ? calculateStripeFee(grossAmount) : 0;
+    
+    // Total des frais
+    const totalFees = solocabFee + stripeFee;
+    
+    // Montant net pour le chauffeur
+    const netToDriver = Math.round((grossAmount - totalFees) * 100) / 100;
+
+    console.log("[CREATE-FACTURE-AUTO] 💰 Fee breakdown:", {
+      grossAmount,
+      depositAmount,
+      finalPaymentAmount,
+      isStripePayment,
+      solocabFee,
+      stripeFee,
+      totalFees,
+      netToDriver
+    });
+
+    // Create facture with complete fee breakdown
     const factureData: any = {
       driver_id: course.driver_id,
       course_id: course.id,
       devis_id: acceptedDevis.id,
       invoice_number: invoiceNumber,
-      amount: acceptedDevis.amount,
+      amount: grossAmount,
       discount_amount: acceptedDevis.discount_amount || 0,
       promo_code: acceptedDevis.promo_code || null,
-      payment_method: payment_method,
+      payment_method: payment_method || (isStripePayment ? "stripe" : "other"),
       payment_status: "paid",
-      paid_at: new Date().toISOString()
+      paid_at: new Date().toISOString(),
+      
+      // Détails prix
+      base_price: acceptedDevis.base_price || 0,
+      distance_price: acceptedDevis.distance_price || 0,
+      time_price: acceptedDevis.time_price || 0,
+      evening_surcharge_amount: acceptedDevis.evening_surcharge_amount || 0,
+      weekend_surcharge_amount: acceptedDevis.weekend_surcharge_amount || 0,
+      peak_hours_surcharge_amount: acceptedDevis.peak_hours_surcharge_amount || 0,
+      pricing_source: acceptedDevis.pricing_source,
+      city_pricing_name: acceptedDevis.city_pricing_name,
+      distance_km: acceptedDevis.distance_km || course.distance_km,
+      
+      // ===== NOUVEAUX CHAMPS FRAIS =====
+      is_stripe_payment: isStripePayment,
+      solocab_fee_amount: solocabFee,
+      stripe_fee_amount: stripeFee,
+      total_fees_amount: totalFees,
+      net_amount_to_driver: netToDriver,
+      deposit_amount: depositAmount,
+      deposit_status: course.deposit_status || null,
+      final_payment_amount: finalPaymentAmount,
     };
 
-    // Set client_id OR company_id (one must be present)
+    // Set client_id OR company_id
     if (isCompanyCourse && companyCourse?.company_id) {
       factureData.company_id = companyCourse.company_id;
       factureData.company_employee_id = companyCourse.employee_id;
-      factureData.client_id = course.client_id; // May be null for guest bookings
-      // For company invoices, set status to pending (company needs to pay later)
+      factureData.client_id = course.client_id;
       factureData.payment_status = "pending";
       factureData.paid_at = null;
     } else {
       factureData.client_id = course.client_id;
     }
 
-    console.log("[CREATE-FACTURE-AUTO] Creating facture:", factureData);
+    console.log("[CREATE-FACTURE-AUTO] Creating facture with fees:", factureData);
 
     const { data: facture, error: insertError } = await supabase
       .from("factures")
@@ -434,7 +442,45 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    // For company courses, notify the company
+    // ===== CRÉER L'ENREGISTREMENT STRIPE_TRANSACTIONS =====
+    if (isStripePayment) {
+      const transactionData = {
+        course_id,
+        facture_id: facture.id,
+        driver_id: course.driver_id,
+        stripe_payment_intent_id: course.stripe_payment_intent_id || course.final_payment_intent_id,
+        transaction_type: depositAmount > 0 ? "final_payment" : "full_payment",
+        gross_amount: grossAmount,
+        stripe_fee_amount: stripeFee,
+        solocab_fee_amount: solocabFee,
+        net_amount: netToDriver,
+        status: "succeeded",
+        description: `Course ${invoiceNumber} - ${course.pickup_address} → ${course.destination_address}`,
+      };
+
+      const { error: txError } = await supabase
+        .from("stripe_transactions")
+        .insert(transactionData);
+
+      if (txError) {
+        console.log("[CREATE-FACTURE-AUTO] ⚠️ Transaction record error:", txError.message);
+      } else {
+        console.log("[CREATE-FACTURE-AUTO] ✅ Transaction recorded");
+      }
+    }
+
+    // Update course with fee info
+    await supabase
+      .from("courses")
+      .update({
+        solocab_fee_amount: solocabFee,
+        stripe_fee_amount: stripeFee,
+        total_fees_amount: totalFees,
+        net_amount_to_driver: netToDriver,
+      })
+      .eq("id", course_id);
+
+    // Notify company if applicable
     if (isCompanyCourse && companyCourse?.company_id) {
       const { data: companyData } = await supabase
         .from("companies")
@@ -453,12 +499,15 @@ serve(async (req) => {
       }
     }
 
-    // La notification pour le client est gérée par le trigger notify_new_facture
-    // Ne pas envoyer de notification en double ici
-
     return new Response(
       JSON.stringify({ 
         facture,
+        fees: {
+          solocab_fee: solocabFee,
+          stripe_fee: stripeFee,
+          total_fees: totalFees,
+          net_to_driver: netToDriver,
+        },
         message: "Facture créée avec succès"
       }),
       { 
