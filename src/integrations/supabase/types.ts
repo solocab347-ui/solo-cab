@@ -3680,6 +3680,7 @@ export type Database = {
           id: string
           is_guest_booking: boolean | null
           last_dispatched_at: string | null
+          net_amount_to_driver: number | null
           notes: string | null
           passengers_count: number
           payment_captured_at: string | null
@@ -3697,9 +3698,11 @@ export type Database = {
           solocab_fee_amount: number | null
           status: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id: string | null
+          stripe_fee_amount: number | null
           stripe_payment_intent_id: string | null
           stripe_payment_method_id: string | null
           stripe_setup_intent_id: string | null
+          total_fees_amount: number | null
           updated_at: string
         }
         Insert: {
@@ -3759,6 +3762,7 @@ export type Database = {
           id?: string
           is_guest_booking?: boolean | null
           last_dispatched_at?: string | null
+          net_amount_to_driver?: number | null
           notes?: string | null
           passengers_count?: number
           payment_captured_at?: string | null
@@ -3776,9 +3780,11 @@ export type Database = {
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
+          stripe_fee_amount?: number | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
           stripe_setup_intent_id?: string | null
+          total_fees_amount?: number | null
           updated_at?: string
         }
         Update: {
@@ -3838,6 +3844,7 @@ export type Database = {
           id?: string
           is_guest_booking?: boolean | null
           last_dispatched_at?: string | null
+          net_amount_to_driver?: number | null
           notes?: string | null
           passengers_count?: number
           payment_captured_at?: string | null
@@ -3855,9 +3862,11 @@ export type Database = {
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
+          stripe_fee_amount?: number | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
           stripe_setup_intent_id?: string | null
+          total_fees_amount?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -4167,17 +4176,24 @@ export type Database = {
           company_id: string | null
           course_id: string
           created_at: string
+          deposit_amount: number | null
+          deposit_percentage: number | null
+          deposit_required: boolean | null
           discount_amount: number
           distance_km: number | null
           distance_price: number
           driver_id: string
+          estimated_net_to_driver: number | null
+          estimated_stripe_fee: number | null
           evening_surcharge_amount: number | null
           id: string
+          is_stripe_payment: boolean | null
           notes: string | null
           peak_hours_surcharge_amount: number | null
           pricing_source: string | null
           promo_code: string | null
           quote_number: string | null
+          solocab_fee_amount: number | null
           status: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id: string | null
           time_price: number | null
@@ -4198,17 +4214,24 @@ export type Database = {
           company_id?: string | null
           course_id: string
           created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          deposit_required?: boolean | null
           discount_amount?: number
           distance_km?: number | null
           distance_price: number
           driver_id: string
+          estimated_net_to_driver?: number | null
+          estimated_stripe_fee?: number | null
           evening_surcharge_amount?: number | null
           id?: string
+          is_stripe_payment?: boolean | null
           notes?: string | null
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
+          solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id?: string | null
           time_price?: number | null
@@ -4229,17 +4252,24 @@ export type Database = {
           company_id?: string | null
           course_id?: string
           created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          deposit_required?: boolean | null
           discount_amount?: number
           distance_km?: number | null
           distance_price?: number
           driver_id?: string
+          estimated_net_to_driver?: number | null
+          estimated_stripe_fee?: number | null
           evening_surcharge_amount?: number | null
           id?: string
+          is_stripe_payment?: boolean | null
           notes?: string | null
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
+          solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id?: string | null
           time_price?: number | null
@@ -7572,29 +7602,40 @@ export type Database = {
           airport_fee: number | null
           amount: number
           base_price: number | null
+          cancellation_fee_amount: number | null
+          cancellation_fee_charged: boolean | null
+          cancelled_at: string | null
           city_pricing_name: string | null
           client_id: string | null
           company_employee_id: string | null
           company_id: string | null
           course_id: string
           created_at: string
+          deposit_amount: number | null
+          deposit_status: string | null
           devis_id: string | null
           discount_amount: number
           distance_km: number | null
           distance_price: number | null
           driver_id: string
           evening_surcharge_amount: number | null
+          final_payment_amount: number | null
           id: string
           invoice_number: string
           invoice_number_generated: string | null
+          is_stripe_payment: boolean | null
+          net_amount_to_driver: number | null
           paid_at: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           peak_hours_surcharge_amount: number | null
           pricing_source: string | null
           promo_code: string | null
+          solocab_fee_amount: number | null
+          stripe_fee_amount: number | null
           stripe_payment_id: string | null
           time_price: number | null
+          total_fees_amount: number | null
           tva_amount: number | null
           tva_rate: number | null
           updated_at: string
@@ -7604,29 +7645,40 @@ export type Database = {
           airport_fee?: number | null
           amount: number
           base_price?: number | null
+          cancellation_fee_amount?: number | null
+          cancellation_fee_charged?: boolean | null
+          cancelled_at?: string | null
           city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id: string
           created_at?: string
+          deposit_amount?: number | null
+          deposit_status?: string | null
           devis_id?: string | null
           discount_amount?: number
           distance_km?: number | null
           distance_price?: number | null
           driver_id: string
           evening_surcharge_amount?: number | null
+          final_payment_amount?: number | null
           id?: string
           invoice_number: string
           invoice_number_generated?: string | null
+          is_stripe_payment?: boolean | null
+          net_amount_to_driver?: number | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
+          solocab_fee_amount?: number | null
+          stripe_fee_amount?: number | null
           stripe_payment_id?: string | null
           time_price?: number | null
+          total_fees_amount?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
           updated_at?: string
@@ -7636,29 +7688,40 @@ export type Database = {
           airport_fee?: number | null
           amount?: number
           base_price?: number | null
+          cancellation_fee_amount?: number | null
+          cancellation_fee_charged?: boolean | null
+          cancelled_at?: string | null
           city_pricing_name?: string | null
           client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id?: string
           created_at?: string
+          deposit_amount?: number | null
+          deposit_status?: string | null
           devis_id?: string | null
           discount_amount?: number
           distance_km?: number | null
           distance_price?: number | null
           driver_id?: string
           evening_surcharge_amount?: number | null
+          final_payment_amount?: number | null
           id?: string
           invoice_number?: string
           invoice_number_generated?: string | null
+          is_stripe_payment?: boolean | null
+          net_amount_to_driver?: number | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
+          solocab_fee_amount?: number | null
+          stripe_fee_amount?: number | null
           stripe_payment_id?: string | null
           time_price?: number | null
+          total_fees_amount?: number | null
           tva_amount?: number | null
           tva_rate?: number | null
           updated_at?: string
@@ -14426,6 +14489,144 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_transactions: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          driver_id: string
+          facture_id: string | null
+          gross_amount: number
+          id: string
+          net_amount: number
+          solocab_fee_amount: number | null
+          status: string
+          stripe_charge_id: string | null
+          stripe_fee_amount: number | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          stripe_transfer_id: string | null
+          transaction_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          driver_id: string
+          facture_id?: string | null
+          gross_amount: number
+          id?: string
+          net_amount: number
+          solocab_fee_amount?: number | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_fee_amount?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          transaction_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          driver_id?: string
+          facture_id?: string | null
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          solocab_fee_amount?: number | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_fee_amount?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suspicious_fingerprints: {
         Row: {
           associated_ips: string[] | null
@@ -16785,10 +16986,19 @@ export type Database = {
           total_cost: number
         }[]
       }
+      calculate_net_to_driver: {
+        Args: {
+          gross_amount: number
+          solocab_fee?: number
+          stripe_fee?: number
+        }
+        Returns: number
+      }
       calculate_payment_due_date: {
         Args: { created_at: string; payment_schedule: string }
         Returns: string
       }
+      calculate_stripe_fee: { Args: { amount_eur: number }; Returns: number }
       can_add_free_driver: {
         Args: { _fleet_manager_id: string }
         Returns: boolean

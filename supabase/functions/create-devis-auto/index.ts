@@ -304,6 +304,11 @@ Deno.serve(async (req) => {
         const devisStatus = autoAcceptDevis ? 'accepted' : 'pending';
         console.log(`📋 Statut du devis: ${devisStatus} (autoAccept: ${autoAcceptDevis})`);
 
+        // Calculer les frais estimés pour information
+        const SOLOCAB_FEE = 0.50;
+        const estimatedStripeFee = Math.round((finalAmount * 0.015 + 0.25) * 100) / 100;
+        const estimatedNetToDriver = Math.round((finalAmount - SOLOCAB_FEE - estimatedStripeFee) * 100) / 100;
+
         // Try to create devis with unified reservation number and promo
         const { data: createdDevis, error: devisError } = await supabaseClient
           .from('devis')
@@ -311,9 +316,9 @@ Deno.serve(async (req) => {
             course_id: course_id,
             driver_id: driver_id,
             client_id: course.client_id || null,
-            company_id: companyId || null, // Pour les courses d'entreprise
-            company_employee_id: companyEmployeeId || null, // IMPORTANT: Lier le devis à l'employé
-            quote_number: reservationNumber, // RES-001, RES-002, etc.
+            company_id: companyId || null,
+            company_employee_id: companyEmployeeId || null,
+            quote_number: reservationNumber,
             base_price: pricing.base_price,
             distance_price: pricing.distance_price,
             time_price: pricing.time_price || 0,
@@ -322,13 +327,16 @@ Deno.serve(async (req) => {
             promo_code: promoCode,
             evening_surcharge_amount: pricing.surcharge_evening || 0,
             weekend_surcharge_amount: pricing.surcharge_weekend || 0,
-            peak_hours_surcharge_amount: pricing.peak_adjustment || 0, // Majoration heures de pointe
+            peak_hours_surcharge_amount: pricing.peak_adjustment || 0,
             valid_until: validUntil.toISOString(),
-            status: devisStatus, // 'accepted' pour guest, 'pending' sinon
-            // TRAÇABILITÉ: Source de tarification
+            status: devisStatus,
             pricing_source: pricingType,
             city_pricing_name: cityPricingName,
             distance_km: course.distance_km || 0,
+            // NOUVEAUX: Frais estimés pour traçabilité
+            solocab_fee_amount: SOLOCAB_FEE,
+            estimated_stripe_fee: estimatedStripeFee,
+            estimated_net_to_driver: estimatedNetToDriver,
           })
           .select()
           .single();
