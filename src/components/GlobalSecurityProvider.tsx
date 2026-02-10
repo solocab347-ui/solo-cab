@@ -56,27 +56,35 @@ const globalRateLimiter = (url?: string) => {
 
 // Interception globale des requêtes fetch
 const installFetchInterceptor = () => {
+  // Prevent double-wrapping if called multiple times
+  if ((window.fetch as any).__solocab_intercepted) return;
+  
   const originalFetch = window.fetch;
 
-  window.fetch = async (...args) => {
+  const interceptedFetch = async (...args: Parameters<typeof fetch>) => {
     // Extract URL for whitelisting
     const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : '';
 
-    // Vérifier le rate limit (auth requests are never blocked)
+    // Vérifier le rate limit (auth/supabase requests are never blocked)
     if (globalRateLimiter(url)) {
       console.warn('[Security] Requête bloquée - rate limit atteint');
       throw new Error('Rate limit exceeded. Please wait before making more requests.');
     }
 
     // Tracker le pattern de requête pour détection d'anomalies
-    trackRequestPattern();
+    try {
+      trackRequestPattern();
+    } catch (e) {
+      // Never let tracking crash a real request
+    }
 
     // Exécuter la requête originale
-    return originalFetch(...args);
+    return originalFetch.apply(window, args);
   };
+  
+  (interceptedFetch as any).__solocab_intercepted = true;
+  window.fetch = interceptedFetch;
 };
-
-// Protection contre les attaques par injection de scripts
 const installXSSProtection = () => {
   // Observer les mutations DOM pour détecter les injections
   const observer = new MutationObserver((mutations) => {

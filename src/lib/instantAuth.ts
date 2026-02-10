@@ -15,18 +15,18 @@ import { Session, User } from "@supabase/supabase-js";
 
 // === CONFIGURATION OPTIMISÉE ===
 const INSTANT_AUTH_CONFIG = {
-  // Timeouts ultra-courts pour UX fluide
-  QUICK_TIMEOUT: 3000,      // 3s pour opérations rapides
-  AUTH_TIMEOUT: 8000,       // 8s max pour auth (réduit de 15s)
-  DATA_TIMEOUT: 4000,       // 4s pour données additionnelles
+  // Timeouts plus généreux pour connexions mobiles
+  QUICK_TIMEOUT: 5000,      // 5s pour opérations rapides
+  AUTH_TIMEOUT: 15000,      // 15s max pour auth (mobile peut être lent)
+  DATA_TIMEOUT: 6000,       // 6s pour données additionnelles
   
   // Cache
   CACHE_KEY: 'solocab_auth_cache',
   CACHE_DURATION: 7 * 24 * 60 * 60 * 1000, // 7 jours
   
   // Retries optimisés
-  MAX_RETRIES: 2,           // Moins de retries pour éviter l'attente
-  RETRY_DELAY: 300,         // 300ms entre retries
+  MAX_RETRIES: 3,           // 3 retries pour résilience mobile
+  RETRY_DELAY: 500,         // 500ms entre retries
 } as const;
 
 // === TYPES ===
