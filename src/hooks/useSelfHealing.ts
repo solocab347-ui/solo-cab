@@ -66,20 +66,21 @@ export function useSelfHealing(autoStart: boolean = true) {
   }, []);
 
   // Démarrer/arrêter le service selon l'état de connexion
+  // REDUCED: Self-healing every 10min instead of 1min, maintenance every 2h instead of 30min
   useEffect(() => {
     if (autoStart && user) {
-      selfHealingService.start(60000); // Check toutes les minutes
+      selfHealingService.start(600000); // Check toutes les 10 minutes (was 1 min)
       setState(prev => ({ ...prev, isRunning: true }));
 
       // Pour les admins et chauffeurs, exécuter la maintenance périodiquement
       if (userRole === 'admin' || userRole === 'driver') {
-        // Première exécution après 2 minutes
+        // Première exécution après 5 minutes
         const initialTimeout = setTimeout(() => {
           runPlatformMaintenance();
           
-          // Puis toutes les 30 minutes
-          maintenanceIntervalRef.current = setInterval(runPlatformMaintenance, 30 * 60 * 1000);
-        }, 2 * 60 * 1000);
+          // Puis toutes les 2 heures (was 30 min)
+          maintenanceIntervalRef.current = setInterval(runPlatformMaintenance, 2 * 60 * 60 * 1000);
+        }, 5 * 60 * 1000);
 
         return () => {
           selfHealingService.stop();
