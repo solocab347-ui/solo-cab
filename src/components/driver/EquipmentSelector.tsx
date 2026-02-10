@@ -39,7 +39,7 @@ export const EquipmentSelector = ({ selectedEquipment, onChange }: EquipmentSele
                 "p-4 cursor-pointer transition-all hover:shadow-lg relative border-2",
                 isSelected 
                   ? "border-green-500 bg-green-500/10 shadow-md" 
-                  : "border-gray-300 bg-white hover:border-gray-400"
+                  : "border-border bg-card hover:border-muted-foreground"
               )}
             >
               <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center">
@@ -57,7 +57,7 @@ export const EquipmentSelector = ({ selectedEquipment, onChange }: EquipmentSele
                 <span className="text-2xl">{equipment.icon}</span>
                 <span className={cn(
                   "font-medium text-sm",
-                  isSelected ? "text-green-700 font-bold" : "text-gray-700"
+                  isSelected ? "text-green-700 font-bold" : "text-card-foreground"
                 )}>{equipment.label}</span>
               </div>
             </Card>

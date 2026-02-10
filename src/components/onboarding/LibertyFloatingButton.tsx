@@ -76,7 +76,7 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
           whileTap={{ scale: 0.95 }}
           className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-lg"
         >
-          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+          <div className="w-full h-full rounded-full bg-storefront-dark flex items-center justify-center">
             <ChevronUp className="w-5 h-5 text-amber-400" />
           </div>
         </motion.button>
@@ -106,9 +106,9 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
             exit={{ opacity: 0, x: 10, scale: 0.9 }}
             className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap"
           >
-            <div className="bg-slate-900 text-white px-4 py-2 rounded-xl shadow-xl border border-white/10">
+            <div className="bg-storefront-dark text-foreground px-4 py-2 rounded-xl shadow-xl border border-border">
               <p className="text-sm font-medium">Besoin d'aide ? Je suis Liberty !</p>
-              <p className="text-xs text-white/60">Cliquez pour ouvrir le guide</p>
+              <p className="text-xs text-muted-foreground">Cliquez pour ouvrir le guide</p>
             </div>
           </motion.div>
         )}
@@ -127,7 +127,7 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
         
         {/* Button */}
         <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl">
-          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+          <div className="w-full h-full rounded-full bg-storefront-dark flex items-center justify-center">
             <motion.div
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
@@ -142,7 +142,7 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-slate-900"
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-storefront-dark"
           >
             <HelpCircle className="w-3 h-3 text-white" />
           </motion.div>
@@ -159,7 +159,7 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
       {/* Dismiss button - visible on hover */}
       <button
         onClick={handleDismiss}
-        className="absolute -top-2 -left-2 w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center border border-slate-600 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute -top-2 -left-2 w-6 h-6 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center border border-border transition-colors opacity-0 group-hover:opacity-100"
       >
         <X className="w-3 h-3 text-white" />
       </button>

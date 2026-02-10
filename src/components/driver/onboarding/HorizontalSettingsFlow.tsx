@@ -485,12 +485,12 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
                     <SelectTrigger className="h-10 bg-white/10 border-white/20 text-white mt-1">
                       <SelectValue placeholder="Choisir..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-popover border-border">
                       {VEHICLE_COLORS.map(color => (
                         <SelectItem 
                           key={color.value} 
                           value={color.label}
-                          className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                          className="text-popover-foreground hover:bg-muted focus:bg-muted"
                         >
                           <div className="flex items-center gap-2">
                             <div 
@@ -616,7 +616,7 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
         {currentStep > 0 && (
           <button
             onClick={goBack}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-r from-slate-900/90 to-transparent group"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-r from-background/90 to-transparent group"
             aria-label="Étape précédente"
           >
             <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/50 group-active:scale-90 transition-all">
@@ -627,7 +627,7 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
         {currentStep < STEPS.length - 1 && canProceed() && (
           <button
             onClick={goNext}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-l from-slate-900/90 to-transparent group"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-20 bg-gradient-to-l from-background/90 to-transparent group"
             aria-label="Étape suivante"
           >
             <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm border border-primary/40 flex items-center justify-center group-hover:bg-primary/30 group-hover:border-primary group-active:scale-90 transition-all animate-pulse">

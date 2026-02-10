@@ -274,7 +274,7 @@ const Login = () => {
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input 
                   type="checkbox" 
-                  className="rounded border-gray-300 text-primary focus:ring-primary" 
+                  className="rounded border-border text-primary focus:ring-primary" 
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={loading} 

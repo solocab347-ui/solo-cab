@@ -130,13 +130,13 @@ export function WelcomeVideoModal({
       }
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-slate-900 border-emerald-500/30">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-storefront-dark border-emerald-500/30">
         <DialogHeader className="p-4 bg-gradient-to-r from-emerald-500/20 to-primary/20">
-          <DialogTitle className="flex items-center gap-2 text-white">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <Rocket className="w-5 h-5 text-emerald-400" />
             Bienvenue sur SoloCab !
           </DialogTitle>
-          <DialogDescription className="text-white/70">
+          <DialogDescription className="text-muted-foreground">
             Découvrez tout ce que SoloCab peut faire pour vous en quelques minutes
           </DialogDescription>
         </DialogHeader>
@@ -203,7 +203,7 @@ export function WelcomeVideoModal({
                 canProceed && "bg-emerald-500/20"
               )}
             />
-            <span className="text-xs text-white/60 min-w-[60px] text-right">
+            <span className="text-xs text-muted-foreground min-w-[60px] text-right">
               {Math.round(currentProgress)}%
             </span>
           </div>
@@ -225,7 +225,7 @@ export function WelcomeVideoModal({
               )}
             </Button>
           ) : (
-            <div className="text-center text-white/60 text-sm py-2">
+            <div className="text-center text-muted-foreground text-sm py-2">
               <p>Regardez la vidéo pour découvrir les fonctionnalités de SoloCab</p>
             </div>
           )}
