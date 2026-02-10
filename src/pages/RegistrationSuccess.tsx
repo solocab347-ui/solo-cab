@@ -17,7 +17,6 @@ const RegistrationSuccess = () => {
     const updateDriverPaymentStatus = async () => {
       console.log("🔍 VERIFICATION PAIEMENT - Driver ID:", driverId);
       
-      // ===== VALIDATION DRIVER ID =====
       if (!driverId) {
         console.error("❌ Driver ID manquant dans URL");
         setError("Identifiant chauffeur manquant");
@@ -26,7 +25,6 @@ const RegistrationSuccess = () => {
         return;
       }
 
-      // Validation format UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(driverId)) {
         console.error("❌ Driver ID invalide:", driverId);
@@ -36,12 +34,10 @@ const RegistrationSuccess = () => {
         return;
       }
 
-      // Identifier le type d'accès
       const isTokenAccess = searchParams.get("token") === "true";
       console.log("📋 Type d'accès:", isTokenAccess ? "Token gratuit" : "Paiement Stripe");
 
       try {
-        // Vérifier que le driver existe et a les bons accès
         console.log("🔎 Vérification driver dans DB...");
         const { data: driver, error: driverCheckError } = await supabase
           .from("drivers")
@@ -63,7 +59,6 @@ const RegistrationSuccess = () => {
           free_access_granted: driver.free_access_granted
         });
 
-        // Si accès gratuit via token, tout est déjà configuré
         if (isTokenAccess && driver.free_access_granted) {
           console.log("✅ Accès gratuit validé");
           
@@ -91,18 +86,14 @@ const RegistrationSuccess = () => {
           toast.success("Inscription complétée avec accès gratuit !");
           setLoading(false);
           
-          // Rediriger vers la page de bienvenue
           setTimeout(() => {
             navigate(`/driver-welcome?driver_id=${driverId}&pioneer=false`);
           }, 1500);
           return;
         }
 
-        // SINON : Vérifier que c'est bien un retour Stripe valide
-        // Le webhook Stripe doit avoir mis à jour subscription_paid=true
         console.log("💳 Vérification paiement Stripe...");
         
-        // Attendre jusqu'à 10 secondes que le webhook mette à jour le statut
         let attempts = 0;
         let paymentConfirmed = driver.subscription_paid;
         
@@ -133,7 +124,6 @@ const RegistrationSuccess = () => {
 
         console.log("✅ Paiement Stripe validé");
         
-        // ⚠️ SÉCURITÉ CRITIQUE: Changer status à "pending" SEULEMENT après paiement
         console.log("🔄 Mise à jour statut vers 'pending'...");
         const { error: updateError } = await supabase
           .from("drivers")
@@ -150,7 +140,6 @@ const RegistrationSuccess = () => {
           console.log("✅ Statut mis à jour");
         }
 
-        // Récupérer infos pour email
         console.log("📧 Envoi email bienvenue...");
         const { data: driverData } = await supabase
           .from("drivers")
@@ -176,7 +165,6 @@ const RegistrationSuccess = () => {
         toast.success("Inscription terminée avec succès !");
         console.log("🎉 INSCRIPTION COMPLETE");
         
-        // Rediriger vers la page de bienvenue après succès
         setTimeout(() => {
           navigate(`/driver-welcome?driver_id=${driverId}&pioneer=false`);
         }, 1500);
@@ -194,27 +182,27 @@ const RegistrationSuccess = () => {
   }, [driverId, searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg p-8 bg-white text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg p-8 bg-card text-card-foreground">
         {loading ? (
           <div className="text-center">
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               Validation du paiement...
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Veuillez patienter quelques instants
             </p>
           </div>
         ) : error ? (
           <div className="text-center">
-            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-red-500" />
+            <div className="w-20 h-20 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-destructive" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-foreground mb-4">
               Erreur de validation
             </h1>
-            <p className="text-gray-700 mb-6">
+            <p className="text-muted-foreground mb-6">
               {error}
             </p>
             <Button
@@ -226,13 +214,13 @@ const RegistrationSuccess = () => {
           </div>
         ) : (
           <div className="text-center">
-            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-green-500" />
+            <div className="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-success" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               Paiement validé !
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Redirection vers la configuration de votre espace...
             </p>
             <Button
