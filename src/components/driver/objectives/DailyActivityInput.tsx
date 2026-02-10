@@ -100,7 +100,7 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
       // Get courses completed today
       const { data: courses } = await supabase
         .from('courses')
-        .select('id, final_price, price, distance_km, duration_minutes, client_id')
+        .select('id, final_payment_amount, guest_estimated_price, distance_km, duration_minutes, client_id')
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .eq('status', 'completed')
         .gte('scheduled_date', `${dateStr}T00:00:00`)
@@ -115,7 +115,7 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
         .lte('created_at', `${dateStr}T23:59:59`);
 
       const stats = {
-        revenue: courses?.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0) || 0,
+        revenue: courses?.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0) || 0,
         coursesCount: courses?.length || 0,
         newClientsCount: newClients?.length || 0,
         kmDriven: courses?.reduce((sum, c: any) => sum + (c.distance_km || 0), 0) || 0,

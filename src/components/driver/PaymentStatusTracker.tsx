@@ -52,7 +52,7 @@ export function PaymentStatusTracker({ courseId, className }: PaymentStatusTrack
           cardHoldStatus: courseData.card_hold_status,
           finalPaymentStatus: courseData.final_payment_status,
           finalPaymentAmount: courseData.final_payment_amount,
-          totalAmount: courseData.final_price || courseData.estimated_price,
+          totalAmount: courseData.final_payment_amount || courseData.guest_estimated_price,
           paymentMethod: courseData.payment_method,
         });
       } catch (err) {
@@ -83,7 +83,7 @@ export function PaymentStatusTracker({ courseId, className }: PaymentStatusTrack
             cardHoldStatus: newData.card_hold_status,
             finalPaymentStatus: newData.final_payment_status,
             finalPaymentAmount: newData.final_payment_amount,
-            totalAmount: newData.final_price || newData.estimated_price,
+            totalAmount: newData.final_payment_amount || newData.guest_estimated_price,
             paymentMethod: newData.payment_method,
           });
         }

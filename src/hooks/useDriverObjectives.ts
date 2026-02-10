@@ -77,7 +77,7 @@ export function useDriverObjectives(driverId: string | null) {
       // Get total courses completed
       const { data: courses, count: courseCount } = await supabase
         .from('courses')
-        .select('id, final_price, created_at', { count: 'exact' })
+        .select('id, final_payment_amount, created_at', { count: 'exact' })
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .eq('status', 'completed');
 
@@ -89,7 +89,7 @@ export function useDriverObjectives(driverId: string | null) {
         .eq('status', 'active');
 
       // Calculate total revenue from courses
-      const totalRevenue = courses?.reduce((sum, c: any) => sum + (c.final_price || 0), 0) || 0;
+      const totalRevenue = courses?.reduce((sum, c: any) => sum + (c.final_payment_amount || 0), 0) || 0;
 
       // Check if first client/course (simplified)
       const isFirstClient = clientCount === 1;
@@ -184,7 +184,7 @@ export function useDriverObjectives(driverId: string | null) {
         const [coursesRes, clientsRes] = await Promise.all([
           supabase
             .from('courses')
-            .select('id, final_price, price')
+            .select('id, final_payment_amount, guest_estimated_price')
             .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
             .eq('status', 'completed')
             .gte('scheduled_date', startStr)
@@ -202,7 +202,7 @@ export function useDriverObjectives(driverId: string | null) {
 
         return {
           courses: courses.length,
-          revenue: courses.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0),
+          revenue: courses.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0),
           clients: clients.length,
         };
       };
@@ -254,7 +254,7 @@ export function useDriverObjectives(driverId: string | null) {
     // Get courses completed on this date - use final_price for revenue
     const { data: courses } = await supabase
       .from('courses')
-      .select('id, final_price, price, distance_km, duration_minutes, client_id')
+      .select('id, final_payment_amount, guest_estimated_price, distance_km, duration_minutes, client_id')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', `${dateStr}T00:00:00`)
@@ -271,7 +271,7 @@ export function useDriverObjectives(driverId: string | null) {
     if (!courses) return null;
 
     return {
-      revenue: courses.reduce((sum, c: any) => sum + (c.final_price || c.price || 0), 0),
+      revenue: courses.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0),
       courses_count: courses.length,
       new_clients_count: newClients?.length || 0,
       km_driven: courses.reduce((sum, c: any) => sum + (c.distance_km || 0), 0),

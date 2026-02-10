@@ -35,7 +35,7 @@ serve(async (req) => {
       // Get yesterday's courses for this driver
       const { data: courses } = await supabase
         .from('courses')
-        .select('id, final_price, price, status')
+        .select('id, final_payment_amount, guest_estimated_price, status')
         .or(`driver_id.eq.${driver.id},driver_ids.cs.{${driver.id}}`)
         .gte('scheduled_date', `${yesterdayStr}T00:00:00`)
         .lte('scheduled_date', `${yesterdayStr}T23:59:59`);
@@ -58,7 +58,7 @@ serve(async (req) => {
 
       // Calculate SoloCab stats
       const completedCourses = courses?.filter((c: any) => c.status === 'completed') || [];
-      const soloCabRevenue = completedCourses.reduce((sum: number, c: any) => sum + (c.final_price || c.price || 0), 0);
+      const soloCabRevenue = completedCourses.reduce((sum: number, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0);
       const soloCabCourses = completedCourses.length;
 
       // Calculate external platform stats
