@@ -45,7 +45,7 @@ const CANCELLATION_REASONS = {
 
 // Constantes selon le cahier des charges
 const FREE_CANCELLATION_HOURS_WITH_DEPOSIT = 4; // T-4h avec acompte
-const FREE_CANCELLATION_HOURS_NO_DEPOSIT = 2; // T-2h sans acompte
+const FREE_CANCELLATION_HOURS_NO_DEPOSIT = 1; // T-1h sans acompte
 const CANCELLATION_FEE_NO_DEPOSIT = 10; // 10€ sans acompte
 
 export function CancellationDialog({
