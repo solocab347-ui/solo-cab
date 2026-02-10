@@ -270,8 +270,8 @@ export const GlobalSecurityProvider: React.FC<{ children: React.ReactNode }> = (
     // 2. Analyser le navigateur pour détecter les bots
     analyzeAndReportBot();
 
-    // 3. Installer les protections
-    installFetchInterceptor();
+    // 3. Installer les protections (fetch interceptor DÉSACTIVÉ - causait des "Failed to fetch")
+    // installFetchInterceptor();
     const xssObserver = installXSSProtection();
     installConsoleProtection();
     installClipboardProtection();
