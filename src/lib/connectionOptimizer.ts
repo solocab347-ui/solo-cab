@@ -406,15 +406,14 @@ if (typeof window !== 'undefined') {
   });
 
   // Vérification périodique de la santé de la connexion
-  // Augmenté à 60s au lieu de 30s pour réduire la charge
+  // Augmenté à 5 minutes pour réduire la charge sur le plan Pico
   setInterval(() => {
     const timeSinceLastSuccess = Date.now() - connectionInfo.lastSuccess;
     
-    // Si plus de 5 minutes sans succès ET hors ligne, tenter une récupération
-    // (augmenté de 2min à 5min pour éviter les faux-positifs)
-    if (timeSinceLastSuccess > 300000 && connectionInfo.state === 'offline') {
+    // Si plus de 10 minutes sans succès ET hors ligne, tenter une récupération
+    if (timeSinceLastSuccess > 600000 && connectionInfo.state === 'offline') {
       logger.info('Periodic health check triggered recovery');
       connectionRecovery.attemptRecovery();
     }
-  }, 60000);
+  }, 300000); // 5 minutes
 }

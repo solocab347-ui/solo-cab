@@ -119,17 +119,8 @@ class StabilityGuard {
 // Singleton
 export const stabilityGuard = new StabilityGuard();
 
-// Health check périodique
-if (typeof window !== 'undefined') {
-  setInterval(() => {
-    const health = stabilityGuard.healthCheck();
-    if (!health.healthy) {
-      console.warn('⚠️ Problèmes détectés:', health.issues);
-      
-      // Cleanup si trop de problèmes
-      if (health.issues.length >= 2) {
-        stabilityGuard.emergencyCleanup();
-      }
-    }
-  }, 30000); // Check toutes les 30s
-}
+// Health check périodique - DISABLED to reduce DB load
+// The stabilityGuard singleton is still available for on-demand checks
+// if (typeof window !== 'undefined') {
+//   setInterval(() => { ... }, 30000);
+// }

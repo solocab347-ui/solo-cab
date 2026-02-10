@@ -58,27 +58,17 @@ const localMetrics = new Map<string, { count: number; timestamp: number }>();
  * Log un événement de sécurité
  */
 export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
+  // DISABLED: Security logging was overloading the database on Pico plan.
+  // Events are only logged locally for now.
   try {
-    // Log async pour ne pas bloquer l'UI
-    supabase
-      .from('security_audit_logs')
-      .insert({
-        event_type: event.eventType,
-        user_id: event.userId || null,
-        ip_address: event.ipAddress || getClientIP(),
-        user_agent: event.userAgent || navigator.userAgent,
-        request_path: event.requestPath || window.location.pathname,
-        request_method: event.requestMethod || 'GET',
-        risk_score: event.riskScore || 0,
-        details: event.details ? JSON.parse(JSON.stringify(event.details)) : {},
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.warn('[Security] Failed to log event:', error.message);
-        }
-      });
+    const key = `security_${event.eventType}`;
+    const existing = localMetrics.get(key);
+    localMetrics.set(key, { 
+      count: (existing?.count || 0) + 1, 
+      timestamp: Date.now() 
+    });
   } catch (error) {
-    console.warn('[Security] Error logging event:', error);
+    // Silently ignore
   }
 }
 
@@ -176,9 +166,9 @@ export function cleanupLocalMetrics(): void {
   }
 }
 
-// Nettoyage périodique des métriques locales
+// Nettoyage périodique des métriques locales - reduced frequency
 if (typeof window !== 'undefined') {
-  setInterval(cleanupLocalMetrics, 5 * 60 * 1000); // Toutes les 5 minutes
+  setInterval(cleanupLocalMetrics, 30 * 60 * 1000); // Toutes les 30 minutes (was 5 min)
 }
 
 /**
