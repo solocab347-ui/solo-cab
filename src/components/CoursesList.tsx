@@ -721,7 +721,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     if (!course) return null;
     
     const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
-    const amount = acceptedDevis?.amount || course.final_price || course.estimated_price || 0;
+    const amount = acceptedDevis?.amount || course.final_payment_amount || course.guest_estimated_price || 0;
     
     return {
       id: course.id,

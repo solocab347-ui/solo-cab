@@ -96,7 +96,7 @@ export function DashboardObjectivesWidget({
           // Today's courses
           supabase
             .from('courses')
-            .select('id, final_price, price')
+            .select('id, final_payment_amount, guest_estimated_price')
             .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
             .eq('status', 'completed')
             .gte('scheduled_date', `${today}T00:00:00`)
@@ -104,7 +104,7 @@ export function DashboardObjectivesWidget({
           // Week courses
           supabase
             .from('courses')
-            .select('id, final_price, price')
+            .select('id, final_payment_amount, guest_estimated_price')
             .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
             .eq('status', 'completed')
             .gte('scheduled_date', `${weekStart}T00:00:00`)
@@ -112,7 +112,7 @@ export function DashboardObjectivesWidget({
           // Month courses
           supabase
             .from('courses')
-            .select('id, final_price, price')
+            .select('id, final_payment_amount, guest_estimated_price')
             .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
             .eq('status', 'completed')
             .gte('scheduled_date', `${monthStart}T00:00:00`)
@@ -120,7 +120,7 @@ export function DashboardObjectivesWidget({
           // Year courses
           supabase
             .from('courses')
-            .select('id, final_price, price')
+            .select('id, final_payment_amount, guest_estimated_price')
             .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
             .eq('status', 'completed')
             .gte('scheduled_date', `${yearStart}T00:00:00`)
@@ -158,7 +158,7 @@ export function DashboardObjectivesWidget({
         // Calculate stats for each period
         const calcPeriodStats = (courses: any[] | null, clients: any[] | null): PeriodStats => ({
           courses: courses?.length || 0,
-          revenue: courses?.reduce((sum, c) => sum + (c.final_price || c.price || 0), 0) || 0,
+          revenue: courses?.reduce((sum, c) => sum + ((c as any).final_payment_amount || (c as any).guest_estimated_price || 0), 0) || 0,
           clients: clients?.length || 0
         });
 

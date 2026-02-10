@@ -394,7 +394,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
         // Get courses count from company_courses
         const { data: companyCourses } = await supabase
           .from('company_courses')
-          .select('course_id, course:courses(price, status)')
+          .select('course_id, course:courses(final_payment_amount, guest_estimated_price, status)')
           .eq('company_id', ca.company_id);
 
         const completedCourses = companyCourses?.filter(
@@ -402,7 +402,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
         ) || [];
         
         const totalRevenue = completedCourses.reduce(
-          (sum: number, cc: any) => sum + (Number(cc.course?.price) || 0), 0
+          (sum: number, cc: any) => sum + (Number(cc.course?.final_payment_amount) || Number(cc.course?.guest_estimated_price) || 0), 0
         );
 
         companyRankings.push({

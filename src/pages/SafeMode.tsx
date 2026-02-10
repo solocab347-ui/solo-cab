@@ -307,10 +307,10 @@ const SafeMode = () => {
                               {getStatusLabel(course.status)}
                             </span>
                           </div>
-                          {course.price && (
+                          {course.final_payment_amount && (
                             <Badge variant="outline">
                               <Euro className="h-3 w-3 mr-1" />
-                              {course.price.toFixed(2)}€
+                              {course.final_payment_amount.toFixed(2)}€
                             </Badge>
                           )}
                         </div>
