@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -38,6 +39,7 @@ import jsPDF from "jspdf";
 import { CourseRating } from "@/components/CourseRating";
 import CourseReportDialog from "@/components/CourseReportDialog";
 import { SharedCoursePartnerInfo } from "./SharedCoursePartnerInfo";
+import { GuestReservationWithCardHold } from "@/components/payment/GuestReservationWithCardHold";
 
 interface ClientCoursesListProps {
   clientId: string;
@@ -60,6 +62,15 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [courseToReport, setCourseToReport] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  
+  // Card hold flow state
+  const [cardHoldData, setCardHoldData] = useState<{
+    courseId: string;
+    driverId: string;
+    amount: number;
+    clientEmail?: string;
+    clientName?: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -470,6 +481,37 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
       
       if (!result?.success) {
         throw new Error(result?.message || "Échec de l'acceptation du devis");
+      }
+
+      // Vérifier si le chauffeur utilise Stripe Connect → empreinte bancaire requise
+      const course = courses.find(c => c.id === courseId);
+      const devis = course?.devis?.find((d: any) => d.id === devisId);
+      
+      if (course && devis) {
+        const { data: driver } = await supabase
+          .from("drivers")
+          .select("billing_type, stripe_connect_account_id, stripe_connect_charges_enabled")
+          .eq("id", course.driver_id)
+          .single();
+
+        const driverUsesStripe = 
+          driver?.billing_type === "solocab_stripe" &&
+          driver?.stripe_connect_account_id &&
+          driver?.stripe_connect_charges_enabled;
+
+        if (driverUsesStripe) {
+          // Déclencher le flux d'empreinte bancaire
+          setCardHoldData({
+            courseId,
+            driverId: course.driver_id,
+            amount: parseFloat(devis.amount),
+            clientEmail: user.email || undefined,
+            clientName: user.user_metadata?.full_name || undefined,
+          });
+          toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
+          await fetchCourses();
+          return;
+        }
       }
 
       toast.success(result.message);
@@ -883,6 +925,33 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           currentUserId={currentUserId}
         />
       )}
+
+      {/* Card Hold Dialog - Empreinte bancaire après acceptation de devis */}
+      <Dialog open={!!cardHoldData} onOpenChange={(open) => !open && setCardHoldData(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Empreinte bancaire requise</DialogTitle>
+            <DialogDescription>
+              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. Aucun débit immédiat.
+            </DialogDescription>
+          </DialogHeader>
+          {cardHoldData && (
+            <GuestReservationWithCardHold
+              driverId={cardHoldData.driverId}
+              courseId={cardHoldData.courseId}
+              clientEmail={cardHoldData.clientEmail}
+              clientName={cardHoldData.clientName}
+              estimatedAmount={cardHoldData.amount}
+              trackingToken=""
+              onComplete={() => {
+                setCardHoldData(null);
+                toast.success("Empreinte bancaire validée ! Votre réservation est confirmée.");
+                fetchCourses();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
