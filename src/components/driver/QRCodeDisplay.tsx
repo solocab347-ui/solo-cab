@@ -160,7 +160,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
           
           <Button
             onClick={handleShareSMS}
-            className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm h-9 sm:h-10"
+            className="bg-info hover:bg-info/90 text-info-foreground text-xs sm:text-sm h-9 sm:h-10"
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
@@ -170,7 +170,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
           
           <Button
             onClick={handleShareEmail}
-            className="bg-purple-500 hover:bg-purple-600 text-white text-xs sm:text-sm h-9 sm:h-10"
+            className="bg-premium hover:bg-premium/90 text-premium-foreground text-xs sm:text-sm h-9 sm:h-10"
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
