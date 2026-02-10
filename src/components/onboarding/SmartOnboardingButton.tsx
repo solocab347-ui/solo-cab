@@ -115,31 +115,31 @@ export const SmartOnboardingButton = ({
             exit={{ opacity: 0, x: 10, scale: 0.9 }}
             className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap"
           >
-            <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-white/10">
+            <div className="bg-storefront-dark text-foreground px-4 py-3 rounded-xl shadow-xl border border-border">
               <p className="text-sm font-medium flex items-center gap-2">
                 {isReady ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                    <CheckCircle2 className="w-4 h-4 text-success" />
                     Profil complet !
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-4 h-4 text-amber-400" />
+                    <AlertCircle className="w-4 h-4 text-warning" />
                     {requiredMissing} élément{requiredMissing > 1 ? 's' : ''} à configurer
                   </>
                 )}
               </p>
-              <p className="text-xs text-white/60 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Cliquez pour ouvrir le guide Liberty
               </p>
               {/* Progress bar */}
-              <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 bg-muted/30 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-300"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <p className="text-xs text-white/40 mt-1">{percentage}% complété</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{percentage}% complété</p>
             </div>
           </motion.div>
         )}

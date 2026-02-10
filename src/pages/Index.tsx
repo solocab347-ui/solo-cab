@@ -265,15 +265,15 @@ const Index = () => {
                 Créez des partenariats avec d'autres chauffeurs indépendants. Partagez vos courses quand vous n'êtes pas disponible et recevez des courses de vos partenaires.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <Shield className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="w-4 h-4 text-success" />
                   Partenariats de confiance
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <DollarSign className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <DollarSign className="w-4 h-4 text-success" />
                   Commission négociable
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-300">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Star className="w-4 h-4 text-amber-500" />
                   Développez votre réseau
                 </div>

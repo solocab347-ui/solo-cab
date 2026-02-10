@@ -116,7 +116,7 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
         type="text"
         inputMode="decimal"
         className={cn(
-          "flex h-11 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-lg font-semibold text-gray-900 dark:text-white shadow-sm transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-11 w-full rounded-lg border-2 border-input bg-background px-4 py-2 text-lg font-semibold text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         ref={ref}
