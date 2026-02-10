@@ -18,14 +18,19 @@ export const useUserLanguage = () => {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('preferred_language')
-        .eq('id', user.id)
-        .single();
+      const { data, error } = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('preferred_language')
+          .eq('id', user.id)
+          .single(),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Language query timeout')), 5000)
+        )
+      ]);
 
       if (error) {
-        console.error('Error loading user language:', error);
+        // Silencieux: ne pas polluer la console pour un simple timeout
         return;
       }
 

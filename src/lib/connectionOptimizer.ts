@@ -70,10 +70,23 @@ export function onConnectionChange(callback: (info: ConnectionInfo) => void): ()
 /**
  * Met à jour l'état de connexion
  */
-function updateConnectionState(success: boolean, latency?: number) {
+function updateConnectionState(success: boolean, latency?: number, isDbTimeout?: boolean) {
   const now = Date.now();
   
+  // IMPORTANT: Un timeout DB (code 57014) n'est PAS une panne réseau
+  // La connexion fonctionne, la requête est juste lente côté serveur
+  if (isDbTimeout) {
+    // Ne pas dégrader l'état de connexion pour un timeout DB
+    connectionInfo.lastCheck = now;
+    if (connectionInfo.state === 'online') {
+      // Rester online, juste noter la latence élevée
+      connectionInfo.averageLatency = Math.max(connectionInfo.averageLatency, 5000);
+    }
+    return; // Ne pas notifier les listeners pour un timeout DB
+  }
+  
   if (success) {
+    const previousState = connectionInfo.state;
     connectionInfo = {
       state: latency && latency > 3000 ? 'slow' : 'online',
       lastSuccess: now,
@@ -83,15 +96,23 @@ function updateConnectionState(success: boolean, latency?: number) {
         ? (connectionInfo.averageLatency * 0.7 + latency * 0.3) 
         : connectionInfo.averageLatency,
     };
+    // Ne notifier que si l'état a changé (éviter les re-renders inutiles)
+    if (previousState === connectionInfo.state && previousState === 'online') {
+      return;
+    }
   } else {
     connectionInfo.consecutiveFailures++;
     connectionInfo.lastCheck = now;
     
-    // Déterminer l'état basé sur les échecs consécutifs
-    if (connectionInfo.consecutiveFailures >= 3) {
+    // Exiger PLUS d'échecs avant de déclarer offline (était 3, maintenant 5)
+    if (connectionInfo.consecutiveFailures >= 5) {
       connectionInfo.state = 'offline';
-    } else if (connectionInfo.consecutiveFailures >= 1) {
+    } else if (connectionInfo.consecutiveFailures >= 3) {
       connectionInfo.state = 'recovering';
+    }
+    // 1-2 échecs: rester dans l'état actuel, ne pas paniquer
+    if (connectionInfo.consecutiveFailures < 3) {
+      return; // Ne pas notifier pour des échecs isolés
     }
   }
   
@@ -151,7 +172,12 @@ export async function optimizedQuery<T>(
       updateConnectionState(true, latency);
       
       if (result.error) {
-        // Erreur métier, pas de retry
+        // Vérifier si c'est un timeout DB (code 57014) - PAS une panne réseau
+        if (result.error.code === '57014') {
+          updateConnectionState(true, undefined, true);
+          return result; // Retourner l'erreur mais ne pas déclencher de recovery
+        }
+        // Autre erreur métier, pas de retry
         return result;
       }
       
@@ -184,8 +210,14 @@ export async function optimizedQuery<T>(
     }
   }
 
-  // Échec final
-  updateConnectionState(false);
+  // Échec final - mais vérifier si c'est un timeout client (pas réseau)
+  const isClientTimeout = lastError?.message?.includes('Timeout:');
+  if (isClientTimeout && navigator.onLine) {
+    // Le réseau est là, c'est juste lent - ne pas déclarer offline
+    updateConnectionState(true, undefined, true);
+  } else {
+    updateConnectionState(false);
+  }
   logger.error(`Query failed after ${retries} retries: ${context}`, { error: lastError?.message });
   return { data: null, error: lastError };
 }
@@ -217,8 +249,14 @@ export async function pingConnection(): Promise<{ connected: boolean; latency: n
   const start = Date.now();
   
   try {
+    // Utiliser un simple fetch HEAD sur l'API REST Supabase
+    // Plus fiable qu'une requête DB qui peut timeout sur une base chargée
     const { error } = await Promise.race([
-      supabase.from("profiles").select("id").limit(1),
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/`, {
+        method: 'HEAD',
+        headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        signal: AbortSignal.timeout(CONNECTION_CONFIG.HEALTH_CHECK_TIMEOUT),
+      }).then(() => ({ error: null as Error | null })).catch(() => ({ error: new Error('Network unreachable') })),
       new Promise<{ error: Error }>((resolve) => 
         setTimeout(() => resolve({ error: new Error('Ping timeout') }), CONNECTION_CONFIG.HEALTH_CHECK_TIMEOUT)
       )
@@ -368,13 +406,15 @@ if (typeof window !== 'undefined') {
   });
 
   // Vérification périodique de la santé de la connexion
+  // Augmenté à 60s au lieu de 30s pour réduire la charge
   setInterval(() => {
     const timeSinceLastSuccess = Date.now() - connectionInfo.lastSuccess;
     
-    // Si plus de 2 minutes sans succès, tenter une récupération
-    if (timeSinceLastSuccess > 120000 && connectionInfo.state !== 'recovering') {
+    // Si plus de 5 minutes sans succès ET hors ligne, tenter une récupération
+    // (augmenté de 2min à 5min pour éviter les faux-positifs)
+    if (timeSinceLastSuccess > 300000 && connectionInfo.state === 'offline') {
       logger.info('Periodic health check triggered recovery');
       connectionRecovery.attemptRecovery();
     }
-  }, CONNECTION_CONFIG.PING_INTERVAL);
+  }, 60000);
 }
