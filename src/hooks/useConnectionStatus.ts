@@ -95,15 +95,19 @@ export function useConnectionStatus() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Écouter les changements de recovery
+    // Écouter les changements de recovery (mais ne PAS déconnecter pour un état 'failed')
     const unsubscribeRecovery = connectionRecovery.onStateChange((state) => {
       if (state === 'recovered') {
         updateFromInfo(getConnectionState());
       } else if (state === 'recovering') {
-        setStatus(prev => ({ ...prev, isRecovering: true }));
-      } else if (state === 'failed' || state === 'offline') {
-        setStatus(prev => ({ ...prev, isRecovering: false, isOnline: false }));
+        // Ne mettre à jour que si on est déjà dans un état dégradé
+        const currentState = getConnectionState();
+        if (currentState.state === 'offline') {
+          setStatus(prev => ({ ...prev, isRecovering: true }));
+        }
       }
+      // Retirer le cas 'failed'/'offline' qui forçait isOnline: false
+      // C'est le connectionOptimizer qui gère l'état réel
     });
 
     return () => {

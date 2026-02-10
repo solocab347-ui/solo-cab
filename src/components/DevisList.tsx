@@ -34,31 +34,37 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
   const fetchDevis = async () => {
     try {
-      const { data, error } = await supabase
-        .from("devis")
-        .select(`
-          *,
-          courses!inner(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes,
-            status
-          ),
-          drivers!inner(
-            company_name,
-            company_address,
-            siret,
-            profiles:user_id(full_name, phone, profile_photo_url)
-          ),
-          clients!inner(
-            profiles:user_id(full_name, phone, email)
-          )
-        `)
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await Promise.race([
+        supabase
+          .from("devis")
+          .select(`
+            *,
+            courses!inner(
+              id,
+              pickup_address,
+              destination_address,
+              scheduled_date,
+              distance_km,
+              duration_minutes,
+              status
+            ),
+            drivers!inner(
+              company_name,
+              company_address,
+              siret,
+              profiles:user_id(full_name, phone, profile_photo_url)
+            ),
+            clients!inner(
+              profiles:user_id(full_name, phone, email)
+            )
+          `)
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Devis query timeout')), 15000)
+        )
+      ]);
 
       if (error) throw error;
       
@@ -76,8 +82,13 @@ const DevisList = ({ clientId }: DevisListProps) => {
       
       setDevisList(synchronizedDevis);
     } catch (error: any) {
-      console.error("Error fetching devis:", error);
-      toast.error("Erreur lors du chargement des devis");
+      // Ne pas afficher de toast pour les timeouts - l'utilisateur verra les données en cache
+      if (error?.message?.includes('timeout')) {
+        console.warn("Devis query timeout, will retry on next refresh");
+      } else {
+        console.error("Error fetching devis:", error);
+        toast.error("Erreur lors du chargement des devis");
+      }
     } finally {
       setLoading(false);
     }
