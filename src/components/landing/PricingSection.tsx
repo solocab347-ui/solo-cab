@@ -12,7 +12,7 @@ const PricingSection = () => {
   const savings = (monthlyPrice * 12 - annualPrice).toFixed(2); // ~17.98€ économisés
 
   return (
-    <section className="py-20 bg-[#0f1e35]">
+    <section className="py-20 bg-storefront">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <Badge className="mb-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">

@@ -56,28 +56,28 @@ const Tarifs = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
+    <div className="min-h-screen bg-gradient-to-b from-storefront-dark via-storefront to-storefront-light">
       {/* Navigation */}
-      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-border bg-storefront-dark backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/chauffeurs" className="text-muted-foreground hover:text-foreground transition-colors">
               Trouver un chauffeur
             </Link>
-            <Link to="/devenir-chauffeur" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/devenir-chauffeur" className="text-muted-foreground hover:text-foreground transition-colors">
               Devenir chauffeur
             </Link>
-            <Link to="/plaque-nfc" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/plaque-nfc" className="text-muted-foreground hover:text-foreground transition-colors">
               Plaque NFC
             </Link>
           </nav>
           <div className="flex items-center gap-4">
             <SocialLinks variant="compact" iconSize={20} />
             <Link to="/login">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-primary-foreground shadow-lg">
                 Se Connecter
               </Button>
             </Link>
@@ -88,13 +88,13 @@ const Tarifs = () => {
       {/* Hero Section */}
       <section className="py-16 text-center">
         <div className="container mx-auto px-4">
-          <Badge className="mb-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+          <Badge className="mb-4 bg-gradient-to-r from-green-500 to-emerald-600 text-primary-foreground border-0">
             💰 Tarification transparente
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
             Tous nos <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">tarifs</span>
           </h1>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Une tarification simple et transparente. Zéro commission sur vos courses, 
             vous gardez 100% de vos revenus.
           </p>
@@ -102,7 +102,7 @@ const Tarifs = () => {
       </section>
 
       {/* Abonnements Chauffeurs */}
-      <section className="py-16 bg-[#0f1e35]">
+      <section className="py-16 bg-storefront">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
