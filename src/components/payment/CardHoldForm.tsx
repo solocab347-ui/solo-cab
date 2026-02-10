@@ -223,29 +223,39 @@ export function CardHoldForm({
           Empreinte bancaire
         </CardTitle>
         <CardDescription>
-          Une empreinte bancaire de 0€ est requise pour confirmer votre réservation.
-          Aucun montant ne sera prélevé maintenant.
+          Une empreinte bancaire de <strong>0€</strong> est requise pour confirmer votre réservation.
+          Aucun montant ne sera prélevé maintenant. Vous serez débité uniquement en fin de course 
+          pour le prix convenu sur votre devis.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Security notice */}
+        {/* Qu'est-ce qu'une empreinte bancaire ? */}
         <Alert className="bg-primary/5 border-primary/20">
           <Shield className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-foreground">
-            <strong>Paiement sécurisé</strong> - Vos informations sont protégées par Stripe.
-            Aucun prélèvement ne sera effectué sauf en cas d'annulation tardive (moins de 2h avant la course).
+          <AlertDescription className="text-foreground text-sm">
+            <strong>Qu'est-ce qu'une empreinte bancaire ?</strong>
+            <p className="mt-1">
+              C'est une vérification de votre carte bancaire à <strong>0€</strong>. 
+              Aucun montant n'est prélevé lors de la réservation. Votre carte est simplement 
+              enregistrée de manière sécurisée via Stripe pour garantir votre réservation.
+            </p>
+            <p className="mt-1">
+              Votre carte ne sera débitée <strong>qu'en fin de course</strong> pour le montant convenu, 
+              ou en cas d'annulation tardive (frais de 10€).
+            </p>
           </AlertDescription>
         </Alert>
 
-        {/* Cancellation policy - Sans acompte = T-2h, 10€ de frais */}
+        {/* Politique d'annulation */}
         <Alert className="bg-warning/10 border-warning/30">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertDescription className="text-foreground text-sm">
             <strong>Politique d'annulation :</strong>
             <ul className="list-disc list-inside mt-1 space-y-1">
-              <li>Annulation gratuite jusqu'à 2h avant la course</li>
-              <li>Annulation moins de 2h avant : frais de 10€</li>
-              <li>Si le chauffeur annule : aucun frais pour vous</li>
+              <li><strong>Annulation gratuite</strong> jusqu'à 1h avant la course</li>
+              <li><strong>Annulation tardive</strong> (moins de 1h avant) : frais de 10€ prélevés automatiquement sur votre carte</li>
+              <li><strong>Si le chauffeur annule</strong> : aucun frais pour vous, quelle que soit l'heure</li>
             </ul>
           </AlertDescription>
         </Alert>

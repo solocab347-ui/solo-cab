@@ -199,7 +199,9 @@ export function GuestReservationWithCardHold({
             <div>
               <p className="font-medium">Empreinte bancaire sécurisée</p>
               <p className="text-sm text-muted-foreground">
-                Une empreinte de 0€ est requise pour garantir votre réservation.
+                Une vérification de carte à 0€ est requise pour garantir votre réservation. 
+                Vous ne serez débité qu'en fin de course. En cas d'annulation tardive (moins de 1h avant), 
+                des frais de 10€ s'appliquent. Si le chauffeur annule : aucun frais.
               </p>
             </div>
           </div>
