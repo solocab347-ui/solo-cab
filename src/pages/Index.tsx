@@ -103,7 +103,7 @@ const Index = () => {
               <Heart className="w-5 h-5 fill-amber-400" />
               <span className="font-bold text-lg">Nos Valeurs</span>
             </div>
-            <span className="text-gray-300 hidden sm:inline">
+            <span className="text-muted-foreground hidden sm:inline">
               L'humain avant le profit • Technologie au service de l'humain • Relations saines
             </span>
             <div className="flex items-center gap-1 text-amber-400 group-hover:text-amber-300 transition-colors">
@@ -115,18 +115,18 @@ const Index = () => {
       </section>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
+      <section className="py-20 md:py-32 bg-gradient-to-b from-storefront-dark to-storefront">
         <div className="container mx-auto px-4">
           {/* Toggle Buttons - 3 options aligned */}
           <div className="flex justify-center mb-12">
-            <div className="flex flex-wrap justify-center gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10">
+            <div className="flex flex-wrap justify-center gap-2 rounded-lg bg-muted/30 p-2 backdrop-blur-sm border border-border">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
                   "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <Users className="w-5 h-5" />
@@ -139,7 +139,7 @@ const Index = () => {
                   "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <Car className="w-5 h-5" />
@@ -152,7 +152,7 @@ const Index = () => {
                   "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "nfc"
                     ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <CreditCard className="w-5 h-5" />
@@ -174,26 +174,26 @@ const Index = () => {
       </section>
 
       {/* Platform Overview */}
-      <section className="py-20 bg-[#0f1e35]">
+      <section className="py-20 bg-storefront">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <Badge className="mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0">
               ✨ Zéro commission • Contrôle total
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-white">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-foreground">
               La plateforme pour les
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">chauffeurs indépendants</span>
               <br />
               et les <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">clients engagés</span>
             </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Une communauté où les <span className="text-purple-400 font-semibold">chauffeurs VTC reprennent leur indépendance</span> et où les <span className="text-green-400 font-semibold">clients trouvent des professionnels de confiance</span>. Sans intermédiaire, sans commission.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-muted/30 backdrop-blur-sm border-border">
               <div className="relative inline-block mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
                   <Search className="w-10 h-10 text-white" />
@@ -202,8 +202,8 @@ const Index = () => {
                   Populaire
                 </Badge>
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Trouver un Chauffeur</h3>
-              <p className="text-gray-400 mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-foreground">Trouver un Chauffeur</h3>
+              <p className="text-muted-foreground mb-6">
                 Des chauffeurs professionnels à votre service
               </p>
               <Link to="/chauffeurs">
@@ -214,12 +214,12 @@ const Index = () => {
               </Link>
             </Card>
 
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-muted/30 backdrop-blur-sm border-border">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
                 <Car className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Je suis Chauffeur</h3>
-              <p className="text-gray-400 mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-foreground">Je suis Chauffeur</h3>
+              <p className="text-muted-foreground mb-6">
                 Rejoignez la communauté des chauffeurs indépendants
               </p>
               <Link to="/devenir-chauffeur">
@@ -230,12 +230,12 @@ const Index = () => {
               </Link>
             </Card>
 
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-muted/30 backdrop-blur-sm border-border">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-6">
                 <ArrowRight className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Se Connecter</h3>
-              <p className="text-gray-400 mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-foreground">Se Connecter</h3>
+              <p className="text-muted-foreground mb-6">
                 Accédez à votre espace personnel
               </p>
               <Link to="/login">
@@ -253,15 +253,15 @@ const Index = () => {
       <PricingSection />
 
       {/* Driver Partnership Feature */}
-      <section className="py-16 bg-[#1a2942]">
+      <section className="py-16 bg-storefront-light">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <Card className="p-8 text-center bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border-indigo-500/20">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
                 <Handshake className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Partage de courses entre chauffeurs</h3>
-              <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold mb-3 text-foreground">Partage de courses entre chauffeurs</h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Créez des partenariats avec d'autres chauffeurs indépendants. Partagez vos courses quand vous n'êtes pas disponible et recevez des courses de vos partenaires.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mb-6">
@@ -292,7 +292,7 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-900/50 to-purple-900/50">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
             Prêt à commencer ?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
@@ -316,7 +316,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/10 bg-black">
+      <footer className="py-12 border-t border-border bg-storefront-dark">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -324,23 +324,23 @@ const Index = () => {
                 <div className="w-8 h-8 bg-gradient-premium rounded-lg flex items-center justify-center">
                   <Car className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-xl font-bold text-white">SoloCab</span>
+                <span className="text-xl font-bold text-foreground">SoloCab</span>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 La plateforme pour les chauffeurs indépendants et les clients engagés
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-4 text-white">Chauffeurs</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h4 className="font-bold mb-4 text-foreground">Chauffeurs</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link to="/devenir-chauffeur" className="hover:text-white transition-colors">
+                  <Link to="/devenir-chauffeur" className="hover:text-foreground transition-colors">
                     Devenir chauffeur
                   </Link>
                 </li>
                 <li>
-                  <Link to="/login" className="hover:text-white transition-colors">
+                  <Link to="/login" className="hover:text-foreground transition-colors">
                     Connexion
                   </Link>
                 </li>
@@ -348,15 +348,15 @@ const Index = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4 text-white">Clients</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h4 className="font-bold mb-4 text-foreground">Clients</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link to="/chauffeurs" className="hover:text-white transition-colors">
+                  <Link to="/chauffeurs" className="hover:text-foreground transition-colors">
                     Trouver un chauffeur
                   </Link>
                 </li>
                 <li>
-                  <Link to="/register-client" className="hover:text-white transition-colors">
+                  <Link to="/register-client" className="hover:text-foreground transition-colors">
                     Créer un compte
                   </Link>
                 </li>
@@ -364,20 +364,20 @@ const Index = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4 text-white">Légal</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h4 className="font-bold mb-4 text-foreground">Légal</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link to="/mentions-legales" className="hover:text-white transition-colors">
+                  <Link to="/mentions-legales" className="hover:text-foreground transition-colors">
                     Mentions légales
                   </Link>
                 </li>
                 <li>
-                  <Link to="/privacy-policy" className="hover:text-white transition-colors">
+                  <Link to="/privacy-policy" className="hover:text-foreground transition-colors">
                     Politique de confidentialité
                   </Link>
                 </li>
                 <li>
-                  <Link to="/cgv" className="hover:text-white transition-colors">
+                  <Link to="/cgv" className="hover:text-foreground transition-colors">
                     CGV
                   </Link>
                 </li>
@@ -385,8 +385,8 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500">
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
               © 2024 SoloCab. Tous droits réservés.
             </p>
             <SocialLinks variant="compact" iconSize={18} />
