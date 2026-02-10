@@ -230,9 +230,9 @@ export function OnboardingTrialStartStep({
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="w-20 h-20 bg-gradient-to-br from-primary to-emerald-500 rounded-full flex items-center justify-center mb-4"
+        className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mb-4"
       >
-        <Rocket className="w-10 h-10 text-white" />
+        <Rocket className="w-10 h-10 text-primary-foreground" />
       </motion.div>
 
       <motion.div
@@ -241,8 +241,8 @@ export function OnboardingTrialStartStep({
         transition={{ delay: 0.3 }}
         className="mb-4"
       >
-        <h2 className="text-2xl font-bold text-white">Prêt à démarrer ? 🚀</h2>
-        <p className="text-white/60 text-sm mt-1">
+        <h2 className="text-2xl font-bold text-foreground">Prêt à démarrer ? 🚀</h2>
+        <p className="text-muted-foreground text-sm mt-1">
           14 jours gratuits pour développer ta clientèle
         </p>
       </motion.div>
@@ -254,10 +254,10 @@ export function OnboardingTrialStartStep({
         transition={{ delay: 0.4 }}
         className="w-full max-w-sm mb-4 p-3 rounded-xl bg-primary/10 border border-primary/30"
       >
-        <p className="text-xs text-white/80 text-left">
+        <p className="text-xs text-foreground/80 text-left">
           <strong className="text-primary">🎁 Vos 14 jours ne démarrent que lorsque :</strong>
         </p>
-        <ul className="text-xs text-white/60 mt-1 space-y-0.5 text-left list-disc ml-4">
+        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5 text-left list-disc ml-4">
           <li>Vos documents sont validés par notre équipe</li>
           <li>Vous appuyez sur "Lancer mon indépendance"</li>
         </ul>
@@ -324,23 +324,23 @@ export function OnboardingTrialStartStep({
               "w-full p-4 rounded-2xl border-2 transition-all text-left",
               confirmReady 
                 ? "border-emerald-500 bg-emerald-500/10" 
-                : "border-white/20 bg-white/5 hover:border-white/40"
+                : "border-border bg-muted/10 hover:border-border"
             )}
           >
             <div className="flex items-start gap-3">
               <div className={cn(
                 "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                confirmReady ? "bg-emerald-500 border-emerald-500" : "border-white/40"
+                confirmReady ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/40"
               )}>
                 {confirmReady && <CheckCircle2 className="w-4 h-4 text-white" />}
               </div>
               <div>
-                <h3 className="font-semibold text-white text-sm">
+                <h3 className="font-semibold text-foreground text-sm">
                   {isEquipmentPurchase 
                     ? "J'ai reçu mon terminal" 
                     : "Mon matériel est prêt"}
                 </h3>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-muted-foreground text-xs mt-1">
                   {isEquipmentPurchase 
                     ? "Mon TPE est fonctionnel" 
                     : "Mon équipement de paiement est configuré"}
@@ -375,7 +375,7 @@ export function OnboardingTrialStartStep({
                 )}>
                   {isStripeReady ? "Compte Stripe activé ✓" : "Validation Stripe en cours..."}
                 </h3>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-muted-foreground text-xs mt-1">
                   {isStripeReady 
                     ? "Tu peux encaisser tes clients" 
                     : "L'essai démarrera après validation"}
@@ -391,7 +391,7 @@ export function OnboardingTrialStartStep({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="w-full max-w-sm bg-white/5 rounded-xl p-3 mb-6"
+        className="w-full max-w-sm bg-muted/30 rounded-xl p-3 mb-6"
       >
         <div className="grid grid-cols-2 gap-2 text-xs">
           {[
@@ -400,7 +400,7 @@ export function OnboardingTrialStartStep({
             "Calculateur de prix",
             "Statistiques complètes"
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-white/60">
+            <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
               <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
               <span>{item}</span>
             </div>
@@ -419,7 +419,7 @@ export function OnboardingTrialStartStep({
           <Button 
             onClick={handleLaunchWithVideo} 
             disabled={activating || loading}
-            className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-emerald-500"
+            className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
           >
             {activating ? (
               <Loader2 className="w-5 h-5 animate-spin" />

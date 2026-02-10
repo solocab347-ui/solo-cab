@@ -316,9 +316,9 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", duration: 0.8 }}
-                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mb-3 sm:mb-4 shadow-lg"
+                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-destructive flex items-center justify-center mb-3 sm:mb-4 shadow-lg"
               >
-                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive-foreground" />
               </motion.div>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
@@ -347,10 +347,10 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
-                    className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/20"
+                    className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-destructive/10 border border-destructive/20"
                   >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
                     </div>
                     <p className="text-xs sm:text-sm text-foreground font-medium leading-tight">{problem.text}</p>
                   </motion.div>
@@ -364,7 +364,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               transition={{ delay: 1 }}
               className="text-center mt-4 sm:mt-6"
             >
-              <p className="text-base sm:text-lg font-bold text-red-500">
+              <p className="text-base sm:text-lg font-bold text-destructive">
                 Stop. Il y a mieux.
               </p>
             </motion.div>
@@ -380,7 +380,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", duration: 0.6 }}
-                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2 sm:mb-3 shadow-lg"
+                className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center mb-2 sm:mb-3 shadow-lg"
               >
                 <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
               </motion.div>
@@ -412,7 +412,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                     transition={{ delay: 0.2 + index * 0.1 }}
                     className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-colors"
                   >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-1.5 sm:mb-2">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary flex items-center justify-center mb-1.5 sm:mb-2">
                       <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                     </div>
                     <h3 className="font-bold text-foreground text-xs sm:text-sm mb-0.5 leading-tight">{solution.title}</h3>
@@ -426,7 +426,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 w-full max-w-sm mx-auto"
+              className="mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20 w-full max-w-sm mx-auto"
             >
               <p className="text-center text-xs sm:text-sm font-semibold text-primary">
                 🎯 14 jours d'essai gratuit
@@ -446,7 +446,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center mb-2 sm:mb-3"
               >
                 <UserCheck className="w-5 h-5 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
@@ -509,9 +509,9 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", duration: 0.8 }}
-                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-br from-primary via-emerald-500 to-green-500 flex items-center justify-center mb-3 sm:mb-4 shadow-xl"
+                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-primary flex items-center justify-center mb-3 sm:mb-4 shadow-xl"
               >
-                <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </motion.div>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
@@ -573,7 +573,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 onClick={handleComplete}
                 disabled={saving}
                 size="lg"
-                className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 shadow-lg"
+                className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold bg-primary hover:bg-primary/90 shadow-lg"
               >
                 {saving ? (
                   'Préparation...'
@@ -605,7 +605,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
             key={i}
             className={cn(
               "h-1.5 sm:h-2 rounded-full transition-all duration-300",
-              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-emerald-500" : "w-1.5 sm:w-2 bg-muted"
+              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-primary/60" : "w-1.5 sm:w-2 bg-muted"
             )}
           />
         ))}
