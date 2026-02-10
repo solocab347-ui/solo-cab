@@ -154,16 +154,16 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId, onSkip }: OnboardingN
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", duration: 0.8 }}
-            className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
+            className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
           >
-            <Package className="w-10 h-10 text-white" />
+            <Package className="w-10 h-10 text-primary-foreground" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="text-xl font-bold text-green-500">Commande confirmée ! 🎉</h3>
+            <h3 className="text-xl font-bold text-primary">Commande confirmée ! 🎉</h3>
             <p className="text-muted-foreground text-sm mt-2">
               Votre <strong>{plate?.name}</strong> sera livrée sous 5-7 jours ouvrés.
             </p>
@@ -206,7 +206,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId, onSkip }: OnboardingN
             <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-8 bg-gradient-to-br ${plate.color} rounded flex items-center justify-center`}>
-                  <plate.icon className="w-5 h-5 text-white" />
+                  <plate.icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{plate.name}</p>

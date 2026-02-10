@@ -562,9 +562,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center mb-2 sm:mb-3"
               >
-                <TrendingUp className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <TrendingUp className="w-5 h-5 sm:w-7 sm:h-7 text-foreground" />
               </motion.div>
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ta situation aujourd'hui
@@ -671,9 +671,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton objectif de revenus
@@ -741,9 +741,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-2"
+                className="w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-accent flex items-center justify-center mb-2"
               >
-                <Users className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <Users className="w-5 h-5 sm:w-7 sm:h-7 text-accent-foreground" />
               </motion.div>
               <h2 className="text-base sm:text-xl font-bold text-foreground mb-0.5">
                 Objectif nouveaux clients / mois
@@ -900,9 +900,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Calendar className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <Calendar className="w-5 h-5 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton planning de travail
@@ -1029,9 +1029,9 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-2 sm:mb-3"
+                className="w-11 h-11 sm:w-14 sm:h-14 mx-auto rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center mb-2 sm:mb-3"
               >
-                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <Target className="w-5 h-5 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
               <h2 className="text-lg sm:text-xl font-bold text-foreground mb-0.5 sm:mb-1">
                 Ton plan progressif
@@ -1056,7 +1056,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     animate={{ width: `${targetPlatformPercentage}%` }}
                     transition={{ delay: 0.2, duration: 0.5 }}
                   >
-                    <span className="text-[9px] sm:text-[10px] text-white font-medium">{weeklyPlatformTarget}€</span>
+                    <span className="text-[9px] sm:text-[10px] text-destructive-foreground font-medium">{weeklyPlatformTarget}€</span>
                   </motion.div>
                   <motion.div 
                     className="bg-primary flex items-center justify-center"
@@ -1064,7 +1064,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
                     animate={{ width: `${targetPrivatePercentage}%` }}
                     transition={{ delay: 0.4, duration: 0.5 }}
                   >
-                    <span className="text-[9px] sm:text-[10px] text-white font-medium">{weeklyPrivateTarget}€</span>
+                    <span className="text-[9px] sm:text-[10px] text-primary-foreground font-medium">{weeklyPrivateTarget}€</span>
                   </motion.div>
                 </div>
                 
@@ -1163,7 +1163,7 @@ export function OnboardingGoalsStep({ driverId, onComplete }: OnboardingGoalsSte
             key={i}
             className={cn(
               "h-1.5 sm:h-2 rounded-full transition-all duration-300",
-              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-emerald-500" : "w-1.5 sm:w-2 bg-muted"
+              i === currentStep ? "w-6 sm:w-8 bg-primary" : i < currentStep ? "w-1.5 sm:w-2 bg-primary/60" : "w-1.5 sm:w-2 bg-muted"
             )}
           />
         ))}
