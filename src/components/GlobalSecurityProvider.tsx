@@ -20,10 +20,10 @@ const requestCounter = {
 };
 
 // Protection contre les requêtes excessives
-const globalRateLimiter = () => {
+const globalRateLimiter = (url?: string) => {
   const now = Date.now();
   const windowDuration = 60000; // 1 minute
-  const maxRequests = 100; // Max 100 requêtes par minute
+  const maxRequests = 500; // Max 500 requêtes par minute (was 100 - too low for SPA)
 
   if (now - requestCounter.windowStart > windowDuration) {
     requestCounter.count = 0;
@@ -32,6 +32,11 @@ const globalRateLimiter = () => {
   }
 
   requestCounter.count++;
+
+  // Never block Supabase auth or essential API requests
+  if (url && (url.includes('/auth/') || url.includes('supabase'))) {
+    return false;
+  }
 
   if (requestCounter.count > maxRequests && !requestCounter.blocked) {
     requestCounter.blocked = true;
@@ -54,8 +59,11 @@ const installFetchInterceptor = () => {
   const originalFetch = window.fetch;
 
   window.fetch = async (...args) => {
-    // Vérifier le rate limit
-    if (globalRateLimiter()) {
+    // Extract URL for whitelisting
+    const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : '';
+
+    // Vérifier le rate limit (auth requests are never blocked)
+    if (globalRateLimiter(url)) {
       console.warn('[Security] Requête bloquée - rate limit atteint');
       throw new Error('Rate limit exceeded. Please wait before making more requests.');
     }
