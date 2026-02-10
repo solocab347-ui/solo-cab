@@ -26,7 +26,7 @@ export const NfcHeroSection = () => {
           Livraison gratuite en 5-7 jours
         </Badge>
         
-        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-white">
+        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-foreground">
           Plaques <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">NFC</span> professionnelles
         </h1>
         <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -50,7 +50,7 @@ export const NfcHeroSection = () => {
               />
             </div>
             
-            <h3 className="text-lg font-bold text-white mb-1">Plastique noir</h3>
+            <h3 className="text-lg font-bold text-foreground mb-1">Plastique noir</h3>
             <p className="text-xs text-muted-foreground mb-3">Format carte • Ultra résistant</p>
             
             <div className="flex items-center justify-between mb-4">
@@ -72,8 +72,8 @@ export const NfcHeroSection = () => {
           </Card>
 
           {/* Standard Plate */}
-          <Card className="p-5 bg-gradient-to-br from-amber-900/20 to-amber-800/10 border-green-500/30 relative overflow-hidden group hover:border-green-500/60 transition-all">
-            <Badge className="absolute top-3 right-3 bg-green-500 text-white text-xs">
+          <Card className="p-5 bg-gradient-to-br from-amber-900/20 to-amber-800/10 border-success/30 relative overflow-hidden group hover:border-success/60 transition-all">
+            <Badge className="absolute top-3 right-3 bg-success text-success-foreground text-xs">
               <TreeDeciduous className="w-3 h-3 mr-1" />
               Éco
             </Badge>
@@ -86,21 +86,21 @@ export const NfcHeroSection = () => {
               />
             </div>
             
-            <h3 className="text-lg font-bold text-white mb-1">Bois naturel</h3>
+            <h3 className="text-lg font-bold text-foreground mb-1">Bois naturel</h3>
             <p className="text-xs text-muted-foreground mb-3">Format ovale • Écologique</p>
             
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-xl font-bold text-green-500">14,99€</p>
+                <p className="text-xl font-bold text-success">14,99€</p>
                 <p className="text-xs text-primary">11,99€ avec abo</p>
               </div>
-              <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
+              <Badge variant="outline" className="border-success/50 text-success text-xs">
                 -20%
               </Badge>
             </div>
 
             <Link to="/plaque-nfc">
-              <Button variant="outline" className="w-full border-green-500/50 text-white hover:bg-green-500/10" size="sm">
+              <Button variant="outline" className="w-full border-success/50 text-foreground hover:bg-success/10" size="sm">
                 Commander
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -111,15 +111,15 @@ export const NfcHeroSection = () => {
         {/* Key Features */}
         <div className="flex flex-wrap justify-center gap-4 mb-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="w-4 h-4 text-success" />
             Compatible tous smartphones
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="w-4 h-4 text-success" />
             QR code + NFC
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="w-4 h-4 text-success" />
             Scan instantané
           </div>
         </div>
@@ -136,7 +136,7 @@ export const NfcHeroSection = () => {
 
       {/* How it Works - Simplified */}
       <div className="mb-10 max-w-4xl mx-auto">
-        <h3 className="text-lg font-semibold text-white mb-6">Comment ça marche ?</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-6">Comment ça marche ?</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4 bg-card/50 border-border/50">
             <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold mb-2 mx-auto text-sm">1</div>
@@ -147,7 +147,7 @@ export const NfcHeroSection = () => {
             <p className="text-sm text-muted-foreground">Réception en 5-7j</p>
           </Card>
           <Card className="p-4 bg-card/50 border-border/50">
-            <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center font-bold mb-2 mx-auto text-sm">3</div>
+            <div className="w-8 h-8 rounded-full bg-success/20 text-success flex items-center justify-center font-bold mb-2 mx-auto text-sm">3</div>
             <p className="text-sm text-muted-foreground">Placez dans véhicule</p>
           </Card>
           <Card className="p-4 bg-card/50 border-border/50">

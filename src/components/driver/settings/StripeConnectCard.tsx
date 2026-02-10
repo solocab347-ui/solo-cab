@@ -79,16 +79,16 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
   // État: Compte actif et prêt
   if (isReady) {
     return (
-      <Card className="border-2 border-green-500/30 bg-gradient-to-br from-green-500/10 to-green-500/5 overflow-hidden">
+      <Card className="border-2 border-success/30 bg-gradient-to-br from-success/10 to-success/5 overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-green-500/20 p-3 rounded-xl">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <div className="bg-success/20 p-3 rounded-xl">
+                <CheckCircle2 className="h-6 w-6 text-success" />
               </div>
               <div>
-                <h3 className="font-semibold text-green-700">Compte Stripe connecté</h3>
-                <p className="text-sm text-green-600">
+                <h3 className="font-semibold text-success">Compte Stripe connecté</h3>
+                <p className="text-sm text-success/80">
                   Vos clients peuvent payer par carte bancaire
                 </p>
               </div>
@@ -98,16 +98,16 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             </Button>
           </div>
 
-          <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
-            <p className="text-sm text-green-700">
+          <div className="bg-success/10 rounded-lg p-3 border border-success/20">
+            <p className="text-sm text-success">
               <strong>Les fonds sont versés directement sur votre compte.</strong>
               <br />
-              <span className="text-green-600 text-xs">Virements automatiques sous 2 jours ouvrés</span>
+              <span className="text-success/80 text-xs">Virements automatiques sous 2 jours ouvrés</span>
             </p>
           </div>
 
           {/* Transparence */}
-          <div className="mt-4 pt-4 border-t border-green-500/20">
+          <div className="mt-4 pt-4 border-t border-success/20">
             <p className="text-xs text-muted-foreground text-center">
               <strong>Frais par transaction :</strong> 0,50€ SoloCab + ~1,5% + 0,25€ Stripe
             </p>
@@ -120,16 +120,16 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
   // État: Vérification en cours
   if (isPending) {
     return (
-      <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 overflow-hidden">
+      <Card className="border-2 border-warning/30 bg-gradient-to-br from-warning/10 to-warning/5 overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-amber-500/20 p-3 rounded-xl">
-                <Clock className="h-6 w-6 text-amber-600 animate-pulse" />
+              <div className="bg-warning/20 p-3 rounded-xl">
+                <Clock className="h-6 w-6 text-warning animate-pulse" />
               </div>
               <div>
-                <h3 className="font-semibold text-amber-700">Vérification en cours</h3>
-                <p className="text-sm text-amber-600">
+                <h3 className="font-semibold text-warning">Vérification en cours</h3>
+                <p className="text-sm text-warning/80">
                   Stripe vérifie vos informations
                 </p>
               </div>
@@ -139,9 +139,9 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             </Button>
           </div>
 
-          <Alert className="border-amber-500/30 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-700 text-sm">
+          <Alert className="border-warning/30 bg-warning/10">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-warning text-sm">
               La validation peut prendre jusqu'à 24h. Vous recevrez une notification dès que votre compte sera actif.
             </AlertDescription>
           </Alert>
@@ -150,7 +150,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             <Button 
               onClick={handleConnectStripe}
               disabled={connecting}
-              className="w-full mt-4 bg-amber-600 hover:bg-amber-700"
+              className="w-full mt-4 bg-warning hover:bg-warning/90 text-warning-foreground"
             >
               {connecting ? (
                 <>
@@ -175,7 +175,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
     <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden shadow-lg">
       <CardContent className="p-0">
         {/* Header avec gradient - Responsive */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
+        <div className="bg-gradient-premium p-4 text-white">
           <div className="flex items-start gap-3">
             <div className="bg-white/20 p-2 rounded-lg backdrop-blur shrink-0">
               <Zap className="h-6 w-6" />
@@ -200,8 +200,8 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
                   key={idx}
                   className="flex items-center gap-2 text-sm"
                 >
-                  <div className="bg-green-500/10 p-1.5 rounded-full shrink-0">
-                    <Icon className="h-3.5 w-3.5 text-green-600" />
+                  <div className="bg-success/10 p-1.5 rounded-full shrink-0">
+                    <Icon className="h-3.5 w-3.5 text-success" />
                   </div>
                   <span className="text-muted-foreground text-xs">{benefit.label}</span>
                 </div>
@@ -210,14 +210,14 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
           </div>
 
           {/* Frais - Compact */}
-          <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+          <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/20 rounded-lg p-3">
             <div className="flex items-center gap-2">
-              <div className="bg-emerald-500/20 p-1.5 rounded-lg shrink-0">
-                <Receipt className="h-4 w-4 text-emerald-600" />
+              <div className="bg-success/20 p-1.5 rounded-lg shrink-0">
+                <Receipt className="h-4 w-4 text-success" />
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-emerald-700 text-sm">0,50 € / transaction</p>
-                <p className="text-[10px] text-emerald-600">+ frais Stripe (~1,5% + 0,25€)</p>
+                <p className="font-semibold text-success text-sm">0,50 € / transaction</p>
+                <p className="text-[10px] text-success/80">+ frais Stripe (~1,5% + 0,25€)</p>
               </div>
             </div>
           </div>
@@ -243,7 +243,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             <Button 
               onClick={() => setShowGuide(true)}
               disabled={connecting || loading}
-              className="w-full h-12 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+              className="w-full h-12 text-sm bg-gradient-premium text-white shadow-lg hover:opacity-90"
             >
               {connecting ? (
                 <>
@@ -309,19 +309,19 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
                   <div key={i} className="flex items-center gap-2">
                     <div className={cn(
                       "text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0",
-                      step.green ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"
+                      step.green ? "bg-success/10 text-success" : "bg-primary/10 text-primary"
                     )}>
                       {step.num}
                     </div>
-                    <p className={cn("text-xs", step.green && "text-green-700 font-medium")}>{step.text}</p>
+                    <p className={cn("text-xs", step.green && "text-success font-medium")}>{step.text}</p>
                   </div>
                 ))}
               </div>
 
               {/* Documents requis */}
-              <Alert className="border-blue-500/30 bg-blue-500/10 py-2">
-                <Info className="h-3 w-3 text-blue-600" />
-                <AlertDescription className="text-blue-700 text-[10px]">
+              <Alert className="border-info/30 bg-info/10 py-2">
+                <Info className="h-3 w-3 text-info" />
+                <AlertDescription className="text-info text-[10px]">
                   Préparez : pièce d'identité, RIB et SIRET
                 </AlertDescription>
               </Alert>
