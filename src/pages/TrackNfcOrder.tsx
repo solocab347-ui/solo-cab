@@ -106,9 +106,9 @@ const TrackNfcOrder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
+    <div className="min-h-screen bg-gradient-to-b from-storefront-dark via-storefront to-storefront-light">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-border bg-storefront-dark backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img src={logo} alt="SoloCab" className="w-10 h-10 object-contain" />

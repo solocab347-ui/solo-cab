@@ -73,6 +73,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        storefront: {
+          DEFAULT: "hsl(var(--storefront))",
+          dark: "hsl(var(--storefront-dark))",
+          light: "hsl(var(--storefront-light))",
+        },
       },
       backgroundImage: {
         "gradient-blue-purple": "var(--gradient-blue-purple)",

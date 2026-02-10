@@ -90,6 +90,11 @@ All colors MUST be HSL.
     --background: 217 33% 12%;
     --foreground: 210 20% 98%;
 
+    /* Storefront - Public pages navy palette */
+    --storefront-dark: 217 42% 7%;
+    --storefront: 217 33% 12%;
+    --storefront-light: 217 29% 18%;
+
     --card: 217 33% 15%;
     --card-foreground: 210 20% 98%;
 
@@ -179,6 +184,11 @@ All colors MUST be HSL.
     /* Mode sombre déjà par défaut - même design */
     --background: 217 33% 12%;
     --foreground: 210 20% 98%;
+
+    /* Storefront - Public pages navy palette */
+    --storefront-dark: 217 42% 7%;
+    --storefront: 217 33% 12%;
+    --storefront-light: 217 29% 18%;
 
     --card: 217 33% 15%;
     --card-foreground: 210 20% 98%;

@@ -51,16 +51,16 @@ const Index = () => {
   // Show minimal loading state during auth check to prevent flash
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-storefront-dark via-storefront to-storefront-light flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
+    <div className="min-h-screen bg-gradient-to-b from-storefront-dark via-storefront to-storefront-light">
       {/* Navigation with black background - iOS safe area support */}
-      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
+      <header className="border-b border-border bg-storefront-dark backdrop-blur-lg sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/">
@@ -68,16 +68,16 @@ const Index = () => {
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/chauffeurs" className="text-muted-foreground hover:text-foreground transition-colors">
               {t('landing.findDriver')}
             </Link>
-            <Link to="/devenir-chauffeur" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/devenir-chauffeur" className="text-muted-foreground hover:text-foreground transition-colors">
               {t('landing.becomeDriver')}
             </Link>
-            <Link to="/plaque-nfc" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/plaque-nfc" className="text-muted-foreground hover:text-foreground transition-colors">
               Plaque NFC
             </Link>
-            <Link to="/tarifs" className="text-gray-400 hover:text-white transition-colors font-medium">
+            <Link to="/tarifs" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
               Tarifs
             </Link>
           </nav>
