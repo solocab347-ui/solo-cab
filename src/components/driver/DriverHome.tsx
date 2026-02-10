@@ -145,7 +145,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
             <p className="text-muted-foreground text-lg">Tableau de bord professionnel</p>
           </div>
           {driverProfile?.driver?.rating && driverProfile.driver.rating > 0 && (
-            <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-premium mt-2">
+            <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-border shadow-premium mt-2">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 fill-warning text-warning" />
                 <span className="text-2xl font-bold text-foreground">
@@ -168,7 +168,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-success group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border shadow-success group"
             onClick={() => navigate("/driver/create-course")}
           >
             <div className="absolute inset-0 bg-gradient-success opacity-10 group-hover:opacity-20 transition-opacity"></div>
@@ -185,7 +185,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
           {/* Course client non inscrit */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-[0_8px_30px_rgb(249,115,22,0.2)] group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border shadow-[0_8px_30px_rgb(249,115,22,0.2)] group"
             onClick={() => navigate("/driver/create-direct-course")}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-orange-600/5 group-hover:from-orange-500/20 group-hover:to-orange-600/10 transition-opacity"></div>
@@ -202,7 +202,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
           {/* Mon QR Code */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border shadow-premium group"
             onClick={() => onTabChange("qrcode")}
           >
             <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity"></div>
@@ -220,7 +220,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
           {/* Calculatrice */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-trust group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border shadow-trust group"
             onClick={() => onTabChange("calculator")}
           >
             <div className="absolute inset-0 bg-gradient-trust opacity-10 group-hover:opacity-20 transition-opacity"></div>
@@ -245,7 +245,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Courses */}
-          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-trust transition-all hover:shadow-trust/80">
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-trust transition-all hover:shadow-trust/80">
             <div className="absolute inset-0 bg-gradient-trust opacity-10"></div>
             <div className="relative z-10 flex items-start gap-6">
               <div className="w-16 h-16 bg-gradient-trust rounded-2xl flex items-center justify-center flex-shrink-0 shadow-trust">
@@ -265,7 +265,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* Revenue */}
-          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-premium transition-all hover:shadow-premium/80">
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-premium transition-all hover:shadow-premium/80">
             <div className="absolute inset-0 bg-gradient-premium opacity-10"></div>
             <div className="relative z-10 flex items-start gap-6">
               <div className="w-16 h-16 bg-gradient-premium rounded-2xl flex items-center justify-center flex-shrink-0 shadow-premium">
@@ -294,7 +294,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Clients */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-success hover:scale-[1.02] transition-all">
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-success hover:scale-[1.02] transition-all">
             <div className="absolute inset-0 bg-gradient-success opacity-5"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-3">
               <div className="w-14 h-14 bg-gradient-success rounded-xl flex items-center justify-center shadow-success">
@@ -310,7 +310,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* Courses */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-trust hover:scale-[1.02] transition-all">
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-trust hover:scale-[1.02] transition-all">
             <div className="absolute inset-0 bg-gradient-trust opacity-5"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-3">
               <div className="w-14 h-14 bg-gradient-trust rounded-xl flex items-center justify-center shadow-trust">
@@ -326,7 +326,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* Terminées */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-premium hover:scale-[1.02] transition-all">
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-premium hover:scale-[1.02] transition-all">
             <div className="absolute inset-0 bg-gradient-premium opacity-5"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-3">
               <div className="w-14 h-14 bg-gradient-premium rounded-xl flex items-center justify-center shadow-premium">
@@ -342,7 +342,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* CA Total */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-warning hover:scale-[1.02] transition-all">
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-warning hover:scale-[1.02] transition-all">
             <div className="absolute inset-0 bg-gradient-warning opacity-5"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-3">
               <div className="w-14 h-14 bg-gradient-warning rounded-xl flex items-center justify-center shadow-warning">

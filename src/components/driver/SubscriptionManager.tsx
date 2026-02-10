@@ -556,13 +556,13 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {/* Subscription Info */}
-      <Card className={`p-4 sm:p-6 bg-card/80 border-white/10 ${isPioneer ? 'ring-2 ring-amber-500/50' : ''}`}>
+      <Card className={`p-4 sm:p-6 bg-card/80 border-border ${isPioneer ? 'ring-2 ring-amber-500/50' : ''}`}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
-            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-white">
+            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-foreground">
               {isPioneer ? 'Abonnement Pionnier SoloCab' : 'Abonnement SoloCab'}
             </h3>
-            <p className="text-xs sm:text-sm text-gray-300">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {isPioneer ? 'Tarif exclusif à vie pour les pionniers' : 'Accès complet à la plateforme professionnelle'}
             </p>
           </div>

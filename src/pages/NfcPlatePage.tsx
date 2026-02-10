@@ -166,10 +166,10 @@ const NfcPlatePage = () => {
             <Truck className="w-3 h-3 mr-1" />
             Livraison gratuite en 5-7 jours
           </Badge>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
             Choisissez votre <span className="text-primary">Plaque NFC</span>
           </h1>
-          <p className="text-gray-400 max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Un simple scan et vos clients accèdent à votre profil. Compatible tous smartphones.
           </p>
         </div>
@@ -182,7 +182,7 @@ const NfcPlatePage = () => {
             className={`relative text-left p-0 rounded-2xl border-2 transition-all overflow-hidden ${
               selectedPlate === "premium"
                 ? "border-orange-500 ring-2 ring-orange-500/30"
-                : "border-white/20 hover:border-orange-500/50"
+                : "border-border hover:border-orange-500/50"
             }`}
           >
             <div className="absolute top-3 left-3 z-10">
@@ -193,8 +193,8 @@ const NfcPlatePage = () => {
             </div>
             {selectedPlate === "premium" && (
               <div className="absolute top-3 right-3 z-10">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-white" />
+                <div className="w-6 h-6 bg-success rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-success-foreground" />
                 </div>
               </div>
             )}
@@ -207,9 +207,9 @@ const NfcPlatePage = () => {
               />
             </div>
             
-            <div className="p-5 bg-white/5">
-              <h3 className="text-lg font-bold text-white mb-1">Plastique noir</h3>
-              <p className="text-sm text-gray-400 mb-3">Format carte de visite • Ultra résistant</p>
+            <div className="p-5 bg-muted/30">
+              <h3 className="text-lg font-bold text-foreground mb-1">Plastique noir</h3>
+              <p className="text-sm text-muted-foreground mb-3">Format carte de visite • Ultra résistant</p>
               
               <div className="space-y-1">
                 <p className="text-2xl font-bold text-orange-500">
@@ -228,7 +228,7 @@ const NfcPlatePage = () => {
             className={`relative text-left p-0 rounded-2xl border-2 transition-all overflow-hidden ${
               selectedPlate === "standard"
                 ? "border-green-500 ring-2 ring-green-500/30"
-                : "border-white/20 hover:border-green-500/50"
+                : "border-border hover:border-success/50"
             }`}
           >
             <div className="absolute top-3 left-3 z-10">
@@ -239,8 +239,8 @@ const NfcPlatePage = () => {
             </div>
             {selectedPlate === "standard" && (
               <div className="absolute top-3 right-3 z-10">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-white" />
+                <div className="w-6 h-6 bg-success rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-success-foreground" />
                 </div>
               </div>
             )}
@@ -253,9 +253,9 @@ const NfcPlatePage = () => {
               />
             </div>
             
-            <div className="p-5 bg-white/5">
-              <h3 className="text-lg font-bold text-white mb-1">Bois naturel</h3>
-              <p className="text-sm text-gray-400 mb-3">Format ovale • Écologique & élégant</p>
+            <div className="p-5 bg-muted/30">
+              <h3 className="text-lg font-bold text-foreground mb-1">Bois naturel</h3>
+              <p className="text-sm text-muted-foreground mb-3">Format ovale • Écologique & élégant</p>
               
               <div className="space-y-1">
                 <p className="text-2xl font-bold text-green-500">
@@ -271,7 +271,7 @@ const NfcPlatePage = () => {
 
         {/* Purchase Mode Selection */}
         <div className="max-w-4xl mx-auto mb-10">
-          <h2 className="text-xl font-bold text-white mb-4 text-center">
+          <h2 className="text-xl font-bold text-foreground mb-4 text-center">
             Comment souhaitez-vous utiliser votre plaque ?
           </h2>
           
@@ -282,7 +282,7 @@ const NfcPlatePage = () => {
               className={`relative text-left p-5 rounded-xl border-2 transition-all ${
                 purchaseMode === "with_subscription"
                   ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                  : "border-white/20 bg-white/5 hover:border-primary/50"
+                  : "border-border bg-muted/30 hover:border-primary/50"
               }`}
             >
               <Badge className="absolute -top-2.5 left-4 bg-primary text-white text-xs">
@@ -294,35 +294,35 @@ const NfcPlatePage = () => {
                   <Star className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-white mb-1">Plaque + SoloCab</h3>
+                  <h3 className="font-bold text-foreground mb-1">Plaque + SoloCab</h3>
                   <p className="text-sm text-primary mb-3">Abonnement inclus</p>
                   
                   <ul className="space-y-2 mb-4">
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span>Profil professionnel complet</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span>Réservations en ligne</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span>Avis clients & CRM</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span><strong className="text-primary">-20%</strong> sur la plaque</span>
                     </li>
                   </ul>
                   
-                  <div className="pt-3 border-t border-white/10">
-                    <p className="text-2xl font-bold text-white">
+                   <div className="pt-3 border-t border-border">
+                    <p className="text-2xl font-bold text-foreground">
                       {PLATES[selectedPlate].promoPrice.toFixed(2)}€
-                      <span className="text-sm font-normal text-gray-400 ml-2">+ 9,99€/mois</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-2">+ 9,99€/mois</span>
                     </p>
-                    <p className="text-xs text-gray-500">14 jours d'essai gratuit</p>
-                  </div>
+                    <p className="text-xs text-muted-foreground">14 jours d'essai gratuit</p>
+                   </div>
                 </div>
               </div>
             </button>
@@ -332,43 +332,43 @@ const NfcPlatePage = () => {
               onClick={() => setPurchaseMode("plate_only")}
               className={`relative text-left p-5 rounded-xl border-2 transition-all ${
                 purchaseMode === "plate_only"
-                  ? "border-gray-400 bg-gray-500/10 ring-2 ring-gray-500/30"
-                  : "border-white/20 bg-white/5 hover:border-gray-400/50"
+                  ? "border-muted-foreground bg-muted/20 ring-2 ring-muted-foreground/30"
+                  : "border-border bg-muted/30 hover:border-muted-foreground/50"
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-500/20 flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-5 h-5 text-gray-400" />
+                <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-white mb-1">Plaque seule</h3>
-                  <p className="text-sm text-gray-400 mb-3">Sans abonnement</p>
+                  <h3 className="font-bold text-foreground mb-1">Plaque seule</h3>
+                  <p className="text-sm text-muted-foreground mb-3">Sans abonnement</p>
                   
                   <ul className="space-y-2 mb-4">
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span>Lien vers votre téléphone</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                       <span>QR code + NFC inclus</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-500">
-                      <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                      <X className="w-4 h-4 text-destructive flex-shrink-0" />
                       <span>Pas de profil public</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-500">
-                      <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                      <X className="w-4 h-4 text-destructive flex-shrink-0" />
                       <span>Pas de réservation</span>
                     </li>
                   </ul>
                   
-                  <div className="pt-3 border-t border-white/10">
-                    <p className="text-2xl font-bold text-white">
+                   <div className="pt-3 border-t border-border">
+                    <p className="text-2xl font-bold text-foreground">
                       {PLATES[selectedPlate].price.toFixed(2)}€
                     </p>
-                    <p className="text-xs text-gray-500">Paiement unique</p>
-                  </div>
+                    <p className="text-xs text-muted-foreground">Paiement unique</p>
+                   </div>
                 </div>
               </div>
             </button>
@@ -392,8 +392,8 @@ const NfcPlatePage = () => {
               </Button>
             </Link>
           ) : (
-            <Card className="p-6 bg-white/5 border-white/20">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Card className="p-6 bg-muted/30 border-border">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 <Package className="w-5 h-5 text-primary" />
                 Commander ma plaque - {PLATES[selectedPlate].price.toFixed(2)}€
               </h3>
@@ -401,80 +401,80 @@ const NfcPlatePage = () => {
               <form onSubmit={handleOrder} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">Email *</Label>
+                    <Label className="text-muted-foreground">Email *</Label>
                     <Input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="votre@email.com"
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-muted/50 border-border"
                       required
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-300">Téléphone</Label>
+                    <Label className="text-muted-foreground">Téléphone</Label>
                     <Input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="06 00 00 00 00"
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-muted/50 border-border"
                     />
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">Prénom *</Label>
+                    <Label className="text-muted-foreground">Prénom *</Label>
                     <Input
                       type="text"
                       name="first_name"
                       value={formData.first_name}
                       onChange={handleChange}
                       placeholder="Jean"
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-muted/50 border-border"
                       required
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-300">Nom *</Label>
+                    <Label className="text-muted-foreground">Nom *</Label>
                     <Input
                       type="text"
                       name="last_name"
                       value={formData.last_name}
                       onChange={handleChange}
                       placeholder="Dupont"
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-muted/50 border-border"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
-                  <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                <div className="pt-4 border-t border-border">
+                  <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" />
                     Adresse de livraison
                   </h4>
                   
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-gray-300">Adresse *</Label>
+                      <Label className="text-muted-foreground">Adresse *</Label>
                       <Input
                         type="text"
                         name="shipping_address"
                         value={formData.shipping_address}
                         onChange={handleChange}
                         placeholder="123 rue de la République"
-                        className="bg-white/10 border-white/20 text-white"
+                        className="bg-muted/50 border-border"
                         required
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-gray-300">Code postal *</Label>
+                        <Label className="text-muted-foreground">Code postal *</Label>
                         <Input
                           type="text"
                           name="shipping_postal_code"
@@ -485,19 +485,19 @@ const NfcPlatePage = () => {
                           }}
                           placeholder="75001"
                           maxLength={5}
-                          className="bg-white/10 border-white/20 text-white"
+                          className="bg-muted/50 border-border"
                           required
                         />
                       </div>
                       <div>
-                        <Label className="text-gray-300">Ville *</Label>
+                        <Label className="text-muted-foreground">Ville *</Label>
                         <Input
                           type="text"
                           name="shipping_city"
                           value={formData.shipping_city}
                           onChange={handleChange}
                           placeholder="Paris"
-                          className="bg-white/10 border-white/20 text-white"
+                          className="bg-muted/50 border-border"
                           required
                         />
                       </div>
@@ -523,7 +523,7 @@ const NfcPlatePage = () => {
                   )}
                 </Button>
 
-                <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-2">
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-2">
                   <Shield className="w-3 h-3" />
                   Paiement sécurisé par Stripe
                 </p>
@@ -534,34 +534,34 @@ const NfcPlatePage = () => {
 
         {/* Features */}
         <div className="max-w-4xl mx-auto mb-10">
-          <h3 className="text-lg font-bold text-white text-center mb-6">
+          <h3 className="text-lg font-bold text-foreground text-center mb-6">
             Inclus avec chaque plaque
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-4 bg-white/5 border-white/10 text-center">
-              <Smartphone className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-sm text-gray-300">Compatible tous smartphones</p>
+            <Card className="p-4 bg-muted/30 border-border text-center">
+              <Smartphone className="w-8 h-8 mx-auto mb-2 text-info" />
+              <p className="text-sm text-muted-foreground">Compatible tous smartphones</p>
             </Card>
-            <Card className="p-4 bg-white/5 border-white/10 text-center">
-              <QrCode className="w-8 h-8 mx-auto mb-2 text-green-500" />
-              <p className="text-sm text-gray-300">QR code + NFC</p>
+            <Card className="p-4 bg-muted/30 border-border text-center">
+              <QrCode className="w-8 h-8 mx-auto mb-2 text-success" />
+              <p className="text-sm text-muted-foreground">QR code + NFC</p>
             </Card>
-            <Card className="p-4 bg-white/5 border-white/10 text-center">
-              <Zap className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-              <p className="text-sm text-gray-300">Scan instantané</p>
+            <Card className="p-4 bg-muted/30 border-border text-center">
+              <Zap className="w-8 h-8 mx-auto mb-2 text-warning" />
+              <p className="text-sm text-muted-foreground">Scan instantané</p>
             </Card>
-            <Card className="p-4 bg-white/5 border-white/10 text-center">
-              <Truck className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-              <p className="text-sm text-gray-300">Livraison 5-7 jours</p>
+            <Card className="p-4 bg-muted/30 border-border text-center">
+              <Truck className="w-8 h-8 mx-auto mb-2 text-premium" />
+              <p className="text-sm text-muted-foreground">Livraison 5-7 jours</p>
             </Card>
           </div>
         </div>
 
         {/* Track Order Link */}
         <div className="max-w-4xl mx-auto text-center">
-          <Card className="p-4 bg-white/5 border-white/10 inline-flex items-center gap-3">
-            <Package className="w-5 h-5 text-blue-500" />
-            <span className="text-gray-300">Vous avez déjà commandé ?</span>
+          <Card className="p-4 bg-muted/30 border-border inline-flex items-center gap-3">
+            <Package className="w-5 h-5 text-info" />
+            <span className="text-muted-foreground">Vous avez déjà commandé ?</span>
             <Link to="/suivi-plaque-nfc">
               <Button variant="link" className="text-primary p-0 h-auto">
                 Suivre ma commande →

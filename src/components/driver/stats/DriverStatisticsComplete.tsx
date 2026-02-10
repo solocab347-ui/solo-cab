@@ -554,7 +554,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   return (
     <div className="space-y-6 p-4">
       {/* Header with filters */}
-      <Card className="bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
+      <Card className="bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
