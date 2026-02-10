@@ -600,7 +600,7 @@ const DriverDashboard = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Desktop TabsList - hidden on mobile, using MobileDriverNav instead */}
-          <TabsList className="hidden md:flex w-full bg-white/5 backdrop-blur-sm flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
+          <TabsList className="hidden md:flex w-full bg-muted/30 backdrop-blur-sm flex-col gap-2 h-auto p-2 shadow-lg border border-border">
             {/* Première ligne */}
             <div className="grid grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-success/80 data-[state=active]:text-white">
@@ -759,14 +759,14 @@ const DriverDashboard = () => {
 
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
-            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
+            <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <QrCode className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Mon QR Code Personnel</h2>
-                  <p className="text-sm text-white/80">Recrutez vos clients exclusifs en 30 secondes</p>
+                  <h2 className="text-xl font-bold text-foreground">Mon QR Code Personnel</h2>
+                  <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
                 </div>
               </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
@@ -852,14 +852,14 @@ const DriverDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
-            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
+            <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Demandes de Réservation</h2>
-                  <p className="text-sm text-white/80">Gérez vos courses et créez des devis</p>
+                  <h2 className="text-xl font-bold text-foreground">Demandes de Réservation</h2>
+                  <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
                 </div>
               </div>
 

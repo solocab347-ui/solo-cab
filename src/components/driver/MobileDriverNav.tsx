@@ -135,8 +135,8 @@ export const MobileDriverNav = ({
             ? "opacity-50 cursor-not-allowed bg-muted/20"
             : "active:scale-[0.98]",
           !isDisabled && isActive
-            ? `bg-gradient-to-r ${item.gradient || "from-primary to-accent"} text-white shadow-lg`
-            : !isDisabled && "bg-white/5 text-gray-300 hover:bg-white/10"
+            ? `bg-gradient-to-r ${item.gradient || "from-primary to-accent"} text-primary-foreground shadow-lg`
+            : !isDisabled && "bg-muted/30 text-muted-foreground hover:bg-muted/50"
         )}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
@@ -167,7 +167,7 @@ export const MobileDriverNav = ({
         <Button 
           variant="outline" 
           size="sm"
-          className="md:hidden flex items-center gap-2 bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 touch-manipulation h-10 px-3"
+          className="md:hidden flex items-center gap-2 bg-muted/30 border-border text-muted-foreground hover:bg-muted/50 touch-manipulation h-10 px-3"
         >
           <Menu className="w-5 h-5" />
           <ActiveIcon className="w-4 h-4" />
@@ -178,10 +178,10 @@ export const MobileDriverNav = ({
       </SheetTrigger>
       <SheetContent 
         side="left" 
-        className="w-[85vw] max-w-sm bg-[#0f1e35] border-white/10 p-0 overflow-hidden"
+        className="w-[85vw] max-w-sm bg-card border-border p-0 overflow-hidden"
       >
-        <SheetHeader className="p-4 pb-2 border-b border-white/10">
-          <SheetTitle className="text-white text-left">Navigation</SheetTitle>
+        <SheetHeader className="p-4 pb-2 border-b border-border">
+          <SheetTitle className="text-foreground text-left">Navigation</SheetTitle>
         </SheetHeader>
         
         <div 
@@ -194,7 +194,7 @@ export const MobileDriverNav = ({
           <div className="p-3 space-y-4">
             {/* Items principaux */}
             <div className="space-y-1.5">
-              <p className="text-xs uppercase tracking-wider text-gray-500 px-2 mb-2">Principal</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 mb-2">Principal</p>
               {mainItems.map(item => (
                 <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value)} />
               ))}
@@ -207,15 +207,15 @@ export const MobileDriverNav = ({
                 open={openGroups.includes(group.title)}
                 onOpenChange={() => toggleGroup(group.title)}
               >
-                <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all touch-manipulation">
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all touch-manipulation">
                   <div className="flex items-center gap-3">
                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-r", group.gradient)}>
-                      <group.icon className="w-4 h-4 text-white" />
+                      <group.icon className="w-4 h-4 text-primary-foreground" />
                     </div>
-                    <span className="font-medium text-gray-200">{group.title}</span>
+                    <span className="font-medium text-foreground">{group.title}</span>
                   </div>
                   <ChevronDown className={cn(
-                    "w-5 h-5 text-gray-400 transition-transform",
+                    "w-5 h-5 text-muted-foreground transition-transform",
                     openGroups.includes(group.title) && "rotate-180"
                   )} />
                 </CollapsibleTrigger>
@@ -228,8 +228,8 @@ export const MobileDriverNav = ({
             ))}
 
             {/* Items secondaires */}
-            <div className="space-y-1.5 pt-2 border-t border-white/10">
-              <p className="text-xs uppercase tracking-wider text-gray-500 px-2 mb-2">Autre</p>
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 mb-2">Autre</p>
               {secondaryItems.map(item => (
                 <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value)} />
               ))}
