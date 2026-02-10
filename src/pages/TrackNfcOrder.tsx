@@ -112,10 +112,10 @@ const TrackNfcOrder = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img src={logo} alt="SoloCab" className="w-10 h-10 object-contain" />
-            <span className="text-xl font-bold text-white">SoloCab</span>
+            <span className="text-xl font-bold text-foreground">SoloCab</span>
           </Link>
           <Link to="/plaque-nfc">
-            <Button variant="ghost" className="text-gray-400 hover:text-white">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
@@ -125,17 +125,17 @@ const TrackNfcOrder = () => {
 
       <div className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="text-center mb-8">
-          <Package className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <Package className="w-16 h-16 text-warning mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Suivi de commande
           </h1>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             Entrez votre numéro de commande ou token de suivi
           </p>
         </div>
 
         {/* Search form */}
-        <Card className="p-6 bg-white/5 border-white/10 mb-8">
+        <Card className="p-6 bg-muted/30 border-border/50 mb-8">
           <form onSubmit={handleTrack} className="flex gap-4">
             <div className="flex-1">
               <Label htmlFor="tracking" className="sr-only">Numéro de commande</Label>
@@ -144,13 +144,13 @@ const TrackNfcOrder = () => {
                 value={trackingInput}
                 onChange={(e) => setTrackingInput(e.target.value)}
                 placeholder="NFC-xxx ou token de suivi"
-                className="bg-white/10 border-white/20 text-white"
+                className="bg-muted/50 border-border text-foreground"
               />
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+              className="bg-gradient-warning text-warning-foreground"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -165,31 +165,31 @@ const TrackNfcOrder = () => {
         {order && (
           <div className="space-y-6">
             {/* Order header */}
-            <Card className="p-6 bg-white/5 border-white/10">
+            <Card className="p-6 bg-muted/30 border-border/50">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-gray-400">Commande</p>
-                  <p className="text-xl font-bold text-white">{order.order_number}</p>
+                  <p className="text-sm text-muted-foreground">Commande</p>
+                  <p className="text-xl font-bold text-foreground">{order.order_number}</p>
                 </div>
                 {getDeliveryStatusBadge(order.delivery_status)}
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-400">Destinataire</p>
-                  <p className="text-white">{order.first_name} {order.last_name}</p>
+                  <p className="text-muted-foreground">Destinataire</p>
+                  <p className="text-foreground">{order.first_name} {order.last_name}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Date de commande</p>
-                  <p className="text-white">
+                  <p className="text-muted-foreground">Date de commande</p>
+                  <p className="text-foreground">
                     {format(new Date(order.created_at), "d MMMM yyyy", { locale: fr })}
                   </p>
                 </div>
               </div>
 
               {order.estimated_delivery_date && (
-                <div className="mt-4 p-3 bg-blue-500/10 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-400">
+                <div className="mt-4 p-3 bg-info/10 rounded-lg">
+                  <div className="flex items-center gap-2 text-info">
                     <Truck className="w-4 h-4" />
                     <span className="text-sm">
                       Livraison estimée : {format(new Date(order.estimated_delivery_date), "d MMMM yyyy", { locale: fr })}
@@ -199,16 +199,16 @@ const TrackNfcOrder = () => {
               )}
 
               {order.tracking_number && (
-                <div className="mt-4 p-3 bg-green-500/10 rounded-lg">
-                  <p className="text-sm text-gray-400">Numéro de suivi transporteur</p>
-                  <p className="text-green-400 font-mono">{order.tracking_number}</p>
+                <div className="mt-4 p-3 bg-success/10 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Numéro de suivi transporteur</p>
+                  <p className="text-success font-mono">{order.tracking_number}</p>
                 </div>
               )}
             </Card>
 
             {/* Progress steps */}
-            <Card className="p-6 bg-white/5 border-white/10">
-              <h3 className="font-semibold text-white mb-6">Progression</h3>
+            <Card className="p-6 bg-muted/30 border-border/50">
+              <h3 className="font-semibold text-foreground mb-6">Progression</h3>
               <div className="space-y-4">
                 {order.steps.map((step, index) => (
                   <div key={step.id} className="flex items-start gap-4">
@@ -216,18 +216,18 @@ const TrackNfcOrder = () => {
                       {getStatusIcon(step.status)}
                       {index < order.steps.length - 1 && (
                         <div className={`w-0.5 h-8 mt-2 ${
-                          step.status === "completed" ? "bg-green-500" : "bg-gray-600"
+                          step.status === "completed" ? "bg-success" : "bg-muted"
                         }`} />
                       )}
                     </div>
                     <div className="flex-1 pb-4">
                       <p className={`font-medium ${
-                        step.status === "completed" ? "text-white" : "text-gray-500"
+                        step.status === "completed" ? "text-foreground" : "text-muted-foreground"
                       }`}>
                         {step.label}
                       </p>
                       {step.date && (
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {format(new Date(step.date), "d MMMM yyyy à HH:mm", { locale: fr })}
                         </p>
                       )}
@@ -238,12 +238,12 @@ const TrackNfcOrder = () => {
             </Card>
 
             {/* Shipping address */}
-            <Card className="p-6 bg-white/5 border-white/10">
+            <Card className="p-6 bg-muted/30 border-border/50">
               <div className="flex items-center gap-2 mb-4">
-                <MapPin className="w-5 h-5 text-orange-500" />
-                <h3 className="font-semibold text-white">Adresse de livraison</h3>
+                <MapPin className="w-5 h-5 text-warning" />
+                <h3 className="font-semibold text-foreground">Adresse de livraison</h3>
               </div>
-              <p className="text-gray-300">
+              <p className="text-muted-foreground">
                 {order.first_name} {order.last_name}<br />
                 {order.shipping_address}<br />
                 {order.shipping_postal_code} {order.shipping_city}
@@ -253,12 +253,12 @@ const TrackNfcOrder = () => {
         )}
 
         {/* Help */}
-        <Card className="mt-8 p-6 bg-white/5 border-white/10 text-center">
-          <p className="text-gray-400 mb-4">
+        <Card className="mt-8 p-6 bg-muted/30 border-border/50 text-center">
+          <p className="text-muted-foreground mb-4">
             Un problème avec votre commande ?
           </p>
           <a href="mailto:support@solocab.fr">
-            <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+            <Button variant="outline" className="border-border text-foreground hover:bg-muted/50">
               Contacter le support
             </Button>
           </a>

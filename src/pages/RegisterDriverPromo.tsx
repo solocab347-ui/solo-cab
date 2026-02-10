@@ -501,11 +501,11 @@ const RegisterDriverPromo = () => {
       {/* Payment redirect overlay - shown immediately when user clicks pay */}
       <PaymentRedirectOverlay isVisible={showPaymentOverlay} />
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-4 sm:py-6 px-3 sm:px-6 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-storefront-dark via-storefront to-storefront-dark py-4 sm:py-6 px-3 sm:px-6 overflow-x-hidden">
         {/* Decorative gradient orbs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-emerald-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-success/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-primary/10 rounded-full blur-3xl" />
         </div>
         
         <div className="relative w-full max-w-md mx-auto">
@@ -522,8 +522,8 @@ const RegisterDriverPromo = () => {
                 <div
                   className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm transition-all ${
                     currentStep >= step
-                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30"
-                      : "bg-slate-800 text-slate-500 border border-slate-700"
+                      ? "bg-gradient-success text-success-foreground shadow-lg shadow-success"
+                      : "bg-muted text-muted-foreground border border-border"
                   }`}
                 >
                   {currentStep > step ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : step}
@@ -531,7 +531,7 @@ const RegisterDriverPromo = () => {
                 {step < totalSteps && (
                   <div
                     className={`w-8 sm:w-12 h-0.5 sm:h-1 mx-0.5 sm:mx-1 rounded-full transition-all ${
-                      currentStep > step ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-slate-800"
+                      currentStep > step ? "bg-gradient-success" : "bg-muted"
                     }`}
                   />
                 )}
@@ -554,18 +554,18 @@ const RegisterDriverPromo = () => {
 
         {/* Login mode for returning users */}
         {isLoginMode && currentStep === 1 && (
-          <Card className="p-5 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
-            <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 text-white">
-              <RefreshCw className="w-5 h-5 text-emerald-500" />
+          <Card className="p-5 sm:p-6 bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
+            <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 text-foreground">
+              <RefreshCw className="w-5 h-5 text-success" />
               Reprendre votre inscription
             </h2>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Connectez-vous pour finaliser votre inscription.
             </p>
             
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label htmlFor="loginEmail" className="text-sm text-slate-300">Email</Label>
+                <Label htmlFor="loginEmail" className="text-sm text-muted-foreground">Email</Label>
                 <Input
                   id="loginEmail"
                   type="email"
@@ -573,12 +573,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
                   placeholder="votre@email.com"
-                  className="h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-12 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="loginPassword" className="text-sm text-slate-300">Mot de passe</Label>
+                <Label htmlFor="loginPassword" className="text-sm text-muted-foreground">Mot de passe</Label>
                 <div className="relative">
                   <Input
                     id="loginPassword"
@@ -587,12 +587,12 @@ const RegisterDriverPromo = () => {
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
                     placeholder="Votre mot de passe"
-                    className="h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    className="h-12 pr-12 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -602,7 +602,7 @@ const RegisterDriverPromo = () => {
               <Button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25"
+                className="w-full h-14 text-base font-semibold bg-gradient-success text-success-foreground shadow-lg shadow-success"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 Se connecter et continuer
@@ -610,7 +610,7 @@ const RegisterDriverPromo = () => {
               </Button>
             </form>
 
-            <div className="mt-4 pt-4 border-t border-slate-800 text-center">
+            <div className="mt-4 pt-4 border-t border-border text-center">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -618,7 +618,7 @@ const RegisterDriverPromo = () => {
                   setLoginEmail("");
                   setLoginPassword("");
                 }}
-                className="text-slate-400 hover:text-white hover:bg-slate-800"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 ← Créer un nouveau compte
               </Button>
@@ -628,14 +628,14 @@ const RegisterDriverPromo = () => {
 
         {/* Step 1: Account Info */}
         {currentStep === 1 && !isLoginMode && (
-          <Card className="p-4 sm:p-6 bg-slate-900/80 backdrop-blur-xl border-slate-800/50 shadow-2xl">
+          <Card className="p-4 sm:p-6 bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
             <h2 className="text-base sm:text-xl font-bold mb-1 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
               Créez votre compte gratuit
             </h2>
             <form onSubmit={handleStep1} className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
               <div>
-                <Label htmlFor="fullName" className="text-xs sm:text-sm text-slate-300">Nom complet *</Label>
+                <Label htmlFor="fullName" className="text-xs sm:text-sm text-muted-foreground">Nom complet *</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -643,12 +643,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Jean Dupont"
-                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-xs sm:text-sm text-slate-300">Email *</Label>
+                <Label htmlFor="email" className="text-xs sm:text-sm text-muted-foreground">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -656,12 +656,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="votre@email.com"
-                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="phone" className="text-xs sm:text-sm text-slate-300">Téléphone *</Label>
+                <Label htmlFor="phone" className="text-xs sm:text-sm text-muted-foreground">Téléphone *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -669,12 +669,12 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   placeholder="06 12 34 56 78"
-                  className="h-11 sm:h-12 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  className="h-11 sm:h-12 text-sm sm:text-base bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                 />
               </div>
               
               <div>
-                <Label htmlFor="password" className="text-xs sm:text-sm text-slate-300">Mot de passe *</Label>
+                <Label htmlFor="password" className="text-xs sm:text-sm text-muted-foreground">Mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -684,12 +684,12 @@ const RegisterDriverPromo = () => {
                     required
                     placeholder="Minimum 6 caractères"
                     minLength={6}
-                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
@@ -697,7 +697,7 @@ const RegisterDriverPromo = () => {
               </div>
               
               <div>
-                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-slate-300">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-muted-foreground">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -707,12 +707,12 @@ const RegisterDriverPromo = () => {
                     required
                     placeholder="Confirmez votre mot de passe"
                     minLength={6}
-                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    className="h-11 sm:h-12 pr-11 text-sm sm:text-base bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-success focus:ring-success/20"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
@@ -720,14 +720,14 @@ const RegisterDriverPromo = () => {
               </div>
               
               {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-red-400">Les mots de passe ne correspondent pas</p>
+                <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
               )}
 
               {/* CTA Button - Engaging Independence */}
               <Button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-gradient-success text-success-foreground shadow-lg shadow-success transition-all duration-300 hover:shadow-success hover:scale-[1.02] active:scale-[0.98]"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin mr-2" />
@@ -739,21 +739,21 @@ const RegisterDriverPromo = () => {
               </Button>
               
               {/* Legal notice */}
-              <p className="text-[10px] sm:text-xs text-slate-500 text-center">
+              <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
                 En vous inscrivant, vous acceptez nos{" "}
-                <button type="button" className="text-emerald-500 hover:underline">
+                <button type="button" className="text-success hover:underline">
                   conditions d'utilisation
                 </button>
               </p>
             </form>
 
             {/* Link to login for existing users */}
-            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-800 text-center">
-              <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide mb-2 sm:mb-3">Déjà inscrit ?</p>
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border text-center">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-2 sm:mb-3">Déjà inscrit ?</p>
               <Button
                 variant="outline"
                 onClick={() => setIsLoginMode(true)}
-                className="w-full h-10 sm:h-12 text-sm bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600"
+                className="w-full h-10 sm:h-12 text-sm bg-transparent border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-border"
               >
                 Se connecter
               </Button>
@@ -1296,17 +1296,17 @@ const RegisterDriverPromo = () => {
 
         {/* Benefits footer */}
         <div className="mt-6 flex justify-center gap-2 sm:gap-3 flex-wrap">
-          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Sécurisé</p>
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-muted/50 backdrop-blur-sm rounded-xl border border-border/50">
+            <Shield className="w-5 h-5 text-success mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-muted-foreground">Sécurisé</p>
           </div>
-          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Sans engagement</p>
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-muted/50 backdrop-blur-sm rounded-xl border border-border/50">
+            <CheckCircle className="w-5 h-5 text-success mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-muted-foreground">Sans engagement</p>
           </div>
-          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-            <p className="font-medium text-[10px] sm:text-xs text-slate-300">Accès direct</p>
+          <div className="p-2.5 sm:p-3 text-center min-w-[80px] flex-1 max-w-[110px] bg-muted/50 backdrop-blur-sm rounded-xl border border-border/50">
+            <TrendingUp className="w-5 h-5 text-success mx-auto mb-1" />
+            <p className="font-medium text-[10px] sm:text-xs text-muted-foreground">Accès direct</p>
           </div>
         </div>
       </div>

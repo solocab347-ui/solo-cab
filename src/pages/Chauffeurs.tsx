@@ -394,7 +394,7 @@ const Chauffeurs = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/client-dashboard')}
-              className="text-white/80 hover:text-white hover:bg-white/10 gap-2"
+              className="text-foreground/80 hover:text-foreground hover:bg-muted/30 gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour
@@ -403,7 +403,7 @@ const Chauffeurs = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/client-dashboard')}
-              className="text-white/80 hover:text-white hover:bg-white/10 gap-2"
+              className="text-foreground/80 hover:text-foreground hover:bg-muted/30 gap-2"
             >
               <Home className="w-4 h-4" />
               Mon espace
@@ -419,11 +419,11 @@ const Chauffeurs = () => {
         
         <div className="relative container mx-auto px-4 py-10 md:py-14">
           <div className="flex justify-center mb-8">
-            <SocialLinks variant="compact" className="text-white/60" />
+            <SocialLinks variant="compact" className="text-muted-foreground" />
           </div>
           
           <div className="text-center max-w-4xl mx-auto">
-            <Badge className="mb-6 bg-white/10 text-white/90 border-white/20 backdrop-blur-sm px-4 py-1.5">
+            <Badge className="mb-6 bg-muted/30 text-foreground/90 border-border backdrop-blur-sm px-4 py-1.5">
               <Car className="w-4 h-4 mr-2" />
               Service VTC Premium
             </Badge>
@@ -435,19 +435,19 @@ const Chauffeurs = () => {
               </span>
             </h1>
             
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
               Des professionnels d'exception à votre service. 
               Réservez votre trajet en toute simplicité.
             </p>
             
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-5 py-2.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-white/80 text-sm">Chauffeurs disponibles 24/7</span>
+              <div className="flex items-center gap-2 bg-muted/30 backdrop-blur-sm border border-border rounded-full px-5 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                <span className="text-foreground/80 text-sm">Chauffeurs disponibles 24/7</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-5 py-2.5">
+              <div className="flex items-center gap-2 bg-muted/30 backdrop-blur-sm border border-border rounded-full px-5 py-2.5">
                 <MapPin className="w-4 h-4 text-amber-400" />
-                <span className="text-white/80 text-sm">{t('chauffeurs.allFrance')}</span>
+                <span className="text-foreground/80 text-sm">{t('chauffeurs.allFrance')}</span>
               </div>
             </div>
           </div>
@@ -477,7 +477,7 @@ const Chauffeurs = () => {
               <Button
                 variant={searchMode === "city" ? "default" : "outline"}
                 onClick={() => setSearchMode("city")}
-                className={searchMode === "city" ? "bg-gradient-to-r from-slate-800 to-slate-700 border-0 shadow-lg" : ""}
+                className={searchMode === "city" ? "bg-primary border-0 shadow-lg" : ""}
               >
                 <MapPin className="w-4 h-4 mr-2" />
                 {t('chauffeurs.byCity')}
@@ -485,7 +485,7 @@ const Chauffeurs = () => {
               <Button
                 variant={searchMode === "address" ? "default" : "outline"}
                 onClick={() => setSearchMode("address")}
-                className={searchMode === "address" ? "bg-gradient-to-r from-slate-800 to-slate-700 border-0 shadow-lg" : ""}
+                className={searchMode === "address" ? "bg-primary border-0 shadow-lg" : ""}
               >
                 <Navigation className="w-4 h-4 mr-2" />
                 {t('chauffeurs.byAddress')}
@@ -518,9 +518,9 @@ const Chauffeurs = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">{t('chauffeurs.searchRadius')}</label>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 rounded-full shadow-lg">
-                      <span className="text-2xl font-bold text-white">{radiusCity[0]}</span>
-                      <span className="text-sm text-white/80">km</span>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary rounded-full shadow-lg">
+                      <span className="text-2xl font-bold text-primary-foreground">{radiusCity[0]}</span>
+                      <span className="text-sm text-primary-foreground/80">km</span>
                     </div>
                   </div>
                   <Slider
@@ -566,9 +566,9 @@ const Chauffeurs = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">Rayon de recherche</label>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 rounded-full shadow-lg">
-                      <span className="text-2xl font-bold text-white">{radiusAddress[0]}</span>
-                      <span className="text-sm text-white/80">km</span>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary rounded-full shadow-lg">
+                      <span className="text-2xl font-bold text-primary-foreground">{radiusAddress[0]}</span>
+                      <span className="text-sm text-primary-foreground/80">km</span>
                     </div>
                   </div>
                   <Slider
@@ -625,7 +625,7 @@ const Chauffeurs = () => {
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-lg">
-                        <Users className="w-6 h-6 text-white" />
+                        <Users className="w-6 h-6 text-primary-foreground" />
                       </div>
                       <div>
                         <h3 className="text-2xl font-bold">
@@ -678,11 +678,11 @@ const Chauffeurs = () => {
         {/* Default View */}
         {!searchPerformed && (
           <div className="text-center py-20">
-            <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-8">
+            <div className="w-24 h-24 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-8">
               <Search className="w-12 h-12 text-amber-400/60" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-white">Trouvez votre chauffeur idéal</h3>
-            <p className="text-gray-400 max-w-lg mx-auto">
+            <h3 className="text-2xl font-bold mb-4 text-foreground">Trouvez votre chauffeur idéal</h3>
+            <p className="text-muted-foreground max-w-lg mx-auto">
               Utilisez la recherche ci-dessus pour découvrir les chauffeurs VTC professionnels disponibles dans votre région.
             </p>
           </div>
@@ -694,16 +694,16 @@ const Chauffeurs = () => {
         <div className="container mx-auto px-4 py-10">
           <div className="flex flex-col items-center gap-6">
             <SocialLinks variant="compact" />
-            <div className="flex items-center gap-8 text-sm text-gray-400">
-              <Link to="/login" className="hover:text-white transition-colors">
+            <div className="flex items-center gap-8 text-sm text-muted-foreground">
+              <Link to="/login" className="hover:text-foreground transition-colors">
                 Espace Chauffeur
               </Link>
-              <span className="w-1 h-1 rounded-full bg-white/20" />
-              <Link to="/register-driver" className="hover:text-white transition-colors">
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <Link to="/register-driver" className="hover:text-foreground transition-colors">
                 Devenir Chauffeur
               </Link>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground/60">
               © {new Date().getFullYear()} SoloCab - Service VTC Premium
             </p>
           </div>
