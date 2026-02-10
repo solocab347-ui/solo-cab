@@ -267,8 +267,8 @@ export const GlobalSecurityProvider: React.FC<{ children: React.ReactNode }> = (
     // 1. Initialiser les headers de sécurité côté client
     initClientSecurity();
 
-    // 2. Analyser le navigateur pour détecter les bots
-    analyzeAndReportBot();
+    // 2. Bot detection DÉSACTIVÉE - causait des requêtes DB inutiles
+    // analyzeAndReportBot();
 
     // 3. Installer les protections (fetch interceptor DÉSACTIVÉ - causait des "Failed to fetch")
     // installFetchInterceptor();

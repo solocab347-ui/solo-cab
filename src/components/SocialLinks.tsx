@@ -27,10 +27,20 @@ const TikTokIcon = ({ size = 24 }: { size?: number }) => (
   </svg>
 );
 
+// Cache partagé pour éviter des requêtes DB répétées
+let cachedLinks: SocialLink[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
 const SocialLinks = ({ className, iconSize = 24, variant = "default" }: SocialLinksProps) => {
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(cachedLinks || []);
 
   useEffect(() => {
+    // Si le cache est valide, ne pas refaire de requête
+    if (cachedLinks && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+      setSocialLinks(cachedLinks);
+      return;
+    }
     fetchSocialLinks();
   }, []);
 
@@ -45,9 +55,11 @@ const SocialLinks = ({ className, iconSize = 24, variant = "default" }: SocialLi
 
       if (error) throw error;
 
-      setSocialLinks(data || []);
+      cachedLinks = data || [];
+      cacheTimestamp = Date.now();
+      setSocialLinks(cachedLinks);
     } catch (error) {
-      console.error("Error fetching social links:", error);
+      // Silently fail - social links are not critical
     }
   };
 

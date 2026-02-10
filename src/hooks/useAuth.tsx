@@ -119,14 +119,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let refreshRetryCount = 0;
     const MAX_REFRESH_RETRIES = 2; // Moins de retries pour rapidité
 
-    // TIMEOUT DE SÉCURITÉ ULTRA-COURT: 3 secondes pour UX fluide
+    // TIMEOUT DE SÉCURITÉ: 5 secondes pour UX fluide
     const safetyTimeout = setTimeout(() => {
       if (isMounted && isInitializing) {
-        logger.warn("SAFETY TIMEOUT - forcing loading to false after 3s");
+        logger.warn("SAFETY TIMEOUT - forcing loading to false after 5s");
         isInitializing = false;
         setLoading(false);
       }
-    }, 3000);
+    }, 5000);
 
     // Fonction pour gérer l'échec du refresh token - RAPIDE
     const handleRefreshFailure = async () => {
