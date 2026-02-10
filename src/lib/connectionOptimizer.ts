@@ -393,17 +393,9 @@ if (typeof window !== 'undefined') {
     updateConnectionState(false);
   });
 
-  // Récupération quand l'app revient en premier plan
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      // Vérifier la connexion après 500ms (laisser le temps au réseau)
-      setTimeout(() => {
-        if (connectionInfo.state !== 'online') {
-          connectionRecovery.attemptRecovery();
-        }
-      }, 500);
-    }
-  });
+  // Récupération quand l'app revient en premier plan - DÉSACTIVÉE
+  // Causait des pings DB inutiles à chaque focus de fenêtre
+  // document.addEventListener('visibilitychange', () => { ... });
 
   // Vérification périodique de la santé de la connexion
   // Augmenté à 5 minutes pour réduire la charge sur le plan Pico
