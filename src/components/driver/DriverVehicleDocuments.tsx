@@ -146,9 +146,12 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      // Generate signed URL instead of public URL
+      const { data: signedUrlData } = await supabase.storage
         .from("driver-documents")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
+
+      const documentUrl = signedUrlData?.signedUrl || fileName;
 
       // Check if document exists
       const existingDoc = documents[vehicleId]?.find(d => d.document_type === docType);
@@ -157,7 +160,7 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
         await supabase
           .from("driver_vehicle_documents")
           .update({
-            document_url: urlData.publicUrl,
+            document_url: documentUrl,
             document_name: file.name,
             status: "submitted",
             uploaded_at: new Date().toISOString(),
@@ -171,7 +174,7 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
             vehicle_id: vehicleId,
             driver_id: driverId,
             document_type: docType,
-            document_url: urlData.publicUrl,
+            document_url: documentUrl,
             document_name: file.name,
             status: "submitted",
             uploaded_at: new Date().toISOString()
@@ -350,7 +353,23 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(doc.document_url!, "_blank")}
+                            onClick={async () => {
+                              // Extract file path from URL for signed URL generation
+                              let filePath = doc.document_url!;
+                              if (filePath.includes('/storage/v1/object/')) {
+                                const parts = filePath.split('/storage/v1/object/');
+                                if (parts[1]) {
+                                  filePath = parts[1].replace(/^(public|sign)\//, '');
+                                  filePath = filePath.replace(/^[^/]+\//, '');
+                                }
+                              }
+                              const { data } = await supabase.storage
+                                .from('driver-documents')
+                                .createSignedUrl(filePath, 3600);
+                              if (data?.signedUrl) {
+                                window.open(data.signedUrl, "_blank");
+                              }
+                            }}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
