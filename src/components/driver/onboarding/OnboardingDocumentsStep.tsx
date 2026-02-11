@@ -112,15 +112,17 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      // Generate signed URL instead of public URL
+      const { data: signedUrlData } = await supabase.storage
         .from("driver-documents")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
       const newDocuments = {
         ...documents,
         [docKey]: {
           name: file.name,
-          url: urlData.publicUrl,
+          url: signedUrlData?.signedUrl || fileName,
+          storagePath: fileName,
           uploadedAt: new Date().toISOString(),
         },
       };
