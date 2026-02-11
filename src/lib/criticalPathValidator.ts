@@ -277,13 +277,6 @@ class CriticalPathValidator {
 // Singleton
 export const criticalPathValidator = new CriticalPathValidator();
 
-// Validation au démarrage de l'application (après un délai)
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    criticalPathValidator.validateAll().then(result => {
-      if (!result.passed) {
-        console.warn('⚠️ Certaines fonctionnalités critiques ont échoué:', result.failedTests);
-      }
-    });
-  }, 3000); // Attendre 3s après le chargement
-}
+// Validation au démarrage DÉSACTIVÉE - consommait 5 connexions DB au chargement
+// Causait l'épuisement du pool de connexions sur le plan Pico
+// Utiliser criticalPathValidator.validateAll() manuellement si nécessaire
