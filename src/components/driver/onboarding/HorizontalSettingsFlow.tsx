@@ -82,12 +82,11 @@ export function HorizontalSettingsFlow({ data, driverName, onUpdate, onComplete 
       case 'per_km': return !!data.perKmRate && parseFloat(data.perKmRate) > 0;
       case 'hourly': return true;
       case 'minimum': return !!data.minimumPrice;
-      // SIRET (14 chiffres) et adresse obligatoires pour la facturation
+      // Nom de société obligatoire, SIRET et adresse optionnels (complétables plus tard)
       case 'company': 
-        return !!data.companyName.trim() && 
-               !!data.siret.trim() && data.siret.replace(/\s/g, '').length === 14 &&
-               !!data.companyAddress.trim();
-      case 'vehicle': return !!data.vehicleBrand.trim() && !!data.vehicleModel.trim();
+        return !!data.companyName.trim();
+      case 'vehicle': 
+        return !!data.vehicleBrand.trim() && data.vehicleBrand !== 'À compléter';
       case 'recap': return true;
       default: return true;
     }

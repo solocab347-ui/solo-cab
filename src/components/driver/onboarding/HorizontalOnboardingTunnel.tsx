@@ -70,24 +70,20 @@ export function HorizontalOnboardingTunnel({
     ? ALL_STEPS.filter(step => step.id !== 'nfc')
     : ALL_STEPS;
 
-  // FORCER le démarrage au début (étape 0) pour les anciens utilisateurs du tunnel précédent
-  // Les données restent enregistrées, mais on recommence la navigation depuis le début
-  const [currentStep, setCurrentStep] = useState(0);
+  // Reprendre là où le chauffeur s'est arrêté
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [direction, setDirection] = useState(0);
   const [saving, setSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Mettre à jour last_seen_at à chaque connexion au tunnel
+  // Mettre à jour last_seen_at à chaque connexion au tunnel (sans reset de l'étape)
   useEffect(() => {
     const updateLastSeen = async () => {
       try {
         await supabase
           .from('drivers')
-          .update({ 
-            last_seen_at: new Date().toISOString(),
-            onboarding_step: 'vision' // Reset au début du tunnel
-          })
+          .update({ last_seen_at: new Date().toISOString() })
           .eq('id', driverId);
       } catch (error) {
         console.error('Erreur mise à jour last_seen_at:', error);
@@ -221,8 +217,11 @@ export function HorizontalOnboardingTunnel({
   };
 
   const isSettingsValid = () => {
-    const { baseFare, perKmRate, companyName, vehicleBrand } = stepData.settings;
-    return !!(baseFare && perKmRate && companyName && vehicleBrand);
+    const { baseFare, perKmRate, vehicleBrand } = stepData.settings;
+    // companyName est optionnel - pas tous les VTC ont un nom de société
+    // vehicleBrand doit être une vraie valeur (pas le placeholder "À compléter")
+    const validBrand = vehicleBrand && vehicleBrand !== 'À compléter';
+    return !!(baseFare && perKmRate && validBrand);
   };
 
   const isProfileValid = () => {
