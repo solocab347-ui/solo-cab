@@ -20,43 +20,45 @@ import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 
-// Eager load public pages
+// Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Chauffeurs from "./pages/Chauffeurs";
-import ChauffeurLanding from "./pages/ChauffeurLanding";
-import ChauffeurProfile from "./pages/ChauffeurProfile";
-import RegisterClientQR from "./pages/RegisterClientQR";
-import RegisterClientDriver from "./pages/RegisterClientDriver";
-import RegisterDriver from "./pages/RegisterDriver";
-import RegisterDriverPromo from "./pages/RegisterDriverPromo";
-import RegisterDriverPromoFree from "./pages/RegisterDriverPromoFree";
-import RegistrationSuccess from "./pages/RegistrationSuccess";
-import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
-import GuestBooking from "./pages/GuestBooking";
-import GuestBookingTracking from "./pages/GuestBookingTracking";
-import RegisterCourseInvitation from "./pages/RegisterCourseInvitation";
-import RegisterGuestClient from "./pages/RegisterGuestClient";
-import RegisterClient from "./pages/RegisterClient";
-import RegisterCongressDriver from "./pages/RegisterCongressDriver";
-import PioneerPayment from "./pages/PioneerPayment";
-import OurValues from "./pages/OurValues";
-import DriverWelcome from "./pages/DriverWelcome";
-import MentionsLegales from "./pages/MentionsLegales";
-import SafeMode from "./pages/SafeMode";
-import NfcPlatePage from "./pages/NfcPlatePage";
-import NfcPlateOrderSuccess from "./pages/NfcPlateOrderSuccess";
-import TrackNfcOrder from "./pages/TrackNfcOrder";
-import Tarifs from "./pages/Tarifs";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
+
+// Lazy load ALL other pages
+const Login = lazy(() => import("./pages/Login"));
+const Chauffeurs = lazy(() => import("./pages/Chauffeurs"));
+const ChauffeurLanding = lazy(() => import("./pages/ChauffeurLanding"));
+const ChauffeurProfile = lazy(() => import("./pages/ChauffeurProfile"));
+const RegisterClientQR = lazy(() => import("./pages/RegisterClientQR"));
+const RegisterClientDriver = lazy(() => import("./pages/RegisterClientDriver"));
+const RegisterDriver = lazy(() => import("./pages/RegisterDriver"));
+const RegisterDriverPromoFree = lazy(() => import("./pages/RegisterDriverPromoFree"));
+const RegistrationSuccess = lazy(() => import("./pages/RegistrationSuccess"));
+const PioneerTest = lazy(() => import("./pages/PioneerTest"));
+const GuestBooking = lazy(() => import("./pages/GuestBooking"));
+const GuestBookingTracking = lazy(() => import("./pages/GuestBookingTracking"));
+const RegisterCourseInvitation = lazy(() => import("./pages/RegisterCourseInvitation"));
+const RegisterGuestClient = lazy(() => import("./pages/RegisterGuestClient"));
+const RegisterClient = lazy(() => import("./pages/RegisterClient"));
+const RegisterCongressDriver = lazy(() => import("./pages/RegisterCongressDriver"));
+const PioneerPayment = lazy(() => import("./pages/PioneerPayment"));
+const OurValues = lazy(() => import("./pages/OurValues"));
+const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
+const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
+const SafeMode = lazy(() => import("./pages/SafeMode"));
+const NfcPlatePage = lazy(() => import("./pages/NfcPlatePage"));
+const NfcPlateOrderSuccess = lazy(() => import("./pages/NfcPlateOrderSuccess"));
+const TrackNfcOrder = lazy(() => import("./pages/TrackNfcOrder"));
+const Tarifs = lazy(() => import("./pages/Tarifs"));
+const ImmediateRide = lazy(() => import("./pages/ImmediateRide"));
 
 // Legacy migration pages
 const LegacyMigration = lazy(() => import("./pages/chauffeur/LegacyMigration"));
 const MigrationSuccess = lazy(() => import("./pages/chauffeur/MigrationSuccess"));
 const TrialExpiredSubscribe = lazy(() => import("./pages/chauffeur/TrialExpiredSubscribe"));
 
-// Lazy load heavy dashboards and authenticated pages
+// Authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
 const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
@@ -74,7 +76,6 @@ const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
-const ImmediateRide = lazy(() => import("./pages/ImmediateRide"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -96,37 +97,33 @@ const App = () => (
                 <MaintenanceGuard>
                 <ErrorBoundary>
                 <Routes>
-                <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/chauffeurs" element={<Chauffeurs />} />
-              <Route path="/devenir-chauffeur" element={<ChauffeurLanding />} />
-              <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
-              <Route path="/register-client-qr" element={<RegisterClientQR />} />
-              <Route path="/register-client-driver" element={<RegisterClientDriver />} />
-              <Route path="/register-driver" element={<RegisterDriver />} />
-              <Route path="/register-driver-promo" element={<RegisterDriverPromoFree />} />
-              <Route path="/registration-success" element={<RegistrationSuccess />} />
-              <Route path="/pioneer-test" element={<PioneerTest />} />
-              <Route path="/reservation-rapide/:driverId" element={<GuestBooking />} />
-              <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
-              <Route path="/register-course-invitation" element={<RegisterCourseInvitation />} />
-              <Route path="/register-client" element={<RegisterClient />} />
-              <Route path="/inscription-client" element={<RegisterGuestClient />} />
-              <Route path="/inscription-congres" element={<RegisterCongressDriver />} />
-              <Route path="/pioneer-payment" element={<PioneerPayment />} />
-              <Route path="/nos-valeurs" element={<OurValues />} />
-              <Route path="/driver-welcome" element={<DriverWelcome />} />
-              <Route path="/mentions-legales" element={<MentionsLegales />} />
-              <Route path="/safe-mode" element={<SafeMode />} />
-              <Route path="/plaque-nfc" element={<NfcPlatePage />} />
-              <Route path="/plaque-nfc/success" element={<NfcPlateOrderSuccess />} />
-              <Route path="/suivi-plaque-nfc" element={<TrackNfcOrder />} />
-              <Route path="/tarifs" element={<Tarifs />} />
-              <Route path="/course-immediate" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <ImmediateRide />
-                </Suspense>
-              } />
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><Login /></Suspense>} />
+              <Route path="/chauffeurs" element={<Suspense fallback={<LoadingFallback />}><Chauffeurs /></Suspense>} />
+              <Route path="/devenir-chauffeur" element={<Suspense fallback={<LoadingFallback />}><ChauffeurLanding /></Suspense>} />
+              <Route path="/chauffeur/:id" element={<Suspense fallback={<LoadingFallback />}><ChauffeurProfile /></Suspense>} />
+              <Route path="/register-client-qr" element={<Suspense fallback={<LoadingFallback />}><RegisterClientQR /></Suspense>} />
+              <Route path="/register-client-driver" element={<Suspense fallback={<LoadingFallback />}><RegisterClientDriver /></Suspense>} />
+              <Route path="/register-driver" element={<Suspense fallback={<LoadingFallback />}><RegisterDriver /></Suspense>} />
+              <Route path="/register-driver-promo" element={<Suspense fallback={<LoadingFallback />}><RegisterDriverPromoFree /></Suspense>} />
+              <Route path="/registration-success" element={<Suspense fallback={<LoadingFallback />}><RegistrationSuccess /></Suspense>} />
+              <Route path="/pioneer-test" element={<Suspense fallback={<LoadingFallback />}><PioneerTest /></Suspense>} />
+              <Route path="/reservation-rapide/:driverId" element={<Suspense fallback={<LoadingFallback />}><GuestBooking /></Suspense>} />
+              <Route path="/reservation-suivi/:token" element={<Suspense fallback={<LoadingFallback />}><GuestBookingTracking /></Suspense>} />
+              <Route path="/register-course-invitation" element={<Suspense fallback={<LoadingFallback />}><RegisterCourseInvitation /></Suspense>} />
+              <Route path="/register-client" element={<Suspense fallback={<LoadingFallback />}><RegisterClient /></Suspense>} />
+              <Route path="/inscription-client" element={<Suspense fallback={<LoadingFallback />}><RegisterGuestClient /></Suspense>} />
+              <Route path="/inscription-congres" element={<Suspense fallback={<LoadingFallback />}><RegisterCongressDriver /></Suspense>} />
+              <Route path="/pioneer-payment" element={<Suspense fallback={<LoadingFallback />}><PioneerPayment /></Suspense>} />
+              <Route path="/nos-valeurs" element={<Suspense fallback={<LoadingFallback />}><OurValues /></Suspense>} />
+              <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
+              <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
+              <Route path="/safe-mode" element={<Suspense fallback={<LoadingFallback />}><SafeMode /></Suspense>} />
+              <Route path="/plaque-nfc" element={<Suspense fallback={<LoadingFallback />}><NfcPlatePage /></Suspense>} />
+              <Route path="/plaque-nfc/success" element={<Suspense fallback={<LoadingFallback />}><NfcPlateOrderSuccess /></Suspense>} />
+              <Route path="/suivi-plaque-nfc" element={<Suspense fallback={<LoadingFallback />}><TrackNfcOrder /></Suspense>} />
+              <Route path="/tarifs" element={<Suspense fallback={<LoadingFallback />}><Tarifs /></Suspense>} />
+              <Route path="/course-immediate" element={<Suspense fallback={<LoadingFallback />}><ImmediateRide /></Suspense>} />
               
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
