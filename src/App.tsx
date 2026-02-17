@@ -35,13 +35,12 @@ const RegisterClientDriver = lazy(() => import("./pages/RegisterClientDriver"));
 const RegisterDriver = lazy(() => import("./pages/RegisterDriver"));
 const RegisterDriverPromoFree = lazy(() => import("./pages/RegisterDriverPromoFree"));
 const RegistrationSuccess = lazy(() => import("./pages/RegistrationSuccess"));
-const PioneerTest = lazy(() => import("./pages/PioneerTest"));
+
 const GuestBooking = lazy(() => import("./pages/GuestBooking"));
 const GuestBookingTracking = lazy(() => import("./pages/GuestBookingTracking"));
 const RegisterCourseInvitation = lazy(() => import("./pages/RegisterCourseInvitation"));
 const RegisterGuestClient = lazy(() => import("./pages/RegisterGuestClient"));
 const RegisterClient = lazy(() => import("./pages/RegisterClient"));
-const RegisterCongressDriver = lazy(() => import("./pages/RegisterCongressDriver"));
 const PioneerPayment = lazy(() => import("./pages/PioneerPayment"));
 const OurValues = lazy(() => import("./pages/OurValues"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
@@ -70,9 +69,6 @@ const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
 const RGPDData = lazy(() => import("./pages/RGPDData"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
-const CreateTestAccounts = lazy(() => import("./pages/CreateTestAccounts"));
-const CreateParisDrivers = lazy(() => import("./pages/CreateParisDrivers"));
-const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
@@ -107,13 +103,13 @@ const App = () => (
               <Route path="/register-driver" element={<Suspense fallback={<LoadingFallback />}><RegisterDriver /></Suspense>} />
               <Route path="/register-driver-promo" element={<Suspense fallback={<LoadingFallback />}><RegisterDriverPromoFree /></Suspense>} />
               <Route path="/registration-success" element={<Suspense fallback={<LoadingFallback />}><RegistrationSuccess /></Suspense>} />
-              <Route path="/pioneer-test" element={<Suspense fallback={<LoadingFallback />}><PioneerTest /></Suspense>} />
+              
               <Route path="/reservation-rapide/:driverId" element={<Suspense fallback={<LoadingFallback />}><GuestBooking /></Suspense>} />
               <Route path="/reservation-suivi/:token" element={<Suspense fallback={<LoadingFallback />}><GuestBookingTracking /></Suspense>} />
               <Route path="/register-course-invitation" element={<Suspense fallback={<LoadingFallback />}><RegisterCourseInvitation /></Suspense>} />
               <Route path="/register-client" element={<Suspense fallback={<LoadingFallback />}><RegisterClient /></Suspense>} />
               <Route path="/inscription-client" element={<Suspense fallback={<LoadingFallback />}><RegisterGuestClient /></Suspense>} />
-              <Route path="/inscription-congres" element={<Suspense fallback={<LoadingFallback />}><RegisterCongressDriver /></Suspense>} />
+              <Route path="/inscription-congres" element={<Navigate to="/register-driver-promo" replace />} />
               <Route path="/pioneer-payment" element={<Suspense fallback={<LoadingFallback />}><PioneerPayment /></Suspense>} />
               <Route path="/nos-valeurs" element={<Suspense fallback={<LoadingFallback />}><OurValues /></Suspense>} />
               <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
@@ -133,21 +129,6 @@ const App = () => (
                     </ErrorBoundary>
                   </Suspense>
                 </ProtectedRoute>
-              } />
-              <Route path="/create-test-accounts" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <CreateTestAccounts />
-                </Suspense>
-              } />
-              <Route path="/create-paris-drivers" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <CreateParisDrivers />
-                </Suspense>
-              } />
-              <Route path="/upload-driver-photos" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <UploadDriverPhotos />
-                </Suspense>
               } />
               <Route
                 path="/driver/create-course"
