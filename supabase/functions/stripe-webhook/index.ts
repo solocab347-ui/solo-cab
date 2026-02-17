@@ -588,8 +588,8 @@ serve(async (req) => {
 
         // Send emails
         try {
-          await supabaseClient.functions.invoke("send-driver-registration-email", {
-            body: { driver_id: driverId }
+          await supabaseClient.functions.invoke("send-email", {
+            body: { driver_id: driverId, type: "driver_registration" }
           });
           await supabaseClient.functions.invoke("send-admin-driver-pending", {
             body: { driver_id: driverId }

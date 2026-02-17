@@ -69,8 +69,8 @@ const DriversValidation = () => {
       if (error) throw error;
 
       // Send validation email
-      await supabase.functions.invoke("send-driver-validation-email", {
-        body: { driver_id: driverId, action: "validated" },
+      await supabase.functions.invoke("send-email", {
+        body: { driver_id: driverId, type: "driver_validation", data: { validationStatus: "approved" } },
       });
 
       toast.success("Chauffeur et documents validés avec succès");
@@ -91,8 +91,8 @@ const DriversValidation = () => {
       if (error) throw error;
 
       // Send rejection email
-      await supabase.functions.invoke("send-driver-validation-email", {
-        body: { driver_id: driverId, action: "rejected" },
+      await supabase.functions.invoke("send-email", {
+        body: { driver_id: driverId, type: "driver_validation", data: { validationStatus: "rejected" } },
       });
 
       toast.success("Chauffeur rejeté");

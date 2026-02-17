@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendEmailWithRetry, sendAdminAlert } from '../_shared/emailRetry.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -9,8 +11,9 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  to: string;
-  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access" | "account_deletion_notice";
+  to?: string;
+  driver_id?: string; // Auto-lookup driver email/name from DB
+  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access" | "account_deletion_notice" | "driver_registration" | "driver_welcome_new";
   data?: {
     driverName?: string;
     clientName?: string;
@@ -21,7 +24,33 @@ interface EmailRequest {
     freeAccessDuration?: string;
     freeAccessStartDate?: string;
     freeAccessEndDate?: string;
+    action?: string;
+    document_type?: string;
+    rejection_reason?: string;
     [key: string]: any;
+  };
+}
+
+// Helper to lookup driver email and name from DB
+async function resolveDriverEmail(driverId: string): Promise<{ email: string; fullName: string }> {
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+  
+  const { data: driver, error } = await supabaseAdmin
+    .from("drivers")
+    .select("profiles:user_id(email, full_name)")
+    .eq("id", driverId)
+    .single();
+  
+  if (error || !driver?.profiles) {
+    throw new Error(`Driver not found: ${driverId}`);
+  }
+  
+  return {
+    email: (driver.profiles as any).email,
+    fullName: (driver.profiles as any).full_name || "Chauffeur"
   };
 }
 
@@ -547,6 +576,73 @@ const getEmailTemplate = (type: string, data: any) => {
         </html>
       `,
     },
+
+    driver_registration: {
+      subject: "📝 Dossier d'inscription SoloCab reçu",
+      html: `
+        <!DOCTYPE html><html><head><style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+        </style></head><body>
+          <div class="container">
+            <div class="header"><h1>📝 Inscription reçue</h1></div>
+            <div class="content">
+              <p>Bonjour <strong>${data.driverName || "Chauffeur"}</strong>,</p>
+              <p>Nous avons bien reçu votre dossier d'inscription en tant que chauffeur VTC sur SoloCab.</p>
+              <h2>✅ Votre paiement a été validé</h2>
+              <p>Votre abonnement mensuel est maintenant actif.</p>
+              <h2>📋 Prochaines étapes</h2>
+              <p>Notre équipe va examiner votre dossier sous <strong>24 à 48 heures</strong>.</p>
+              <ul><li>✓ Informations personnelles et professionnelles</li><li>✓ Documents VTC</li><li>✓ Paiement validé</li></ul>
+              <p>À très bientôt !<br>L'équipe SoloCab</p>
+            </div>
+            <div class="footer"><p>SoloCab · www.solocab.fr</p></div>
+          </div>
+        </body></html>
+      `,
+    },
+
+    driver_welcome_new: {
+      subject: "🎉 Bienvenue sur SoloCab - Finalisez votre inscription",
+      html: `
+        <!DOCTYPE html><html><head><style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+          .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .success-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        </style></head><body>
+          <div class="container">
+            <div class="header">
+              <h1>🎉 Bienvenue sur SoloCab !</h1>
+              <p>Félicitations ${data.driverName || "Chauffeur"} !</p>
+            </div>
+            <div class="content">
+              <p>Votre compte chauffeur a été créé avec succès !</p>
+              <div class="success-box">
+                <p><strong>✅ Vous pouvez dès maintenant :</strong></p>
+                <ul><li>Explorer votre tableau de bord</li><li>Configurer votre profil et vos tarifs</li><li>Découvrir toutes les fonctionnalités</li></ul>
+              </div>
+              <div class="warning-box">
+                <p><strong>⚠️ IMPORTANT : Soumettez vos documents sous 7 jours</strong></p>
+                <p>Pour conserver votre accès et recevoir des courses.</p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://solocab.fr/driver-dashboard" class="button">Accéder à mon espace chauffeur</a>
+              </div>
+              <p>L'équipe SoloCab</p>
+            </div>
+            <div class="footer"><p>SoloCab · www.solocab.fr</p></div>
+          </div>
+        </body></html>
+      `,
+    },
   };
 
   return templates[type as keyof typeof templates] || templates.driver_welcome;
@@ -605,60 +701,68 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { to, type, data = {} }: EmailRequest = await req.json();
+    const { to, driver_id, type, data = {} }: EmailRequest = await req.json();
+    
+    // Resolve recipient email: either provided directly or looked up from driver_id
+    let resolvedTo = to;
+    let enrichedData = { ...data };
+    
+    if (driver_id && !resolvedTo) {
+      console.log(`🔍 [SEND-EMAIL] Looking up driver ${driver_id}...`);
+      const driverInfo = await resolveDriverEmail(driver_id);
+      resolvedTo = driverInfo.email;
+      enrichedData.driverName = enrichedData.driverName || driverInfo.fullName;
+      console.log(`✅ [SEND-EMAIL] Resolved to: ${resolvedTo}`);
+    }
     
     // Capturer pour le catch
-    emailTo = to;
+    emailTo = resolvedTo || "inconnu";
     emailType = type;
 
-    console.log(`📧 [SEND-EMAIL] Envoi email ${type} à:`, to);
-    console.log(`🔑 [SEND-EMAIL] API Key présente:`, Deno.env.get("RESEND_API_KEY") ? "OUI" : "NON");
+    console.log(`📧 [SEND-EMAIL] Envoi email ${type} à:`, resolvedTo);
 
-    if (!to || !type) {
-      throw new Error("Paramètres manquants: 'to' et 'type' sont requis");
+    if (!resolvedTo || !type) {
+      throw new Error("Paramètres manquants: 'to' ou 'driver_id' + 'type' sont requis");
     }
 
-    const template = getEmailTemplate(type, data);
+    const template = getEmailTemplate(type, enrichedData);
 
     console.log('📄 [SEND-EMAIL] Template généré - Sujet:', template.subject);
 
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "SoloCab <noreply@solocab.fr>",
-      to: [to],
-      subject: template.subject,
-      html: template.html,
-    });
 
-    if (emailError) {
-      console.error("❌❌❌ [SEND-EMAIL] ERREUR RESEND API:", {
-        error: emailError,
-        type: type,
-        to: to
+    // Use retry mechanism for reliability
+    const emailResult = await sendEmailWithRetry(
+      resend,
+      {
+        from: "SoloCab <noreply@solocab.fr>",
+        to: [resolvedTo],
+        subject: template.subject,
+        html: template.html,
+      },
+      { maxAttempts: 3 }
+    );
+
+    if (!emailResult.success) {
+      console.error("❌❌❌ [SEND-EMAIL] ÉCHEC DÉFINITIF après retry:", emailResult.error);
+      
+      await sendAdminAlert(resend, {
+        emailType: type,
+        recipient: resolvedTo,
+        error: emailResult.error || "Erreur inconnue",
+        context: driver_id ? `Driver ID: ${driver_id}` : undefined
       });
+      
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: emailError.message || 'Erreur Resend inconnue',
-          errorDetails: emailError
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ success: false, error: emailResult.error }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("✅✅✅ [SEND-EMAIL] Email envoyé avec succès - ID:", emailData?.id);
+    console.log("✅✅✅ [SEND-EMAIL] Email envoyé avec succès - ID:", emailResult.emailId);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data: emailData 
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ success: true, emailId: emailResult.emailId }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
     console.error("❌❌❌ [SEND-EMAIL] ERREUR CRITIQUE COMPLÈTE:", {
