@@ -9,7 +9,7 @@ import {
   Car,
   Loader2
 } from 'lucide-react';
-import { PartnerCoursePool } from '../PartnerCoursePool';
+import { PartnerCoursePool } from '../sharing/PartnerCoursePool';
 import { ReceivedPartnerCourses } from './ReceivedPartnerCourses';
 import { SentPartnerCourses } from './SentPartnerCourses';
 

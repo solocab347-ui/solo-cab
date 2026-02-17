@@ -33,7 +33,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getCourseType, getCourseTypeFilters, CourseType, CourseTypeInfo } from "@/lib/courseTypeUtils";
-import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
+import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/courses/CourseTypeBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DriverPlanningProps {

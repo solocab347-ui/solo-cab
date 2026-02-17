@@ -29,7 +29,7 @@ import {
   Phone,
   ArrowRight
 } from 'lucide-react';
-import { SharingAvailabilityToggle } from '@/components/driver/SharingAvailabilityToggle';
+import { SharingAvailabilityToggle } from '@/components/driver/sharing/SharingAvailabilityToggle';
 import { useDriverPartnershipStatus } from '@/hooks/usePartnershipRequestStatus';
 import { PartnershipStatusBadge, PartnershipStatusMessage } from '@/components/driver/partnership/PartnershipStatusBadge';
 

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { DirectCourseCreationForm } from "@/components/driver/DirectCourseCreationForm";
+import { DirectCourseCreationForm } from "@/components/driver/courses/DirectCourseCreationForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useEffect } from "react";
 

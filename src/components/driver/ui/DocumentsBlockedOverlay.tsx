@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { XCircle, FileText, CreditCard, AlertTriangle, Clock, CheckCircle, Loader2, ShieldCheck } from "lucide-react";
-import { DriverDocuments } from "./DriverDocuments";
-import SubscriptionManager from "./SubscriptionManager";
+import { DriverDocuments } from "../DriverDocuments";
+import SubscriptionManager from "../payments/SubscriptionManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DocumentsBlockedOverlayProps {

@@ -7,8 +7,8 @@ import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 import { SectorSelector } from '../SectorSelector';
 import { ServicesSelector } from '../ServicesSelector';
-import { EquipmentSelector } from '../EquipmentSelector';
-import { VehicleCategorySelector } from '../VehicleCategorySelector';
+import { EquipmentSelector } from '../vehicles/EquipmentSelector';
+import { VehicleCategorySelector } from '../vehicles/VehicleCategorySelector';
 import { 
   Camera, 
   MapPin, 

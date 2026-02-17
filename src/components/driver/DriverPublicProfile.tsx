@@ -12,12 +12,12 @@ import { Separator } from "@/components/ui/separator";
 import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package, Users, Star, DollarSign, Eye, Shield, Copy, Check, ExternalLink } from "lucide-react";
 import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
-import { EquipmentSelector } from "./EquipmentSelector";
+import { EquipmentSelector } from "./vehicles/EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
 import { toast } from "sonner";
 
-import { VehicleCategorySelector } from "./VehicleCategorySelector";
-import { DriverVehiclesManager } from "./DriverVehiclesManager";
+import { VehicleCategorySelector } from "./vehicles/VehicleCategorySelector";
+import { DriverVehiclesManager } from "./vehicles/DriverVehiclesManager";
 
 interface DriverPublicProfileProps {
   driverProfile: any;
