@@ -29,8 +29,8 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DeclineCourseDialog } from './partnership/DeclineCourseDialog';
-import { SenderProfileDialog } from './partnership/SenderProfileDialog';
+import { DeclineCourseDialog } from '../partnership/DeclineCourseDialog';
+import { SenderProfileDialog } from '../partnership/SenderProfileDialog';
 
 interface PooledCourse {
   pool_id: string;

@@ -21,9 +21,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
 
 // Import sub-components
-import { MyPartnersList } from '../MyPartnersList';
-import { PartnerCoursePool } from '../PartnerCoursePool';
-import { DriverPartnerSearch } from '../DriverPartnerSearch';
+import { MyPartnersList } from '../sharing/MyPartnersList';
+import { PartnerCoursePool } from '../sharing/PartnerCoursePool';
+import { DriverPartnerSearch } from '../sharing/DriverPartnerSearch';
 import { ReceivedPartnerCourses } from './ReceivedPartnerCourses';
 import { SentPartnerCourses } from './SentPartnerCourses';
 import { PartnerInvoicesList } from './PartnerInvoicesList';

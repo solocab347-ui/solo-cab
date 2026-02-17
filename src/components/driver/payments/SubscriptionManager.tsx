@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import PioneerCancellationWarning from "./PioneerCancellationWarning";
+import PioneerCancellationWarning from "../ui/PioneerCancellationWarning";
 import { SubscriptionManagementCard } from "@/components/subscription/SubscriptionManagementCard";
 
 interface SubscriptionManagerProps {

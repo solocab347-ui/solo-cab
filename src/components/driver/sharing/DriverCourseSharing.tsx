@@ -24,8 +24,8 @@ import {
 
 // Sub-components
 import { MyPartnersList } from './MyPartnersList';
-import { ReceivedPartnerCourses } from './partnership/ReceivedPartnerCourses';
-import { SentPartnerCourses } from './partnership/SentPartnerCourses';
+import { ReceivedPartnerCourses } from '../partnership/ReceivedPartnerCourses';
+import { SentPartnerCourses } from '../partnership/SentPartnerCourses';
 import { PartnerCoursePool } from './PartnerCoursePool';
 import { PushCourseToPartners } from './PushCourseToPartners';
 import { PartnerSearchInline } from './PartnerSearchInline';

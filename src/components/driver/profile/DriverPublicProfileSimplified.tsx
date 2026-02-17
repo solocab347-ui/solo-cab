@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { SingleProfilePhotoUpload } from "../onboarding/SingleProfilePhotoUpload";
 import { SectorSelector } from "../SectorSelector";
-import { EquipmentSelector } from "../EquipmentSelector";
+import { EquipmentSelector } from "../vehicles/EquipmentSelector";
 import { ServicesSelector } from "../ServicesSelector";
-import { VehicleCategorySelector } from "../VehicleCategorySelector";
-import { DriverVehiclesManager } from "../DriverVehiclesManager";
+import { VehicleCategorySelector } from "../vehicles/VehicleCategorySelector";
+import { DriverVehiclesManager } from "../vehicles/DriverVehiclesManager";
 import { toast } from "sonner";
 
 interface DriverPublicProfileSimplifiedProps {
