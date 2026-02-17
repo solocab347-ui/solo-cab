@@ -114,7 +114,7 @@ serve(async (req) => {
     // Send welcome email for trial
     try {
       await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-driver-welcome-new`,
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`,
         {
           method: "POST",
           headers: {
@@ -123,8 +123,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({ 
             driver_id,
-            is_trial: true,
-            trial_days: TRIAL_DURATION_DAYS,
+            type: "driver_welcome_new",
           }),
         }
       );

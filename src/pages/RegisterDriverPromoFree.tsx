@@ -148,8 +148,8 @@ const RegisterDriverPromoFree = () => {
       await supabase.from("user_roles").insert({ user_id: newUserId, role: "driver" });
 
       try {
-        await supabase.functions.invoke("send-driver-welcome-new", {
-          body: { driver_id: driverData.id },
+        await supabase.functions.invoke("send-email", {
+          body: { driver_id: driverData.id, type: "driver_welcome_new" },
         });
       } catch (emailError) {
         console.error("Welcome email error:", emailError);
