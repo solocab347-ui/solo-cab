@@ -108,11 +108,11 @@ export function CarouselSettingsFlow({
       case 'tva':
         return true;
       case 'company_name':
-        return !!data.companyName.trim();
+        return true; // Optionnel à l'onboarding, complétable plus tard
       case 'company_details':
         return true; // Optionnel
       case 'vehicle_brand':
-        return !!data.vehicleBrand.trim();
+        return !!data.vehicleBrand.trim() && data.vehicleBrand !== 'À compléter';
       case 'vehicle_details':
         return true; // Optionnel
       case 'recap':

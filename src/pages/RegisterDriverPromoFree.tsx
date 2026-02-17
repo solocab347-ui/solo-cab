@@ -135,11 +135,11 @@ const RegisterDriverPromoFree = () => {
           trial_status: "pending",
           documents_status: "pending",
           registration_step: 1,
-          license_number: "À_COMPLÉTER",
-          vehicle_brand: "À compléter",
-          vehicle_model: "À compléter",
+          license_number: "",
+          vehicle_brand: "",
+          vehicle_model: "",
           vehicle_year: new Date().getFullYear(),
-          vehicle_color: "À compléter",
+          vehicle_color: "",
         })
         .select()
         .single();
