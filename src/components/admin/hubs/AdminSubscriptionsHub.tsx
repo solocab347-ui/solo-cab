@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Activity, Gift, Ticket, Link2 } from "lucide-react";
+import { Activity, Gift, Link2 } from "lucide-react";
 import AdminSubscriptions from "../AdminSubscriptions";
 import AdminFreeAccess from "../AdminFreeAccess";
-import { AdminInvitationTokens } from "../AdminInvitationTokens";
 import AdminSubscriptionSync from "../AdminSubscriptionSync";
+import AdminInvitationLinks from "../AdminInvitationLinks";
 
 const AdminSubscriptionsHub = () => {
-  const [activeTab, setActiveTab] = useState<"subscriptions" | "free" | "tokens" | "sync">("subscriptions");
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "invitations" | "free" | "sync">("subscriptions");
 
   return (
     <div className="space-y-4">
@@ -24,14 +24,14 @@ const AdminSubscriptionsHub = () => {
           <span className="sm:hidden">Abos</span>
         </Button>
         <Button
-          variant={activeTab === "sync" ? "default" : "ghost"}
+          variant={activeTab === "invitations" ? "default" : "ghost"}
           size="sm"
-          onClick={() => setActiveTab("sync")}
+          onClick={() => setActiveTab("invitations")}
           className="gap-2"
         >
           <Link2 className="w-4 h-4" />
-          <span className="hidden sm:inline">Synchronisation</span>
-          <span className="sm:hidden">Sync</span>
+          <span className="hidden sm:inline">Liens d'invitation</span>
+          <span className="sm:hidden">Liens</span>
         </Button>
         <Button
           variant={activeTab === "free" ? "default" : "ghost"}
@@ -44,22 +44,22 @@ const AdminSubscriptionsHub = () => {
           <span className="sm:hidden">Gratuits</span>
         </Button>
         <Button
-          variant={activeTab === "tokens" ? "default" : "ghost"}
+          variant={activeTab === "sync" ? "default" : "ghost"}
           size="sm"
-          onClick={() => setActiveTab("tokens")}
+          onClick={() => setActiveTab("sync")}
           className="gap-2"
         >
-          <Ticket className="w-4 h-4" />
-          <span className="hidden sm:inline">Tokens Campagne</span>
-          <span className="sm:hidden">Tokens</span>
+          <Activity className="w-4 h-4" />
+          <span className="hidden sm:inline">Synchronisation</span>
+          <span className="sm:hidden">Sync</span>
         </Button>
       </div>
 
       {/* Contenu */}
       {activeTab === "subscriptions" && <AdminSubscriptions />}
-      {activeTab === "sync" && <AdminSubscriptionSync />}
+      {activeTab === "invitations" && <AdminInvitationLinks />}
       {activeTab === "free" && <AdminFreeAccess />}
-      {activeTab === "tokens" && <AdminInvitationTokens />}
+      {activeTab === "sync" && <AdminSubscriptionSync />}
     </div>
   );
 };
