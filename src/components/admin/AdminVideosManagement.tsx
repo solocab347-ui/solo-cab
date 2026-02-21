@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +39,11 @@ import {
   Video, 
   Eye,
   Loader2,
-  GripVertical
+  GripVertical,
+  Upload,
+  FileVideo
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface TrainingVideo {
   id: string;
@@ -69,6 +72,9 @@ export default function AdminVideosManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<TrainingVideo | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -102,9 +108,66 @@ export default function AdminVideosManagement() {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez MP4, WebM, OGG ou MOV.');
+      return;
+    }
+
+    // Validate file size (max 500MB)
+    if (file.size > 500 * 1024 * 1024) {
+      toast.error('Le fichier est trop volumineux (max 500 Mo)');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(10);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `videos/${fileName}`;
+
+      setUploadProgress(30);
+
+      const { error: uploadError } = await supabase.storage
+        .from('training-videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(80);
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('training-videos')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, video_url: urlData.publicUrl }));
+      setUploadProgress(100);
+      toast.success('Vidéo téléchargée avec succès !');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(`Erreur d'upload: ${error.message}`);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.title || !formData.video_url) {
-      toast.error('Titre et URL de la vidéo requis');
+      toast.error('Titre et vidéo requis');
       return;
     }
 
@@ -156,12 +219,28 @@ export default function AdminVideosManagement() {
     if (!confirm('Supprimer cette vidéo ?')) return;
 
     try {
+      // Find the video to get its URL for storage cleanup
+      const video = videos.find(v => v.id === id);
+      
       const { error } = await supabase
         .from('training_videos')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      // Try to delete from storage if it's a storage URL
+      if (video?.video_url?.includes('training-videos')) {
+        try {
+          const path = video.video_url.split('training-videos/')[1];
+          if (path) {
+            await supabase.storage.from('training-videos').remove([path]);
+          }
+        } catch (e) {
+          console.warn('Could not delete storage file:', e);
+        }
+      }
+
       toast.success('Vidéo supprimée');
       fetchVideos();
     } catch (error) {
@@ -223,6 +302,8 @@ export default function AdminVideosManagement() {
     );
   };
 
+  const isStorageVideo = (url: string) => url?.includes('training-videos');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -255,7 +336,7 @@ export default function AdminVideosManagement() {
               Ajouter une vidéo
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingVideo ? 'Modifier la vidéo' : 'Nouvelle vidéo'}
@@ -282,13 +363,68 @@ export default function AdminVideosManagement() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>URL de la vidéo *</Label>
-                <Input
-                  value={formData.video_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
-                  placeholder="https://youtube.com/embed/... ou URL directe"
-                />
+              {/* Video Upload Section */}
+              <div className="space-y-3">
+                <Label>Vidéo *</Label>
+                
+                {/* File Upload */}
+                <div 
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  {uploading ? (
+                    <div className="space-y-3">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                      <p className="text-sm text-muted-foreground">Téléchargement en cours...</p>
+                      <Progress value={uploadProgress} className="w-full" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm font-medium">Cliquez pour télécharger une vidéo</p>
+                      <p className="text-xs text-muted-foreground">MP4, WebM, OGG, MOV • Max 500 Mo</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Current video URL display */}
+                {formData.video_url && (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <FileVideo className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm truncate flex-1">
+                      {isStorageVideo(formData.video_url) 
+                        ? `✅ Vidéo uploadée` 
+                        : formData.video_url}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => window.open(formData.video_url, '_blank')}
+                    >
+                      <Play className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Optional: Manual URL fallback */}
+                <details className="text-sm">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                    Ou coller une URL externe
+                  </summary>
+                  <Input
+                    value={isStorageVideo(formData.video_url) ? '' : formData.video_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
+                    placeholder="https://youtube.com/embed/... ou URL directe"
+                    className="mt-2"
+                  />
+                </details>
               </div>
 
               <div className="space-y-2">
@@ -354,7 +490,7 @@ export default function AdminVideosManagement() {
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Annuler
               </Button>
-              <Button onClick={handleSubmit} disabled={saving}>
+              <Button onClick={handleSubmit} disabled={saving || uploading}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {editingVideo ? 'Mettre à jour' : 'Ajouter'}
               </Button>
@@ -401,12 +537,12 @@ export default function AdminVideosManagement() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Video className="w-8 h-8 text-blue-500" />
+              <Upload className="w-8 h-8 text-blue-500" />
               <div>
                 <p className="text-2xl font-bold">
-                  {videos.filter(v => v.category === 'welcome').length}
+                  {videos.filter(v => isStorageVideo(v.video_url)).length}
                 </p>
-                <p className="text-sm text-muted-foreground">Bienvenue</p>
+                <p className="text-sm text-muted-foreground">Uploadées</p>
               </div>
             </div>
           </CardContent>
@@ -418,7 +554,7 @@ export default function AdminVideosManagement() {
         <CardHeader>
           <CardTitle>Liste des vidéos</CardTitle>
           <CardDescription>
-            Glissez-déposez pour réorganiser l'ordre d'affichage
+            Uploadez vos vidéos directement ou utilisez des liens externes
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -434,6 +570,7 @@ export default function AdminVideosManagement() {
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
                   <TableHead>Titre</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Durée</TableHead>
                   <TableHead>Obligatoire</TableHead>
@@ -456,6 +593,18 @@ export default function AdminVideosManagement() {
                           </p>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {isStorageVideo(video.video_url) ? (
+                        <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">
+                          <Upload className="w-3 h-3 mr-1" />
+                          Uploadée
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-blue-500 border-blue-500/30">
+                          Lien externe
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>{getCategoryBadge(video.category)}</TableCell>
                     <TableCell>

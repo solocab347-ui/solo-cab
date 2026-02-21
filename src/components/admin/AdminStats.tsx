@@ -16,16 +16,26 @@ import {
   AlertTriangle,
   RefreshCw,
   UserPlus,
-  Percent
+  Percent,
+  Activity,
+  Eye,
+  Globe
 } from "lucide-react";
 import { logger } from "@/lib/productionLogger";
 
 const AdminStats = () => {
   const [stats, setStats] = useState<any>(null);
+  const [connectionStats, setConnectionStats] = useState<{
+    connectedToday: number;
+    connectedThisWeek: number;
+    connectedThisMonth: number;
+    neverConnected: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
+    fetchConnectionStats();
   }, []);
 
   const fetchStats = async () => {
@@ -41,11 +51,84 @@ const AdminStats = () => {
     }
   };
 
+  const fetchConnectionStats = async () => {
+    try {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      const [todayRes, weekRes, monthRes, neverRes] = await Promise.all([
+        supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .gte("last_seen_at", startOfToday)
+          .eq("is_demo_account", false),
+        supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .gte("last_seen_at", startOfWeek)
+          .eq("is_demo_account", false),
+        supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .gte("last_seen_at", startOfMonth)
+          .eq("is_demo_account", false),
+        supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .is("last_seen_at", null)
+          .eq("is_demo_account", false),
+      ]);
+
+      setConnectionStats({
+        connectedToday: todayRes.count || 0,
+        connectedThisWeek: weekRes.count || 0,
+        connectedThisMonth: monthRes.count || 0,
+        neverConnected: neverRes.count || 0,
+      });
+    } catch (error) {
+      logger.error("Error fetching connection stats", { error });
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement des statistiques...</div>;
   }
 
   if (!stats) return null;
+
+  // Section 0: Connexions & Visites
+  const connectionCards = [
+    {
+      title: "Connectés aujourd'hui",
+      value: connectionStats?.connectedToday || 0,
+      description: "Chauffeurs inscrits actifs aujourd'hui",
+      icon: Activity,
+      color: "bg-emerald-500",
+    },
+    {
+      title: "Connectés cette semaine",
+      value: connectionStats?.connectedThisWeek || 0,
+      description: "7 derniers jours",
+      icon: Eye,
+      color: "bg-blue-500",
+    },
+    {
+      title: "Connectés ce mois",
+      value: connectionStats?.connectedThisMonth || 0,
+      description: "Depuis le 1er du mois",
+      icon: Globe,
+      color: "bg-purple-500",
+    },
+    {
+      title: "Jamais connectés",
+      value: connectionStats?.neverConnected || 0,
+      description: "Inscrits mais jamais vus",
+      icon: AlertTriangle,
+      color: "bg-red-500",
+    },
+  ];
 
   // Section 1: Revenus et Abonnements
   const revenueCards = [
@@ -227,6 +310,7 @@ const AdminStats = () => {
 
   return (
     <div className="space-y-2">
+      {renderSection("🟢 Connexions & Activité", connectionCards)}
       {renderSection("💰 Revenus et Facturation", revenueCards)}
       {renderSection("📊 Abonnements", subscriptionCards)}
       {renderSection("🚗 Chauffeurs", driverCards)}
