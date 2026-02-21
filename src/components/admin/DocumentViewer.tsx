@@ -350,15 +350,30 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
                               }}
                             />
                           ) : isPDF(url) ? (
-                            <div className="bg-muted rounded-lg p-4 text-center">
-                              <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(url, '_blank')}
-                              >
-                                Ouvrir le PDF
-                              </Button>
+                            <div className="space-y-2">
+                              <iframe
+                                src={`${url}#toolbar=1`}
+                                className="w-full h-48 rounded-lg border border-border"
+                                title={doc.label}
+                              />
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => downloadDocument(doc.key, `${group.groupLabel}_${doc.label}.pdf`)}
+                                >
+                                  <Download className="w-4 h-4 mr-1" />
+                                  Télécharger
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(url, '_blank')}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  Nouvel onglet
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <div className="bg-muted rounded-lg p-4 text-center">

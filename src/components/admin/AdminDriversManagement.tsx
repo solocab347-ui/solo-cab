@@ -218,12 +218,17 @@ const AdminDriversManagement = () => {
           successMessage = "Demande refusée";
         }
         
+        const updateData: any = { 
+          status: newStatus,
+          validation_date: newStatus === "validated" ? new Date().toISOString() : null
+        };
+        // IMPORTANT: Synchroniser documents_status avec status pour éviter les désynchronisations
+        if (newStatus === "validated") {
+          updateData.documents_status = "validated";
+        }
         const { error } = await supabase
           .from("drivers")
-          .update({ 
-            status: newStatus,
-            validation_date: newStatus === "validated" ? new Date().toISOString() : null
-          })
+          .update(updateData)
           .eq("id", actionDialog.driver.id);
 
         if (error) throw error;
