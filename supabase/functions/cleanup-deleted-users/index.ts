@@ -101,74 +101,67 @@ Deno.serve(async (req) => {
 
     console.log('✅ Admin verified:', user.email);
 
-    const { email } = await req.json();
+    const body = await req.json();
+    const { email, userId } = body;
 
-    if (!email) {
+    if (!email && !userId) {
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
+        JSON.stringify({ error: 'Email ou userId requis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('🧹 Cleaning up user:', email);
+    let targetUserId = userId;
+    let targetEmail = email;
 
-    // 1. Chercher l'utilisateur dans auth.users
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('❌ Error listing users:', listError);
-      throw listError;
+    // If userId provided directly, use it; otherwise find by email
+    if (!targetUserId && targetEmail) {
+      const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) throw listError;
+      const found = users.users.find((u) => u.email === targetEmail);
+      if (found) {
+        targetUserId = found.id;
+        targetEmail = found.email;
+      }
     }
 
-    const userToDelete = users.users.find((u) => u.email === email);
-
-    if (userToDelete) {
-      console.log('👤 Found user in auth.users:', userToDelete.id);
-
-      // 2. Supprimer complètement de profiles (cascade supprimera clients/drivers)
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('id', userToDelete.id);
-
-      if (profileError) {
-        console.error('⚠️ Error deleting profile:', profileError);
-      } else {
-        console.log('✅ Profile deleted');
-      }
-
-      // 3. Supprimer définitivement de auth.users
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
-        userToDelete.id
-      );
-
-      if (deleteError) {
-        console.error('❌ Error deleting user from auth:', deleteError);
-        throw deleteError;
-      }
-
-      console.log('✅ User completely deleted from auth.users');
-
+    if (!targetUserId) {
+      console.log('ℹ️ User not found - already clean');
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `User ${email} completely deleted and can now re-register`,
-          userId: userToDelete.id
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      console.log('ℹ️ User not found in auth.users - already clean');
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `No user found with email ${email} - already clean`,
-          alreadyClean: true
-        }),
+        JSON.stringify({ success: true, message: `Aucun utilisateur trouvé - déjà nettoyé`, alreadyClean: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('🧹 Cleaning up user:', targetUserId, targetEmail);
+
+    // Step 1: Call the cascade cleanup function to remove all related data
+    const { error: rpcError } = await supabaseAdmin.rpc('admin_delete_user_cascade', {
+      target_user_id: targetUserId
+    });
+
+    if (rpcError) {
+      console.error('❌ Error in cascade cleanup:', rpcError);
+      throw rpcError;
+    }
+    console.log('✅ Cascade cleanup completed');
+
+    // Step 2: Delete from auth.users
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+    if (deleteError) {
+      console.error('❌ Error deleting user from auth:', deleteError);
+      throw deleteError;
+    }
+    console.log('✅ User completely deleted from auth.users');
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Utilisateur ${targetEmail || targetUserId} complètement supprimé`,
+        userId: targetUserId
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('❌ Cleanup error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

@@ -194,14 +194,15 @@ const AdminDriversManagement = () => {
 
     try {
       if (actionDialog.action === "delete") {
-        // Supprimer le chauffeur
-        const { error } = await supabase
-          .from("drivers")
-          .delete()
-          .eq("id", actionDialog.driver.id);
+        // Suppression complète via edge function (cascade toutes les tables)
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await supabase.functions.invoke("cleanup-deleted-users", {
+          body: { userId: actionDialog.driver.user_id },
+        });
 
-        if (error) throw error;
-        toast.success("Chauffeur supprimé avec succès");
+        if (response.error) throw response.error;
+        if (response.data?.error) throw new Error(response.data.error);
+        toast.success("Chauffeur supprimé avec succès de toutes les tables");
       } else {
         // Changer le statut
         let newStatus: "validated" | "rejected" | "on_hold";

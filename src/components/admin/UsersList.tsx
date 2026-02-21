@@ -86,17 +86,20 @@ const UsersList = () => {
     if (!deleteDialog.user) return;
 
     try {
-      // Delete from auth.users (cascade will handle related data)
-      const { error } = await supabase.auth.admin.deleteUser(deleteDialog.user.id);
+      // Suppression complète via edge function (cascade toutes les tables)
+      const response = await supabase.functions.invoke("cleanup-deleted-users", {
+        body: { userId: deleteDialog.user.id },
+      });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
 
-      toast.success("Utilisateur supprimé avec succès");
+      toast.success("Utilisateur supprimé avec succès de toutes les tables");
       fetchUsers();
       setDeleteDialog({ open: false, user: null });
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      toast.error("Erreur lors de la suppression de l'utilisateur");
+      toast.error(`Erreur: ${error.message || "Impossible de supprimer l'utilisateur"}`);
     }
   };
 
