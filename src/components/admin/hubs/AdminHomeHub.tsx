@@ -1,39 +1,37 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, TrendingUp } from "lucide-react";
-import AdminOverview from "../AdminOverview";
+import { BarChart3, TrendingUp } from "lucide-react";
+import AdminStats from "../AdminStats";
 import AdminSubscriptionStats from "../AdminSubscriptionStats";
 
 const AdminHomeHub = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "stats">("overview");
+  const [activeTab, setActiveTab] = useState<"stats" | "subscriptions">("stats");
 
   return (
     <div className="space-y-4">
-      {/* Navigation simplifiée */}
       <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
-        <Button
-          variant={activeTab === "overview" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("overview")}
-          className="gap-2"
-        >
-          <Home className="w-4 h-4" />
-          Vue d'ensemble
-        </Button>
         <Button
           variant={activeTab === "stats" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("stats")}
           className="gap-2"
         >
-          <TrendingUp className="w-4 h-4" />
+          <BarChart3 className="w-4 h-4" />
           Statistiques
+        </Button>
+        <Button
+          variant={activeTab === "subscriptions" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("subscriptions")}
+          className="gap-2"
+        >
+          <TrendingUp className="w-4 h-4" />
+          Abonnements & Revenus
         </Button>
       </div>
 
-      {/* Contenu */}
-      {activeTab === "overview" && <AdminOverview />}
-      {activeTab === "stats" && <AdminSubscriptionStats />}
+      {activeTab === "stats" && <AdminStats />}
+      {activeTab === "subscriptions" && <AdminSubscriptionStats />}
     </div>
   );
 };
