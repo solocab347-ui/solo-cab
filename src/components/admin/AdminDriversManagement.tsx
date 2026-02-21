@@ -119,6 +119,7 @@ const AdminDriversManagement = () => {
           is_pioneer,
           is_demo_account,
           sharing_number,
+          last_seen_at,
           profiles!inner(full_name, email, phone, profile_photo_url)
         `
         )
@@ -381,6 +382,11 @@ const AdminDriversManagement = () => {
               <p className="text-xs text-muted-foreground">
                 📅 Inscrit le {format(new Date(driver.created_at), "d MMMM yyyy", { locale: fr })}
               </p>
+              {(driver as any).last_seen_at && (
+                <p className="text-xs text-primary font-medium">
+                  👁️ Dernière visite : {format(new Date((driver as any).last_seen_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
+                </p>
+              )}
             </div>
           </div>
 
