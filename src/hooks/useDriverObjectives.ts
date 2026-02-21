@@ -233,7 +233,58 @@ export function useDriverObjectives(driverId: string | null) {
         supabase.from('driver_work_schedules').select('*').eq('driver_id', driverId).order('day_of_week'),
       ]);
 
-      if (objectivesRes.data) setObjectives(objectivesRes.data as DriverObjective[]);
+      // Auto-seed objectives from onboarding data if table is empty
+      if (objectivesRes.data && objectivesRes.data.length === 0) {
+        const { data: driver } = await supabase
+          .from('drivers')
+          .select('objectives_data')
+          .eq('id', driverId)
+          .single();
+
+        const od = driver?.objectives_data as Record<string, any> | null;
+        if (od && od.target_monthly_revenue) {
+          const monthlyRev = Number(od.target_monthly_revenue) || 0;
+          const weeklyRev = Number(od.target_weekly_revenue) || Math.round(monthlyRev / 4);
+          const daysPerWeek = Number(od.work_days_per_week) || 5;
+          const hoursPerDay = Number(od.work_hours_per_day) || 8;
+          const monthlyClients = Number(od.target_direct_clients) || 5;
+
+          const seeds = [
+            {
+              driver_id: driverId, period_type: 'daily', is_active: true,
+              revenue_target: Math.round(monthlyRev / (daysPerWeek * 4)),
+              courses_target: 5, new_clients_target: 1,
+              hours_target: hoursPerDay, km_target: 100,
+            },
+            {
+              driver_id: driverId, period_type: 'weekly', is_active: true,
+              revenue_target: weeklyRev,
+              courses_target: daysPerWeek * 5, new_clients_target: Math.max(Math.round(monthlyClients / 4), 1),
+              hours_target: hoursPerDay * daysPerWeek, km_target: 500,
+            },
+            {
+              driver_id: driverId, period_type: 'monthly', is_active: true,
+              revenue_target: monthlyRev,
+              courses_target: daysPerWeek * 4 * 5, new_clients_target: monthlyClients,
+              hours_target: hoursPerDay * daysPerWeek * 4, km_target: 2000,
+            },
+            {
+              driver_id: driverId, period_type: 'yearly', is_active: true,
+              revenue_target: monthlyRev * 12,
+              courses_target: daysPerWeek * 52 * 5, new_clients_target: monthlyClients * 12,
+              hours_target: hoursPerDay * daysPerWeek * 52, km_target: 24000,
+            },
+          ];
+
+          const { data: seeded } = await supabase.from('driver_objectives').insert(seeds).select();
+          if (seeded) {
+            setObjectives(seeded as DriverObjective[]);
+          }
+        }
+      } else if (objectivesRes.data) {
+        setObjectives(objectivesRes.data as DriverObjective[]);
+      }
+
       if (platformsRes.data) setPlatforms(platformsRes.data as DriverPlatform[]);
       if (entriesRes.data) setDailyEntries(entriesRes.data as DriverDailyEntry[]);
       if (messagesRes.data) setCoachingMessages(messagesRes.data as DriverCoachingMessage[]);
