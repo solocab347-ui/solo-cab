@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
+import AdminDashboardStats from "@/components/admin/AdminDashboardStats";
 import AdminHomeHub from "@/components/admin/hubs/AdminHomeHub";
 import AdminUsersHub from "@/components/admin/hubs/AdminUsersHub";
 import AdminSubscriptionsHub from "@/components/admin/hubs/AdminSubscriptionsHub";
@@ -180,8 +181,12 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        {/* Grille de navigation */}
+        {/* Stats clés + Grille de navigation */}
         <main className="p-4 max-w-5xl mx-auto">
+          {/* Statistiques principales visibles immédiatement */}
+          <AdminDashboardStats />
+
+          {/* Grille de navigation */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {menuItems.map((item) => {
               const Icon = item.icon;
