@@ -16793,6 +16793,10 @@ export type Database = {
             }
             Returns: string
           }
+      admin_delete_user_cascade: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       admin_get_all_driver_statistics: {
         Args: never
         Returns: {
