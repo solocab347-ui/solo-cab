@@ -1,0 +1,1 @@
+ALTER TABLE public.driver_objectives ALTER COLUMN hours_target TYPE numeric(10,2);
