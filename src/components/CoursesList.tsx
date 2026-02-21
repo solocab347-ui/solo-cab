@@ -890,6 +890,30 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         }
       }
 
+      // ═══ STRIPE CONNECT: déclencher le paiement automatique si le chauffeur utilise Stripe ═══
+      if (paymentMethod === "stripe" || paymentMethod === "card_online") {
+        try {
+          console.log("[handleCompleteCourse] Tentative finalisation paiement Stripe...");
+          const { data: stripeResult, error: stripeError } = await supabase.functions.invoke("finalize-course-payment", {
+            body: { course_id: selectedCourseId }
+          });
+
+          if (stripeError) {
+            console.error("[handleCompleteCourse] Erreur Stripe:", stripeError);
+            toast.warning("Course terminée mais le paiement Stripe nécessite une action manuelle.");
+          } else if (stripeResult?.status === "requires_action") {
+            toast.info("Le paiement nécessite une authentification 3D Secure du client.");
+          } else if (stripeResult?.success) {
+            console.log("[handleCompleteCourse] Paiement Stripe encaissé:", stripeResult);
+            toast.success(`Paiement de ${stripeResult.amount_charged?.toFixed(2)}€ encaissé avec succès.`);
+          }
+        } catch (stripeErr: any) {
+          console.error("[handleCompleteCourse] Exception Stripe:", stripeErr);
+          // La course est terminée, le paiement pourra être relancé manuellement
+          toast.warning("Course terminée. Le paiement Stripe pourra être relancé manuellement.");
+        }
+      }
+
       // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
 
       // Notifier l'entreprise si la course est liée à une entreprise

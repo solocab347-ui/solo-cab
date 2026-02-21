@@ -73,7 +73,7 @@ serve(async (req) => {
     }
 
     // Calculer le montant total et le reste à payer
-    const totalAmount = course.final_price || course.estimated_price || course.devis?.[0]?.amount || 0;
+    const totalAmount = course.final_payment_amount || course.guest_estimated_price || course.devis?.[0]?.amount || 0;
     const depositPaid = course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0;
     const remainingAmount = totalAmount - depositPaid;
 
