@@ -18,12 +18,15 @@ export function buildDriverFilter(driverId: string): string {
 export function queryDriverCourses(
   supabase: SupabaseClient,
   driverId: string,
-  select = "*"
+  select = "*",
+  limit = 500
 ) {
   return supabase
     .from("courses")
     .select(select)
-    .or(buildDriverFilter(driverId));
+    .or(buildDriverFilter(driverId))
+    .order("created_at", { ascending: false })
+    .limit(limit);
 }
 
 /**
@@ -32,12 +35,15 @@ export function queryDriverCourses(
 export function queryDriverClients(
   supabase: SupabaseClient,
   driverId: string,
-  select = "*"
+  select = "*",
+  limit = 500
 ) {
   return supabase
     .from("clients")
     .select(select)
-    .or(buildDriverFilter(driverId));
+    .or(buildDriverFilter(driverId))
+    .order("created_at", { ascending: false })
+    .limit(limit);
 }
 
 /**
@@ -46,12 +52,15 @@ export function queryDriverClients(
 export function queryDriverDevis(
   supabase: SupabaseClient,
   driverId: string,
-  select = "*"
+  select = "*",
+  limit = 500
 ) {
   return supabase
     .from("devis")
     .select(select)
-    .or(buildDriverFilter(driverId));
+    .or(buildDriverFilter(driverId))
+    .order("created_at", { ascending: false })
+    .limit(limit);
 }
 
 /**
@@ -60,12 +69,15 @@ export function queryDriverDevis(
 export function queryDriverFactures(
   supabase: SupabaseClient,
   driverId: string,
-  select = "*"
+  select = "*",
+  limit = 500
 ) {
   return supabase
     .from("factures")
     .select(select)
-    .eq("driver_id", driverId); // Factures use only driver_id
+    .eq("driver_id", driverId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 }
 
 /**
