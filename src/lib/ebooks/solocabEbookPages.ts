@@ -1231,7 +1231,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   ];
   let fy = 198;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
+  doc.setFontSize(10.5);
   doc.setTextColor(...c.primaryBlue);
   features.forEach((f) => {
     doc.text(f, w / 2, fy, { align: "center" });
