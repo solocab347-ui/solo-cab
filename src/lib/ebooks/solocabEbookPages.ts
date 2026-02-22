@@ -10,9 +10,9 @@ import {
 const c = ebookColors;
 
 // Logo loading helper
-const loadLogo = async (): Promise<string | null> => {
+const loadImage = async (path: string): Promise<string | null> => {
   try {
-    const response = await fetch("/images/solocab-academy-logo.png");
+    const response = await fetch(path);
     const blob = await response.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -26,9 +26,13 @@ const loadLogo = async (): Promise<string | null> => {
 };
 
 let logoDataUrl: string | null = null;
+let coverDataUrl: string | null = null;
 
 export const initLogo = async () => {
-  logoDataUrl = await loadLogo();
+  [logoDataUrl, coverDataUrl] = await Promise.all([
+    loadImage("/images/solocab-academy-logo.png"),
+    loadImage("/images/ebook-cover.png"),
+  ]);
 };
 
 /** Add logo to a page at specified position */
@@ -44,40 +48,31 @@ const addLogo = (doc: jsPDF, x: number, y: number, size = 20) => {
 export const addCover = (doc: jsPDF) => {
   const { w, h } = getPageDims(doc);
 
+  if (coverDataUrl) {
+    try {
+      // Full-page cover image
+      doc.addImage(coverDataUrl, "PNG", 0, 0, w, h);
+      return;
+    } catch { /* fall through to generated cover */ }
+  }
+
+  // Fallback: generated cover if image fails to load
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
-
-  // Subtle abstract circles — editorial depth
-  doc.setFillColor(25, 45, 90);
-  doc.circle(-30, 70, 85, "F");
-  doc.circle(w + 30, h - 70, 100, "F");
-  doc.setFillColor(30, 52, 100);
-  doc.circle(w * 0.75, -15, 35, "F");
-  doc.circle(45, h - 40, 25, "F");
-
-  // Logo centered
   addLogo(doc, w / 2 - 18, 30, 36);
-
-  // Label
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...c.lightViolet);
   doc.text("SOLOCAB ACADEMY", w / 2, 78, { align: "center" });
-
-  // Top accent line — elegant violet
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(2);
   doc.line(40, 85, w - 40, 85);
-
-  // Main title — large, clean, high-end
   doc.setFont("helvetica", "bold");
   doc.setFontSize(40);
   doc.setTextColor(255, 255, 255);
   doc.text("L'ILLUSION", w / 2, 118, { align: "center" });
   doc.text("DES", w / 2, 138, { align: "center" });
   doc.text("APPLICATIONS", w / 2, 158, { align: "center" });
-
-  // Subtitle box — soft dark blue
   doc.setFillColor(28, 48, 95);
   doc.roundedRect(35, 170, w - 70, 30, 5, 5, "F");
   doc.setFont("helvetica", "normal");
@@ -85,13 +80,9 @@ export const addCover = (doc: jsPDF) => {
   doc.setTextColor(...c.lightViolet);
   doc.text("Comprendre le système pour reprendre", w / 2, 183, { align: "center" });
   doc.text("le contrôle de son activité", w / 2, 194, { align: "center" });
-
-  // Bottom accent line
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(2);
   doc.line(40, h - 80, w - 40, h - 80);
-
-  // Bottom info
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...c.lightViolet);
@@ -99,18 +90,8 @@ export const addCover = (doc: jsPDF) => {
   doc.setFontSize(9);
   doc.setTextColor(180, 190, 220);
   doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 48, { align: "center" });
-
-  // Decorative dots at bottom
-  doc.setFillColor(40, 62, 118);
-  for (let i = 0; i < 5; i++) {
-    doc.circle(w / 2 - 20 + i * 10, h - 35, 1, "F");
-  }
-
-  // Clickable link
   doc.link(35, h - 68, w - 70, 14, { url: "https://www.solocab.fr" });
 };
-
-// ========== TABLE OF CONTENTS ==========
 export const addTableOfContents = (doc: jsPDF) => {
   doc.addPage();
   const { w, margin } = getPageDims(doc);
