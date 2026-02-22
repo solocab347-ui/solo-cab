@@ -9,6 +9,37 @@ import {
 
 const c = ebookColors;
 
+// Logo loading helper
+const loadLogo = async (): Promise<string | null> => {
+  try {
+    const response = await fetch("/images/solocab-academy-logo.png");
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
+let logoDataUrl: string | null = null;
+
+export const initLogo = async () => {
+  logoDataUrl = await loadLogo();
+};
+
+/** Add logo to a page at specified position */
+const addLogo = (doc: jsPDF, x: number, y: number, size = 20) => {
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", x, y, size, size);
+    } catch { /* silent fail */ }
+  }
+};
+
 // ========== COVER ==========
 export const addCover = (doc: jsPDF) => {
   const { w, h } = getPageDims(doc);
@@ -17,51 +48,53 @@ export const addCover = (doc: jsPDF) => {
   doc.rect(0, 0, w, h, "F");
 
   // Decorative circles
-  doc.setFillColor(0, 65, 140);
+  doc.setFillColor(35, 55, 120);
   doc.circle(-40, 60, 100, "F");
   doc.circle(w + 40, h - 60, 120, "F");
   doc.circle(w / 2, -30, 50, "F");
 
-  // Gold lines
+  // Accent lines
   doc.setDrawColor(...c.accentGold);
   doc.setLineWidth(3);
   doc.line(30, 70, w - 30, 70);
   doc.line(30, h - 80, w - 30, h - 80);
 
-  // Logo area
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(...c.accentGold);
-  doc.text("SOLOCAB", w / 2, 50, { align: "center" });
+  // Logo
+  addLogo(doc, w / 2 - 18, 25, 36);
 
   // Label
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(200, 200, 220);
-  doc.text("MANUSCRIT INTÉGRAL", w / 2, 90, { align: "center" });
+  doc.setTextColor(200, 200, 230);
+  doc.text("SOLOCAB ACADEMY", w / 2, 90, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.setTextColor(180, 180, 210);
+  doc.text("MANUSCRIT INTÉGRAL", w / 2, 100, { align: "center" });
 
   // Main title
   doc.setFontSize(38);
   doc.setTextColor(255, 255, 255);
-  doc.text("L'ILLUSION", w / 2, 125, { align: "center" });
-  doc.text("DES", w / 2, 145, { align: "center" });
-  doc.text("APPLICATIONS", w / 2, 165, { align: "center" });
+  doc.text("L'ILLUSION", w / 2, 130, { align: "center" });
+  doc.text("DES", w / 2, 150, { align: "center" });
+  doc.text("APPLICATIONS", w / 2, 170, { align: "center" });
 
   // Subtitle box
-  doc.setFillColor(0, 65, 140);
-  doc.roundedRect(35, 180, w - 70, 30, 5, 5, "F");
+  doc.setFillColor(35, 55, 120);
+  doc.roundedRect(35, 185, w - 70, 30, 5, 5, "F");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(...c.accentGold);
-  doc.text("Comprendre le système pour reprendre", w / 2, 193, { align: "center" });
-  doc.text("le contrôle de son activité", w / 2, 203, { align: "center" });
+  doc.text("Comprendre le système pour reprendre", w / 2, 198, { align: "center" });
+  doc.text("le contrôle de son activité", w / 2, 208, { align: "center" });
 
   // Bottom
   doc.setFontSize(9);
   doc.setTextColor(...c.accentGold);
   doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 30, { align: "center" });
   doc.setFontSize(8);
-  doc.setTextColor(200, 200, 220);
-  doc.text("Édition 2026", w / 2, h - 20, { align: "center" });
+  doc.setTextColor(200, 200, 230);
+  doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 20, { align: "center" });
 };
 
 // ========== TABLE OF CONTENTS ==========
@@ -970,18 +1003,22 @@ export const addPartie16 = (doc: jsPDF, startPage: number): number => {
   return ctx.pageNum;
 };
 
-// ========== MESSAGE DE L'AUTEUR + MANIFESTE + BACK COVER ==========
+// ========== MESSAGE DE L'AUTEUR + MANIFESTE + INSCRIPTION + BACK COVER ==========
 export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.addPage();
   const ctx = new DocContext(doc, startPage);
   const { w } = getPageDims(doc);
+
+  // Logo at top
+  addLogo(doc, w / 2 - 12, ctx.y - 5, 24);
+  ctx.y += 22;
 
   // Message de l'auteur title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...c.primaryBlue);
   doc.text("MESSAGE DE L'AUTEUR", w / 2, ctx.y, { align: "center" });
-  ctx.y += 12;
+  ctx.y += 10;
 
   ctx.addSubTitle("Une réflexion née du terrain");
   ctx.addParagraphs([
@@ -998,7 +1035,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "Parce que la compréhension est toujours la première étape vers la liberté.",
   ]);
 
-  ctx.addSpace(5);
+  ctx.addSpace(3);
 
   // Manifeste
   doc.setFont("helvetica", "bold");
@@ -1006,7 +1043,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setTextColor(...c.accentGold);
   ctx.checkPageBreak(20);
   doc.text("MANIFESTE SOLOCAB", w / 2, ctx.y, { align: "center" });
-  ctx.y += 10;
+  ctx.y += 8;
 
   ctx.addSubTitle("Le mouvement des professionnels conscients");
   ctx.addParagraphs([
@@ -1019,10 +1056,10 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "Et surtout, nous croyons que la véritable transformation commence toujours par une prise de conscience.",
   ]);
 
-  ctx.addSpace(5);
+  ctx.addSpace(3);
   ctx.addQuote("Comprendre pour choisir. Choisir pour construire.");
 
-  ctx.addSpace(5);
+  ctx.addSpace(3);
   ctx.addParagraphs([
     "Si vous avez lu jusqu'ici, alors quelque chose a probablement résonné en vous.",
     "Peut-être une question. Peut-être une prise de recul. Peut-être une confirmation.",
@@ -1035,44 +1072,113 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
 
   ctx.finishPage();
 
-  // BACK COVER
+  // ========== PAGE INSCRIPTION ==========
   doc.addPage();
   const h = doc.internal.pageSize.getHeight();
+  const inscPage = ctx.pageNum + 1;
+
+  doc.setFillColor(...c.lightBg);
+  doc.rect(0, 0, w, h, "F");
+
+  // Logo
+  addLogo(doc, w / 2 - 20, 30, 40);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...c.primaryBlue);
+  doc.text("REJOIGNEZ SOLOCAB", w / 2, 90, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(...c.darkText);
+  const inscTexts = doc.splitTextToSize(
+    "Vous souhaitez reprendre le contrôle de votre activité ? Construire votre propre clientèle ? Développer une activité durable et indépendante ?",
+    w - 60
+  );
+  doc.text(inscTexts, w / 2, 105, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...c.darkText);
+  doc.text("Inscrivez-vous gratuitement sur :", w / 2, 140, { align: "center" });
+
+  // CTA box
+  doc.setFillColor(...c.primaryBlue);
+  doc.roundedRect(w / 2 - 65, 150, 130, 20, 5, 5, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text("solocab.fr/chauffeur", w / 2, 163, { align: "center" });
+
+  // Clickable link
+  doc.link(w / 2 - 65, 150, 130, 20, { url: "https://www.solocab.fr/chauffeur-inscription" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...c.grayText);
+  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 185, { align: "center" });
+
+  // Features list
+  const features = [
+    "✓ Gérez vos clients et vos courses en toute autonomie",
+    "✓ Fixez vos propres tarifs",
+    "✓ Fidélisez votre clientèle avec vos outils",
+    "✓ Développez votre chiffre d'affaires en direct",
+  ];
+  let fy = 210;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(...c.primaryBlue);
+  features.forEach((f) => {
+    doc.text(f, w / 2, fy, { align: "center" });
+    fy += 10;
+  });
+
+  addFooter(doc, inscPage);
+
+  // ========== BACK COVER ==========
+  doc.addPage();
 
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
-  doc.setFillColor(0, 65, 140);
+  doc.setFillColor(35, 55, 120);
   doc.circle(w + 20, h / 4, 60, "F");
   doc.circle(-20, h * 0.75, 80, "F");
 
   doc.setDrawColor(...c.accentGold);
   doc.setLineWidth(2);
-  doc.line(40, h / 2 - 60, w - 40, h / 2 - 60);
+  doc.line(40, h / 2 - 70, w - 40, h / 2 - 70);
+
+  // Logo on back cover
+  addLogo(doc, w / 2 - 18, h / 2 - 65, 36);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
+  doc.setFontSize(24);
   doc.setTextColor(255, 255, 255);
-  doc.text("SOLOCAB", w / 2, h / 2 - 35, { align: "center" });
+  doc.text("SOLOCAB ACADEMY", w / 2, h / 2 - 15, { align: "center" });
 
   doc.setFontSize(14);
   doc.setTextColor(...c.accentGold);
-  doc.text("Comprendre pour choisir.", w / 2, h / 2 - 10, { align: "center" });
-  doc.text("Choisir pour construire.", w / 2, h / 2 + 2, { align: "center" });
+  doc.text("Comprendre pour choisir.", w / 2, h / 2 + 5, { align: "center" });
+  doc.text("Choisir pour construire.", w / 2, h / 2 + 17, { align: "center" });
 
   doc.setDrawColor(...c.accentGold);
-  doc.line(60, h / 2 + 15, w - 60, h / 2 + 15);
+  doc.line(60, h / 2 + 30, w - 60, h / 2 + 30);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
-  doc.text("www.solocab.fr", w / 2, h / 2 + 35, { align: "center" });
-  doc.text("contact@solocab.fr", w / 2, h / 2 + 47, { align: "center" });
+  doc.text("www.solocab.fr", w / 2, h / 2 + 50, { align: "center" });
+  doc.text("contact@solocab.fr", w / 2, h / 2 + 62, { align: "center" });
+
+  // Link cliquable
+  doc.link(w / 2 - 30, h / 2 + 42, 60, 12, { url: "https://www.solocab.fr" });
 
   doc.setFontSize(9);
-  doc.setTextColor(180, 190, 220);
+  doc.setTextColor(180, 190, 230);
   doc.text("SASU SoloCab | RCS Paris 994 176 576", w / 2, h - 30, { align: "center" });
   doc.text("10 rue de Penthièvre, 75008 Paris", w / 2, h - 22, { align: "center" });
 
-  return startPage + 2;
+  return inscPage + 1;
 };

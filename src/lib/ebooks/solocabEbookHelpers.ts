@@ -18,7 +18,7 @@ export const addFooter = (doc: jsPDF, pageNum: number) => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(255, 255, 255);
-  doc.text("SASU SoloCab | RCS Paris 994 176 576 | www.solocab.fr", 18, h - 4.5);
+  doc.text("L'Illusion des Applications — Offert par SoloCab Academy", 18, h - 4.5);
   doc.text(`${pageNum}`, w - 18, h - 4.5, { align: "right" });
 };
 
@@ -101,7 +101,7 @@ export class DocContext {
       this.doc.text(line, margin, this.y);
       this.y += lineH;
     }
-    this.y += 3;
+    this.y += 2;
   }
 
   /** Add multiple paragraphs from an array */
@@ -183,7 +183,7 @@ export class DocContext {
   }
 
   /** Add vertical spacing */
-  addSpace(mm = 5) {
+  addSpace(mm = 3) {
     this.y += mm;
   }
 }
@@ -196,7 +196,7 @@ export const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle:
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
-  doc.setFillColor(0, 70, 140);
+  doc.setFillColor(35, 55, 120);
   doc.circle(-30, h / 2, 80, "F");
   doc.circle(w + 30, h / 3, 60, "F");
 

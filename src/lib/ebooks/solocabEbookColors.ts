@@ -1,15 +1,15 @@
-// Shared color palette for the SoloCab eBook
+// Shared color palette for the SoloCab eBook — SoloCab Academy branding
 export const ebookColors = {
-  primaryBlue: [0, 82, 165] as [number, number, number],
-  darkBlue: [0, 50, 110] as [number, number, number],
-  accentGold: [218, 165, 32] as [number, number, number],
-  orange: [249, 115, 22] as [number, number, number],
-  darkText: [30, 30, 40] as [number, number, number],
-  grayText: [100, 100, 110] as [number, number, number],
-  lightGray: [180, 180, 190] as [number, number, number],
-  lightBg: [245, 247, 255] as [number, number, number],
-  lightOrange: [255, 247, 237] as [number, number, number],
-  lightGold: [255, 248, 230] as [number, number, number],
+  primaryBlue: [55, 90, 180] as [number, number, number],       // Bleu SoloCab Academy
+  darkBlue: [25, 45, 100] as [number, number, number],          // Navy SoloCab
+  accentGold: [180, 140, 255] as [number, number, number],      // Violet/lavande accent
+  orange: [100, 120, 220] as [number, number, number],          // Bleu-violet bullets
+  darkText: [30, 30, 50] as [number, number, number],
+  grayText: [100, 100, 120] as [number, number, number],
+  lightGray: [180, 180, 200] as [number, number, number],
+  lightBg: [240, 242, 255] as [number, number, number],
+  lightOrange: [245, 243, 255] as [number, number, number],
+  lightGold: [245, 240, 255] as [number, number, number],       // Light lavender
   white: [255, 255, 255] as [number, number, number],
   green: [16, 185, 129] as [number, number, number],
   lightGreen: [236, 253, 245] as [number, number, number],
