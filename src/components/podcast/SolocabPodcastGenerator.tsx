@@ -216,7 +216,7 @@ const SolocabPodcastGenerator = () => {
               </p>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {!hasFullPodcast ? (
               <Button
                 onClick={generateFullPodcast}
@@ -224,7 +224,9 @@ const SolocabPodcastGenerator = () => {
                 className="flex-1 gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
               >
                 {generating === "full" ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Génération...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Assemblage...</>
+                ) : savedCount === TOTAL_CHAPTERS ? (
+                  <><Download className="w-4 h-4" /> Assembler et télécharger</>
                 ) : savedCount > 0 ? (
                   <><Mic className="w-4 h-4" /> Reprendre ({savedCount}/{TOTAL_CHAPTERS})</>
                 ) : (
@@ -237,8 +239,8 @@ const SolocabPodcastGenerator = () => {
                   {playing === "full" ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {playing === "full" ? "Pause" : "Écouter"}
                 </Button>
-                <Button variant="outline" onClick={() => handleDownload("full", "Podcast-Complet-SoloCab")} className="gap-2">
-                  <Download className="w-4 h-4" /> Télécharger MP3
+                <Button onClick={() => handleDownload("full", "Podcast-Complet-SoloCab")} className="gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
+                  <Download className="w-4 h-4" /> Télécharger le podcast complet
                 </Button>
               </>
             )}
