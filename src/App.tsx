@@ -84,7 +84,7 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 
-                
+                <PWAInstallBanner />
                 <PushNotificationListener />
                 <NotificationPermissionPrompt />
                 <EmergencyReset />
