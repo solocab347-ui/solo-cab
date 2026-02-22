@@ -18,14 +18,16 @@ export function usePodcastPersistence() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setLoading(false); return; }
 
+      // Try to find driver ID first
       const { data: driver } = await supabase
         .from("drivers")
         .select("id")
         .eq("user_id", session.user.id)
         .single();
 
-      if (!driver) { setLoading(false); return; }
-      setDriverId(driver.id);
+      // Use driver.id if found, otherwise use user_id directly (for admins)
+      const effectiveId = driver?.id || session.user.id;
+      setDriverId(effectiveId);
 
       const { data: segments } = await supabase
         .from("podcast_segments")
