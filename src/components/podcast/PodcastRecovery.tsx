@@ -24,19 +24,26 @@ const PodcastRecovery = ({ onComplete, onClose }: PodcastRecoveryProps) => {
 
   const episodes = getAllEpisodes();
 
-  // Extract a unique text snippet from each episode (skip the common intro)
-  const getUniqueText = (script: string): string => {
-    // The scripts all start with "Bienvenue dans..." intro
-    // Find the first substantive paragraph after the intro
+  // Extract multiple unique short snippets from each episode for better matching
+  const getSnippets = (script: string): string[] => {
     const parts = script.split("\n\n");
-    // Skip first part (intro), take 2nd or 3rd part which has unique chapter content
-    for (let i = 1; i < parts.length; i++) {
-      const part = parts[i].trim();
-      if (part.length > 50 && !part.startsWith("Bienvenue") && !part.startsWith("C'était l'épisode")) {
-        return part.slice(0, 200);
+    const snippets: string[] = [];
+    for (const part of parts) {
+      const trimmed = part.trim();
+      // Skip common intro/outro
+      if (trimmed.length < 30) continue;
+      if (trimmed.startsWith("Bienvenue dans")) continue;
+      if (trimmed.startsWith("C'était l'épisode")) continue;
+      if (trimmed.startsWith("Merci d'avoir écouté")) continue;
+      // Take a 60-char slice from the middle of each paragraph
+      const mid = Math.floor(trimmed.length / 3);
+      const snippet = trimmed.slice(mid, mid + 80);
+      if (snippet.length >= 30) {
+        snippets.push(snippet);
       }
+      if (snippets.length >= 5) break; // 5 snippets is enough
     }
-    return script.slice(200, 400); // Fallback: skip common prefix
+    return snippets;
   };
 
   const recoverAll = useCallback(async () => {
@@ -47,7 +54,7 @@ const PodcastRecovery = ({ onComplete, onClose }: PodcastRecoveryProps) => {
 
       const episodeData = episodes.map(ep => ({
         id: ep.id,
-        unique_text: getUniqueText(ep.script),
+        snippets: getSnippets(ep.script),
       }));
 
       const response = await fetch(

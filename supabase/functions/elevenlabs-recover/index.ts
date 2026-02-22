@@ -6,6 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Normalize text: lowercase, remove punctuation, collapse whitespace
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[«»""'']/g, '"')
+    .replace(/[—–‐]/g, '-')
+    .replace(/[.,;:!?…\n\r\t]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,16 +49,15 @@ serve(async (req) => {
     const driverId = driver?.id || user.id;
 
     if (action === "recover_all") {
-      // Client sends episode info: [{ id: "chapter-0", unique_text: "some unique text from middle of script" }]
-      const { episodes } = body as { episodes: Array<{ id: string; unique_text: string }> };
+      const { episodes } = body as { episodes: Array<{ id: string; snippets: string[] }> };
       if (!episodes || episodes.length === 0) throw new Error("No episodes provided");
 
-      // Fetch ALL history pages from ElevenLabs (voice Eric)
+      // Fetch ALL history pages from ElevenLabs
       let allHistoryItems: any[] = [];
       let lastHistoryItemId: string | undefined;
       let page = 0;
       
-      while (page < 5) { // Max 5 pages = 500 items
+      while (page < 10) { // Max 10 pages = 1000 items
         const url = new URL("https://api.elevenlabs.io/v1/history");
         url.searchParams.set("page_size", "100");
         if (lastHistoryItemId) {
@@ -75,6 +85,12 @@ serve(async (req) => {
 
       console.log(`Found ${allHistoryItems.length} ElevenLabs history items with voice Eric`);
 
+      // Pre-normalize all history item texts
+      const normalizedHistory = allHistoryItems.map(item => ({
+        ...item,
+        normalizedText: normalize(item.text || ""),
+      }));
+
       // Check which episodes are already saved
       const { data: existingSegments } = await supabase
         .from("podcast_segments")
@@ -82,33 +98,43 @@ serve(async (req) => {
         .eq("driver_id", driverId);
       const existingIds = new Set(existingSegments?.map((s: any) => s.episode_id) || []);
 
-      // Match episodes to history items using unique_text
-      const matches: Array<{ episode_id: string; history_item_id: string }> = [];
+      // Match episodes to history items using multiple short snippets
+      const matches: Array<{ episode_id: string; history_item_id: string; score: number }> = [];
       const usedHistoryIds = new Set<string>();
 
       for (const ep of episodes) {
-        if (existingIds.has(ep.id)) continue; // Already saved
+        if (existingIds.has(ep.id)) continue;
+        if (!ep.snippets || ep.snippets.length === 0) continue;
 
-        const searchText = ep.unique_text.toLowerCase().trim();
-        if (searchText.length < 20) continue;
+        const normalizedSnippets = ep.snippets.map(s => normalize(s)).filter(s => s.length >= 15);
 
-        // Find best match: history item whose text contains the unique snippet
-        for (const item of allHistoryItems) {
+        // Score each history item by how many snippets it contains
+        let bestMatch: { historyItemId: string; score: number } | null = null;
+
+        for (const item of normalizedHistory) {
           if (usedHistoryIds.has(item.history_item_id)) continue;
           
-          const itemText = (item.text || "").toLowerCase();
-          // Check if the history item's full text contains our unique snippet
-          if (itemText.includes(searchText)) {
-            matches.push({ episode_id: ep.id, history_item_id: item.history_item_id });
-            usedHistoryIds.add(item.history_item_id);
-            break;
+          let score = 0;
+          for (const snippet of normalizedSnippets) {
+            if (item.normalizedText.includes(snippet)) {
+              score++;
+            }
           }
+
+          if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+            bestMatch = { historyItemId: item.history_item_id, score };
+          }
+        }
+
+        if (bestMatch && bestMatch.score >= 1) {
+          matches.push({ episode_id: ep.id, history_item_id: bestMatch.historyItemId, score: bestMatch.score });
+          usedHistoryIds.add(bestMatch.historyItemId);
         }
       }
 
-      console.log(`Matched ${matches.length} episodes to history items`);
+      console.log(`Matched ${matches.length} episodes to history items (details: ${JSON.stringify(matches.map(m => `${m.episode_id}:${m.score}`))})`);
 
-      // Now recover all matched items
+      // Recover all matched items
       const recovered: string[] = [];
       const errors: string[] = [];
 
@@ -152,7 +178,7 @@ serve(async (req) => {
           }
 
           recovered.push(match.episode_id);
-          console.log(`Recovered: ${match.episode_id} (${audioBuffer.byteLength} bytes)`);
+          console.log(`Recovered: ${match.episode_id} (${audioBuffer.byteLength} bytes, score: ${match.score})`);
         } catch (e) {
           errors.push(`${match.episode_id}: ${e.message}`);
         }
@@ -161,7 +187,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         total_history_items: allHistoryItems.length,
         matched: matches.length,
-        recovered: recovered,
+        recovered,
         already_saved: Array.from(existingIds),
         errors,
       }), {
