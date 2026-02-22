@@ -13007,6 +13007,33 @@ export type Database = {
           },
         ]
       }
+      podcast_segments: {
+        Row: {
+          created_at: string
+          driver_id: string
+          episode_id: string
+          file_size: number | null
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          episode_id: string
+          file_size?: number | null
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          episode_id?: string
+          file_size?: number | null
+          id?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
