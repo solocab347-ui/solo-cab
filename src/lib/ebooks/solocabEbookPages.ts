@@ -1224,18 +1224,21 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
 
   // Features list
   const features = [
-    "✓ Gérez vos clients et vos courses en toute autonomie",
-    "✓ Fixez vos propres tarifs",
-    "✓ Fidélisez votre clientèle avec vos outils",
-    "✓ Développez votre chiffre d'affaires en direct",
+    "Gerez vos clients et vos courses en toute autonomie",
+    "Fixez vos propres tarifs",
+    "Fidelisez votre clientele avec vos outils",
+    "Developpez votre chiffre d'affaires en direct",
   ];
   let fy = 198;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
+  doc.setFontSize(11);
   doc.setTextColor(...c.primaryBlue);
   features.forEach((f) => {
-    doc.text(f, w / 2, fy, { align: "center" });
-    fy += 10;
+    // Draw a small filled circle as bullet
+    doc.setFillColor(...c.primaryBlue);
+    doc.circle(w / 2 - 75, fy - 1.2, 1.5, "F");
+    doc.text(f, w / 2 - 70, fy);
+    fy += 11;
   });
 
   // Separator
