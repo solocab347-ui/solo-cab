@@ -31,12 +31,12 @@ export class DocContext {
   pageNum: number;
   maxY: number;
 
-  constructor(doc: jsPDF, startPage: number, startY = 20) {
+  constructor(doc: jsPDF, startPage: number, startY = 18) {
     this.doc = doc;
     this.y = startY;
     this.pageNum = startPage;
     const { h } = getPageDims(doc);
-    this.maxY = h - 20; // leave space for footer
+    this.maxY = h - 15; // leave space for footer
   }
 
   /** Check if we need a new page, if so add one */
@@ -45,7 +45,7 @@ export class DocContext {
       addFooter(this.doc, this.pageNum);
       this.doc.addPage();
       this.pageNum++;
-      this.y = 20;
+      this.y = 18;
     }
   }
 
@@ -59,32 +59,32 @@ export class DocContext {
     this.finishPage();
     this.doc.addPage();
     this.pageNum++;
-    this.y = 20;
+    this.y = 18;
   }
 
   /** Add a section title with gold underline */
   addTitle(text: string) {
-    this.checkPageBreak(15);
+    this.checkPageBreak(12);
     const { margin } = getPageDims(this.doc);
     this.doc.setFont("helvetica", "bold");
-    this.doc.setFontSize(14);
+    this.doc.setFontSize(13);
     this.doc.setTextColor(...c.primaryBlue);
     this.doc.text(text, margin, this.y);
     this.doc.setDrawColor(...c.accentGold);
     this.doc.setLineWidth(1);
     this.doc.line(margin, this.y + 2, margin + this.doc.getTextWidth(text), this.y + 2);
-    this.y += 10;
+    this.y += 8;
   }
 
   /** Add a sub-title (smaller, bold, dark) */
   addSubTitle(text: string) {
-    this.checkPageBreak(12);
+    this.checkPageBreak(10);
     const { margin } = getPageDims(this.doc);
     this.doc.setFont("helvetica", "bold");
-    this.doc.setFontSize(11);
+    this.doc.setFontSize(10.5);
     this.doc.setTextColor(...c.darkText);
     this.doc.text(text, margin, this.y);
-    this.y += 7;
+    this.y += 6;
   }
 
   /** Add body paragraph with auto-wrap and page breaks */
@@ -94,14 +94,14 @@ export class DocContext {
     this.doc.setFontSize(fontSize);
     this.doc.setTextColor(...c.darkText);
     const lines: string[] = this.doc.splitTextToSize(text, contentW);
-    const lineH = fontSize * 0.42;
+    const lineH = fontSize * 0.4;
 
     for (const line of lines) {
       this.checkPageBreak(lineH + 1);
       this.doc.text(line, margin, this.y);
       this.y += lineH;
     }
-    this.y += 2;
+    this.y += 1.5;
   }
 
   /** Add multiple paragraphs from an array */
@@ -116,16 +116,16 @@ export class DocContext {
     const { margin, contentW } = getPageDims(this.doc);
     this.doc.setFont("helvetica", "normal");
     this.doc.setFontSize(fontSize);
-    const lineH = fontSize * 0.42;
+    const lineH = fontSize * 0.4;
 
     for (const item of items) {
       const lines: string[] = this.doc.splitTextToSize(item, contentW - 12);
-      this.checkPageBreak(lines.length * lineH + 3);
+      this.checkPageBreak(lines.length * lineH + 2);
       this.doc.setTextColor(...c.orange);
       this.doc.text("●", margin + 2, this.y);
       this.doc.setTextColor(...c.darkText);
       this.doc.text(lines, margin + 8, this.y);
-      this.y += lines.length * lineH + 3;
+      this.y += lines.length * lineH + 2;
     }
   }
 
@@ -183,7 +183,7 @@ export class DocContext {
   }
 
   /** Add vertical spacing */
-  addSpace(mm = 3) {
+  addSpace(mm = 2) {
     this.y += mm;
   }
 }
