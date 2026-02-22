@@ -1081,42 +1081,42 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.rect(0, 0, w, h, "F");
 
   // Logo
-  addLogo(doc, w / 2 - 20, 30, 40);
+  addLogo(doc, w / 2 - 15, 25, 30);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(...c.primaryBlue);
-  doc.text("REJOIGNEZ SOLOCAB", w / 2, 90, { align: "center" });
+  doc.text("REJOIGNEZ SOLOCAB", w / 2, 72, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(...c.darkText);
   const inscTexts = doc.splitTextToSize(
     "Vous souhaitez reprendre le contrôle de votre activité ? Construire votre propre clientèle ? Développer une activité durable et indépendante ?",
-    w - 60
+    w - 50
   );
-  doc.text(inscTexts, w / 2, 105, { align: "center" });
+  doc.text(inscTexts, w / 2, 85, { align: "center" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(...c.darkText);
-  doc.text("Inscrivez-vous gratuitement sur :", w / 2, 140, { align: "center" });
+  doc.text("Inscrivez-vous gratuitement sur :", w / 2, 112, { align: "center" });
 
   // CTA box
   doc.setFillColor(...c.primaryBlue);
-  doc.roundedRect(w / 2 - 65, 150, 130, 20, 5, 5, "F");
+  doc.roundedRect(w / 2 - 65, 120, 130, 18, 5, 5, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text("solocab.fr/chauffeur", w / 2, 163, { align: "center" });
+  doc.text("solocab.fr/chauffeur", w / 2, 132, { align: "center" });
 
   // Clickable link
-  doc.link(w / 2 - 65, 150, 130, 20, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  doc.link(w / 2 - 65, 120, 130, 18, { url: "https://www.solocab.fr/chauffeur-inscription" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...c.grayText);
-  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 185, { align: "center" });
+  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 150, { align: "center" });
 
   // Features list
   const features = [
@@ -1125,14 +1125,25 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "✓ Fidélisez votre clientèle avec vos outils",
     "✓ Développez votre chiffre d'affaires en direct",
   ];
-  let fy = 210;
+  let fy = 165;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(...c.primaryBlue);
   features.forEach((f) => {
     doc.text(f, w / 2, fy, { align: "center" });
-    fy += 10;
+    fy += 8;
   });
+
+  // Additional info section
+  doc.setDrawColor(...c.accentGold);
+  doc.setLineWidth(1);
+  doc.line(50, fy + 5, w - 50, fy + 5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...c.grayText);
+  doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 15, { align: "center" });
+  doc.text("Sans commission sur vos courses directes", w / 2, fy + 22, { align: "center" });
 
   addFooter(doc, inscPage);
 
