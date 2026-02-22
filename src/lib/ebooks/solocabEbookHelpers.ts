@@ -225,10 +225,53 @@ export class DocContext {
   addSpace(mm = 6) {
     this.y += mm;
   }
+
+  /** Fill remaining page space with decorative elements to avoid large white areas */
+  fillRemainingSpace() {
+    const { w, margin } = getPageDims(this.doc);
+    const remaining = this.maxY - this.y;
+    if (remaining < 40) return; // Not enough space to bother
+
+    // Add a decorative separator
+    this.addSeparator();
+
+    // If still lots of space, add subtle decorative geometric elements
+    const stillRemaining = this.maxY - this.y;
+    if (stillRemaining > 80) {
+      // Add a soft inspirational quote box to fill space
+      this.doc.setFillColor(...c.lightBg);
+      const boxH = Math.min(stillRemaining - 30, 50);
+      this.doc.roundedRect(margin + 20, this.y, getPageDims(this.doc).contentW - 40, boxH, 4, 4, "F");
+      this.doc.setFillColor(...c.softViolet);
+      this.doc.roundedRect(margin + 20, this.y, 3, boxH, 1.5, 1.5, "F");
+      
+      this.doc.setFont("helvetica", "italic");
+      this.doc.setFontSize(11);
+      this.doc.setTextColor(...c.grayText);
+      const quotes = [
+        "« La compréhension est le premier pas vers la liberté. »",
+        "« Celui qui comprend le système peut le transformer. »",
+        "« L'indépendance se construit, elle ne se reçoit pas. »",
+        "« La valeur appartient à ceux qui la créent. »",
+        "« Comprendre pour choisir. Choisir pour construire. »",
+      ];
+      const quote = quotes[Math.floor(this.pageNum % quotes.length)];
+      const lines = this.doc.splitTextToSize(quote, getPageDims(this.doc).contentW - 70);
+      this.doc.text(lines, margin + 32, this.y + boxH / 2 + 2);
+      this.y += boxH + 8;
+    }
+
+    // Add subtle decorative dots at bottom
+    const finalRemaining = this.maxY - this.y;
+    if (finalRemaining > 30) {
+      this.y += finalRemaining / 2 - 5;
+      this.addDecorativeElement();
+    }
+  }
 }
 
-/** Adds a chapter title page — premium minimalist dark blue with abstract art */
-export const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle: string, pageNum: number) => {
+/** Adds a chapter title page — premium minimalist dark blue with abstract art + logo */
+export const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle: string, pageNum: number, logoDataUrl?: string | null) => {
   doc.addPage();
   const { w, h, margin } = getPageDims(doc);
 
@@ -240,26 +283,32 @@ export const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle:
   doc.setFillColor(25, 45, 88);
   doc.circle(-25, h * 0.25, 65, "F");
   doc.circle(w + 20, h * 0.65, 50, "F");
-  // Subtle small accent circle
   doc.setFillColor(35, 58, 110);
   doc.circle(w * 0.8, h * 0.2, 20, "F");
+
+  // Logo SoloCab Academy on chapter page
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", w / 2 - 14, h / 2 - 85, 28, 28);
+    } catch { /* silent */ }
+  }
 
   // Top decorative line — soft violet
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(1.5);
-  doc.line(margin + 15, h / 2 - 55, w - margin - 15, h / 2 - 55);
+  doc.line(margin + 15, h / 2 - 50, w - margin - 15, h / 2 - 50);
 
   // Chapter number — large, violet accent
   doc.setFont("helvetica", "bold");
   doc.setFontSize(60);
   doc.setTextColor(...c.lightViolet);
-  doc.text(`${num}`, w / 2, h / 2 - 20, { align: "center" });
+  doc.text(`${num}`, w / 2, h / 2 - 15, { align: "center" });
 
   // Title — large, white
   doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
   const titleLines = doc.splitTextToSize(title.toUpperCase(), w - margin * 2 - 20);
-  doc.text(titleLines, w / 2, h / 2 + 10, { align: "center" });
+  doc.text(titleLines, w / 2, h / 2 + 15, { align: "center" });
 
   // Subtitle — if provided
   if (subtitle) {
@@ -267,13 +316,13 @@ export const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle:
     doc.setFontSize(12);
     doc.setTextColor(...c.lightViolet);
     const subLines = doc.splitTextToSize(subtitle, w - margin * 2 - 20);
-    doc.text(subLines, w / 2, h / 2 + 32, { align: "center" });
+    doc.text(subLines, w / 2, h / 2 + 37, { align: "center" });
   }
 
   // Bottom decorative line
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(1.5);
-  doc.line(margin + 15, h / 2 + 48, w - margin - 15, h / 2 + 48);
+  doc.line(margin + 15, h / 2 + 53, w - margin - 15, h / 2 + 53);
 
   // Small decorative dot pattern at bottom
   const dotsY = h - 45;

@@ -151,19 +151,16 @@ export const addTableOfContents = (doc: jsPDF) => {
 
   let y = 74;
   chapters.forEach((ch) => {
-    // Label
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(...c.softViolet);
     doc.text(ch.label, margin + 2, y);
 
-    // Title
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11.5);
     doc.setTextColor(...c.bodyText);
     doc.text(ch.title, margin + 32, y);
 
-    // Subtle dot line
     doc.setDrawColor(...c.softBlue);
     doc.setLineWidth(0.2);
     const textEnd = margin + 32 + doc.getTextWidth(ch.title) + 4;
@@ -177,7 +174,7 @@ export const addTableOfContents = (doc: jsPDF) => {
 
 // ========== INTRODUCTION ==========
 export const addIntroduction = (doc: jsPDF): number => {
-  addChapterPage(doc, 0, "Introduction", "La révolution qui semblait évidente", 3);
+  addChapterPage(doc, 0, "Introduction", "La révolution qui semblait évidente", 3, logoDataUrl);
 
   doc.addPage();
   const ctx = new DocContext(doc, 4);
@@ -245,13 +242,14 @@ export const addIntroduction = (doc: jsPDF): number => {
 
   ctx.addQuote("Qui possède réellement le pouvoir ? Et c'est peut-être là que commence la véritable réflexion.");
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 1 ==========
 export const addPartie1 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 1, "Une transformation qui semblait évidente", "", startPage);
+  addChapterPage(doc, 1, "Une transformation qui semblait évidente", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -309,13 +307,14 @@ export const addPartie1 = (doc: jsPDF, startPage: number): number => {
     "Car derrière l'évidence apparente se cache une réalité plus nuancée. Et comprendre cette nuance est la première étape pour voir le métier sous un angle différent.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 2 ==========
 export const addPartie2 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 2, "Comprendre le modèle économique", "", startPage);
+  addChapterPage(doc, 2, "Comprendre le modèle économique", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -377,13 +376,14 @@ export const addPartie2 = (doc: jsPDF, startPage: number): number => {
     "Et cette prise de conscience change profondément la manière d'analyser la relation entre le professionnel et la plateforme.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 3 ==========
 export const addPartie3 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 3, "L'évolution du rapport de force", "", startPage);
+  addChapterPage(doc, 3, "L'évolution du rapport de force", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -417,13 +417,14 @@ export const addPartie3 = (doc: jsPDF, startPage: number): number => {
     "Et reconnaître cette réalité permet de mieux comprendre les dynamiques qui façonnent aujourd'hui le secteur.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 4 ==========
 export const addPartie4 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 4, "La dépendance invisible", "", startPage);
+  addChapterPage(doc, 4, "La dépendance invisible", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -477,13 +478,14 @@ export const addPartie4 = (doc: jsPDF, startPage: number): number => {
     "Et c'est précisément ce changement de posture qui ouvre la voie à de nouvelles possibilités.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 5 ==========
 export const addPartie5 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 5, "L'illusion du flux", "", startPage);
+  addChapterPage(doc, 5, "L'illusion du flux", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -522,13 +524,14 @@ export const addPartie5 = (doc: jsPDF, startPage: number): number => {
     "Cette vision ne remet pas en cause l'utilité des plateformes. Elle permet simplement de les replacer dans un cadre plus large, où elles deviennent un élément d'un écosystème plutôt qu'une fondation unique.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 6 ==========
 export const addPartie6 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 6, "Les conséquences économiques", "", startPage);
+  addChapterPage(doc, 6, "Les conséquences économiques", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -576,13 +579,14 @@ export const addPartie6 = (doc: jsPDF, startPage: number): number => {
     "Cette réflexion marque souvent le début d'une transition vers une approche plus stratégique du métier.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 7 ==========
 export const addPartie7 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 7, "Les stratégies des plateformes", "", startPage);
+  addChapterPage(doc, 7, "Les stratégies des plateformes", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -651,13 +655,14 @@ export const addPartie7 = (doc: jsPDF, startPage: number): number => {
     "Car comprendre la logique d'un système est toujours la première étape pour pouvoir s'y positionner de manière plus consciente.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 8 ==========
 export const addPartie8 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 8, "La perception d'injustice", "", startPage);
+  addChapterPage(doc, 8, "La perception d'injustice", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -688,13 +693,14 @@ export const addPartie8 = (doc: jsPDF, startPage: number): number => {
     "Non pas en rejetant le système, mais en cherchant à s'y positionner différemment.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 9 ==========
 export const addPartie9 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 9, "Construire sa clientèle", "L'alternative commence ici", startPage);
+  addChapterPage(doc, 9, "Construire sa clientèle", "L'alternative commence ici", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -736,13 +742,14 @@ export const addPartie9 = (doc: jsPDF, startPage: number): number => {
     "Cette diversification est la clé d'une activité plus résiliente et plus maîtrisée.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 10 ==========
 export const addPartie10 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 10, "Le modèle hybride", "Combiner le meilleur des deux mondes", startPage);
+  addChapterPage(doc, 10, "Le modèle hybride", "Combiner le meilleur des deux mondes", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -773,13 +780,14 @@ export const addPartie10 = (doc: jsPDF, startPage: number): number => {
     "Et cet équilibre ouvre la voie à une activité plus durable et plus maîtrisée.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 11 ==========
 export const addPartie11 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 11, "La dimension stratégique", "", startPage);
+  addChapterPage(doc, 11, "La dimension stratégique", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -819,13 +827,14 @@ export const addPartie11 = (doc: jsPDF, startPage: number): number => {
     "Et cette évolution ouvre la voie à une vision plus équilibrée, plus consciente et plus maîtrisée du travail.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 12 ==========
 export const addPartie12 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 12, "L'avenir du métier", "", startPage);
+  addChapterPage(doc, 12, "L'avenir du métier", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -871,13 +880,14 @@ export const addPartie12 = (doc: jsPDF, startPage: number): number => {
     "Et c'est précisément cette prise de conscience qui ouvre la voie à un futur plus maîtrisé et plus durable.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 13 ==========
 export const addPartie13 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 13, "Le changement de paradigme", "", startPage);
+  addChapterPage(doc, 13, "Le changement de paradigme", "", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -911,13 +921,14 @@ export const addPartie13 = (doc: jsPDF, startPage: number): number => {
     "C'est souvent à ce moment que l'on commence à envisager l'activité avec une perspective plus large, tournée vers l'avenir.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 14 — CONCLUSION ==========
 export const addPartie14 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 14, "Conclusion manifeste", "La fin d'une illusion, le début d'une vision", startPage);
+  addChapterPage(doc, 14, "Conclusion manifeste", "La fin d'une illusion, le début d'une vision", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -972,13 +983,14 @@ export const addPartie14 = (doc: jsPDF, startPage: number): number => {
 
   ctx.addQuote("Comprendre son environnement est la première étape pour reprendre une part de contrôle sur son avenir professionnel.");
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 15 — PLAN D'ACTION ==========
 export const addPartie15 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 15, "Plan d'action", "Transformer la prise de conscience en mouvement", startPage);
+  addChapterPage(doc, 15, "Plan d'action", "Transformer la prise de conscience en mouvement", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -1028,13 +1040,14 @@ export const addPartie15 = (doc: jsPDF, startPage: number): number => {
 
   ctx.addQuote("Chaque pas compte. Et le simple fait de lire ce livre est déjà un premier pas vers une posture plus consciente et plus stratégique.");
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
 
 // ========== PARTIE 16 ==========
 export const addPartie16 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 16, "Au-delà de la compréhension", "Vers l'action", startPage);
+  addChapterPage(doc, 16, "Au-delà de la compréhension", "Vers l'action", startPage, logoDataUrl);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
@@ -1075,6 +1088,7 @@ export const addPartie16 = (doc: jsPDF, startPage: number): number => {
     "Mais c'est toujours l'individu qui décide de la direction qu'il souhaite prendre.",
   ]);
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
   return ctx.pageNum;
 };
@@ -1143,6 +1157,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
 
   ctx.addQuote("La valeur sera toujours créée par ceux qui exercent avec professionnalisme et engagement. Et c'est peut-être là l'essentiel.");
 
+  ctx.fillRemainingSpace();
   ctx.finishPage();
 
   // ========== PAGE INSCRIPTION ==========
@@ -1186,16 +1201,23 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setTextColor(...c.darkText);
   doc.text("Inscrivez-vous gratuitement sur :", w / 2, 128, { align: "center" });
 
-  // CTA box — premium blue
+  // CTA box — premium blue — CLICKABLE
+  const ctaX = w / 2 - 70;
+  const ctaY = 136;
+  const ctaW = 140;
+  const ctaH = 20;
   doc.setFillColor(...c.primaryBlue);
-  doc.roundedRect(w / 2 - 70, 136, 140, 20, 6, 6, "F");
+  doc.roundedRect(ctaX, ctaY, ctaW, ctaH, 6, 6, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
   doc.text("solocab.fr/chauffeur", w / 2, 149, { align: "center" });
 
-  // Clickable link
-  doc.link(w / 2 - 70, 136, 140, 20, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  // Make the entire CTA area clickable
+  doc.link(ctaX, ctaY, ctaW, ctaH, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  
+  // Also add a larger invisible link area around the button for easier tapping on mobile
+  doc.link(ctaX - 10, ctaY - 5, ctaW + 20, ctaH + 10, { url: "https://www.solocab.fr/chauffeur-inscription" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
@@ -1228,6 +1250,13 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setTextColor(...c.grayText);
   doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 18, { align: "center" });
   doc.text("Sans commission sur vos courses directes", w / 2, fy + 26, { align: "center" });
+
+  // Add a second clickable text link below for redundancy
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...c.primaryBlue);
+  doc.text("👉 Cliquez ici pour vous inscrire", w / 2, fy + 42, { align: "center" });
+  doc.link(w / 2 - 60, fy + 35, 120, 12, { url: "https://www.solocab.fr/chauffeur-inscription" });
 
   addFooter(doc, inscPage);
 
