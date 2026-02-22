@@ -10,46 +10,53 @@ export function usePodcastPersistence() {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [savedSegments, setSavedSegments] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Get driver ID and load existing segments
-  useEffect(() => {
-    const loadExisting = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) { setLoading(false); return; }
+  const loadExisting = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
 
-        const { data: driver } = await supabase
-          .from("drivers")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .single();
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .single();
 
-        if (!driver) { setLoading(false); return; }
-        setDriverId(driver.id);
+      if (!driver) { setLoading(false); return; }
+      setDriverId(driver.id);
 
-        // Load existing segments
-        const { data: segments } = await supabase
-          .from("podcast_segments")
-          .select("episode_id, storage_path")
-          .eq("driver_id", driver.id);
+      const { data: segments } = await supabase
+        .from("podcast_segments")
+        .select("episode_id, storage_path")
+        .eq("driver_id", driver.id);
 
-        if (segments && segments.length > 0) {
-          const urls: Record<string, string> = {};
-          for (const seg of segments) {
-            const { data: urlData } = supabase.storage
-              .from("podcast-audio")
-              .getPublicUrl(seg.storage_path);
-            urls[seg.episode_id] = urlData.publicUrl;
-          }
-          setSavedSegments(urls);
+      if (segments && segments.length > 0) {
+        const urls: Record<string, string> = {};
+        for (const seg of segments) {
+          const { data: urlData } = supabase.storage
+            .from("podcast-audio")
+            .getPublicUrl(seg.storage_path);
+          urls[seg.episode_id] = urlData.publicUrl;
         }
-      } catch (err) {
-        console.error("Error loading podcast segments:", err);
-      } finally {
-        setLoading(false);
+        setSavedSegments(urls);
+      } else {
+        setSavedSegments({});
       }
-    };
+    } catch (err) {
+      console.error("Error loading podcast segments:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
     loadExisting();
+  }, [loadExisting, reloadKey]);
+
+  const reload = useCallback(() => {
+    setReloadKey(k => k + 1);
   }, []);
 
   const saveSegment = useCallback(async (episodeId: string, audioBlob: Blob): Promise<string | null> => {
@@ -90,5 +97,5 @@ export function usePodcastPersistence() {
     return !!savedSegments[episodeId];
   }, [savedSegments]);
 
-  return { driverId, savedSegments, loading, saveSegment, isSegmentSaved };
+  return { driverId, savedSegments, loading, saveSegment, isSegmentSaved, reload };
 }
