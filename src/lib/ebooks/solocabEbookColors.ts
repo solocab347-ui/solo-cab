@@ -1,0 +1,21 @@
+// Shared color palette for the SoloCab eBook
+export const ebookColors = {
+  primaryBlue: [0, 82, 165] as [number, number, number],
+  darkBlue: [0, 50, 110] as [number, number, number],
+  accentGold: [218, 165, 32] as [number, number, number],
+  orange: [249, 115, 22] as [number, number, number],
+  darkText: [30, 30, 40] as [number, number, number],
+  grayText: [100, 100, 110] as [number, number, number],
+  lightGray: [180, 180, 190] as [number, number, number],
+  lightBg: [245, 247, 255] as [number, number, number],
+  lightOrange: [255, 247, 237] as [number, number, number],
+  lightGold: [255, 248, 230] as [number, number, number],
+  white: [255, 255, 255] as [number, number, number],
+  green: [16, 185, 129] as [number, number, number],
+  lightGreen: [236, 253, 245] as [number, number, number],
+  red: [239, 68, 68] as [number, number, number],
+  purple: [139, 92, 246] as [number, number, number],
+  lightPurple: [245, 243, 255] as [number, number, number],
+  teal: [20, 184, 166] as [number, number, number],
+  lightTeal: [240, 253, 250] as [number, number, number],
+};
