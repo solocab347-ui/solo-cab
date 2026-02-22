@@ -1204,10 +1204,10 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.text("solocab.fr/chauffeur", w / 2, 149, { align: "center" });
 
   // Make the entire CTA area clickable
-  doc.link(ctaX, ctaY, ctaW, ctaH, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  doc.link(ctaX, ctaY, ctaW, ctaH, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
   
   // Also add a larger invisible link area around the button for easier tapping on mobile
-  doc.link(ctaX - 10, ctaY - 5, ctaW + 20, ctaH + 10, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  doc.link(ctaX - 10, ctaY - 5, ctaW + 20, ctaH + 10, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
@@ -1245,8 +1245,8 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...c.primaryBlue);
-  doc.text("👉 Cliquez ici pour vous inscrire", w / 2, fy + 42, { align: "center" });
-  doc.link(w / 2 - 60, fy + 35, 120, 12, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  doc.text(">> Cliquez ici pour vous inscrire <<", w / 2, fy + 42, { align: "center" });
+  doc.link(w / 2 - 60, fy + 35, 120, 12, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
 
   addFooter(doc, inscPage);
 
