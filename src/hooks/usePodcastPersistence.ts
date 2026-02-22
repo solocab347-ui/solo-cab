@@ -23,7 +23,7 @@ export function usePodcastPersistence() {
         .from("drivers")
         .select("id")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       // Use driver.id if found, otherwise use user_id directly (for admins)
       const effectiveId = driver?.id || session.user.id;
@@ -32,7 +32,7 @@ export function usePodcastPersistence() {
       const { data: segments } = await supabase
         .from("podcast_segments")
         .select("episode_id, storage_path")
-        .eq("driver_id", driver.id);
+        .eq("driver_id", effectiveId);
 
       if (segments && segments.length > 0) {
         const urls: Record<string, string> = {};
