@@ -2,17 +2,10 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, RotateCcw, CheckCircle2, X, Download } from "lucide-react";
+import { Loader2, RotateCcw, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllEpisodes } from "@/lib/podcast/podcastScripts";
-
-interface HistoryItem {
-  history_item_id: string;
-  text_preview: string;
-  date_unix: number;
-  character_count: number;
-}
 
 interface PodcastRecoveryProps {
   onComplete: () => void;
@@ -20,21 +13,42 @@ interface PodcastRecoveryProps {
 }
 
 const PodcastRecovery = ({ onComplete, onClose }: PodcastRecoveryProps) => {
-  const [loading, setLoading] = useState(false);
   const [recovering, setRecovering] = useState(false);
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
-  const [existingEpisodes, setExistingEpisodes] = useState<string[]>([]);
-  const [mappings, setMappings] = useState<Record<string, string>>({});
-  const [recovered, setRecovered] = useState<string[]>([]);
-  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<{
+    total_history_items: number;
+    matched: number;
+    recovered: string[];
+    already_saved: string[];
+    errors: string[];
+  } | null>(null);
 
   const episodes = getAllEpisodes();
 
-  const fetchHistory = useCallback(async () => {
-    setLoading(true);
+  // Extract a unique text snippet from each episode (skip the common intro)
+  const getUniqueText = (script: string): string => {
+    // The scripts all start with "Bienvenue dans..." intro
+    // Find the first substantive paragraph after the intro
+    const parts = script.split("\n\n");
+    // Skip first part (intro), take 2nd or 3rd part which has unique chapter content
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i].trim();
+      if (part.length > 50 && !part.startsWith("Bienvenue") && !part.startsWith("C'était l'épisode")) {
+        return part.slice(0, 200);
+      }
+    }
+    return script.slice(200, 400); // Fallback: skip common prefix
+  };
+
+  const recoverAll = useCallback(async () => {
+    setRecovering(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Vous devez être connecté"); return; }
+
+      const episodeData = episodes.map(ep => ({
+        id: ep.id,
+        unique_text: getUniqueText(ep.script),
+      }));
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-recover`,
@@ -45,116 +59,34 @@ const PodcastRecovery = ({ onComplete, onClose }: PodcastRecoveryProps) => {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ action: "list" }),
+          body: JSON.stringify({ action: "recover_all", episodes: episodeData }),
         }
       );
 
-      if (!response.ok) throw new Error("Erreur lors de la récupération");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Erreur lors de la récupération");
+      }
+
       const data = await response.json();
+      setResult(data);
 
-      setHistoryItems(data.history_items || []);
-      setExistingEpisodes(data.existing_episodes || []);
-
-      // Auto-map: try matching history items to episodes by text content
-      const autoMappings: Record<string, string> = {};
-      for (const item of data.history_items || []) {
-        for (const ep of episodes) {
-          const epStart = ep.script.slice(0, 100).toLowerCase();
-          const itemText = (item.text_preview || "").toLowerCase();
-          if (itemText && epStart.includes(itemText.slice(0, 50)) || itemText.includes(epStart.slice(0, 50))) {
-            if (!Object.values(autoMappings).includes(item.history_item_id)) {
-              autoMappings[ep.id] = item.history_item_id;
-              break;
-            }
-          }
-        }
-      }
-      setMappings(autoMappings);
-
-      if ((data.history_items || []).length === 0) {
-        toast.info("Aucun audio trouvé dans l'historique ElevenLabs.");
+      if (data.recovered.length > 0) {
+        toast.success(`${data.recovered.length} épisode(s) récupéré(s) avec succès !`);
+        onComplete();
+      } else if (data.already_saved.length > 0) {
+        toast.info(`${data.already_saved.length} épisode(s) déjà enregistré(s).`);
+        onComplete();
       } else {
-        toast.success(`${data.history_items.length} audios trouvés dans l'historique !`);
+        toast.info(`${data.total_history_items} audio(s) trouvé(s) dans l'historique, mais aucune correspondance avec les épisodes.`);
       }
     } catch (error: any) {
-      console.error("Recovery fetch error:", error);
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [episodes]);
-
-  const recoverAll = useCallback(async () => {
-    const toRecover = Object.entries(mappings).filter(
-      ([epId]) => !existingEpisodes.includes(epId) && !recovered.includes(epId)
-    );
-
-    if (toRecover.length === 0) {
-      toast.info("Rien à récupérer !");
-      return;
-    }
-
-    setRecovering(true);
-    setProgress(0);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      for (let i = 0; i < toRecover.length; i++) {
-        const [episodeId, historyItemId] = toRecover[i];
-        setProgress(Math.round((i / toRecover.length) * 100));
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-recover`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              action: "recover",
-              history_item_id: historyItemId,
-              episode_id: episodeId,
-            }),
-          }
-        );
-
-        if (response.ok) {
-          setRecovered(prev => [...prev, episodeId]);
-        } else {
-          const err = await response.json().catch(() => ({}));
-          console.error(`Failed to recover ${episodeId}:`, err);
-        }
-      }
-
-      setProgress(100);
-      toast.success(`${toRecover.length} épisode(s) récupéré(s) avec succès !`);
-      onComplete();
-    } catch (error: any) {
+      console.error("Recovery error:", error);
       toast.error(error.message);
     } finally {
       setRecovering(false);
     }
-  }, [mappings, existingEpisodes, recovered, onComplete]);
-
-  const toggleMapping = (episodeId: string, historyItemId: string) => {
-    setMappings(prev => {
-      const next = { ...prev };
-      if (next[episodeId] === historyItemId) {
-        delete next[episodeId];
-      } else {
-        next[episodeId] = historyItemId;
-      }
-      return next;
-    });
-  };
-
-  const mappedCount = Object.keys(mappings).filter(
-    epId => !existingEpisodes.includes(epId)
-  ).length;
+  }, [episodes, onComplete]);
 
   return (
     <Card className="border-amber-500/30">
@@ -170,75 +102,56 @@ const PodcastRecovery = ({ onComplete, onClose }: PodcastRecoveryProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {historyItems.length === 0 ? (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Cette fonctionnalité récupère les audios déjà générés depuis l'historique ElevenLabs et les sauvegarde — <strong>sans dépenser de crédits</strong>.
-            </p>
-            <Button onClick={fetchHistory} disabled={loading} className="w-full gap-2">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Recherche...</> : <><RotateCcw className="w-4 h-4" /> Chercher dans l'historique</>}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {historyItems.length} audio(s) trouvé(s). Associez-les aux épisodes puis cliquez "Récupérer".
-            </p>
+        <p className="text-sm text-muted-foreground">
+          Récupère les audios déjà générés depuis l'historique ElevenLabs — <strong>sans dépenser de crédits</strong>. Le système cherche automatiquement les correspondances.
+        </p>
 
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {episodes.map(ep => {
-                const isExisting = existingEpisodes.includes(ep.id);
-                const isRecovered = recovered.includes(ep.id);
-                const mapped = mappings[ep.id];
-
-                return (
-                  <div key={ep.id} className={`p-2 rounded-lg text-xs border ${isExisting || isRecovered ? "bg-emerald-500/10 border-emerald-500/30" : mapped ? "bg-amber-500/10 border-amber-500/30" : "border-border"}`}>
-                    <div className="flex items-center gap-2">
-                      {(isExisting || isRecovered) && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                      <span className="font-medium flex-1">{ep.title}</span>
-                    </div>
-                    {!isExisting && !isRecovered && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {historyItems.map(item => (
-                          <button
-                            key={item.history_item_id}
-                            onClick={() => toggleMapping(ep.id, item.history_item_id)}
-                            className={`px-2 py-0.5 rounded text-[10px] border transition-colors ${
-                              mapped === item.history_item_id
-                                ? "bg-amber-500/20 border-amber-500 text-amber-700 dark:text-amber-300"
-                                : "border-border hover:border-amber-500/50"
-                            }`}
-                          >
-                            {new Date(item.date_unix * 1000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} — {item.character_count} chars
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+        {result && (
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>🔍 {result.total_history_items} audio(s) trouvé(s) dans l'historique</span>
             </div>
-
-            {recovering && (
-              <div className="space-y-1">
-                <Progress value={progress} className="h-2" />
-                <p className="text-xs text-center text-muted-foreground">Récupération en cours...</p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>🔗 {result.matched} correspondance(s) trouvée(s)</span>
+            </div>
+            {result.recovered.length > 0 && (
+              <div className="flex items-center gap-2 text-emerald-600">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>{result.recovered.length} épisode(s) récupéré(s)</span>
               </div>
             )}
-
-            <Button
-              onClick={recoverAll}
-              disabled={recovering || mappedCount === 0}
-              className="w-full gap-2"
-            >
-              {recovering ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Récupération...</>
-              ) : (
-                <><Download className="w-4 h-4" /> Récupérer {mappedCount} épisode(s)</>
-              )}
-            </Button>
+            {result.already_saved.length > 0 && (
+              <div className="flex items-center gap-2 text-emerald-600">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>{result.already_saved.length} épisode(s) déjà enregistré(s)</span>
+              </div>
+            )}
+            {result.errors.length > 0 && (
+              <div className="space-y-1">
+                {result.errors.map((err, i) => (
+                  <div key={i} className="flex items-center gap-2 text-destructive">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{err}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
+        <Button
+          onClick={recoverAll}
+          disabled={recovering}
+          className="w-full gap-2"
+        >
+          {recovering ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Récupération en cours (peut prendre 1-2 min)...</>
+          ) : result ? (
+            <><RotateCcw className="w-4 h-4" /> Relancer la récupération</>
+          ) : (
+            <><RotateCcw className="w-4 h-4" /> Récupérer les audios existants</>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
