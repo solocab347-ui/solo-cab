@@ -2,18 +2,26 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Mic, Play, Pause, Download, Loader2, Radio, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic, Play, Pause, Download, Loader2, Radio, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllEpisodes, TOTAL_CHAPTERS, type PodcastEpisode } from "@/lib/podcast/podcastScripts";
+import { usePodcastPersistence } from "@/hooks/usePodcastPersistence";
 
 const SolocabPodcastGenerator = () => {
   const [generating, setGenerating] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState<string | null>(null);
   const [showEpisodes, setShowEpisodes] = useState(false);
-  const [generatedAudios, setGeneratedAudios] = useState<Record<string, string>>({});
+  const [localAudios, setLocalAudios] = useState<Record<string, string>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const { savedSegments, loading: loadingSegments, saveSegment, isSegmentSaved } = usePodcastPersistence();
+
+  // Merge saved + local URLs (saved takes priority)
+  const getAudioUrl = useCallback((episodeId: string): string | null => {
+    return savedSegments[episodeId] || localAudios[episodeId] || null;
+  }, [savedSegments, localAudios]);
 
   const generateSingleAudio = useCallback(async (text: string, session: any): Promise<Blob> => {
     const response = await fetch(
@@ -42,6 +50,11 @@ const SolocabPodcastGenerator = () => {
 
   // Generate individual episode
   const generateEpisodeAudio = useCallback(async (episode: PodcastEpisode) => {
+    if (isSegmentSaved(episode.id)) {
+      toast.info("Cet épisode est déjà généré !");
+      return;
+    }
+
     setGenerating(episode.id);
     setProgress(10);
 
@@ -56,11 +69,19 @@ const SolocabPodcastGenerator = () => {
       toast.info(`Génération : "${episode.title}"...`, { duration: 10000 });
 
       const audioBlob = await generateSingleAudio(episode.script, session);
-      const audioUrl = URL.createObjectURL(audioBlob);
+      setProgress(80);
 
-      setGeneratedAudios((prev) => ({ ...prev, [episode.id]: audioUrl }));
-      setProgress(100);
-      toast.success(`"${episode.title}" généré !`);
+      // Save to storage
+      const url = await saveSegment(episode.id, audioBlob);
+      if (url) {
+        setProgress(100);
+        toast.success(`"${episode.title}" généré et sauvegardé !`);
+      } else {
+        // Fallback: keep in memory
+        const localUrl = URL.createObjectURL(audioBlob);
+        setLocalAudios(prev => ({ ...prev, [episode.id]: localUrl }));
+        toast.success(`"${episode.title}" généré !`);
+      }
     } catch (error: any) {
       console.error("Podcast generation error:", error);
       toast.error(`Erreur : ${error.message}`);
@@ -68,9 +89,9 @@ const SolocabPodcastGenerator = () => {
       setGenerating(null);
       setProgress(0);
     }
-  }, [generateSingleAudio]);
+  }, [generateSingleAudio, isSegmentSaved, saveSegment]);
 
-  // Generate full podcast by generating all chapters and concatenating
+  // Generate full podcast: generate missing chapters then concatenate
   const generateFullPodcast = useCallback(async () => {
     setGenerating("full");
     setProgress(5);
@@ -85,6 +106,7 @@ const SolocabPodcastGenerator = () => {
       const episodes = getAllEpisodes();
       const totalEpisodes = episodes.length;
       const chapterBlobs: Blob[] = [];
+      let skipped = 0;
 
       toast.info(`Génération du podcast complet (${totalEpisodes} chapitres)...`, { duration: 30000 });
 
@@ -92,39 +114,47 @@ const SolocabPodcastGenerator = () => {
         const ep = episodes[i];
         setProgress(Math.round(10 + (80 * i) / totalEpisodes));
 
-        // Skip if already generated
-        if (generatedAudios[ep.id]) {
-          const existingResponse = await fetch(generatedAudios[ep.id]);
-          chapterBlobs.push(await existingResponse.blob());
+        // Check if already saved in storage
+        if (isSegmentSaved(ep.id)) {
+          skipped++;
+          // Fetch existing audio for concatenation
+          const url = savedSegments[ep.id];
+          const res = await fetch(url);
+          chapterBlobs.push(await res.blob());
           continue;
         }
 
+        // Generate missing chapter
         const blob = await generateSingleAudio(ep.script, session);
         chapterBlobs.push(blob);
 
-        // Save individual chapter audio
-        const chapterUrl = URL.createObjectURL(blob);
-        setGeneratedAudios((prev) => ({ ...prev, [ep.id]: chapterUrl }));
+        // Save immediately to storage (incremental save)
+        await saveSegment(ep.id, blob);
+      }
+
+      if (skipped > 0) {
+        toast.info(`${skipped} chapitres déjà générés, reprise effectuée.`);
       }
 
       // Concatenate all chapter blobs into full podcast
       const fullBlob = new Blob(chapterBlobs, { type: "audio/mpeg" });
-      const fullUrl = URL.createObjectURL(fullBlob);
-      setGeneratedAudios((prev) => ({ ...prev, full: fullUrl }));
+      
+      // Save full podcast too
+      await saveSegment("full", fullBlob);
 
       setProgress(100);
-      toast.success("Podcast complet généré ! Tous les épisodes sont aussi disponibles individuellement.");
+      toast.success("Podcast complet généré et sauvegardé !");
     } catch (error: any) {
       console.error("Full podcast generation error:", error);
-      toast.error(`Erreur : ${error.message}`);
+      toast.error(`Erreur : ${error.message}. Les chapitres déjà générés sont sauvegardés — vous pouvez reprendre.`);
     } finally {
       setGenerating(null);
       setProgress(0);
     }
-  }, [generateSingleAudio, generatedAudios]);
+  }, [generateSingleAudio, savedSegments, isSegmentSaved, saveSegment]);
 
   const handlePlay = (episodeId: string) => {
-    const url = generatedAudios[episodeId];
+    const url = getAudioUrl(episodeId);
     if (!url) return;
 
     if (playing === episodeId) {
@@ -143,7 +173,7 @@ const SolocabPodcastGenerator = () => {
   };
 
   const handleDownload = (episodeId: string, title: string) => {
-    const url = generatedAudios[episodeId];
+    const url = getAudioUrl(episodeId);
     if (!url) return;
     const a = document.createElement("a");
     a.href = url;
@@ -152,7 +182,20 @@ const SolocabPodcastGenerator = () => {
   };
 
   const episodes = getAllEpisodes();
-  const allChaptersGenerated = episodes.every((ep) => generatedAudios[ep.id]);
+  const savedCount = episodes.filter(ep => isSegmentSaved(ep.id)).length;
+  const allChaptersGenerated = savedCount === episodes.length;
+  const hasFullPodcast = !!getAudioUrl("full");
+
+  if (loadingSegments) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Chargement des podcasts sauvegardés...
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -167,7 +210,19 @@ const SolocabPodcastGenerator = () => {
             <div className="flex-1">
               <CardTitle className="text-lg">🎙️ Podcast Complet</CardTitle>
               <CardDescription className="mt-1">
-                Génère tous les chapitres en une seule fois. Chaque épisode sera aussi disponible individuellement — zéro doublon de crédits.
+                {savedCount > 0 && !allChaptersGenerated && (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    {savedCount}/{TOTAL_CHAPTERS} chapitres déjà générés — la reprise est automatique.{" "}
+                  </span>
+                )}
+                {allChaptersGenerated && !hasFullPodcast && (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    Tous les chapitres sont prêts — cliquez pour assembler sans crédits supplémentaires.{" "}
+                  </span>
+                )}
+                {!allChaptersGenerated && savedCount === 0 && (
+                  "Génère tous les chapitres en une seule fois. Chaque épisode sera aussi disponible individuellement — zéro doublon de crédits."
+                )}
               </CardDescription>
             </div>
           </div>
@@ -177,13 +232,13 @@ const SolocabPodcastGenerator = () => {
             <div className="space-y-2">
               <Progress value={progress} className="h-2" />
               <p className="text-xs text-muted-foreground text-center">
-                Génération chapitre par chapitre... Cela peut prendre plusieurs minutes.
+                Génération chapitre par chapitre... Les chapitres déjà générés sont ignorés.
               </p>
             </div>
           )}
 
           <div className="flex gap-2">
-            {!generatedAudios["full"] ? (
+            {!hasFullPodcast ? (
               <Button
                 onClick={generateFullPodcast}
                 disabled={!!generating}
@@ -191,6 +246,8 @@ const SolocabPodcastGenerator = () => {
               >
                 {generating === "full" ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Génération...</>
+                ) : savedCount > 0 ? (
+                  <><Mic className="w-4 h-4" /> Reprendre la génération ({savedCount}/{TOTAL_CHAPTERS})</>
                 ) : (
                   <><Mic className="w-4 h-4" /> Générer le podcast complet</>
                 )}
@@ -207,12 +264,6 @@ const SolocabPodcastGenerator = () => {
               </>
             )}
           </div>
-
-          {allChaptersGenerated && !generatedAudios["full"] && (
-            <p className="text-xs text-muted-foreground text-center">
-              Tous les chapitres sont déjà générés — cliquez pour assembler le podcast complet sans utiliser de crédits supplémentaires.
-            </p>
-          )}
         </CardContent>
       </Card>
 
@@ -224,53 +275,66 @@ const SolocabPodcastGenerator = () => {
       >
         {showEpisodes ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         {showEpisodes ? "Masquer" : "Afficher"} les {TOTAL_CHAPTERS} épisodes individuels
+        {savedCount > 0 && (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+            ({savedCount} sauvegardés)
+          </span>
+        )}
       </Button>
 
       {/* Individual episodes */}
       {showEpisodes && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {episodes.map((ep) => (
-            <Card key={ep.id} className="overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-violet-400 to-purple-500" />
-              <CardContent className="p-4 space-y-3">
-                <div>
-                  <p className="font-medium text-sm">{ep.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ep.description}</p>
-                </div>
+          {episodes.map((ep) => {
+            const isSaved = isSegmentSaved(ep.id);
+            const audioUrl = getAudioUrl(ep.id);
 
-                {generating === ep.id && (
-                  <Progress value={progress} className="h-1.5" />
-                )}
+            return (
+              <Card key={ep.id} className="overflow-hidden">
+                <div className={`h-1 bg-gradient-to-r ${isSaved ? "from-emerald-400 to-green-500" : "from-violet-400 to-purple-500"}`} />
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start gap-2">
+                    {isSaved && <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />}
+                    <div>
+                      <p className="font-medium text-sm">{ep.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ep.description}</p>
+                    </div>
+                  </div>
 
-                <div className="flex gap-2">
-                  {!generatedAudios[ep.id] ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => generateEpisodeAudio(ep)}
-                      disabled={!!generating}
-                      className="gap-1 text-xs flex-1"
-                    >
-                      {generating === ep.id ? (
-                        <><Loader2 className="w-3 h-3 animate-spin" /> En cours...</>
-                      ) : (
-                        <><Mic className="w-3 h-3" /> Générer</>
-                      )}
-                    </Button>
-                  ) : (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => handlePlay(ep.id)} className="gap-1 text-xs">
-                        {playing === ep.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDownload(ep.id, ep.title)} className="gap-1 text-xs">
-                        <Download className="w-3 h-3" />
-                      </Button>
-                    </>
+                  {generating === ep.id && (
+                    <Progress value={progress} className="h-1.5" />
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  <div className="flex gap-2">
+                    {!audioUrl ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => generateEpisodeAudio(ep)}
+                        disabled={!!generating}
+                        className="gap-1 text-xs flex-1"
+                      >
+                        {generating === ep.id ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> En cours...</>
+                        ) : (
+                          <><Mic className="w-3 h-3" /> Générer</>
+                        )}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => handlePlay(ep.id)} className="gap-1 text-xs">
+                          {playing === ep.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDownload(ep.id, ep.title)} className="gap-1 text-xs">
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
