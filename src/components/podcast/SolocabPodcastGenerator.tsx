@@ -156,8 +156,8 @@ const SolocabPodcastGenerator = () => {
 
   return (
     <div className="space-y-4">
-      {/* Recovery banner if no episodes saved */}
-      {savedCount === 0 && !showRecovery && (
+      {/* Recovery banner if missing episodes */}
+      {savedCount < TOTAL_CHAPTERS && !showRecovery && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
