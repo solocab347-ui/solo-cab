@@ -1196,18 +1196,18 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   const ctaY = 136;
   const ctaW = 140;
   const ctaH = 20;
+  const registrationUrl = "https://solo-cab-to-lovable.lovable.app/register-driver-promo";
   doc.setFillColor(...c.primaryBlue);
   doc.roundedRect(ctaX, ctaY, ctaW, ctaH, 6, 6, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
-  doc.text("solocab.fr/chauffeur", w / 2, 149, { align: "center" });
-
-  // Make the entire CTA area clickable
-  doc.link(ctaX, ctaY, ctaW, ctaH, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
-  
-  // Also add a larger invisible link area around the button for easier tapping on mobile
-  doc.link(ctaX - 10, ctaY - 5, ctaW + 20, ctaH + 10, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
+  // Use textWithLink for universal PDF reader support
+  const ctaLabel = "solocab.fr/chauffeur";
+  const ctaTextW = doc.getTextWidth(ctaLabel);
+  doc.textWithLink(ctaLabel, w / 2 - ctaTextW / 2, 149, { url: registrationUrl });
+  // Fallback invisible link covering the whole button area
+  doc.link(ctaX, ctaY, ctaW, ctaH, { url: registrationUrl });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
@@ -1241,12 +1241,13 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 18, { align: "center" });
   doc.text("Sans commission sur vos courses directes", w / 2, fy + 26, { align: "center" });
 
-  // Add a second clickable text link below for redundancy
+  // Add a second clickable text link below for redundancy — use textWithLink
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...c.primaryBlue);
-  doc.text(">> Cliquez ici pour vous inscrire <<", w / 2, fy + 42, { align: "center" });
-  doc.link(w / 2 - 60, fy + 35, 120, 12, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
+  const linkLabel = ">> Cliquez ici pour vous inscrire <<";
+  const linkW = doc.getTextWidth(linkLabel);
+  doc.textWithLink(linkLabel, w / 2 - linkW / 2, fy + 42, { url: "https://solo-cab-to-lovable.lovable.app/register-driver-promo" });
 
   addFooter(doc, inscPage);
 
