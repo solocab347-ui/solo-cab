@@ -50,8 +50,17 @@ export const addCover = (doc: jsPDF) => {
 
   if (coverDataUrl) {
     try {
-      // Full-page cover image
-      doc.addImage(coverDataUrl, "PNG", 0, 0, w, h);
+      // Dark background behind margins
+      doc.setFillColor(...c.darkBlue);
+      doc.rect(0, 0, w, h, "F");
+
+      // Add cover image with margins so PDF viewers don't clip it
+      const marginTop = 10;
+      const marginBottom = 10;
+      const marginSide = 8;
+      const imgW = w - marginSide * 2;
+      const imgH = h - marginTop - marginBottom;
+      doc.addImage(coverDataUrl, "PNG", marginSide, marginTop, imgW, imgH);
       return;
     } catch { /* fall through to generated cover */ }
   }
