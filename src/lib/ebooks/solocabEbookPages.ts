@@ -47,54 +47,57 @@ export const addCover = (doc: jsPDF) => {
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
-  // Decorative circles
-  doc.setFillColor(35, 55, 120);
-  doc.circle(-40, 60, 100, "F");
-  doc.circle(w + 40, h - 60, 120, "F");
-  doc.circle(w / 2, -30, 50, "F");
+  // Subtle abstract circles
+  doc.setFillColor(28, 48, 95);
+  doc.circle(-30, 80, 80, "F");
+  doc.circle(w + 25, h - 80, 90, "F");
+  doc.circle(w * 0.7, -20, 40, "F");
 
-  // Accent lines
-  doc.setDrawColor(...c.accentGold);
-  doc.setLineWidth(3);
-  doc.line(30, 70, w - 30, 70);
-  doc.line(30, h - 80, w - 30, h - 80);
+  // Top accent line — soft violet
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(2);
+  doc.line(35, 75, w - 35, 75);
 
   // Logo
-  addLogo(doc, w / 2 - 18, 25, 36);
+  addLogo(doc, w / 2 - 16, 28, 32);
 
   // Label
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(200, 200, 230);
-  doc.text("SOLOCAB ACADEMY", w / 2, 90, { align: "center" });
-
   doc.setFontSize(10);
-  doc.setTextColor(180, 180, 210);
-  doc.text("MANUSCRIT INTÉGRAL", w / 2, 100, { align: "center" });
+  doc.setTextColor(...c.lightViolet);
+  doc.text("SOLOCAB ACADEMY", w / 2, 72, { align: "center" });
 
-  // Main title
-  doc.setFontSize(38);
+  // Main title — clean and large
+  doc.setFontSize(36);
   doc.setTextColor(255, 255, 255);
-  doc.text("L'ILLUSION", w / 2, 130, { align: "center" });
-  doc.text("DES", w / 2, 150, { align: "center" });
-  doc.text("APPLICATIONS", w / 2, 170, { align: "center" });
+  doc.text("L'ILLUSION", w / 2, 110, { align: "center" });
+  doc.text("DES", w / 2, 128, { align: "center" });
+  doc.text("APPLICATIONS", w / 2, 146, { align: "center" });
 
-  // Subtitle box
-  doc.setFillColor(35, 55, 120);
-  doc.roundedRect(35, 185, w - 70, 30, 5, 5, "F");
+  // Subtitle in soft violet box
+  doc.setFillColor(28, 48, 95);
+  doc.roundedRect(40, 160, w - 80, 28, 4, 4, "F");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.setTextColor(...c.accentGold);
-  doc.text("Comprendre le système pour reprendre", w / 2, 198, { align: "center" });
-  doc.text("le contrôle de son activité", w / 2, 208, { align: "center" });
+  doc.setTextColor(...c.lightViolet);
+  doc.text("Comprendre le système pour reprendre", w / 2, 172, { align: "center" });
+  doc.text("le contrôle de son activité", w / 2, 182, { align: "center" });
 
-  // Bottom
+  // Bottom accent line
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(2);
+  doc.line(35, h - 75, w - 35, h - 75);
+
+  // Bottom info
   doc.setFontSize(9);
-  doc.setTextColor(...c.accentGold);
-  doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 30, { align: "center" });
+  doc.setTextColor(...c.lightViolet);
+  doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 55, { align: "center" });
   doc.setFontSize(8);
-  doc.setTextColor(200, 200, 230);
-  doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 20, { align: "center" });
+  doc.setTextColor(180, 190, 220);
+  doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 45, { align: "center" });
+
+  // Clickable link
+  doc.link(35, h - 62, w - 70, 12, { url: "https://www.solocab.fr" });
 };
 
 // ========== TABLE OF CONTENTS ==========
@@ -102,14 +105,17 @@ export const addTableOfContents = (doc: jsPDF) => {
   doc.addPage();
   const { w, margin } = getPageDims(doc);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...c.primaryBlue);
-  doc.text("SOMMAIRE", w / 2, 30, { align: "center" });
+  // Logo at top
+  addLogo(doc, w / 2 - 10, 15, 20);
 
-  doc.setDrawColor(...c.accentGold);
-  doc.setLineWidth(2);
-  doc.line(margin, 35, w - margin, 35);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(...c.deepBlue);
+  doc.text("SOMMAIRE", w / 2, 48, { align: "center" });
+
+  doc.setDrawColor(...c.softViolet);
+  doc.setLineWidth(1.5);
+  doc.line(w / 2 - 30, 52, w / 2 + 30, 52);
 
   const chapters = [
     { label: "Introduction", title: "La révolution qui semblait évidente" },
@@ -132,21 +138,26 @@ export const addTableOfContents = (doc: jsPDF) => {
     { label: "", title: "Message de l'auteur & Manifeste" },
   ];
 
-  let y = 50;
+  let y = 65;
   chapters.forEach((ch) => {
     // Label
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.setTextColor(...c.accentGold);
+    doc.setTextColor(...c.softViolet);
     doc.text(ch.label, margin + 2, y);
 
     // Title
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...c.darkText);
+    doc.setFontSize(10.5);
+    doc.setTextColor(...c.bodyText);
     doc.text(ch.title, margin + 30, y);
 
-    y += 12;
+    // Subtle dot line
+    doc.setDrawColor(...c.softBlue);
+    doc.setLineWidth(0.2);
+    doc.line(margin + 30 + doc.getTextWidth(ch.title) + 3, y - 0.5, w - margin, y - 0.5);
+
+    y += 11;
   });
 
   addFooter(doc, 2);
@@ -1009,14 +1020,13 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   const ctx = new DocContext(doc, startPage);
   const { w } = getPageDims(doc);
 
-  // Logo at top
-  addLogo(doc, w / 2 - 12, ctx.y - 5, 24);
-  ctx.y += 22;
+  // Subtle separator at top
+  ctx.addSeparator();
 
   // Message de l'auteur title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.setTextColor(...c.primaryBlue);
+  doc.setTextColor(...c.deepBlue);
   doc.text("MESSAGE DE L'AUTEUR", w / 2, ctx.y, { align: "center" });
   ctx.y += 10;
 
@@ -1038,9 +1048,10 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   ctx.addSpace(3);
 
   // Manifeste
+  ctx.addSeparator();
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.setTextColor(...c.accentGold);
+  doc.setTextColor(...c.softViolet);
   ctx.checkPageBreak(20);
   doc.text("MANIFESTE SOLOCAB", w / 2, ctx.y, { align: "center" });
   ctx.y += 8;
