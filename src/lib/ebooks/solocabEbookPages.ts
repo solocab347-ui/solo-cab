@@ -4,11 +4,7 @@ import {
   getPageDims,
   addFooter,
   addChapterPage,
-  addSectionTitle,
-  addParagraph,
-  addBulletList,
-  addInfoCard,
-  addStatBoxes,
+  DocContext,
 } from "./solocabEbookHelpers";
 
 const c = ebookColors;
@@ -17,7 +13,7 @@ const c = ebookColors;
 export const addCover = (doc: jsPDF) => {
   const { w, h } = getPageDims(doc);
 
-  doc.setFillColor(...c.primaryBlue);
+  doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
   // Decorative circles
@@ -38,38 +34,26 @@ export const addCover = (doc: jsPDF) => {
   doc.setTextColor(...c.accentGold);
   doc.text("SOLOCAB", w / 2, 50, { align: "center" });
 
-  // Main title
-  doc.setFontSize(36);
-  doc.setTextColor(255, 255, 255);
-  doc.text("LE GUIDE", w / 2, 110, { align: "center" });
-  doc.text("COMPLET", w / 2, 130, { align: "center" });
+  // Label
+  doc.setFontSize(11);
+  doc.setTextColor(200, 200, 220);
+  doc.text("MANUSCRIT INTÉGRAL", w / 2, 90, { align: "center" });
 
-  doc.setFontSize(18);
-  doc.setTextColor(...c.accentGold);
-  doc.text("de la Plateforme SoloCab", w / 2, 150, { align: "center" });
+  // Main title
+  doc.setFontSize(38);
+  doc.setTextColor(255, 255, 255);
+  doc.text("L'ILLUSION", w / 2, 125, { align: "center" });
+  doc.text("DES", w / 2, 145, { align: "center" });
+  doc.text("APPLICATIONS", w / 2, 165, { align: "center" });
 
   // Subtitle box
   doc.setFillColor(0, 65, 140);
-  doc.roundedRect(35, 170, w - 70, 40, 5, 5, "F");
+  doc.roundedRect(35, 180, w - 70, 30, 5, 5, "F");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  const sub = "La solution tout-en-un pour les chauffeurs VTC indépendants, les gestionnaires de flotte et les entreprises.";
-  const subLines = doc.splitTextToSize(sub, w - 90);
-  doc.text(subLines, w / 2, 185, { align: "center" });
-
-  // Highlights
-  const highlights = [
-    "🚗  Chauffeurs indépendants",
-    "🏢  Entreprises & Collaborateurs",
-    "📊  Gestion & Analytics",
-    "💳  Paiements intégrés",
-  ];
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  highlights.forEach((h, i) => {
-    doc.text(h, w / 2, 230 + i * 10, { align: "center" });
-  });
+  doc.setTextColor(...c.accentGold);
+  doc.text("Comprendre le système pour reprendre", w / 2, 193, { align: "center" });
+  doc.text("le contrôle de son activité", w / 2, 203, { align: "center" });
 
   // Bottom
   doc.setFontSize(9);
@@ -83,7 +67,7 @@ export const addCover = (doc: jsPDF) => {
 // ========== TABLE OF CONTENTS ==========
 export const addTableOfContents = (doc: jsPDF) => {
   doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
+  const { w, margin } = getPageDims(doc);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
@@ -95,920 +79,969 @@ export const addTableOfContents = (doc: jsPDF) => {
   doc.line(margin, 35, w - margin, 35);
 
   const chapters = [
-    { num: 1, title: "Présentation de SoloCab", page: 4 },
-    { num: 2, title: "L'Écosystème Complet", page: 7 },
-    { num: 3, title: "Espace Chauffeur VTC", page: 11 },
-    { num: 4, title: "Gestionnaire de Flotte", page: 16 },
-    { num: 5, title: "Espace Entreprise", page: 20 },
-    { num: 6, title: "Outils & Technologies", page: 24 },
-    { num: 7, title: "Tarification & Offres", page: 28 },
-    { num: 8, title: "Rejoindre SoloCab", page: 31 },
+    { label: "Introduction", title: "La révolution qui semblait évidente" },
+    { label: "Partie 1", title: "Une transformation qui semblait évidente" },
+    { label: "Partie 2", title: "Comprendre le modèle économique" },
+    { label: "Partie 3", title: "L'évolution du rapport de force" },
+    { label: "Partie 4", title: "La dépendance invisible" },
+    { label: "Partie 5", title: "L'illusion du flux" },
+    { label: "Partie 6", title: "Les conséquences économiques" },
+    { label: "Partie 7", title: "Les stratégies des plateformes" },
+    { label: "Partie 8", title: "La perception d'injustice" },
+    { label: "Partie 9", title: "Construire sa clientèle" },
+    { label: "Partie 10", title: "Le modèle hybride" },
+    { label: "Partie 11", title: "La dimension stratégique" },
+    { label: "Partie 12", title: "L'avenir du métier" },
+    { label: "Partie 13", title: "Le changement de paradigme" },
+    { label: "Partie 14", title: "Conclusion manifeste" },
+    { label: "Partie 15", title: "Plan d'action" },
+    { label: "Partie 16", title: "Au-delà de la compréhension" },
+    { label: "", title: "Message de l'auteur & Manifeste" },
   ];
 
   let y = 50;
   chapters.forEach((ch) => {
-    // Number circle
-    doc.setFillColor(...c.primaryBlue);
-    doc.circle(margin + 8, y - 1.5, 6, "F");
+    // Label
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${ch.num}`, margin + 8, y, { align: "center" });
+    doc.setFontSize(8);
+    doc.setTextColor(...c.accentGold);
+    doc.text(ch.label, margin + 2, y);
 
     // Title
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...c.darkText);
-    doc.text(ch.title, margin + 20, y + 1);
-
-    // Dots
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(...c.lightGray);
-    const titleEnd = margin + 20 + doc.getTextWidth(ch.title) + 3;
-    const pageX = w - margin - 5;
-    const dotLen = pageX - titleEnd;
-    if (dotLen > 0) {
-      const dots = ".".repeat(Math.floor(dotLen / 1.5));
-      doc.text(dots, titleEnd, y + 1);
-    }
-
-    // Page number
-    doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(...c.primaryBlue);
-    doc.text(`${ch.page}`, w - margin, y + 1, { align: "right" });
+    doc.setTextColor(...c.darkText);
+    doc.text(ch.title, margin + 30, y);
 
-    y += 18;
+    y += 12;
   });
 
   addFooter(doc, 2);
 };
 
-// ========== INTRO PAGE ==========
-export const addIntroPage = (doc: jsPDF) => {
-  doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
+// ========== INTRODUCTION ==========
+export const addIntroduction = (doc: jsPDF): number => {
+  addChapterPage(doc, 0, "Introduction", "La révolution qui semblait évidente", 3);
 
+  doc.addPage();
+  const ctx = new DocContext(doc, 4);
+
+  ctx.addParagraphs([
+    "Pendant longtemps, l'arrivée des applications dans le secteur du transport a été perçue comme une transformation évidente, presque naturelle.",
+    "Tout semblait plus simple, plus rapide, plus accessible.",
+    "Pour les clients, la promesse était claire : quelques clics suffisaient pour obtenir un véhicule, connaître le prix, suivre son trajet en temps réel et payer automatiquement sans même sortir son portefeuille.",
+    "Pour les chauffeurs, c'était l'ouverture d'un marché qui ne nécessitait plus la même structure qu'auparavant.",
+  ]);
+
+  ctx.addBulletList([
+    "Plus besoin d'une centrale d'appels.",
+    "Plus besoin d'une organisation commerciale complexe.",
+    "Plus besoin d'un réseau construit sur des années.",
+  ]);
+
+  ctx.addParagraphs([
+    "Il suffisait d'une application pour commencer à travailler.",
+    "Dans les premières années, cette promesse semblait largement tenue.",
+    "Le marché était dynamique, la demande forte et l'activité soutenue. Pour beaucoup, cette période a été celle de la découverte d'un nouveau modèle plus flexible et plus accessible.",
+    "Une révolution silencieuse était en train de redéfinir la manière dont le service de transport était consommé et produit.",
+    "Mais toute révolution technologique transforme aussi les équilibres économiques et la perception du métier.",
+    "Avec le temps, certaines questions commencent à émerger.",
+  ]);
+
+  ctx.addBulletList([
+    "Qui contrôle réellement l'accès au marché ?",
+    "Qui définit les règles économiques ?",
+    "Qui possède la relation client ?",
+    "Qui capte réellement la valeur créée ?",
+  ]);
+
+  ctx.addParagraphs([
+    "Ces questions ne remettent pas en cause l'utilité des plateformes.",
+    "Mais elles invitent à regarder le système avec plus de recul.",
+    "Car derrière la simplicité apparente se cache un modèle économique précis, avec ses intérêts, ses dynamiques et ses équilibres.",
+    "Et lorsque l'on commence à analyser ces dynamiques, la réalité apparaît plus nuancée que la perception initiale.",
+    "Ce livre n'a pas pour objectif de critiquer ni d'opposer de manière caricaturale.",
+    "Il propose simplement de comprendre.",
+  ]);
+
+  ctx.addBulletList([
+    "Comprendre les mécanismes.",
+    "Comprendre les dynamiques.",
+    "Comprendre la place réelle du professionnel.",
+  ]);
+
+  ctx.addParagraphs([
+    "Car lorsque la compréhension devient claire, la manière de voir le métier change profondément.",
+    "On ne subit plus uniquement un système.",
+    "On commence à percevoir ses marges de manœuvre, ses possibilités et son potentiel réel.",
+    "Ce livre est une invitation à prendre du recul. À regarder au-delà de l'interface. À observer ce qui structure réellement le marché. À comprendre ce qui se joue en profondeur.",
+  ]);
+
+  ctx.addQuote("Qui possède réellement le pouvoir ? Et c'est peut-être là que commence la véritable réflexion.");
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 1 ==========
+export const addPartie1 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 1, "Une transformation qui semblait évidente", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "L'arrivée des applications a marqué un tournant majeur dans l'histoire du transport.",
+    "Pour la première fois, la technologie permettait une mise en relation instantanée entre un besoin et un service, à une échelle jamais atteinte auparavant.",
+    "Ce changement a profondément transformé la perception du métier, aussi bien du côté des clients que du côté des chauffeurs.",
+    "Du jour au lendemain, commander un véhicule devenait aussi simple que commander un repas.",
+    "La promesse était puissante :",
+  ]);
+
+  ctx.addBulletList(["rapidité", "simplicité", "transparence", "accessibilité"]);
+
+  ctx.addParagraphs([
+    "Tout semblait aller dans le sens du progrès.",
+    "Et pendant un temps, cette perception était largement partagée.",
+    "Les applications ont permis d'ouvrir le marché, de fluidifier la demande et de simplifier l'accès au métier pour de nombreux professionnels.",
+    "Elles ont apporté une expérience utilisateur nouvelle, plus fluide, plus moderne et plus intuitive.",
+    "Pour les clients, c'était une amélioration évidente. Pour les chauffeurs, c'était une opportunité.",
+    "Mais toute transformation profonde modifie aussi les équilibres économiques, souvent de manière progressive et parfois imperceptible au départ.",
+    "Car derrière la simplicité d'une interface se cache toujours une structure plus complexe.",
+    "Lorsque l'on observe cette évolution avec du recul, on réalise que la transformation n'a pas seulement été technologique. Elle a aussi été structurelle.",
+    "Avant l'arrivée des plateformes, le marché était composé d'une multitude d'acteurs indépendants, de réseaux locaux et de centrales de réservation.",
+    "La demande était répartie, fragmentée, parfois difficile à capter, mais elle appartenait en grande partie à ceux qui exerçaient le métier.",
+    "Avec l'arrivée des applications, une grande partie de cette demande s'est progressivement concentrée autour de quelques canaux dominants.",
+    "Ce phénomène de concentration est un mécanisme naturel dans les marchés technologiques.",
+    "Plus un outil est utilisé, plus il devient incontournable. Et plus il devient incontournable, plus il acquiert de l'influence sur la manière dont le marché fonctionne.",
+    "Cette concentration n'est pas visible au quotidien. Elle se construit progressivement, à mesure que les habitudes évoluent.",
+    "Les clients prennent l'habitude d'utiliser une application plutôt qu'un autre canal. Les chauffeurs prennent l'habitude de se connecter pour recevoir des courses plutôt que de développer d'autres sources d'activité.",
+    "Petit à petit, le centre de gravité du marché se déplace.",
+    "Et lorsque l'accès à la demande passe majoritairement par un seul canal, ce canal acquiert naturellement un pouvoir structurant.",
+    "Il devient capable de définir les règles du jeu, d'influencer les prix, d'orienter les conditions et d'imposer un cadre.",
+    "Ce phénomène n'est pas spécifique au transport. On le retrouve dans de nombreux secteurs transformés par les plateformes.",
+    "Mais dans un métier où la valeur est créée par un service humain, cette transformation prend une dimension particulière.",
+    "Car la perception du métier évolue avec elle.",
+    "Au départ, le chauffeur voit l'application comme un outil qui lui apporte des clients. Puis, avec le temps, l'application devient le canal principal, parfois unique, d'accès à la demande.",
+    "Ce changement de perspective est subtil, mais il modifie profondément la manière dont l'activité est vécue.",
+    "On ne parle plus seulement d'un outil. On parle d'un environnement.",
+    "Et lorsque l'environnement devient incontournable, il influence naturellement les comportements, les décisions et la manière de travailler.",
+    "Cette transformation s'est faite progressivement, sans rupture visible. Elle a accompagné l'évolution des usages, l'amélioration des technologies et l'adoption massive des smartphones.",
+    "Et parce qu'elle s'est faite progressivement, elle a été largement acceptée comme une évolution naturelle du marché.",
+    "Mais comprendre qu'une transformation est naturelle ne signifie pas qu'elle est neutre.",
+    "Elle redéfinit toujours les équilibres, les rôles et la répartition de la valeur.",
+    "C'est précisément ce que nous allons explorer dans les prochaines parties.",
+    "Car derrière l'évidence apparente se cache une réalité plus nuancée. Et comprendre cette nuance est la première étape pour voir le métier sous un angle différent.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 2 ==========
+export const addPartie2 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 2, "Comprendre le modèle économique", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Pour comprendre en profondeur la transformation du secteur, il est essentiel de s'intéresser au fonctionnement du modèle économique des plateformes.",
+    "Car derrière l'interface simple et intuitive se trouve une mécanique précise, structurée autour d'objectifs financiers, de stratégies de croissance et d'équilibres économiques.",
+    "Une plateforme n'est pas un service public. C'est une entreprise privée, avec des investisseurs, des objectifs de rentabilité et des impératifs de développement.",
+    "Son rôle est d'organiser la mise en relation entre une offre et une demande, tout en captant une partie de la valeur générée par cette interaction.",
+    "Dans le transport, cette valeur correspond au service rendu au client : le trajet, l'expérience, la qualité de service, la disponibilité, la relation humaine.",
+    "Cette valeur est produite concrètement par le chauffeur.",
+    "La plateforme, elle, intervient comme intermédiaire technologique. Elle fournit l'interface, la visibilité, l'accès à la demande et l'organisation du flux.",
+    "En échange, elle prélève une commission sur chaque course.",
+    "Au départ, cette commission est souvent modérée. C'est une stratégie classique dans les modèles de plateforme :",
+  ]);
+
+  ctx.addBulletList([
+    "attirer un maximum d'utilisateurs",
+    "favoriser la croissance",
+    "atteindre une masse critique",
+  ]);
+
+  ctx.addParagraphs([
+    "Dans cette phase, l'objectif principal n'est pas la rentabilité immédiate, mais l'expansion rapide du marché.",
+    "Plus il y a de chauffeurs, plus le service est disponible. Plus le service est disponible, plus il attire de clients. Plus il attire de clients, plus il devient indispensable.",
+    "Une fois cette masse critique atteinte, la dynamique évolue.",
+    "La priorité d'une entreprise en phase de maturité devient naturellement l'optimisation de sa rentabilité.",
+    "Les commissions peuvent évoluer. Les conditions peuvent changer. Les règles peuvent être ajustées.",
+    "Ces évolutions ne sont pas nécessairement perçues immédiatement comme problématiques. Elles s'inscrivent dans la logique économique d'une entreprise qui cherche à améliorer ses performances financières.",
+    "Mais du point de vue du professionnel, la perception peut être différente.",
+    "Car la valeur produite reste la même — le service rendu au client — tandis que la part captée par l'intermédiaire peut augmenter.",
+    "C'est là que se crée parfois un sentiment de déséquilibre.",
+    "Le chauffeur supporte les coûts opérationnels :",
+  ]);
+
+  ctx.addBulletList([
+    "le véhicule", "le carburant", "l'entretien", "les assurances",
+    "le temps", "la fatigue", "le risque",
+  ]);
+
+  ctx.addParagraphs([
+    "La plateforme, elle, capte une part de la transaction sans supporter directement ces contraintes opérationnelles.",
+    "Tant que l'équilibre est perçu comme juste, le système fonctionne sans tension majeure.",
+  ]);
+
+  ctx.addQuote("La répartition de la valeur est-elle équilibrée ?");
+
+  ctx.addParagraphs([
+    "Cette question n'est pas idéologique. Elle est économique.",
+    "Elle renvoie à la manière dont la valeur est créée et distribuée dans un système.",
+    "Comprendre ce mécanisme permet de prendre du recul. Il ne s'agit pas de remettre en cause l'existence des plateformes, mais de comprendre leur logique.",
+    "Car toute entreprise agit en fonction de ses intérêts économiques. Et comprendre ces intérêts permet de mieux anticiper les évolutions possibles du modèle.",
+    "C'est à partir de cette compréhension que le regard sur le métier commence à évoluer.",
+    "On ne voit plus uniquement l'application comme un outil, mais comme un acteur économique à part entière, avec ses objectifs, ses contraintes et ses stratégies.",
+    "Et cette prise de conscience change profondément la manière d'analyser la relation entre le professionnel et la plateforme.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 3 ==========
+export const addPartie3 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 3, "L'évolution du rapport de force", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "À mesure que les plateformes se développent et deviennent des acteurs centraux du marché, le rapport de force évolue naturellement.",
+    "Au départ, la relation entre le chauffeur et la plateforme est perçue comme un partenariat. L'un apporte son service, l'autre apporte de la visibilité et de la demande.",
+    "Cette relation semble équilibrée, car chacun y trouve un avantage immédiat.",
+    "Mais avec le temps, à mesure que la demande se concentre sur quelques applications dominantes, l'équilibre peut évoluer.",
+    "Celui qui contrôle l'accès au client acquiert naturellement une influence majeure sur le fonctionnement du marché.",
+    "Ce phénomène n'est pas spécifique au transport. Il est observable dans tous les secteurs où un intermédiaire technologique devient le principal canal d'accès à la demande.",
+    "Lorsque la majorité des clients utilisent un même outil, cet outil devient capable d'orienter les conditions dans lesquelles le service est proposé.",
+    "Il peut définir les règles, ajuster les paramètres et influencer les dynamiques économiques.",
+    "Pour le professionnel, cette évolution peut être perçue comme un changement progressif de position.",
+    "On passe d'une relation perçue comme équilibrée à une relation où les décisions importantes sont prises à un niveau stratégique auquel le professionnel n'a pas directement accès.",
+    "Les évolutions de tarifs, les modifications des conditions d'utilisation, les ajustements des règles se font généralement de manière descendante.",
+    "Le chauffeur les découvre, s'y adapte, mais ne participe pas réellement à leur définition.",
+    "Cette situation n'est pas nécessairement intentionnelle. Elle est structurelle dans un modèle de plateforme.",
+    "Mais elle peut créer un sentiment de perte de contrôle sur certains paramètres essentiels de l'activité.",
+    "Lorsque l'on dépend majoritairement d'un seul canal pour accéder à la demande, la capacité d'influence individuelle devient limitée.",
+    "Et c'est précisément à ce moment que la perception du rapport de force commence à évoluer.",
+    "Certains professionnels ressentent un décalage entre leur rôle réel — produire le service — et leur capacité à influencer les règles du système dans lequel ils évoluent.",
+    "Ce décalage peut générer un sentiment d'incertitude, voire de frustration.",
+    "Mais au-delà du ressenti, il traduit surtout une transformation structurelle du marché.",
+    "Comprendre cette transformation permet de prendre du recul. Il ne s'agit pas d'opposer, mais d'analyser.",
+    "Car dans tout système économique, celui qui contrôle l'accès à la demande détient une influence importante sur la répartition de la valeur.",
+    "Et reconnaître cette réalité permet de mieux comprendre les dynamiques qui façonnent aujourd'hui le secteur.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 4 ==========
+export const addPartie4 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 4, "La dépendance invisible", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "La dépendance ne commence jamais par une contrainte visible. Elle commence presque toujours par le confort.",
+    "Lorsqu'un système fonctionne bien, qu'il apporte de la simplicité, de la fluidité et une forme de sécurité, il devient naturellement rassurant.",
+    "Dans le cas des plateformes, cette sécurité prend la forme d'un flux constant de courses.",
+    "On se connecte, et l'activité arrive. On travaille, et la journée s'organise autour de ce flux.",
+    "Ce fonctionnement crée une habitude. Et avec l'habitude, une forme de confiance s'installe.",
+    "Cette confiance n'est pas irrationnelle. Elle repose sur une expérience réelle : le système fonctionne, les courses arrivent, l'activité est possible.",
+    "Mais avec le temps, cette habitude peut aussi modifier certains réflexes stratégiques.",
+    "Lorsque la demande est fournie en continu, la nécessité de construire d'autres sources d'activité peut sembler moins urgente.",
+    "Pourquoi chercher ailleurs lorsque le flux est déjà là ? Pourquoi développer un réseau lorsque l'activité est immédiate ? Pourquoi réfléchir à une stratégie long terme lorsque le court terme fonctionne ?",
+    "Ces questions sont naturelles. Elles traduisent une adaptation logique à un environnement qui semble stable et efficace.",
+    "Mais c'est précisément là que la dépendance commence à s'installer, souvent de manière imperceptible.",
+    "Car à mesure que l'on s'habitue à un système, on peut progressivement réduire sa capacité à fonctionner en dehors de ce système.",
+  ]);
+
+  ctx.addBulletList([
+    "On développe moins d'autres canaux.",
+    "On construit moins de relations directes.",
+    "On investit moins dans des alternatives.",
+  ]);
+
+  ctx.addParagraphs([
+    "L'activité devient alors fortement liée à un flux externe. Et tant que ce flux reste stable, cette dépendance reste invisible.",
+    "Elle ne devient perceptible que lorsque quelque chose change.",
+  ]);
+
+  ctx.addBulletList([
+    "Une modification des conditions.",
+    "Une baisse d'activité.",
+    "Une évolution des règles.",
+  ]);
+
+  ctx.addParagraphs([
+    "C'est souvent dans ces moments que l'on prend conscience du degré de dépendance que l'on a développé.",
+    "Mais la dépendance n'est pas uniquement économique. Elle est aussi psychologique.",
+    "Lorsqu'un système structure notre quotidien, notre organisation et notre manière de travailler, il devient une référence implicite.",
+    "On finit par considérer son fonctionnement comme la norme. Et cette normalisation peut rendre plus difficile la projection vers d'autres modèles.",
+    "Comprendre ce mécanisme ne signifie pas qu'il faut rejeter le système. Il signifie simplement qu'il est utile de prendre conscience de la manière dont il influence nos comportements et nos choix.",
+    "Car la prise de conscience est toujours la première étape vers la liberté stratégique.",
+    "Lorsqu'on comprend les mécanismes de dépendance, on peut commencer à réfléchir à la manière de diversifier, d'équilibrer et de structurer son activité différemment.",
+    "Cette réflexion n'est pas une remise en cause. C'est une évolution.",
+    "Elle permet de passer d'une posture passive à une posture plus consciente.",
+    "Et c'est précisément ce changement de posture qui ouvre la voie à de nouvelles possibilités.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 5 ==========
+export const addPartie5 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 5, "L'illusion du flux", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Le flux est probablement l'un des éléments les plus rassurants dans un modèle basé sur les plateformes.",
+    "Il donne le sentiment que l'activité est toujours disponible, que la demande est constante et que le travail ne manque jamais.",
+    "Se connecter devient presque synonyme de travailler.",
+    "Cette sensation est puissante, car elle apporte une forme de sécurité immédiate.",
+    "On sait que l'on va recevoir des courses. On sait que la journée peut être remplie. On sait que l'activité est possible.",
+    "Mais derrière cette impression de continuité se cache une réalité plus subtile.",
+    "Les plateformes n'ont pas créé le besoin de mobilité. Le besoin de se déplacer existe depuis toujours.",
+    "Ce qu'elles ont créé, c'est une manière plus efficace d'organiser ce besoin.",
+    "Elles ont structuré la demande, facilité la mise en relation et fluidifié l'expérience.",
+    "Mais le flux lui-même n'est pas une ressource créée par la plateforme. Il est simplement organisé par elle.",
+    "Cette distinction est essentielle. Car elle change la manière de percevoir le système.",
+    "Si le flux est perçu comme quelque chose qui appartient exclusivement à la plateforme, alors la dépendance semble naturelle.",
+    "Mais si le flux est compris comme l'expression d'un besoin existant, alors la perception évolue.",
+    "On commence à voir la plateforme comme un canal parmi d'autres, plutôt que comme la source unique de l'activité.",
+    "Cette nuance peut sembler théorique, mais elle a des conséquences très concrètes.",
+    "Elle ouvre la possibilité d'imaginer d'autres manières d'accéder à la demande.",
+    "Elle permet de comprendre que le marché ne se limite pas à un seul canal.",
+    "Et surtout, elle rappelle que la valeur du service ne dépend pas uniquement du système qui organise le flux. Elle dépend avant tout du professionnel qui réalise la prestation.",
+    "Le flux peut donner l'impression que l'activité est fournie. Mais en réalité, l'activité existe parce que des clients ont un besoin et parce que des professionnels y répondent.",
+    "La plateforme n'est qu'un intermédiaire entre ces deux réalités.",
+    "Comprendre cette dynamique permet de prendre du recul sur la perception du système.",
+    "On ne voit plus le flux comme une ressource extérieure indispensable, mais comme une organisation spécifique d'un besoin plus large.",
+    "Cette prise de conscience est souvent le début d'une réflexion plus profonde sur la manière de structurer son activité.",
+    "Car lorsqu'on comprend que la demande existe indépendamment du canal, on commence à envisager d'autres possibilités.",
+    "On réalise que le flux n'est pas une finalité. C'est un outil.",
+    "Et comme tout outil, il peut être utilisé, complété ou équilibré par d'autres approches.",
+    "Cette vision ne remet pas en cause l'utilité des plateformes. Elle permet simplement de les replacer dans un cadre plus large, où elles deviennent un élément d'un écosystème plutôt qu'une fondation unique.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 6 ==========
+export const addPartie6 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 6, "Les conséquences économiques", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Au fil du temps, de nombreux professionnels commencent à ressentir un décalage entre l'intensité de leur activité et le résultat économique qu'ils en retirent.",
+    "Beaucoup travaillent davantage, mais ont le sentiment de gagner moins.",
+    "Ce ressenti n'est pas uniquement lié à une perception subjective. Il est souvent le résultat d'une combinaison de facteurs économiques qui évoluent progressivement.",
+  ]);
+
+  ctx.addBulletList([
+    "L'augmentation des commissions.",
+    "L'évolution des tarifs.",
+    "La hausse des coûts opérationnels.",
+    "La pression concurrentielle.",
+  ]);
+
+  ctx.addParagraphs([
+    "Pris séparément, chacun de ces éléments peut sembler gérable. Mais ensemble, ils modifient progressivement l'équilibre économique du métier.",
+    "Le professionnel supporte l'essentiel des coûts liés à l'activité :",
+  ]);
+
+  ctx.addBulletList([
+    "Le véhicule.", "Le carburant.", "L'entretien.", "Les assurances.",
+    "Les charges.", "Le temps passé.", "La fatigue physique et mentale.",
+  ]);
+
+  ctx.addParagraphs([
+    "Ces coûts sont concrets, tangibles et immédiats.",
+    "La plateforme, de son côté, capte une part de chaque transaction sans supporter directement ces contraintes opérationnelles.",
+    "Ce fonctionnement est cohérent avec son rôle d'intermédiaire. Mais lorsque la part captée augmente, l'équilibre perçu peut évoluer.",
+    "Certains professionnels ont le sentiment que la rentabilité devient plus difficile à maintenir malgré une activité soutenue.",
+    "Ils travaillent plus d'heures pour maintenir un niveau de revenu similaire.",
+    "Cette situation peut créer une forme de pression économique permanente.",
+    "On travaille pour maintenir l'équilibre, mais sans toujours pouvoir améliorer sa situation.",
+    "À long terme, cette dynamique peut générer une incertitude sur la capacité à se projeter.",
+    "La question n'est plus seulement de travailler, mais de savoir dans quelles conditions économiques l'activité pourra évoluer.",
+    "Cette incertitude n'est pas propre à un individu. Elle reflète une transformation plus large du modèle économique du secteur.",
+    "Comprendre ces mécanismes permet de prendre du recul sur les difficultés rencontrées.",
+    "Il ne s'agit pas de pointer un responsable, mais d'analyser une structure.",
+    "Car dans tout système où la valeur est partagée entre plusieurs acteurs, la perception de l'équilibre est essentielle pour maintenir une relation saine.",
+    "Lorsque cet équilibre semble évoluer, la perception du métier change naturellement.",
+    "On commence à réfléchir différemment à la manière de structurer son activité, de diversifier ses sources de revenus et de construire une stabilité plus durable.",
+    "Cette réflexion marque souvent le début d'une transition vers une approche plus stratégique du métier.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 7 ==========
+export const addPartie7 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 7, "Les stratégies des plateformes", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Pour comprendre pleinement l'évolution du secteur, il est essentiel d'observer la manière dont les plateformes se développent dans le temps.",
+    "Car leur évolution suit souvent un cycle stratégique assez clair, que l'on retrouve dans de nombreux modèles technologiques.",
+    "On peut généralement distinguer plusieurs phases.",
+  ]);
+
+  ctx.addSubTitle("La phase de séduction");
+  ctx.addParagraphs([
+    "Dans les premières années, l'objectif principal est de conquérir le marché. Pour y parvenir, les plateformes mettent en place des conditions attractives.",
+  ]);
+  ctx.addBulletList([
+    "Les commissions sont souvent modérées.",
+    "Les incitations financières sont nombreuses.",
+    "Les conditions d'entrée sont facilitées.",
+  ]);
+  ctx.addParagraph("L'objectif est clair : attirer un maximum de chauffeurs et de clients pour atteindre une masse critique. Cette phase est souvent perçue comme très positive.");
+
+  ctx.addSubTitle("La phase de croissance");
+  ctx.addParagraphs([
+    "Une fois la base d'utilisateurs établie, la plateforme cherche à consolider sa position. Elle améliore son service, renforce son infrastructure et développe sa présence sur le marché.",
+    "L'écosystème se structure progressivement autour d'elle. Les habitudes se créent. Les clients adoptent le service. Les chauffeurs s'y connectent quotidiennement.",
+    "Le système devient de plus en plus central dans l'organisation du marché.",
+  ]);
+
+  ctx.addSubTitle("La phase de domination");
+  ctx.addParagraphs([
+    "À mesure que la plateforme devient incontournable, elle acquiert une influence importante sur les conditions du marché.",
+    "Elle devient le canal principal d'accès à la demande pour une grande partie des professionnels.",
+    "C'est à ce moment que le rapport de force évolue de manière plus visible.",
+  ]);
+  ctx.addBulletList([
+    "Les règles peuvent être ajustées.",
+    "Les conditions peuvent évoluer.",
+    "Les paramètres économiques peuvent être modifiés.",
+  ]);
+
+  ctx.addSubTitle("La phase d'optimisation");
+  ctx.addParagraphs([
+    "Une fois la position dominante consolidée, la priorité devient souvent l'optimisation des performances économiques.",
+    "Les plateformes cherchent à améliorer leur rentabilité, à satisfaire leurs investisseurs et à renforcer leur modèle financier.",
+    "C'est dans cette phase que certaines décisions peuvent être perçues comme plus contraignantes par les professionnels.",
+  ]);
+
+  ctx.addSubTitle("Une logique économique, pas morale");
+  ctx.addParagraphs([
+    "Il est important de comprendre que ces évolutions ne sont pas nécessairement guidées par une intention négative. Elles sont le résultat d'une logique économique propre aux entreprises technologiques.",
+    "Comprendre cette logique permet de replacer les transformations dans un cadre plus large et d'éviter une lecture uniquement émotionnelle.",
+    "Cela permet également d'anticiper les évolutions possibles du modèle et d'adapter sa stratégie en conséquence.",
+  ]);
+
+  ctx.addSubTitle("La perception du pouvoir");
+  ctx.addParagraphs([
+    "Lorsque l'on observe ce cycle avec du recul, on comprend que le pouvoir d'une plateforme repose principalement sur sa capacité à organiser l'accès au marché.",
+    "Mais ce pouvoir n'existe que parce qu'il est alimenté par deux éléments essentiels : les clients et les chauffeurs.",
+    "Sans clients, il n'y a pas de demande. Sans chauffeurs, il n'y a pas de service.",
+    "Cette réalité rappelle que le système repose sur un équilibre entre plusieurs acteurs, chacun jouant un rôle indispensable.",
+    "Observer les stratégies des plateformes permet de mieux comprendre certaines évolutions qui peuvent sembler difficiles à interpréter lorsqu'on les vit au quotidien.",
+    "Cette prise de recul ne vise pas à juger, mais à analyser.",
+    "Car comprendre la logique d'un système est toujours la première étape pour pouvoir s'y positionner de manière plus consciente.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 8 ==========
+export const addPartie8 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 8, "La perception d'injustice", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Au-delà des mécanismes économiques et des logiques stratégiques, il existe une dimension plus humaine dans la manière dont les professionnels vivent l'évolution du secteur.",
+    "Car un marché n'est pas uniquement constitué de chiffres et de modèles économiques. Il est aussi fait de perceptions, de ressentis et d'expériences individuelles.",
+    "Avec le temps, de nombreux chauffeurs commencent à exprimer un sentiment difficile à définir précisément, mais qui revient souvent dans les discussions : un sentiment de décalage.",
+    "Un décalage entre l'effort fourni et la reconnaissance perçue. Un décalage entre la promesse initiale et la réalité quotidienne. Un décalage entre l'intensité du travail et la capacité à améliorer sa situation.",
+    "Ce sentiment ne naît pas d'un événement unique. Il se construit progressivement, à mesure que l'expérience s'accumule.",
+    "Au départ, l'activité peut sembler dynamique et motivante. Puis, avec le temps, certaines évolutions du marché modifient la perception du métier.",
+    "Les conditions changent. Les règles évoluent. La pression économique augmente.",
+    "Et peu à peu, certains professionnels ont le sentiment que leur rôle réel dans la création de valeur n'est pas pleinement reconnu à sa juste mesure.",
+    "Ce ressenti n'est pas universel. Il varie selon les parcours, les contextes et les situations individuelles.",
+    "Mais il est suffisamment répandu pour constituer un élément important dans la compréhension du secteur.",
+    "La perception d'injustice ne signifie pas nécessairement qu'une injustice objective existe dans tous les cas. Elle reflète avant tout une transformation du rapport entre l'effort fourni et la reconnaissance perçue.",
+    "Lorsque ce rapport semble évoluer de manière défavorable, le sentiment apparaît naturellement.",
+    "Ce phénomène est observable dans de nombreux secteurs où la valeur est partagée entre plusieurs acteurs.",
+    "Lorsque l'équilibre perçu se modifie, la relation au travail change.",
+    "On commence à ressentir une forme de frustration, parfois difficile à exprimer clairement.",
+    "Mais au-delà du ressenti individuel, ce sentiment révèle souvent une réalité plus structurelle : le besoin de retrouver un équilibre perçu comme plus juste.",
+    "Comprendre cette dimension humaine est essentiel, car elle permet d'aborder la transformation du secteur avec plus de nuance.",
+    "Il ne s'agit pas seulement d'un changement économique. C'est aussi un changement dans la manière dont les professionnels vivent leur métier.",
+    "Et lorsque la perception du métier évolue, la manière de se projeter dans l'avenir évolue également.",
+    "Certains commencent à réfléchir différemment à leur activité, à leur place dans le système et aux possibilités qui s'offrent à eux.",
+    "Cette réflexion marque souvent le début d'une transition vers une vision plus stratégique et plus consciente du métier.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 9 ==========
+export const addPartie9 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 9, "Construire sa clientèle", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "À partir du moment où l'on commence à comprendre les mécanismes du marché, une nouvelle perspective apparaît.",
+    "La question n'est plus seulement de travailler. Elle devient :",
+  ]);
+
+  ctx.addQuote("Comment construire ?");
+
+  ctx.addParagraphs([
+    "Cette nuance peut sembler simple, mais elle change profondément la manière de voir le métier.",
+    "Travailler consiste à répondre à une demande immédiate. Construire consiste à développer un actif dans le temps.",
+    "Dans un métier de service, cet actif s'appelle la clientèle.",
+    "Une clientèle n'est pas simplement une succession de courses. C'est un ensemble de relations construites sur la confiance, la qualité de service et la régularité.",
+    "Chaque client satisfait représente une opportunité de créer une relation durable. Et chaque relation durable constitue une base sur laquelle une activité plus stable peut se développer.",
+    "Dans un modèle entièrement dépendant d'un flux externe, cette dimension peut parfois être moins visible, car la demande arrive sans nécessiter d'effort particulier pour la générer.",
+    "Mais lorsque l'on adopte une vision plus stratégique, on commence à percevoir la différence entre recevoir des courses et construire une base de clients.",
+    "Recevoir des courses dépend du système. Construire une clientèle dépend du professionnel.",
+    "Cette distinction est fondamentale. Car elle détermine la capacité à stabiliser son activité dans le temps.",
+    "Une clientèle fidèle apporte plusieurs éléments essentiels :",
+  ]);
+
+  ctx.addBulletList([
+    "une régularité",
+    "une prévisibilité",
+    "une relation directe",
+    "une reconnaissance du service",
+  ]);
+
+  ctx.addParagraphs([
+    "Elle permet de réduire l'incertitude et d'augmenter la stabilité.",
+    "Mais au-delà des aspects économiques, elle transforme aussi la relation au métier.",
+    "On ne se contente plus d'exécuter des courses. On développe un service. On crée une expérience. On construit une réputation.",
+    "Cette approche demande du temps et de la constance. Elle ne se construit pas en un jour.",
+    "Mais elle constitue l'un des leviers les plus puissants pour renforcer l'autonomie professionnelle.",
+    "Construire sa clientèle ne signifie pas nécessairement abandonner les plateformes. Cela signifie simplement compléter son activité par une démarche plus proactive.",
+    "On passe d'une logique entièrement réactive à une logique hybride, où l'on utilise différents canaux pour structurer son activité.",
+    "Cette évolution permet de retrouver une forme de maîtrise sur le développement de son activité.",
+    "On ne dépend plus uniquement du flux. On commence à construire.",
+    "Et c'est souvent à ce moment que la perception du métier change profondément.",
+    "On ne voit plus seulement une activité quotidienne. On voit un projet qui se développe dans le temps.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 10 ==========
+export const addPartie10 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 10, "Le modèle hybride", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Lorsque l'on commence à adopter une vision plus stratégique du métier, une évidence apparaît progressivement :",
+    "L'avenir ne réside pas dans un choix radical entre différents modèles, mais dans un équilibre intelligent entre plusieurs sources d'activité.",
+    "Pendant longtemps, la question a souvent été posée de manière binaire : faut-il dépendre uniquement des plateformes ou fonctionner entièrement en dehors ?",
+    "Mais cette opposition simplifie une réalité beaucoup plus nuancée.",
+    "Dans la plupart des cas, la solution la plus stable repose sur un modèle hybride.",
+    "Un modèle dans lequel les plateformes restent un canal utile pour générer du flux, tout en étant complétées par d'autres sources d'activité construites progressivement.",
+    "Cette approche permet de combiner les avantages de différents systèmes tout en réduisant leurs limites.",
+    "Les plateformes apportent de la demande immédiate et une certaine fluidité dans l'organisation du travail.",
+    "Les relations directes avec les clients apportent de la stabilité, de la prévisibilité et une reconnaissance plus personnelle du service.",
+    "En combinant ces deux dimensions, le professionnel peut structurer une activité plus équilibrée.",
+    "Le modèle hybride permet également de réduire la dépendance à un seul canal.",
+    "Lorsque l'activité repose sur plusieurs sources, les variations de l'une sont plus facilement absorbées par les autres.",
+    "Cette diversification apporte une forme de sécurité économique et psychologique.",
+    "Elle permet de travailler avec plus de sérénité, en sachant que l'activité ne dépend pas d'un seul facteur.",
+    "Mais au-delà de la sécurité, le modèle hybride offre surtout une plus grande liberté stratégique.",
+    "Le professionnel peut choisir la manière dont il souhaite organiser son activité, en fonction de ses objectifs, de son rythme et de sa vision du métier.",
+    "Il peut ajuster son équilibre entre flux immédiat et construction long terme.",
+    "Cette capacité d'ajustement est un atout majeur dans un environnement en constante évolution.",
+    "Car aucun modèle n'est figé. Le marché évolue, les technologies évoluent, les attentes des clients évoluent.",
+    "Et dans ce contexte, la flexibilité devient une compétence essentielle.",
+    "Le modèle hybride n'est pas une solution miracle. C'est une approche progressive, qui se construit dans le temps et qui s'adapte à chaque situation individuelle.",
+    "Il permet simplement d'aborder le métier avec une vision plus large et plus stratégique.",
+    "On ne se limite plus à un seul cadre. On crée un équilibre.",
+    "Et cet équilibre ouvre la voie à une activité plus durable et plus maîtrisée.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 11 ==========
+export const addPartie11 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 11, "La dimension stratégique", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "À mesure que la compréhension du marché s'approfondit, une nouvelle manière de percevoir le métier commence à émerger.",
+    "On ne le voit plus uniquement comme une activité quotidienne, mais comme un projet qui peut être structuré et développé dans le temps.",
+    "Cette évolution correspond à un changement de posture.",
+    "On passe d'une logique d'exécution à une logique stratégique.",
+    "Dans une logique d'exécution, l'objectif principal est de répondre à la demande immédiate. On travaille au jour le jour, en s'adaptant aux conditions et aux opportunités qui se présentent.",
+    "Cette approche peut fonctionner à court terme, mais elle rend plus difficile la projection à long terme.",
+    "Dans une logique stratégique, la perspective change.",
+    "On commence à réfléchir à la direction que l'on souhaite donner à son activité, aux objectifs que l'on souhaite atteindre et aux moyens de structurer son développement.",
+    "Cette réflexion ne nécessite pas de transformations radicales. Elle commence souvent par une simple prise de recul.",
+  ]);
+
+  ctx.addBulletList([
+    "Prendre le temps d'observer son activité.",
+    "Analyser ses sources de revenus.",
+    "Comprendre ses marges de manœuvre.",
+    "Identifier ses priorités.",
+  ]);
+
+  ctx.addParagraphs([
+    "Cette démarche permet de passer d'une posture réactive à une posture plus consciente.",
+    "On ne subit plus uniquement les conditions du marché. On commence à prendre des décisions plus alignées avec sa vision personnelle du métier.",
+    "La dimension stratégique ne signifie pas nécessairement complexité. Elle signifie simplement intention.",
+    "Avoir une intention claire permet de donner une direction à son activité et d'éviter de naviguer uniquement en fonction des circonstances.",
+    "Cette approche apporte également plus de cohérence dans les choix quotidiens. Chaque décision s'inscrit dans une logique plus large, orientée vers un objectif à long terme.",
+    "La dimension stratégique permet aussi d'anticiper les évolutions du marché.",
+    "En comprenant les dynamiques économiques et les transformations du secteur, on peut mieux s'adapter aux changements et saisir de nouvelles opportunités.",
+    "Cette capacité d'adaptation est essentielle dans un environnement en constante évolution.",
+    "Car le marché ne reste jamais figé. Les technologies évoluent. Les modèles économiques évoluent. Les attentes des clients évoluent.",
+    "Et dans ce contexte, ceux qui adoptent une posture stratégique sont souvent ceux qui parviennent à construire les modèles les plus durables.",
+    "La dimension stratégique transforme la relation au métier. On ne se contente plus de travailler. On développe une activité.",
+    "Et cette évolution ouvre la voie à une vision plus équilibrée, plus consciente et plus maîtrisée du travail.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 12 ==========
+export const addPartie12 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 12, "L'avenir du métier", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Lorsqu'on observe les transformations du secteur avec du recul, une chose apparaît clairement : le métier continue d'évoluer, et il continuera de le faire dans les années à venir.",
+    "Les évolutions technologiques, les changements de modèles économiques et les nouvelles attentes des clients redessinent progressivement les contours du marché.",
+    "Cette évolution n'est ni bonne ni mauvaise en soi. Elle est simplement le reflet d'un monde en mouvement, où les outils et les usages se transforment en permanence.",
+    "Dans ce contexte, l'avenir du métier ne se résume pas à une opposition entre tradition et technologie. Il se construit dans la manière dont les professionnels choisissent de s'adapter à ces transformations.",
+    "La technologie continuera de jouer un rôle central. Elle facilitera l'organisation, améliorera l'expérience client et apportera de nouveaux outils pour structurer l'activité.",
+    "Mais au-delà des outils, ce qui restera constant, c'est la valeur du service humain.",
+  ]);
+
+  ctx.addBulletList([
+    "La qualité de l'accueil.",
+    "La ponctualité.",
+    "Le professionnalisme.",
+    "La relation de confiance.",
+  ]);
+
+  ctx.addParagraphs([
+    "Ces éléments ne peuvent pas être automatisés. Ils reposent sur l'engagement et l'expérience du professionnel.",
+    "C'est pourquoi l'avenir du métier ne dépend pas uniquement de la technologie, mais de la manière dont elle est utilisée.",
+    "Elle peut être un levier puissant lorsqu'elle est mise au service du professionnel. Elle peut aussi devenir contraignante lorsqu'elle devient la seule structure de l'activité.",
+    "Comprendre cette nuance permet d'aborder l'avenir avec plus de sérénité.",
+    "Car l'évolution du secteur ouvre aussi de nouvelles opportunités.",
+  ]);
+
+  ctx.addBulletList([
+    "De nouveaux outils apparaissent.",
+    "De nouvelles approches émergent.",
+    "De nouvelles manières de structurer son activité deviennent possibles.",
+  ]);
+
+  ctx.addParagraphs([
+    "Le professionnel qui adopte une posture ouverte et stratégique est souvent mieux préparé à saisir ces opportunités.",
+    "Il ne subit pas les transformations. Il s'y adapte. Et parfois même, il les anticipe.",
+    "L'avenir du métier ne sera pas uniforme. Certains choisiront de continuer à fonctionner principalement via les plateformes. D'autres développeront davantage leur clientèle. Certains adopteront des modèles hybrides plus structurés.",
+    "Cette diversité reflète la richesse du secteur et la multiplicité des parcours possibles.",
+    "Mais une chose semble se dessiner progressivement : une évolution vers des modèles plus équilibrés, où la technologie devient un outil au service du professionnel plutôt qu'un cadre unique.",
+    "Cette évolution ne se fera pas du jour au lendemain. Elle se construira progressivement, à mesure que les professionnels prendront conscience des différentes possibilités qui s'offrent à eux.",
+    "Et c'est précisément cette prise de conscience qui ouvre la voie à un futur plus maîtrisé et plus durable.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 13 ==========
+export const addPartie13 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 13, "Le changement de paradigme", "", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Au fil des transformations du secteur, une évolution plus profonde se dessine progressivement.",
+    "Au-delà des outils, des modèles économiques et des conditions du marché, c'est la manière même de percevoir le métier qui évolue.",
+    "Pendant longtemps, l'activité a été pensée principalement sous l'angle de l'exécution : répondre à la demande, optimiser son temps, maximiser le nombre de courses.",
+    "Cette approche reste valable dans un certain contexte, mais elle ne reflète plus entièrement la réalité d'un secteur en mutation.",
+    "Un nouveau paradigme commence à émerger.",
+    "Un paradigme dans lequel le professionnel n'est plus seulement un exécutant, mais un acteur capable de structurer, de développer et d'orienter son activité.",
+    "Ce changement ne se fait pas de manière brutale. Il se construit progressivement, à mesure que la compréhension du système s'approfondit.",
+    "On commence à voir le métier sous un angle plus large. On ne parle plus uniquement de courses. On parle d'activité. On parle de relation client. On parle de stratégie. On parle de développement.",
+    "Ce changement de perspective modifie profondément la posture professionnelle.",
+    "On ne se contente plus de répondre aux conditions du marché. On cherche à comprendre comment y évoluer de manière plus consciente.",
+    "Le changement de paradigme repose sur une idée simple : la technologie ne doit pas être une structure qui enferme, mais un outil qui accompagne.",
+    "Elle doit faciliter, pas remplacer la réflexion stratégique. Elle doit soutenir, pas limiter la capacité d'évolution.",
+    "Dans cette vision, les plateformes ne disparaissent pas. Elles deviennent un élément parmi d'autres dans un écosystème plus large.",
+    "Le professionnel peut choisir la manière dont il souhaite les utiliser, en fonction de ses objectifs et de sa vision du métier.",
+    "Ce changement de paradigme ouvre la porte à une approche plus équilibrée et plus mature.",
+    "On ne cherche plus à opposer les modèles. On cherche à comprendre comment les articuler de manière cohérente.",
+    "Cette évolution marque une étape importante dans la maturation du secteur.",
+    "Elle reflète une prise de conscience progressive : le métier ne se limite pas à un cadre unique. Il peut évoluer, se structurer et se développer de différentes manières.",
+    "Et cette diversité d'approches constitue une richesse pour l'ensemble du secteur.",
+    "Le changement de paradigme n'est pas seulement une évolution économique. C'est aussi une évolution culturelle.",
+    "Une évolution dans la manière dont les professionnels perçoivent leur rôle, leur valeur et leur capacité à agir sur leur environnement.",
+    "C'est souvent à ce moment que l'on commence à envisager l'activité avec une perspective plus large, tournée vers l'avenir.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 14 — CONCLUSION ==========
+export const addPartie14 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 14, "Conclusion manifeste", "La fin d'une illusion, le début d'une vision", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Tout au long de ce livre, nous avons exploré une réalité qui, pour beaucoup, reste difficile à définir avec des mots simples.",
+    "Une réalité faite de promesses, d'opportunités, mais aussi de transformations profondes dans la manière dont le métier est exercé et perçu.",
+    "Nous avons observé comment un modèle innovant a transformé un secteur entier, apportant simplicité et fluidité, tout en redéfinissant progressivement les équilibres économiques et le rapport au travail.",
+    "Mais au-delà de l'analyse économique et stratégique, ce livre raconte avant tout une histoire plus personnelle : celle de la manière dont un professionnel perçoit sa place dans un système en constante évolution.",
+  ]);
+
+  ctx.addSubTitle("Comprendre pour se libérer");
+  ctx.addParagraphs([
+    "La compréhension est souvent la première forme de liberté.",
+    "Lorsque l'on comprend les mécanismes qui structurent un environnement, on cesse de les subir passivement.",
+    "On commence à voir les possibilités, les marges de manœuvre et les choix qui s'offrent à nous.",
+    "Ce livre n'a pas pour objectif de désigner un responsable ni de proposer une opposition simpliste. Il a pour objectif d'éclairer.",
+    "D'éclairer les dynamiques invisibles. D'éclairer les mécanismes économiques. D'éclairer la place réelle du professionnel dans l'écosystème.",
+  ]);
+
+  ctx.addSubTitle("Reprendre conscience de sa valeur");
+  ctx.addParagraphs([
+    "Dans un environnement fortement structuré par la technologie, il est parfois facile d'oublier que la valeur d'un service repose avant tout sur l'humain qui le réalise.",
+    "Un trajet n'est pas seulement un déplacement. C'est une expérience. C'est un service. C'est une relation de confiance.",
+    "Cette valeur ne peut pas être automatisée. Elle existe grâce à l'engagement, au professionnalisme et à la présence du chauffeur.",
+  ]);
+
+  ctx.addSubTitle("Le pouvoir du choix");
+  ctx.addParagraphs([
+    "La véritable liberté ne réside pas dans l'absence de contraintes, mais dans la capacité à choisir la manière dont on souhaite organiser son activité.",
+    "Choisir ses canaux. Choisir sa stratégie. Choisir sa direction.",
+    "Cette capacité de choix est au cœur de toute démarche professionnelle consciente.",
+  ]);
+
+  ctx.addSubTitle("Le futur appartient aux professionnels conscients");
+  ctx.addParagraphs([
+    "Dans un monde en constante évolution, ceux qui comprennent les dynamiques du marché et qui adoptent une posture stratégique sont ceux qui construisent les modèles les plus solides.",
+    "Le futur du métier appartient à ceux qui choisissent d'en comprendre les mécanismes plutôt que de les subir.",
+  ]);
+
+  ctx.addSubTitle("Une vision plus équilibrée");
+  ctx.addParagraphs([
+    "L'objectif n'est pas d'opposer, mais de rééquilibrer.",
+  ]);
+  ctx.addBulletList([
+    "Rééquilibrer la perception du pouvoir.",
+    "Rééquilibrer la compréhension de la valeur.",
+    "Rééquilibrer la manière de voir son activité.",
+  ]);
+  ctx.addParagraph("Cette vision plus équilibrée ouvre la porte à un modèle plus durable et plus satisfaisant.");
+
+  ctx.addQuote("Comprendre son environnement est la première étape pour reprendre une part de contrôle sur son avenir professionnel.");
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 15 — PLAN D'ACTION ==========
+export const addPartie15 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 15, "Plan d'action", "Transformer la prise de conscience en mouvement", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Comprendre un système est une étape essentielle. Mais la véritable transformation commence lorsque cette compréhension se traduit par des actions concrètes, même simples.",
+    "Ce plan d'action n'est pas une méthode rigide ni un programme universel. Il s'agit d'une série de repères destinés à accompagner une évolution progressive vers un modèle plus équilibré et plus conscient.",
+  ]);
+
+  ctx.addSubTitle("Étape 1 — Observer avec lucidité");
+  ctx.addParagraph("La première étape consiste simplement à observer son activité telle qu'elle est, sans jugement et sans précipitation. Prendre le temps d'analyser son fonctionnement, ses habitudes, ses résultats et ses ressentis.");
+
+  ctx.addSubTitle("Étape 2 — Distinguer ce qui dépend de soi");
+  ctx.addParagraph("Dans tout système, certains éléments sont sous notre contrôle et d'autres ne le sont pas. Identifier cette différence est essentiel pour se concentrer sur ce qui peut réellement évoluer.");
+
+  ctx.addSubTitle("Étape 3 — Renforcer la relation client");
+  ctx.addParagraph("Dans un métier de service, la relation est un levier majeur. Prendre le temps de soigner l'expérience client, d'être attentif aux détails et de maintenir un niveau de qualité constant permet de construire progressivement une réputation solide.");
+
+  ctx.addSubTitle("Étape 4 — Commencer à structurer son activité");
+  ctx.addParagraphs([
+    "Structurer son activité ne signifie pas tout transformer du jour au lendemain. Cela peut commencer par des actions simples :",
+  ]);
+  ctx.addBulletList([
+    "mieux organiser son temps",
+    "clarifier ses objectifs",
+    "identifier ses priorités",
+  ]);
+  ctx.addParagraph("Cette structuration progressive permet de passer d'une logique réactive à une logique plus proactive.");
+
+  ctx.addSubTitle("Étape 5 — Diversifier progressivement");
+  ctx.addParagraph("La diversification est un processus qui se construit dans le temps. Il ne s'agit pas de remplacer un système par un autre, mais d'ajouter progressivement de nouvelles sources d'activité.");
+
+  ctx.addSubTitle("Étape 6 — Développer une vision à long terme");
+  ctx.addParagraph("Prendre le temps de réfléchir à la direction que l'on souhaite donner à son activité permet de prendre des décisions plus cohérentes. Cette vision n'a pas besoin d'être parfaite. Elle doit simplement donner un cap.");
+
+  ctx.addSubTitle("Étape 7 — Cultiver une posture stratégique");
+  ctx.addParagraph("Adopter une posture stratégique consiste à rester attentif aux évolutions du marché, à analyser les tendances et à ajuster progressivement son positionnement.");
+
+  ctx.addSubTitle("Étape 8 — Accepter la progression");
+  ctx.addParagraph("Toute évolution prend du temps. Il est important de considérer chaque avancée, même modeste, comme une étape vers un modèle plus équilibré. La progression est souvent plus durable que les changements brusques.");
+
+  ctx.addSubTitle("Étape 9 — Construire avec cohérence");
+  ctx.addParagraph("Les actions les plus efficaces sont celles qui s'inscrivent dans une logique cohérente avec ses valeurs et ses objectifs. Construire une activité durable repose autant sur la cohérence que sur la performance.");
+
+  ctx.addSubTitle("Étape 10 — Continuer à apprendre");
+  ctx.addParagraph("Le marché évolue constamment. Continuer à apprendre, à observer et à ajuster sa manière de travailler permet de rester aligné avec les évolutions du secteur.");
+
+  ctx.addInfoCard("Le premier pas", "La transformation commence souvent par un premier pas simple : décider de voir son activité avec plus de conscience et de recul. À partir de ce moment, les décisions deviennent plus claires et les possibilités plus visibles.", c.lightGold, c.accentGold);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== PARTIE 16 — AU-DELÀ ==========
+export const addPartie16 = (doc: jsPDF, startPage: number): number => {
+  addChapterPage(doc, 16, "Au-delà de la compréhension", "Une nouvelle manière d'envisager le métier", startPage);
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage + 1);
+
+  ctx.addParagraphs([
+    "Arrivé à ce stade du livre, une chose devient évidente : le secteur du transport est en pleine évolution, et avec lui la manière dont les professionnels perçoivent leur rôle.",
+    "Pendant longtemps, la question principale était simple : comment travailler ?",
+    "Aujourd'hui, une question plus profonde émerge :",
+  ]);
+
+  ctx.addQuote("Comment construire ?");
+
+  ctx.addParagraphs([
+    "Cette question marque un tournant. Elle traduit un passage d'une logique d'exécution à une logique de vision.",
+    "Et c'est précisément dans ce passage que se dessine l'avenir du métier.",
+  ]);
+
+  ctx.addSubTitle("Lorsque la technologie devient un levier");
+  ctx.addParagraphs([
+    "La technologie a profondément transformé le secteur. Elle a simplifié l'accès au marché, facilité la mise en relation et ouvert des opportunités nouvelles.",
+    "Mais comme toute transformation, elle a aussi redéfini les équilibres.",
+    "Aujourd'hui, une nouvelle étape apparaît : celle où la technologie ne sert plus seulement à organiser l'activité, mais à permettre aux professionnels de la structurer eux-mêmes.",
+    "C'est un changement subtil, mais fondamental. La technologie cesse d'être uniquement un canal. Elle devient un levier.",
+  ]);
+
+  ctx.addSubTitle("Le retour du professionnel au centre");
+  ctx.addParagraphs([
+    "Au cœur de cette évolution se trouve une idée simple : le métier repose avant tout sur ceux qui l'exercent.",
+    "Sur leur engagement. Sur leur professionnalisme. Sur leur capacité à créer une expérience.",
+    "Cette réalité, parfois éclipsée par la puissance des systèmes, revient progressivement au centre du débat.",
+  ]);
+
+  ctx.addSubTitle("SoloCab comme expression de cette vision");
+  ctx.addParagraphs([
+    "Dans cette dynamique, certaines initiatives incarnent concrètement cette évolution vers un modèle plus équilibré.",
+    "SoloCab fait partie de ces approches. Non pas comme une réponse unique ou une solution imposée, mais comme une expression concrète d'une vision : celle d'une technologie pensée pour accompagner les professionnels plutôt que pour les contraindre.",
+    "Son ambition est simple : offrir des outils qui permettent de structurer son activité, de renforcer sa relation client et de développer progressivement son autonomie, tout en conservant la simplicité d'usage des technologies modernes.",
+  ]);
+
+  ctx.addSubTitle("L'essentiel reste entre les mains du professionnel");
+  ctx.addParagraphs([
+    "Au-delà des outils, la véritable transformation repose toujours sur la vision et les choix du professionnel.",
+    "Les technologies peuvent accompagner. Les méthodes peuvent structurer. Les solutions peuvent faciliter.",
+    "Mais c'est toujours l'individu qui décide de la direction qu'il souhaite prendre.",
+  ]);
+
+  ctx.finishPage();
+  return ctx.pageNum;
+};
+
+// ========== MESSAGE DE L'AUTEUR + MANIFESTE + BACK COVER ==========
+export const addClosingPages = (doc: jsPDF, startPage: number): number => {
+  doc.addPage();
+  const ctx = new DocContext(doc, startPage);
+  const { w } = getPageDims(doc);
+
+  // Message de l'auteur title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...c.primaryBlue);
-  doc.text("AVANT-PROPOS", w / 2, 25, { align: "center" });
+  doc.text("MESSAGE DE L'AUTEUR", w / 2, ctx.y, { align: "center" });
+  ctx.y += 12;
 
-  let y = 40;
-  y = addParagraph(doc, y, "SoloCab est né d'un constat simple : les chauffeurs VTC méritent une plateforme qui travaille AVEC eux, pas CONTRE eux. Une plateforme qui respecte leur indépendance tout en leur offrant les outils pour la transformer en réussite durable.");
-
-  y = addParagraph(doc, y, "Ce guide complet vous présente l'ensemble de l'écosystème SoloCab : de l'inscription à la gestion avancée, en passant par les fonctionnalités pour les entreprises et les gestionnaires de flotte.");
-
-  y += 5;
-  y = addInfoCard(doc, y, "💡 Notre philosophie",
-    "SoloCab ne travaille pas à ta place. Il travaille avec toi. L'indépendance n'est pas un statut, c'est une discipline. Un chauffeur sans objectif subit. Un chauffeur avec des objectifs pilote.",
-    c.lightGold, c.accentGold);
-
-  y += 5;
-  y = addSectionTitle(doc, y, "À qui s'adresse ce guide ?");
-
-  y = addBulletList(doc, y, [
-    "Chauffeurs VTC indépendants souhaitant développer leur activité",
-    "Gestionnaires de flotte recherchant un outil de management complet",
-    "Entreprises voulant optimiser la gestion de leurs déplacements",
-    "Partenaires et investisseurs souhaitant comprendre notre vision",
+  ctx.addSubTitle("Une réflexion née du terrain");
+  ctx.addParagraphs([
+    "Ce livre n'est pas né d'une théorie abstraite ni d'une simple analyse extérieure.",
+    "Il est né d'observations, d'échanges, de discussions avec des professionnels qui vivent ce métier chaque jour, sur le terrain, au contact direct de la réalité.",
+    "Des femmes et des hommes engagés, passionnés, qui travaillent avec sérieux et qui ressentent, parfois sans pouvoir l'exprimer clairement, que quelque chose évolue dans leur manière de vivre leur activité.",
+    "Ce livre est né de cette réalité. D'un besoin de comprendre. D'un besoin de mettre des mots sur des ressentis. D'un besoin de prendre du recul sur un secteur en pleine transformation.",
   ]);
 
-  y += 5;
-  y = addStatBoxes(doc, y, [
-    { value: "0%", label: "Commission" },
-    { value: "100%", label: "Indépendance" },
-    { value: "24/7", label: "Disponibilité" },
-    { value: "∞", label: "Potentiel" },
+  ctx.addSubTitle("Une volonté d'apporter de la clarté");
+  ctx.addParagraphs([
+    "L'objectif n'a jamais été de critiquer ni d'opposer. Mais simplement d'apporter un éclairage.",
+    "Un éclairage sur les mécanismes économiques. Un éclairage sur les dynamiques du marché. Un éclairage sur les possibilités qui existent aujourd'hui.",
+    "Parce que la compréhension est toujours la première étape vers la liberté.",
   ]);
 
-  addFooter(doc, 3);
-};
+  ctx.addSpace(5);
 
-// ========== CHAPTER 1: PRESENTATION (3 pages) ==========
-export const addChapter1 = (doc: jsPDF) => {
-  // Chapter cover
-  addChapterPage(doc, 1, "Présentation de SoloCab", "Découvrez la plateforme qui réinvente le VTC en France", 4);
+  // Manifeste
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...c.accentGold);
+  ctx.checkPageBreak(20);
+  doc.text("MANIFESTE SOLOCAB", w / 2, ctx.y, { align: "center" });
+  ctx.y += 10;
 
-  // Page 5
+  ctx.addSubTitle("Le mouvement des professionnels conscients");
+  ctx.addParagraphs([
+    "Nous croyons en un métier qui évolue. Un métier dans lequel les professionnels ne se contentent plus d'exécuter, mais choisissent de comprendre, de construire et de structurer leur activité.",
+    "Nous croyons que la technologie doit servir ceux qui créent la valeur, et non l'inverse.",
+    "Nous croyons que chaque professionnel possède le potentiel de développer une activité plus équilibrée, plus stable et plus consciente.",
+    "Nous croyons qu'il est possible d'utiliser les outils modernes tout en conservant sa liberté de choix.",
+    "Nous croyons que l'avenir du métier appartient à ceux qui comprennent les mécanismes plutôt qu'à ceux qui les subissent.",
+    "Nous croyons en un modèle basé sur le respect, la transparence et l'autonomie.",
+    "Et surtout, nous croyons que la véritable transformation commence toujours par une prise de conscience.",
+  ]);
+
+  ctx.addSpace(5);
+  ctx.addQuote("Comprendre pour choisir. Choisir pour construire.");
+
+  ctx.addSpace(5);
+  ctx.addParagraphs([
+    "Si vous avez lu jusqu'ici, alors quelque chose a probablement résonné en vous.",
+    "Peut-être une question. Peut-être une prise de recul. Peut-être une confirmation.",
+    "Quelle que soit votre impression, elle est légitime.",
+    "Ce livre n'avait pas pour objectif de convaincre, mais d'ouvrir une réflexion.",
+    "Et si cette réflexion vous accompagne dans votre manière de voir votre activité, alors il aura rempli son rôle.",
+  ]);
+
+  ctx.addQuote("La valeur sera toujours créée par ceux qui exercent avec professionnalisme et engagement. Et c'est peut-être là l'essentiel.");
+
+  ctx.finishPage();
+
+  // BACK COVER
   doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
-
-  let y = 20;
-  y = addSectionTitle(doc, y, "Qu'est-ce que SoloCab ?");
-  y = addParagraph(doc, y, "SoloCab est une plateforme française dédiée aux professionnels du transport VTC. Contrairement aux plateformes traditionnelles qui prélèvent des commissions allant de 20% à 30%, SoloCab propose un modèle basé sur l'abonnement, laissant 100% des revenus de course aux chauffeurs.");
-
-  y = addParagraph(doc, y, "Fondée avec la conviction que les chauffeurs VTC sont des entrepreneurs à part entière, SoloCab offre un écosystème complet d'outils professionnels : gestion de clientèle, facturation, planification, analytique et bien plus.");
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Notre Mission");
-  y = addInfoCard(doc, y, "🎯 Vision",
-    "Permettre à chaque chauffeur VTC de construire une activité rentable et pérenne, en toute indépendance. Nous croyons que la technologie doit servir le professionnel, jamais l'asservir.",
-    c.lightBg, c.primaryBlue);
-
-  y = addSectionTitle(doc, y, "Nos Valeurs Fondamentales");
-  y = addBulletList(doc, y, [
-    "Indépendance : Le chauffeur est son propre patron, SoloCab est son outil",
-    "Transparence : Aucun frais caché, tarification claire et prévisible",
-    "Innovation : Technologies de pointe au service du terrain",
-    "Communauté : Un réseau de professionnels qui s'entraident",
-    "Conformité : Respect total de la réglementation VTC et RGPD",
-  ]);
-
-  y += 3;
-  y = addStatBoxes(doc, y, [
-    { value: "2026", label: "Lancement" },
-    { value: "France", label: "Couverture" },
-    { value: "SaaS", label: "Modèle" },
-    { value: "RGPD", label: "Conforme" },
-  ]);
-
-  addFooter(doc, 5);
-
-  // Page 6
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Le Problème que Nous Résolvons");
-  y = addParagraph(doc, y, "Le marché VTC souffre de nombreuses inefficacités qui pénalisent les chauffeurs :");
-
-  const problems = [
-    { title: "Commissions excessives", desc: "Les plateformes traditionnelles prélèvent 20-30% sur chaque course, réduisant drastiquement la rentabilité des chauffeurs." },
-    { title: "Dépendance algorithmique", desc: "Les chauffeurs sont soumis aux algorithmes de répartition des courses, sans contrôle sur leur activité." },
-    { title: "Absence d'outils pro", desc: "Pas de CRM, pas de facturation avancée, pas d'analytics pour piloter son activité." },
-    { title: "Isolement professionnel", desc: "Aucun outil de mise en réseau ou de collaboration entre chauffeurs indépendants." },
-  ];
-
-  problems.forEach((p) => {
-    y = addInfoCard(doc, y, `❌ ${p.title}`, p.desc, c.lightOrange, c.orange);
-  });
-
-  y += 3;
-  y = addSectionTitle(doc, y, "La Solution SoloCab");
-  y = addParagraph(doc, y, "SoloCab répond à chacun de ces problèmes avec une approche radicalement différente : un abonnement fixe qui laisse 100% des courses au chauffeur, des outils professionnels complets, et une communauté structurée.");
-
-  addFooter(doc, 6);
-};
-
-// ========== CHAPTER 2: ECOSYSTEM (4 pages) ==========
-export const addChapter2 = (doc: jsPDF) => {
-  addChapterPage(doc, 2, "L'Écosystème Complet", "Tous les acteurs connectés dans une seule plateforme", 7);
-
-  // Page 8
-  doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
-  let y = 20;
-  y = addSectionTitle(doc, y, "Les 5 Piliers de l'Écosystème");
-  y = addParagraph(doc, y, "SoloCab connecte cinq types d'acteurs dans un écosystème cohérent et efficace. Chaque acteur dispose de son espace dédié avec des fonctionnalités adaptées à ses besoins spécifiques.");
-
-  const pillars = [
-    { title: "🚗 Chauffeur VTC Indépendant", desc: "Le cœur de la plateforme. Gère ses clients, ses courses, sa facturation et son développement commercial de manière autonome." },
-    { title: "🏢 Gestionnaire de Flotte", desc: "Supervise plusieurs chauffeurs. Organise les plannings, répartit les courses, suit les performances et gère la conformité administrative." },
-    { title: "🏭 Entreprise", desc: "Réserve des courses pour ses collaborateurs. Bénéficie d'une facturation centralisée et de rapports de dépenses détaillés." },
-    { title: "👤 Collaborateur", desc: "L'employé d'une entreprise cliente. Réserve ses courses dans le cadre du budget alloué par son entreprise." },
-    { title: "🛡️ Administrateur SoloCab", desc: "Supervise l'ensemble de la plateforme, vérifie les documents, gère les validations et assure le bon fonctionnement." },
-  ];
-
-  pillars.forEach((p) => {
-    y = addInfoCard(doc, y, p.title, p.desc, c.lightBg, c.primaryBlue);
-  });
-
-  addFooter(doc, 8);
-
-  // Page 9
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Les Interactions entre Acteurs");
-  y = addParagraph(doc, y, "L'écosystème SoloCab fonctionne grâce à des interactions fluides et sécurisées entre les différents acteurs :");
-
-  y = addBulletList(doc, y, [
-    "Chauffeur ↔ Client : Réservation directe, sans intermédiaire ni commission",
-    "Chauffeur ↔ Gestionnaire de Flotte : Attribution des courses, suivi des performances",
-    "Entreprise ↔ Chauffeur/Flotte : Demandes de course, devis automatiques, facturation",
-    "Collaborateur ↔ Entreprise : Budget alloué, validation des courses, reporting",
-    "Admin ↔ Tous : Vérification des documents, validation des inscriptions, support",
-  ]);
-
-  y += 5;
-  y = addSectionTitle(doc, y, "Architecture Technique");
-  y = addParagraph(doc, y, "SoloCab repose sur une architecture cloud moderne, sécurisée et scalable :");
-
-  y = addBulletList(doc, y, [
-    "Application web responsive (desktop, tablette, mobile)",
-    "Base de données sécurisée avec chiffrement des données sensibles",
-    "API RESTful pour les intégrations tierces",
-    "Notifications en temps réel (push, email, SMS)",
-    "Conformité RGPD et hébergement en Europe",
-  ]);
-
-  y += 5;
-  y = addInfoCard(doc, y, "🔒 Sécurité",
-    "Toutes les communications sont chiffrées. Les données personnelles sont protégées par des politiques d'accès strictes (Row Level Security). Chaque utilisateur n'accède qu'à ses propres données.",
-    c.lightGreen, c.green);
-
-  addFooter(doc, 9);
-
-  // Page 10
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Le Partage de Chauffeurs");
-  y = addParagraph(doc, y, "Une fonctionnalité unique de SoloCab : les chauffeurs indépendants peuvent choisir de rendre leur profil visible aux gestionnaires de flotte et aux entreprises, créant ainsi un réseau de chauffeurs disponibles.");
-
-  y = addInfoCard(doc, y, "🤝 Comment ça marche ?",
-    "Le chauffeur active l'option 'Visible pour le partage' dans ses paramètres. Les gestionnaires de flotte peuvent alors le trouver et lui proposer des courses. Le chauffeur reste libre d'accepter ou refuser chaque proposition.",
-    c.lightPurple, c.purple);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Avantages du Partage");
-
-  const shareAdvantages = [
-    { title: "Pour le Chauffeur", items: ["Plus de courses disponibles", "Diversification de la clientèle", "Maintien de l'indépendance totale"] },
-    { title: "Pour la Flotte", items: ["Accès à des chauffeurs qualifiés", "Flexibilité en période de forte demande", "Pas d'engagement long terme"] },
-    { title: "Pour l'Entreprise", items: ["Plus de chauffeurs disponibles", "Meilleure couverture géographique", "Tarifs compétitifs"] },
-  ];
-
-  shareAdvantages.forEach((sa) => {
-    y = addInfoCard(doc, y, sa.title, sa.items.join(" • "), c.lightBg, c.primaryBlue);
-  });
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Statistiques de l'Écosystème");
-  y = addStatBoxes(doc, y, [
-    { value: "5", label: "Types d'acteurs" },
-    { value: "360°", label: "Vue complète" },
-    { value: "Temps réel", label: "Synchronisation" },
-  ]);
-
-  addFooter(doc, 10);
-};
-
-// ========== CHAPTER 3: DRIVER SPACE (5 pages) ==========
-export const addChapter3 = (doc: jsPDF) => {
-  addChapterPage(doc, 3, "Espace Chauffeur VTC", "Tous les outils pour développer votre activité", 11);
-
-  // Page 12
-  doc.addPage();
-  let y = 20;
-  y = addSectionTitle(doc, y, "Tableau de Bord Chauffeur");
-  y = addParagraph(doc, y, "Dès la connexion, le chauffeur accède à un tableau de bord complet qui synthétise toute son activité. Un véritable cockpit pour piloter son entreprise.");
-
-  y = addBulletList(doc, y, [
-    "Chiffre d'affaires du jour, de la semaine, du mois",
-    "Nombre de courses en attente, confirmées, terminées",
-    "Prochaines courses programmées avec détails client",
-    "Notifications et alertes importantes",
-    "Indicateurs de performance personnalisables",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Gestion des Clients (CRM)");
-  y = addParagraph(doc, y, "SoloCab intègre un véritable CRM professionnel pour chauffeur VTC. Gérez votre portefeuille clients comme un entrepreneur :");
-
-  y = addBulletList(doc, y, [
-    "Fiche client détaillée (coordonnées, préférences, historique)",
-    "Clients exclusifs ou partagés selon vos préférences",
-    "Classement des clients par fréquence et valeur",
-    "Notes et commentaires sur chaque client",
-    "Export de la base de données clients",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "💡 Astuce Pro",
-    "Utilisez le système de clients favoris pour identifier vos meilleurs clients et leur offrir un service privilégié. Un client fidèle vaut 10 nouveaux clients !",
-    c.lightGold, c.accentGold);
-
-  addFooter(doc, 12);
-
-  // Page 13
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Gestion des Courses");
-  y = addParagraph(doc, y, "Le module de gestion des courses est le cœur opérationnel de SoloCab. Créez, planifiez et suivez toutes vos courses en quelques clics :");
-
-  y = addBulletList(doc, y, [
-    "Création rapide avec auto-complétion des adresses",
-    "Calcul automatique de la distance et de l'estimation tarifaire",
-    "Programmation à l'avance ou course immédiate",
-    "Suivi du statut en temps réel (en attente, en cours, terminée)",
-    "Attribution multi-chauffeurs pour les courses partagées",
-    "Historique complet avec filtres avancés",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Tarification Intelligente");
-  y = addParagraph(doc, y, "Définissez votre grille tarifaire avec une précision inégalée :");
-
-  y = addBulletList(doc, y, [
-    "Tarif au kilomètre personnalisable par ville/secteur",
-    "Prise en charge et tarif minimum configurables",
-    "Majoration heures de pointe (3 créneaux paramétrables)",
-    "Supplément soirée, week-end et jours fériés",
-    "Supplément aéroport/gare automatique",
-    "Remise heures creuses pour encourager l'activité",
-    "TVA paramétrable (incluse ou exclue)",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "📊 Tarification par Secteur",
-    "Créez des grilles tarifaires différentes par secteur géographique. Par exemple, des tarifs spécifiques pour les zones aéroport, centre-ville ou banlieue.",
-    c.lightTeal, c.teal);
-
-  addFooter(doc, 13);
-
-  // Page 14
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Facturation & Devis");
-  y = addParagraph(doc, y, "Gérez toute votre comptabilité directement dans SoloCab :");
-
-  y = addBulletList(doc, y, [
-    "Génération automatique de factures conformes",
-    "Création de devis personnalisés",
-    "Numérotation séquentielle automatique",
-    "Export PDF professionnel avec votre branding",
-    "Suivi des paiements (payé, en attente, en retard)",
-    "Intégration avec les terminaux de paiement SumUp",
-    "Historique comptable exportable",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "QR Code & Carte NFC");
-  y = addParagraph(doc, y, "Chaque chauffeur dispose d'un QR code et d'une carte NFC personnalisés :");
-
-  y = addBulletList(doc, y, [
-    "QR code unique lié à votre profil professionnel",
-    "Page de réservation personnalisée accessible via le QR code",
-    "Carte NFC programmable (offerte lors de nos événements)",
-    "Partage facilité avec les clients potentiels",
-    "Statistiques de scan et de conversion",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "🎯 Votre Vitrine Professionnelle",
-    "Votre page de réservation personnalisée est accessible 24h/24. Les clients y trouvent vos services, vos tarifs, vos avis et peuvent réserver directement. C'est votre site web professionnel intégré à SoloCab.",
-    c.lightOrange, c.orange);
-
-  y += 3;
-  y = addStatBoxes(doc, y, [
-    { value: "PDF", label: "Factures pro" },
-    { value: "QR", label: "Code unique" },
-    { value: "NFC", label: "Carte pro" },
-    { value: "TPE", label: "Paiement CB" },
-  ]);
-
-  addFooter(doc, 14);
-
-  // Page 15
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Outils Marketing");
-  y = addParagraph(doc, y, "SoloCab fournit des outils marketing intégrés pour développer votre base clients :");
-
-  y = addBulletList(doc, y, [
-    "Campagnes promotionnelles personnalisées",
-    "Codes promo pour fidéliser ou acquérir des clients",
-    "Programme de parrainage intégré",
-    "Partage automatique sur les réseaux sociaux",
-    "Flyers PDF professionnels générés automatiquement",
-    "Notifications push aux clients pour les promotions",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Analytics & Reporting");
-  y = addParagraph(doc, y, "Pilotez votre activité avec des données précises :");
-
-  y = addBulletList(doc, y, [
-    "Chiffre d'affaires par période (jour, semaine, mois, année)",
-    "Répartition des courses par type et par zone",
-    "Taux d'occupation et temps d'attente moyen",
-    "Analyse de la rentabilité par client",
-    "Comparaison mensuelle des performances",
-    "Export des données pour votre comptable",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Conformité Administrative");
-  y = addParagraph(doc, y, "SoloCab vous aide à rester en règle :");
-
-  y = addBulletList(doc, y, [
-    "Stockage sécurisé de tous vos documents professionnels",
-    "Alertes d'expiration automatiques (carte VTC, assurance, contrôle technique)",
-    "Vérification des documents par l'équipe SoloCab",
-    "Registre des courses conforme à la réglementation",
-  ]);
-
-  addFooter(doc, 15);
-};
-
-// ========== CHAPTER 4: FLEET MANAGER (4 pages) ==========
-export const addChapter4 = (doc: jsPDF) => {
-  addChapterPage(doc, 4, "Gestionnaire de Flotte", "Gérez vos chauffeurs avec efficacité", 16);
-
-  // Page 17
-  doc.addPage();
-  let y = 20;
-  y = addSectionTitle(doc, y, "Vue d'Ensemble Flotte");
-  y = addParagraph(doc, y, "Le gestionnaire de flotte dispose d'un tableau de bord complet pour superviser l'ensemble de ses chauffeurs et de leurs activités.");
-
-  y = addBulletList(doc, y, [
-    "Vue synthétique de tous les chauffeurs de la flotte",
-    "Statut en temps réel (disponible, en course, hors ligne)",
-    "Performances individuelles et collectives",
-    "Chiffre d'affaires global et par chauffeur",
-    "Alertes documents et conformité",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Gestion des Chauffeurs");
-  y = addParagraph(doc, y, "Invitez, gérez et suivez vos chauffeurs :");
-
-  y = addBulletList(doc, y, [
-    "Invitation des chauffeurs par email ou lien",
-    "Validation des documents administratifs",
-    "Suivi des performances individuelles",
-    "Attribution des courses manuelle ou automatique",
-    "Gestion des plannings et disponibilités",
-    "Communication directe avec chaque chauffeur",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "🔄 Partage de Chauffeurs Externe",
-    "Accédez à des chauffeurs indépendants qui ont activé le partage. Proposez-leur des courses ponctuelles sans engagement, idéal pour les pics d'activité.",
-    c.lightPurple, c.purple);
-
-  addFooter(doc, 17);
-
-  // Page 18
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Répartition des Courses");
-  y = addParagraph(doc, y, "Un système intelligent de répartition des courses permet au gestionnaire d'optimiser l'utilisation de sa flotte :");
-
-  y = addBulletList(doc, y, [
-    "Vue calendrier avec toutes les courses planifiées",
-    "Attribution par proximité géographique",
-    "Gestion des priorités et des urgences",
-    "Réaffectation en cas d'indisponibilité",
-    "Notifications automatiques aux chauffeurs",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Contrats avec les Entreprises");
-  y = addParagraph(doc, y, "Les gestionnaires de flotte peuvent contractualiser avec des entreprises :");
-
-  y = addBulletList(doc, y, [
-    "Accords de partenariat formalisés",
-    "Tarifs préférentiels négociés",
-    "Facturation centralisée vers l'entreprise",
-    "Réception des demandes de course des entreprises",
-    "Dispatching vers les chauffeurs de la flotte",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Tarification Flotte");
-  y = addParagraph(doc, y, "Définissez une grille tarifaire uniforme pour toute votre flotte, ou laissez chaque chauffeur avec sa propre tarification. Les tarifs flotte s'appliquent prioritairement sur les courses attribuées par le gestionnaire.");
-
-  y += 3;
-  y = addStatBoxes(doc, y, [
-    { value: "Multi", label: "Chauffeurs" },
-    { value: "Auto", label: "Attribution" },
-    { value: "B2B", label: "Contrats" },
-  ]);
-
-  addFooter(doc, 18);
-
-  // Page 19
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Reporting Flotte");
-  y = addParagraph(doc, y, "Des rapports détaillés pour piloter votre activité de gestionnaire :");
-
-  y = addBulletList(doc, y, [
-    "CA global de la flotte et ventilation par chauffeur",
-    "Nombre de courses par période et par chauffeur",
-    "Taux de satisfaction client par chauffeur",
-    "Temps de réponse moyen aux demandes de course",
-    "Analyse de la rentabilité par secteur géographique",
-    "Export comptable mensuel",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Administration de la Flotte");
-  y = addBulletList(doc, y, [
-    "Gestion des documents de chaque chauffeur",
-    "Suivi des véhicules et leurs documents (assurance, CT...)",
-    "Gestion des frais d'annulation",
-    "Configuration des méthodes de paiement acceptées",
-    "Paramétrage des notifications et alertes",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "📱 Application Mobile",
-    "Les chauffeurs de votre flotte reçoivent des notifications en temps réel pour les nouvelles courses attribuées. Ils peuvent accepter, décliner ou demander une réaffectation directement depuis leur mobile.",
-    c.lightBg, c.primaryBlue);
-
-  addFooter(doc, 19);
-};
-
-// ========== CHAPTER 5: ENTERPRISE (4 pages) ==========
-export const addChapter5 = (doc: jsPDF) => {
-  addChapterPage(doc, 5, "Espace Entreprise", "Optimisez les déplacements de vos collaborateurs", 20);
-
-  // Page 21
-  doc.addPage();
-  let y = 20;
-  y = addSectionTitle(doc, y, "Création du Compte Entreprise");
-  y = addParagraph(doc, y, "Toute entreprise peut créer un compte sur SoloCab en fournissant ses informations légales (SIRET, adresse, contact). Le compte est vérifié par l'équipe SoloCab avant activation.");
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Gestion des Collaborateurs");
-  y = addParagraph(doc, y, "L'entreprise peut inviter ses collaborateurs à utiliser SoloCab pour leurs déplacements professionnels :");
-
-  y = addBulletList(doc, y, [
-    "Invitation par email avec création de compte simplifiée",
-    "Attribution d'un budget mensuel par collaborateur",
-    "Définition de rôles (admin entreprise, collaborateur simple)",
-    "Suivi des dépenses en temps réel par collaborateur",
-    "Blocage automatique en cas de dépassement de budget",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Demande de Course Entreprise");
-  y = addParagraph(doc, y, "Les entreprises et leurs collaborateurs peuvent demander des courses de deux manières :");
-
-  y = addInfoCard(doc, y, "📋 Mode Direct",
-    "L'entreprise publie sa demande de course. Les chauffeurs/flottes partenaires reçoivent la demande et soumettent un devis. L'entreprise choisit le meilleur devis.",
-    c.lightBg, c.primaryBlue);
-
-  y = addInfoCard(doc, y, "🏢 Mode Flotte Dédiée",
-    "L'entreprise a un accord avec un gestionnaire de flotte. Les demandes sont envoyées directement à cette flotte qui dispatche un chauffeur. Facturation selon les termes du contrat.",
-    c.lightTeal, c.teal);
-
-  addFooter(doc, 21);
-
-  // Page 22
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Accords Entreprise-Chauffeur");
-  y = addParagraph(doc, y, "SoloCab facilite la contractualisation entre entreprises et prestataires VTC :");
-
-  y = addBulletList(doc, y, [
-    "Proposition d'accord avec conditions de paiement",
-    "Fréquence de facturation paramétrable (hebdo, mensuelle...)",
-    "Méthodes de paiement acceptées définies dans l'accord",
-    "Suivi de l'encours et des paiements",
-    "Possibilité de remise négociée",
-    "Modification ou résiliation avec validation mutuelle",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Facturation Centralisée");
-  y = addParagraph(doc, y, "L'un des avantages majeurs pour les entreprises : une facturation centralisée qui simplifie la comptabilité :");
-
-  y = addBulletList(doc, y, [
-    "Une seule facture mensuelle regroupant toutes les courses",
-    "Détail par collaborateur, par date, par trajet",
-    "Export compatible avec les logiciels de comptabilité",
-    "Rappels automatiques pour les factures impayées",
-    "TVA et mentions légales conformes",
-  ]);
-
-  y += 3;
-  y = addStatBoxes(doc, y, [
-    { value: "1", label: "Facture unique" },
-    { value: "N", label: "Collaborateurs" },
-    { value: "Export", label: "Comptable" },
-    { value: "RGPD", label: "Conforme" },
-  ]);
-
-  addFooter(doc, 22);
-
-  // Page 23
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Reporting Entreprise");
-  y = addParagraph(doc, y, "Des outils analytiques puissants pour les responsables transport :");
-
-  y = addBulletList(doc, y, [
-    "Dépenses par collaborateur et par département",
-    "Analyse des trajets récurrents et optimisation",
-    "Budget consommé vs. budget alloué",
-    "Comparaison mensuelle des dépenses transport",
-    "Rapports téléchargeables en PDF ou CSV",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Sécurité & Conformité");
-  y = addParagraph(doc, y, "SoloCab garantit un niveau de sécurité maximal pour les entreprises :");
-
-  y = addBulletList(doc, y, [
-    "Tous les chauffeurs sont vérifiés (carte VTC, assurance, documents)",
-    "Suivi GPS en temps réel des courses",
-    "Conformité RGPD totale",
-    "Données hébergées en Europe",
-    "Politique de confidentialité stricte",
-    "Audit trail complet de toutes les opérations",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "🛡️ Engagement Qualité",
-    "SoloCab vérifie chaque chauffeur inscrit sur la plateforme. Documents à jour, véhicule conforme, assurance valide. Votre entreprise travaille uniquement avec des professionnels certifiés.",
-    c.lightGreen, c.green);
-
-  addFooter(doc, 23);
-};
-
-// ========== CHAPTER 6: TOOLS & TECH (4 pages) ==========
-export const addChapter6 = (doc: jsPDF) => {
-  addChapterPage(doc, 6, "Outils & Technologies", "Des innovations au service du quotidien", 24);
-
-  // Page 25
-  doc.addPage();
-  let y = 20;
-  y = addSectionTitle(doc, y, "Paiement Intégré");
-  y = addParagraph(doc, y, "SoloCab intègre les solutions de paiement les plus modernes pour faciliter les encaissements :");
-
-  y = addInfoCard(doc, y, "💳 Stripe Connect",
-    "Paiement en ligne sécurisé intégré à la plateforme. Les clients peuvent payer par carte directement lors de la réservation ou après la course.",
-    c.lightBg, c.primaryBlue);
-
-  y = addInfoCard(doc, y, "📱 SumUp",
-    "Terminal de paiement physique pour encaisser sur place. SoloCab est partenaire SumUp : obtenez votre terminal Solo Lite à prix préférentiel.",
-    c.lightTeal, c.teal);
-
-  y = addInfoCard(doc, y, "🏦 Revolut Business",
-    "Compte professionnel avec IBAN, cartes de paiement, liens de paiement instantanés et outils de comptabilité. Ouverture gratuite via notre lien partenaire.",
-    c.lightPurple, c.purple);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Technologie NFC");
-  y = addParagraph(doc, y, "SoloCab est à la pointe de la technologie NFC (Near Field Communication) :");
-
-  y = addBulletList(doc, y, [
-    "Plaques NFC personnalisées pour votre véhicule",
-    "Cartes de visite NFC programmables",
-    "Le client scanne → accède à votre page de réservation",
-    "Aucune application nécessaire côté client",
-    "Compatible tous smartphones récents (iOS et Android)",
-  ]);
-
-  addFooter(doc, 25);
-
-  // Page 26
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Géolocalisation & Cartographie");
-  y = addParagraph(doc, y, "Un système de cartographie avancé propulsé par Mapbox :");
-
-  y = addBulletList(doc, y, [
-    "Auto-complétion des adresses en temps réel",
-    "Calcul d'itinéraire optimisé",
-    "Estimation de distance et de durée précise",
-    "Visualisation des zones de couverture",
-    "Géolocalisation du véhicule en temps réel",
-    "Historique des trajets avec carte interactive",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Notifications Intelligentes");
-  y = addParagraph(doc, y, "Un système de notifications multi-canal pour ne rien rater :");
-
-  y = addBulletList(doc, y, [
-    "Notifications push en temps réel dans l'application",
-    "Emails automatiques (confirmation, rappel, facture)",
-    "Alertes d'expiration de documents",
-    "Notifications de nouvelle course disponible",
-    "Rappels de courses programmées",
-    "Résumé d'activité hebdomadaire",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "PWA (Progressive Web App)");
-  y = addParagraph(doc, y, "SoloCab est une Progressive Web App : installez-la sur votre smartphone comme une application native, sans passer par les stores. Accès hors-ligne, notifications push, et une expérience fluide sur tous les appareils.");
-
-  y += 3;
-  y = addStatBoxes(doc, y, [
-    { value: "PWA", label: "Multi-plateforme" },
-    { value: "NFC", label: "Sans contact" },
-    { value: "GPS", label: "Temps réel" },
-    { value: "Push", label: "Notifications" },
-  ]);
-
-  addFooter(doc, 26);
-
-  // Page 27
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Intelligence Artificielle");
-  y = addParagraph(doc, y, "SoloCab intègre des fonctionnalités d'IA pour assister les chauffeurs et optimiser l'activité :");
-
-  y = addBulletList(doc, y, [
-    "Suggestions de tarification basées sur le marché",
-    "Prédiction de la demande par zone et horaire",
-    "Assistant virtuel pour les questions administratives",
-    "Analyse automatique des tendances de votre activité",
-    "Optimisation des itinéraires en temps réel",
-  ]);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Intégrations & API");
-  y = addParagraph(doc, y, "SoloCab s'intègre avec les outils professionnels les plus utilisés :");
-
-  y = addBulletList(doc, y, [
-    "API RESTful complète pour les développeurs",
-    "Webhooks pour les événements en temps réel",
-    "Export comptable compatible avec les logiciels de gestion",
-    "Intégration calendrier (Google Calendar, Outlook)",
-    "Partage automatique sur les réseaux sociaux",
-  ]);
-
-  y += 3;
-  y = addInfoCard(doc, y, "🔧 API Entreprise",
-    "Les entreprises et gestionnaires de flotte peuvent accéder à l'API SoloCab pour intégrer les fonctionnalités de réservation et de suivi directement dans leurs propres systèmes.",
-    c.lightBg, c.primaryBlue);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Sécurité des Données");
-  y = addBulletList(doc, y, [
-    "Chiffrement des données au repos et en transit (TLS 1.3)",
-    "Authentification multi-facteurs disponible",
-    "Politiques d'accès strictes (Row Level Security)",
-    "Sauvegardes automatiques quotidiennes",
-    "Hébergement en Europe (conformité RGPD)",
-    "Audit de sécurité régulier",
-  ]);
-
-  addFooter(doc, 27);
-};
-
-// ========== CHAPTER 7: PRICING (3 pages) ==========
-export const addChapter7 = (doc: jsPDF) => {
-  addChapterPage(doc, 7, "Tarification & Offres", "Un modèle transparent et accessible", 28);
-
-  // Page 29
-  doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
-  let y = 20;
-  y = addSectionTitle(doc, y, "Notre Philosophie Tarifaire");
-  y = addParagraph(doc, y, "Chez SoloCab, nous croyons que les chauffeurs doivent garder 100% de leurs revenus de course. C'est pourquoi nous avons choisi un modèle par abonnement, simple et prévisible.");
-
-  y += 3;
-  y = addInfoCard(doc, y, "💰 0% de Commission",
-    "Contrairement aux plateformes traditionnelles qui prélèvent 20 à 30% sur chaque course, SoloCab ne prend AUCUNE commission. Vous gardez l'intégralité de vos revenus.",
-    c.lightGreen, c.green);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Offre Chauffeur Indépendant");
-
-  // Free tier
-  y = addInfoCard(doc, y, "🆓 Accès Découverte — GRATUIT",
-    "Essai gratuit de 2 mois avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise. À l'issue de la période, passage à l'abonnement mensuel.",
-    c.lightGold, c.accentGold);
-
-  // Paid tier
-  y = addInfoCard(doc, y, "⭐ Abonnement Pro",
-    "Accès illimité à toutes les fonctionnalités : CRM, facturation, analytics, NFC, QR code, promotions, support prioritaire. Tarif mensuel fixe et transparent.",
-    c.lightBg, c.primaryBlue);
-
-  y += 3;
-  y = addSectionTitle(doc, y, "Offre Gestionnaire de Flotte");
-  y = addParagraph(doc, y, "Le tarif gestionnaire de flotte est adapté au nombre de chauffeurs gérés. Contactez-nous pour un devis personnalisé incluant :");
-
-  y = addBulletList(doc, y, [
-    "Accès au tableau de bord multi-chauffeurs",
-    "Dispatch automatique des courses",
-    "Reporting consolidé",
-    "Support dédié",
-    "Formation de l'équipe",
-  ]);
-
-  addFooter(doc, 29);
-
-  // Page 30
-  doc.addPage();
-  y = 20;
-  y = addSectionTitle(doc, y, "Offre Entreprise");
-
-  y = addInfoCard(doc, y, "🏢 PME — Gratuit",
-    "Jusqu'à 10 collaborateurs • Facturation mensuelle • Support email • Accès au réseau de chauffeurs et flottes SoloCab",
-    c.lightBg, c.primaryBlue);
-
-  y = addInfoCard(doc, y, "🏭 ETI / Grande Entreprise — Sur mesure",
-    "Collaborateurs illimités • API disponible • Account manager dédié • Tarifs négociés • Intégration sur mesure • SLA garanti",
-    c.lightGold, c.accentGold);
-
-  y += 5;
-  y = addSectionTitle(doc, y, "Comparaison avec les Plateformes Traditionnelles");
-
-  // Comparison table
-  const tableData = [
-    ["", "SoloCab", "Plateforme X", "Plateforme Y"],
-    ["Commission", "0%", "20-25%", "25-30%"],
-    ["Liberté tarifaire", "✅ Totale", "❌ Imposée", "❌ Imposée"],
-    ["CRM intégré", "✅ Complet", "❌ Non", "❌ Non"],
-    ["Facturation", "✅ Incluse", "⚠️ Basique", "❌ Non"],
-    ["NFC / QR Code", "✅ Inclus", "❌ Non", "❌ Non"],
-    ["Données client", "✅ Vos données", "❌ Plateforme", "❌ Plateforme"],
-  ];
-
-  doc.setFontSize(8);
-  const colW = contentW / 4;
-  tableData.forEach((row, rowIdx) => {
-    const rowY = y + rowIdx * 9;
-    if (rowIdx === 0) {
-      doc.setFillColor(...c.primaryBlue);
-      doc.rect(margin, rowY - 4, contentW, 9, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
-    } else if (rowIdx % 2 === 0) {
-      doc.setFillColor(...c.lightBg);
-      doc.rect(margin, rowY - 4, contentW, 9, "F");
-    }
-
-    row.forEach((cell, colIdx) => {
-      if (rowIdx > 0) {
-        doc.setFont("helvetica", colIdx === 0 ? "bold" : "normal");
-        doc.setTextColor(...(colIdx === 1 ? c.green : c.darkText));
-      }
-      doc.text(cell, margin + colIdx * colW + 3, rowY + 1);
-    });
-  });
-
-  y += tableData.length * 9 + 8;
-
-  y = addInfoCard(doc, y, "💡 Le Calcul est Simple",
-    "Un chauffeur qui réalise 4 000€ de CA mensuel paye 800-1200€ de commission aux plateformes traditionnelles. Avec SoloCab, il garde tout et ne paye qu'un abonnement fixe de quelques dizaines d'euros.",
-    c.lightGreen, c.green);
-
-  addFooter(doc, 30);
-};
-
-// ========== CHAPTER 8: JOIN US (2 pages) ==========
-export const addChapter8 = (doc: jsPDF) => {
-  addChapterPage(doc, 8, "Rejoindre SoloCab", "Commencez votre aventure dès maintenant", 31);
-
-  // Page 32
-  doc.addPage();
-  const { w, margin, contentW } = getPageDims(doc);
-  let y = 20;
-  y = addSectionTitle(doc, y, "Comment Rejoindre SoloCab ?");
-
-  const steps = [
-    { num: "1", title: "Inscrivez-vous", desc: "Créez votre compte en quelques minutes sur www.solocab.fr. Renseignez vos informations et téléchargez vos documents professionnels." },
-    { num: "2", title: "Vérification", desc: "Notre équipe vérifie vos documents (carte VTC, assurance, Kbis). Validation sous 24-48h." },
-    { num: "3", title: "Configurez", desc: "Paramétrez votre profil, vos tarifs, votre page de réservation. Personnalisez SoloCab selon vos besoins." },
-    { num: "4", title: "Lancez-vous !", desc: "Commencez à accepter des courses, développez votre clientèle et prenez le contrôle de votre activité." },
-  ];
-
-  steps.forEach((step) => {
-    doc.setFillColor(...c.lightBg);
-    doc.roundedRect(margin, y, contentW, 22, 3, 3, "F");
-
-    // Step number
-    doc.setFillColor(...c.orange);
-    doc.circle(margin + 12, y + 11, 8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(255, 255, 255);
-    doc.text(step.num, margin + 12, y + 13, { align: "center" });
-
-    // Title
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...c.darkText);
-    doc.text(step.title, margin + 25, y + 8);
-
-    // Desc
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(...c.grayText);
-    const lines = doc.splitTextToSize(step.desc, contentW - 30);
-    doc.text(lines, margin + 25, y + 14);
-
-    y += 26;
-  });
-
-  y += 5;
-  y = addSectionTitle(doc, y, "Documents Requis");
-  y = addBulletList(doc, y, [
-    "Carte VTC en cours de validité",
-    "Attestation d'assurance RC professionnelle",
-    "Extrait Kbis ou inscription au registre",
-    "Pièce d'identité",
-    "Carte grise du véhicule",
-    "Contrôle technique à jour",
-  ]);
-
-  addFooter(doc, 32);
-
-  // BACK COVER (page 33)
-  doc.addPage();
-  doc.setFillColor(...c.primaryBlue);
-  doc.rect(0, 0, w, doc.internal.pageSize.getHeight(), "F");
-
   const h = doc.internal.pageSize.getHeight();
 
-  // Decorative
+  doc.setFillColor(...c.darkBlue);
+  doc.rect(0, 0, w, h, "F");
+
   doc.setFillColor(0, 65, 140);
   doc.circle(w + 20, h / 4, 60, "F");
   doc.circle(-20, h * 0.75, 80, "F");
@@ -1024,8 +1057,8 @@ export const addChapter8 = (doc: jsPDF) => {
 
   doc.setFontSize(14);
   doc.setTextColor(...c.accentGold);
-  doc.text("L'indépendance n'est pas un statut,", w / 2, h / 2 - 10, { align: "center" });
-  doc.text("c'est une discipline.", w / 2, h / 2 + 2, { align: "center" });
+  doc.text("Comprendre pour choisir.", w / 2, h / 2 - 10, { align: "center" });
+  doc.text("Choisir pour construire.", w / 2, h / 2 + 2, { align: "center" });
 
   doc.setDrawColor(...c.accentGold);
   doc.line(60, h / 2 + 15, w - 60, h / 2 + 15);
@@ -1040,4 +1073,6 @@ export const addChapter8 = (doc: jsPDF) => {
   doc.setTextColor(180, 190, 220);
   doc.text("SASU SoloCab | RCS Paris 994 176 576", w / 2, h - 30, { align: "center" });
   doc.text("10 rue de Penthièvre, 75008 Paris", w / 2, h - 22, { align: "center" });
+
+  return startPage + 2;
 };
