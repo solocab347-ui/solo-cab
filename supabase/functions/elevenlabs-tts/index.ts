@@ -16,8 +16,8 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY not configured");
     }
 
-    const { text, voiceId = "onwK4e9ZLuTAKqWW03F9" } = await req.json();
-    // Default voice: Daniel (French male voice)
+    const { text, voiceId = "cjVigY5qzO86Huf0OWal" } = await req.json();
+    // Default voice: Eric - dynamic, engaging narrator with natural rhythm variations
 
     if (!text || text.length === 0) {
       throw new Error("Text is required");
@@ -60,11 +60,11 @@ serve(async (req) => {
         text: chunk,
         model_id: "eleven_multilingual_v2",
         voice_settings: {
-          stability: 0.6,
-          similarity_boost: 0.8,
-          style: 0.4,
+          stability: 0.3,
+          similarity_boost: 0.85,
+          style: 0.7,
           use_speaker_boost: true,
-          speed: 0.95,
+          speed: 1.05,
         },
       };
 

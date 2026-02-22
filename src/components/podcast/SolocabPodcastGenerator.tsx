@@ -40,7 +40,7 @@ const SolocabPodcastGenerator = () => {
           },
           body: JSON.stringify({
             text: episode.script,
-            voiceId: "onwK4e9ZLuTAKqWW03F9", // Daniel - French voice
+            voiceId: "cjVigY5qzO86Huf0OWal", // Eric - dynamic, engaging narrator
           }),
         }
       );
