@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import {
+  initLogo,
   addCover,
   addTableOfContents,
   addIntroduction,
@@ -23,6 +24,7 @@ import {
 } from "./solocabEbookPages";
 
 export const generateSolocabEbook = async () => {
+  await initLogo();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   addCover(doc);
