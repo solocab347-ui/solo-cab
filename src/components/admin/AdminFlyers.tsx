@@ -10,7 +10,7 @@ import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
 import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
-import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
+
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 
 const AdminFlyers = () => {
@@ -180,8 +180,6 @@ const AdminFlyers = () => {
       {/* Podcast Generator */}
       <SolocabPodcastGenerator />
 
-      {/* Audiobook Player */}
-      <SolocabAudiobookPlayer />
 
       {/* Info box */}
       <Card className="bg-muted/50 border-dashed">
