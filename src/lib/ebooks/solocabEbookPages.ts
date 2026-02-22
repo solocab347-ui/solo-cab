@@ -47,57 +47,67 @@ export const addCover = (doc: jsPDF) => {
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
-  // Subtle abstract circles
-  doc.setFillColor(28, 48, 95);
-  doc.circle(-30, 80, 80, "F");
-  doc.circle(w + 25, h - 80, 90, "F");
-  doc.circle(w * 0.7, -20, 40, "F");
+  // Subtle abstract circles — editorial depth
+  doc.setFillColor(25, 45, 90);
+  doc.circle(-30, 70, 85, "F");
+  doc.circle(w + 30, h - 70, 100, "F");
+  doc.setFillColor(30, 52, 100);
+  doc.circle(w * 0.75, -15, 35, "F");
+  doc.circle(45, h - 40, 25, "F");
 
-  // Top accent line — soft violet
-  doc.setDrawColor(...c.lightViolet);
-  doc.setLineWidth(2);
-  doc.line(35, 75, w - 35, 75);
-
-  // Logo
-  addLogo(doc, w / 2 - 16, 28, 32);
+  // Logo centered
+  addLogo(doc, w / 2 - 18, 30, 36);
 
   // Label
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...c.lightViolet);
-  doc.text("SOLOCAB ACADEMY", w / 2, 72, { align: "center" });
+  doc.text("SOLOCAB ACADEMY", w / 2, 78, { align: "center" });
 
-  // Main title — clean and large
-  doc.setFontSize(36);
+  // Top accent line — elegant violet
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(2);
+  doc.line(40, 85, w - 40, 85);
+
+  // Main title — large, clean, high-end
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(40);
   doc.setTextColor(255, 255, 255);
-  doc.text("L'ILLUSION", w / 2, 110, { align: "center" });
-  doc.text("DES", w / 2, 128, { align: "center" });
-  doc.text("APPLICATIONS", w / 2, 146, { align: "center" });
+  doc.text("L'ILLUSION", w / 2, 118, { align: "center" });
+  doc.text("DES", w / 2, 138, { align: "center" });
+  doc.text("APPLICATIONS", w / 2, 158, { align: "center" });
 
-  // Subtitle in soft violet box
+  // Subtitle box — soft dark blue
   doc.setFillColor(28, 48, 95);
-  doc.roundedRect(40, 160, w - 80, 28, 4, 4, "F");
+  doc.roundedRect(35, 170, w - 70, 30, 5, 5, "F");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(...c.lightViolet);
-  doc.text("Comprendre le système pour reprendre", w / 2, 172, { align: "center" });
-  doc.text("le contrôle de son activité", w / 2, 182, { align: "center" });
+  doc.text("Comprendre le système pour reprendre", w / 2, 183, { align: "center" });
+  doc.text("le contrôle de son activité", w / 2, 194, { align: "center" });
 
   // Bottom accent line
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(2);
-  doc.line(35, h - 75, w - 35, h - 75);
+  doc.line(40, h - 80, w - 40, h - 80);
 
   // Bottom info
-  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
   doc.setTextColor(...c.lightViolet);
-  doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 55, { align: "center" });
-  doc.setFontSize(8);
+  doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 60, { align: "center" });
+  doc.setFontSize(9);
   doc.setTextColor(180, 190, 220);
-  doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 45, { align: "center" });
+  doc.text("Édition 2026 — Offert par SoloCab Academy", w / 2, h - 48, { align: "center" });
+
+  // Decorative dots at bottom
+  doc.setFillColor(40, 62, 118);
+  for (let i = 0; i < 5; i++) {
+    doc.circle(w / 2 - 20 + i * 10, h - 35, 1, "F");
+  }
 
   // Clickable link
-  doc.link(35, h - 62, w - 70, 12, { url: "https://www.solocab.fr" });
+  doc.link(35, h - 68, w - 70, 14, { url: "https://www.solocab.fr" });
 };
 
 // ========== TABLE OF CONTENTS ==========
@@ -106,16 +116,17 @@ export const addTableOfContents = (doc: jsPDF) => {
   const { w, margin } = getPageDims(doc);
 
   // Logo at top
-  addLogo(doc, w / 2 - 10, 15, 20);
+  addLogo(doc, w / 2 - 12, 18, 24);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   doc.setTextColor(...c.deepBlue);
-  doc.text("SOMMAIRE", w / 2, 48, { align: "center" });
+  doc.text("SOMMAIRE", w / 2, 55, { align: "center" });
 
+  // Violet underline
   doc.setDrawColor(...c.softViolet);
   doc.setLineWidth(1.5);
-  doc.line(w / 2 - 30, 52, w / 2 + 30, 52);
+  doc.line(w / 2 - 30, 60, w / 2 + 30, 60);
 
   const chapters = [
     { label: "Introduction", title: "La révolution qui semblait évidente" },
@@ -138,26 +149,27 @@ export const addTableOfContents = (doc: jsPDF) => {
     { label: "", title: "Message de l'auteur & Manifeste" },
   ];
 
-  let y = 65;
+  let y = 74;
   chapters.forEach((ch) => {
     // Label
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(...c.softViolet);
     doc.text(ch.label, margin + 2, y);
 
     // Title
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
+    doc.setFontSize(11.5);
     doc.setTextColor(...c.bodyText);
-    doc.text(ch.title, margin + 30, y);
+    doc.text(ch.title, margin + 32, y);
 
     // Subtle dot line
     doc.setDrawColor(...c.softBlue);
     doc.setLineWidth(0.2);
-    doc.line(margin + 30 + doc.getTextWidth(ch.title) + 3, y - 0.5, w - margin, y - 0.5);
+    const textEnd = margin + 32 + doc.getTextWidth(ch.title) + 4;
+    doc.line(textEnd, y - 0.5, w - margin, y - 0.5);
 
-    y += 11;
+    y += 12.5;
   });
 
   addFooter(doc, 2);
@@ -188,6 +200,11 @@ export const addIntroduction = (doc: jsPDF): number => {
     "Dans les premières années, cette promesse semblait largement tenue.",
     "Le marché était dynamique, la demande forte et l'activité soutenue. Pour beaucoup, cette période a été celle de la découverte d'un nouveau modèle plus flexible et plus accessible.",
     "Une révolution silencieuse était en train de redéfinir la manière dont le service de transport était consommé et produit.",
+  ]);
+
+  ctx.addDecorativeElement();
+
+  ctx.addParagraphs([
     "Mais toute révolution technologique transforme aussi les équilibres économiques et la perception du métier.",
     "Avec le temps, certaines questions commencent à émerger.",
   ]);
@@ -204,6 +221,11 @@ export const addIntroduction = (doc: jsPDF): number => {
     "Mais elles invitent à regarder le système avec plus de recul.",
     "Car derrière la simplicité apparente se cache un modèle économique précis, avec ses intérêts, ses dynamiques et ses équilibres.",
     "Et lorsque l'on commence à analyser ces dynamiques, la réalité apparaît plus nuancée que la perception initiale.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
     "Ce livre n'a pas pour objectif de critiquer ni d'opposer de manière caricaturale.",
     "Il propose simplement de comprendre.",
   ]);
@@ -249,6 +271,11 @@ export const addPartie1 = (doc: jsPDF, startPage: number): number => {
     "Les applications ont permis d'ouvrir le marché, de fluidifier la demande et de simplifier l'accès au métier pour de nombreux professionnels.",
     "Elles ont apporté une expérience utilisateur nouvelle, plus fluide, plus moderne et plus intuitive.",
     "Pour les clients, c'était une amélioration évidente. Pour les chauffeurs, c'était une opportunité.",
+  ]);
+
+  ctx.addDecorativeElement();
+
+  ctx.addParagraphs([
     "Mais toute transformation profonde modifie aussi les équilibres économiques, souvent de manière progressive et parfois imperceptible au départ.",
     "Car derrière la simplicité d'une interface se cache toujours une structure plus complexe.",
     "Lorsque l'on observe cette évolution avec du recul, on réalise que la transformation n'a pas seulement été technologique. Elle a aussi été structurelle.",
@@ -257,6 +284,11 @@ export const addPartie1 = (doc: jsPDF, startPage: number): number => {
     "Avec l'arrivée des applications, une grande partie de cette demande s'est progressivement concentrée autour de quelques canaux dominants.",
     "Ce phénomène de concentration est un mécanisme naturel dans les marchés technologiques.",
     "Plus un outil est utilisé, plus il devient incontournable. Et plus il devient incontournable, plus il acquiert de l'influence sur la manière dont le marché fonctionne.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
     "Cette concentration n'est pas visible au quotidien. Elle se construit progressivement, à mesure que les habitudes évoluent.",
     "Les clients prennent l'habitude d'utiliser une application plutôt qu'un autre canal. Les chauffeurs prennent l'habitude de se connecter pour recevoir des courses plutôt que de développer d'autres sources d'activité.",
     "Petit à petit, le centre de gravité du marché se déplace.",
@@ -308,6 +340,11 @@ export const addPartie2 = (doc: jsPDF, startPage: number): number => {
   ctx.addParagraphs([
     "Dans cette phase, l'objectif principal n'est pas la rentabilité immédiate, mais l'expansion rapide du marché.",
     "Plus il y a de chauffeurs, plus le service est disponible. Plus le service est disponible, plus il attire de clients. Plus il attire de clients, plus il devient indispensable.",
+  ]);
+
+  ctx.addDecorativeElement();
+
+  ctx.addParagraphs([
     "Une fois cette masse critique atteinte, la dynamique évolue.",
     "La priorité d'une entreprise en phase de maturité devient naturellement l'optimisation de sa rentabilité.",
     "Les commissions peuvent évoluer. Les conditions peuvent changer. Les règles peuvent être ajustées.",
@@ -359,6 +396,11 @@ export const addPartie3 = (doc: jsPDF, startPage: number): number => {
     "Ce phénomène n'est pas spécifique au transport. Il est observable dans tous les secteurs où un intermédiaire technologique devient le principal canal d'accès à la demande.",
     "Lorsque la majorité des clients utilisent un même outil, cet outil devient capable d'orienter les conditions dans lesquelles le service est proposé.",
     "Il peut définir les règles, ajuster les paramètres et influencer les dynamiques économiques.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
     "Pour le professionnel, cette évolution peut être perçue comme un changement progressif de position.",
     "On passe d'une relation perçue comme équilibrée à une relation où les décisions importantes sont prises à un niveau stratégique auquel le professionnel n'a pas directement accès.",
     "Les évolutions de tarifs, les modifications des conditions d'utilisation, les ajustements des règles se font généralement de manière descendante.",
@@ -396,6 +438,11 @@ export const addPartie4 = (doc: jsPDF, startPage: number): number => {
     "Lorsque la demande est fournie en continu, la nécessité de construire d'autres sources d'activité peut sembler moins urgente.",
     "Pourquoi chercher ailleurs lorsque le flux est déjà là ? Pourquoi développer un réseau lorsque l'activité est immédiate ? Pourquoi réfléchir à une stratégie long terme lorsque le court terme fonctionne ?",
     "Ces questions sont naturelles. Elles traduisent une adaptation logique à un environnement qui semble stable et efficace.",
+  ]);
+
+  ctx.addDecorativeElement();
+
+  ctx.addParagraphs([
     "Mais c'est précisément là que la dépendance commence à s'installer, souvent de manière imperceptible.",
     "Car à mesure que l'on s'habitue à un système, on peut progressivement réduire sa capacité à fonctionner en dehors de ce système.",
   ]);
@@ -451,6 +498,11 @@ export const addPartie5 = (doc: jsPDF, startPage: number): number => {
     "Ce qu'elles ont créé, c'est une manière plus efficace d'organiser ce besoin.",
     "Elles ont structuré la demande, facilité la mise en relation et fluidifié l'expérience.",
     "Mais le flux lui-même n'est pas une ressource créée par la plateforme. Il est simplement organisé par elle.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
     "Cette distinction est essentielle. Car elle change la manière de percevoir le système.",
     "Si le flux est perçu comme quelque chose qui appartient exclusivement à la plateforme, alors la dépendance semble naturelle.",
     "Mais si le flux est compris comme l'expression d'un besoin existant, alors la perception évolue.",
@@ -503,6 +555,8 @@ export const addPartie6 = (doc: jsPDF, startPage: number): number => {
     "Les charges.", "Le temps passé.", "La fatigue physique et mentale.",
   ]);
 
+  ctx.addDecorativeElement();
+
   ctx.addParagraphs([
     "Ces coûts sont concrets, tangibles et immédiats.",
     "La plateforme, de son côté, capte une part de chaque transaction sans supporter directement ces contraintes opérationnelles.",
@@ -549,6 +603,8 @@ export const addPartie7 = (doc: jsPDF, startPage: number): number => {
   ]);
   ctx.addParagraph("L'objectif est clair : attirer un maximum de chauffeurs et de clients pour atteindre une masse critique. Cette phase est souvent perçue comme très positive.");
 
+  ctx.addSeparator();
+
   ctx.addSubTitle("La phase de croissance");
   ctx.addParagraphs([
     "Une fois la base d'utilisateurs établie, la plateforme cherche à consolider sa position. Elle améliore son service, renforce son infrastructure et développe sa présence sur le marché.",
@@ -574,6 +630,8 @@ export const addPartie7 = (doc: jsPDF, startPage: number): number => {
     "Les plateformes cherchent à améliorer leur rentabilité, à satisfaire leurs investisseurs et à renforcer leur modèle financier.",
     "C'est dans cette phase que certaines décisions peuvent être perçues comme plus contraignantes par les professionnels.",
   ]);
+
+  ctx.addDecorativeElement();
 
   ctx.addSubTitle("Une logique économique, pas morale");
   ctx.addParagraphs([
@@ -607,24 +665,27 @@ export const addPartie8 = (doc: jsPDF, startPage: number): number => {
     "Au-delà des mécanismes économiques et des logiques stratégiques, il existe une dimension plus humaine dans la manière dont les professionnels vivent l'évolution du secteur.",
     "Car un marché n'est pas uniquement constitué de chiffres et de modèles économiques. Il est aussi fait de perceptions, de ressentis et d'expériences individuelles.",
     "Avec le temps, de nombreux chauffeurs commencent à exprimer un sentiment difficile à définir précisément, mais qui revient souvent dans les discussions : un sentiment de décalage.",
-    "Un décalage entre l'effort fourni et la reconnaissance perçue. Un décalage entre la promesse initiale et la réalité quotidienne. Un décalage entre l'intensité du travail et la capacité à améliorer sa situation.",
-    "Ce sentiment ne naît pas d'un événement unique. Il se construit progressivement, à mesure que l'expérience s'accumule.",
-    "Au départ, l'activité peut sembler dynamique et motivante. Puis, avec le temps, certaines évolutions du marché modifient la perception du métier.",
-    "Les conditions changent. Les règles évoluent. La pression économique augmente.",
-    "Et peu à peu, certains professionnels ont le sentiment que leur rôle réel dans la création de valeur n'est pas pleinement reconnu à sa juste mesure.",
-    "Ce ressenti n'est pas universel. Il varie selon les parcours, les contextes et les situations individuelles.",
-    "Mais il est suffisamment répandu pour constituer un élément important dans la compréhension du secteur.",
-    "La perception d'injustice ne signifie pas nécessairement qu'une injustice objective existe dans tous les cas. Elle reflète avant tout une transformation du rapport entre l'effort fourni et la reconnaissance perçue.",
-    "Lorsque ce rapport semble évoluer de manière défavorable, le sentiment apparaît naturellement.",
-    "Ce phénomène est observable dans de nombreux secteurs où la valeur est partagée entre plusieurs acteurs.",
-    "Lorsque l'équilibre perçu se modifie, la relation au travail change.",
-    "On commence à ressentir une forme de frustration, parfois difficile à exprimer clairement.",
-    "Mais au-delà du ressenti individuel, ce sentiment révèle souvent une réalité plus structurelle : le besoin de retrouver un équilibre perçu comme plus juste.",
-    "Comprendre cette dimension humaine est essentiel, car elle permet d'aborder la transformation du secteur avec plus de nuance.",
-    "Il ne s'agit pas seulement d'un changement économique. C'est aussi un changement dans la manière dont les professionnels vivent leur métier.",
-    "Et lorsque la perception du métier évolue, la manière de se projeter dans l'avenir évolue également.",
-    "Certains commencent à réfléchir différemment à leur activité, à leur place dans le système et aux possibilités qui s'offrent à eux.",
-    "Cette réflexion marque souvent le début d'une transition vers une vision plus stratégique et plus consciente du métier.",
+    "Un décalage entre l'effort fourni et le résultat obtenu. Entre la qualité du service rendu et la reconnaissance perçue. Entre le rôle joué et la position occupée dans le système.",
+    "Ce sentiment n'est pas un jugement de valeur. Il est simplement le reflet d'une perception qui évolue à mesure que le système se transforme.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
+    "Lorsque l'on travaille avec intensité, que l'on investit du temps, de l'énergie et des ressources, et que l'on a le sentiment que la valeur créée ne se traduit pas pleinement dans le résultat, une forme de frustration peut apparaître.",
+    "Cette frustration n'est pas nécessairement dirigée vers un acteur en particulier. Elle traduit un malaise plus profond face à un système dont les règles semblent parfois évoluer indépendamment de ceux qui créent la valeur.",
+    "Il est important de comprendre que ce sentiment est normal.",
+    "Il est le signe d'une prise de conscience. La prise de conscience que le système ne fonctionne pas uniquement selon une logique de mérite, mais aussi selon une logique de structure.",
+    "Dans un modèle de plateforme, la valeur est répartie selon des règles définies par celui qui organise le système, pas nécessairement selon la contribution de chaque acteur.",
+    "Reconnaître cette réalité permet de dépasser le sentiment d'injustice pour entrer dans une analyse plus rationnelle.",
+    "Car si le système est structurel, alors la réponse doit l'être aussi.",
+    "On ne change pas un système en le subissant ou en le critiquant uniquement. On le comprend. Et à partir de cette compréhension, on peut adapter sa stratégie.",
+    "Cette posture est exigeante. Elle demande du recul, de la réflexion et parfois un changement de perspective.",
+    "Mais elle offre également une forme de liberté : celle de ne plus dépendre uniquement de la perception du système pour définir sa propre valeur.",
+    "Le professionnel qui comprend la structure dans laquelle il évolue peut commencer à chercher des leviers d'action.",
+    "Il peut identifier les espaces de liberté qui existent à l'intérieur du système. Et surtout, il peut commencer à construire des alternatives.",
+    "C'est souvent à partir de ce sentiment de décalage que naît la volonté de faire évoluer son approche du métier.",
+    "Non pas en rejetant le système, mais en cherchant à s'y positionner différemment.",
   ]);
 
   ctx.finishPage();
@@ -633,49 +694,46 @@ export const addPartie8 = (doc: jsPDF, startPage: number): number => {
 
 // ========== PARTIE 9 ==========
 export const addPartie9 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 9, "Construire sa clientèle", "", startPage);
+  addChapterPage(doc, 9, "Construire sa clientèle", "L'alternative commence ici", startPage);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
   ctx.addParagraphs([
-    "À partir du moment où l'on commence à comprendre les mécanismes du marché, une nouvelle perspective apparaît.",
-    "La question n'est plus seulement de travailler. Elle devient :",
+    "Si les parties précédentes ont permis de comprendre les dynamiques du système actuel, cette partie ouvre une perspective différente.",
+    "Car comprendre un système ne suffit pas. La véritable transformation commence lorsque l'on commence à agir.",
+    "Et l'une des actions les plus puissantes qu'un professionnel puisse entreprendre est de construire sa propre clientèle.",
+    "Cette démarche peut sembler ambitieuse, voire complexe. Mais en réalité, elle repose sur des principes simples et accessibles.",
+    "Construire sa clientèle, c'est avant tout créer des relations directes avec les personnes que l'on transporte.",
+    "C'est passer d'une logique transactionnelle à une logique relationnelle.",
   ]);
 
-  ctx.addQuote("Comment construire ?");
+  ctx.addDecorativeElement();
 
   ctx.addParagraphs([
-    "Cette nuance peut sembler simple, mais elle change profondément la manière de voir le métier.",
-    "Travailler consiste à répondre à une demande immédiate. Construire consiste à développer un actif dans le temps.",
-    "Dans un métier de service, cet actif s'appelle la clientèle.",
-    "Une clientèle n'est pas simplement une succession de courses. C'est un ensemble de relations construites sur la confiance, la qualité de service et la régularité.",
-    "Chaque client satisfait représente une opportunité de créer une relation durable. Et chaque relation durable constitue une base sur laquelle une activité plus stable peut se développer.",
-    "Dans un modèle entièrement dépendant d'un flux externe, cette dimension peut parfois être moins visible, car la demande arrive sans nécessiter d'effort particulier pour la générer.",
-    "Mais lorsque l'on adopte une vision plus stratégique, on commence à percevoir la différence entre recevoir des courses et construire une base de clients.",
-    "Recevoir des courses dépend du système. Construire une clientèle dépend du professionnel.",
-    "Cette distinction est fondamentale. Car elle détermine la capacité à stabiliser son activité dans le temps.",
-    "Une clientèle fidèle apporte plusieurs éléments essentiels :",
+    "Dans un modèle basé sur les plateformes, chaque course est une transaction isolée. Le client commande, le service est rendu, et la relation s'arrête là.",
+    "Construire sa clientèle, c'est prolonger cette relation au-delà de la course.",
+    "C'est offrir un niveau de service qui donne envie au client de revenir directement, sans passer par un intermédiaire.",
+    "Cette approche n'est pas nouvelle. Elle est à la base de tout métier de service depuis toujours.",
+    "Ce qui est nouveau, c'est la possibilité de combiner cette approche traditionnelle avec des outils modernes.",
   ]);
 
   ctx.addBulletList([
-    "une régularité",
-    "une prévisibilité",
-    "une relation directe",
-    "une reconnaissance du service",
+    "Un site de réservation personnalisé.",
+    "Un système de fidélisation.",
+    "Une communication directe avec le client.",
+    "Une visibilité locale renforcée.",
   ]);
 
   ctx.addParagraphs([
-    "Elle permet de réduire l'incertitude et d'augmenter la stabilité.",
-    "Mais au-delà des aspects économiques, elle transforme aussi la relation au métier.",
-    "On ne se contente plus d'exécuter des courses. On développe un service. On crée une expérience. On construit une réputation.",
-    "Cette approche demande du temps et de la constance. Elle ne se construit pas en un jour.",
-    "Mais elle constitue l'un des leviers les plus puissants pour renforcer l'autonomie professionnelle.",
-    "Construire sa clientèle ne signifie pas nécessairement abandonner les plateformes. Cela signifie simplement compléter son activité par une démarche plus proactive.",
-    "On passe d'une logique entièrement réactive à une logique hybride, où l'on utilise différents canaux pour structurer son activité.",
-    "Cette évolution permet de retrouver une forme de maîtrise sur le développement de son activité.",
-    "On ne dépend plus uniquement du flux. On commence à construire.",
-    "Et c'est souvent à ce moment que la perception du métier change profondément.",
-    "On ne voit plus seulement une activité quotidienne. On voit un projet qui se développe dans le temps.",
+    "Ces outils permettent de structurer une clientèle propre tout en conservant la flexibilité des plateformes.",
+    "Le professionnel ne choisit pas entre les deux. Il combine les deux.",
+    "Et cette combinaison ouvre la voie à un modèle plus équilibré, plus stable et plus durable.",
+    "Construire sa clientèle demande du temps. Ce n'est pas un résultat immédiat. C'est un investissement progressif.",
+    "Mais chaque client fidélisé est un pas vers une activité plus autonome.",
+    "Et avec le temps, cette base de clients devient un actif précieux, qui apporte stabilité et prévisibilité.",
+    "La construction d'une clientèle propre n'est pas un rejet du système existant. C'est une évolution naturelle.",
+    "Une évolution vers un modèle où le professionnel ne dépend plus d'un seul canal, mais dispose de plusieurs sources d'activité.",
+    "Cette diversification est la clé d'une activité plus résiliente et plus maîtrisée.",
   ]);
 
   ctx.finishPage();
@@ -684,21 +742,21 @@ export const addPartie9 = (doc: jsPDF, startPage: number): number => {
 
 // ========== PARTIE 10 ==========
 export const addPartie10 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 10, "Le modèle hybride", "", startPage);
+  addChapterPage(doc, 10, "Le modèle hybride", "Combiner le meilleur des deux mondes", startPage);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
   ctx.addParagraphs([
-    "Lorsque l'on commence à adopter une vision plus stratégique du métier, une évidence apparaît progressivement :",
-    "L'avenir ne réside pas dans un choix radical entre différents modèles, mais dans un équilibre intelligent entre plusieurs sources d'activité.",
-    "Pendant longtemps, la question a souvent été posée de manière binaire : faut-il dépendre uniquement des plateformes ou fonctionner entièrement en dehors ?",
-    "Mais cette opposition simplifie une réalité beaucoup plus nuancée.",
-    "Dans la plupart des cas, la solution la plus stable repose sur un modèle hybride.",
-    "Un modèle dans lequel les plateformes restent un canal utile pour générer du flux, tout en étant complétées par d'autres sources d'activité construites progressivement.",
-    "Cette approche permet de combiner les avantages de différents systèmes tout en réduisant leurs limites.",
-    "Les plateformes apportent de la demande immédiate et une certaine fluidité dans l'organisation du travail.",
+    "Le modèle hybride est probablement l'approche la plus pragmatique et la plus adaptée à la réalité du marché actuel.",
+    "Il repose sur une idée simple : ne pas choisir entre les plateformes et la clientèle directe, mais combiner les deux de manière stratégique.",
+    "Les plateformes apportent un flux immédiat et une accessibilité au marché.",
     "Les relations directes avec les clients apportent de la stabilité, de la prévisibilité et une reconnaissance plus personnelle du service.",
     "En combinant ces deux dimensions, le professionnel peut structurer une activité plus équilibrée.",
+  ]);
+
+  ctx.addSeparator();
+
+  ctx.addParagraphs([
     "Le modèle hybride permet également de réduire la dépendance à un seul canal.",
     "Lorsque l'activité repose sur plusieurs sources, les variations de l'une sont plus facilement absorbées par les autres.",
     "Cette diversification apporte une forme de sécurité économique et psychologique.",
@@ -744,6 +802,8 @@ export const addPartie11 = (doc: jsPDF, startPage: number): number => {
     "Identifier ses priorités.",
   ]);
 
+  ctx.addDecorativeElement();
+
   ctx.addParagraphs([
     "Cette démarche permet de passer d'une posture réactive à une posture plus consciente.",
     "On ne subit plus uniquement les conditions du marché. On commence à prendre des décisions plus alignées avec sa vision personnelle du métier.",
@@ -784,6 +844,8 @@ export const addPartie12 = (doc: jsPDF, startPage: number): number => {
     "Le professionnalisme.",
     "La relation de confiance.",
   ]);
+
+  ctx.addSeparator();
 
   ctx.addParagraphs([
     "Ces éléments ne peuvent pas être automatisés. Ils reposent sur l'engagement et l'expérience du professionnel.",
@@ -826,6 +888,11 @@ export const addPartie13 = (doc: jsPDF, startPage: number): number => {
     "Cette approche reste valable dans un certain contexte, mais elle ne reflète plus entièrement la réalité d'un secteur en mutation.",
     "Un nouveau paradigme commence à émerger.",
     "Un paradigme dans lequel le professionnel n'est plus seulement un exécutant, mais un acteur capable de structurer, de développer et d'orienter son activité.",
+  ]);
+
+  ctx.addDecorativeElement();
+
+  ctx.addParagraphs([
     "Ce changement ne se fait pas de manière brutale. Il se construit progressivement, à mesure que la compréhension du système s'approfondit.",
     "On commence à voir le métier sous un angle plus large. On ne parle plus uniquement de courses. On parle d'activité. On parle de relation client. On parle de stratégie. On parle de développement.",
     "Ce changement de perspective modifie profondément la posture professionnelle.",
@@ -869,6 +936,8 @@ export const addPartie14 = (doc: jsPDF, startPage: number): number => {
     "Ce livre n'a pas pour objectif de désigner un responsable ni de proposer une opposition simpliste. Il a pour objectif d'éclairer.",
     "D'éclairer les dynamiques invisibles. D'éclairer les mécanismes économiques. D'éclairer la place réelle du professionnel dans l'écosystème.",
   ]);
+
+  ctx.addDecorativeElement();
 
   ctx.addSubTitle("Reprendre conscience de sa valeur");
   ctx.addParagraphs([
@@ -924,6 +993,8 @@ export const addPartie15 = (doc: jsPDF, startPage: number): number => {
   ctx.addSubTitle("Étape 2 — Distinguer ce qui dépend de soi");
   ctx.addParagraph("Dans tout système, certains éléments sont sous notre contrôle et d'autres ne le sont pas. Identifier cette différence est essentiel pour se concentrer sur ce qui peut réellement évoluer.");
 
+  ctx.addSeparator();
+
   ctx.addSubTitle("Étape 3 — Renforcer la relation client");
   ctx.addParagraph("Dans un métier de service, la relation est un levier majeur. Prendre le temps de soigner l'expérience client, d'être attentif aux détails et de maintenir un niveau de qualité constant permet de construire progressivement une réputation solide.");
 
@@ -941,6 +1012,8 @@ export const addPartie15 = (doc: jsPDF, startPage: number): number => {
   ctx.addSubTitle("Étape 5 — Diversifier progressivement");
   ctx.addParagraph("La diversification est un processus qui se construit dans le temps. Il ne s'agit pas de remplacer un système par un autre, mais d'ajouter progressivement de nouvelles sources d'activité.");
 
+  ctx.addDecorativeElement();
+
   ctx.addSubTitle("Étape 6 — Développer une vision à long terme");
   ctx.addParagraph("Prendre le temps de réfléchir à la direction que l'on souhaite donner à son activité permet de prendre des décisions plus cohérentes. Cette vision n'a pas besoin d'être parfaite. Elle doit simplement donner un cap.");
 
@@ -948,55 +1021,47 @@ export const addPartie15 = (doc: jsPDF, startPage: number): number => {
   ctx.addParagraph("Adopter une posture stratégique consiste à rester attentif aux évolutions du marché, à analyser les tendances et à ajuster progressivement son positionnement.");
 
   ctx.addSubTitle("Étape 8 — Accepter la progression");
-  ctx.addParagraph("Toute évolution prend du temps. Il est important de considérer chaque avancée, même modeste, comme une étape vers un modèle plus équilibré. La progression est souvent plus durable que les changements brusques.");
+  ctx.addParagraphs([
+    "La transformation ne se fait jamais du jour au lendemain. Elle se construit à travers des étapes successives, chacune apportant un nouvel éclairage et une nouvelle opportunité.",
+    "Accepter cette progression permet d'éviter la frustration de l'immédiateté et de construire un modèle solide et durable.",
+  ]);
 
-  ctx.addSubTitle("Étape 9 — Construire avec cohérence");
-  ctx.addParagraph("Les actions les plus efficaces sont celles qui s'inscrivent dans une logique cohérente avec ses valeurs et ses objectifs. Construire une activité durable repose autant sur la cohérence que sur la performance.");
-
-  ctx.addSubTitle("Étape 10 — Continuer à apprendre");
-  ctx.addParagraph("Le marché évolue constamment. Continuer à apprendre, à observer et à ajuster sa manière de travailler permet de rester aligné avec les évolutions du secteur.");
-
-  ctx.addInfoCard("Le premier pas", "La transformation commence souvent par un premier pas simple : décider de voir son activité avec plus de conscience et de recul. À partir de ce moment, les décisions deviennent plus claires et les possibilités plus visibles.", c.lightGold, c.accentGold);
+  ctx.addQuote("Chaque pas compte. Et le simple fait de lire ce livre est déjà un premier pas vers une posture plus consciente et plus stratégique.");
 
   ctx.finishPage();
   return ctx.pageNum;
 };
 
-// ========== PARTIE 16 — AU-DELÀ ==========
+// ========== PARTIE 16 ==========
 export const addPartie16 = (doc: jsPDF, startPage: number): number => {
-  addChapterPage(doc, 16, "Au-delà de la compréhension", "Une nouvelle manière d'envisager le métier", startPage);
+  addChapterPage(doc, 16, "Au-delà de la compréhension", "Vers l'action", startPage);
   doc.addPage();
   const ctx = new DocContext(doc, startPage + 1);
 
   ctx.addParagraphs([
-    "Arrivé à ce stade du livre, une chose devient évidente : le secteur du transport est en pleine évolution, et avec lui la manière dont les professionnels perçoivent leur rôle.",
-    "Pendant longtemps, la question principale était simple : comment travailler ?",
-    "Aujourd'hui, une question plus profonde émerge :",
+    "À ce stade du livre, une question se pose naturellement : et maintenant ?",
+    "Comprendre les mécanismes du système est une étape fondamentale. Mais la compréhension seule ne transforme pas une situation.",
+    "La véritable évolution commence lorsque l'on passe de l'analyse à l'action.",
+    "Pas une action spectaculaire ou radicale. Mais une action réfléchie, progressive et alignée avec sa vision personnelle du métier.",
+    "Agir, c'est avant tout choisir.",
+    "Choisir de ne plus considérer sa situation comme figée. Choisir de regarder les possibilités qui existent. Choisir de construire, même modestement, une alternative.",
+    "Agir, c'est aussi accepter que la transformation prend du temps.",
+    "On ne construit pas une clientèle en un jour. On ne change pas un modèle du jour au lendemain. Mais chaque jour où l'on avance, même d'un petit pas, est un jour de construction.",
   ]);
 
-  ctx.addQuote("Comment construire ?");
+  ctx.addSeparator();
 
+  ctx.addSubTitle("La technologie comme alliée");
   ctx.addParagraphs([
-    "Cette question marque un tournant. Elle traduit un passage d'une logique d'exécution à une logique de vision.",
-    "Et c'est précisément dans ce passage que se dessine l'avenir du métier.",
+    "La technologie n'est pas le problème. La manière dont elle est utilisée peut l'être.",
+    "Lorsqu'elle est pensée pour servir le professionnel plutôt que pour le contraindre, elle devient un levier puissant.",
+    "Des outils existent aujourd'hui pour permettre à chaque chauffeur de structurer son activité, de gérer sa clientèle et de développer sa visibilité.",
+    "Ces outils ne remplacent pas le travail. Ils l'accompagnent.",
   ]);
 
-  ctx.addSubTitle("Lorsque la technologie devient un levier");
-  ctx.addParagraphs([
-    "La technologie a profondément transformé le secteur. Elle a simplifié l'accès au marché, facilité la mise en relation et ouvert des opportunités nouvelles.",
-    "Mais comme toute transformation, elle a aussi redéfini les équilibres.",
-    "Aujourd'hui, une nouvelle étape apparaît : celle où la technologie ne sert plus seulement à organiser l'activité, mais à permettre aux professionnels de la structurer eux-mêmes.",
-    "C'est un changement subtil, mais fondamental. La technologie cesse d'être uniquement un canal. Elle devient un levier.",
-  ]);
+  ctx.addDecorativeElement();
 
-  ctx.addSubTitle("Le retour du professionnel au centre");
-  ctx.addParagraphs([
-    "Au cœur de cette évolution se trouve une idée simple : le métier repose avant tout sur ceux qui l'exercent.",
-    "Sur leur engagement. Sur leur professionnalisme. Sur leur capacité à créer une expérience.",
-    "Cette réalité, parfois éclipsée par la puissance des systèmes, revient progressivement au centre du débat.",
-  ]);
-
-  ctx.addSubTitle("SoloCab comme expression de cette vision");
+  ctx.addSubTitle("SoloCab : une vision au service des professionnels");
   ctx.addParagraphs([
     "Dans cette dynamique, certaines initiatives incarnent concrètement cette évolution vers un modèle plus équilibré.",
     "SoloCab fait partie de ces approches. Non pas comme une réponse unique ou une solution imposée, mais comme une expression concrète d'une vision : celle d'une technologie pensée pour accompagner les professionnels plutôt que pour les contraindre.",
@@ -1018,17 +1083,17 @@ export const addPartie16 = (doc: jsPDF, startPage: number): number => {
 export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.addPage();
   const ctx = new DocContext(doc, startPage);
-  const { w } = getPageDims(doc);
+  const { w, margin } = getPageDims(doc);
 
-  // Subtle separator at top
-  ctx.addSeparator();
+  // Decorative separator at top
+  ctx.addDecorativeElement();
 
   // Message de l'auteur title
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.setTextColor(...c.deepBlue);
   doc.text("MESSAGE DE L'AUTEUR", w / 2, ctx.y, { align: "center" });
-  ctx.y += 10;
+  ctx.y += 12;
 
   ctx.addSubTitle("Une réflexion née du terrain");
   ctx.addParagraphs([
@@ -1045,16 +1110,15 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "Parce que la compréhension est toujours la première étape vers la liberté.",
   ]);
 
-  ctx.addSpace(3);
+  ctx.addSeparator();
 
   // Manifeste
-  ctx.addSeparator();
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(18);
   doc.setTextColor(...c.softViolet);
   ctx.checkPageBreak(20);
   doc.text("MANIFESTE SOLOCAB", w / 2, ctx.y, { align: "center" });
-  ctx.y += 8;
+  ctx.y += 10;
 
   ctx.addSubTitle("Le mouvement des professionnels conscients");
   ctx.addParagraphs([
@@ -1067,10 +1131,8 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "Et surtout, nous croyons que la véritable transformation commence toujours par une prise de conscience.",
   ]);
 
-  ctx.addSpace(3);
   ctx.addQuote("Comprendre pour choisir. Choisir pour construire.");
 
-  ctx.addSpace(3);
   ctx.addParagraphs([
     "Si vous avez lu jusqu'ici, alors quelque chose a probablement résonné en vous.",
     "Peut-être une question. Peut-être une prise de recul. Peut-être une confirmation.",
@@ -1088,46 +1150,57 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   const h = doc.internal.pageSize.getHeight();
   const inscPage = ctx.pageNum + 1;
 
+  // Light background
   doc.setFillColor(...c.lightBg);
   doc.rect(0, 0, w, h, "F");
 
+  // Subtle abstract circle decoration
+  doc.setFillColor(230, 235, 248);
+  doc.circle(w + 10, 40, 50, "F");
+  doc.circle(-15, h - 50, 40, "F");
+
   // Logo
-  addLogo(doc, w / 2 - 15, 25, 30);
+  addLogo(doc, w / 2 - 16, 28, 32);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
+  doc.setFontSize(24);
   doc.setTextColor(...c.primaryBlue);
-  doc.text("REJOIGNEZ SOLOCAB", w / 2, 72, { align: "center" });
+  doc.text("REJOIGNEZ SOLOCAB", w / 2, 78, { align: "center" });
+
+  // Decorative line
+  doc.setDrawColor(...c.softViolet);
+  doc.setLineWidth(1.5);
+  doc.line(w / 2 - 35, 84, w / 2 + 35, 84);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(12.5);
   doc.setTextColor(...c.darkText);
   const inscTexts = doc.splitTextToSize(
     "Vous souhaitez reprendre le contrôle de votre activité ? Construire votre propre clientèle ? Développer une activité durable et indépendante ?",
-    w - 50
+    w - 60
   );
-  doc.text(inscTexts, w / 2, 85, { align: "center" });
+  doc.text(inscTexts, w / 2, 98, { align: "center" });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(...c.darkText);
-  doc.text("Inscrivez-vous gratuitement sur :", w / 2, 112, { align: "center" });
-
-  // CTA box
-  doc.setFillColor(...c.primaryBlue);
-  doc.roundedRect(w / 2 - 65, 120, 130, 18, 5, 5, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
+  doc.setTextColor(...c.darkText);
+  doc.text("Inscrivez-vous gratuitement sur :", w / 2, 128, { align: "center" });
+
+  // CTA box — premium blue
+  doc.setFillColor(...c.primaryBlue);
+  doc.roundedRect(w / 2 - 70, 136, 140, 20, 6, 6, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
-  doc.text("solocab.fr/chauffeur", w / 2, 132, { align: "center" });
+  doc.text("solocab.fr/chauffeur", w / 2, 149, { align: "center" });
 
   // Clickable link
-  doc.link(w / 2 - 65, 120, 130, 18, { url: "https://www.solocab.fr/chauffeur-inscription" });
+  doc.link(w / 2 - 70, 136, 140, 20, { url: "https://www.solocab.fr/chauffeur-inscription" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(10.5);
   doc.setTextColor(...c.grayText);
-  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 150, { align: "center" });
+  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 168, { align: "center" });
 
   // Features list
   const features = [
@@ -1136,25 +1209,25 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "✓ Fidélisez votre clientèle avec vos outils",
     "✓ Développez votre chiffre d'affaires en direct",
   ];
-  let fy = 165;
+  let fy = 186;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(...c.primaryBlue);
   features.forEach((f) => {
     doc.text(f, w / 2, fy, { align: "center" });
-    fy += 8;
+    fy += 10;
   });
 
-  // Additional info section
-  doc.setDrawColor(...c.accentGold);
+  // Separator
+  doc.setDrawColor(...c.softViolet);
   doc.setLineWidth(1);
-  doc.line(50, fy + 5, w - 50, fy + 5);
+  doc.line(55, fy + 6, w - 55, fy + 6);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(...c.grayText);
-  doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 15, { align: "center" });
-  doc.text("Sans commission sur vos courses directes", w / 2, fy + 22, { align: "center" });
+  doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 18, { align: "center" });
+  doc.text("Sans commission sur vos courses directes", w / 2, fy + 26, { align: "center" });
 
   addFooter(doc, inscPage);
 
@@ -1164,42 +1237,54 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, w, h, "F");
 
-  doc.setFillColor(35, 55, 120);
-  doc.circle(w + 20, h / 4, 60, "F");
-  doc.circle(-20, h * 0.75, 80, "F");
+  // Abstract shapes
+  doc.setFillColor(30, 52, 110);
+  doc.circle(w + 25, h / 4, 65, "F");
+  doc.circle(-25, h * 0.75, 85, "F");
+  doc.setFillColor(35, 58, 120);
+  doc.circle(w * 0.2, h * 0.15, 20, "F");
 
-  doc.setDrawColor(...c.accentGold);
+  // Top decorative line
+  doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(2);
-  doc.line(40, h / 2 - 70, w - 40, h / 2 - 70);
+  doc.line(45, h / 2 - 75, w - 45, h / 2 - 75);
 
   // Logo on back cover
-  addLogo(doc, w / 2 - 18, h / 2 - 65, 36);
+  addLogo(doc, w / 2 - 20, h / 2 - 70, 40);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
+  doc.setFontSize(26);
   doc.setTextColor(255, 255, 255);
-  doc.text("SOLOCAB ACADEMY", w / 2, h / 2 - 15, { align: "center" });
+  doc.text("SOLOCAB ACADEMY", w / 2, h / 2 - 12, { align: "center" });
 
-  doc.setFontSize(14);
-  doc.setTextColor(...c.accentGold);
-  doc.text("Comprendre pour choisir.", w / 2, h / 2 + 5, { align: "center" });
-  doc.text("Choisir pour construire.", w / 2, h / 2 + 17, { align: "center" });
+  doc.setFontSize(15);
+  doc.setTextColor(...c.lightViolet);
+  doc.text("Comprendre pour choisir.", w / 2, h / 2 + 8, { align: "center" });
+  doc.text("Choisir pour construire.", w / 2, h / 2 + 22, { align: "center" });
 
-  doc.setDrawColor(...c.accentGold);
-  doc.line(60, h / 2 + 30, w - 60, h / 2 + 30);
+  // Bottom decorative line
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(2);
+  doc.line(55, h / 2 + 38, w - 55, h / 2 + 38);
+
+  // Decorative dots
+  doc.setFillColor(45, 65, 125);
+  for (let i = 0; i < 5; i++) {
+    doc.circle(w / 2 - 20 + i * 10, h / 2 + 50, 1, "F");
+  }
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
-  doc.text("www.solocab.fr", w / 2, h / 2 + 50, { align: "center" });
-  doc.text("contact@solocab.fr", w / 2, h / 2 + 62, { align: "center" });
+  doc.text("www.solocab.fr", w / 2, h / 2 + 65, { align: "center" });
+  doc.text("contact@solocab.fr", w / 2, h / 2 + 78, { align: "center" });
 
   // Link cliquable
-  doc.link(w / 2 - 30, h / 2 + 42, 60, 12, { url: "https://www.solocab.fr" });
+  doc.link(w / 2 - 35, h / 2 + 57, 70, 14, { url: "https://www.solocab.fr" });
 
   doc.setFontSize(9);
   doc.setTextColor(180, 190, 230);
-  doc.text("SASU SoloCab | RCS Paris 994 176 576", w / 2, h - 30, { align: "center" });
+  doc.text("SASU SoloCab | RCS Paris 994 176 576", w / 2, h - 32, { align: "center" });
   doc.text("10 rue de Penthièvre, 75008 Paris", w / 2, h - 22, { align: "center" });
 
   return inscPage + 1;
