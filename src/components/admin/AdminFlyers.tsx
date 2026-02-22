@@ -10,6 +10,7 @@ import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
 import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
+import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
@@ -174,6 +175,9 @@ const AdminFlyers = () => {
           );
         })}
       </div>
+
+      {/* Audiobook Player */}
+      <SolocabAudiobookPlayer />
 
       {/* Info box */}
       <Card className="bg-muted/50 border-dashed">
