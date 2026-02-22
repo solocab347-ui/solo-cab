@@ -1209,10 +1209,18 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   // Fallback invisible link covering the whole button area
   doc.link(ctaX, ctaY, ctaW, ctaH, { url: registrationUrl });
 
+  // 14-day free trial badge
+  doc.setFillColor(34, 197, 94); // green
+  doc.roundedRect(w / 2 - 55, 158, 110, 14, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text("14 JOURS D'ESSAI GRATUIT", w / 2, 168, { align: "center" });
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(...c.grayText);
-  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 168, { align: "center" });
+  doc.text("Ou scannez le QR code de votre chauffeur partenaire", w / 2, 182, { align: "center" });
 
   // Features list
   const features = [
@@ -1221,7 +1229,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
     "✓ Fidélisez votre clientèle avec vos outils",
     "✓ Développez votre chiffre d'affaires en direct",
   ];
-  let fy = 186;
+  let fy = 198;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(...c.primaryBlue);
