@@ -242,3 +242,6 @@ verify_jwt = true
 
 [functions.create-payment-request]
 verify_jwt = true
+
+[functions.elevenlabs-tts]
+verify_jwt = true

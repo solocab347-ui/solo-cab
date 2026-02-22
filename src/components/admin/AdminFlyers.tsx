@@ -11,6 +11,7 @@ import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
 import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
+import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
@@ -175,6 +176,9 @@ const AdminFlyers = () => {
           );
         })}
       </div>
+
+      {/* Podcast Generator */}
+      <SolocabPodcastGenerator />
 
       {/* Audiobook Player */}
       <SolocabAudiobookPlayer />
