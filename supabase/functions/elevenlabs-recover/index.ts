@@ -30,15 +30,19 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) throw new Error("Invalid auth token");
 
-    // Get driver_id
+    // Parse body once
+    const body = await req.json();
+    const { action } = body;
+
+    // Get driver_id - try drivers table first, then check profiles for admin
     const { data: driver } = await supabase
       .from("drivers")
       .select("id")
       .eq("user_id", user.id)
       .single();
-    if (!driver) throw new Error("Driver not found");
-
-    const { action } = await req.json();
+    
+    // For admins without a driver profile, use user.id as fallback identifier
+    const driverId = driver?.id || user.id;
 
     if (action === "list") {
       // List ElevenLabs history items
@@ -70,19 +74,19 @@ serve(async (req) => {
       const { data: existingSegments } = await supabase
         .from("podcast_segments")
         .select("episode_id")
-        .eq("driver_id", driver.id);
+        .eq("driver_id", driverId);
 
       return new Response(JSON.stringify({
         history_items: relevantItems,
         existing_episodes: existingSegments?.map((s: any) => s.episode_id) || [],
-        driver_id: driver.id,
+        driver_id: driverId,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "recover") {
-      const { history_item_id, episode_id } = await req.json();
+      const { history_item_id, episode_id } = body;
       
       if (!history_item_id || !episode_id) {
         throw new Error("history_item_id and episode_id are required");
@@ -92,7 +96,7 @@ serve(async (req) => {
       const { data: existing } = await supabase
         .from("podcast_segments")
         .select("id")
-        .eq("driver_id", driver.id)
+        .eq("driver_id", driverId)
         .eq("episode_id", episode_id)
         .single();
 
@@ -115,7 +119,7 @@ serve(async (req) => {
       }
 
       const audioBuffer = await audioResponse.arrayBuffer();
-      const path = `${driver.id}/${episode_id}.mp3`;
+      const path = `${driverId}/${episode_id}.mp3`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -127,7 +131,7 @@ serve(async (req) => {
       // Save metadata
       const { error: dbError } = await supabase.from("podcast_segments").upsert(
         {
-          driver_id: driver.id,
+          driver_id: driverId,
           episode_id: episode_id,
           storage_path: path,
           file_size: audioBuffer.byteLength,
