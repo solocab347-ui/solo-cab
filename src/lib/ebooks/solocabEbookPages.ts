@@ -1315,8 +1315,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
 
   doc.setFontSize(9);
   doc.setTextColor(180, 190, 230);
-  doc.text("SASU SoloCab | RCS Paris 994 176 576", w / 2, h - 32, { align: "center" });
-  doc.text("10 rue de Penthièvre, 75008 Paris", w / 2, h - 22, { align: "center" });
+  doc.text("SoloCab SASU", w / 2, h - 28, { align: "center" });
 
   return inscPage + 1;
 };
