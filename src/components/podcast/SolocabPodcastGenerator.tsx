@@ -2,10 +2,10 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Mic, Play, Pause, Download, Loader2, Radio, ChevronDown, ChevronUp, CheckCircle2, RotateCcw } from "lucide-react";
+import { Mic, Play, Pause, Download, Loader2, Radio, ChevronDown, ChevronUp, CheckCircle2, RotateCcw, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllEpisodes, getAllChaptersOnly, TOTAL_CHAPTERS, type PodcastEpisode } from "@/lib/podcast/podcastScripts";
+import { getAllEpisodes, getAllChaptersOnly, getFullPodcastScript, TOTAL_CHAPTERS, type PodcastEpisode } from "@/lib/podcast/podcastScripts";
 import { usePodcastPersistence } from "@/hooks/usePodcastPersistence";
 import PodcastRecovery from "./PodcastRecovery";
 
@@ -141,6 +141,41 @@ const SolocabPodcastGenerator = () => {
     }
   }, [generateSingleAudio, savedSegments, isSegmentSaved, saveSegment]);
 
+  const generateEbookAudio = useCallback(async () => {
+    setGenerating("ebook");
+    setProgress(5);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Vous devez être connecté"); return; }
+
+      const fullScript = getFullPodcastScript();
+      toast.info("Génération de l'audio eBook complet en un seul bloc...", { duration: 30000 });
+      setProgress(15);
+
+      const audioBlob = await generateSingleAudio(fullScript.script, session);
+      setProgress(90);
+
+      await saveSegment("ebook-full", audioBlob);
+
+      // Auto-download
+      const freshUrl = URL.createObjectURL(audioBlob);
+      const a = document.createElement("a");
+      a.href = freshUrl;
+      a.download = "eBook-Audio-SoloCab-Complet.mp3";
+      a.click();
+      URL.revokeObjectURL(freshUrl);
+
+      setProgress(100);
+      toast.success("Audio eBook complet généré et téléchargé !");
+    } catch (error: any) {
+      console.error("Ebook audio generation error:", error);
+      toast.error(`Erreur : ${error.message}`);
+    } finally {
+      setGenerating(null);
+      setProgress(0);
+    }
+  }, [generateSingleAudio, saveSegment]);
+
   const handlePlay = (episodeId: string) => {
     const url = getAudioUrl(episodeId);
     if (!url) return;
@@ -274,6 +309,61 @@ const SolocabPodcastGenerator = () => {
                   Ré-assembler
                 </Button>
               </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* eBook Audio - Single Block */}
+      <Card className="overflow-hidden border border-rose-500/20">
+        <div className="h-2 bg-gradient-to-r from-rose-500 to-pink-600" />
+        <CardHeader className="pb-3">
+          <div className="flex items-start gap-3">
+            <div className="p-3 rounded-xl bg-rose-500/10">
+              <BookOpen className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-lg">📖 Audio eBook — Bloc unique</CardTitle>
+              <CardDescription className="mt-1">
+                Génère l'intégralité du livre en un seul fichier audio via un unique appel TTS (le texte est découpé automatiquement côté serveur).
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {generating === "ebook" && (
+            <div className="space-y-2">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">Génération en cours...</p>
+            </div>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            {getAudioUrl("ebook-full") ? (
+              <>
+                <Button variant="outline" onClick={() => handlePlay("ebook-full")} className="gap-2">
+                  {playing === "ebook-full" ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {playing === "ebook-full" ? "Pause" : "Écouter"}
+                </Button>
+                <Button onClick={() => handleDownload("ebook-full", "eBook-Audio-SoloCab-Complet")} className="gap-2 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700">
+                  <Download className="w-4 h-4" /> Télécharger
+                </Button>
+                <Button variant="outline" onClick={generateEbookAudio} disabled={!!generating} className="gap-1 text-xs">
+                  {generating === "ebook" ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                  Re-générer
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={generateEbookAudio}
+                disabled={!!generating}
+                className="flex-1 gap-2 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
+              >
+                {generating === "ebook" ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Génération...</>
+                ) : (
+                  <><BookOpen className="w-4 h-4" /> Générer l'audio eBook complet</>
+                )}
+              </Button>
             )}
           </div>
         </CardContent>
