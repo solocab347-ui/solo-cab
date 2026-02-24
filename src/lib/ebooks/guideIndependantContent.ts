@@ -709,7 +709,7 @@ export const guideChapters: GuideChapter[] = [
           "Ce que SoloCab vous apporte : une page de réservation personnalisée que vous pouvez partager avec vos clients. Un système de facturation automatique professionnel. Un CRM intégré pour suivre chaque client et chaque interaction. Un planning intelligent qui optimise vos créneaux. Un tableau de bord avec tous vos KPIs en temps réel. Des outils de tarification avancés (forfaits, tarification par zone, majorations automatiques).",
           "SoloCab ne remplace pas votre travail. Il amplifie votre efficacité. Chaque outil présenté dans ce guide (fichier client, facturation, planning, communication) est intégré nativement dans la plateforme.",
           "Essai gratuit de 14 jours, sans engagement. Parce que le meilleur moyen de savoir si un outil est fait pour vous, c'est de l'essayer.",
-          "Rendez-vous sur solocab.com pour commencer votre essai gratuit."
+          "Rendez-vous sur solocab.fr pour commencer votre essai gratuit."
         ]
       }
     ],
