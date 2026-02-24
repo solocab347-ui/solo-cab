@@ -31,9 +31,19 @@ function san(text: string): string {
     .replace(/«\s*/g, '"')
     .replace(/\s*»/g, '"')
     .replace(/—/g, " - ")
+    .replace(/–/g, "-")
     .replace(/…/g, "...")
     .replace(/'/g, "'")
-    .replace(/[\u{1F300}-\u{1FAFF}]/gu, ""); // strip emojis
+    .replace(/'/g, "'")
+    .replace(/"/g, '"')
+    .replace(/"/g, '"')
+    .replace(/\u00A0/g, " ") // non-breaking space
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2022\u2023\u25E6]/g, "-") // bullet chars
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, "") // strip emojis
+    .replace(/[\u{2600}-\u{27BF}]/gu, "") // misc symbols
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, ""); // variation selectors
 }
 
 // ===== LOAD IMAGES =====
@@ -278,64 +288,66 @@ export async function generateGuideIndependantPdf() {
   doc.circle(-20, ph * 0.3, 60, "F");
   doc.circle(pw + 15, ph * 0.7, 45, "F");
 
-  // Cover image
+  // Cover image — lighter overlay for better visibility
   try {
-    const imgW = 110;
+    const imgW = 120;
     const imgH = imgW * (coverImg.height / coverImg.width);
     const imgX = (pw - imgW) / 2;
-    doc.addImage(coverImg, "JPEG", imgX, 18, imgW, Math.min(imgH, 130));
-    // Overlay
+    const imgMaxH = Math.min(imgH, 110);
+    doc.addImage(coverImg, "JPEG", imgX, 14, imgW, imgMaxH);
+    // Lighter overlay so photo is more visible
     doc.setFillColor(...c.darkBlue);
-    doc.setGState(new (doc as any).GState({ opacity: 0.45 }));
-    doc.rect(imgX, 18, imgW, Math.min(imgH, 130), "F");
+    doc.setGState(new (doc as any).GState({ opacity: 0.25 }));
+    doc.rect(imgX, 14, imgW, imgMaxH, "F");
     doc.setGState(new (doc as any).GState({ opacity: 1 }));
   } catch { /* silent */ }
 
-  // Logo
-  ctx.addLogo(pw / 2 - 14, 155, 28);
+  // Logo — closer to image
+  const logoY = 128;
+  ctx.addLogo(pw / 2 - 12, logoY, 24);
 
   // Academy label
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(...c.lightViolet);
-  doc.text("SOLOCAB ACADEMY", pw / 2, 190, { align: "center" });
+  doc.text("SOLOCAB ACADEMY", pw / 2, logoY + 30, { align: "center" });
 
   // Violet line
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(1.5);
-  doc.line(50, 196, pw - 50, 196);
+  doc.line(50, logoY + 35, pw - 50, logoY + 35);
 
-  // Title
+  // Title — compact
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
+  doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
-  doc.text(san("LE GUIDE DU CHAUFFEUR"), pw / 2, 212, { align: "center" });
-  doc.text(san("INDEPENDANT"), pw / 2, 222, { align: "center" });
+  doc.text(san("LE GUIDE DU CHAUFFEUR"), pw / 2, logoY + 50, { align: "center" });
+  doc.text(san("INDEPENDANT"), pw / 2, logoY + 60, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(...c.lightViolet);
-  doc.text(san("Construire sa Clientele Privee de A a Z"), pw / 2, 236, { align: "center" });
+  doc.text(san("Construire sa Clientele Privee de A a Z"), pw / 2, logoY + 72, { align: "center" });
 
   // Tagline
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setTextColor(180, 190, 220);
   const tagLines: string[] = doc.splitTextToSize(san(guideMetadata.tagline), 140);
-  let ty = 250;
+  let ty = logoY + 82;
   for (const tl of tagLines) {
     doc.text(tl, pw / 2, ty, { align: "center" });
     ty += 5;
   }
 
-  // Bottom
+  // Bottom info
   doc.setDrawColor(...c.lightViolet);
   doc.setLineWidth(1.5);
-  doc.line(50, ph - 40, pw - 50, ph - 40);
+  doc.line(50, ph - 36, pw - 50, ph - 36);
   doc.setFontSize(9);
   doc.setTextColor(180, 190, 220);
-  doc.text(san("Edition 2026 - SoloCab Academy"), pw / 2, ph - 30, { align: "center" });
-  doc.text(san("4,99 EUR - Guide Premium"), pw / 2, ph - 22, { align: "center" });
+  doc.text(san("Edition 2026 - SoloCab Academy"), pw / 2, ph - 28, { align: "center" });
+  doc.text(san("4,99 EUR - Guide Premium"), pw / 2, ph - 21, { align: "center" });
 
   ctx.footer();
 
@@ -855,8 +867,8 @@ export async function generateGuideIndependantPdf() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
-  doc.text("solocab.com", pw / 2, cy + 5, { align: "center" });
-  doc.link(pw / 2 - 45, cy - 6, 90, 18, { url: "https://www.solocab.com" });
+  doc.text("solocab.fr", pw / 2, cy + 5, { align: "center" });
+  doc.link(pw / 2 - 45, cy - 6, 90, 18, { url: "https://www.solocab.fr" });
 
   cy += 25;
   doc.setFont("helvetica", "normal");
