@@ -70,10 +70,10 @@ class PageCtx {
   page: number;
   pw: number;
   ph: number;
-  ml = 28;
-  mr = 28;
-  mt = 32;
-  mb = 22;
+  ml = 18;
+  mr = 18;
+  mt = 28;
+  mb = 20;
   cw: number;
   maxY: number;
   logoUrl: string | null;
@@ -102,12 +102,12 @@ class PageCtx {
     const d = this.doc;
     d.setDrawColor(...c.softBlue);
     d.setLineWidth(0.3);
-    d.line(this.ml, this.ph - 16, this.pw - this.mr, this.ph - 16);
+    d.line(this.ml, this.ph - 14, this.pw - this.mr, this.ph - 14);
     d.setFont("helvetica", "normal");
     d.setFontSize(7.5);
     d.setTextColor(...c.grayText);
-    d.text(san("Le Guide du Chauffeur Independant - SoloCab Academy"), this.ml, this.ph - 9);
-    d.text(`${this.page}`, this.pw - this.mr, this.ph - 9, { align: "right" });
+    d.text(san("Le Guide du Chauffeur Independant - SoloCab Academy"), this.ml, this.ph - 8);
+    d.text(`${this.page}`, this.pw - this.mr, this.ph - 8, { align: "right" });
   }
 
   newPage() {
@@ -119,75 +119,82 @@ class PageCtx {
 
   // --- Text helpers ---
   title(text: string) {
-    this.check(18);
+    this.check(16);
+    const sanText = san(text);
     this.doc.setFont("helvetica", "bold");
-    this.doc.setFontSize(17);
+    this.doc.setFontSize(15);
     this.doc.setTextColor(...c.deepBlue);
-    this.doc.text(san(text), this.ml, this.y);
+    // Wrap title if it exceeds content width
+    const titleLines: string[] = this.doc.splitTextToSize(sanText, this.cw);
+    for (const tl of titleLines) {
+      this.doc.text(tl, this.ml, this.y);
+      this.y += 7;
+    }
     this.doc.setDrawColor(...c.softViolet);
     this.doc.setLineWidth(1);
-    this.doc.line(this.ml, this.y + 3, this.ml + Math.min(this.doc.getTextWidth(san(text)), this.cw), this.y + 3);
-    this.y += 14;
+    const underlineW = Math.min(this.doc.getTextWidth(titleLines[0]), this.cw);
+    this.doc.line(this.ml, this.y - 4, this.ml + underlineW, this.y - 4);
+    this.y += 5;
   }
 
-  para(text: string, fontSize = 12, indent = 0) {
+  para(text: string, fontSize = 11.5, indent = 0) {
     const d = this.doc;
     d.setFont("helvetica", "normal");
     d.setFontSize(fontSize);
     d.setTextColor(...c.bodyText);
     const lines: string[] = d.splitTextToSize(san(text), this.cw - indent);
-    const lh = fontSize * 0.52;
+    const lh = fontSize * 0.55;
     for (const line of lines) {
       this.check(lh + 1);
       d.text(line, this.ml + indent, this.y);
       this.y += lh;
     }
-    this.y += 3.5;
+    this.y += 3;
   }
 
-  paras(texts: string[], fontSize = 12) {
+  paras(texts: string[], fontSize = 11.5) {
     for (const t of texts) this.para(t, fontSize);
   }
 
   bullets(items: string[], fontSize = 11) {
     for (const item of items) {
-      const lines: string[] = this.doc.splitTextToSize(san(item), this.cw - 14);
-      const lh = fontSize * 0.5;
-      this.check(lines.length * lh + 5);
+      const lines: string[] = this.doc.splitTextToSize(san(item), this.cw - 12);
+      const lh = fontSize * 0.52;
+      this.check(lines.length * lh + 4);
       this.doc.setFillColor(...c.lightBlue);
-      this.doc.circle(this.ml + 3.5, this.y - 1.3, 1.4, "F");
+      this.doc.circle(this.ml + 3, this.y - 1.3, 1.3, "F");
       this.doc.setFont("helvetica", "normal");
       this.doc.setFontSize(fontSize);
       this.doc.setTextColor(...c.bodyText);
-      this.doc.text(lines, this.ml + 10, this.y);
-      this.y += lines.length * lh + 3.5;
+      this.doc.text(lines, this.ml + 9, this.y);
+      this.y += lines.length * lh + 3;
     }
-    this.y += 2;
+    this.y += 1;
   }
 
   quote(text: string) {
     const d = this.doc;
     d.setFont("helvetica", "bolditalic");
-    d.setFontSize(12);
-    const lines: string[] = d.splitTextToSize(san(text), this.cw - 24);
-    const bh = 12 + lines.length * 6;
-    this.check(bh + 8);
+    d.setFontSize(11.5);
+    const lines: string[] = d.splitTextToSize(san(text), this.cw - 20);
+    const bh = 10 + lines.length * 6;
+    this.check(bh + 5);
     d.setFillColor(...c.lightGold);
-    d.roundedRect(this.ml, this.y, this.cw, bh, 4, 4, "F");
+    d.roundedRect(this.ml, this.y, this.cw, bh, 3, 3, "F");
     d.setFillColor(...c.softViolet);
-    d.roundedRect(this.ml, this.y, 4, bh, 2, 2, "F");
+    d.roundedRect(this.ml, this.y, 3.5, bh, 1.5, 1.5, "F");
     d.setTextColor(...c.deepBlue);
-    d.text(lines, this.ml + 14, this.y + 8);
-    this.y += bh + 8;
+    d.text(lines, this.ml + 12, this.y + 7);
+    this.y += bh + 5;
   }
 
   infoCard(cardTitle: string, text: string, bg = c.lightBg, accent = c.primaryBlue) {
     const d = this.doc;
     d.setFont("helvetica", "normal");
     d.setFontSize(10.5);
-    const lines: string[] = d.splitTextToSize(san(text), this.cw - 22);
-    const bh = 14 + lines.length * 5;
-    this.check(bh + 6);
+    const lines: string[] = d.splitTextToSize(san(text), this.cw - 20);
+    const bh = 13 + lines.length * 5;
+    this.check(bh + 5);
     d.setFillColor(...bg);
     d.roundedRect(this.ml, this.y, this.cw, bh, 3, 3, "F");
     d.setFillColor(...accent);
@@ -195,25 +202,25 @@ class PageCtx {
     d.setFont("helvetica", "bold");
     d.setFontSize(11);
     d.setTextColor(...accent);
-    d.text(san(cardTitle), this.ml + 11, this.y + 8);
+    d.text(san(cardTitle), this.ml + 10, this.y + 8);
     d.setFont("helvetica", "normal");
     d.setFontSize(10.5);
     d.setTextColor(...c.bodyText);
-    d.text(lines, this.ml + 11, this.y + 15);
-    this.y += bh + 6;
+    d.text(lines, this.ml + 10, this.y + 14);
+    this.y += bh + 5;
   }
 
   separator() {
-    this.check(14);
+    this.check(10);
     const cx = this.pw / 2;
-    this.y += 3;
+    this.y += 2;
     this.doc.setFillColor(...c.softBlue);
-    this.doc.circle(cx - 10, this.y + 3, 1.2, "F");
+    this.doc.circle(cx - 10, this.y + 2, 1.2, "F");
     this.doc.setFillColor(...c.softViolet);
-    this.doc.circle(cx, this.y + 3, 1.5, "F");
+    this.doc.circle(cx, this.y + 2, 1.5, "F");
     this.doc.setFillColor(...c.softBlue);
-    this.doc.circle(cx + 10, this.y + 3, 1.2, "F");
-    this.y += 12;
+    this.doc.circle(cx + 10, this.y + 2, 1.2, "F");
+    this.y += 8;
   }
 
   statBoxes(stats: { value: string; label: string }[]) {
@@ -337,65 +344,65 @@ export async function generateGuideIndependantPdf() {
   ctx.page = 2;
   ctx.y = ctx.mt;
 
-  ctx.addLogo(pw / 2 - 12, 18, 24);
+  ctx.addLogo(pw / 2 - 11, 20, 22);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
+  doc.setFontSize(20);
   doc.setTextColor(...c.deepBlue);
-  doc.text("SOMMAIRE", pw / 2, 55, { align: "center" });
+  doc.text("SOMMAIRE", pw / 2, 50, { align: "center" });
 
   doc.setDrawColor(...c.softViolet);
   doc.setLineWidth(1.5);
-  doc.line(pw / 2 - 30, 60, pw / 2 + 30, 60);
+  doc.line(pw / 2 - 28, 54, pw / 2 + 28, 54);
 
-  ctx.y = 74;
+  ctx.y = 64;
   for (const ch of guideChapters) {
-    ctx.check(14);
+    ctx.check(11);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(...c.softViolet);
     doc.text("Partie " + ch.partNumber, ctx.ml + 2, ctx.y);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11.5);
+    doc.setFontSize(11);
     doc.setTextColor(...c.bodyText);
-    doc.text(san(ch.title), ctx.ml + 30, ctx.y);
+    doc.text(san(ch.title), ctx.ml + 28, ctx.y);
     doc.setDrawColor(...c.softBlue);
     doc.setLineWidth(0.2);
-    const te = ctx.ml + 30 + doc.getTextWidth(san(ch.title)) + 4;
+    const te = ctx.ml + 28 + doc.getTextWidth(san(ch.title)) + 3;
     doc.line(te, ctx.y - 0.5, pw - ctx.mr, ctx.y - 0.5);
-    ctx.y += 12;
+    ctx.y += 10;
   }
 
   // Tools section in TOC
-  ctx.y += 6;
-  ctx.check(12);
+  ctx.y += 4;
+  ctx.check(10);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setTextColor(...c.softViolet);
   doc.text(san("BOITE A OUTILS (18 fiches pratiques)"), ctx.ml + 2, ctx.y);
-  ctx.y += 10;
+  ctx.y += 8;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setTextColor(...c.bodyText);
 
   const categories = [...new Set(guideTools.map(t => t.category))];
   for (const cat of categories) {
-    ctx.check(8);
+    ctx.check(7);
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(...c.grayText);
-    doc.text(san(cat), ctx.ml + 8, ctx.y);
-    ctx.y += 6;
+    doc.text(san(cat), ctx.ml + 6, ctx.y);
+    ctx.y += 5;
     const tools = guideTools.filter(t => t.category === cat);
     for (const tool of tools) {
-      ctx.check(6);
+      ctx.check(5);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setTextColor(...c.bodyText);
-      doc.text(san("- " + tool.title), ctx.ml + 14, ctx.y);
-      ctx.y += 5.5;
+      doc.text(san("- " + tool.title), ctx.ml + 12, ctx.y);
+      ctx.y += 4.5;
     }
-    ctx.y += 2;
+    ctx.y += 1.5;
   }
 
   ctx.footer();
@@ -482,7 +489,7 @@ export async function generateGuideIndependantPdf() {
 
     // Introduction (italic)
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(11.5);
+    doc.setFontSize(11);
     doc.setTextColor(...c.grayText);
     const introLines: string[] = doc.splitTextToSize(san(chapter.introduction), ctx.cw);
     for (const il of introLines) {
@@ -490,7 +497,7 @@ export async function generateGuideIndependantPdf() {
       doc.text(il, ctx.ml, ctx.y);
       ctx.y += 5.5;
     }
-    ctx.y += 8;
+    ctx.y += 4;
 
     ctx.separator();
 
@@ -514,7 +521,7 @@ export async function generateGuideIndependantPdf() {
         ctx.infoCard("Exemple concret", section.example, c.lightBg, c.primaryBlue);
       }
 
-      ctx.y += 4;
+      ctx.y += 2;
     }
 
     // Stats page after certain chapters
@@ -553,17 +560,17 @@ export async function generateGuideIndependantPdf() {
 
     // Action Box
     if (chapter.actionBox) {
-      ctx.check(30);
-      ctx.y += 4;
+      ctx.check(25);
+      ctx.y += 2;
       const ab = chapter.actionBox;
 
       // Calculate height
-      let abH = 16;
+      let abH = 14;
       for (const step of ab.steps) {
-        const sl: string[] = doc.splitTextToSize(san(step), ctx.cw - 22);
-        abH += sl.length * 5 + 3;
+        const sl: string[] = doc.splitTextToSize(san(step), ctx.cw - 20);
+        abH += sl.length * 4.5 + 2.5;
       }
-      abH += 6;
+      abH += 4;
 
       ctx.check(abH);
       doc.setFillColor(...c.lightGreen);
@@ -571,37 +578,37 @@ export async function generateGuideIndependantPdf() {
       doc.setFillColor(...c.green);
       doc.roundedRect(ctx.ml, ctx.y, 3.5, abH, 1.5, 1.5, "F");
 
-      ctx.y += 9;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(...c.green);
-      doc.text(san("PASSAGE A L'ACTION : " + ab.title), ctx.ml + 11, ctx.y);
       ctx.y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(...c.green);
+      doc.text(san("PASSAGE A L'ACTION : " + ab.title), ctx.ml + 10, ctx.y);
+      ctx.y += 7;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setTextColor(...c.bodyText);
       for (let i = 0; i < ab.steps.length; i++) {
         const stepText = san((i + 1) + ". " + ab.steps[i]);
-        const stepLines: string[] = doc.splitTextToSize(stepText, ctx.cw - 22);
+        const stepLines: string[] = doc.splitTextToSize(stepText, ctx.cw - 20);
         for (const sl of stepLines) {
-          doc.text(sl, ctx.ml + 11, ctx.y);
-          ctx.y += 5;
+          doc.text(sl, ctx.ml + 10, ctx.y);
+          ctx.y += 4.5;
         }
-        ctx.y += 2.5;
+        ctx.y += 2;
       }
-      ctx.y += 8;
+      ctx.y += 5;
     }
 
     // Tool Box
     if (chapter.toolBox) {
-      ctx.check(20);
+      ctx.check(18);
       const tb = chapter.toolBox;
-      let tbH = 16;
+      let tbH = 14;
       for (const tool of tb.tools) {
-        tbH += 11;
+        tbH += 10;
       }
-      tbH += 4;
+      tbH += 3;
 
       ctx.check(tbH);
       doc.setFillColor(...c.lightPurple);
@@ -609,25 +616,25 @@ export async function generateGuideIndependantPdf() {
       doc.setFillColor(...c.purple);
       doc.roundedRect(ctx.ml, ctx.y, 3.5, tbH, 1.5, 1.5, "F");
 
-      ctx.y += 9;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(...c.purple);
-      doc.text(san("BOITE A OUTILS : " + tb.title), ctx.ml + 11, ctx.y);
       ctx.y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(...c.purple);
+      doc.text(san("BOITE A OUTILS : " + tb.title), ctx.ml + 10, ctx.y);
+      ctx.y += 7;
 
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       for (const tool of tb.tools) {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(90, 70, 160);
-        doc.text(san(tool.name + " (" + tool.type + ")"), ctx.ml + 11, ctx.y);
-        ctx.y += 4.5;
+        doc.text(san(tool.name + " (" + tool.type + ")"), ctx.ml + 10, ctx.y);
+        ctx.y += 4;
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...c.bodyText);
-        doc.text(san(tool.description), ctx.ml + 11, ctx.y);
-        ctx.y += 6.5;
+        doc.text(san(tool.description), ctx.ml + 10, ctx.y);
+        ctx.y += 6;
       }
-      ctx.y += 8;
+      ctx.y += 5;
     }
 
     ctx.footer();
