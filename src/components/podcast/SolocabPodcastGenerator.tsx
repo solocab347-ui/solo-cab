@@ -122,7 +122,16 @@ const SolocabPodcastGenerator = () => {
       const fullBlob = new Blob(chapterBlobs, { type: "audio/mpeg" });
       await saveSegment("full", fullBlob);
       setProgress(100);
-      toast.success("Podcast complet assemblé et sauvegardé !");
+
+      // Auto-download the freshly assembled blob directly (avoids CDN cache issues)
+      const freshUrl = URL.createObjectURL(fullBlob);
+      const a = document.createElement("a");
+      a.href = freshUrl;
+      a.download = "Podcast-Complet-SoloCab.mp3";
+      a.click();
+      URL.revokeObjectURL(freshUrl);
+
+      toast.success("Podcast complet assemblé et téléchargé !");
     } catch (error: any) {
       console.error("Full podcast generation error:", error);
       toast.error(`Erreur : ${error.message}. Les chapitres déjà générés sont sauvegardés — vous pouvez reprendre.`);
