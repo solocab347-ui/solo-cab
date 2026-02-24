@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Mic, Play, Pause, Download, Loader2, Radio, ChevronDown, ChevronUp, CheckCircle2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllEpisodes, TOTAL_CHAPTERS, type PodcastEpisode } from "@/lib/podcast/podcastScripts";
+import { getAllEpisodes, getAllChaptersOnly, TOTAL_CHAPTERS, type PodcastEpisode } from "@/lib/podcast/podcastScripts";
 import { usePodcastPersistence } from "@/hooks/usePodcastPersistence";
 import PodcastRecovery from "./PodcastRecovery";
 
@@ -82,24 +82,52 @@ const SolocabPodcastGenerator = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Vous devez être connecté"); return; }
-      const episodes = getAllEpisodes();
-      const totalEpisodes = episodes.length;
+      // Use chapters WITHOUT individual intros/outros to avoid repetition
+      const chapters = getAllChaptersOnly();
+      const totalChapters = chapters.length;
       const chapterBlobs: Blob[] = [];
       let skipped = 0;
-      toast.info(`Génération du podcast complet (${totalEpisodes} chapitres)...`, { duration: 30000 });
-      for (let i = 0; i < totalEpisodes; i++) {
-        const ep = episodes[i];
-        setProgress(Math.round(10 + (80 * i) / totalEpisodes));
-        if (isSegmentSaved(ep.id)) {
+      toast.info(`Génération du podcast complet (${totalChapters} chapitres)...`, { duration: 30000 });
+
+      // Generate intro
+      const introId = "full-intro";
+      if (isSegmentSaved(introId)) {
+        const res = await fetch(savedSegments[introId]);
+        chapterBlobs.push(await res.blob());
+      } else {
+        const introText = `Bienvenue dans "Être indépendant dans le secteur du VTC", le podcast qui décrypte les réalités du métier de chauffeur VTC. Ce podcast est basé sur le livre créé par SoloCab, "L'Illusion des Applications". Installez-vous confortablement, et plongeons ensemble dans cette réflexion.`;
+        const introBlob = await generateSingleAudio(introText, session);
+        chapterBlobs.push(introBlob);
+        await saveSegment(introId, introBlob);
+      }
+
+      // Generate each chapter (content only, no per-chapter intro/outro)
+      for (let i = 0; i < totalChapters; i++) {
+        const ch = chapters[i];
+        setProgress(Math.round(10 + (80 * i) / totalChapters));
+        if (isSegmentSaved(ch.id)) {
           skipped++;
-          const res = await fetch(savedSegments[ep.id]);
+          const res = await fetch(savedSegments[ch.id]);
           chapterBlobs.push(await res.blob());
           continue;
         }
-        const blob = await generateSingleAudio(ep.script, session);
+        const blob = await generateSingleAudio(ch.script, session);
         chapterBlobs.push(blob);
-        await saveSegment(ep.id, blob);
+        await saveSegment(ch.id, blob);
       }
+
+      // Generate outro
+      const outroId = "full-outro";
+      if (isSegmentSaved(outroId)) {
+        const res = await fetch(savedSegments[outroId]);
+        chapterBlobs.push(await res.blob());
+      } else {
+        const outroText = `Merci d'avoir écouté "Être indépendant dans le secteur du VTC". Si ce contenu vous a intéressé, découvrez l'intégralité du livre "L'Illusion des Applications" disponible sur SoloCab. Comprendre pour choisir. Choisir pour construire. À bientôt.`;
+        const outroBlob = await generateSingleAudio(outroText, session);
+        chapterBlobs.push(outroBlob);
+        await saveSegment(outroId, outroBlob);
+      }
+
       if (skipped > 0) toast.info(`${skipped} chapitres déjà générés, reprise effectuée.`);
       const fullBlob = new Blob(chapterBlobs, { type: "audio/mpeg" });
       await saveSegment("full", fullBlob);

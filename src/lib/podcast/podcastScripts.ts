@@ -41,7 +41,7 @@ export function getFullPodcastScript(): PodcastEpisode {
   };
 }
 
-// Individual episode per chapter
+// Individual episode per chapter (with intro/outro for standalone listening)
 export function getChapterPodcastScript(chapterIdx: number): PodcastEpisode {
   const chapter = audiobookChapters[chapterIdx];
   if (!chapter) {
@@ -63,8 +63,29 @@ export function getChapterPodcastScript(chapterIdx: number): PodcastEpisode {
   };
 }
 
+// Chapter script WITHOUT intro/outro (for full podcast assembly)
+export function getChapterScriptOnly(chapterIdx: number): PodcastEpisode {
+  const chapter = audiobookChapters[chapterIdx];
+  if (!chapter) {
+    return { id: "unknown", title: "Episode inconnu", description: "", script: "" };
+  }
+
+  return {
+    id: `chapter-${chapterIdx}`,
+    title: `Épisode ${chapterIdx + 1} — ${chapter.title}`,
+    description: chapter.subtitle || chapter.paragraphs[0]?.slice(0, 120) + "...",
+    script: buildChapterScript(chapterIdx),
+  };
+}
+
+// For individual episode listing (with intro/outro)
 export function getAllEpisodes(): PodcastEpisode[] {
   return audiobookChapters.map((_, idx) => getChapterPodcastScript(idx));
+}
+
+// For full podcast assembly (chapters only, no repeated intros/outros)
+export function getAllChaptersOnly(): PodcastEpisode[] {
+  return audiobookChapters.map((_, idx) => getChapterScriptOnly(idx));
 }
 
 export const TOTAL_CHAPTERS = audiobookChapters.length;
