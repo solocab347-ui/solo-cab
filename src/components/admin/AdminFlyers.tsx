@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen, AlignLeft, BookOpenCheck } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen, AlignLeft, BookOpenCheck, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
@@ -12,13 +12,14 @@ import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
 import { generateEbookRawTextPdf } from "@/lib/ebooks/ebookRawTextPdfGenerator";
 import { generateGuideIndependantPdf } from "@/lib/ebooks/guideIndependantPdfGenerator";
+import { generateGuideIndependantRawTextPdf } from "@/lib/ebooks/guideIndependantRawTextPdfGenerator";
 
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant" | "guide-raw-text") => {
     setLoading(type);
     try {
       switch (type) {
@@ -57,6 +58,10 @@ const AdminFlyers = () => {
         case "guide-independant":
           await generateGuideIndependantPdf();
           toast.success("Guide du Chauffeur Indépendant téléchargé !");
+          break;
+        case "guide-raw-text":
+          await generateGuideIndependantRawTextPdf();
+          toast.success("Texte podcast du Guide téléchargé !");
           break;
       }
     } catch (error) {
@@ -139,6 +144,14 @@ const AdminFlyers = () => {
       icon: BookOpenCheck,
       color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
       gradient: "from-yellow-500 to-amber-500",
+    },
+    {
+      id: "guide-raw-text" as const,
+      title: "🎙️ Texte Podcast — Guide Indépendant",
+      description: "Le texte brut intégral du Guide du Chauffeur Indépendant en PDF. Prêt à être lu pour enregistrement podcast.",
+      icon: Mic,
+      color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+      gradient: "from-violet-500 to-purple-500",
     },
   ];
 
