@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
 import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidget";
+import { QuickPlatformEntry } from "./objectives/QuickPlatformEntry";
 import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
 import { useProactiveCoach } from "./objectives/hooks/useProactiveCoach";
 
@@ -42,6 +43,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     availablePartnerCourses: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -159,6 +161,15 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           driverId={driverProfile.driver.id}
           driverName={displayName}
           onNavigateToObjectives={() => onTabChange("objectives")}
+          refreshKey={statsRefreshKey}
+        />
+      )}
+
+      {/* Quick Platform Entry - Enter external app revenues */}
+      {driverProfile?.driver?.id && (
+        <QuickPlatformEntry
+          driverId={driverProfile.driver.id}
+          onEntrySaved={() => setStatsRefreshKey(k => k + 1)}
         />
       )}
 

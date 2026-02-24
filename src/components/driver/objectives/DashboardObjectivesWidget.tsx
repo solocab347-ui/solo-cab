@@ -24,6 +24,7 @@ interface DashboardObjectivesWidgetProps {
   driverId: string;
   driverName?: string;
   onNavigateToObjectives: () => void;
+  refreshKey?: number;
 }
 
 interface PeriodStats {
@@ -52,7 +53,8 @@ interface ObjectiveSummary {
 export function DashboardObjectivesWidget({ 
   driverId, 
   driverName,
-  onNavigateToObjectives 
+  onNavigateToObjectives,
+  refreshKey = 0
 }: DashboardObjectivesWidgetProps) {
   const [summary, setSummary] = useState<ObjectiveSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,6 +157,24 @@ export function DashboardObjectivesWidget({
             .lte('created_at', `${yearEnd}T23:59:59`)
         ]);
 
+        // Also fetch external platform entries for all periods to include in consolidated stats
+        const [todayExternal, weekExternal, monthExternal, yearExternal] = await Promise.all([
+          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('entry_date', today).eq('is_solocab', false),
+          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', weekStart).lte('entry_date', weekEnd),
+          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', monthStart).lte('entry_date', monthEnd),
+          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', yearStart).lte('entry_date', yearEnd),
+        ]);
+
+        const sumEntries = (data: any[] | null) => ({
+          revenue: data?.reduce((s, e) => s + (e.revenue || 0), 0) || 0,
+          courses: data?.reduce((s, e) => s + (e.courses_count || 0), 0) || 0,
+        });
+
+        const extToday = sumEntries(todayExternal.data);
+        const extWeek = sumEntries(weekExternal.data);
+        const extMonth = sumEntries(monthExternal.data);
+        const extYear = sumEntries(yearExternal.data);
+
         // Calculate stats for each period
         const calcPeriodStats = (courses: any[] | null, clients: any[] | null): PeriodStats => ({
           courses: courses?.length || 0,
@@ -163,10 +183,10 @@ export function DashboardObjectivesWidget({
         });
 
         const soloCabStats: SoloCabStats = {
-          today: calcPeriodStats(todayCourses.data, todayClients.data),
-          week: calcPeriodStats(weekCourses.data, weekClients.data),
-          month: calcPeriodStats(monthCourses.data, monthClients.data),
-          year: calcPeriodStats(yearCourses.data, yearClients.data)
+          today: { ...calcPeriodStats(todayCourses.data, todayClients.data), revenue: calcPeriodStats(todayCourses.data, todayClients.data).revenue + extToday.revenue, courses: calcPeriodStats(todayCourses.data, todayClients.data).courses + extToday.courses },
+          week: { ...calcPeriodStats(weekCourses.data, weekClients.data), revenue: calcPeriodStats(weekCourses.data, weekClients.data).revenue + extWeek.revenue, courses: calcPeriodStats(weekCourses.data, weekClients.data).courses + extWeek.courses },
+          month: { ...calcPeriodStats(monthCourses.data, monthClients.data), revenue: calcPeriodStats(monthCourses.data, monthClients.data).revenue + extMonth.revenue, courses: calcPeriodStats(monthCourses.data, monthClients.data).courses + extMonth.courses },
+          year: { ...calcPeriodStats(yearCourses.data, yearClients.data), revenue: calcPeriodStats(yearCourses.data, yearClients.data).revenue + extYear.revenue, courses: calcPeriodStats(yearCourses.data, yearClients.data).courses + extYear.courses },
         };
 
         const hasObjectives = !!objectivesRes.data;
@@ -220,7 +240,7 @@ export function DashboardObjectivesWidget({
     };
 
     fetchSummary();
-  }, [driverId]);
+  }, [driverId, refreshKey]);
 
   if (loading) {
     return (
