@@ -82,7 +82,7 @@ export function DashboardObjectivesWidget({
             .eq('period_type', 'daily')
             .maybeSingle(),
           supabase
-            .from('driver_work_schedule')
+            .from('driver_work_schedules')
             .select('*')
             .eq('driver_id', driverId)
             .eq('day_of_week', now.getDay()),

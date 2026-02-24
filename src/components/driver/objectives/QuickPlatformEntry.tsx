@@ -234,8 +234,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
   const grandTotalRevenue = soloCabStats.revenue + totalExternalRevenue;
   const grandTotalCourses = soloCabStats.coursesCount + totalExternalCourses;
 
-  // Don't show if no external platforms configured
-  if (!loading && platforms.length === 0) return null;
+  // Always show - even without external platforms, show SoloCab stats
 
   return (
     <Card className="relative overflow-hidden border-border/50">
