@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen, AlignLeft } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
@@ -10,13 +10,14 @@ import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
 import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
+import { generateEbookRawTextPdf } from "@/lib/ebooks/ebookRawTextPdfGenerator";
 
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text") => {
     setLoading(type);
     try {
       switch (type) {
@@ -47,6 +48,10 @@ const AdminFlyers = () => {
         case "ebook-solocab":
           await generateSolocabEbook();
           toast.success("eBook SoloCab téléchargé !");
+          break;
+        case "ebook-raw-text":
+          await generateEbookRawTextPdf();
+          toast.success("Texte intégral eBook téléchargé !");
           break;
       }
     } catch (error) {
@@ -113,6 +118,14 @@ const AdminFlyers = () => {
       icon: BookOpen,
       color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
       gradient: "from-rose-500 to-pink-500",
+    },
+    {
+      id: "ebook-raw-text" as const,
+      title: "📝 Texte Intégral eBook VTC",
+      description: "Le texte brut complet de \"L'Illusion des Applications\" en PDF propre, sans mise en page marketing. Idéal pour relecture ou édition.",
+      icon: AlignLeft,
+      color: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+      gradient: "from-slate-500 to-gray-500",
     },
   ];
 
