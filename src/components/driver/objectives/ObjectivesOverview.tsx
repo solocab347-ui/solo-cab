@@ -11,7 +11,9 @@ import {
   Star,
   Target,
   CheckCircle2,
-  AlertTriangle
+  Flame,
+  Compass,
+  Rocket
 } from 'lucide-react';
 
 interface ObjectivesOverviewProps {
@@ -32,25 +34,61 @@ const PERIOD_COLORS = {
   yearly: 'from-green-500 to-emerald-500',
 };
 
+// Calculate how far into the period we are (0-1)
+const getPeriodProgress = (period: string): number => {
+  const now = new Date();
+  switch (period) {
+    case 'daily': {
+      const hours = now.getHours();
+      return hours / 24;
+    }
+    case 'weekly': {
+      const day = now.getDay() || 7; // 1=Mon, 7=Sun
+      return day / 7;
+    }
+    case 'monthly': {
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      return dayOfMonth / daysInMonth;
+    }
+    case 'yearly': {
+      const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+      const endOfYear = new Date(now.getFullYear() + 1, 0, 1).getTime();
+      return (now.getTime() - startOfYear) / (endOfYear - startOfYear);
+    }
+    default: return 0;
+  }
+};
+
 export function ObjectivesOverview({ progress }: ObjectivesOverviewProps) {
-  const getStatusBadge = (percentage: number) => {
+  const getStatusBadge = (percentage: number, period: string) => {
+    const periodProgress = getPeriodProgress(period);
+    
     if (percentage >= 100) {
-      return <Badge className="bg-green-500/20 text-green-500 border-green-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Atteint</Badge>;
+      return <Badge className="bg-green-500/20 text-green-500 border-green-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Atteint 🎉</Badge>;
     }
     if (percentage >= 75) {
-      return <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30">En bonne voie</Badge>;
+      return <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30"><Flame className="w-3 h-3 mr-1" />En bonne voie</Badge>;
+    }
+    // If we're early in the period, be encouraging regardless of percentage
+    if (periodProgress < 0.3) {
+      return <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30"><Rocket className="w-3 h-3 mr-1" />C'est parti !</Badge>;
     }
     if (percentage >= 50) {
-      return <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30">À surveiller</Badge>;
+      return <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30"><Compass className="w-3 h-3 mr-1" />En progression</Badge>;
     }
-    return <Badge className="bg-destructive/20 text-destructive border-destructive/30"><AlertTriangle className="w-3 h-3 mr-1" />Retard</Badge>;
+    // Even for low %, use encouraging language
+    if (periodProgress < 0.6) {
+      return <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30"><Compass className="w-3 h-3 mr-1" />Continue !</Badge>;
+    }
+    return <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30"><Target className="w-3 h-3 mr-1" />À accélérer</Badge>;
   };
 
   const getProgressColor = (percentage: number) => {
     if (percentage >= 100) return 'bg-green-500';
     if (percentage >= 75) return 'bg-blue-500';
     if (percentage >= 50) return 'bg-amber-500';
-    return 'bg-destructive';
+    return 'bg-orange-400';
   };
 
   if (progress.length === 0) {
@@ -82,7 +120,7 @@ export function ObjectivesOverview({ progress }: ObjectivesOverviewProps) {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{PERIOD_LABELS[p.period]}</CardTitle>
-                  {p.objective && getStatusBadge(avgPercentage)}
+                  {p.objective && getStatusBadge(avgPercentage, p.period)}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
