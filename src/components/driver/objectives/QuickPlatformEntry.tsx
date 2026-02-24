@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -23,7 +22,17 @@ import {
   AlertCircle,
   Sparkles,
   RefreshCw,
-  PlusCircle
+  PlusCircle,
+  Settings,
+  Plus,
+  X,
+  Zap,
+  Music,
+  Briefcase,
+  Navigation,
+  Crown,
+  Star,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,24 +58,105 @@ interface EntryState {
   isModified: boolean;
 }
 
-// SoloCab auto stats
 interface SoloCabStats {
   revenue: number;
   coursesCount: number;
   newClientsCount: number;
 }
 
+// Mapping from onboarding platform IDs to names/icons
+const ONBOARDING_PLATFORM_MAP: Record<string, { name: string; icon: string }> = {
+  uber: { name: 'Uber', icon: 'car' },
+  bolt: { name: 'Bolt', icon: 'zap' },
+  heetch: { name: 'Heetch', icon: 'music' },
+  marcel: { name: 'Marcel', icon: 'briefcase' },
+  freenow: { name: 'FreeNow', icon: 'navigation' },
+  lecab: { name: 'LeCab', icon: 'crown' },
+  kapten: { name: 'Kapten', icon: 'star' },
+  clients_directs: { name: 'Clients directs', icon: 'users' },
+};
+
+const ICON_MAP: Record<string, any> = {
+  car: Car,
+  zap: Zap,
+  music: Music,
+  briefcase: Briefcase,
+  navigation: Navigation,
+  crown: Crown,
+  star: Star,
+  users: Users,
+};
+
+const AVAILABLE_PLATFORMS = [
+  { name: 'Uber', icon: 'car' },
+  { name: 'Bolt', icon: 'zap' },
+  { name: 'Heetch', icon: 'music' },
+  { name: 'Marcel', icon: 'briefcase' },
+  { name: 'FreeNow', icon: 'navigation' },
+  { name: 'LeCab', icon: 'crown' },
+  { name: 'Kapten', icon: 'star' },
+  { name: 'Clients directs', icon: 'users' },
+];
+
 export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntryProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const [platforms, setPlatforms] = useState<PlatformData[]>([]);
   const [entries, setEntries] = useState<EntryState[]>([]);
   const [soloCabStats, setSoloCabStats] = useState<SoloCabStats>({ revenue: 0, coursesCount: 0, newClientsCount: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [addingPlatform, setAddingPlatform] = useState(false);
 
   const today = new Date();
   const dateStr = format(today, 'yyyy-MM-dd');
+
+  // Auto-seed platforms from onboarding objectives_data if driver_platforms is empty
+  const seedPlatformsFromOnboarding = useCallback(async (existingPlatforms: PlatformData[]) => {
+    if (!driverId || existingPlatforms.length > 0) return existingPlatforms;
+
+    try {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('objectives_data')
+        .eq('id', driverId)
+        .single();
+
+      const objectivesData = driver?.objectives_data as Record<string, any> | null;
+      const platformsUsed = objectivesData?.platformsUsed as string[] | undefined;
+
+      if (!platformsUsed || platformsUsed.length === 0) return existingPlatforms;
+
+      // Insert platforms from onboarding into driver_platforms
+      const toInsert = platformsUsed.map((pid, index) => {
+        const mapped = ONBOARDING_PLATFORM_MAP[pid];
+        return {
+          driver_id: driverId,
+          platform_name: mapped?.name || pid,
+          platform_icon: mapped?.icon || 'car',
+          display_order: index,
+          is_active: true,
+        };
+      });
+
+      const { data: inserted, error } = await supabase
+        .from('driver_platforms')
+        .insert(toInsert)
+        .select('id, platform_name, platform_icon');
+
+      if (error) {
+        console.error('Error seeding platforms:', error);
+        return existingPlatforms;
+      }
+
+      console.log('✅ Plateformes auto-importées depuis l\'inscription:', inserted?.length);
+      return inserted || existingPlatforms;
+    } catch (error) {
+      console.error('Error seeding platforms from onboarding:', error);
+      return existingPlatforms;
+    }
+  }, [driverId]);
 
   // Load platforms + existing entries + SoloCab stats
   const loadData = useCallback(async () => {
@@ -95,7 +185,10 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           .lte('scheduled_date', `${dateStr}T23:59:59`)
       ]);
 
-      const platformsList = platformsRes.data || [];
+      let platformsList = platformsRes.data || [];
+      
+      // Auto-seed from onboarding if empty
+      platformsList = await seedPlatformsFromOnboarding(platformsList);
       setPlatforms(platformsList);
 
       // SoloCab auto stats
@@ -103,7 +196,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
       setSoloCabStats({
         revenue: courses.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0),
         coursesCount: courses.length,
-        newClientsCount: 0, // simplified
+        newClientsCount: 0,
       });
 
       // Build entries for each platform
@@ -127,7 +220,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
     } finally {
       setLoading(false);
     }
-  }, [driverId, dateStr]);
+  }, [driverId, dateStr, seedPlatformsFromOnboarding]);
 
   useEffect(() => {
     loadData();
@@ -170,7 +263,6 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
     }
   }, [driverId, dateStr, soloCabStats]);
 
-  // Auto-sync SoloCab on load
   useEffect(() => {
     if (!loading && soloCabStats.coursesCount >= 0) {
       syncSoloCab();
@@ -228,17 +320,74 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
     }
   };
 
+  // Add a platform
+  const addPlatform = async (name: string, icon: string) => {
+    if (platforms.some(p => p.platform_name.toLowerCase() === name.toLowerCase())) {
+      toast.error('Cette plateforme existe déjà');
+      return;
+    }
+    setAddingPlatform(true);
+    try {
+      const { data, error } = await supabase
+        .from('driver_platforms')
+        .insert({
+          driver_id: driverId,
+          platform_name: name,
+          platform_icon: icon,
+          display_order: platforms.length,
+          is_active: true,
+        })
+        .select('id, platform_name, platform_icon')
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setPlatforms(prev => [...prev, data]);
+        setEntries(prev => [...prev, {
+          platformId: data.id,
+          platformName: data.platform_name,
+          revenue: 0,
+          coursesCount: 0,
+          hoursWorked: 0,
+          kmDriven: 0,
+          isSaved: false,
+          isModified: false,
+        }]);
+        toast.success(`${name} ajouté`);
+      }
+    } catch (error) {
+      console.error('Error adding platform:', error);
+      toast.error("Erreur lors de l'ajout");
+    } finally {
+      setAddingPlatform(false);
+    }
+  };
+
+  // Remove a platform
+  const removePlatform = async (platformId: string) => {
+    try {
+      await supabase.from('driver_platforms').update({ is_active: false }).eq('id', platformId);
+      setPlatforms(prev => prev.filter(p => p.id !== platformId));
+      setEntries(prev => prev.filter(e => e.platformId !== platformId));
+      toast.success('Plateforme retirée');
+    } catch (error) {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
   const hasUnsaved = entries.some(e => e.isModified);
   const totalExternalRevenue = entries.reduce((sum, e) => sum + e.revenue, 0);
   const totalExternalCourses = entries.reduce((sum, e) => sum + e.coursesCount, 0);
   const grandTotalRevenue = soloCabStats.revenue + totalExternalRevenue;
   const grandTotalCourses = soloCabStats.coursesCount + totalExternalCourses;
 
-  // Always show - even without external platforms, show SoloCab stats
+  const availableToAdd = AVAILABLE_PLATFORMS.filter(
+    ap => !platforms.some(p => p.platform_name.toLowerCase() === ap.name.toLowerCase())
+  );
 
   return (
     <Card className="relative overflow-hidden border-border/50">
-      {/* Header - always visible */}
+      {/* Header */}
       <CardHeader
         className="pb-2 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
@@ -313,87 +462,187 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {entries.map((entry, index) => (
-                    <div key={entry.platformId}>
-                      {index > 0 && <Separator className="mb-3" />}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">{entry.platformName}</span>
-                        {entry.isSaved && !entry.isModified && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            <CheckCircle2 className="w-3 h-3 mr-0.5" /> Sauvé
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[10px] flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-emerald-500" /> CA (€)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.revenue || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] flex items-center gap-1">
-                            <Car className="w-3 h-3 text-blue-500" /> Courses
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.coursesCount || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-orange-500" /> Heures
-                          </Label>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={entry.hoursWorked || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-red-500" /> Km
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.kmDriven || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
+                  {entries.length === 0 && !showManage && (
+                    <div className="text-center py-3">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Aucune plateforme externe configurée
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); setShowManage(true); }}
+                        className="gap-1"
+                      >
+                        <Plus className="w-4 h-4" /> Ajouter des plateformes
+                      </Button>
                     </div>
-                  ))}
+                  )}
+
+                  {entries.map((entry, index) => {
+                    const platform = platforms.find(p => p.id === entry.platformId);
+                    const IconComp = ICON_MAP[platform?.platform_icon || 'car'] || Car;
+                    return (
+                      <div key={entry.platformId}>
+                        {index > 0 && <Separator className="mb-3" />}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <IconComp className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">{entry.platformName}</span>
+                          </div>
+                          {entry.isSaved && !entry.isModified && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              <CheckCircle2 className="w-3 h-3 mr-0.5" /> Sauvé
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3 text-emerald-500" /> CA (€)
+                            </Label>
+                            <Input
+                              type="number"
+                              value={entry.revenue || ''}
+                              onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Car className="w-3 h-3 text-blue-500" /> Courses
+                            </Label>
+                            <Input
+                              type="number"
+                              value={entry.coursesCount || ''}
+                              onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-orange-500" /> Heures
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              value={entry.hoursWorked || ''}
+                              onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-red-500" /> Km
+                            </Label>
+                            <Input
+                              type="number"
+                              value={entry.kmDriven || ''}
+                              onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {/* Save button */}
+                  {entries.length > 0 && (
+                    <Button
+                      onClick={saveAll}
+                      disabled={saving || !hasUnsaved}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : hasUnsaved ? (
+                        <Save className="w-4 h-4 mr-2" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                      )}
+                      {saving ? 'Enregistrement...' : hasUnsaved ? 'Valider les résultats' : 'Tout est à jour'}
+                    </Button>
+                  )}
+
+                  <Separator />
+
+                  {/* Manage platforms toggle */}
                   <Button
-                    onClick={saveAll}
-                    disabled={saving || !hasUnsaved}
-                    className="w-full"
+                    variant="ghost"
                     size="sm"
+                    onClick={(e) => { e.stopPropagation(); setShowManage(!showManage); }}
+                    className="w-full gap-2 text-muted-foreground"
                   >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : hasUnsaved ? (
-                      <Save className="w-4 h-4 mr-2" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                    )}
-                    {saving ? 'Enregistrement...' : hasUnsaved ? 'Valider les résultats' : 'Tout est à jour'}
+                    <Settings className="w-4 h-4" />
+                    {showManage ? 'Fermer la gestion' : 'Gérer mes plateformes'}
                   </Button>
+
+                  {/* Platform management panel */}
+                  <AnimatePresence>
+                    {showManage && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="space-y-3"
+                      >
+                        {/* Current platforms with remove */}
+                        {platforms.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">Mes plateformes actives</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {platforms.map(p => {
+                                const IconComp = ICON_MAP[p.platform_icon] || Car;
+                                return (
+                                  <Badge
+                                    key={p.id}
+                                    variant="secondary"
+                                    className="gap-1 cursor-pointer hover:bg-destructive/20 hover:text-destructive pr-1"
+                                    onClick={() => removePlatform(p.id)}
+                                  >
+                                    <IconComp className="w-3 h-3" />
+                                    {p.platform_name}
+                                    <X className="w-3 h-3 ml-0.5" />
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Available platforms to add */}
+                        {availableToAdd.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">Ajouter une plateforme</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {availableToAdd.map(ap => {
+                                const IconComp = ICON_MAP[ap.icon] || Car;
+                                return (
+                                  <Button
+                                    key={ap.name}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1 h-7 text-xs"
+                                    disabled={addingPlatform}
+                                    onClick={() => addPlatform(ap.name, ap.icon)}
+                                  >
+                                    <IconComp className="w-3 h-3" />
+                                    {ap.name}
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </CardContent>
