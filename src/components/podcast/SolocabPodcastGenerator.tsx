@@ -148,17 +148,54 @@ const SolocabPodcastGenerator = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Vous devez être connecté"); return; }
 
-      const fullScript = getFullPodcastScript();
-      toast.info("Génération de l'audio eBook complet en un seul bloc...", { duration: 30000 });
-      setProgress(15);
+      const chapters = getAllChaptersOnly();
+      const totalChapters = chapters.length;
+      const chapterBlobs: Blob[] = [];
+      let skipped = 0;
 
-      const audioBlob = await generateSingleAudio(fullScript.script, session);
-      setProgress(90);
+      // Check how many ebook chapters are already saved
+      const allSaved = chapters.every(ch => isSegmentSaved(`ebook-${ch.id}`));
 
-      await saveSegment("ebook-full", audioBlob);
+      if (allSaved) {
+        toast.info("Assemblage de l'audio eBook à partir des chapitres sauvegardés (0 crédit)...", { duration: 5000 });
+        for (let i = 0; i < totalChapters; i++) {
+          setProgress(Math.round(10 + (80 * i) / totalChapters));
+          const res = await fetch(savedSegments[`ebook-${chapters[i].id}`]);
+          chapterBlobs.push(await res.blob());
+        }
+      } else {
+        const savedCount = chapters.filter(ch => isSegmentSaved(`ebook-${ch.id}`)).length;
+        if (savedCount > 0) {
+          toast.info(`Reprise : ${savedCount}/${totalChapters} chapitres déjà générés, on continue...`, { duration: 10000 });
+        } else {
+          toast.info(`Génération de l'audio eBook (${totalChapters} chapitres)...`, { duration: 30000 });
+        }
+
+        for (let i = 0; i < totalChapters; i++) {
+          const ch = chapters[i];
+          setProgress(Math.round(10 + (80 * i) / totalChapters));
+
+          if (isSegmentSaved(`ebook-${ch.id}`)) {
+            skipped++;
+            const res = await fetch(savedSegments[`ebook-${ch.id}`]);
+            chapterBlobs.push(await res.blob());
+            continue;
+          }
+
+          toast.info(`Chapitre ${i + 1}/${totalChapters} : "${ch.title}"`, { duration: 8000 });
+          const blob = await generateSingleAudio(ch.script, session);
+          chapterBlobs.push(blob);
+          await saveSegment(`ebook-${ch.id}`, blob);
+        }
+        if (skipped > 0) toast.info(`${skipped} chapitres récupérés, reprise effectuée.`);
+      }
+
+      const fullBlob = new Blob(chapterBlobs, { type: "audio/mpeg" });
+      await saveSegment("ebook-full", fullBlob);
+      setProgress(95);
 
       // Auto-download
-      const freshUrl = URL.createObjectURL(audioBlob);
+      const freshUrl = URL.createObjectURL(fullBlob);
       const a = document.createElement("a");
       a.href = freshUrl;
       a.download = "eBook-Audio-SoloCab-Complet.mp3";
@@ -169,12 +206,12 @@ const SolocabPodcastGenerator = () => {
       toast.success("Audio eBook complet généré et téléchargé !");
     } catch (error: any) {
       console.error("Ebook audio generation error:", error);
-      toast.error(`Erreur : ${error.message}`);
+      toast.error(`Erreur : ${error.message}. Les chapitres déjà générés sont sauvegardés — relancez pour reprendre.`);
     } finally {
       setGenerating(null);
       setProgress(0);
     }
-  }, [generateSingleAudio, saveSegment]);
+  }, [generateSingleAudio, savedSegments, isSegmentSaved, saveSegment]);
 
   const handlePlay = (episodeId: string) => {
     const url = getAudioUrl(episodeId);
