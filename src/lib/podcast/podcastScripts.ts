@@ -64,6 +64,7 @@ export function getChapterPodcastScript(chapterIdx: number): PodcastEpisode {
 }
 
 // Chapter script WITHOUT intro/outro (for full podcast assembly)
+// Uses different ID prefix "raw-chapter-" to avoid reusing old cached episodes with intros/outros
 export function getChapterScriptOnly(chapterIdx: number): PodcastEpisode {
   const chapter = audiobookChapters[chapterIdx];
   if (!chapter) {
@@ -71,7 +72,7 @@ export function getChapterScriptOnly(chapterIdx: number): PodcastEpisode {
   }
 
   return {
-    id: `chapter-${chapterIdx}`,
+    id: `raw-chapter-${chapterIdx}`,
     title: `Épisode ${chapterIdx + 1} — ${chapter.title}`,
     description: chapter.subtitle || chapter.paragraphs[0]?.slice(0, 120) + "...",
     script: buildChapterScript(chapterIdx),
