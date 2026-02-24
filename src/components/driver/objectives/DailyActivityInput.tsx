@@ -20,14 +20,13 @@ import {
   Sparkles,
   RefreshCw,
   Save,
-  Plus,
-  ChevronDown,
-  ChevronUp,
   Check,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DriverPlatform, DriverDailyEntry } from './types';
+import { DriverPlatform } from './types';
 
 interface DailyActivityInputProps {
   driverId: string;
@@ -46,17 +45,17 @@ interface PlatformEntry {
   kmDriven: number;
   isSaved: boolean;
   isLoading: boolean;
+  isModified: boolean;
 }
 
 export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: DailyActivityInputProps) {
   const today = new Date();
   const [selectedDate] = useState(today);
   const [entries, setEntries] = useState<PlatformEntry[]>([]);
-  const [soloCabStats, setSoloCabStats] = useState<any>(null);
   const [loadingSoloCab, setLoadingSoloCab] = useState(true);
-  const [showPlatforms, setShowPlatforms] = useState(false);
+  const [soloCabSynced, setSoloCabSynced] = useState(false);
   const [notes, setNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
 
   // Initialize entries for SoloCab + external platforms
   useEffect(() => {
@@ -72,6 +71,7 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
         kmDriven: 0,
         isSaved: false,
         isLoading: true,
+        isModified: false,
       },
       ...platforms.map(p => ({
         platformId: p.id,
@@ -84,20 +84,21 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
         kmDriven: 0,
         isSaved: false,
         isLoading: false,
+        isModified: false,
       })),
     ];
     setEntries(initialEntries);
   }, [platforms]);
 
-  // Fetch SoloCab stats automatically
-  const fetchSoloCabStats = useCallback(async () => {
+  // Fetch SoloCab stats and AUTO-PERSIST to driver_daily_entries
+  const fetchAndSyncSoloCabStats = useCallback(async () => {
     if (!driverId) return;
     setLoadingSoloCab(true);
     
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // Get courses completed today
+      // Get completed & paid courses today
       const { data: courses } = await supabase
         .from('courses')
         .select('id, final_payment_amount, guest_estimated_price, distance_km, duration_minutes, client_id')
@@ -122,30 +123,55 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
         hoursWorked: courses?.reduce((sum, c: any) => sum + ((c.duration_minutes || 0) / 60), 0) || 0,
       };
 
-      setSoloCabStats(stats);
-      
-      // Update SoloCab entry
+      // Update UI
       setEntries(prev => prev.map(e => 
         e.isSolocab 
-          ? { 
-              ...e, 
-              revenue: stats.revenue,
-              coursesCount: stats.coursesCount,
-              newClientsCount: stats.newClientsCount,
-              kmDriven: stats.kmDriven,
-              hoursWorked: stats.hoursWorked,
-              isLoading: false,
-            }
+          ? { ...e, ...stats, isLoading: false, isSaved: true, isModified: false }
           : e
       ));
+
+      // AUTO-PERSIST SoloCab data to driver_daily_entries for progress tracking
+      const entryData = {
+        driver_id: driverId,
+        entry_date: dateStr,
+        platform_id: null as string | null,
+        is_solocab: true,
+        revenue: stats.revenue,
+        courses_count: stats.coursesCount,
+        new_clients_count: stats.newClientsCount,
+        hours_worked: stats.hoursWorked,
+        km_driven: stats.kmDriven,
+      };
+
+      const { data: existing } = await supabase
+        .from('driver_daily_entries')
+        .select('id')
+        .eq('driver_id', driverId)
+        .eq('entry_date', dateStr)
+        .eq('is_solocab', true)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('driver_daily_entries')
+          .update({ ...entryData, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('driver_daily_entries')
+          .insert(entryData);
+      }
+
+      setSoloCabSynced(true);
+      onEntryUpdated?.();
     } catch (error) {
-      console.error('Error fetching SoloCab stats:', error);
+      console.error('Error syncing SoloCab stats:', error);
     } finally {
       setLoadingSoloCab(false);
     }
-  }, [driverId, selectedDate]);
+  }, [driverId, selectedDate, onEntryUpdated]);
 
-  // Fetch existing entries for today
+  // Fetch existing entries for today (external platforms)
   const fetchExistingEntries = useCallback(async () => {
     if (!driverId) return;
     
@@ -164,21 +190,21 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
             (!e.isSolocab && ex.platform_id === e.platformId)
           );
           
-          if (existing) {
+          if (existing && !e.isSolocab) {
             return {
               ...e,
-              revenue: e.isSolocab ? e.revenue : existing.revenue || 0,
-              coursesCount: e.isSolocab ? e.coursesCount : existing.courses_count || 0,
-              newClientsCount: e.isSolocab ? e.newClientsCount : existing.new_clients_count || 0,
-              hoursWorked: e.isSolocab ? e.hoursWorked : existing.hours_worked || 0,
-              kmDriven: e.isSolocab ? e.kmDriven : existing.km_driven || 0,
+              revenue: existing.revenue || 0,
+              coursesCount: existing.courses_count || 0,
+              newClientsCount: existing.new_clients_count || 0,
+              hoursWorked: existing.hours_worked || 0,
+              kmDriven: existing.km_driven || 0,
               isSaved: true,
+              isModified: false,
             };
           }
           return e;
         }));
 
-        // Get notes from any entry
         const entryWithNotes = existingEntries.find(e => e.notes);
         if (entryWithNotes?.notes) {
           setNotes(entryWithNotes.notes);
@@ -190,14 +216,14 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
   }, [driverId, selectedDate]);
 
   useEffect(() => {
-    fetchSoloCabStats();
+    fetchAndSyncSoloCabStats();
     fetchExistingEntries();
-  }, [fetchSoloCabStats, fetchExistingEntries]);
+  }, [fetchAndSyncSoloCabStats, fetchExistingEntries]);
 
   const updateEntry = (platformId: string | null, field: keyof PlatformEntry, value: number) => {
     setEntries(prev => prev.map(e => 
-      (e.platformId === platformId || (platformId === null && e.isSolocab))
-        ? { ...e, [field]: value, isSaved: false }
+      (e.platformId === platformId && !e.isSolocab)
+        ? { ...e, [field]: value, isSaved: false, isModified: true }
         : e
     ));
   };
@@ -214,7 +240,6 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // Check for existing entry
       const { data: existing } = await supabase
         .from('driver_daily_entries')
         .select('id')
@@ -250,12 +275,12 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
 
       setEntries(prev => prev.map(e => 
         (e.platformId === entry.platformId && e.isSolocab === entry.isSolocab)
-          ? { ...e, isSaved: true, isLoading: false }
+          ? { ...e, isSaved: true, isLoading: false, isModified: false }
           : e
       ));
 
-      toast.success(`${entry.platformName} enregistré`);
       onEntryUpdated?.();
+      return true;
     } catch (error) {
       console.error('Error saving entry:', error);
       toast.error('Erreur lors de l\'enregistrement');
@@ -264,17 +289,36 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
           ? { ...e, isLoading: false }
           : e
       ));
+      return false;
     }
+  };
+
+  const saveAllPlatforms = async () => {
+    setSavingAll(true);
+    const platformsToSave = entries.filter(e => !e.isSolocab && e.isModified);
+    
+    let successCount = 0;
+    for (const entry of platformsToSave) {
+      const ok = await saveEntry(entry);
+      if (ok) successCount++;
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} plateforme${successCount > 1 ? 's' : ''} enregistrée${successCount > 1 ? 's' : ''}`);
+      onEntryUpdated?.();
+    }
+    setSavingAll(false);
   };
 
   const totalRevenue = entries.reduce((sum, e) => sum + e.revenue, 0);
   const totalCourses = entries.reduce((sum, e) => sum + e.coursesCount, 0);
   const soloCabEntry = entries.find(e => e.isSolocab);
   const platformEntries = entries.filter(e => !e.isSolocab);
+  const hasUnsavedChanges = platformEntries.some(e => e.isModified);
 
   return (
     <div className="space-y-4">
-      {/* Date Header */}
+      {/* Date Header + Total */}
       <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -285,9 +329,9 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Total du jour</p>
+              <p className="text-sm text-muted-foreground">Total consolidé</p>
               <p className="text-2xl font-bold text-foreground">{totalRevenue.toFixed(0)}€</p>
-              <p className="text-xs text-muted-foreground">{totalCourses} courses</p>
+              <p className="text-xs text-muted-foreground">{totalCourses} courses • SoloCab + Apps</p>
             </div>
           </div>
         </CardContent>
@@ -304,15 +348,23 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
                   SoloCab
-                  <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {soloCabSynced ? (
+                      <><CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" /> Synchronisé</>
+                    ) : (
+                      'Auto'
+                    )}
+                  </Badge>
                 </CardTitle>
-                <p className="text-xs text-muted-foreground">Synchronisation automatique</p>
+                <p className="text-xs text-muted-foreground">
+                  Courses terminées & encaissées (CB, espèces, virement)
+                </p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchSoloCabStats}
+              onClick={fetchAndSyncSoloCabStats}
               disabled={loadingSoloCab}
             >
               {loadingSoloCab ? (
@@ -347,126 +399,129 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
         </CardContent>
       </Card>
 
-      {/* External Platforms */}
-      {platformEntries.length > 0 && (
+      {/* External Platforms - Always visible */}
+      {platformEntries.length > 0 ? (
         <Card>
           <CardHeader className="pb-2">
-            <Button
-              variant="ghost"
-              className="w-full flex items-center justify-between p-0 h-auto"
-              onClick={() => setShowPlatforms(!showPlatforms)}
-            >
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Car className="w-5 h-5 text-muted-foreground" />
-                <span className="font-semibold">Autres plateformes</span>
-                <Badge variant="outline">{platformEntries.length}</Badge>
+                <span className="font-semibold">Résultats des applications</span>
               </div>
-              {showPlatforms ? (
-                <ChevronUp className="w-5 h-5" />
-              ) : (
-                <ChevronDown className="w-5 h-5" />
+              {hasUnsavedChanges && (
+                <Badge variant="outline" className="text-amber-600 border-amber-300">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  Non sauvé
+                </Badge>
               )}
-            </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Saisissez vos chiffres Uber, Bolt, etc. pour un suivi consolidé de vos objectifs
+            </p>
           </CardHeader>
 
-          <AnimatePresence>
-            {showPlatforms && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-              >
-                <CardContent className="pt-0 space-y-4">
-                  {platformEntries.map((entry) => (
-                    <div key={entry.platformId} className="space-y-3">
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{entry.platformName}</span>
-                        {entry.isSaved && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            <Check className="w-3 h-3 mr-1" />
-                            Enregistré
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-emerald-500" />
-                            CA (€)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.revenue || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Car className="w-3 h-3 text-blue-500" />
-                            Courses
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.coursesCount || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-orange-500" />
-                            Heures
-                          </Label>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={entry.hoursWorked || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-red-500" />
-                            Km
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.kmDriven || ''}
-                            onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                            className="h-9"
-                          />
-                        </div>
-                      </div>
+          <CardContent className="pt-0 space-y-4">
+            {platformEntries.map((entry, index) => (
+              <div key={entry.platformId}>
+                {index > 0 && <Separator className="mb-4" />}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium text-sm">{entry.platformName}</span>
+                  {entry.isSaved && !entry.isModified && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      <Check className="w-3 h-3 mr-1" />
+                      Enregistré
+                    </Badge>
+                  )}
+                  {entry.isModified && (
+                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
+                      Modifié
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      CA (€)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={entry.revenue || ''}
+                      onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Car className="w-3 h-3 text-blue-500" />
+                      Courses
+                    </Label>
+                    <Input
+                      type="number"
+                      value={entry.coursesCount || ''}
+                      onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-orange-500" />
+                      Heures
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      value={entry.hoursWorked || ''}
+                      onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-red-500" />
+                      Km
+                    </Label>
+                    <Input
+                      type="number"
+                      value={entry.kmDriven || ''}
+                      onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
 
-                      <Button
-                        size="sm"
-                        onClick={() => saveEntry(entry)}
-                        disabled={entry.isLoading || entry.isSaved}
-                        className="w-full"
-                      >
-                        {entry.isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : entry.isSaved ? (
-                          <Check className="w-4 h-4 mr-2" />
-                        ) : (
-                          <Save className="w-4 h-4 mr-2" />
-                        )}
-                        {entry.isSaved ? 'Enregistré' : 'Enregistrer'}
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {/* Save All Button */}
+            <Button
+              onClick={saveAllPlatforms}
+              disabled={savingAll || !hasUnsavedChanges}
+              className="w-full mt-4"
+              size="lg"
+            >
+              {savingAll ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : hasUnsavedChanges ? (
+                <Save className="w-4 h-4 mr-2" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+              )}
+              {savingAll ? 'Enregistrement...' : hasUnsavedChanges ? 'Valider les résultats' : 'Tout est à jour'}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-amber-500/10 border-amber-500/20">
+          <CardContent className="py-4">
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              💡 Ajoutez vos plateformes (Uber, Bolt...) dans l'onglet "Plateformes" pour saisir vos revenus externes et les inclure dans vos objectifs.
+            </p>
+          </CardContent>
         </Card>
       )}
 
@@ -485,17 +540,6 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
           />
         </CardContent>
       </Card>
-
-      {/* No platforms message */}
-      {platformEntries.length === 0 && (
-        <Card className="bg-amber-500/10 border-amber-500/20">
-          <CardContent className="py-4">
-            <p className="text-sm text-amber-600 dark:text-amber-400">
-              💡 Ajoutez vos plateformes (Uber, Bolt...) dans l'onglet "Plateformes" pour saisir vos revenus externes.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
