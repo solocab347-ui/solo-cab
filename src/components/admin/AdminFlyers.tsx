@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen, AlignLeft } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift, BookOpen, AlignLeft, BookOpenCheck } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
@@ -11,13 +11,14 @@ import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
 import { generateEbookRawTextPdf } from "@/lib/ebooks/ebookRawTextPdfGenerator";
+import { generateGuideIndependantPdf } from "@/lib/ebooks/guideIndependantPdfGenerator";
 
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant") => {
     setLoading(type);
     try {
       switch (type) {
@@ -52,6 +53,10 @@ const AdminFlyers = () => {
         case "ebook-raw-text":
           await generateEbookRawTextPdf();
           toast.success("Texte intégral eBook téléchargé !");
+          break;
+        case "guide-independant":
+          await generateGuideIndependantPdf();
+          toast.success("Guide du Chauffeur Indépendant téléchargé !");
           break;
       }
     } catch (error) {
@@ -126,6 +131,14 @@ const AdminFlyers = () => {
       icon: AlignLeft,
       color: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
       gradient: "from-slate-500 to-gray-500",
+    },
+    {
+      id: "guide-independant" as const,
+      title: "📘 Guide du Chauffeur Indépendant",
+      description: "eBook premium (4,99 €) : 80+ pages pour construire sa clientèle privée de A à Z. Mindset, prospection, fidélisation, outils, roadmap 12 mois.",
+      icon: BookOpenCheck,
+      color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+      gradient: "from-yellow-500 to-amber-500",
     },
   ];
 
