@@ -1,187 +1,292 @@
 import jsPDF from "jspdf";
-import { guideChapters, guideMetadata, GuideChapter, GuideSection } from "./guideIndependantContent";
+import { guideChapters, guideMetadata } from "./guideIndependantContent";
+import guideCoverImg from "@/assets/guide-cover-vtc.jpg";
+
+// jsPDF helvetica cannot render: €, emojis, «, »
+// We sanitize ALL text before rendering
+function sanitize(text: string): string {
+  return text
+    .replace(/€/g, "EUR")
+    .replace(/«\s*/g, '"')
+    .replace(/\s*»/g, '"')
+    .replace(/—/g, " - ")
+    .replace(/…/g, "...");
+}
+
+// Part labels instead of emojis
+const partLabels: Record<number, string> = {
+  1: "PARTIE 1",
+  2: "PARTIE 2",
+  3: "PARTIE 3",
+  4: "PARTIE 4",
+  5: "PARTIE 5",
+  6: "PARTIE 6",
+  7: "PARTIE 7",
+  8: "PARTIE 8",
+};
 
 export async function generateGuideIndependantPdf() {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pw = doc.internal.pageSize.getWidth();
-  const ph = doc.internal.pageSize.getHeight();
-  const ml = 20; // margin left
+  const pw = doc.internal.pageSize.getWidth(); // 210
+  const ph = doc.internal.pageSize.getHeight(); // 297
+  const ml = 20;
   const mr = 20;
   const mt = 28;
-  const mb = 22;
-  const cw = pw - ml - mr; // content width
+  const mb = 24;
+  const cw = pw - ml - mr;
   let y = mt;
 
   // ---- Helpers ----
-  const footer = () => {
+  const addFooter = () => {
     const p = doc.getNumberOfPages();
     doc.setFontSize(7.5);
     doc.setTextColor(140, 140, 140);
-    doc.text(`Le Guide du Chauffeur Indépendant — Page ${p}`, pw / 2, ph - 8, { align: "center" });
+    doc.text(sanitize("Le Guide du Chauffeur Independant - Page " + p), pw / 2, ph - 8, { align: "center" });
   };
 
-  const check = (need: number) => {
+  const needNewPage = (need: number) => {
     if (y + need > ph - mb) {
-      footer();
+      addFooter();
       doc.addPage();
       y = mt;
+      return true;
     }
+    return false;
   };
 
-  const writeParagraph = (text: string, fontSize = 10.5, lineH = 5.5, indent = 0) => {
+  const writeLines = (text: string, fontSize: number, lineH: number, font: string, style: string, color: number[], indent = 0) => {
     doc.setFontSize(fontSize);
-    const lines: string[] = doc.splitTextToSize(text, cw - indent);
+    doc.setFont(font, style);
+    doc.setTextColor(color[0], color[1], color[2]);
+    const safe = sanitize(text);
+    const lines: string[] = doc.splitTextToSize(safe, cw - indent);
     for (const line of lines) {
-      check(lineH);
+      needNewPage(lineH);
       doc.text(line, ml + indent, y);
       y += lineH;
     }
+  };
+
+  const writeParagraph = (text: string) => {
+    writeLines(text, 10.5, 5.5, "helvetica", "normal", [40, 40, 40]);
     y += 2.5;
   };
 
-  // ---- COVER ----
+  // =============================================
+  // COVER PAGE with image
+  // =============================================
+  // Load image
+  const img = new Image();
+  img.src = guideCoverImg;
+  await new Promise<void>((resolve) => {
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+  });
+
+  // Dark background
   doc.setFillColor(12, 12, 12);
   doc.rect(0, 0, pw, ph, "F");
 
-  // accent bar
-  doc.setFillColor(234, 179, 8); // gold
-  doc.rect(pw / 2 - 30, 55, 60, 2, "F");
+  // Add cover image (centered, with opacity effect via dark overlay)
+  try {
+    const imgW = 120;
+    const imgH = imgW * (img.height / img.width);
+    const imgX = (pw - imgW) / 2;
+    const imgY = 20;
+    doc.addImage(img, "JPEG", imgX, imgY, imgW, Math.min(imgH, 140));
+    // Dark gradient overlay on image
+    doc.setFillColor(12, 12, 12);
+    doc.setGState(new (doc as any).GState({ opacity: 0.55 }));
+    doc.rect(imgX, imgY, imgW, Math.min(imgH, 140), "F");
+    doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  } catch (e) {
+    // Fallback if image fails
+  }
+
+  // Gold accent bar
+  doc.setFillColor(234, 179, 8);
+  doc.rect(pw / 2 - 30, 165, 60, 2, "F");
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(30);
+  doc.setFontSize(26);
   doc.setFont("helvetica", "bold");
-  doc.text("Le Guide du Chauffeur", pw / 2, 72, { align: "center" });
-  doc.text("Indépendant", pw / 2, 84, { align: "center" });
+  doc.text("Le Guide du Chauffeur", pw / 2, 180, { align: "center" });
+  doc.text("Independant", pw / 2, 191, { align: "center" });
 
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(234, 179, 8);
-  doc.text("Construire sa Clientèle Privée de A à Z", pw / 2, 100, { align: "center" });
+  doc.text("Construire sa Clientele Privee de A a Z", pw / 2, 205, { align: "center" });
 
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(180, 180, 180);
-  doc.text(guideMetadata.tagline, pw / 2, 120, { align: "center", maxWidth: cw });
+  const tagSafe = sanitize(guideMetadata.tagline);
+  const tagLines: string[] = doc.splitTextToSize(tagSafe, cw - 20);
+  let tagY = 218;
+  for (const tl of tagLines) {
+    doc.text(tl, pw / 2, tagY, { align: "center" });
+    tagY += 6;
+  }
 
   doc.setFontSize(10);
   doc.setTextColor(150, 150, 150);
-  doc.text(`Par ${guideMetadata.author} — ${guideMetadata.year}`, pw / 2, 145, { align: "center" });
+  doc.text("Par " + guideMetadata.author + " - " + guideMetadata.year, pw / 2, 245, { align: "center" });
 
-  // dedication
+  // Dedication
   doc.setFontSize(9);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(120, 120, 120);
-  doc.text(`« ${guideMetadata.dedication} »`, pw / 2, 170, { align: "center", maxWidth: cw - 20 });
+  const dedSafe = sanitize('"' + guideMetadata.dedication + '"');
+  const dedLines: string[] = doc.splitTextToSize(dedSafe, cw - 30);
+  let dedY = 258;
+  for (const dl of dedLines) {
+    doc.text(dl, pw / 2, dedY, { align: "center" });
+    dedY += 5;
+  }
 
-  // price badge
+  // Price badge
   doc.setFillColor(234, 179, 8);
-  doc.roundedRect(pw / 2 - 18, 195, 36, 14, 3, 3, "F");
+  doc.roundedRect(pw / 2 - 16, 275, 32, 12, 3, 3, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(12, 12, 12);
-  doc.text(guideMetadata.price, pw / 2, 204, { align: "center" });
+  doc.text("4,99 EUR", pw / 2, 283, { align: "center" });
 
-  footer();
+  addFooter();
   doc.addPage();
   y = mt;
 
-  // ---- TABLE OF CONTENTS ----
+  // =============================================
+  // TABLE OF CONTENTS
+  // =============================================
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.text("Sommaire", ml, y);
   y += 14;
 
-  doc.setFontSize(11);
   for (const ch of guideChapters) {
-    check(10);
+    needNewPage(16);
+
+    // Part number badge
+    doc.setFillColor(234, 179, 8);
+    doc.roundedRect(ml, y - 5, 8, 8, 1.5, 1.5, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(12, 12, 12);
+    doc.text(String(ch.partNumber), ml + 4, y, { align: "center" });
+
+    // Title
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(50, 50, 50);
-    doc.text(`${ch.icon}  Partie ${ch.partNumber} — ${ch.title}`, ml + 4, y);
+    doc.text(sanitize(ch.title), ml + 12, y);
     y += 5;
+
+    // Subtitle
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
     doc.setTextColor(110, 110, 110);
-    doc.text(ch.subtitle, ml + 12, y);
-    y += 8;
-    doc.setFontSize(11);
+    doc.text(sanitize(ch.subtitle), ml + 12, y);
+    y += 10;
   }
 
-  footer();
+  addFooter();
   doc.addPage();
   y = mt;
 
-  // ---- CHAPTERS ----
+  // =============================================
+  // CHAPTERS
+  // =============================================
   for (const chapter of guideChapters) {
-    // Part title page
+    // ---------- TRANSITION PAGE ----------
     doc.setFillColor(245, 245, 245);
     doc.rect(0, 0, pw, ph, "F");
 
-    doc.setFontSize(14);
+    // Gold accent bar at top
+    doc.setFillColor(234, 179, 8);
+    doc.rect(0, 0, pw, 4, "F");
+
+    // Part number in large circle
+    doc.setFillColor(234, 179, 8);
+    doc.circle(pw / 2, 80, 16, "F");
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(12, 12, 12);
+    doc.text(String(chapter.partNumber), pw / 2, 86, { align: "center" });
+
+    // "PARTIE X" label
+    doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(150, 150, 150);
-    doc.text(`PARTIE ${chapter.partNumber}`, pw / 2, 70, { align: "center" });
+    doc.text("PARTIE " + chapter.partNumber, pw / 2, 108, { align: "center" });
 
-    doc.setFontSize(26);
+    // Title
+    doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 30, 30);
-    const titleLines: string[] = doc.splitTextToSize(chapter.title, cw);
-    let ty = 85;
+    const titleSafe = sanitize(chapter.title);
+    const titleLines: string[] = doc.splitTextToSize(titleSafe, cw - 10);
+    let ty = 125;
     for (const tl of titleLines) {
       doc.text(tl, pw / 2, ty, { align: "center" });
-      ty += 12;
+      ty += 11;
     }
 
-    doc.setFontSize(12);
+    // Subtitle
+    doc.setFontSize(11);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(100, 100, 100);
-    const stLines: string[] = doc.splitTextToSize(chapter.subtitle, cw - 10);
+    const stSafe = sanitize(chapter.subtitle);
+    const stLines: string[] = doc.splitTextToSize(stSafe, cw - 20);
+    ty += 5;
     for (const sl of stLines) {
-      doc.text(sl, pw / 2, ty + 5, { align: "center" });
+      doc.text(sl, pw / 2, ty, { align: "center" });
       ty += 7;
     }
 
-    // Gold bar
+    // Gold bar under subtitle
     doc.setFillColor(234, 179, 8);
-    doc.rect(pw / 2 - 20, ty + 12, 40, 1.5, "F");
+    doc.rect(pw / 2 - 20, ty + 8, 40, 1.5, "F");
 
-    // Icon
-    doc.setFontSize(40);
-    doc.setTextColor(60, 60, 60);
-    doc.text(chapter.icon, pw / 2, ty + 35, { align: "center" });
-
-    footer();
+    addFooter();
     doc.addPage();
     y = mt;
 
-    // Introduction
+    // ---------- INTRODUCTION ----------
     doc.setFont("helvetica", "italic");
     doc.setTextColor(80, 80, 80);
-    writeParagraph(chapter.introduction, 10.5, 5.5);
-    y += 4;
+    doc.setFontSize(10.5);
+    const introSafe = sanitize(chapter.introduction);
+    const introLines: string[] = doc.splitTextToSize(introSafe, cw);
+    for (const il of introLines) {
+      needNewPage(5.5);
+      doc.text(il, ml, y);
+      y += 5.5;
+    }
+    y += 8;
 
-    // Sections
-    doc.setFont("helvetica", "normal");
+    // ---------- SECTIONS ----------
     for (const section of chapter.sections) {
       // Section heading
-      check(14);
+      needNewPage(18);
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 25, 25);
-      const hLines: string[] = doc.splitTextToSize(section.heading, cw);
+      const hSafe = sanitize(section.heading);
+      const hLines: string[] = doc.splitTextToSize(hSafe, cw);
       for (const hl of hLines) {
-        check(7);
+        needNewPage(7);
         doc.text(hl, ml, y);
         y += 7;
       }
       // Gold underline
       doc.setDrawColor(234, 179, 8);
-      doc.setLineWidth(0.5);
-      doc.line(ml, y, ml + 40, y);
-      y += 6;
+      doc.setLineWidth(0.6);
+      doc.line(ml, y + 1, ml + 35, y + 1);
+      y += 7;
 
       // Paragraphs
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(40, 40, 40);
       for (const para of section.paragraphs) {
         writeParagraph(para);
       }
@@ -189,170 +294,191 @@ export async function generateGuideIndependantPdf() {
       // Bullet points
       if (section.bulletPoints) {
         for (const bp of section.bulletPoints) {
-          check(6);
+          needNewPage(8);
+          // Gold bullet
           doc.setFillColor(234, 179, 8);
           doc.circle(ml + 3, y - 1.5, 1.2, "F");
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.setTextColor(40, 40, 40);
-          const bpLines: string[] = doc.splitTextToSize(bp, cw - 10);
-          for (const bl of bpLines) {
-            check(5);
-            doc.text(bl, ml + 8, y);
-            y += 5;
-          }
+          writeLines(bp, 10, 5, "helvetica", "normal", [40, 40, 40], 8);
           y += 2;
         }
-        y += 2;
+        y += 3;
       }
 
       // Highlight box
       if (section.highlight) {
-        check(20);
-        const hlLines: string[] = doc.splitTextToSize(section.highlight, cw - 16);
-        const hlHeight = hlLines.length * 6 + 10;
-        check(hlHeight);
+        const hlSafe = sanitize(section.highlight);
+        const hlLines: string[] = doc.splitTextToSize(hlSafe, cw - 18);
+        const hlHeight = hlLines.length * 6 + 12;
+        needNewPage(hlHeight + 4);
+
         doc.setFillColor(255, 250, 230);
         doc.setDrawColor(234, 179, 8);
         doc.setLineWidth(0.8);
-        doc.roundedRect(ml, y - 2, cw, hlHeight, 2, 2, "FD");
-        y += 3;
+        doc.roundedRect(ml, y, cw, hlHeight, 2, 2, "FD");
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(120, 90, 0);
+        let hlY = y + 7;
         for (const hl of hlLines) {
-          doc.text(hl, ml + 8, y + 2);
-          y += 6;
+          doc.text(hl, ml + 9, hlY);
+          hlY += 6;
         }
-        y += 6;
+        y += hlHeight + 6;
       }
 
       // Example box
       if (section.example) {
-        check(18);
-        const exLines: string[] = doc.splitTextToSize(section.example, cw - 16);
-        const exH = exLines.length * 5 + 12;
-        check(exH);
+        const exSafe = sanitize(section.example);
+        const exLines: string[] = doc.splitTextToSize(exSafe, cw - 18);
+        const exH = exLines.length * 5.5 + 12;
+        needNewPage(exH + 4);
+
         doc.setFillColor(240, 248, 255);
         doc.setDrawColor(100, 160, 220);
         doc.setLineWidth(0.5);
-        doc.roundedRect(ml, y - 2, cw, exH, 2, 2, "FD");
-        y += 2;
+        doc.roundedRect(ml, y, cw, exH, 2, 2, "FD");
+
         doc.setFont("helvetica", "italic");
         doc.setFontSize(9.5);
         doc.setTextColor(40, 80, 130);
+        let exY = y + 7;
         for (const el of exLines) {
-          doc.text(el, ml + 8, y + 2);
-          y += 5;
+          doc.text(el, ml + 9, exY);
+          exY += 5.5;
         }
-        y += 6;
+        y += exH + 6;
       }
 
-      y += 3;
+      y += 4;
     }
 
-    // Action Box
+    // ---------- ACTION BOX ----------
     if (chapter.actionBox) {
-      check(30);
+      const abSteps = chapter.actionBox.steps;
+      const abH = abSteps.length * 10 + 20;
+      needNewPage(Math.min(abH, 60));
+
       doc.setFillColor(235, 255, 235);
       doc.setDrawColor(50, 180, 80);
       doc.setLineWidth(0.8);
-      const abSteps = chapter.actionBox.steps;
-      const abH = abSteps.length * 7 + 18;
-      check(abH);
-      doc.roundedRect(ml, y - 2, cw, abH, 2, 2, "FD");
-      y += 3;
+
+      // Calculate actual height needed
+      let tempH = 14;
+      for (const step of abSteps) {
+        const sl: string[] = doc.splitTextToSize(sanitize(step), cw - 20);
+        tempH += sl.length * 5.5 + 3;
+      }
+      tempH += 4;
+
+      needNewPage(tempH);
+      const boxStartY = y;
+      doc.roundedRect(ml, y, cw, tempH, 2, 2, "FD");
+
+      y += 8;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(20, 100, 40);
-      doc.text(`Passage à l'action : ${chapter.actionBox.title}`, ml + 6, y + 2);
+      doc.text(sanitize("PASSAGE A L'ACTION : " + chapter.actionBox.title), ml + 7, y);
       y += 8;
+
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
       doc.setTextColor(30, 80, 30);
       for (let i = 0; i < abSteps.length; i++) {
-        const stepLines: string[] = doc.splitTextToSize(`${i + 1}. ${abSteps[i]}`, cw - 16);
+        const stepSafe = sanitize((i + 1) + ". " + abSteps[i]);
+        const stepLines: string[] = doc.splitTextToSize(stepSafe, cw - 20);
         for (const sl of stepLines) {
-          doc.text(sl, ml + 8, y + 2);
+          doc.text(sl, ml + 9, y);
           y += 5.5;
         }
-        y += 1.5;
+        y += 2;
       }
-      y += 6;
+      y += 8;
     }
 
-    // Tool Box
+    // ---------- TOOL BOX ----------
     if (chapter.toolBox) {
-      check(20);
+      const tbTools = chapter.toolBox.tools;
+      let tempH = 14;
+      for (const tool of tbTools) {
+        tempH += 12;
+      }
+      tempH += 4;
+
+      needNewPage(tempH);
       doc.setFillColor(245, 240, 255);
       doc.setDrawColor(130, 100, 200);
       doc.setLineWidth(0.5);
-      const tbTools = chapter.toolBox.tools;
-      const tbH = tbTools.length * 12 + 18;
-      check(tbH);
-      doc.roundedRect(ml, y - 2, cw, tbH, 2, 2, "FD");
-      y += 3;
+      doc.roundedRect(ml, y, cw, tempH, 2, 2, "FD");
+
+      y += 8;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(80, 50, 150);
-      doc.text(`Boîte à outils : ${chapter.toolBox.title}`, ml + 6, y + 2);
+      doc.text(sanitize("BOITE A OUTILS : " + chapter.toolBox.title), ml + 7, y);
       y += 9;
+
       doc.setFontSize(9.5);
       for (const tool of tbTools) {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(60, 40, 120);
-        doc.text(`${tool.name} (${tool.type})`, ml + 8, y + 2);
+        doc.text(sanitize(tool.name + " (" + tool.type + ")"), ml + 9, y);
         y += 5;
         doc.setFont("helvetica", "normal");
         doc.setTextColor(80, 60, 140);
-        doc.text(tool.description, ml + 8, y + 2);
+        doc.text(sanitize(tool.description), ml + 9, y);
         y += 7;
       }
-      y += 4;
+      y += 8;
     }
 
-    y += 8;
+    y += 10;
   }
 
-  // ---- CLOSING PAGE ----
-  footer();
+  // =============================================
+  // CLOSING PAGE
+  // =============================================
+  addFooter();
   doc.addPage();
+
   doc.setFillColor(12, 12, 12);
   doc.rect(0, 0, pw, ph, "F");
 
+  // Gold bar
   doc.setFillColor(234, 179, 8);
   doc.rect(pw / 2 - 25, 70, 50, 1.5, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("Votre chemin commence ici.", pw / 2, 85, { align: "center" });
+  doc.text("Votre chemin commence ici.", pw / 2, 88, { align: "center" });
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(200, 200, 200);
-  const closingText = "Ce guide vous a donné la carte. Les outils. La méthode. Maintenant, c'est à vous de faire le premier pas. Chaque jour est une opportunité de construire quelque chose qui vous appartient.";
-  const closingLines: string[] = doc.splitTextToSize(closingText, cw - 20);
-  let cy = 100;
+  const closingSafe = sanitize("Ce guide vous a donne la carte. Les outils. La methode. Maintenant, c'est a vous de faire le premier pas. Chaque jour est une opportunite de construire quelque chose qui vous appartient.");
+  const closingLines: string[] = doc.splitTextToSize(closingSafe, cw - 20);
+  let cy = 105;
   for (const cl of closingLines) {
     doc.text(cl, pw / 2, cy, { align: "center" });
     cy += 7;
   }
 
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(234, 179, 8);
-  doc.text("solocab.com", pw / 2, cy + 15, { align: "center" });
+  doc.text("solocab.com", pw / 2, cy + 20, { align: "center" });
 
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(120, 120, 120);
-  doc.text("14 jours d'essai gratuit — Sans engagement", pw / 2, cy + 25, { align: "center" });
+  doc.setTextColor(150, 150, 150);
+  doc.text("14 jours d'essai gratuit - Sans engagement", pw / 2, cy + 30, { align: "center" });
 
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
-  doc.text(`© ${guideMetadata.year} SoloCab Academy — Tous droits réservés`, pw / 2, ph - 15, { align: "center" });
+  doc.text("(c) " + guideMetadata.year + " SoloCab Academy - Tous droits reserves", pw / 2, ph - 15, { align: "center" });
 
-  footer();
+  addFooter();
   doc.save("Guide_Chauffeur_Independant_SoloCab.pdf");
 }
