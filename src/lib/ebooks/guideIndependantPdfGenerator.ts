@@ -1,484 +1,871 @@
 import jsPDF from "jspdf";
+import { ebookColors } from "./solocabEbookColors";
 import { guideChapters, guideMetadata } from "./guideIndependantContent";
-import guideCoverImg from "@/assets/guide-cover-vtc.jpg";
+import { guideTools, ACADEMY_HUB_URL } from "./guideIndependantConfig";
 
-// jsPDF helvetica cannot render: €, emojis, «, »
-// We sanitize ALL text before rendering
-function sanitize(text: string): string {
+// Images
+import guideCoverImg from "@/assets/guide-cover-vtc.jpg";
+import ch1Img from "@/assets/guide-ch1-conscience.jpg";
+import ch2Img from "@/assets/guide-ch2-mindset.jpg";
+import ch3Img from "@/assets/guide-ch3-image.jpg";
+import ch4Img from "@/assets/guide-ch4-prospection.jpg";
+import ch5Img from "@/assets/guide-ch5-fidelisation.jpg";
+import ch8Img from "@/assets/guide-ch8-roadmap.jpg";
+
+const c = ebookColors;
+
+// Map chapter images
+const chapterImages: Record<number, string> = {
+  1: ch1Img,
+  2: ch2Img,
+  3: ch3Img,
+  4: ch4Img,
+  5: ch5Img,
+  8: ch8Img,
+};
+
+// jsPDF helvetica limitations — sanitize all text
+function san(text: string): string {
   return text
     .replace(/€/g, "EUR")
     .replace(/«\s*/g, '"')
     .replace(/\s*»/g, '"')
     .replace(/—/g, " - ")
-    .replace(/…/g, "...");
+    .replace(/…/g, "...")
+    .replace(/'/g, "'")
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, ""); // strip emojis
 }
 
-// Part labels instead of emojis
-const partLabels: Record<number, string> = {
-  1: "PARTIE 1",
-  2: "PARTIE 2",
-  3: "PARTIE 3",
-  4: "PARTIE 4",
-  5: "PARTIE 5",
-  6: "PARTIE 6",
-  7: "PARTIE 7",
-  8: "PARTIE 8",
-};
-
-export async function generateGuideIndependantPdf() {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pw = doc.internal.pageSize.getWidth(); // 210
-  const ph = doc.internal.pageSize.getHeight(); // 297
-  const ml = 20;
-  const mr = 20;
-  const mt = 28;
-  const mb = 24;
-  const cw = pw - ml - mr;
-  let y = mt;
-
-  // ---- Helpers ----
-  const addFooter = () => {
-    const p = doc.getNumberOfPages();
-    doc.setFontSize(7.5);
-    doc.setTextColor(140, 140, 140);
-    doc.text(sanitize("Le Guide du Chauffeur Independant - Page " + p), pw / 2, ph - 8, { align: "center" });
-  };
-
-  const needNewPage = (need: number) => {
-    if (y + need > ph - mb) {
-      addFooter();
-      doc.addPage();
-      y = mt;
-      return true;
-    }
-    return false;
-  };
-
-  const writeLines = (text: string, fontSize: number, lineH: number, font: string, style: string, color: number[], indent = 0) => {
-    doc.setFontSize(fontSize);
-    doc.setFont(font, style);
-    doc.setTextColor(color[0], color[1], color[2]);
-    const safe = sanitize(text);
-    const lines: string[] = doc.splitTextToSize(safe, cw - indent);
-    for (const line of lines) {
-      needNewPage(lineH);
-      doc.text(line, ml + indent, y);
-      y += lineH;
-    }
-  };
-
-  const writeParagraph = (text: string) => {
-    writeLines(text, 10.5, 5.5, "helvetica", "normal", [40, 40, 40]);
-    y += 2.5;
-  };
-
-  // =============================================
-  // COVER PAGE with image
-  // =============================================
-  // Load image
+// ===== LOAD IMAGES =====
+async function loadImageEl(src: string): Promise<HTMLImageElement> {
   const img = new Image();
-  img.src = guideCoverImg;
-  await new Promise<void>((resolve) => {
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
+  img.src = src;
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((r) => {
+    img.onload = () => r();
+    img.onerror = () => r();
   });
+  return img;
+}
 
-  // Dark background
-  doc.setFillColor(12, 12, 12);
+async function loadLogoDataUrl(): Promise<string | null> {
+  try {
+    const resp = await fetch("/images/solocab-academy-logo.png");
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===== PAGE CONTEXT (auto-pagination) =====
+class PageCtx {
+  doc: jsPDF;
+  y: number;
+  page: number;
+  pw: number;
+  ph: number;
+  ml = 28;
+  mr = 28;
+  mt = 32;
+  mb = 22;
+  cw: number;
+  maxY: number;
+  logoUrl: string | null;
+
+  constructor(doc: jsPDF, page: number, logoUrl: string | null) {
+    this.doc = doc;
+    this.page = page;
+    this.pw = doc.internal.pageSize.getWidth();
+    this.ph = doc.internal.pageSize.getHeight();
+    this.cw = this.pw - this.ml - this.mr;
+    this.maxY = this.ph - this.mb;
+    this.y = this.mt;
+    this.logoUrl = logoUrl;
+  }
+
+  check(need: number) {
+    if (this.y + need > this.maxY) {
+      this.footer();
+      this.doc.addPage();
+      this.page++;
+      this.y = this.mt;
+    }
+  }
+
+  footer() {
+    const d = this.doc;
+    d.setDrawColor(...c.softBlue);
+    d.setLineWidth(0.3);
+    d.line(this.ml, this.ph - 16, this.pw - this.mr, this.ph - 16);
+    d.setFont("helvetica", "normal");
+    d.setFontSize(7.5);
+    d.setTextColor(...c.grayText);
+    d.text(san("Le Guide du Chauffeur Independant - SoloCab Academy"), this.ml, this.ph - 9);
+    d.text(`${this.page}`, this.pw - this.mr, this.ph - 9, { align: "right" });
+  }
+
+  newPage() {
+    this.footer();
+    this.doc.addPage();
+    this.page++;
+    this.y = this.mt;
+  }
+
+  // --- Text helpers ---
+  title(text: string) {
+    this.check(18);
+    this.doc.setFont("helvetica", "bold");
+    this.doc.setFontSize(17);
+    this.doc.setTextColor(...c.deepBlue);
+    this.doc.text(san(text), this.ml, this.y);
+    this.doc.setDrawColor(...c.softViolet);
+    this.doc.setLineWidth(1);
+    this.doc.line(this.ml, this.y + 3, this.ml + Math.min(this.doc.getTextWidth(san(text)), this.cw), this.y + 3);
+    this.y += 14;
+  }
+
+  para(text: string, fontSize = 12, indent = 0) {
+    const d = this.doc;
+    d.setFont("helvetica", "normal");
+    d.setFontSize(fontSize);
+    d.setTextColor(...c.bodyText);
+    const lines: string[] = d.splitTextToSize(san(text), this.cw - indent);
+    const lh = fontSize * 0.52;
+    for (const line of lines) {
+      this.check(lh + 1);
+      d.text(line, this.ml + indent, this.y);
+      this.y += lh;
+    }
+    this.y += 3.5;
+  }
+
+  paras(texts: string[], fontSize = 12) {
+    for (const t of texts) this.para(t, fontSize);
+  }
+
+  bullets(items: string[], fontSize = 11) {
+    for (const item of items) {
+      const lines: string[] = this.doc.splitTextToSize(san(item), this.cw - 14);
+      const lh = fontSize * 0.5;
+      this.check(lines.length * lh + 5);
+      this.doc.setFillColor(...c.lightBlue);
+      this.doc.circle(this.ml + 3.5, this.y - 1.3, 1.4, "F");
+      this.doc.setFont("helvetica", "normal");
+      this.doc.setFontSize(fontSize);
+      this.doc.setTextColor(...c.bodyText);
+      this.doc.text(lines, this.ml + 10, this.y);
+      this.y += lines.length * lh + 3.5;
+    }
+    this.y += 2;
+  }
+
+  quote(text: string) {
+    const d = this.doc;
+    d.setFont("helvetica", "bolditalic");
+    d.setFontSize(12);
+    const lines: string[] = d.splitTextToSize(san(text), this.cw - 24);
+    const bh = 12 + lines.length * 6;
+    this.check(bh + 8);
+    d.setFillColor(...c.lightGold);
+    d.roundedRect(this.ml, this.y, this.cw, bh, 4, 4, "F");
+    d.setFillColor(...c.softViolet);
+    d.roundedRect(this.ml, this.y, 4, bh, 2, 2, "F");
+    d.setTextColor(...c.deepBlue);
+    d.text(lines, this.ml + 14, this.y + 8);
+    this.y += bh + 8;
+  }
+
+  infoCard(cardTitle: string, text: string, bg = c.lightBg, accent = c.primaryBlue) {
+    const d = this.doc;
+    d.setFont("helvetica", "normal");
+    d.setFontSize(10.5);
+    const lines: string[] = d.splitTextToSize(san(text), this.cw - 22);
+    const bh = 14 + lines.length * 5;
+    this.check(bh + 6);
+    d.setFillColor(...bg);
+    d.roundedRect(this.ml, this.y, this.cw, bh, 3, 3, "F");
+    d.setFillColor(...accent);
+    d.roundedRect(this.ml, this.y, 3.5, bh, 1.5, 1.5, "F");
+    d.setFont("helvetica", "bold");
+    d.setFontSize(11);
+    d.setTextColor(...accent);
+    d.text(san(cardTitle), this.ml + 11, this.y + 8);
+    d.setFont("helvetica", "normal");
+    d.setFontSize(10.5);
+    d.setTextColor(...c.bodyText);
+    d.text(lines, this.ml + 11, this.y + 15);
+    this.y += bh + 6;
+  }
+
+  separator() {
+    this.check(14);
+    const cx = this.pw / 2;
+    this.y += 3;
+    this.doc.setFillColor(...c.softBlue);
+    this.doc.circle(cx - 10, this.y + 3, 1.2, "F");
+    this.doc.setFillColor(...c.softViolet);
+    this.doc.circle(cx, this.y + 3, 1.5, "F");
+    this.doc.setFillColor(...c.softBlue);
+    this.doc.circle(cx + 10, this.y + 3, 1.2, "F");
+    this.y += 12;
+  }
+
+  statBoxes(stats: { value: string; label: string }[]) {
+    const boxW = (this.cw - (stats.length - 1) * 5) / stats.length;
+    this.check(32);
+    stats.forEach((s, i) => {
+      const x = this.ml + i * (boxW + 5);
+      this.doc.setFillColor(...c.lightBg);
+      this.doc.roundedRect(x, this.y, boxW, 26, 4, 4, "F");
+      this.doc.setFont("helvetica", "bold");
+      this.doc.setFontSize(16);
+      this.doc.setTextColor(...c.primaryBlue);
+      this.doc.text(san(s.value), x + boxW / 2, this.y + 12, { align: "center" });
+      this.doc.setFont("helvetica", "normal");
+      this.doc.setFontSize(7.5);
+      this.doc.setTextColor(...c.grayText);
+      this.doc.text(san(s.label), x + boxW / 2, this.y + 20, { align: "center" });
+    });
+    this.y += 32;
+  }
+
+  addLogo(x: number, y: number, size = 22) {
+    if (this.logoUrl) {
+      try {
+        this.doc.addImage(this.logoUrl, "PNG", x, y, size, size);
+      } catch { /* silent */ }
+    }
+  }
+}
+
+// ===== MAIN GENERATOR =====
+export async function generateGuideIndependantPdf() {
+  // Load assets
+  const [coverImg, logoUrl, ...chImgs] = await Promise.all([
+    loadImageEl(guideCoverImg),
+    loadLogoDataUrl(),
+    ...Object.values(chapterImages).map(loadImageEl),
+  ]);
+
+  const chapterImgMap: Record<number, HTMLImageElement> = {};
+  const keys = Object.keys(chapterImages).map(Number);
+  keys.forEach((k, i) => { chapterImgMap[k] = chImgs[i]; });
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  const ctx = new PageCtx(doc, 1, logoUrl);
+
+  // =================== COVER ===================
+  doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, pw, ph, "F");
 
-  // Add cover image (centered, with opacity effect via dark overlay)
+  // Decorative circles
+  doc.setFillColor(25, 45, 88);
+  doc.circle(-20, ph * 0.3, 60, "F");
+  doc.circle(pw + 15, ph * 0.7, 45, "F");
+
+  // Cover image
   try {
-    const imgW = 120;
-    const imgH = imgW * (img.height / img.width);
+    const imgW = 110;
+    const imgH = imgW * (coverImg.height / coverImg.width);
     const imgX = (pw - imgW) / 2;
-    const imgY = 20;
-    doc.addImage(img, "JPEG", imgX, imgY, imgW, Math.min(imgH, 140));
-    // Dark gradient overlay on image
-    doc.setFillColor(12, 12, 12);
-    doc.setGState(new (doc as any).GState({ opacity: 0.55 }));
-    doc.rect(imgX, imgY, imgW, Math.min(imgH, 140), "F");
+    doc.addImage(coverImg, "JPEG", imgX, 18, imgW, Math.min(imgH, 130));
+    // Overlay
+    doc.setFillColor(...c.darkBlue);
+    doc.setGState(new (doc as any).GState({ opacity: 0.45 }));
+    doc.rect(imgX, 18, imgW, Math.min(imgH, 130), "F");
     doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  } catch (e) {
-    // Fallback if image fails
-  }
+  } catch { /* silent */ }
 
-  // Gold accent bar
-  doc.setFillColor(234, 179, 8);
-  doc.rect(pw / 2 - 30, 165, 60, 2, "F");
+  // Logo
+  ctx.addLogo(pw / 2 - 14, 155, 28);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(26);
+  // Academy label
   doc.setFont("helvetica", "bold");
-  doc.text("Le Guide du Chauffeur", pw / 2, 180, { align: "center" });
-  doc.text("Independant", pw / 2, 191, { align: "center" });
+  doc.setFontSize(10);
+  doc.setTextColor(...c.lightViolet);
+  doc.text("SOLOCAB ACADEMY", pw / 2, 190, { align: "center" });
 
-  doc.setFontSize(13);
+  // Violet line
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(1.5);
+  doc.line(50, 196, pw - 50, 196);
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.setTextColor(255, 255, 255);
+  doc.text(san("LE GUIDE DU CHAUFFEUR"), pw / 2, 212, { align: "center" });
+  doc.text(san("INDEPENDANT"), pw / 2, 222, { align: "center" });
+
+  // Subtitle
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(234, 179, 8);
-  doc.text("Construire sa Clientele Privee de A a Z", pw / 2, 205, { align: "center" });
+  doc.setFontSize(12);
+  doc.setTextColor(...c.lightViolet);
+  doc.text(san("Construire sa Clientele Privee de A a Z"), pw / 2, 236, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.setTextColor(180, 180, 180);
-  const tagSafe = sanitize(guideMetadata.tagline);
-  const tagLines: string[] = doc.splitTextToSize(tagSafe, cw - 20);
-  let tagY = 218;
+  // Tagline
+  doc.setFontSize(9.5);
+  doc.setTextColor(180, 190, 220);
+  const tagLines: string[] = doc.splitTextToSize(san(guideMetadata.tagline), 140);
+  let ty = 250;
   for (const tl of tagLines) {
-    doc.text(tl, pw / 2, tagY, { align: "center" });
-    tagY += 6;
+    doc.text(tl, pw / 2, ty, { align: "center" });
+    ty += 5;
   }
 
-  doc.setFontSize(10);
-  doc.setTextColor(150, 150, 150);
-  doc.text("Par " + guideMetadata.author + " - " + guideMetadata.year, pw / 2, 245, { align: "center" });
-
-  // Dedication
+  // Bottom
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(1.5);
+  doc.line(50, ph - 40, pw - 50, ph - 40);
   doc.setFontSize(9);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(120, 120, 120);
-  const dedSafe = sanitize('"' + guideMetadata.dedication + '"');
-  const dedLines: string[] = doc.splitTextToSize(dedSafe, cw - 30);
-  let dedY = 258;
-  for (const dl of dedLines) {
-    doc.text(dl, pw / 2, dedY, { align: "center" });
-    dedY += 5;
+  doc.setTextColor(180, 190, 220);
+  doc.text(san("Edition 2026 - SoloCab Academy"), pw / 2, ph - 30, { align: "center" });
+  doc.text(san("4,99 EUR - Guide Premium"), pw / 2, ph - 22, { align: "center" });
+
+  ctx.footer();
+
+  // =================== TABLE OF CONTENTS ===================
+  doc.addPage();
+  ctx.page = 2;
+  ctx.y = ctx.mt;
+
+  ctx.addLogo(pw / 2 - 12, 18, 24);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...c.deepBlue);
+  doc.text("SOMMAIRE", pw / 2, 55, { align: "center" });
+
+  doc.setDrawColor(...c.softViolet);
+  doc.setLineWidth(1.5);
+  doc.line(pw / 2 - 30, 60, pw / 2 + 30, 60);
+
+  ctx.y = 74;
+  for (const ch of guideChapters) {
+    ctx.check(14);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...c.softViolet);
+    doc.text("Partie " + ch.partNumber, ctx.ml + 2, ctx.y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11.5);
+    doc.setTextColor(...c.bodyText);
+    doc.text(san(ch.title), ctx.ml + 30, ctx.y);
+    doc.setDrawColor(...c.softBlue);
+    doc.setLineWidth(0.2);
+    const te = ctx.ml + 30 + doc.getTextWidth(san(ch.title)) + 4;
+    doc.line(te, ctx.y - 0.5, pw - ctx.mr, ctx.y - 0.5);
+    ctx.y += 12;
   }
 
-  // Price badge
-  doc.setFillColor(234, 179, 8);
-  doc.roundedRect(pw / 2 - 16, 275, 32, 12, 3, 3, "F");
+  // Tools section in TOC
+  ctx.y += 6;
+  ctx.check(12);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(12, 12, 12);
-  doc.text("4,99 EUR", pw / 2, 283, { align: "center" });
+  doc.setTextColor(...c.softViolet);
+  doc.text(san("BOITE A OUTILS (18 fiches pratiques)"), ctx.ml + 2, ctx.y);
+  ctx.y += 10;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...c.bodyText);
 
-  addFooter();
-  doc.addPage();
-  y = mt;
-
-  // =============================================
-  // TABLE OF CONTENTS
-  // =============================================
-  doc.setTextColor(30, 30, 30);
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("Sommaire", ml, y);
-  y += 14;
-
-  for (const ch of guideChapters) {
-    needNewPage(16);
-
-    // Part number badge
-    doc.setFillColor(234, 179, 8);
-    doc.roundedRect(ml, y - 5, 8, 8, 1.5, 1.5, "F");
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(12, 12, 12);
-    doc.text(String(ch.partNumber), ml + 4, y, { align: "center" });
-
-    // Title
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(50, 50, 50);
-    doc.text(sanitize(ch.title), ml + 12, y);
-    y += 5;
-
-    // Subtitle
+  const categories = [...new Set(guideTools.map(t => t.category))];
+  for (const cat of categories) {
+    ctx.check(8);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
-    doc.setTextColor(110, 110, 110);
-    doc.text(sanitize(ch.subtitle), ml + 12, y);
-    y += 10;
+    doc.setTextColor(...c.grayText);
+    doc.text(san(cat), ctx.ml + 8, ctx.y);
+    ctx.y += 6;
+    const tools = guideTools.filter(t => t.category === cat);
+    for (const tool of tools) {
+      ctx.check(6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...c.bodyText);
+      doc.text(san("- " + tool.title), ctx.ml + 14, ctx.y);
+      ctx.y += 5.5;
+    }
+    ctx.y += 2;
   }
 
-  addFooter();
-  doc.addPage();
-  y = mt;
+  ctx.footer();
 
-  // =============================================
-  // CHAPTERS
-  // =============================================
+  // =================== CHAPTERS ===================
   for (const chapter of guideChapters) {
-    // ---------- TRANSITION PAGE ----------
-    doc.setFillColor(245, 245, 245);
+    // --- CHAPTER TRANSITION PAGE ---
+    doc.addPage();
+    ctx.page++;
+
+    doc.setFillColor(...c.darkBlue);
     doc.rect(0, 0, pw, ph, "F");
 
-    // Gold accent bar at top
-    doc.setFillColor(234, 179, 8);
-    doc.rect(0, 0, pw, 4, "F");
+    // Decorative circles
+    doc.setFillColor(25, 45, 88);
+    doc.circle(-25, ph * 0.25, 65, "F");
+    doc.circle(pw + 20, ph * 0.65, 50, "F");
+    doc.setFillColor(35, 58, 110);
+    doc.circle(pw * 0.8, ph * 0.2, 20, "F");
 
-    // Part number in large circle
-    doc.setFillColor(234, 179, 8);
-    doc.circle(pw / 2, 80, 16, "F");
-    doc.setFontSize(22);
+    // Chapter image (if available)
+    const chImg = chapterImgMap[chapter.partNumber];
+    if (chImg && chImg.complete && chImg.naturalWidth > 0) {
+      try {
+        const iw = 80;
+        const ih = iw * (chImg.naturalHeight / chImg.naturalWidth);
+        const ix = (pw - iw) / 2;
+        const iy = 30;
+        doc.addImage(chImg, "JPEG", ix, iy, iw, Math.min(ih, 100));
+        doc.setFillColor(...c.darkBlue);
+        doc.setGState(new (doc as any).GState({ opacity: 0.5 }));
+        doc.rect(ix, iy, iw, Math.min(ih, 100), "F");
+        doc.setGState(new (doc as any).GState({ opacity: 1 }));
+      } catch { /* silent */ }
+    }
+
+    // Logo
+    ctx.addLogo(pw / 2 - 14, ph / 2 - 85, 28);
+
+    // Top line
+    doc.setDrawColor(...c.lightViolet);
+    doc.setLineWidth(1.5);
+    doc.line(ctx.ml + 15, ph / 2 - 50, pw - ctx.mr - 15, ph / 2 - 50);
+
+    // Chapter number
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(12, 12, 12);
-    doc.text(String(chapter.partNumber), pw / 2, 86, { align: "center" });
-
-    // "PARTIE X" label
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(150, 150, 150);
-    doc.text("PARTIE " + chapter.partNumber, pw / 2, 108, { align: "center" });
+    doc.setFontSize(60);
+    doc.setTextColor(...c.lightViolet);
+    doc.text(`${chapter.partNumber}`, pw / 2, ph / 2 - 15, { align: "center" });
 
     // Title
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 30, 30);
-    const titleSafe = sanitize(chapter.title);
-    const titleLines: string[] = doc.splitTextToSize(titleSafe, cw - 10);
-    let ty = 125;
-    for (const tl of titleLines) {
-      doc.text(tl, pw / 2, ty, { align: "center" });
-      ty += 11;
-    }
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    const titleLines: string[] = doc.splitTextToSize(san(chapter.title.toUpperCase()), pw - ctx.ml * 2 - 20);
+    doc.text(titleLines, pw / 2, ph / 2 + 15, { align: "center" });
 
     // Subtitle
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(100, 100, 100);
-    const stSafe = sanitize(chapter.subtitle);
-    const stLines: string[] = doc.splitTextToSize(stSafe, cw - 20);
-    ty += 5;
-    for (const sl of stLines) {
-      doc.text(sl, pw / 2, ty, { align: "center" });
-      ty += 7;
+    if (chapter.subtitle) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(...c.lightViolet);
+      const subLines: string[] = doc.splitTextToSize(san(chapter.subtitle), pw - ctx.ml * 2 - 20);
+      doc.text(subLines, pw / 2, ph / 2 + 37, { align: "center" });
     }
 
-    // Gold bar under subtitle
-    doc.setFillColor(234, 179, 8);
-    doc.rect(pw / 2 - 20, ty + 8, 40, 1.5, "F");
+    // Bottom line
+    doc.setDrawColor(...c.lightViolet);
+    doc.setLineWidth(1.5);
+    doc.line(ctx.ml + 15, ph / 2 + 53, pw - ctx.mr - 15, ph / 2 + 53);
 
-    addFooter();
+    // Dots
+    const dotsY = ph - 45;
+    doc.setFillColor(40, 60, 115);
+    for (let i = 0; i < 5; i++) {
+      doc.circle(pw / 2 - 20 + i * 10, dotsY, 1, "F");
+    }
+
+    ctx.footer();
+
+    // --- CHAPTER CONTENT ---
     doc.addPage();
-    y = mt;
+    ctx.page++;
+    ctx.y = ctx.mt;
 
-    // ---------- INTRODUCTION ----------
+    // Introduction (italic)
     doc.setFont("helvetica", "italic");
-    doc.setTextColor(80, 80, 80);
-    doc.setFontSize(10.5);
-    const introSafe = sanitize(chapter.introduction);
-    const introLines: string[] = doc.splitTextToSize(introSafe, cw);
+    doc.setFontSize(11.5);
+    doc.setTextColor(...c.grayText);
+    const introLines: string[] = doc.splitTextToSize(san(chapter.introduction), ctx.cw);
     for (const il of introLines) {
-      needNewPage(5.5);
-      doc.text(il, ml, y);
-      y += 5.5;
+      ctx.check(5.5);
+      doc.text(il, ctx.ml, ctx.y);
+      ctx.y += 5.5;
     }
-    y += 8;
+    ctx.y += 8;
 
-    // ---------- SECTIONS ----------
+    ctx.separator();
+
+    // Sections
     for (const section of chapter.sections) {
-      // Section heading
-      needNewPage(18);
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(25, 25, 25);
-      const hSafe = sanitize(section.heading);
-      const hLines: string[] = doc.splitTextToSize(hSafe, cw);
-      for (const hl of hLines) {
-        needNewPage(7);
-        doc.text(hl, ml, y);
-        y += 7;
-      }
-      // Gold underline
-      doc.setDrawColor(234, 179, 8);
-      doc.setLineWidth(0.6);
-      doc.line(ml, y + 1, ml + 35, y + 1);
-      y += 7;
+      ctx.title(section.heading);
 
-      // Paragraphs
-      for (const para of section.paragraphs) {
-        writeParagraph(para);
-      }
+      ctx.paras(section.paragraphs);
 
-      // Bullet points
       if (section.bulletPoints) {
-        for (const bp of section.bulletPoints) {
-          needNewPage(8);
-          // Gold bullet
-          doc.setFillColor(234, 179, 8);
-          doc.circle(ml + 3, y - 1.5, 1.2, "F");
-          writeLines(bp, 10, 5, "helvetica", "normal", [40, 40, 40], 8);
-          y += 2;
-        }
-        y += 3;
+        ctx.bullets(section.bulletPoints);
       }
 
-      // Highlight box
+      // Highlight
       if (section.highlight) {
-        const hlSafe = sanitize(section.highlight);
-        const hlLines: string[] = doc.splitTextToSize(hlSafe, cw - 18);
-        const hlHeight = hlLines.length * 6 + 12;
-        needNewPage(hlHeight + 4);
-
-        doc.setFillColor(255, 250, 230);
-        doc.setDrawColor(234, 179, 8);
-        doc.setLineWidth(0.8);
-        doc.roundedRect(ml, y, cw, hlHeight, 2, 2, "FD");
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(120, 90, 0);
-        let hlY = y + 7;
-        for (const hl of hlLines) {
-          doc.text(hl, ml + 9, hlY);
-          hlY += 6;
-        }
-        y += hlHeight + 6;
+        ctx.quote(section.highlight);
       }
 
-      // Example box
+      // Example
       if (section.example) {
-        const exSafe = sanitize(section.example);
-        const exLines: string[] = doc.splitTextToSize(exSafe, cw - 18);
-        const exH = exLines.length * 5.5 + 12;
-        needNewPage(exH + 4);
-
-        doc.setFillColor(240, 248, 255);
-        doc.setDrawColor(100, 160, 220);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(ml, y, cw, exH, 2, 2, "FD");
-
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(9.5);
-        doc.setTextColor(40, 80, 130);
-        let exY = y + 7;
-        for (const el of exLines) {
-          doc.text(el, ml + 9, exY);
-          exY += 5.5;
-        }
-        y += exH + 6;
+        ctx.infoCard("Exemple concret", section.example, c.lightBg, c.primaryBlue);
       }
 
-      y += 4;
+      ctx.y += 4;
     }
 
-    // ---------- ACTION BOX ----------
+    // Stats page after certain chapters
+    if (chapter.partNumber === 1) {
+      ctx.separator();
+      ctx.statBoxes([
+        { value: "5-7 EUR", label: "Taux horaire reel plateforme" },
+        { value: "15-25 EUR", label: "Taux horaire client prive" },
+        { value: "x3", label: "Multiplicateur de revenus" },
+      ]);
+    }
+    if (chapter.partNumber === 2) {
+      ctx.separator();
+      ctx.statBoxes([
+        { value: "30 min", label: "Prospection quotidienne" },
+        { value: "180h", label: "Par an investies" },
+        { value: "22 jours", label: "Equivalent temps plein" },
+      ]);
+    }
+    if (chapter.partNumber === 4) {
+      ctx.separator();
+      ctx.statBoxes([
+        { value: "85%", label: "Hotels cherchent des independants" },
+        { value: "3-5", label: "RDV/semaine recommandes" },
+        { value: "90 jours", label: "Pour premiers resultats" },
+      ]);
+    }
+    if (chapter.partNumber === 6) {
+      ctx.separator();
+      ctx.statBoxes([
+        { value: "72%", label: "Clients via Google My Business" },
+        { value: "45%", label: "Via bouche-a-oreille" },
+        { value: "4.9/5", label: "Note moyenne visee" },
+      ]);
+    }
+
+    // Action Box
     if (chapter.actionBox) {
-      const abSteps = chapter.actionBox.steps;
-      const abH = abSteps.length * 10 + 20;
-      needNewPage(Math.min(abH, 60));
+      ctx.check(30);
+      ctx.y += 4;
+      const ab = chapter.actionBox;
 
-      doc.setFillColor(235, 255, 235);
-      doc.setDrawColor(50, 180, 80);
-      doc.setLineWidth(0.8);
-
-      // Calculate actual height needed
-      let tempH = 14;
-      for (const step of abSteps) {
-        const sl: string[] = doc.splitTextToSize(sanitize(step), cw - 20);
-        tempH += sl.length * 5.5 + 3;
+      // Calculate height
+      let abH = 16;
+      for (const step of ab.steps) {
+        const sl: string[] = doc.splitTextToSize(san(step), ctx.cw - 22);
+        abH += sl.length * 5 + 3;
       }
-      tempH += 4;
+      abH += 6;
 
-      needNewPage(tempH);
-      const boxStartY = y;
-      doc.roundedRect(ml, y, cw, tempH, 2, 2, "FD");
+      ctx.check(abH);
+      doc.setFillColor(...c.lightGreen);
+      doc.roundedRect(ctx.ml, ctx.y, ctx.cw, abH, 3, 3, "F");
+      doc.setFillColor(...c.green);
+      doc.roundedRect(ctx.ml, ctx.y, 3.5, abH, 1.5, 1.5, "F");
 
-      y += 8;
+      ctx.y += 9;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(20, 100, 40);
-      doc.text(sanitize("PASSAGE A L'ACTION : " + chapter.actionBox.title), ml + 7, y);
-      y += 8;
+      doc.setTextColor(...c.green);
+      doc.text(san("PASSAGE A L'ACTION : " + ab.title), ctx.ml + 11, ctx.y);
+      ctx.y += 8;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(30, 80, 30);
-      for (let i = 0; i < abSteps.length; i++) {
-        const stepSafe = sanitize((i + 1) + ". " + abSteps[i]);
-        const stepLines: string[] = doc.splitTextToSize(stepSafe, cw - 20);
+      doc.setFontSize(10);
+      doc.setTextColor(...c.bodyText);
+      for (let i = 0; i < ab.steps.length; i++) {
+        const stepText = san((i + 1) + ". " + ab.steps[i]);
+        const stepLines: string[] = doc.splitTextToSize(stepText, ctx.cw - 22);
         for (const sl of stepLines) {
-          doc.text(sl, ml + 9, y);
-          y += 5.5;
+          doc.text(sl, ctx.ml + 11, ctx.y);
+          ctx.y += 5;
         }
-        y += 2;
+        ctx.y += 2.5;
       }
-      y += 8;
+      ctx.y += 8;
     }
 
-    // ---------- TOOL BOX ----------
+    // Tool Box
     if (chapter.toolBox) {
-      const tbTools = chapter.toolBox.tools;
-      let tempH = 14;
-      for (const tool of tbTools) {
-        tempH += 12;
+      ctx.check(20);
+      const tb = chapter.toolBox;
+      let tbH = 16;
+      for (const tool of tb.tools) {
+        tbH += 11;
       }
-      tempH += 4;
+      tbH += 4;
 
-      needNewPage(tempH);
-      doc.setFillColor(245, 240, 255);
-      doc.setDrawColor(130, 100, 200);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(ml, y, cw, tempH, 2, 2, "FD");
+      ctx.check(tbH);
+      doc.setFillColor(...c.lightPurple);
+      doc.roundedRect(ctx.ml, ctx.y, ctx.cw, tbH, 3, 3, "F");
+      doc.setFillColor(...c.purple);
+      doc.roundedRect(ctx.ml, ctx.y, 3.5, tbH, 1.5, 1.5, "F");
 
-      y += 8;
+      ctx.y += 9;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.setTextColor(80, 50, 150);
-      doc.text(sanitize("BOITE A OUTILS : " + chapter.toolBox.title), ml + 7, y);
-      y += 9;
+      doc.setTextColor(...c.purple);
+      doc.text(san("BOITE A OUTILS : " + tb.title), ctx.ml + 11, ctx.y);
+      ctx.y += 8;
 
       doc.setFontSize(9.5);
-      for (const tool of tbTools) {
+      for (const tool of tb.tools) {
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(60, 40, 120);
-        doc.text(sanitize(tool.name + " (" + tool.type + ")"), ml + 9, y);
-        y += 5;
+        doc.setTextColor(90, 70, 160);
+        doc.text(san(tool.name + " (" + tool.type + ")"), ctx.ml + 11, ctx.y);
+        ctx.y += 4.5;
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(80, 60, 140);
-        doc.text(sanitize(tool.description), ml + 9, y);
-        y += 7;
+        doc.setTextColor(...c.bodyText);
+        doc.text(san(tool.description), ctx.ml + 11, ctx.y);
+        ctx.y += 6.5;
       }
-      y += 8;
+      ctx.y += 8;
     }
 
-    y += 10;
+    ctx.footer();
   }
 
-  // =============================================
-  // CLOSING PAGE
-  // =============================================
-  addFooter();
+  // =================== TOOLS SECTION ===================
+  // Tools intro page
   doc.addPage();
+  ctx.page++;
 
-  doc.setFillColor(12, 12, 12);
+  doc.setFillColor(...c.darkBlue);
   doc.rect(0, 0, pw, ph, "F");
 
-  // Gold bar
-  doc.setFillColor(234, 179, 8);
-  doc.rect(pw / 2 - 25, 70, 50, 1.5, "F");
+  doc.setFillColor(25, 45, 88);
+  doc.circle(-25, ph * 0.25, 65, "F");
+  doc.circle(pw + 20, ph * 0.65, 50, "F");
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
+  ctx.addLogo(pw / 2 - 14, ph / 2 - 85, 28);
+
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(1.5);
+  doc.line(ctx.ml + 15, ph / 2 - 50, pw - ctx.mr - 15, ph / 2 - 50);
+
   doc.setFont("helvetica", "bold");
-  doc.text("Votre chemin commence ici.", pw / 2, 88, { align: "center" });
+  doc.setFontSize(40);
+  doc.setTextColor(...c.lightViolet);
+  doc.text("18", pw / 2, ph / 2 - 10, { align: "center" });
 
-  doc.setFontSize(11);
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text("BOITE A OUTILS", pw / 2, ph / 2 + 15, { align: "center" });
+
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(200, 200, 200);
-  const closingSafe = sanitize("Ce guide vous a donne la carte. Les outils. La methode. Maintenant, c'est a vous de faire le premier pas. Chaque jour est une opportunite de construire quelque chose qui vous appartient.");
-  const closingLines: string[] = doc.splitTextToSize(closingSafe, cw - 20);
-  let cy = 105;
+  doc.setFontSize(11);
+  doc.setTextColor(...c.lightViolet);
+  doc.text(san("Fiches pratiques telechargeables"), pw / 2, ph / 2 + 30, { align: "center" });
+  doc.text(san("PDF - Word - Excel"), pw / 2, ph / 2 + 40, { align: "center" });
+
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(1.5);
+  doc.line(ctx.ml + 15, ph / 2 + 53, pw - ctx.mr - 15, ph / 2 + 53);
+
+  doc.setFontSize(9);
+  doc.setTextColor(180, 190, 220);
+  doc.text(san("Telechargez chaque outil sur : " + ACADEMY_HUB_URL), pw / 2, ph / 2 + 70, { align: "center" });
+
+  ctx.footer();
+
+  // --- RENDER EACH TOOL ---
+  for (const tool of guideTools) {
+    doc.addPage();
+    ctx.page++;
+    ctx.y = ctx.mt;
+
+    // Tool header
+    doc.setFillColor(...c.lightBg);
+    doc.roundedRect(ctx.ml, ctx.y - 6, ctx.cw, 30, 4, 4, "F");
+    doc.setFillColor(...c.primaryBlue);
+    doc.roundedRect(ctx.ml, ctx.y - 6, 4, 30, 2, 2, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...c.softViolet);
+    doc.text(san("OUTIL - " + tool.category), ctx.ml + 12, ctx.y);
+    ctx.y += 6;
+
+    doc.setFontSize(14);
+    doc.setTextColor(...c.deepBlue);
+    doc.text(san(tool.title), ctx.ml + 12, ctx.y);
+    ctx.y += 5;
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...c.grayText);
+    doc.text(san(tool.subtitle), ctx.ml + 12, ctx.y);
+    ctx.y += 12;
+
+    // Description
+    ctx.para(tool.description, 10.5);
+    ctx.y += 2;
+
+    // Format badges
+    const badgeY = ctx.y;
+    doc.setFontSize(7.5);
+    let bx = ctx.ml;
+    for (const fmt of tool.formats) {
+      const label = fmt.toUpperCase();
+      const bw = doc.getTextWidth(label) + 8;
+      const bgColor = fmt === "excel" ? c.green : fmt === "word" ? c.primaryBlue : c.softViolet;
+      doc.setFillColor(...bgColor);
+      doc.roundedRect(bx, badgeY - 3, bw, 7, 2, 2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(label, bx + 4, badgeY + 2);
+      bx += bw + 4;
+    }
+    ctx.y += 10;
+
+    // Download link
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...c.primaryBlue);
+    const dlUrl = ACADEMY_HUB_URL + "/outils/" + tool.id;
+    doc.textWithLink(san("Telecharger cet outil : " + dlUrl), ctx.ml, ctx.y, { url: dlUrl });
+    ctx.y += 8;
+
+    // Separator
+    doc.setDrawColor(...c.softBlue);
+    doc.setLineWidth(0.5);
+    doc.line(ctx.ml, ctx.y, pw - ctx.mr, ctx.y);
+    ctx.y += 8;
+
+    // Tool content lines
+    doc.setFontSize(10);
+    for (const line of tool.contentLines) {
+      ctx.check(6);
+      if (line === "") {
+        ctx.y += 3;
+        continue;
+      }
+      // Headers are uppercase/bold
+      const isHeader = line === line.toUpperCase() && line.length > 3 && !line.includes("___");
+      if (isHeader) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
+        doc.setTextColor(...c.deepBlue);
+        ctx.y += 2;
+      } else if (line.includes("___")) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...c.bodyText);
+        // Draw underline for fill-in fields
+        const textPart = san(line.split("___")[0]);
+        doc.text(textPart, ctx.ml + 4, ctx.y);
+        const tw = doc.getTextWidth(textPart);
+        doc.setDrawColor(...c.softBlue);
+        doc.setLineWidth(0.3);
+        doc.line(ctx.ml + 4 + tw, ctx.y + 0.5, ctx.ml + 4 + tw + 50, ctx.y + 0.5);
+      } else if (line.startsWith("[ ]") || line.startsWith("[")) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...c.bodyText);
+        // Checkbox style
+        doc.setDrawColor(...c.softBlue);
+        doc.setLineWidth(0.3);
+        doc.rect(ctx.ml + 4, ctx.y - 3, 3.5, 3.5);
+        doc.text(san(line.replace(/^\[ \] ?/, "")), ctx.ml + 10, ctx.y);
+      } else if (line.startsWith("--> ") || line.startsWith("-->")) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...c.green);
+        const arrowLines: string[] = doc.splitTextToSize(san(line), ctx.cw - 12);
+        for (const al of arrowLines) {
+          ctx.check(5);
+          doc.text(al, ctx.ml + 10, ctx.y);
+          ctx.y += 5;
+        }
+        ctx.y -= 5; // compensate for the loop increment below
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...c.bodyText);
+        const wLines: string[] = doc.splitTextToSize(san(line), ctx.cw - 8);
+        for (const wl of wLines) {
+          ctx.check(5);
+          doc.text(wl, ctx.ml + 4, ctx.y);
+          ctx.y += 5;
+        }
+        ctx.y -= 5;
+      }
+      ctx.y += 5.5;
+    }
+
+    ctx.footer();
+  }
+
+  // =================== CLOSING PAGE ===================
+  doc.addPage();
+  ctx.page++;
+
+  doc.setFillColor(...c.darkBlue);
+  doc.rect(0, 0, pw, ph, "F");
+
+  doc.setFillColor(25, 45, 88);
+  doc.circle(-25, ph * 0.25, 65, "F");
+
+  ctx.addLogo(pw / 2 - 16, 50, 32);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...c.lightViolet);
+  doc.text("SOLOCAB ACADEMY", pw / 2, 92, { align: "center" });
+
+  doc.setDrawColor(...c.lightViolet);
+  doc.setLineWidth(1.5);
+  doc.line(50, 98, pw - 50, 98);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text(san("Votre chemin commence ici."), pw / 2, 118, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(200, 210, 230);
+  const closingText = san("Ce guide vous a donne la carte. Les outils. La methode. Maintenant, c'est a vous de faire le premier pas. Chaque jour est une opportunite de construire quelque chose qui vous appartient.");
+  const closingLines: string[] = doc.splitTextToSize(closingText, ctx.cw - 20);
+  let cy = 135;
   for (const cl of closingLines) {
     doc.text(cl, pw / 2, cy, { align: "center" });
     cy += 7;
   }
 
-  doc.setFontSize(14);
+  // CTA
+  cy += 15;
+  doc.setFillColor(...c.softViolet);
+  doc.roundedRect(pw / 2 - 45, cy - 6, 90, 18, 4, 4, "F");
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(234, 179, 8);
-  doc.text("solocab.com", pw / 2, cy + 20, { align: "center" });
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text("solocab.com", pw / 2, cy + 5, { align: "center" });
+  doc.link(pw / 2 - 45, cy - 6, 90, 18, { url: "https://www.solocab.com" });
 
-  doc.setFontSize(10);
+  cy += 25;
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(150, 150, 150);
-  doc.text("14 jours d'essai gratuit - Sans engagement", pw / 2, cy + 30, { align: "center" });
+  doc.setFontSize(10);
+  doc.setTextColor(180, 190, 220);
+  doc.text(san("14 jours d'essai gratuit - Sans engagement"), pw / 2, cy, { align: "center" });
+
+  cy += 20;
+  doc.setFontSize(9);
+  doc.setTextColor(...c.grayText);
+  doc.text(san("Tous vos outils sur : " + ACADEMY_HUB_URL), pw / 2, cy, { align: "center" });
 
   doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  doc.text("(c) " + guideMetadata.year + " SoloCab Academy - Tous droits reserves", pw / 2, ph - 15, { align: "center" });
+  doc.setTextColor(80, 90, 120);
+  doc.text(san("(c) 2026 SoloCab Academy - Tous droits reserves"), pw / 2, ph - 15, { align: "center" });
 
-  addFooter();
+  ctx.footer();
   doc.save("Guide_Chauffeur_Independant_SoloCab.pdf");
 }
