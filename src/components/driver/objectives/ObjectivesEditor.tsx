@@ -24,7 +24,9 @@ import {
   X,
   ChevronRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Car,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +38,8 @@ interface ObjectivesData {
   target_monthly_revenue?: number;
   target_weekly_revenue?: number;
   target_direct_clients?: number;
+  target_monthly_courses?: number;
+  target_monthly_km?: number;
   work_hours_per_day?: number;
   work_days_per_week?: number;
   selected_work_days?: string[];
@@ -59,7 +63,7 @@ const DAYS_OF_WEEK = [
   { id: 'dimanche', label: 'Dim', fullLabel: 'Dimanche', weight: 1.2, index: 0 },
 ];
 
-type EditSection = 'revenue' | 'clients' | 'independence' | 'planning' | null;
+type EditSection = 'revenue' | 'clients' | 'independence' | 'planning' | 'courses' | 'km' | null;
 
 export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) {
   const [objectivesData, setObjectivesData] = useState<ObjectivesData | null>(null);
@@ -71,6 +75,8 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
   const [targetRevenue, setTargetRevenue] = useState(5000);
   const [targetClients, setTargetClients] = useState(15);
   const [platformPercentage, setPlatformPercentage] = useState(80);
+  const [targetCourses, setTargetCourses] = useState(100);
+  const [targetKm, setTargetKm] = useState(2000);
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
   const [workHoursPerDay, setWorkHoursPerDay] = useState(8);
 
@@ -94,6 +100,8 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
         if (data.target_monthly_revenue) setTargetRevenue(data.target_monthly_revenue);
         if (data.target_direct_clients) setTargetClients(data.target_direct_clients);
         if (data.platform_percentage !== undefined) setPlatformPercentage(data.platform_percentage);
+        if (data.target_monthly_courses) setTargetCourses(data.target_monthly_courses);
+        if (data.target_monthly_km) setTargetKm(data.target_monthly_km);
         if (data.selected_work_days) setSelectedDays(data.selected_work_days);
         if (data.work_hours_per_day) setWorkHoursPerDay(data.work_hours_per_day);
       }
@@ -147,6 +155,8 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
         target_monthly_revenue: targetRevenue,
         target_weekly_revenue: weeklyRevenue,
         target_direct_clients: targetClients,
+        target_monthly_courses: targetCourses,
+        target_monthly_km: targetKm,
         platform_percentage: platformPercentage,
         solocab_percentage: solocabPercentage,
         work_hours_per_day: workHoursPerDay,
@@ -163,10 +173,10 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
 
       // Also update driver_objectives table
       const multipliers = {
-        daily: { revenue: 1/22, clients: 1/22, hours: 1 },
-        weekly: { revenue: 1/4, clients: 1/4, hours: selectedDays.length },
-        monthly: { revenue: 1, clients: 1, hours: selectedDays.length * 4 },
-        yearly: { revenue: 12, clients: 12, hours: selectedDays.length * 4 * 12 }
+        daily: { revenue: 1/22, clients: 1/22, hours: 1, courses: 1/22, km: 1/22 },
+        weekly: { revenue: 1/4, clients: 1/4, hours: selectedDays.length, courses: 1/4, km: 1/4 },
+        monthly: { revenue: 1, clients: 1, hours: selectedDays.length * 4, courses: 1, km: 1 },
+        yearly: { revenue: 12, clients: 12, hours: selectedDays.length * 4 * 12, courses: 12, km: 12 }
       };
 
       for (const period of ['daily', 'weekly', 'monthly', 'yearly'] as const) {
@@ -179,8 +189,8 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
             revenue_target: Math.round(targetRevenue * mult.revenue),
             new_clients_target: Math.round(targetClients * mult.clients),
             hours_target: Math.round(workHoursPerDay * mult.hours),
-            courses_target: Math.round((targetRevenue * mult.revenue) / 25),
-            km_target: Math.round((targetRevenue * mult.revenue) / 25 * 15),
+            courses_target: Math.round(targetCourses * mult.courses),
+            km_target: Math.round(targetKm * mult.km),
             is_active: true,
           }, { onConflict: 'driver_id,period_type' });
       }
@@ -510,6 +520,120 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
         </AnimatePresence>
       </Card>
 
+      {/* Courses Objective Card */}
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <Car className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Objectif courses</CardTitle>
+                <p className="text-2xl font-bold text-foreground">{targetCourses} / mois</p>
+              </div>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setEditingSection(editingSection === 'courses' ? null : 'courses')}
+            >
+              {editingSection === 'courses' ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <AnimatePresence>
+          {editingSection === 'courses' && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+            >
+              <CardContent className="pt-0 pb-4">
+                <Separator className="my-3" />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Nombre de courses par mois</Label>
+                    <Input
+                      type="number"
+                      value={targetCourses}
+                      onChange={(e) => setTargetCourses(parseInt(e.target.value) || 0)}
+                      min={10}
+                      max={1000}
+                      step={5}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {Math.round(targetCourses / 4)} courses/semaine • {Math.round(targetCourses / 22)} courses/jour
+                    </p>
+                  </div>
+                  <Button onClick={() => saveSection('courses')} disabled={saving} className="w-full">
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+
+      {/* Km Objective Card */}
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Objectif kilomètres</CardTitle>
+                <p className="text-2xl font-bold text-foreground">{targetKm.toLocaleString()} km / mois</p>
+              </div>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setEditingSection(editingSection === 'km' ? null : 'km')}
+            >
+              {editingSection === 'km' ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <AnimatePresence>
+          {editingSection === 'km' && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+            >
+              <CardContent className="pt-0 pb-4">
+                <Separator className="my-3" />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Kilomètres par mois</Label>
+                    <Input
+                      type="number"
+                      value={targetKm}
+                      onChange={(e) => setTargetKm(parseInt(e.target.value) || 0)}
+                      min={100}
+                      max={50000}
+                      step={100}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {Math.round(targetKm / 4).toLocaleString()} km/semaine • {Math.round(targetKm / 22)} km/jour
+                    </p>
+                  </div>
+                  <Button onClick={() => saveSection('km')} disabled={saving} className="w-full">
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+
       {/* Summary */}
       {hasData && (
         <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
@@ -518,7 +642,7 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
               <Sparkles className="w-5 h-5 text-primary" />
               <span className="font-semibold text-foreground">Récapitulatif</span>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-muted-foreground">CA mensuel visé</p>
                 <p className="font-bold">{targetRevenue.toLocaleString()}€</p>
@@ -528,7 +652,15 @@ export function ObjectivesEditor({ driverId, onUpdate }: ObjectivesEditorProps) 
                 <p className="font-bold">{targetClients} clients</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Objectif indépendance</p>
+                <p className="text-muted-foreground">Courses / mois</p>
+                <p className="font-bold">{targetCourses}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Km / mois</p>
+                <p className="font-bold">{targetKm.toLocaleString()} km</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Indépendance</p>
                 <p className="font-bold">{solocabPercentage}% privé</p>
               </div>
               <div>
