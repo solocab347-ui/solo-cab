@@ -258,7 +258,11 @@ const SolocabPodcastGenerator = () => {
                   {playing === "full" ? "Pause" : "Écouter"}
                 </Button>
                 <Button onClick={() => handleDownload("full", "Podcast-Complet-SoloCab")} className="gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
-                  <Download className="w-4 h-4" /> Télécharger le podcast complet
+                  <Download className="w-4 h-4" /> Télécharger
+                </Button>
+                <Button variant="outline" onClick={generateFullPodcast} disabled={!!generating} className="gap-1 text-xs">
+                  {generating === "full" ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                  Ré-assembler
                 </Button>
               </>
             )}
