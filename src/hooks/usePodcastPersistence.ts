@@ -91,7 +91,9 @@ export function usePodcastPersistence() {
       .from("podcast-audio")
       .getPublicUrl(path);
 
-    setSavedSegments(prev => ({ ...prev, [episodeId]: urlData.publicUrl }));
+    // Add cache-buster to avoid CDN serving stale files
+    const cacheBuster = `?t=${Date.now()}`;
+    setSavedSegments(prev => ({ ...prev, [episodeId]: urlData.publicUrl + cacheBuster }));
     return urlData.publicUrl;
   }, [driverId]);
 
