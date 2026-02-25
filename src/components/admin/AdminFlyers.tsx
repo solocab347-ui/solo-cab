@@ -17,9 +17,52 @@ import { generateGuideIndependantRawTextPdf } from "@/lib/ebooks/guideIndependan
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
 import GuideAudiobookPlayer from "@/components/audiobook/GuideAudiobookPlayer";
+import { supabase } from "@/integrations/supabase/client";
+import { Headphones } from "lucide-react";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState<string | null>(null);
+
+  const handleAudioDownload = async (ebookKey: string, filename: string) => {
+    setAudioLoading(ebookKey);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Vous devez être connecté"); return; }
+
+      const effectiveId = await (async () => {
+        const { data: driver } = await supabase.from("drivers").select("id").eq("user_id", session.user.id).maybeSingle();
+        return driver?.id || session.user.id;
+      })();
+
+      const storagePath = `${effectiveId}/${ebookKey}.mp3`;
+      const { data: urlData } = supabase.storage.from("podcast-audio").getPublicUrl(storagePath);
+      
+      // Verify file exists by fetching it
+      const response = await fetch(urlData.publicUrl);
+      if (!response.ok) {
+        toast.error("Aucun audio généré. Utilisez d'abord le générateur Audio eBook ci-dessus pour créer le fichier.");
+        return;
+      }
+      const blob = await response.blob();
+      if (blob.size < 1000) {
+        toast.error("Aucun audio généré. Utilisez d'abord le générateur Audio eBook ci-dessus.");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Audio téléchargé !");
+    } catch (error) {
+      console.error("Audio download error:", error);
+      toast.error("Erreur lors du téléchargement audio");
+    } finally {
+      setAudioLoading(null);
+    }
+  };
 
   const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant" | "guide-raw-text") => {
     setLoading(type);
@@ -226,32 +269,56 @@ const AdminFlyers = () => {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-muted-foreground">🎧 Audio eBook — L'Illusion des Applications</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 shrink-0"
-              disabled={loading === "ebook-solocab"}
-              onClick={() => handleDownload("ebook-solocab")}
-            >
-              {loading === "ebook-solocab" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              PDF
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                disabled={audioLoading === "ebook-full"}
+                onClick={() => handleAudioDownload("ebook-full", "eBook-Audio-SoloCab-Complet.mp3")}
+              >
+                {audioLoading === "ebook-full" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Headphones className="w-3.5 h-3.5" />}
+                MP3
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                disabled={loading === "ebook-solocab"}
+                onClick={() => handleDownload("ebook-solocab")}
+              >
+                {loading === "ebook-solocab" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                PDF
+              </Button>
+            </div>
           </div>
           <SolocabAudiobookPlayer />
         </div>
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-muted-foreground">🎧 Audio Guide — Chauffeur Indépendant</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 shrink-0"
-              disabled={loading === "guide-independant"}
-              onClick={() => handleDownload("guide-independant")}
-            >
-              {loading === "guide-independant" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              PDF
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                disabled={audioLoading === "guide-full"}
+                onClick={() => handleAudioDownload("guide-full", "Guide-Audio-Chauffeur-Independant.mp3")}
+              >
+                {audioLoading === "guide-full" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Headphones className="w-3.5 h-3.5" />}
+                MP3
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                disabled={loading === "guide-independant"}
+                onClick={() => handleDownload("guide-independant")}
+              >
+                {loading === "guide-independant" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                PDF
+              </Button>
+            </div>
           </div>
           <GuideAudiobookPlayer />
         </div>
