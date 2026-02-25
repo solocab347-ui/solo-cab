@@ -222,13 +222,37 @@ const AdminFlyers = () => {
       <SolocabPodcastGenerator />
 
       {/* Audio eBook Players (free voices) */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">🎧 Audio eBook — L'Illusion des Applications</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground">🎧 Audio eBook — L'Illusion des Applications</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 shrink-0"
+              disabled={loading === "ebook-solocab"}
+              onClick={() => handleDownload("ebook-solocab")}
+            >
+              {loading === "ebook-solocab" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              PDF
+            </Button>
+          </div>
           <SolocabAudiobookPlayer />
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">🎧 Audio Guide — Chauffeur Indépendant</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground">🎧 Audio Guide — Chauffeur Indépendant</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 shrink-0"
+              disabled={loading === "guide-independant"}
+              onClick={() => handleDownload("guide-independant")}
+            >
+              {loading === "guide-independant" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              PDF
+            </Button>
+          </div>
           <GuideAudiobookPlayer />
         </div>
       </div>
