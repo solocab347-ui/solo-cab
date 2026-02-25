@@ -7,11 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, subDays, isToday, isBefore, startOfDay, addDays } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   TrendingUp,
   Car,
   Clock,
@@ -32,7 +35,8 @@ import {
   Navigation,
   Crown,
   Star,
-  Users
+  Users,
+  CalendarDays
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -108,9 +112,24 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [addingPlatform, setAddingPlatform] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const today = new Date();
-  const dateStr = format(today, 'yyyy-MM-dd');
+  const dateStr = format(selectedDate, 'yyyy-MM-dd');
+  const isSelectedToday = isToday(selectedDate);
+  // Allow editing up to 30 days back
+  const minDate = subDays(new Date(), 30);
+  const canGoPrev = isBefore(minDate, startOfDay(selectedDate));
+  const canGoNext = !isSelectedToday;
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    setSelectedDate(prev => direction === 'prev' ? subDays(prev, 1) : addDays(prev, 1));
+  };
+
+  const getDateLabel = () => {
+    if (isToday(selectedDate)) return "Aujourd'hui";
+    if (isToday(addDays(selectedDate, 1))) return "Hier";
+    return format(selectedDate, 'EEEE d MMMM', { locale: fr });
+  };
 
   // Auto-seed platforms from onboarding objectives_data if driver_platforms is empty
   const seedPlatformsFromOnboarding = useCallback(async (existingPlatforms: PlatformData[]) => {
@@ -398,8 +417,8 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
               <PlusCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                Saisie rapide du jour
+               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                Saisie rapide
                 {hasUnsaved && (
                   <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
                     <AlertCircle className="w-3 h-3 mr-0.5" /> Non sauvé
@@ -407,7 +426,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                 )}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Total : {grandTotalRevenue.toFixed(0)}€ • {grandTotalCourses} courses
+                {getDateLabel()} • {grandTotalRevenue.toFixed(0)}€ • {grandTotalCourses} courses
               </p>
             </div>
           </div>
@@ -435,6 +454,42 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
             transition={{ duration: 0.3 }}
           >
             <CardContent className="pt-0 space-y-4">
+              {/* Date Navigation */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={(e) => { e.stopPropagation(); navigateDate('prev'); }}
+                  disabled={!canGoPrev}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium capitalize">{getDateLabel()}</span>
+                  {!isSelectedToday && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] px-2"
+                      onClick={(e) => { e.stopPropagation(); setSelectedDate(new Date()); }}
+                    >
+                      Aujourd'hui
+                    </Button>
+                  )}
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={(e) => { e.stopPropagation(); navigateDate('next'); }}
+                  disabled={!canGoNext}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
               {/* SoloCab auto row */}
               <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                 <div className="flex items-center gap-2">
