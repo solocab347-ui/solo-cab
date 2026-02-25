@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, BookOpen } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, BookOpen, Download, Square, Loader2 } from "lucide-react";
 import { audiobookChapters } from "@/lib/audiobook/solocabAudiobookContent";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 
 const SolocabAudiobookPlayer = () => {
   const [currentChapter, setCurrentChapter] = useState(0);
@@ -15,6 +16,7 @@ const SolocabAudiobookPlayer = () => {
   const [selectedVoiceIndex, setSelectedVoiceIndex] = useState(0);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const isPlayingRef = useRef(false);
+  const { recordingState, recordingProgress, startRecording, cancelRecording } = useAudioRecorder();
 
   // Load voices
   useEffect(() => {
@@ -197,7 +199,57 @@ const SolocabAudiobookPlayer = () => {
             )}
           </div>
 
-          {/* Current text preview */}
+          {/* Record & Download */}
+          <div className="flex items-center gap-2">
+            {recordingState === "idle" ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1"
+                  onClick={() => {
+                    const ch = audiobookChapters[currentChapter];
+                    if (ch) {
+                      const allText = [`${ch.title}. ${ch.subtitle || ""}`, ...ch.paragraphs];
+                      startRecording(allText, availableVoices[selectedVoiceIndex] || null, rate, `Illusion-${ch.title}`);
+                    }
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Enregistrer ce chapitre
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1"
+                  onClick={() => {
+                    const allParagraphs: string[] = [];
+                    audiobookChapters.forEach((ch) => {
+                      allParagraphs.push(`${ch.title}. ${ch.subtitle || ""}`);
+                      allParagraphs.push(...ch.paragraphs);
+                    });
+                    startRecording(allParagraphs, availableVoices[selectedVoiceIndex] || null, rate, "Illusion-des-Applications-Complet");
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Tout enregistrer
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 w-full">
+                <div className="flex-1 text-xs text-muted-foreground">
+                  {recordingState === "recording" && <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1.5" />}
+                  {recordingProgress}
+                </div>
+                {recordingState === "recording" && (
+                  <Button variant="destructive" size="sm" className="gap-1.5" onClick={cancelRecording}>
+                    <Square className="w-3 h-3" /> Arrêter
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
           {chapter && currentParagraph < chapter.paragraphs.length && (
             <div className="p-3 bg-muted/50 rounded-lg border-l-4 border-rose-500/50">
               <p className="text-sm italic text-muted-foreground leading-relaxed">

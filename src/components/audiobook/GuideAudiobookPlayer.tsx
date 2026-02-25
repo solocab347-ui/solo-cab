@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, GraduationCap } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, GraduationCap, Download, Square, Loader2 } from "lucide-react";
 import { guideAudiobookChapters } from "@/lib/audiobook/guideAudiobookContent";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 
 /**
  * Selects the best available French voice, prioritizing:
@@ -51,7 +52,7 @@ const GuideAudiobookPlayer = () => {
   const [allVoices, setAllVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const isPlayingRef = useRef(false);
-
+  const { recordingState, recordingProgress, startRecording, cancelRecording } = useAudioRecorder();
   // Load voices and auto-select best one
   useEffect(() => {
     const loadVoices = () => {
@@ -206,6 +207,56 @@ const GuideAudiobookPlayer = () => {
             </Button>
           </div>
 
+          {/* Record & Download */}
+          <div className="flex items-center gap-2">
+            {recordingState === "idle" ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1"
+                  onClick={() => {
+                    const chapter = guideAudiobookChapters[currentChapter];
+                    if (chapter) {
+                      const allText = [`${chapter.title}. ${chapter.subtitle || ""}`, ...chapter.paragraphs];
+                      startRecording(allText, selectedVoice, rate, `Guide-${chapter.title}`);
+                    }
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Enregistrer ce chapitre
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1"
+                  onClick={() => {
+                    const allParagraphs: string[] = [];
+                    guideAudiobookChapters.forEach((ch) => {
+                      allParagraphs.push(`${ch.title}. ${ch.subtitle || ""}`);
+                      allParagraphs.push(...ch.paragraphs);
+                    });
+                    startRecording(allParagraphs, selectedVoice, rate, "Guide-Chauffeur-Independant-Complet");
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Tout enregistrer
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 w-full">
+                <div className="flex-1 text-xs text-muted-foreground">
+                  {recordingState === "recording" && <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1.5" />}
+                  {recordingProgress}
+                </div>
+                {recordingState === "recording" && (
+                  <Button variant="destructive" size="sm" className="gap-1.5" onClick={cancelRecording}>
+                    <Square className="w-3 h-3" /> Arrêter
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           {/* Speed, volume & voice selector */}
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)}>
