@@ -15,6 +15,8 @@ import { generateGuideIndependantPdf } from "@/lib/ebooks/guideIndependantPdfGen
 import { generateGuideIndependantRawTextPdf } from "@/lib/ebooks/guideIndependantRawTextPdfGenerator";
 
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
+import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
+import GuideAudiobookPlayer from "@/components/audiobook/GuideAudiobookPlayer";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
@@ -219,7 +221,17 @@ const AdminFlyers = () => {
       {/* Podcast Generator */}
       <SolocabPodcastGenerator />
 
-
+      {/* Audio eBook Players (free voices) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">🎧 Audio eBook — L'Illusion des Applications</h3>
+          <SolocabAudiobookPlayer />
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">🎧 Audio Guide — Chauffeur Indépendant</h3>
+          <GuideAudiobookPlayer />
+        </div>
+      </div>
       {/* Info box */}
       <Card className="bg-muted/50 border-dashed">
         <CardContent className="p-4">
