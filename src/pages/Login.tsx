@@ -165,10 +165,7 @@ const Login = () => {
       // La navigation est gérée dans signIn()
     } catch (error: any) {
       logger.error("Signin error", { error });
-      toast.error("Erreur de connexion", {
-        description: error.message || "Vérifiez vos identifiants et réessayez",
-        duration: 4000,
-      });
+      // Ne PAS afficher de toast ici car signIn() en affiche déjà un
       setLoading(false);
       setHasRedirected(false);
     }
