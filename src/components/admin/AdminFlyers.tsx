@@ -13,6 +13,7 @@ import { generateSolocabEbook } from "@/lib/ebooks/solocabEbookGenerator";
 import { generateEbookRawTextPdf } from "@/lib/ebooks/ebookRawTextPdfGenerator";
 import { generateGuideIndependantPdf } from "@/lib/ebooks/guideIndependantPdfGenerator";
 import { generateGuideIndependantRawTextPdf } from "@/lib/ebooks/guideIndependantRawTextPdfGenerator";
+import { generateNegligenceEbook } from "@/lib/ebooks/negligenceEbookGenerator";
 
 import SolocabPodcastGenerator from "@/components/podcast/SolocabPodcastGenerator";
 import SolocabAudiobookPlayer from "@/components/audiobook/SolocabAudiobookPlayer";
@@ -64,7 +65,7 @@ const AdminFlyers = () => {
     }
   };
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant" | "guide-raw-text") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc" | "ebook-solocab" | "ebook-raw-text" | "guide-independant" | "guide-raw-text" | "ebook-negligence") => {
     setLoading(type);
     try {
       switch (type) {
@@ -107,6 +108,10 @@ const AdminFlyers = () => {
         case "guide-raw-text":
           await generateGuideIndependantRawTextPdf();
           toast.success("Texte podcast du Guide téléchargé !");
+          break;
+        case "ebook-negligence":
+          await generateNegligenceEbook();
+          toast.success("eBook 'Ce que les Applications Négligent' téléchargé !");
           break;
       }
     } catch (error) {
@@ -197,6 +202,14 @@ const AdminFlyers = () => {
       icon: Mic,
       color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
       gradient: "from-violet-500 to-purple-500",
+    },
+    {
+      id: "ebook-negligence" as const,
+      title: "📕 eBook — Ce que les Applications Négligent",
+      description: "Analyse systémique complète du déséquilibre humain dans le modèle VTC. 12 parties + données 2024-2025 + annexes stratégiques.",
+      icon: BookOpen,
+      color: "bg-red-500/10 text-red-600 dark:text-red-400",
+      gradient: "from-red-500 to-rose-500",
     },
   ];
 
