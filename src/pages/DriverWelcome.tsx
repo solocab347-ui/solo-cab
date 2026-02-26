@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Sparkles, Loader2, Rocket, AlertCircle, RefreshCw,
-  Target, Shield, Users, CheckCircle2, ArrowRight
+  Target, Shield, Users, CheckCircle2, ArrowRight, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -161,6 +161,14 @@ const DriverWelcome = () => {
       <div className="min-h-screen bg-background flex flex-col">
         {/* Hero */}
         <div className="relative overflow-hidden flex-1 flex flex-col items-center justify-center px-4 py-8">
+          {/* Logout button */}
+          <button
+            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+            className="absolute top-4 right-4 z-20 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-muted/50"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Déconnexion
+          </button>
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-success/5" />
           
           <div className="relative z-10 max-w-md w-full text-center space-y-6">

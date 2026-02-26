@@ -18,9 +18,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Compass,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 import { OnboardingProfileStep } from './OnboardingProfileStep';
 import { OnboardingDocumentsStep } from './OnboardingDocumentsStep';
 import { OnboardingBillingStep } from './OnboardingBillingStep';
@@ -64,6 +66,7 @@ export function HorizontalOnboardingTunnel({
   onComplete,
   initialStep = 0
 }: OnboardingTunnelProps) {
+  const navigate = useNavigate();
   const hasNfcPlate = !!(driverProfile?.driver?.has_nfc_plate || driverProfile?.driver?.nfc_tag_number || driverProfile?.driver?.nfc_plate_order_id);
   
   const STEPS = hasNfcPlate 
@@ -590,9 +593,17 @@ export function HorizontalOnboardingTunnel({
           {/* Logo + Progress */}
           <div className="flex items-center justify-between mb-2">
             <img src={logo} alt="SoloCab" className="h-5" />
-            <span className="text-xs text-muted-foreground font-medium">
-              Étape {currentStep + 1}/{STEPS.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground font-medium">
+                Étape {currentStep + 1}/{STEPS.length}
+              </span>
+              <button
+                onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
+              >
+                <LogOut className="w-3 h-3" />
+              </button>
+            </div>
           </div>
           
           {/* Progress bar - gradient */}
