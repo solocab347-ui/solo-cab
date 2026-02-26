@@ -6288,6 +6288,7 @@ export type Database = {
           fleet_documents_status: string | null
           fleet_documents_submitted_at: string | null
           fleet_manager_id: string | null
+          free_access_duration_days: number | null
           free_access_end_date: string | null
           free_access_granted: boolean | null
           free_access_start_date: string | null
@@ -6465,6 +6466,7 @@ export type Database = {
           fleet_documents_status?: string | null
           fleet_documents_submitted_at?: string | null
           fleet_manager_id?: string | null
+          free_access_duration_days?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
@@ -6642,6 +6644,7 @@ export type Database = {
           fleet_documents_status?: string | null
           fleet_documents_submitted_at?: string | null
           fleet_manager_id?: string | null
+          free_access_duration_days?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null

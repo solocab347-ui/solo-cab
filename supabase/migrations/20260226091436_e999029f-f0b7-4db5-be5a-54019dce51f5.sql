@@ -1,0 +1,1 @@
+ALTER TABLE public.drivers ADD COLUMN IF NOT EXISTS free_access_duration_days integer DEFAULT NULL;

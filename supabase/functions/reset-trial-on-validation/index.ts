@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     // Récupérer le driver
     const { data: driver, error: driverError } = await supabaseAdmin
       .from('drivers')
-      .select('id, user_id, subscription_stripe_id, subscription_status, is_pioneer, created_at')
+      .select('id, user_id, subscription_stripe_id, subscription_status, is_pioneer, created_at, free_access_granted, free_access_type, free_access_duration_days')
       .eq('id', driver_id)
       .single();
 
@@ -85,12 +85,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('📋 Processing driver:', driver.id, 'Pioneer:', driver.is_pioneer);
+    console.log('📋 Processing driver:', driver.id, 'Pioneer:', driver.is_pioneer, 'Free access:', driver.free_access_granted, 'Duration days:', driver.free_access_duration_days);
 
-    // Calculer la durée d'essai: 30 jours pour pionniers, 14 jours pour les autres
-    const trialDays = driver.is_pioneer ? 30 : 14;
+    // Si accès gratuit différé pré-configuré (ex: invitation), utiliser la durée prévue
+    // Sinon: 30 jours pour pionniers, 14 jours pour les autres
+    const trialDays = driver.free_access_duration_days || (driver.is_pioneer ? 30 : 14);
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
+    // Déterminer le type d'accès
+    const accessType = driver.free_access_type || 'trial';
 
     // Si pas d'abonnement Stripe, définir free_access_end_date pour la période d'essai
     if (!driver.subscription_stripe_id) {
@@ -103,7 +107,7 @@ Deno.serve(async (req) => {
           free_access_granted: true,
           free_access_start_date: new Date().toISOString(),
           free_access_end_date: trialEndDate.toISOString(),
-          free_access_type: 'trial',
+          free_access_type: accessType,
         })
         .eq('id', driver_id);
 
