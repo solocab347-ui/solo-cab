@@ -242,7 +242,8 @@ export const PushNotificationListener = () => {
         if (statusStr === 'SUBSCRIBED') {
           logger.info('Écoute notifications activée', {});
         } else if (statusStr === 'CHANNEL_ERROR') {
-          logger.error('Erreur canal notifications', {});
+          // Log silencieux, pas de reconnexion automatique pour éviter les boucles
+          console.warn('[Notifications] Canal en erreur, pas de reconnexion automatique');
         }
       });
 
@@ -254,7 +255,8 @@ export const PushNotificationListener = () => {
       }
       setIsListening(false);
     };
-  }, [user, showBrowserNotification]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Log d'état pour debug
   useEffect(() => {
