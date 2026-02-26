@@ -25,9 +25,11 @@ const loadImage = async (path: string): Promise<string | null> => {
 };
 
 let logoDataUrl: string | null = null;
+let coverImageDataUrl: string | null = null;
 
 export const initLogo = async () => {
   logoDataUrl = await loadImage("/images/solocab-academy-logo.png");
+  coverImageDataUrl = await loadImage("/images/ebook-negligence-cover.png");
 };
 
 const addLogo = (doc: jsPDF, x: number, y: number, size = 20) => {
@@ -126,61 +128,26 @@ const addChapterPage = (doc: jsPDF, num: number, title: string, subtitle: string
 export const addCover = (doc: jsPDF) => {
   const { w, h } = getPageDims(doc);
 
-  // Dark blue background
-  doc.setFillColor(...c.darkBlue);
-  doc.rect(0, 0, w, h, "F");
+  if (coverImageDataUrl) {
+    // Full-page cover image
+    try {
+      doc.addImage(coverImageDataUrl, "PNG", 0, 0, w, h);
+    } catch {
+      // Fallback to dark background
+      doc.setFillColor(...c.darkBlue);
+      doc.rect(0, 0, w, h, "F");
+    }
+  } else {
+    doc.setFillColor(...c.darkBlue);
+    doc.rect(0, 0, w, h, "F");
+  }
 
-  // Abstract geometric shapes
-  doc.setFillColor(25, 45, 95);
-  doc.circle(-30, h * 0.3, 80, "F");
-  doc.circle(w + 25, h * 0.7, 60, "F");
-  doc.setFillColor(30, 52, 100);
-  doc.circle(w * 0.75, h * 0.15, 30, "F");
-  doc.circle(w * 0.2, h * 0.85, 25, "F");
-
-  // Logo
-  addLogo(doc, w / 2 - 18, 30, 36);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...c.lightViolet);
-  doc.text("SOLOCAB ACADEMY", w / 2, 78, { align: "center" });
-
-  // Top decorative line
-  doc.setDrawColor(...c.lightViolet);
-  doc.setLineWidth(2);
-  doc.line(40, 85, w - 40, 85);
-
-  // Main title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(32);
-  doc.setTextColor(255, 255, 255);
-  doc.text("CE QUE LES", w / 2, 115, { align: "center" });
-  doc.text("APPLICATIONS", w / 2, 135, { align: "center" });
-  doc.text("NEGLIGENT", w / 2, 155, { align: "center" });
-
-  // Subtitle box
-  doc.setFillColor(28, 48, 95);
-  doc.roundedRect(30, 168, w - 60, 34, 5, 5, "F");
+  // Subtle SoloCab Academy branding at very bottom
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(...c.lightViolet);
-  doc.text("Analyse systemique complete du desequilibre", w / 2, 181, { align: "center" });
-  doc.text("humain dans le modele VTC", w / 2, 192, { align: "center" });
-
-  // Bottom line
-  doc.setDrawColor(...c.lightViolet);
-  doc.setLineWidth(2);
-  doc.line(40, h - 80, w - 40, h - 80);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...c.lightViolet);
-  doc.text("www.solocab.fr | contact@solocab.fr", w / 2, h - 60, { align: "center" });
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(180, 190, 220);
-  doc.text("Edition 2026 — SoloCab Academy", w / 2, h - 48, { align: "center" });
-  doc.link(35, h - 68, w - 70, 14, { url: "https://www.solocab.fr" });
+  doc.text("SoloCab Academy — Edition 2026", w / 2, h - 8, { align: "center" });
+  doc.link(0, 0, w, h, { url: "https://www.solocab.fr" });
 };
 
 // ========== TABLE OF CONTENTS ==========
