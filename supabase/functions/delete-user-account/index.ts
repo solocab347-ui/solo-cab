@@ -301,6 +301,20 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Nettoyer nfc_plate_orders (circular FK with drivers)
+        await supabaseAdmin
+          .from('drivers')
+          .update({ nfc_plate_order_id: null })
+          .eq('id', driver.id);
+        
+        const { error: nfcError } = await supabaseAdmin
+          .from('nfc_plate_orders')
+          .delete()
+          .eq('driver_id', driver.id);
+        if (nfcError) {
+          console.log('Note: Could not clean nfc_plate_orders:', nfcError.message);
+        }
+
         // Nettoyer aussi les références par user_id
         const userTables = ['notifications', 'push_subscriptions'];
         for (const table of userTables) {
