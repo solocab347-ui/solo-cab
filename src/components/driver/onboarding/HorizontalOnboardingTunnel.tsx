@@ -552,6 +552,7 @@ export function HorizontalOnboardingTunnel({
           />
         );
       case 'trial_start':
+        const documentsStepIndex = STEPS.findIndex(s => s.id === 'documents');
         return (
           <OnboardingTrialStartStep
             driverId={driverId}
@@ -559,6 +560,10 @@ export function HorizontalOnboardingTunnel({
             stripeAccountStatus={driverProfile?.driver?.stripe_account_status}
             documentsStatus={stepData.documents.documentsStatus}
             onComplete={handleComplete}
+            onGoToDocuments={documentsStepIndex >= 0 ? () => {
+              setDirection(-1);
+              setCurrentStep(documentsStepIndex);
+            } : undefined}
             loading={saving}
           />
         );
@@ -576,59 +581,59 @@ export function HorizontalOnboardingTunnel({
         overscrollBehavior: 'none',
       }}
     >
-      {/* Header */}
+      {/* Header - Clean & minimal */}
       <div 
-        className="flex-shrink-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2 bg-card/80 backdrop-blur-sm border-b border-border"
-        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+        className="flex-shrink-0 px-4 pt-3 pb-2 bg-card/90 backdrop-blur-md border-b border-border/50"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <div className="max-w-lg mx-auto">
-          {/* Logo + Progress counter */}
-          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-            <img src={logo} alt="SoloCab" className="h-5 sm:h-6" />
-            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
-              {autoSaveStatus === 'saving' && <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />}
-              {autoSaveStatus === 'saved' && <Save className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-success" />}
-              <span>Étape {currentStep + 1}/{STEPS.length}</span>
-            </div>
+          {/* Logo + Progress */}
+          <div className="flex items-center justify-between mb-2">
+            <img src={logo} alt="SoloCab" className="h-5" />
+            <span className="text-xs text-muted-foreground font-medium">
+              Étape {currentStep + 1}/{STEPS.length}
+            </span>
           </div>
           
-          {/* Progress bar */}
-          <Progress value={progress} className="h-1" />
+          {/* Progress bar - gradient */}
+          <div className="h-1 bg-muted/50 rounded-full overflow-hidden mb-3">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
           
-          {/* Step indicators */}
-          <div className="flex justify-between mt-2 gap-0.5 sm:gap-1 overflow-x-auto pb-0.5 sm:pb-1 scrollbar-hide">
+          {/* Step indicators - minimalist pills */}
+          <div className="flex justify-between gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
               const isCompleted = index < currentStep || completedSteps[step.id as keyof typeof completedSteps];
               const isCurrent = index === currentStep;
               const isClickable = index < currentStep || isCompleted;
               
-              const handleStepClick = () => {
-                if (isClickable && index !== currentStep) {
-                  setDirection(index < currentStep ? -1 : 1);
-                  setCurrentStep(index);
-                }
-              };
-              
               return (
                 <button
                   type="button"
                   key={step.id}
-                  onClick={handleStepClick}
+                  onClick={() => {
+                    if (isClickable && index !== currentStep) {
+                      setDirection(index < currentStep ? -1 : 1);
+                      setCurrentStep(index);
+                    }
+                  }}
                   disabled={!isClickable || isCurrent}
                   className={cn(
-                    "flex flex-col items-center flex-shrink-0 transition-all",
-                    isClickable && !isCurrent ? "cursor-pointer hover:scale-105 active:scale-95" : "cursor-default",
-                    isCurrent ? 'text-primary' : isCompleted ? 'text-success' : 'text-muted-foreground/30'
+                    "flex flex-col items-center flex-shrink-0 transition-all duration-300",
+                    isClickable && !isCurrent ? "cursor-pointer" : "cursor-default",
                   )}
                 >
                   <div className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                    "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300",
                     isCompleted && !isCurrent
-                      ? 'bg-success/20' 
+                      ? 'bg-emerald-500/15 text-emerald-500' 
                       : isCurrent 
-                        ? 'bg-primary/20 ring-2 ring-primary' 
-                        : 'bg-muted/30'
+                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25' 
+                        : 'bg-muted/40 text-muted-foreground/40'
                   )}>
                     {isCompleted && !isCurrent ? (
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -636,7 +641,10 @@ export function HorizontalOnboardingTunnel({
                       <Icon className="w-3.5 h-3.5" />
                     )}
                   </div>
-                  <span className="text-[8px] mt-0.5 font-medium truncate max-w-[40px]">{step.title}</span>
+                  <span className={cn(
+                    "text-[8px] mt-0.5 font-medium truncate max-w-[45px]",
+                    isCurrent ? "text-primary" : isCompleted ? "text-emerald-500" : "text-muted-foreground/40"
+                  )}>{step.title}</span>
                 </button>
               );
             })}
@@ -671,37 +679,33 @@ export function HorizontalOnboardingTunnel({
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation arrows */}
+        {/* Navigation arrows - subtle */}
         {currentStep > 0 && (
           <button
             onClick={handlePrev}
             disabled={saving}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-24 bg-gradient-to-r from-background/90 to-transparent group disabled:opacity-50"
+            className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-card/80 backdrop-blur border border-border/50 flex items-center justify-center hover:bg-muted active:scale-90 transition-all shadow-sm"
             aria-label="Étape précédente"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted/50 backdrop-blur-sm border border-border flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/50 group-active:scale-90 transition-all shadow-lg">
-              <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground group-hover:text-primary" />
-            </div>
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>
         )}
         {currentStep < STEPS.length - 1 && !isSelfNavigatedStep() && (
           <button
             onClick={handleNext}
             disabled={!canProceed() || saving}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-24 bg-gradient-to-l from-background/90 to-transparent group disabled:opacity-50"
+            className={cn(
+              "absolute right-1 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full backdrop-blur flex items-center justify-center active:scale-90 transition-all shadow-sm disabled:opacity-30",
+              canProceed() 
+                ? "bg-primary/15 border border-primary/30 hover:bg-primary/25" 
+                : "bg-card/80 border border-border/50"
+            )}
             aria-label="Étape suivante"
           >
-            <div className={cn(
-              "w-10 h-10 sm:w-12 sm:h-12 rounded-full backdrop-blur-sm flex items-center justify-center group-active:scale-90 transition-all shadow-lg",
-              canProceed() 
-                ? "bg-primary/20 border border-primary/40 group-hover:bg-primary/30 group-hover:border-primary animate-pulse" 
-                : "bg-muted/30 border border-border"
-            )}>
-              <ChevronRight className={cn(
-                "w-6 h-6 sm:w-7 sm:h-7",
-                canProceed() ? "text-primary" : "text-muted-foreground/30"
-              )} />
-            </div>
+            <ChevronRight className={cn(
+              "w-5 h-5",
+              canProceed() ? "text-primary" : "text-muted-foreground/30"
+            )} />
           </button>
         )}
       </motion.div>
