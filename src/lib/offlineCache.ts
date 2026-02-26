@@ -35,7 +35,7 @@ interface OfflineCourse {
   scheduled_date?: string;
   status: string;
   final_payment_amount?: number;
-  course_type?: string;
+  
   payment_method?: string;
   created_at: string;
   cached_at: string;
