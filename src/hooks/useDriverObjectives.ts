@@ -221,7 +221,10 @@ export function useDriverObjectives(driverId: string | null) {
   }, [driverId]);
 
   const fetchAll = useCallback(async () => {
-    if (!driverId) return;
+    if (!driverId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -397,9 +400,7 @@ export function useDriverObjectives(driverId: string | null) {
   }, [fetchAll]);
 
   useEffect(() => {
-    if (dailyEntries.length > 0 || objectives.length > 0) {
-      calculateProgress();
-    }
+    calculateProgress();
   }, [dailyEntries, objectives, calculateProgress]);
 
   // Fetch driver stats when data changes
