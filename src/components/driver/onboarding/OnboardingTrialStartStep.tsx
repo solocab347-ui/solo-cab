@@ -23,6 +23,7 @@ interface OnboardingTrialStartStepProps {
   stripeAccountStatus?: string;
   documentsStatus?: string;
   onComplete: () => void;
+  onGoToDocuments?: () => void;
   loading: boolean;
 }
 
@@ -32,6 +33,7 @@ export function OnboardingTrialStartStep({
   stripeAccountStatus,
   documentsStatus: initialDocumentsStatus,
   onComplete,
+  onGoToDocuments,
   loading 
 }: OnboardingTrialStartStepProps) {
   const [activating, setActivating] = useState(false);
@@ -224,67 +226,48 @@ export function OnboardingTrialStartStep({
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center px-4">
-      {/* Hero */}
+    <div className="h-full flex flex-col items-center justify-center text-center px-4 py-6">
+      {/* Hero - simplified */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mb-4"
+        className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-5"
       >
-        <Rocket className="w-10 h-10 text-primary-foreground" />
+        <Rocket className="w-8 h-8 text-primary-foreground" />
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="mb-4"
+        className="mb-6"
       >
         <h2 className="text-2xl font-bold text-foreground">Prêt à démarrer ? 🚀</h2>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-2">
           14 jours gratuits pour développer ta clientèle
         </p>
       </motion.div>
 
-      {/* Info explicative sur la période d'essai */}
+      {/* Conditions - clean cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="w-full max-w-sm mb-4 p-3 rounded-xl bg-primary/10 border border-primary/30"
-      >
-        <p className="text-xs text-foreground/80 text-left">
-          <strong className="text-primary">🎁 Vos 14 jours ne démarrent que lorsque :</strong>
-        </p>
-        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5 text-left list-disc ml-4">
-          <li>Vos documents sont validés par notre équipe</li>
-          <li>Vous appuyez sur "Lancer mon indépendance"</li>
-        </ul>
-        <p className="text-xs text-emerald-400 mt-1.5 text-left font-medium">
-          → Vous ne perdez aucun jour !
-        </p>
-      </motion.div>
-
-      {/* Condition cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="w-full max-w-sm mb-6 space-y-3"
+        className="w-full max-w-sm space-y-3 mb-6"
       >
         {/* Documents status */}
         <div className={cn(
-          "w-full p-4 rounded-2xl border-2",
+          "w-full p-4 rounded-2xl border transition-all",
           areDocumentsValidated 
-            ? "border-emerald-500 bg-emerald-500/10" 
+            ? "border-emerald-500/40 bg-emerald-500/5" 
             : areDocumentsPending
-              ? "border-amber-500/50 bg-amber-500/10"
-              : "border-muted bg-muted/10"
+              ? "border-amber-500/40 bg-amber-500/5"
+              : "border-border bg-muted/5"
         )}>
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             <div className={cn(
-              "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+              "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
               areDocumentsValidated ? "bg-emerald-500" : areDocumentsPending ? "bg-amber-500" : "bg-muted"
             )}>
               {areDocumentsValidated 
@@ -294,56 +277,62 @@ export function OnboardingTrialStartStep({
                   : <FileText className="w-4 h-4 text-muted-foreground" />
               }
             </div>
-            <div>
+            <div className="text-left flex-1">
               <h3 className={cn(
                 "font-semibold text-sm",
-                areDocumentsValidated ? "text-emerald-400" : areDocumentsPending ? "text-amber-400" : "text-muted-foreground"
+                areDocumentsValidated ? "text-emerald-500" : areDocumentsPending ? "text-amber-500" : "text-foreground"
               )}>
                 {areDocumentsValidated 
                   ? "Documents validés ✓" 
                   : areDocumentsPending 
-                    ? "En attente de validation admin"
+                    ? "En attente de validation"
                     : "Documents à déposer"}
               </h3>
-              <p className="text-muted-foreground text-xs mt-1">
+              <p className="text-muted-foreground text-xs mt-0.5">
                 {areDocumentsValidated 
-                  ? "Tes documents sont validés" 
+                  ? "Tes documents sont approuvés" 
                   : areDocumentsPending
-                    ? "L'admin valide sous 24-48h"
-                    : "Dépose tes documents pour validation"}
+                    ? "Validation sous 24-48h"
+                    : "Dépose tes documents pour continuer"}
               </p>
             </div>
+            {/* Button to go back to documents */}
+            {areDocumentsMissing && onGoToDocuments && (
+              <button
+                onClick={onGoToDocuments}
+                className="text-xs text-primary font-medium hover:underline flex-shrink-0"
+              >
+                Déposer →
+              </button>
+            )}
           </div>
         </div>
-        {/* Own equipment or buy equipment */}
+
+        {/* Own equipment confirmation */}
         {(isOwnEquipment || isEquipmentPurchase) && (
           <button
             type="button"
             onClick={() => setConfirmReady(!confirmReady)}
             className={cn(
-              "w-full p-4 rounded-2xl border-2 transition-all text-left",
+              "w-full p-4 rounded-2xl border transition-all text-left",
               confirmReady 
-                ? "border-emerald-500 bg-emerald-500/10" 
-                : "border-border bg-muted/10 hover:border-border"
+                ? "border-emerald-500/40 bg-emerald-500/5" 
+                : "border-border bg-muted/5 hover:border-muted-foreground/30"
             )}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <div className={cn(
-                "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                confirmReady ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/40"
+                "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                confirmReady ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"
               )}>
                 {confirmReady && <CheckCircle2 className="w-4 h-4 text-white" />}
               </div>
               <div>
                 <h3 className="font-semibold text-foreground text-sm">
-                  {isEquipmentPurchase 
-                    ? "J'ai reçu mon terminal" 
-                    : "Mon matériel est prêt"}
+                  {isEquipmentPurchase ? "J'ai reçu mon terminal" : "Mon matériel est prêt"}
                 </h3>
-                <p className="text-muted-foreground text-xs mt-1">
-                  {isEquipmentPurchase 
-                    ? "Mon TPE est fonctionnel" 
-                    : "Mon équipement de paiement est configuré"}
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Mon équipement de paiement est configuré
                 </p>
               </div>
             </div>
@@ -353,14 +342,14 @@ export function OnboardingTrialStartStep({
         {/* Stripe Connect */}
         {isStripeChoice && (
           <div className={cn(
-            "w-full p-4 rounded-2xl border-2",
+            "w-full p-4 rounded-2xl border",
             isStripeReady 
-              ? "border-emerald-500 bg-emerald-500/10" 
-              : "border-amber-500/50 bg-amber-500/10"
+              ? "border-emerald-500/40 bg-emerald-500/5" 
+              : "border-amber-500/40 bg-amber-500/5"
           )}>
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <div className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                 isStripeReady ? "bg-emerald-500" : "bg-amber-500"
               )}>
                 {isStripeReady 
@@ -368,17 +357,15 @@ export function OnboardingTrialStartStep({
                   : <Clock className="w-4 h-4 text-white" />
                 }
               </div>
-              <div>
+              <div className="text-left">
                 <h3 className={cn(
                   "font-semibold text-sm",
-                  isStripeReady ? "text-emerald-400" : "text-amber-400"
+                  isStripeReady ? "text-emerald-500" : "text-amber-500"
                 )}>
-                  {isStripeReady ? "Compte Stripe activé ✓" : "Validation Stripe en cours..."}
+                  {isStripeReady ? "Compte activé ✓" : "Validation en cours..."}
                 </h3>
-                <p className="text-muted-foreground text-xs mt-1">
-                  {isStripeReady 
-                    ? "Tu peux encaisser tes clients" 
-                    : "L'essai démarrera après validation"}
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  {isStripeReady ? "Tu peux encaisser tes clients" : "L'essai démarrera après validation"}
                 </p>
               </div>
             </div>
@@ -386,33 +373,24 @@ export function OnboardingTrialStartStep({
         )}
       </motion.div>
 
-      {/* Benefits - compact */}
+      {/* Trial info - minimal */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="w-full max-w-sm bg-muted/30 rounded-xl p-3 mb-6"
+        transition={{ delay: 0.5 }}
+        className="w-full max-w-sm p-3 rounded-xl bg-primary/5 border border-primary/15 mb-6 text-left"
       >
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {[
-            "QR codes personnalisés",
-            "Coach IA intégré",
-            "Calculateur de prix",
-            "Statistiques complètes"
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-muted-foreground">
-              <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
+        <p className="text-xs text-foreground/80">
+          <strong className="text-primary">🎁 Tes 14 jours ne démarrent que lorsque</strong> tes documents sont validés et que tu appuies sur le bouton ci-dessous.
+          <span className="text-emerald-500 font-medium"> Aucun jour perdu !</span>
+        </p>
       </motion.div>
 
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
+        transition={{ delay: 0.6 }}
         className="w-full max-w-sm space-y-3"
       >
         {canStartTrial() ? (
@@ -432,25 +410,31 @@ export function OnboardingTrialStartStep({
           </Button>
         ) : (
           <>
-            {!areDocumentsValidated ? (
+            {areDocumentsMissing && onGoToDocuments ? (
+              <Button 
+                onClick={onGoToDocuments}
+                className="w-full h-12 bg-primary hover:bg-primary/90"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Déposer mes documents
+              </Button>
+            ) : !areDocumentsValidated ? (
               <>
                 <Button 
                   onClick={refreshStatus}
                   disabled={refreshing}
                   variant="outline"
-                  className="w-full h-12 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                  className="w-full h-12"
                 >
                   {refreshing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <RefreshCw className="w-4 h-4 mr-2" />
                   )}
-                  {areDocumentsPending ? 'Actualiser le statut' : 'Vérifier mes documents'}
+                  Actualiser le statut
                 </Button>
                 <p className="text-muted-foreground text-xs text-center">
-                  {areDocumentsPending 
-                    ? "Vos documents sont en cours de validation par l'admin. Vous serez notifié automatiquement."
-                    : "Déposez vos documents pour continuer"}
+                  Vos documents sont en cours de validation.
                 </p>
               </>
             ) : (
@@ -458,7 +442,7 @@ export function OnboardingTrialStartStep({
                 onClick={handleSkipAndWait}
                 disabled={loading}
                 variant="outline"
-                className="w-full h-12 border-border text-foreground hover:bg-muted"
+                className="w-full h-12"
               >
                 <Clock className="w-4 h-4 mr-2" />
                 {isStripeNotReady ? 'Attendre Stripe' : 'Attendre mon matériel'}

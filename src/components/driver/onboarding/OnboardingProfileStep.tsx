@@ -1,8 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 import { SectorSelector } from '../SectorSelector';
@@ -13,10 +11,9 @@ import {
   Camera, 
   MapPin, 
   Briefcase,
-  User,
   CheckCircle2,
-  AlertCircle
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface OnboardingProfileStepProps {
   data: {
@@ -37,6 +34,16 @@ interface OnboardingProfileStepProps {
   onUpdate: (updates: Partial<OnboardingProfileStepProps['data']>) => void;
 }
 
+function SectionHeader({ icon: Icon, title, complete }: { icon: any; title: string; complete?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <Icon className="w-4 h-4 text-primary" />
+      <span className="text-sm font-semibold text-foreground">{title}</span>
+      {complete && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+    </div>
+  );
+}
+
 export function OnboardingProfileStep({ data, driverProfile, userId, onUpdate }: OnboardingProfileStepProps) {
   const isPhotoComplete = !!data.profilePhotoUrl;
   const isDescriptionComplete = !!data.serviceDescription && data.serviceDescription.length >= 20;
@@ -44,201 +51,112 @@ export function OnboardingProfileStep({ data, driverProfile, userId, onUpdate }:
   const isServicesComplete = data.servicesOffered.length > 0;
 
   return (
-    <div className="space-y-3">
-      {/* Photo unique */}
-      <Card className={isPhotoComplete ? 'border-primary/30 bg-primary/5' : ''}>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Camera className="w-4 h-4 text-primary" />
-            Votre photo
-            {isPhotoComplete ? (
-              <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
-                <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                OK
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-orange-500/10 text-orange-500 text-[10px] px-1.5 py-0">
-                <AlertCircle className="w-2.5 h-2.5 mr-0.5" />
-                Requis
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <SingleProfilePhotoUpload
-            currentPhotoUrl={data.profilePhotoUrl}
-            userId={userId}
-            driverName={driverProfile?.full_name || 'Chauffeur'}
-            onPhotoUpdate={(url) => {
-              // Mettre à jour les deux URLs en même temps
-              onUpdate({ profilePhotoUrl: url, cardPhotoUrl: url });
-            }}
-          />
-        </CardContent>
-      </Card>
+    <div className="space-y-5">
+      {/* Photo */}
+      <div>
+        <SectionHeader icon={Camera} title="Photo de profil" complete={isPhotoComplete} />
+        <p className="text-xs text-muted-foreground mb-3">Utilisée sur ton profil public et ta carte chauffeur</p>
+        <SingleProfilePhotoUpload
+          currentPhotoUrl={data.profilePhotoUrl}
+          userId={userId}
+          driverName={driverProfile?.full_name || 'Chauffeur'}
+          onPhotoUpdate={(url) => onUpdate({ profilePhotoUrl: url, cardPhotoUrl: url })}
+        />
+      </div>
 
-      {/* Identité affichée */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <User className="w-4 h-4 text-primary" />
-            Identité affichée
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0 space-y-2">
-          <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
-            <Checkbox
-              id="displayName"
-              checked={data.displayDriverName}
-              onCheckedChange={(checked) => onUpdate({ displayDriverName: checked as boolean })}
-            />
-            <Label htmlFor="displayName" className="text-xs cursor-pointer">
+      {/* Identity display - minimal toggles */}
+      <div>
+        <SectionHeader icon={Briefcase} title="Identité affichée" />
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+            <Label htmlFor="displayName" className="text-xs cursor-pointer flex-1">
               Afficher mon nom ({driverProfile?.full_name || 'Non défini'})
             </Label>
+            <Switch
+              id="displayName"
+              checked={data.displayDriverName}
+              onCheckedChange={(checked) => onUpdate({ displayDriverName: checked })}
+            />
           </div>
-          <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
-            <Checkbox
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+            <Label htmlFor="displayCompany" className="text-xs cursor-pointer flex-1">
+              Afficher le nom de mon entreprise
+            </Label>
+            <Switch
               id="displayCompany"
               checked={data.displayCompanyName}
-              onCheckedChange={(checked) => onUpdate({ displayCompanyName: checked as boolean })}
+              onCheckedChange={(checked) => onUpdate({ displayCompanyName: checked })}
             />
-            <Label htmlFor="displayCompany" className="text-xs cursor-pointer">
-              Afficher mon entreprise
-            </Label>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Description */}
-      <Card className={isDescriptionComplete ? 'border-primary/30 bg-primary/5' : ''}>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-primary" />
-            Présentation
-            {isDescriptionComplete ? (
-              <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
-                <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                OK
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-orange-500/10 text-orange-500 text-[10px] px-1.5 py-0">
-                <AlertCircle className="w-2.5 h-2.5 mr-0.5" />
-                Requis
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <Textarea
-            value={data.serviceDescription}
-            onChange={(e) => onUpdate({ serviceDescription: e.target.value })}
-            placeholder="Chauffeur VTC professionnel, véhicule haut de gamme..."
-            rows={2}
-            className="resize-none text-sm"
-          />
-          <p className="text-[10px] text-muted-foreground mt-1">
-            {data.serviceDescription.length}/20 caractères min.
-          </p>
-        </CardContent>
-      </Card>
+      <div>
+        <SectionHeader icon={Briefcase} title="Présentation" complete={isDescriptionComplete} />
+        <Textarea
+          value={data.serviceDescription}
+          onChange={(e) => onUpdate({ serviceDescription: e.target.value })}
+          placeholder="Chauffeur VTC professionnel, véhicule haut de gamme..."
+          rows={2}
+          className="resize-none text-sm"
+        />
+        <p className={cn(
+          "text-[10px] mt-1",
+          isDescriptionComplete ? "text-muted-foreground" : "text-amber-500"
+        )}>
+          {data.serviceDescription.length}/20 caractères min.
+        </p>
+      </div>
 
-      {/* Secteurs */}
-      <Card className={isSectorsComplete ? 'border-primary/30 bg-primary/5' : ''}>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            Zones d'activité
-            {isSectorsComplete ? (
-              <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
-                <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                OK
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-orange-500/10 text-orange-500 text-[10px] px-1.5 py-0">
-                <AlertCircle className="w-2.5 h-2.5 mr-0.5" />
-                Requis
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <SectorSelector
-            selectedSectors={data.workingSectors}
-            onChange={(sectors) => onUpdate({ workingSectors: sectors })}
-          />
-        </CardContent>
-      </Card>
+      {/* Sectors */}
+      <div>
+        <SectionHeader icon={MapPin} title="Zones d'activité" complete={isSectorsComplete} />
+        <SectorSelector
+          selectedSectors={data.workingSectors}
+          onChange={(sectors) => onUpdate({ workingSectors: sectors })}
+        />
+      </div>
 
-      {/* Adresse de localisation */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            Adresse de départ
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <AddressAutocomplete
-            value={data.homeAddress}
-            onChange={(address, coords) => {
-              onUpdate({ 
-                homeAddress: address,
-                homeCoordinates: coords || null
-              });
-            }}
-            placeholder="Votre adresse de départ"
-          />
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Non visible publiquement
-          </p>
-        </CardContent>
-      </Card>
+      {/* Home address */}
+      <div>
+        <SectionHeader icon={MapPin} title="Adresse de départ" />
+        <AddressAutocomplete
+          value={data.homeAddress}
+          onChange={(address, coords) => {
+            onUpdate({ 
+              homeAddress: address,
+              homeCoordinates: coords || null
+            });
+          }}
+          placeholder="Votre adresse de départ"
+        />
+        <p className="text-[10px] text-muted-foreground mt-1">Non visible publiquement</p>
+      </div>
 
       {/* Services */}
-      <Card className={isServicesComplete ? 'border-primary/30 bg-primary/5' : ''}>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-primary" />
-            Services proposés
-            {isServicesComplete ? (
-              <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] px-1.5 py-0">
-                <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                OK
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-orange-500/10 text-orange-500 text-[10px] px-1.5 py-0">
-                <AlertCircle className="w-2.5 h-2.5 mr-0.5" />
-                Requis
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <ServicesSelector
-            selectedServices={data.servicesOffered}
-            onChange={(services) => onUpdate({ servicesOffered: services })}
-          />
-        </CardContent>
-      </Card>
+      <div>
+        <SectionHeader icon={Briefcase} title="Services proposés" complete={isServicesComplete} />
+        <ServicesSelector
+          selectedServices={data.servicesOffered}
+          onChange={(services) => onUpdate({ servicesOffered: services })}
+        />
+      </div>
 
-      {/* Catégories véhicule */}
+      {/* Vehicle categories */}
       <VehicleCategorySelector
         selectedCategories={data.vehicleCategories}
         onChange={(categories) => onUpdate({ vehicleCategories: categories })}
       />
 
-      {/* Équipements */}
-      <Card>
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="text-sm">Équipements (optionnel)</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <EquipmentSelector
-            selectedEquipment={data.vehicleEquipment}
-            onChange={(equipment) => onUpdate({ vehicleEquipment: equipment })}
-          />
-        </CardContent>
-      </Card>
+      {/* Equipment - optional */}
+      <div>
+        <SectionHeader icon={Briefcase} title="Équipements (optionnel)" />
+        <EquipmentSelector
+          selectedEquipment={data.vehicleEquipment}
+          onChange={(equipment) => onUpdate({ vehicleEquipment: equipment })}
+        />
+      </div>
     </div>
   );
 }

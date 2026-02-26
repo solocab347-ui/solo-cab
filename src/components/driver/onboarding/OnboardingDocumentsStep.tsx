@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
+import { cn } from '@/lib/utils';
 import { 
-  FileText, 
   Upload, 
   CheckCircle, 
   Loader2, 
   Eye, 
   Trash2,
-  Info
 } from 'lucide-react';
 
 interface OnboardingDocumentsStepProps {
@@ -198,113 +194,112 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
   const uploadedRequiredCount = requiredDocs.filter((doc) => documents[doc.key]?.url).length;
 
   return (
-    <div className="space-y-3">
-      {/* Status */}
-      <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg">
-        <span className="text-xs font-medium">Documents requis</span>
-        <Badge variant={documentsStatus === "submitted" ? "default" : "outline"} className="text-xs">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">Documents requis</h3>
+        <span className={cn(
+          "text-xs font-medium px-2 py-0.5 rounded-full",
+          uploadedRequiredCount === requiredDocs.length 
+            ? "bg-emerald-500/10 text-emerald-500" 
+            : "bg-muted text-muted-foreground"
+        )}>
           {uploadedRequiredCount}/{requiredDocs.length}
-        </Badge>
+        </span>
       </div>
 
       {documentsStatus === "submitted" && (
-        <Alert className="bg-primary/5 border-primary/20 py-2">
-          <CheckCircle className="w-3.5 h-3.5 text-primary" />
-          <AlertDescription className="text-xs">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/15">
+          <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+          <p className="text-xs text-foreground/80">
             Documents en attente de validation (24-48h).
-          </AlertDescription>
-        </Alert>
+          </p>
+        </div>
       )}
 
-      {/* Documents List */}
-      <div className="space-y-1.5">
+      {/* Documents List - clean rows */}
+      <div className="divide-y divide-border/50 rounded-xl border border-border overflow-hidden">
         {REQUIRED_DOCUMENTS.map((doc) => {
           const uploadedDoc = documents[doc.key];
           const isUploading = uploading === doc.key;
 
           return (
-            <Card key={doc.key} className={uploadedDoc ? 'border-primary/30 bg-primary/5' : ''}>
-              <CardContent className="p-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {uploadedDoc ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+            <div key={doc.key} className={cn(
+              "flex items-center justify-between gap-3 p-3 transition-colors",
+              uploadedDoc ? "bg-primary/3" : "bg-transparent"
+            )}>
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                {uploadedDoc ? (
+                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/25 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">
+                    {doc.label}
+                    {!doc.required && (
+                      <span className="ml-1.5 text-[9px] text-muted-foreground font-normal">Opt.</span>
                     )}
-                    <div className="min-w-0 flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-medium truncate">{doc.label}</p>
-                        {!doc.required && (
-                          <Badge variant="outline" className="text-[9px] bg-muted/50 px-1 py-0">
-                            Opt.
-                          </Badge>
-                        )}
-                      </div>
-                      {(doc as any).hint && (
-                        <p className="text-[9px] text-muted-foreground">{(doc as any).hint}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {uploadedDoc ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(uploadedDoc.url, "_blank")}
-                          className="h-7 w-7 p-0"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteDocument(doc.key)}
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Label htmlFor={`upload-${doc.key}`} className="cursor-pointer">
-                        <div className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
-                          {isUploading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Upload className="w-3.5 h-3.5" />
-                          )}
-                          <span className="text-[10px]">Ajouter</span>
-                        </div>
-                        <Input
-                          id={`upload-${doc.key}`}
-                          type="file"
-                          accept=".jpg,.jpeg,.png,.webp,.pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileUpload(doc.key, file);
-                          }}
-                          disabled={isUploading}
-                        />
-                      </Label>
-                    )}
-                  </div>
+                  </p>
+                  {(doc as any).hint && (
+                    <p className="text-[9px] text-muted-foreground">{(doc as any).hint}</p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {uploadedDoc ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open(uploadedDoc.url, "_blank")}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteDocument(doc.key)}
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                ) : (
+                  <Label htmlFor={`upload-${doc.key}`} className="cursor-pointer">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium">
+                      {isUploading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5" />
+                      )}
+                      Ajouter
+                    </div>
+                    <Input
+                      id={`upload-${doc.key}`}
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(doc.key, file);
+                      }}
+                      disabled={isUploading}
+                    />
+                  </Label>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
 
-      {/* Info */}
-      <Alert className="py-2">
-        <Info className="w-3.5 h-3.5" />
-        <AlertDescription className="text-[10px]">
-          Formats : JPG, PNG, WebP, PDF (max 5 Mo)
-        </AlertDescription>
-      </Alert>
+      {/* Info - minimal */}
+      <p className="text-[10px] text-muted-foreground text-center">
+        Formats : JPG, PNG, WebP, PDF (max 5 Mo)
+      </p>
     </div>
   );
 }
