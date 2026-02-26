@@ -13,7 +13,7 @@ const corsHeaders = {
 interface EmailRequest {
   to?: string;
   driver_id?: string; // Auto-lookup driver email/name from DB
-  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access" | "account_deletion_notice" | "driver_registration" | "driver_welcome_new";
+  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access" | "account_deletion_notice" | "driver_registration" | "driver_welcome_new" | "custom";
   data?: {
     driverName?: string;
     clientName?: string;
@@ -641,6 +641,38 @@ const getEmailTemplate = (type: string, data: any) => {
             <div class="footer"><p>SoloCab · www.solocab.fr</p></div>
           </div>
         </body></html>
+      `,
+    },
+
+    custom: {
+      subject: data.subject || "Message de SoloCab",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${data.headerTitle || 'SoloCab'}</h1>
+              </div>
+              <div class="content">
+                ${data.htmlBody || '<p>Message de SoloCab</p>'}
+              </div>
+              <div class="footer">
+                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                <p>contact@solocab.fr</p>
+              </div>
+            </div>
+          </body>
+        </html>
       `,
     },
   };
