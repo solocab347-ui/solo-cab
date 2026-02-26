@@ -242,7 +242,7 @@ export function DashboardObjectivesWidget({
     fetchSummary();
   }, [driverId, refreshKey]);
 
-  if (loading) {
+  if (loading || !summary) {
     return (
       <Card className="relative overflow-hidden p-4 sm:p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border/50 animate-pulse">
         <div className="h-32 bg-muted/20 rounded-lg"></div>
