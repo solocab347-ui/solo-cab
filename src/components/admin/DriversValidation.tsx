@@ -61,12 +61,27 @@ const DriversValidation = () => {
         .from("drivers")
         .update({ 
           status: "validated",
-          documents_status: "validated", // Permet au chauffeur de lancer son essai
+          documents_status: "validated",
           validation_date: new Date().toISOString()
         })
         .eq("id", driverId);
 
       if (error) throw error;
+
+      // Activer la période d'essai / accès gratuit différé
+      try {
+        console.log("🔄 Resetting trial period for validated driver...");
+        const resetResponse = await supabase.functions.invoke("reset-trial-on-validation", {
+          body: { driver_id: driverId }
+        });
+        if (resetResponse.error) {
+          console.error("⚠️ Trial reset error:", resetResponse.error);
+        } else {
+          console.log("✅ Trial period reset:", resetResponse.data);
+        }
+      } catch (trialError) {
+        console.error("⚠️ Trial reset failed:", trialError);
+      }
 
       // Send validation email
       await supabase.functions.invoke("send-email", {
