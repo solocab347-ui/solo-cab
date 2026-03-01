@@ -12,6 +12,8 @@ interface DriverHomeProps {
 interface Stats {
   todayCourses: number;
   todayRevenue: number;
+  weekCourses: number;
+  weekRevenue: number;
   monthClients: number;
   monthCourses: number;
   monthCompleted: number;
@@ -31,6 +33,8 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   const [stats, setStats] = useState<Stats>({
     todayCourses: 0,
     todayRevenue: 0,
+    weekCourses: 0,
+    weekRevenue: 0,
     monthClients: 0,
     monthCourses: 0,
     monthCompleted: 0,
@@ -64,6 +68,8 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           setStats({
             todayCourses: d.today_courses || 0,
             todayRevenue: Number(d.today_revenue) || 0,
+            weekCourses: d.week_courses || 0,
+            weekRevenue: Number(d.week_revenue) || 0,
             monthClients: d.month_clients || 0,
             monthCourses: d.month_courses || 0,
             monthCompleted: d.month_completed || 0,
