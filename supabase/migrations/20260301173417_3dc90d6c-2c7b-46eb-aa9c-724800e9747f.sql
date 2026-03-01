@@ -1,0 +1,1 @@
+ALTER TABLE factures DROP CONSTRAINT factures_client_or_company_check;
