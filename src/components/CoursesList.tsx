@@ -273,54 +273,77 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       // Fetch les données supplémentaires en parallèle (en arrière-plan)
       const courseIds = (coursesData || []).map(c => c.id);
+      const chunkBy = <T,>(items: T[], size: number): T[][] => {
+        if (items.length === 0) return [];
+        const chunks: T[][] = [];
+        for (let i = 0; i < items.length; i += size) {
+          chunks.push(items.slice(i, i + size));
+        }
+        return chunks;
+      };
+
       if (courseIds.length > 0) {
-        // Lancer toutes les requêtes secondaires en parallèle
-        const [sharedResult, companyResult, requestsResult, receivedCountResult, completedCountResult] = await Promise.all([
-          supabase
-            .from("shared_courses")
-            .select(`
-              course_id, 
-              sender_driver_id, 
-              receiver_driver_id, 
-              status,
-              receiver:drivers!shared_courses_receiver_driver_id_fkey(
-                id,
-                company_name,
-                profile_photo_url,
-                profiles(full_name, profile_photo_url)
-              )
-            `)
-            .in("course_id", courseIds),
-          supabase
-            .from("company_courses")
-            .select(`
-              course_id,
-              company_id,
-              employee_id,
-              company:companies(
-                id,
-                company_name, 
-                logo_url,
-                siret,
-                siren,
-                tva_number,
-                address,
-                billing_address,
-                contact_email,
-                contact_phone
-              )
-            `)
-            .in("course_id", courseIds),
-          supabase
-            .from("company_course_requests")
-            .select(`
-              final_course_id,
-              guest_employee_name,
-              guest_employee_phone,
-              is_guest_employee,
-              employee_id
-            `)
-            .in("final_course_id", courseIds),
+        const COURSE_ID_CHUNK_SIZE = 60;
+        const courseIdChunks = chunkBy(courseIds, COURSE_ID_CHUNK_SIZE);
+
+        const [sharedChunksResults, companyChunksResults, requestsChunksResults, receivedCountResult, completedCountResult] = await Promise.all([
+          Promise.all(
+            courseIdChunks.map((chunk) =>
+              supabase
+                .from("shared_courses")
+                .select(`
+                  course_id,
+                  sender_driver_id,
+                  receiver_driver_id,
+                  status,
+                  receiver:drivers!shared_courses_receiver_driver_id_fkey(
+                    id,
+                    company_name,
+                    card_photo_url,
+                    profiles(full_name, profile_photo_url)
+                  )
+                `)
+                .in("course_id", chunk)
+            )
+          ),
+          Promise.all(
+            courseIdChunks.map((chunk) =>
+              supabase
+                .from("company_courses")
+                .select(`
+                  course_id,
+                  company_id,
+                  employee_id,
+                  company:companies(
+                    id,
+                    company_name,
+                    logo_url,
+                    siret,
+                    siren,
+                    tva_number,
+                    address,
+                    billing_address,
+                    contact_email,
+                    contact_phone
+                  )
+                `)
+                .in("course_id", chunk)
+            )
+          ),
+          Promise.all(
+            courseIdChunks.map((chunk) =>
+              supabase
+                .from("company_course_requests")
+                .select(`
+                  final_course_id,
+                  guest_employee_name,
+                  guest_employee_phone,
+                  is_guest_employee,
+                  employee_id
+                `)
+                .in("final_course_id", chunk)
+            )
+          ),
           supabase
             .from("shared_courses")
             .select("*", { count: "exact", head: true })
@@ -332,12 +355,25 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
         ]);
 
-        setSharedCoursesData(sharedResult.data || []);
+        const sharedErrors = sharedChunksResults.filter((result) => result.error);
+        const companyErrors = companyChunksResults.filter((result) => result.error);
+        const requestErrors = requestsChunksResults.filter((result) => result.error);
+
+        if (sharedErrors.length > 0 || companyErrors.length > 0 || requestErrors.length > 0) {
+          console.warn("Some secondary course queries failed", {
+            sharedErrors: sharedErrors.map((r) => r.error?.message),
+            companyErrors: companyErrors.map((r) => r.error?.message),
+            requestErrors: requestErrors.map((r) => r.error?.message),
+          });
+        }
+
+        const sharedData = sharedChunksResults.flatMap((result) => result.data || []);
+        const companyData = companyChunksResults.flatMap((result) => result.data || []);
+        const requestsData = requestsChunksResults.flatMap((result) => result.data || []);
+
+        setSharedCoursesData(sharedData);
         setReceivedSharedCoursesCount(receivedCountResult.count || 0);
         setCompletedPartnerCoursesCount(completedCountResult.count || 0);
-        
-        const companyData = companyResult.data;
-        const requestsData = requestsResult.data;
         
         // Collecter tous les employee_ids pour récupérer leurs profils
         const employeeIdsFromRequests = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
@@ -565,7 +601,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     
     const receiver = share.receiver;
     const fullName = receiver.profiles?.full_name || receiver.company_name || 'Partenaire';
-    const photo = receiver.profiles?.profile_photo_url || receiver.profile_photo_url;
+    const photo = receiver.profiles?.profile_photo_url || receiver.card_photo_url || null;
     const company = receiver.company_name;
     
     return { name: fullName, photo, company };
