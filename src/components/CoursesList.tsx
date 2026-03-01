@@ -85,6 +85,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [courseTypeFilter, setCourseTypeFilter] = useState<CourseType | "all">("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
+  // Pagination par onglet pour performance mobile
+  const COURSES_PER_PAGE = 10;
+  const [pendingPage, setPendingPage] = useState(1);
+  const [confirmedPage, setConfirmedPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [cancelledPage, setCancelledPage] = useState(1);
+  
   // État pour les informations de type de course
   const [sharedCoursesData, setSharedCoursesData] = useState<any[]>([]);
   const [companyCoursesData, setCompanyCoursesData] = useState<any[]>([]);
@@ -2045,6 +2052,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setMaxAmount("");
     setPaymentStatusFilter("all");
     setCourseTypeFilter("all");
+    setPendingPage(1);
+    setConfirmedPage(1);
+    setCompletedPage(1);
+    setCancelledPage(1);
   };
 
   // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN - plus proche de maintenant en premier)
@@ -2121,7 +2132,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
+  // Pagination helpers
+  const paginatedPending = pendingCourses.slice(0, pendingPage * COURSES_PER_PAGE);
+  const paginatedConfirmed = confirmedCoursesCombined.slice(0, confirmedPage * COURSES_PER_PAGE);
+  const paginatedCompleted = completedCourses.slice(0, completedPage * COURSES_PER_PAGE);
+  const paginatedCancelled = cancelledCourses.slice(0, cancelledPage * COURSES_PER_PAGE);
+
   const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all" || courseTypeFilter !== "all";
+
+  const LoadMoreButton = ({ total, loaded, onLoadMore }: { total: number; loaded: number; onLoadMore: () => void }) => {
+    if (loaded >= total) return null;
+    return (
+      <Button variant="outline" className="w-full mt-3" onClick={onLoadMore}>
+        Voir plus ({loaded}/{total})
+      </Button>
+    );
+  };
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -2445,7 +2471,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {pendingCourses.length === 0 && pendingCompanyQuotesCount === 0 && pendingFleetCoursesCount === 0 && pendingPartnerCoursesCount === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : pendingCourses.length > 0 ? (
-            pendingCourses.map((course) => {
+            <>
+            {paginatedPending.map((course) => {
               const courseTypeInfo = getCourseTypeInfo(course);
               return (
               <Card key={course.id} className={cn(
@@ -2786,7 +2813,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 </div>
               </Card>
               );
-            })
+            })}
+            <LoadMoreButton total={pendingCourses.length} loaded={paginatedPending.length} onLoadMore={() => setPendingPage(p => p + 1)} />
+            </>
           ) : null}
         </TabsContent>
 
@@ -2794,7 +2823,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {confirmedCoursesCombined.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
-            confirmedCoursesCombined.map((course) => {
+            <>
+            {paginatedConfirmed.map((course) => {
               const handledByPartner = isCourseHandledByPartner(course.id);
               const shareLockStatus = isCourseShareLocked(course.id);
               const isPendingShare = shareLockStatus === 'pending';
@@ -3119,7 +3149,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 </div>
               </Card>
               );
-            })
+            })}
+            <LoadMoreButton total={confirmedCoursesCombined.length} loaded={paginatedConfirmed.length} onLoadMore={() => setConfirmedPage(p => p + 1)} />
+            </>
           )}
           
           {/* Courses partagées reçues et acceptées */}
@@ -3130,7 +3162,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {completedCourses.length === 0 && completedPartnerCoursesCount === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course terminée</p>
           ) : (
-            completedCourses.map((course) => {
+            <>
+            {paginatedCompleted.map((course) => {
               const courseTypeInfo = getCourseTypeInfo(course);
               // Check if this course was shared and completed by a partner
               const sharedCourseInfo = sharedCoursesData.find(sc => 
@@ -3324,8 +3357,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   </Button>
                 </div>
               </Card>
-              );
-            })
+            );
+            })}
+            <LoadMoreButton total={completedCourses.length} loaded={paginatedCompleted.length} onLoadMore={() => setCompletedPage(p => p + 1)} />
+            <LoadMoreButton total={completedCourses.length} loaded={paginatedCompleted.length} onLoadMore={() => setCompletedPage(p => p + 1)} />
+            </>
           )}
           
           {/* Courses partenaires terminées */}
@@ -3336,7 +3372,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {cancelledCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course refusée</p>
           ) : (
-            cancelledCourses.map((course) => {
+            <>
+            {paginatedCancelled.map((course) => {
               return (
               <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
@@ -3478,7 +3515,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 </div>
               </Card>
               );
-            })
+            })}
+            <LoadMoreButton total={cancelledCourses.length} loaded={paginatedCancelled.length} onLoadMore={() => setCancelledPage(p => p + 1)} />
+            </>
           )}
         </TabsContent>
       </Tabs>
