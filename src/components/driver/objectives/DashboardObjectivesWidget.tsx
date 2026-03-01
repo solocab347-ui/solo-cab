@@ -17,8 +17,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 interface DashboardObjectivesWidgetProps {
   driverId: string;
@@ -65,16 +63,10 @@ export function DashboardObjectivesWidget({
 
       try {
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const weekStart = format(startOfWeek(now, { locale: fr }), 'yyyy-MM-dd');
-        const weekEnd = format(endOfWeek(now, { locale: fr }), 'yyyy-MM-dd');
-        const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
-        const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
-        const yearStart = format(startOfYear(now), 'yyyy-MM-dd');
-        const yearEnd = format(endOfYear(now), 'yyyy-MM-dd');
 
-        // Fetch objectives, schedule, coaching messages in parallel
-        const [objectivesRes, scheduleRes, messagesRes] = await Promise.all([
+        // Single RPC + objectives/schedule/messages in parallel
+        const [statsResult, objectivesRes, scheduleRes, messagesRes] = await Promise.all([
+          supabase.rpc('get_driver_dashboard_stats', { p_driver_id: driverId }),
           supabase
             .from('driver_objectives')
             .select('*')
@@ -93,107 +85,36 @@ export function DashboardObjectivesWidget({
             .eq('is_read', false)
         ]);
 
-        // Fetch all SoloCab courses data for all periods
-        const [todayCourses, weekCourses, monthCourses, yearCourses, todayClients, weekClients, monthClients, yearClients] = await Promise.all([
-          // Today's courses
-          supabase
-            .from('courses')
-            .select('id, final_payment_amount, guest_estimated_price')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .eq('status', 'completed')
-            .gte('scheduled_date', `${today}T00:00:00`)
-            .lte('scheduled_date', `${today}T23:59:59`),
-          // Week courses
-          supabase
-            .from('courses')
-            .select('id, final_payment_amount, guest_estimated_price')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .eq('status', 'completed')
-            .gte('scheduled_date', `${weekStart}T00:00:00`)
-            .lte('scheduled_date', `${weekEnd}T23:59:59`),
-          // Month courses
-          supabase
-            .from('courses')
-            .select('id, final_payment_amount, guest_estimated_price')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .eq('status', 'completed')
-            .gte('scheduled_date', `${monthStart}T00:00:00`)
-            .lte('scheduled_date', `${monthEnd}T23:59:59`),
-          // Year courses
-          supabase
-            .from('courses')
-            .select('id, final_payment_amount, guest_estimated_price')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .eq('status', 'completed')
-            .gte('scheduled_date', `${yearStart}T00:00:00`)
-            .lte('scheduled_date', `${yearEnd}T23:59:59`),
-          // Today's new clients
-          supabase
-            .from('clients')
-            .select('id')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .gte('created_at', `${today}T00:00:00`)
-            .lte('created_at', `${today}T23:59:59`),
-          // Week new clients
-          supabase
-            .from('clients')
-            .select('id')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .gte('created_at', `${weekStart}T00:00:00`)
-            .lte('created_at', `${weekEnd}T23:59:59`),
-          // Month new clients
-          supabase
-            .from('clients')
-            .select('id')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .gte('created_at', `${monthStart}T00:00:00`)
-            .lte('created_at', `${monthEnd}T23:59:59`),
-          // Year new clients
-          supabase
-            .from('clients')
-            .select('id')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .gte('created_at', `${yearStart}T00:00:00`)
-            .lte('created_at', `${yearEnd}T23:59:59`)
-        ]);
-
-        // Also fetch external platform entries for all periods to include in consolidated stats
-        const [todayExternal, weekExternal, monthExternal, yearExternal] = await Promise.all([
-          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('entry_date', today).eq('is_solocab', false),
-          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', weekStart).lte('entry_date', weekEnd),
-          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', monthStart).lte('entry_date', monthEnd),
-          supabase.from('driver_daily_entries').select('revenue, courses_count').eq('driver_id', driverId).eq('is_solocab', false).gte('entry_date', yearStart).lte('entry_date', yearEnd),
-        ]);
-
-        const sumEntries = (data: any[] | null) => ({
-          revenue: data?.reduce((s, e) => s + (e.revenue || 0), 0) || 0,
-          courses: data?.reduce((s, e) => s + (e.courses_count || 0), 0) || 0,
-        });
-
-        const extToday = sumEntries(todayExternal.data);
-        const extWeek = sumEntries(weekExternal.data);
-        const extMonth = sumEntries(monthExternal.data);
-        const extYear = sumEntries(yearExternal.data);
-
-        // Calculate stats for each period
-        const calcPeriodStats = (courses: any[] | null, clients: any[] | null): PeriodStats => ({
-          courses: courses?.length || 0,
-          revenue: courses?.reduce((sum, c) => sum + ((c as any).final_payment_amount || (c as any).guest_estimated_price || 0), 0) || 0,
-          clients: clients?.length || 0
-        });
+        if (statsResult.error) throw statsResult.error;
+        const d = statsResult.data as any;
 
         const soloCabStats: SoloCabStats = {
-          today: { ...calcPeriodStats(todayCourses.data, todayClients.data), revenue: calcPeriodStats(todayCourses.data, todayClients.data).revenue + extToday.revenue, courses: calcPeriodStats(todayCourses.data, todayClients.data).courses + extToday.courses },
-          week: { ...calcPeriodStats(weekCourses.data, weekClients.data), revenue: calcPeriodStats(weekCourses.data, weekClients.data).revenue + extWeek.revenue, courses: calcPeriodStats(weekCourses.data, weekClients.data).courses + extWeek.courses },
-          month: { ...calcPeriodStats(monthCourses.data, monthClients.data), revenue: calcPeriodStats(monthCourses.data, monthClients.data).revenue + extMonth.revenue, courses: calcPeriodStats(monthCourses.data, monthClients.data).courses + extMonth.courses },
-          year: { ...calcPeriodStats(yearCourses.data, yearClients.data), revenue: calcPeriodStats(yearCourses.data, yearClients.data).revenue + extYear.revenue, courses: calcPeriodStats(yearCourses.data, yearClients.data).courses + extYear.courses },
+          today: {
+            courses: (d?.today_courses || 0) + (d?.today_ext_courses || 0),
+            revenue: Number(d?.today_revenue || 0) + Number(d?.today_ext_revenue || 0),
+            clients: d?.today_clients || 0,
+          },
+          week: {
+            courses: (d?.week_courses || 0) + (d?.week_ext_courses || 0),
+            revenue: Number(d?.week_revenue || 0) + Number(d?.week_ext_revenue || 0),
+            clients: d?.week_clients || 0,
+          },
+          month: {
+            courses: (d?.month_courses || 0) + (d?.month_ext_courses || 0),
+            revenue: Number(d?.month_revenue || 0) + Number(d?.month_ext_revenue || 0),
+            clients: d?.month_clients || 0,
+          },
+          year: {
+            courses: (d?.year_courses || 0) + (d?.year_ext_courses || 0),
+            revenue: Number(d?.year_revenue || 0) + Number(d?.year_ext_revenue || 0),
+            clients: d?.year_clients || 0,
+          },
         };
 
         const hasObjectives = !!objectivesRes.data;
         const dailyTarget = objectivesRes.data?.revenue_target || 0;
         const todayRevenue = soloCabStats.today.revenue;
         const dailyProgress = dailyTarget > 0 ? Math.min(100, (todayRevenue / dailyTarget) * 100) : 0;
-        
         // Schedule returns an array, get first item
         const scheduleData = scheduleRes.data?.[0];
         const isWorkingDay = scheduleData?.is_working_day ?? true;

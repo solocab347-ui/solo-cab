@@ -24,6 +24,8 @@ interface DriverHomeProps {
 interface Stats {
   todayCourses: number;
   todayRevenue: number;
+  weekRevenue: number;
+  weekCourses: number;
   monthClients: number;
   monthCourses: number;
   monthCompleted: number;
@@ -36,6 +38,8 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
   const [stats, setStats] = useState<Stats>({
     todayCourses: 0,
     todayRevenue: 0,
+    weekRevenue: 0,
+    weekCourses: 0,
     monthClients: 0,
     monthCourses: 0,
     monthCompleted: 0,
@@ -68,6 +72,8 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           setStats({
             todayCourses: d.today_courses || 0,
             todayRevenue: Number(d.today_revenue) || 0,
+            weekRevenue: Number(d.week_revenue) || 0,
+            weekCourses: d.week_courses || 0,
             monthClients: d.month_clients || 0,
             monthCourses: d.month_courses || 0,
             monthCompleted: d.month_completed || 0,
@@ -102,7 +108,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     stats: {
       todayRevenue: stats.todayRevenue,
       todayCourses: stats.todayCourses,
-      weekRevenue: stats.monthRevenue / 4, // Approximation
+      weekRevenue: stats.weekRevenue,
       monthRevenue: stats.monthRevenue,
       totalClients: stats.monthClients,
       streakDays: 0, // Would need separate tracking
