@@ -3,7 +3,6 @@ import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, U
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfDay, startOfMonth, endOfDay, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 interface DriverHomeProps {
   driverProfile: any;
@@ -51,127 +50,30 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       
       try {
         setLoading(true);
-        const today = new Date();
-        const todayStart = startOfDay(today).toISOString();
-        const todayEnd = endOfDay(today).toISOString();
-        const monthStart = startOfMonth(today).toISOString();
-        const monthEnd = endOfMonth(today).toISOString();
-        const yearStart = startOfYear(today).toISOString();
-        const yearEnd = endOfYear(today).toISOString();
-
         const driverId = driverProfile.driver.id;
 
-        // Factures payées aujourd'hui
-        const { data: todayFactures } = await supabase
-          .from('factures')
-          .select('amount, course_id')
-          .eq('driver_id', driverId)
-          .eq('payment_status', 'paid')
-          .gte('paid_at', todayStart)
-          .lte('paid_at', todayEnd);
-
-        if (!mounted) return;
-
-        const todayCourseIds = new Set(todayFactures?.map(f => f.course_id) || []);
-        const todayCoursesCount = todayCourseIds.size;
-
-        // Clients du mois
-        const { data: monthClientsData } = await supabase
-          .from('clients')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .gte('created_at', monthStart)
-          .lte('created_at', monthEnd);
-
-        if (!mounted) return;
-
-        // Courses du mois
-        const { data: monthCoursesData } = await supabase
-          .from('courses')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .gte('created_at', monthStart)
-          .lte('created_at', monthEnd);
-
-        if (!mounted) return;
-
-        // Courses terminées du mois
-        const { data: monthCompletedData } = await supabase
-          .from('courses')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .eq('status', 'completed')
-          .gte('updated_at', monthStart)
-          .lte('updated_at', monthEnd);
-
-        if (!mounted) return;
-
-        // CA total du mois
-        const { data: monthFactures } = await supabase
-          .from('factures')
-          .select('amount')
-          .eq('driver_id', driverId)
-          .eq('payment_status', 'paid')
-          .gte('paid_at', monthStart)
-          .lte('paid_at', monthEnd);
-
-        if (!mounted) return;
-
-        // --- YEARLY STATS ---
-        const { data: yearCoursesData } = await supabase
-          .from('courses')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .gte('created_at', yearStart)
-          .lte('created_at', yearEnd);
-
-        if (!mounted) return;
-
-        const { data: yearCompletedData } = await supabase
-          .from('courses')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .eq('status', 'completed')
-          .gte('updated_at', yearStart)
-          .lte('updated_at', yearEnd);
-
-        if (!mounted) return;
-
-        const { data: yearFactures } = await supabase
-          .from('factures')
-          .select('amount')
-          .eq('driver_id', driverId)
-          .eq('payment_status', 'paid')
-          .gte('paid_at', yearStart)
-          .lte('paid_at', yearEnd);
-
-        if (!mounted) return;
-
-        const { data: yearClientsData } = await supabase
-          .from('clients')
-          .select('id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .gte('created_at', yearStart)
-          .lte('created_at', yearEnd);
-
-        if (!mounted) return;
-
-        const todayRevenue = todayFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-        const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-        const yearRevenue = yearFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-
-        setStats({
-          todayCourses: todayCoursesCount,
-          todayRevenue: todayRevenue,
-          monthClients: monthClientsData?.length || 0,
-          monthCourses: monthCoursesData?.length || 0,
-          monthCompleted: monthCompletedData?.length || 0,
-          monthRevenue: monthRevenue,
-          yearCourses: yearCoursesData?.length || 0,
-          yearCompleted: yearCompletedData?.length || 0,
-          yearRevenue: yearRevenue,
-          yearClients: yearClientsData?.length || 0,
+        const { data, error } = await supabase.rpc('get_driver_dashboard_stats', {
+          p_driver_id: driverId
         });
+
+        if (!mounted) return;
+        if (error) throw error;
+
+        const d = data as any;
+        if (d) {
+          setStats({
+            todayCourses: d.today_courses || 0,
+            todayRevenue: Number(d.today_revenue) || 0,
+            monthClients: d.month_clients || 0,
+            monthCourses: d.month_courses || 0,
+            monthCompleted: d.month_completed || 0,
+            monthRevenue: Number(d.month_revenue) || 0,
+            yearCourses: d.year_courses || 0,
+            yearCompleted: d.year_completed || 0,
+            yearRevenue: Number(d.year_revenue) || 0,
+            yearClients: d.year_clients || 0,
+          });
+        }
       } catch (error) {
         if (mounted) {
           console.error('Erreur lors du chargement des statistiques:', error);

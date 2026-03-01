@@ -10,7 +10,7 @@ import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, C
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
+// date-fns removed - using RPC now
 import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidget";
 import { QuickPlatformEntry } from "./objectives/QuickPlatformEntry";
 import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
@@ -52,38 +52,29 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
       if (!driverProfile?.driver?.id) return;
       
       try {
-        const today = new Date();
-        const todayStart = startOfDay(today).toISOString();
-        const todayEnd = endOfDay(today).toISOString();
-        const monthStart = startOfMonth(today).toISOString();
-        const monthEnd = endOfMonth(today).toISOString();
         const driverId = driverProfile.driver.id;
 
-        // Optimisation: toutes les requêtes en parallèle
-        const [todayFactures, monthClientsData, monthCoursesData, monthCompletedData, monthFactures, partnerPoolData] = await Promise.all([
-          supabase.from('factures').select('amount, course_id').eq('driver_id', driverId).eq('payment_status', 'paid').gte('paid_at', todayStart).lte('paid_at', todayEnd),
-          supabase.from('clients').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).gte('created_at', monthStart).lte('created_at', monthEnd),
-          supabase.from('courses').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).gte('created_at', monthStart).lte('created_at', monthEnd),
-          supabase.from('courses').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).eq('status', 'completed').gte('updated_at', monthStart).lte('updated_at', monthEnd),
-          supabase.from('factures').select('amount').eq('driver_id', driverId).eq('payment_status', 'paid').gte('paid_at', monthStart).lte('paid_at', monthEnd),
-          supabase.from('partner_course_pool').select('id').eq('status', 'available').gt('expires_at', new Date().toISOString())
+        // Single RPC call for all stats + partner pool count in parallel
+        const [statsResult, partnerPoolData] = await Promise.all([
+          supabase.rpc('get_driver_dashboard_stats', { p_driver_id: driverId }),
+          supabase.from('partner_course_pool').select('id', { count: 'exact', head: true }).eq('status', 'available').gt('expires_at', new Date().toISOString())
         ]);
 
         if (!mounted) return;
+        if (statsResult.error) throw statsResult.error;
 
-        const todayCourseIds = new Set(todayFactures.data?.map(f => f.course_id) || []);
-        const todayRevenue = todayFactures.data?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-        const monthRevenue = monthFactures.data?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-
-        setStats({
-          todayCourses: todayCourseIds.size,
-          todayRevenue,
-          monthClients: monthClientsData.data?.length || 0,
-          monthCourses: monthCoursesData.data?.length || 0,
-          monthCompleted: monthCompletedData.data?.length || 0,
-          monthRevenue,
-          availablePartnerCourses: partnerPoolData.data?.length || 0,
-        });
+        const d = statsResult.data as any;
+        if (d) {
+          setStats({
+            todayCourses: d.today_courses || 0,
+            todayRevenue: Number(d.today_revenue) || 0,
+            monthClients: d.month_clients || 0,
+            monthCourses: d.month_courses || 0,
+            monthCompleted: d.month_completed || 0,
+            monthRevenue: Number(d.month_revenue) || 0,
+            availablePartnerCourses: partnerPoolData.count || 0,
+          });
+        }
       } catch (error) {
         if (mounted) console.error('Erreur stats:', error);
       } finally {
