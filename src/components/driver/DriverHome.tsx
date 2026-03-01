@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, UserX } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, UserX, CalendarCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
+import { startOfDay, startOfMonth, endOfDay, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 interface DriverHomeProps {
   driverProfile: any;
@@ -17,7 +17,15 @@ interface Stats {
   monthCourses: number;
   monthCompleted: number;
   monthRevenue: number;
+  yearCourses: number;
+  yearCompleted: number;
+  yearRevenue: number;
+  yearClients: number;
 }
+
+const formatFR = (n: number, decimals = 2): string => {
+  return n.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
 
 export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   const navigate = useNavigate();
@@ -28,6 +36,10 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
     monthCourses: 0,
     monthCompleted: 0,
     monthRevenue: 0,
+    yearCourses: 0,
+    yearCompleted: 0,
+    yearRevenue: 0,
+    yearClients: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -44,10 +56,12 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         const todayEnd = endOfDay(today).toISOString();
         const monthStart = startOfMonth(today).toISOString();
         const monthEnd = endOfMonth(today).toISOString();
+        const yearStart = startOfYear(today).toISOString();
+        const yearEnd = endOfYear(today).toISOString();
 
         const driverId = driverProfile.driver.id;
 
-        // CORRECTION: Courses qui ont des factures payées aujourd'hui
+        // Factures payées aujourd'hui
         const { data: todayFactures } = await supabase
           .from('factures')
           .select('amount, course_id')
@@ -103,8 +117,48 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
         if (!mounted) return;
 
+        // --- YEARLY STATS ---
+        const { data: yearCoursesData } = await supabase
+          .from('courses')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .gte('created_at', yearStart)
+          .lte('created_at', yearEnd);
+
+        if (!mounted) return;
+
+        const { data: yearCompletedData } = await supabase
+          .from('courses')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .eq('status', 'completed')
+          .gte('updated_at', yearStart)
+          .lte('updated_at', yearEnd);
+
+        if (!mounted) return;
+
+        const { data: yearFactures } = await supabase
+          .from('factures')
+          .select('amount')
+          .eq('driver_id', driverId)
+          .eq('payment_status', 'paid')
+          .gte('paid_at', yearStart)
+          .lte('paid_at', yearEnd);
+
+        if (!mounted) return;
+
+        const { data: yearClientsData } = await supabase
+          .from('clients')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .gte('created_at', yearStart)
+          .lte('created_at', yearEnd);
+
+        if (!mounted) return;
+
         const todayRevenue = todayFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
         const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+        const yearRevenue = yearFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
         setStats({
           todayCourses: todayCoursesCount,
@@ -113,6 +167,10 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           monthCourses: monthCoursesData?.length || 0,
           monthCompleted: monthCompletedData?.length || 0,
           monthRevenue: monthRevenue,
+          yearCourses: yearCoursesData?.length || 0,
+          yearCompleted: yearCompletedData?.length || 0,
+          yearRevenue: yearRevenue,
+          yearClients: yearClientsData?.length || 0,
         });
       } catch (error) {
         if (mounted) {
@@ -274,7 +332,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">Revenus</p>
                 <h3 className="text-5xl font-bold text-foreground mb-1">
-                  {loading ? "..." : `${stats.todayRevenue.toFixed(2)}€`}
+                  {loading ? "..." : `${formatFR(stats.todayRevenue)}€`}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="w-2 h-2 bg-premium rounded-full animate-pulse"></div>
@@ -350,9 +408,82 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               </div>
               <div>
                 <h3 className="text-4xl font-bold text-foreground mb-1">
-                  {loading ? "..." : `${stats.monthRevenue.toFixed(2)}€`}
+                  {loading ? "..." : `${formatFR(stats.monthRevenue)}€`}
                 </h3>
                 <p className="text-sm text-muted-foreground uppercase tracking-wider">CA Total</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Cette année */}
+      <div className="animate-fade-in">
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+          Cette année
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Clients */}
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-success hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-success opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-success rounded-xl flex items-center justify-center shadow-success">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-4xl font-bold text-foreground mb-1">
+                  {loading ? "..." : formatFR(stats.yearClients, 0)}
+                </h3>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Clients</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Courses */}
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-trust hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-trust opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-trust rounded-xl flex items-center justify-center shadow-trust">
+                <Car className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-4xl font-bold text-foreground mb-1">
+                  {loading ? "..." : formatFR(stats.yearCourses, 0)}
+                </h3>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Courses</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Terminées */}
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-premium hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-premium opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-premium rounded-xl flex items-center justify-center shadow-premium">
+                <CheckCircle2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-4xl font-bold text-foreground mb-1">
+                  {loading ? "..." : formatFR(stats.yearCompleted, 0)}
+                </h3>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Terminées</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* CA Total annuel */}
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border shadow-warning hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-warning opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-warning rounded-xl flex items-center justify-center shadow-warning">
+                <CalendarCheck className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-4xl font-bold text-foreground mb-1">
+                  {loading ? "..." : `${formatFR(stats.yearRevenue)}€`}
+                </h3>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">CA Annuel</p>
               </div>
             </div>
           </Card>
