@@ -17765,6 +17765,10 @@ export type Database = {
         Args: { _driver_id: string }
         Returns: number
       }
+      get_driver_dashboard_stats: {
+        Args: { p_driver_id: string }
+        Returns: Json
+      }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
       get_driver_quote_request_ids: {
         Args: { _driver_id: string }
