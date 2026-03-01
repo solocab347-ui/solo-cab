@@ -2161,10 +2161,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     return sortedDevis[0];
   };
 
-  const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
+  // Séparer les courses "pending" : celles avec devis accepté par le client → onglet Confirmée
+  const allPendingCourses = applyAllFilters(courses.filter(c => c.status === "pending"));
+  const pendingWithDevisAccepted = allPendingCourses.filter(c => {
+    if (!c.devis || c.devis.length === 0) return false;
+    return c.devis.some((d: any) => d.status === "accepted");
+  });
+  const pendingCourses = sortByDate(allPendingCourses.filter(c => !pendingWithDevisAccepted.includes(c)));
   const acceptedCourses = applyAllFilters(courses.filter(c => c.status === "accepted"));
   const inProgressCourses = applyAllFilters(courses.filter(c => c.status === "in_progress"));
-  const confirmedCoursesCombined = sortConfirmedWithInProgressFirst([...acceptedCourses, ...inProgressCourses]);
+  const confirmedCoursesCombined = sortConfirmedWithInProgressFirst([...acceptedCourses, ...inProgressCourses, ...pendingWithDevisAccepted]);
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
