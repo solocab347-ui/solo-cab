@@ -345,7 +345,11 @@ const CreateCourse = () => {
                     value={pickupAddress}
                     onChange={(address, coords) => {
                       setPickupAddress(address);
-                      if (coords) setPickupCoordinates(coords);
+                      if (coords) {
+                        setPickupCoordinates(coords);
+                      } else {
+                        setPickupCoordinates(null);
+                      }
                       setUseAddressPickup(false);
                     }}
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
@@ -377,7 +381,11 @@ const CreateCourse = () => {
                     value={destinationAddress}
                     onChange={(address, coords) => {
                       setDestinationAddress(address);
-                      if (coords) setDestinationCoordinates(coords);
+                      if (coords) {
+                        setDestinationCoordinates(coords);
+                      } else {
+                        setDestinationCoordinates(null);
+                      }
                       setUseAddressDestination(false);
                     }}
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
