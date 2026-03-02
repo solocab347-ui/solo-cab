@@ -43,6 +43,7 @@ import { ReturnToFleetManagerDialog } from "@/components/driver/company/ReturnTo
 import { CompanyPaymentStatusSelector } from "@/components/driver/company/CompanyPaymentStatusSelector";
 import { CoursePaymentDialogContent } from "@/components/driver/courses/CoursePaymentDialogContent";
 import { CancellationDialog } from "@/components/driver/courses/CancellationDialog";
+import { buildDriverFilter } from "@/lib/driverQueryUtils";
 
 interface CoursesListProps {
   driverId: string;
@@ -182,7 +183,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const fetchCourses = async () => {
     try {
       // Lancer les requêtes principales en parallèle pour réduire la latence
-      const [driverResult, coursesResult] = await Promise.all([
+      const [driverResult, initialCoursesResult] = await Promise.all([
         // Fetch driver info for PDF generation
         supabase
           .from("drivers")
@@ -193,10 +194,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           `)
           .eq("id", driverId)
           .single(),
-        // Fetch courses - inclut maintenant fleet_managers directement
-        supabase
-          .from("courses")
-          .select(`
+        (async () => {
+          const dateWindowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          const driverFilter = buildDriverFilter(driverId);
+
+          const coursesSelectWithRelations = `
             *,
             clients(
               user_id,
@@ -236,16 +238,93 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               promo_code,
               created_at
             )
-          `)
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .gte("scheduled_date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-          .order("scheduled_date", { ascending: true })
-          .limit(200)
+          `;
+
+          const coursesSelectFallback = `
+            *,
+            fleet_managers:fleet_manager_id(
+              id,
+              company_name,
+              logo_url,
+              contact_phone
+            ),
+            devis:devis(
+              id,
+              amount,
+              status,
+              quote_number,
+              valid_until,
+              base_price,
+              distance_price,
+              time_price,
+              evening_surcharge_amount,
+              weekend_surcharge_amount,
+              discount_amount,
+              promo_code,
+              created_at
+            ),
+            factures:factures(
+              id,
+              invoice_number,
+              invoice_number_generated,
+              amount,
+              payment_status,
+              payment_method,
+              paid_at,
+              discount_amount,
+              promo_code,
+              created_at
+            )
+          `;
+
+          const runCoursesQuery = async (options: { withRelations: boolean; withDateWindow: boolean }) => {
+            const select = options.withRelations ? coursesSelectWithRelations : coursesSelectFallback;
+
+            let query = supabase
+              .from("courses")
+              .select(select)
+              .or(driverFilter)
+              .order("scheduled_date", { ascending: true })
+              .limit(200);
+
+            if (options.withDateWindow) {
+              query = query.gte("scheduled_date", dateWindowStart);
+            }
+
+            return query;
+          };
+
+          // 1) Requête complète, fenêtre 30 jours
+          let result = await runCoursesQuery({ withRelations: true, withDateWindow: true });
+
+          // 2) Repli sécurisé si jointures clients/profiles bloquées
+          if (result.error) {
+            console.warn("[CoursesList] Primary query failed, retrying with secure fallback", {
+              message: result.error.message,
+            });
+            result = await runCoursesQuery({ withRelations: false, withDateWindow: true });
+          }
+
+          // 3) Si vide sur 30 jours, élargir pour inclure les données démo/historiques
+          if (!result.error && (!result.data || result.data.length === 0)) {
+            const expanded = await runCoursesQuery({ withRelations: true, withDateWindow: false });
+            if (expanded.error) {
+              console.warn("[CoursesList] Expanded query with relations failed, using secure fallback", {
+                message: expanded.error.message,
+              });
+              result = await runCoursesQuery({ withRelations: false, withDateWindow: false });
+            } else {
+              result = expanded;
+            }
+          }
+
+          return result;
+        })()
       ]);
 
       const driverData = driverResult.data;
-      const coursesData = coursesResult.data;
-      const error = coursesResult.error;
+      const coursesData = (initialCoursesResult.data ?? []) as any[];
+      const error = initialCoursesResult.error;
 
       if (error) throw error;
       
@@ -272,7 +351,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       }
 
       // Fetch les données supplémentaires en parallèle (en arrière-plan)
-      const courseIds = (coursesData || []).map(c => c.id);
+      const courseIds = (coursesData || []).map((c: any) => c?.id).filter((id): id is string => typeof id === "string");
       const chunkBy = <T,>(items: T[], size: number): T[][] => {
         if (items.length === 0) return [];
         const chunks: T[][] = [];
