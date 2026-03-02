@@ -452,7 +452,11 @@ const DriverCreateCourse = () => {
                     value={pickupAddress}
                     onChange={(address, coords) => {
                       setPickupAddress(address);
-                      if (coords) setPickupCoordinates(coords);
+                      if (coords) {
+                        setPickupCoordinates(coords);
+                      } else {
+                        setPickupCoordinates(null);
+                      }
                     }}
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
                   />
@@ -470,7 +474,11 @@ const DriverCreateCourse = () => {
                     value={destinationAddress}
                     onChange={(address, coords) => {
                       setDestinationAddress(address);
-                      if (coords) setDestinationCoordinates(coords);
+                      if (coords) {
+                        setDestinationCoordinates(coords);
+                      } else {
+                        setDestinationCoordinates(null);
+                      }
                     }}
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
                   />

@@ -55,15 +55,25 @@ const GuestBooking = () => {
   const [passengersCount, setPassengersCount] = useState(1);
   const [notes, setNotes] = useState("");
   
-  // Handlers for address changes
+  // Handlers for address changes - clear coords when user types manually
   const handlePickupChange = (address: string, coords?: { latitude: number; longitude: number }) => {
     setPickupAddress(address);
-    if (coords) setPickupCoords(coords);
+    if (coords) {
+      setPickupCoords(coords);
+    } else {
+      // User is typing manually, invalidate previous coordinates
+      setPickupCoords(null);
+    }
   };
   
   const handleDestinationChange = (address: string, coords?: { latitude: number; longitude: number }) => {
     setDestinationAddress(address);
-    if (coords) setDestinationCoords(coords);
+    if (coords) {
+      setDestinationCoords(coords);
+    } else {
+      // User is typing manually, invalidate previous coordinates
+      setDestinationCoords(null);
+    }
   };
   
   // Price estimation

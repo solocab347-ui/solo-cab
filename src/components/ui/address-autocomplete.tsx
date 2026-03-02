@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ interface AddressSuggestion {
   place_name: string;
   center: [number, number]; // [longitude, latitude]
   text: string;
-  isFamous?: boolean; // Flag to identify famous places
+  isFamous?: boolean;
 }
 
 interface AddressAutocompleteProps {
@@ -25,6 +25,15 @@ interface AddressAutocompleteProps {
 const localCache = new Map<string, { data: AddressSuggestion[], timestamp: number }>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+// Global: track which instance is currently active to prevent dropdown interference
+let activeInstanceId: string | null = null;
+const listeners = new Set<() => void>();
+
+function setActiveInstance(id: string | null) {
+  activeInstanceId = id;
+  listeners.forEach(fn => fn());
+}
+
 export const AddressAutocomplete = ({
   value,
   onChange,
@@ -32,28 +41,49 @@ export const AddressAutocomplete = ({
   className,
   disabled = false,
 }: AddressAutocompleteProps) => {
+  const instanceId = useId();
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  // Track whether the current value was selected from suggestions (has valid coords)
+  const [hasValidSelection, setHasValidSelection] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout>();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const isSelectingRef = useRef(false);
 
+  // Sync input value with external value prop, but only when not actively editing
   useEffect(() => {
-    setInputValue(value);
+    if (!isSelectingRef.current) {
+      setInputValue(value);
+    }
   }, [value]);
+
+  // Listen for other instances becoming active → close our dropdown
+  useEffect(() => {
+    const checkActive = () => {
+      if (activeInstanceId !== instanceId) {
+        setShowSuggestions(false);
+      }
+    };
+    listeners.add(checkActive);
+    return () => { listeners.delete(checkActive); };
+  }, [instanceId]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        if (activeInstanceId === instanceId) {
+          setActiveInstance(null);
+        }
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [instanceId]);
 
   const fetchSuggestions = async (query: string) => {
     if (!query || query.length < 2) {
@@ -63,46 +93,36 @@ export const AddressAutocomplete = ({
 
     setIsLoading(true);
     try {
-      // Search famous places first (works with 2+ characters)
+      // Search famous places first
       const famousPlaces = searchFamousPlaces(query);
       const famousSuggestions = famousPlaces.map(place => ({
         ...famousPlaceToSuggestion(place),
         isFamous: true
       }));
 
-      // Si on a des lieux célèbres, les afficher immédiatement
       if (famousSuggestions.length > 0) {
         setSuggestions(famousSuggestions);
         setShowSuggestions(true);
       }
 
-      // Pour les requêtes >= 3 caractères, chercher aussi via l'API
       if (query.length >= 3) {
-        // Vérifier le cache local d'abord
         const cacheKey = `address:${query.toLowerCase().trim()}`;
         const cached = localCache.get(cacheKey);
         
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-          console.log("📍 Cache local HIT pour:", query);
           const combined = [...famousSuggestions, ...cached.data.filter(s => !s.isFamous)];
           setSuggestions(combined);
           setShowSuggestions(combined.length > 0);
           return;
         }
 
-        // Utiliser l'edge function avec cache en DB
         const { data, error } = await supabase.functions.invoke("geocode-cached", {
           body: { query, type: 'address' }
         });
 
         if (!error && data?.features) {
           const apiSuggestions = data.features || [];
-          console.log(`📍 Address suggestions: ${apiSuggestions.length} (cached: ${data?.cached || false})`);
-          
-          // Sauvegarder dans le cache local
           localCache.set(cacheKey, { data: apiSuggestions, timestamp: Date.now() });
-          
-          // Combiner: lieux célèbres d'abord, puis résultats API
           const combined = [...famousSuggestions, ...apiSuggestions];
           setSuggestions(combined);
           setShowSuggestions(combined.length > 0);
@@ -111,7 +131,6 @@ export const AddressAutocomplete = ({
           setShowSuggestions(false);
         }
       } else if (famousSuggestions.length === 0) {
-        // Query trop courte et pas de lieux célèbres
         setSuggestions([]);
         setShowSuggestions(false);
       }
@@ -129,16 +148,18 @@ export const AddressAutocomplete = ({
 
   const handleInputChange = (newValue: string) => {
     setInputValue(newValue);
+    setHasValidSelection(false);
+    // Call onChange WITHOUT coordinates to signal that the user is typing
+    // and the previous coordinates are no longer valid
     onChange(newValue);
 
-    // Debounce API calls
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 350); // Augmenté pour réduire les appels
+    }, 350);
   };
 
   const handleSelectSuggestion = useCallback((suggestion: AddressSuggestion) => {
@@ -147,11 +168,27 @@ export const AddressAutocomplete = ({
       longitude: suggestion.center[0],
     };
 
+    isSelectingRef.current = true;
     setInputValue(suggestion.place_name);
+    setHasValidSelection(true);
     onChange(suggestion.place_name, coordinates);
     setSuggestions([]);
     setShowSuggestions(false);
+    
+    // Reset selecting flag after React has processed the state update
+    requestAnimationFrame(() => {
+      isSelectingRef.current = false;
+    });
   }, [onChange]);
+
+  const handleFocus = () => {
+    // Close any other instance's dropdown first
+    setActiveInstance(instanceId);
+    
+    if (suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
 
   return (
     <div ref={wrapperRef} className="relative w-full">
@@ -160,9 +197,7 @@ export const AddressAutocomplete = ({
         <Input
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => {
-            if (suggestions.length > 0) setShowSuggestions(true);
-          }}
+          onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
@@ -176,8 +211,7 @@ export const AddressAutocomplete = ({
         )}
       </div>
 
-      {/* Dropdown rendered directly below input, not in a portal */}
-      {showSuggestions && (suggestions.length > 0 || isLoading || inputValue.length >= 2) && (
+      {showSuggestions && activeInstanceId === instanceId && (suggestions.length > 0 || isLoading || inputValue.length >= 2) && (
         <div
           className="absolute left-0 right-0 mt-1 bg-card border-2 border-border rounded-lg shadow-2xl z-[99999]"
         >
