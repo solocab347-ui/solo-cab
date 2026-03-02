@@ -32,8 +32,6 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
-    const token = authHeader.replace("Bearer ", "");
-    
     // Use a user-context client for auth validation
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -41,10 +39,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) throw new Error("User not authenticated");
+    const { data: { user: authUser }, error: userError } = await userClient.auth.getUser();
+    if (userError || !authUser) throw new Error("User not authenticated");
 
-    const userId = claimsData.claims.sub as string;
+    const userId = authUser.id;
 
     // Get driver record
     const { data: driver, error: driverError } = await supabaseClient
