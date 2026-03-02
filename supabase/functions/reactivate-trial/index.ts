@@ -28,33 +28,26 @@ serve(async (req) => {
     }
     logStep("Authorization header found");
 
-    // Créer le client avec le header d'auth pour getClaims
+    // Créer le client avec le header d'auth pour validation
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Extraire et valider le token avec getClaims
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    // Valider l'utilisateur avec getUser
+    const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
-      logStep("Claims error", { error: claimsError?.message });
+    if (userError || !authUser) {
+      logStep("Auth error", { error: userError?.message });
       return new Response(JSON.stringify({ error: "Unauthorized - Invalid token" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
-    const userId = claimsData.claims.sub;
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized - No user ID in token" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-    logStep("User authenticated via getClaims", { userId });
+    const userId = authUser.id;
+    logStep("User authenticated via getUser", { userId });
 
     // Client admin pour les opérations DB
     const supabaseAdmin = createClient(
