@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateFreshSignedUrl, extractDocumentPath } from "@/lib/storageUtils";
 import {
   Folder,
   FolderOpen,
@@ -47,6 +48,7 @@ interface DriverFolder {
 
 interface DocumentInfo {
   url: string;
+  storagePath?: string;
   name?: string;
   uploadedAt?: string;
   validated?: boolean;
@@ -196,14 +198,27 @@ const AdminDocumentsHub = () => {
     }
   };
 
-  const handleOpenDocument = (url: string, label: string) => {
-    setPreviewUrl(url);
-    setPreviewDocLabel(label);
+  const handleOpenDocument = async (doc: DocumentInfo, label: string) => {
+    const path = doc.storagePath || doc.url;
+    const signedUrl = await generateFreshSignedUrl(path);
+    if (signedUrl) {
+      setPreviewUrl(signedUrl);
+      setPreviewDocLabel(label);
+    } else {
+      toast.error("Impossible d'ouvrir le document");
+    }
   };
 
-  const handleDownloadDocument = async (url: string, filename: string) => {
+  const handleDownloadDocument = async (doc: DocumentInfo, filename: string) => {
     try {
-      const response = await fetch(url);
+      const path = doc.storagePath || doc.url;
+      const signedUrl = await generateFreshSignedUrl(path);
+      if (!signedUrl) {
+        toast.error("Impossible de télécharger le document");
+        return;
+      }
+      const response = await fetch(signedUrl);
+      if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -426,7 +441,8 @@ const AdminDocumentsHub = () => {
             <div className="grid gap-3">
               {documentEntries.map(([key, doc]) => {
                 const config = DOCUMENT_CONFIG[key];
-                const isImage = doc.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                const rawPath = doc.storagePath || doc.url;
+                const isImage = rawPath?.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
                 
                 return (
                   <div
@@ -467,14 +483,14 @@ const AdminDocumentsHub = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDocument(doc.url, config?.label || key)}
+                        onClick={() => handleOpenDocument(doc, config?.label || key)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadDocument(doc.url, `${selectedDriver.full_name}_${key}.${doc.url.split('.').pop()}`)}
+                        onClick={() => handleDownloadDocument(doc, `${selectedDriver.full_name}_${key}.${(doc.storagePath || doc.url).split('.').pop()}`)}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
@@ -494,13 +510,13 @@ const AdminDocumentsHub = () => {
             <DialogTitle>{previewDocLabel}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
-            {previewUrl?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+            {previewUrl?.split('?')[0]?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
               <img
                 src={previewUrl}
                 alt={previewDocLabel}
                 className="max-w-full max-h-[65vh] object-contain rounded-lg"
               />
-            ) : previewUrl?.match(/\.pdf$/i) ? (
+            ) : previewUrl?.split('?')[0]?.match(/\.pdf$/i) ? (
               <iframe
                 src={previewUrl}
                 className="w-full h-[65vh] rounded-lg"
