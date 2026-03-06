@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateFreshSignedUrl, extractDocumentPath } from "@/lib/storageUtils";
 import {
   Folder,
   FolderOpen,
