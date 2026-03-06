@@ -441,7 +441,8 @@ const AdminDocumentsHub = () => {
             <div className="grid gap-3">
               {documentEntries.map(([key, doc]) => {
                 const config = DOCUMENT_CONFIG[key];
-                const isImage = doc.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                const rawPath = doc.storagePath || doc.url;
+                const isImage = rawPath?.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
                 
                 return (
                   <div
