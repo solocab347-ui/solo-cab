@@ -48,6 +48,7 @@ interface DriverFolder {
 
 interface DocumentInfo {
   url: string;
+  storagePath?: string;
   name?: string;
   uploadedAt?: string;
   validated?: boolean;
