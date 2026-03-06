@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { adminNotificationService } from "@/lib/adminNotificationService";
+import { generateFreshSignedUrl, extractCleanPath } from "@/lib/storageUtils";
 import { 
   FileText, 
   Upload, 
@@ -146,12 +147,8 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
 
       if (uploadError) throw uploadError;
 
-      // Generate signed URL instead of public URL
-      const { data: signedUrlData } = await supabase.storage
-        .from("driver-documents")
-        .createSignedUrl(fileName, 3600);
-
-      const documentUrl = signedUrlData?.signedUrl || fileName;
+      // Store clean file path (NOT signed URL) for on-demand generation
+      const documentUrl = fileName;
 
       // Check if document exists
       const existingDoc = documents[vehicleId]?.find(d => d.document_type === docType);
@@ -354,20 +351,11 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
                             variant="outline"
                             size="sm"
                             onClick={async () => {
-                              // Extract file path from URL for signed URL generation
-                              let filePath = doc.document_url!;
-                              if (filePath.includes('/storage/v1/object/')) {
-                                const parts = filePath.split('/storage/v1/object/');
-                                if (parts[1]) {
-                                  filePath = parts[1].replace(/^(public|sign)\//, '');
-                                  filePath = filePath.replace(/^[^/]+\//, '');
-                                }
-                              }
-                              const { data } = await supabase.storage
-                                .from('driver-documents')
-                                .createSignedUrl(filePath, 3600);
-                              if (data?.signedUrl) {
-                                window.open(data.signedUrl, "_blank");
+                              const signedUrl = await generateFreshSignedUrl(doc.document_url!);
+                              if (signedUrl) {
+                                window.open(signedUrl, "_blank");
+                              } else {
+                                toast.error("Impossible d'ouvrir le document");
                               }
                             }}
                           >

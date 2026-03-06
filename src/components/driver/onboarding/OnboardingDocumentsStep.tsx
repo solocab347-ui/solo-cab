@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
+import { generateFreshSignedUrl } from '@/lib/storageUtils';
 import { 
   Upload, 
   CheckCircle, 
@@ -108,16 +109,12 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
 
       if (uploadError) throw uploadError;
 
-      // Generate signed URL instead of public URL
-      const { data: signedUrlData } = await supabase.storage
-        .from("driver-documents")
-        .createSignedUrl(fileName, 3600);
-
+      // Store clean file path (NOT signed URL) for on-demand URL generation
       const newDocuments = {
         ...documents,
         [docKey]: {
           name: file.name,
-          url: signedUrlData?.signedUrl || fileName,
+          url: fileName,
           storagePath: fileName,
           uploadedAt: new Date().toISOString(),
         },
@@ -253,7 +250,12 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => window.open(uploadedDoc.url, "_blank")}
+                      onClick={async () => {
+                        const path = (uploadedDoc as any).storagePath || uploadedDoc.url;
+                        const signedUrl = await generateFreshSignedUrl(path);
+                        if (signedUrl) window.open(signedUrl, "_blank");
+                        else toast.error("Impossible d'ouvrir le document");
+                      }}
                       className="h-7 w-7 p-0"
                     >
                       <Eye className="w-3.5 h-3.5" />

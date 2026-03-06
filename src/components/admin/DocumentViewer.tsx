@@ -2,9 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { X, Download, FileText, ExternalLink, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { extractCleanPath, generateFreshSignedUrl } from "@/lib/storageUtils";
 
 interface DocumentViewerProps {
   open: boolean;
@@ -73,13 +73,15 @@ const DOCUMENT_GROUPS: DocumentGroup[] = [
   },
 ];
 
-// Helper to extract URL from document data (handles both old string format and new object format)
+// Helper to extract the best path from document data (prefers storagePath over url)
 const extractDocumentUrl = (docData: any): string | null => {
   if (!docData) return null;
   
-  // New format: { url, name, uploadedAt }
-  if (typeof docData === 'object' && docData.url) {
-    return docData.url;
+  // New format: { storagePath, url, name, uploadedAt }
+  if (typeof docData === 'object') {
+    // Prefer storagePath (clean file path, never expires)
+    if (docData.storagePath) return docData.storagePath;
+    if (docData.url) return docData.url;
   }
   
   // Old format: direct URL string
@@ -133,33 +135,12 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
         for (const { key, url } of allDocs) {
           if (!url) continue;
 
-          // If it's already a public URL, use it directly
-          if (url.includes('/storage/v1/object/public/')) {
-            urls[key] = url;
-            continue;
-          }
-
-          // Extract file path from URL
-          let filePath = url;
-          
-          if (url.includes('/storage/v1/object/')) {
-            const parts = url.split('/storage/v1/object/');
-            if (parts[1]) {
-              filePath = parts[1].replace(/^(public|sign)\//, '');
-              filePath = filePath.replace(/^[^/]+\//, '');
-            }
-          }
-
-          // Generate signed URL
-          const { data, error } = await supabase.storage
-            .from('driver-documents')
-            .createSignedUrl(filePath, 3600);
-
-          if (data?.signedUrl) {
-            urls[key] = data.signedUrl;
-          } else if (error) {
-            // Fallback to public URL if signing fails
-            urls[key] = url;
+          // Always generate a fresh signed URL from the clean path
+          const signedUrl = await generateFreshSignedUrl(url);
+          if (signedUrl) {
+            urls[key] = signedUrl;
+          } else {
+            console.warn('Failed to generate signed URL for:', key, url);
           }
         }
 

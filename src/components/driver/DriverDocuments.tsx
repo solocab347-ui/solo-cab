@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateFreshSignedUrl } from "@/lib/storageUtils";
 import { 
   FileText, 
   Upload, 
@@ -179,17 +180,12 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
 
       if (uploadError) throw uploadError;
 
-      // Store the file path (not public URL) for signed URL generation
-      const { data: signedUrlData } = await supabase.storage
-        .from("driver-documents")
-        .createSignedUrl(fileName, 3600);
-
-      // Update documents in database with file path for future signed URL generation
+      // Store clean file path (NOT signed URL) for on-demand URL generation
       const newDocuments = {
         ...documents,
         [docKey]: {
           name: file.name,
-          url: signedUrlData?.signedUrl || fileName,
+          url: fileName,
           storagePath: fileName,
           uploadedAt: new Date().toISOString(),
         },
@@ -448,7 +444,12 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(uploadedDoc.url, "_blank")}
+                        onClick={async () => {
+                          const path = (uploadedDoc as any).storagePath || uploadedDoc.url;
+                          const signedUrl = await generateFreshSignedUrl(path);
+                          if (signedUrl) window.open(signedUrl, "_blank");
+                          else toast.error("Impossible d'ouvrir le document");
+                        }}
                         className="h-8 w-8 p-0"
                       >
                         <Eye className="w-4 h-4" />
