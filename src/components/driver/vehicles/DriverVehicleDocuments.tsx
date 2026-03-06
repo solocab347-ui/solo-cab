@@ -147,12 +147,8 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
 
       if (uploadError) throw uploadError;
 
-      // Generate signed URL instead of public URL
-      const { data: signedUrlData } = await supabase.storage
-        .from("driver-documents")
-        .createSignedUrl(fileName, 3600);
-
-      const documentUrl = signedUrlData?.signedUrl || fileName;
+      // Store clean file path (NOT signed URL) for on-demand generation
+      const documentUrl = fileName;
 
       // Check if document exists
       const existingDoc = documents[vehicleId]?.find(d => d.document_type === docType);
