@@ -482,14 +482,14 @@ const AdminDocumentsHub = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDocument(doc.url, config?.label || key)}
+                        onClick={() => handleOpenDocument(doc, config?.label || key)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadDocument(doc.url, `${selectedDriver.full_name}_${key}.${doc.url.split('.').pop()}`)}
+                        onClick={() => handleDownloadDocument(doc, `${selectedDriver.full_name}_${key}.${(doc.storagePath || doc.url).split('.').pop()}`)}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
