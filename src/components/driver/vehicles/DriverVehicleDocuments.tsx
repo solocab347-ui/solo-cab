@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { adminNotificationService } from "@/lib/adminNotificationService";
+import { generateFreshSignedUrl, extractCleanPath } from "@/lib/storageUtils";
 import { 
   FileText, 
   Upload, 
