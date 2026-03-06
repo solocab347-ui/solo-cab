@@ -180,17 +180,12 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
 
       if (uploadError) throw uploadError;
 
-      // Store the file path (not public URL) for signed URL generation
-      const { data: signedUrlData } = await supabase.storage
-        .from("driver-documents")
-        .createSignedUrl(fileName, 3600);
-
-      // Update documents in database with file path for future signed URL generation
+      // Store clean file path (NOT signed URL) for on-demand URL generation
       const newDocuments = {
         ...documents,
         [docKey]: {
           name: file.name,
-          url: signedUrlData?.signedUrl || fileName,
+          url: fileName,
           storagePath: fileName,
           uploadedAt: new Date().toISOString(),
         },
