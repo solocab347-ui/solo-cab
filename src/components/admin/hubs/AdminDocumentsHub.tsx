@@ -510,13 +510,13 @@ const AdminDocumentsHub = () => {
             <DialogTitle>{previewDocLabel}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
-            {previewUrl?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+            {previewUrl?.split('?')[0]?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
               <img
                 src={previewUrl}
                 alt={previewDocLabel}
                 className="max-w-full max-h-[65vh] object-contain rounded-lg"
               />
-            ) : previewUrl?.match(/\.pdf$/i) ? (
+            ) : previewUrl?.split('?')[0]?.match(/\.pdf$/i) ? (
               <iframe
                 src={previewUrl}
                 className="w-full h-[65vh] rounded-lg"
