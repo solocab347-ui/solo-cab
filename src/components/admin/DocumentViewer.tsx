@@ -2,9 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { X, Download, FileText, ExternalLink, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { extractCleanPath, generateFreshSignedUrl } from "@/lib/storageUtils";
 
 interface DocumentViewerProps {
   open: boolean;
