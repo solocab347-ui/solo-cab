@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
+import { generateFreshSignedUrl } from '@/lib/storageUtils';
 import { 
   Upload, 
   CheckCircle, 
