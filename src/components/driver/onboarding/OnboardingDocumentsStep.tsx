@@ -250,7 +250,12 @@ export function OnboardingDocumentsStep({ driverId, userId, onStatusChange }: On
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => window.open(uploadedDoc.url, "_blank")}
+                      onClick={async () => {
+                        const path = (uploadedDoc as any).storagePath || uploadedDoc.url;
+                        const signedUrl = await generateFreshSignedUrl(path);
+                        if (signedUrl) window.open(signedUrl, "_blank");
+                        else toast.error("Impossible d'ouvrir le document");
+                      }}
                       className="h-7 w-7 p-0"
                     >
                       <Eye className="w-3.5 h-3.5" />

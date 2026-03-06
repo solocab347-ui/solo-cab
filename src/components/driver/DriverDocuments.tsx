@@ -444,7 +444,12 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(uploadedDoc.url, "_blank")}
+                        onClick={async () => {
+                          const path = (uploadedDoc as any).storagePath || uploadedDoc.url;
+                          const signedUrl = await generateFreshSignedUrl(path);
+                          if (signedUrl) window.open(signedUrl, "_blank");
+                          else toast.error("Impossible d'ouvrir le document");
+                        }}
                         className="h-8 w-8 p-0"
                       >
                         <Eye className="w-4 h-4" />

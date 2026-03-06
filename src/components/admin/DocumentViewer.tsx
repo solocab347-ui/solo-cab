@@ -135,33 +135,12 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
         for (const { key, url } of allDocs) {
           if (!url) continue;
 
-          // If it's already a public URL, use it directly
-          if (url.includes('/storage/v1/object/public/')) {
-            urls[key] = url;
-            continue;
-          }
-
-          // Extract file path from URL
-          let filePath = url;
-          
-          if (url.includes('/storage/v1/object/')) {
-            const parts = url.split('/storage/v1/object/');
-            if (parts[1]) {
-              filePath = parts[1].replace(/^(public|sign)\//, '');
-              filePath = filePath.replace(/^[^/]+\//, '');
-            }
-          }
-
-          // Generate signed URL
-          const { data, error } = await supabase.storage
-            .from('driver-documents')
-            .createSignedUrl(filePath, 3600);
-
-          if (data?.signedUrl) {
-            urls[key] = data.signedUrl;
-          } else if (error) {
-            // Fallback to public URL if signing fails
-            urls[key] = url;
+          // Always generate a fresh signed URL from the clean path
+          const signedUrl = await generateFreshSignedUrl(url);
+          if (signedUrl) {
+            urls[key] = signedUrl;
+          } else {
+            console.warn('Failed to generate signed URL for:', key, url);
           }
         }
 
