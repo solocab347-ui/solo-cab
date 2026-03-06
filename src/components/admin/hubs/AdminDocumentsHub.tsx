@@ -198,14 +198,27 @@ const AdminDocumentsHub = () => {
     }
   };
 
-  const handleOpenDocument = (url: string, label: string) => {
-    setPreviewUrl(url);
-    setPreviewDocLabel(label);
+  const handleOpenDocument = async (doc: DocumentInfo, label: string) => {
+    const path = doc.storagePath || doc.url;
+    const signedUrl = await generateFreshSignedUrl(path);
+    if (signedUrl) {
+      setPreviewUrl(signedUrl);
+      setPreviewDocLabel(label);
+    } else {
+      toast.error("Impossible d'ouvrir le document");
+    }
   };
 
-  const handleDownloadDocument = async (url: string, filename: string) => {
+  const handleDownloadDocument = async (doc: DocumentInfo, filename: string) => {
     try {
-      const response = await fetch(url);
+      const path = doc.storagePath || doc.url;
+      const signedUrl = await generateFreshSignedUrl(path);
+      if (!signedUrl) {
+        toast.error("Impossible de télécharger le document");
+        return;
+      }
+      const response = await fetch(signedUrl);
+      if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
