@@ -73,13 +73,15 @@ const DOCUMENT_GROUPS: DocumentGroup[] = [
   },
 ];
 
-// Helper to extract URL from document data (handles both old string format and new object format)
+// Helper to extract the best path from document data (prefers storagePath over url)
 const extractDocumentUrl = (docData: any): string | null => {
   if (!docData) return null;
   
-  // New format: { url, name, uploadedAt }
-  if (typeof docData === 'object' && docData.url) {
-    return docData.url;
+  // New format: { storagePath, url, name, uploadedAt }
+  if (typeof docData === 'object') {
+    // Prefer storagePath (clean file path, never expires)
+    if (docData.storagePath) return docData.storagePath;
+    if (docData.url) return docData.url;
   }
   
   // Old format: direct URL string
