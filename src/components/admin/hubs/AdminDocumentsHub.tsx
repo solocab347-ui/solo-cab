@@ -421,7 +421,7 @@ const AdminDocumentsHub = () => {
   }
 
   // Vue détail du dossier d'un chauffeur
-  const documentEntries = Object.entries(selectedDriver.documents).filter(([_, doc]) => doc?.url);
+  const documentEntries = Object.entries(selectedDriver.documents).filter(([_, doc]) => !!extractDocumentPath(doc));
 
   return (
     <div className="space-y-4">
