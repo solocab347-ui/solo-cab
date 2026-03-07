@@ -109,8 +109,8 @@ const AdminDocumentsHub = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<DriverFolder | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewDocLabel, setPreviewDocLabel] = useState("");
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "validated" | "submitted" | "pending" | "rejected">("all");
 
   const fetchDrivers = useCallback(async () => {
@@ -170,6 +170,41 @@ const AdminDocumentsHub = () => {
     fetchDrivers();
   }, [fetchDrivers]);
 
+  useEffect(() => {
+    const buildSignedUrls = async () => {
+      if (!selectedDriver) {
+        setSignedUrls({});
+        return;
+      }
+
+      setLoadingSignedUrls(true);
+      const generatedUrls: Record<string, string> = {};
+
+      try {
+        const entries = Object.entries(selectedDriver.documents);
+
+        for (const [key, doc] of entries) {
+          const path = extractDocumentPath(doc);
+          if (!path) continue;
+
+          const signedUrl = await generateFreshSignedUrl(path);
+          if (signedUrl) {
+            generatedUrls[key] = signedUrl;
+          }
+        }
+
+        setSignedUrls(generatedUrls);
+      } catch (error) {
+        console.error("Erreur génération URLs des documents:", error);
+        toast.error("Erreur lors du chargement des documents");
+      } finally {
+        setLoadingSignedUrls(false);
+      }
+    };
+
+    buildSignedUrls();
+  }, [selectedDriver]);
+
   const filteredDrivers = drivers.filter(driver => {
     const search = searchTerm.toLowerCase();
     return (
@@ -180,7 +215,7 @@ const AdminDocumentsHub = () => {
   });
 
   const getDocumentCount = (docs: Record<string, DocumentInfo>) => {
-    return Object.values(docs).filter(d => d?.url).length;
+    return Object.values(docs).filter((doc) => !!extractDocumentPath(doc)).length;
   };
 
   const getStatusBadge = (status: string) => {
@@ -196,25 +231,39 @@ const AdminDocumentsHub = () => {
     }
   };
 
-  const handleOpenDocument = async (doc: DocumentInfo, label: string) => {
-    const path = doc.storagePath || doc.url;
-    const signedUrl = await generateFreshSignedUrl(path);
-    if (signedUrl) {
-      setPreviewUrl(signedUrl);
-      setPreviewDocLabel(label);
-    } else {
+  const getSignedUrlForDoc = async (doc: DocumentInfo, key: string): Promise<string | null> => {
+    if (signedUrls[key]) {
+      return signedUrls[key];
+    }
+
+    const path = extractDocumentPath(doc);
+    if (!path) return null;
+
+    return await generateFreshSignedUrl(path);
+  };
+
+  const handleOpenDocument = async (doc: DocumentInfo, key: string) => {
+    const signedUrl = await getSignedUrlForDoc(doc, key);
+
+    if (!signedUrl) {
       toast.error("Impossible d'ouvrir le document");
+      return;
+    }
+
+    const openedWindow = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    if (!openedWindow) {
+      toast.error("Le navigateur bloque l'ouverture automatique");
     }
   };
 
-  const handleDownloadDocument = async (doc: DocumentInfo, filename: string) => {
+  const handleDownloadDocument = async (doc: DocumentInfo, key: string, filename: string) => {
     try {
-      const path = doc.storagePath || doc.url;
-      const signedUrl = await generateFreshSignedUrl(path);
+      const signedUrl = await getSignedUrlForDoc(doc, key);
       if (!signedUrl) {
         toast.error("Impossible de télécharger le document");
         return;
       }
+
       const response = await fetch(signedUrl);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
