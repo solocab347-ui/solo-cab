@@ -488,9 +488,10 @@ const AdminDocumentsHub = () => {
             <div className="grid gap-3">
               {documentEntries.map(([key, doc]) => {
                 const config = DOCUMENT_CONFIG[key];
-                const rawPath = doc.storagePath || doc.url;
-                const isImage = rawPath?.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
-                
+                const rawPath = extractDocumentPath(doc) || "";
+                const isImage = rawPath.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
+                const fileExtension = rawPath.split('?')[0]?.split('.').pop() || 'pdf';
+
                 return (
                   <div
                     key={key}
@@ -530,14 +531,16 @@ const AdminDocumentsHub = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDocument(doc, config?.label || key)}
+                        onClick={() => handleOpenDocument(doc, key)}
+                        disabled={loadingSignedUrls}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadDocument(doc, `${selectedDriver.full_name}_${key}.${(doc.storagePath || doc.url).split('.').pop()}`)}
+                        onClick={() => handleDownloadDocument(doc, key, `${selectedDriver.full_name}_${key}.${fileExtension}`)}
+                        disabled={loadingSignedUrls}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
