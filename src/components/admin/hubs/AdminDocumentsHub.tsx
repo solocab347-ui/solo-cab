@@ -30,8 +30,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
 interface DriverFolder {
   id: string;
   user_id: string;
@@ -111,8 +109,8 @@ const AdminDocumentsHub = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<DriverFolder | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewDocLabel, setPreviewDocLabel] = useState("");
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "validated" | "submitted" | "pending" | "rejected">("all");
 
   const fetchDrivers = useCallback(async () => {
@@ -172,6 +170,41 @@ const AdminDocumentsHub = () => {
     fetchDrivers();
   }, [fetchDrivers]);
 
+  useEffect(() => {
+    const buildSignedUrls = async () => {
+      if (!selectedDriver) {
+        setSignedUrls({});
+        return;
+      }
+
+      setLoadingSignedUrls(true);
+      const generatedUrls: Record<string, string> = {};
+
+      try {
+        const entries = Object.entries(selectedDriver.documents);
+
+        for (const [key, doc] of entries) {
+          const path = extractDocumentPath(doc);
+          if (!path) continue;
+
+          const signedUrl = await generateFreshSignedUrl(path);
+          if (signedUrl) {
+            generatedUrls[key] = signedUrl;
+          }
+        }
+
+        setSignedUrls(generatedUrls);
+      } catch (error) {
+        console.error("Erreur génération URLs des documents:", error);
+        toast.error("Erreur lors du chargement des documents");
+      } finally {
+        setLoadingSignedUrls(false);
+      }
+    };
+
+    buildSignedUrls();
+  }, [selectedDriver]);
+
   const filteredDrivers = drivers.filter(driver => {
     const search = searchTerm.toLowerCase();
     return (
@@ -182,7 +215,7 @@ const AdminDocumentsHub = () => {
   });
 
   const getDocumentCount = (docs: Record<string, DocumentInfo>) => {
-    return Object.values(docs).filter(d => d?.url).length;
+    return Object.values(docs).filter((doc) => !!extractDocumentPath(doc)).length;
   };
 
   const getStatusBadge = (status: string) => {
@@ -198,25 +231,39 @@ const AdminDocumentsHub = () => {
     }
   };
 
-  const handleOpenDocument = async (doc: DocumentInfo, label: string) => {
-    const path = doc.storagePath || doc.url;
-    const signedUrl = await generateFreshSignedUrl(path);
-    if (signedUrl) {
-      setPreviewUrl(signedUrl);
-      setPreviewDocLabel(label);
-    } else {
+  const getSignedUrlForDoc = async (doc: DocumentInfo, key: string): Promise<string | null> => {
+    if (signedUrls[key]) {
+      return signedUrls[key];
+    }
+
+    const path = extractDocumentPath(doc);
+    if (!path) return null;
+
+    return await generateFreshSignedUrl(path);
+  };
+
+  const handleOpenDocument = async (doc: DocumentInfo, key: string) => {
+    const signedUrl = await getSignedUrlForDoc(doc, key);
+
+    if (!signedUrl) {
       toast.error("Impossible d'ouvrir le document");
+      return;
+    }
+
+    const openedWindow = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    if (!openedWindow) {
+      toast.error("Le navigateur bloque l'ouverture automatique");
     }
   };
 
-  const handleDownloadDocument = async (doc: DocumentInfo, filename: string) => {
+  const handleDownloadDocument = async (doc: DocumentInfo, key: string, filename: string) => {
     try {
-      const path = doc.storagePath || doc.url;
-      const signedUrl = await generateFreshSignedUrl(path);
+      const signedUrl = await getSignedUrlForDoc(doc, key);
       if (!signedUrl) {
         toast.error("Impossible de télécharger le document");
         return;
       }
+
       const response = await fetch(signedUrl);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
@@ -374,7 +421,7 @@ const AdminDocumentsHub = () => {
   }
 
   // Vue détail du dossier d'un chauffeur
-  const documentEntries = Object.entries(selectedDriver.documents).filter(([_, doc]) => doc?.url);
+  const documentEntries = Object.entries(selectedDriver.documents).filter(([_, doc]) => !!extractDocumentPath(doc));
 
   return (
     <div className="space-y-4">
@@ -441,9 +488,10 @@ const AdminDocumentsHub = () => {
             <div className="grid gap-3">
               {documentEntries.map(([key, doc]) => {
                 const config = DOCUMENT_CONFIG[key];
-                const rawPath = doc.storagePath || doc.url;
-                const isImage = rawPath?.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
-                
+                const rawPath = extractDocumentPath(doc) || "";
+                const isImage = rawPath.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i);
+                const fileExtension = rawPath.split('?')[0]?.split('.').pop() || 'pdf';
+
                 return (
                   <div
                     key={key}
@@ -483,14 +531,16 @@ const AdminDocumentsHub = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDocument(doc, config?.label || key)}
+                        onClick={() => handleOpenDocument(doc, key)}
+                        disabled={loadingSignedUrls}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadDocument(doc, `${selectedDriver.full_name}_${key}.${(doc.storagePath || doc.url).split('.').pop()}`)}
+                        onClick={() => handleDownloadDocument(doc, key, `${selectedDriver.full_name}_${key}.${fileExtension}`)}
+                        disabled={loadingSignedUrls}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
@@ -503,40 +553,6 @@ const AdminDocumentsHub = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog preview document */}
-      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{previewDocLabel}</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
-            {previewUrl?.split('?')[0]?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-              <img
-                src={previewUrl}
-                alt={previewDocLabel}
-                className="max-w-full max-h-[65vh] object-contain rounded-lg"
-              />
-            ) : previewUrl?.split('?')[0]?.match(/\.pdf$/i) ? (
-              <iframe
-                src={previewUrl}
-                className="w-full h-[65vh] rounded-lg"
-                title={previewDocLabel}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Aperçu non disponible</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => window.open(previewUrl!, '_blank')}
-                >
-                  Ouvrir dans un nouvel onglet
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
