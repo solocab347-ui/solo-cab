@@ -553,40 +553,6 @@ const AdminDocumentsHub = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog preview document */}
-      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{previewDocLabel}</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
-            {previewUrl?.split('?')[0]?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-              <img
-                src={previewUrl}
-                alt={previewDocLabel}
-                className="max-w-full max-h-[65vh] object-contain rounded-lg"
-              />
-            ) : previewUrl?.split('?')[0]?.match(/\.pdf$/i) ? (
-              <iframe
-                src={previewUrl}
-                className="w-full h-[65vh] rounded-lg"
-                title={previewDocLabel}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Aperçu non disponible</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => window.open(previewUrl!, '_blank')}
-                >
-                  Ouvrir dans un nouvel onglet
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
