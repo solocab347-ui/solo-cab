@@ -246,8 +246,12 @@ const getEmailTemplate = (type: string, data: any) => {
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
               .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
               .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-              .button { display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .button { display: inline-block; background: #10b981; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; margin: 15px 5px; font-weight: bold; font-size: 16px; }
+              .button-app { display: inline-block; background: #3b82f6; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; margin: 15px 5px; font-weight: bold; font-size: 16px; }
               .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .app-box { background: #eff6ff; border: 2px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 10px; text-align: center; }
+              .app-box h3 { color: #1d4ed8; margin-top: 0; }
+              .info-box { background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
             </style>
           </head>
           <body>
@@ -268,9 +272,25 @@ const getEmailTemplate = (type: string, data: any) => {
                   <li>📋 Créer des courses et générer des devis</li>
                   <li>💰 Gérer vos factures et paiements</li>
                 </ul>
+
+                <div class="app-box">
+                  <h3>📲 Installez l'application SoloCab !</h3>
+                  <p>Pour avoir SoloCab toujours à portée de main, <strong>installez l'application directement depuis notre site web</strong> sur votre téléphone :</p>
+                  <ol style="text-align: left; margin: 15px auto; max-width: 400px;">
+                    <li>Ouvrez <strong>solocab.fr</strong> dans votre navigateur (Chrome recommandé)</li>
+                    <li>Connectez-vous à votre compte</li>
+                    <li>Cliquez sur <strong>"Installer"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong></li>
+                    <li>L'application sera disponible comme une app native ! 🎉</li>
+                  </ol>
+                  <a href="https://solocab.fr" class="button-app">📲 Installer l'application</a>
+                </div>
                 
                 <div style="text-align: center;">
                   <a href="${data.dashboardLink || "https://solocab.fr/driver-dashboard"}" class="button">Accéder à mon espace</a>
+                </div>
+
+                <div class="info-box">
+                  <p><strong>💡 Astuce :</strong> Installez l'application dès maintenant pour ne rien manquer ! Vous recevrez les notifications de courses et pourrez gérer votre activité en temps réel.</p>
                 </div>
                 
                 <p>Bienvenue dans la communauté SoloCab !</p>
