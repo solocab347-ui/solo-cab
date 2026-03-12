@@ -788,7 +788,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     } finally {
       setActionLoading(courseId, false);
     }
-  }, [isActionLoading, setActionLoading, notifyCompanyForCourse]);
+  }, [isActionLoading, setActionLoading, notifyCompanyForCourse, courses]);
 
   const handleStartCourse = useCallback(async (courseId: string) => {
     if (isActionLoading(courseId)) return;
