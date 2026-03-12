@@ -57,7 +57,8 @@ export const notificationService = {
     try {
       // Types qui déclenchent automatiquement une push notification
       const pushTypes: NotificationType[] = [
-        'course', 'devis', 'facture', 'payment', 'partnership', 'fleet', 'warning', 'error'
+        'course', 'devis', 'facture', 'payment', 'partnership', 'fleet', 'warning', 'error',
+        'admin', 'company', 'client', 'driver', 'message'
       ];
       
       const shouldSendPush = payload.sendPush ?? pushTypes.includes(payload.type);

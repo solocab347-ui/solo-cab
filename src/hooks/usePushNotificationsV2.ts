@@ -281,7 +281,7 @@ export const usePushNotificationsV2 = () => {
     }
   }, [isSupported, user, vapidKey]);
 
-  // Afficher une notification locale
+  // Afficher une notification locale avec son SoloCab
   const showNotification = useCallback(async (title: string, body: string, link?: string) => {
     if (permission !== 'granted') {
       logger.warn('Notification bloquée: permission non accordée');
@@ -289,13 +289,22 @@ export const usePushNotificationsV2 = () => {
     }
 
     try {
+      // Jouer le son signature SoloCab
+      try {
+        const { playSoloCabSound } = await import('@/lib/solocabNotificationSound');
+        await playSoloCabSound(0.6);
+      } catch (soundErr) {
+        logger.warn('Son notification non disponible:', soundErr);
+      }
+
       const options: NotificationOptions = {
         body,
         icon: '/pwa-192x192.png',
         badge: '/pwa-192x192.png',
         tag: `solocab-${Date.now()}`,
         data: { url: link || '/notifications' },
-        requireInteraction: false
+        requireInteraction: false,
+        vibrate: [100, 50, 200, 80, 150]
       };
 
       const registration = await navigator.serviceWorker.ready;
