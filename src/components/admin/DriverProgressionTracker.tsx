@@ -154,10 +154,34 @@ const DriverCardSkeleton = () => (
 );
 
 // Calcul de l'étape actuelle basé sur onboarding_step
+// Supporte les deux formats: numérique ("0"-"7") ET textuel ("vision", "goals"...)
 const getStepIndex = (stepId: string | null): number => {
-  if (!stepId) return 0;
+  if (!stepId) return -1; // -1 = pas encore commencé
+  
+  // D'abord essayer en tant que nombre (format DB courant: "0", "1", "2"...)
+  const numericValue = parseInt(stepId, 10);
+  if (!isNaN(numericValue) && numericValue >= 0 && numericValue < TUNNEL_STEPS.length) {
+    return numericValue;
+  }
+  
+  // Ensuite essayer en tant qu'ID textuel
   const idx = TUNNEL_STEPS.findIndex(s => s.id === stepId);
-  return idx >= 0 ? idx : 0;
+  if (idx >= 0) return idx;
+  
+  // Mapping élargi pour les variantes possibles
+  const stepMapping: Record<string, number> = {
+    "welcome": 0, "intro": 0, "vision": 0,
+    "objectives": 1, "goals": 1,
+    "pricing": 2, "tarifs": 2, "settings": 2,
+    "profile": 3, "public_profile": 3,
+    "documents": 4, "docs": 4,
+    "nfc": 5, "nfc_order": 5,
+    "billing": 6, "payment": 6, "encaissements": 6,
+    "trial": 7, "trial_start": 7, "launch": 7, "lancement": 7,
+    "completed": 8, "complete": 8, "done": 8,
+  };
+  
+  return stepMapping[stepId.toLowerCase()] ?? -1;
 };
 
 const DriverProgressionTracker = () => {
