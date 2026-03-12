@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-solocab.png";
+import { toast } from "sonner";
 
 interface SharedDriver {
   id: string;
@@ -43,6 +44,9 @@ const GuestBookingTracking = () => {
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [driverUsesStripe, setDriverUsesStripe] = useState(false);
 
   const fetchBooking = async () => {
     if (!token) return;
@@ -55,7 +59,6 @@ const GuestBookingTracking = () => {
 
       if (data && data.length > 0) {
         const rawBooking = data[0];
-        // Parse shared_drivers from JSON - cast through unknown for type safety
         const sharedDrivers: SharedDriver[] = rawBooking.shared_drivers 
           ? (rawBooking.shared_drivers as unknown as SharedDriver[])
           : [];
@@ -79,6 +82,9 @@ const GuestBookingTracking = () => {
           quote_number: rawBooking.quote_number
         };
         setBooking(parsedBooking);
+
+        // Check if driver uses Stripe and check payment status
+        await checkDriverPaymentAndStatus(parsedBooking);
       } else {
         setBooking(null);
       }
@@ -90,18 +96,122 @@ const GuestBookingTracking = () => {
     }
   };
 
+  const checkDriverPaymentAndStatus = async (bookingData: BookingInfo) => {
+    try {
+      // Check if driver uses Stripe via the course's driver_id
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('driver_id, payment_status')
+        .eq('id', bookingData.id)
+        .single();
+
+      if (!courseData) return;
+
+      setPaymentStatus(courseData.payment_status);
+
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
+        .eq('id', courseData.driver_id)
+        .single();
+
+      const usesStripe = 
+        driverData?.billing_type === 'solocab_stripe' &&
+        !!driverData?.stripe_connect_account_id &&
+        !!driverData?.stripe_connect_charges_enabled;
+      
+      setDriverUsesStripe(usesStripe);
+
+      // Check facture payment status
+      if (bookingData.status === 'completed') {
+        const { data: facture } = await supabase
+          .from('factures')
+          .select('status, stripe_payment_url')
+          .eq('course_id', bookingData.id)
+          .maybeSingle();
+
+        if (facture?.status === 'paid') {
+          setPaymentStatus('paid');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBooking();
     
-    // Set up polling for status updates
-    const interval = setInterval(fetchBooking, 30000); // Refresh every 30 seconds
+    // Polling every 15 seconds for more responsive updates
+    const interval = setInterval(fetchBooking, 15000);
     
     return () => clearInterval(interval);
   }, [token]);
 
+  // Realtime subscription for instant status updates
+  useEffect(() => {
+    if (!booking?.id) return;
+
+    const channel = supabase
+      .channel(`guest-tracking-${booking.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'courses',
+          filter: `id=eq.${booking.id}`
+        },
+        (payload) => {
+          console.log('📡 Course update received:', payload.new);
+          const newStatus = (payload.new as any).status;
+          const newPaymentStatus = (payload.new as any).payment_status;
+          
+          if (newStatus && booking) {
+            setBooking(prev => prev ? { ...prev, status: newStatus } : null);
+          }
+          if (newPaymentStatus) {
+            setPaymentStatus(newPaymentStatus);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [booking?.id]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchBooking();
+  };
+
+  const handlePayment = async () => {
+    if (!booking) return;
+    
+    setPaymentLoading(true);
+    try {
+      // Check if there's a facture with a Stripe payment URL
+      const { data: facture } = await supabase
+        .from('factures')
+        .select('stripe_payment_url')
+        .eq('course_id', booking.id)
+        .maybeSingle();
+
+      if (facture?.stripe_payment_url) {
+        window.location.href = facture.stripe_payment_url;
+        return;
+      }
+
+      // If no payment URL yet, inform the user
+      toast.info("Le chauffeur n'a pas encore finalisé la course. Vous recevrez un lien de paiement par email.");
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error("Erreur lors du paiement. Veuillez réessayer.");
+    } finally {
+      setPaymentLoading(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -120,6 +230,13 @@ const GuestBookingTracking = () => {
             Confirmée
           </Badge>
         );
+      case 'in_progress':
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+            <Car className="w-3 h-3 mr-1" />
+            En cours
+          </Badge>
+        );
       case 'refused':
       case 'cancelled':
         return (
@@ -130,7 +247,7 @@ const GuestBookingTracking = () => {
         );
       case 'completed':
         return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
             <CheckCircle className="w-3 h-3 mr-1" />
             Terminée
           </Badge>
@@ -147,18 +264,47 @@ const GuestBookingTracking = () => {
   const getStatusMessage = (status: string) => {
     switch (status) {
       case 'pending':
-        return "Votre demande de réservation a été envoyée. Le chauffeur va l'examiner et vous contacter pour confirmer.";
+        return "Votre demande de réservation a été envoyée. Le chauffeur va l'examiner et vous confirmer la course.";
       case 'accepted':
         return "Votre réservation a été confirmée ! Le chauffeur sera au point de rendez-vous à l'heure convenue.";
+      case 'in_progress':
+        return "Votre course est en cours. Bon trajet !";
       case 'refused':
         return "Nous sommes désolés, le chauffeur n'est pas disponible pour cette course. N'hésitez pas à contacter un autre chauffeur.";
       case 'cancelled':
         return "Cette réservation a été annulée.";
       case 'completed':
+        if (paymentStatus === 'paid') {
+          return "Course terminée et payée. Merci d'avoir utilisé SoloCab !";
+        }
+        if (driverUsesStripe && paymentStatus !== 'paid') {
+          return "Votre course est terminée. Veuillez procéder au paiement ci-dessous.";
+        }
         return "Cette course est terminée. Merci d'avoir utilisé SoloCab !";
       default:
         return "";
     }
+  };
+
+  // Status timeline steps
+  const getTimelineSteps = (status: string) => {
+    const steps = [
+      { key: 'pending', label: 'Demande envoyée', icon: Clock3 },
+      { key: 'accepted', label: 'Confirmée', icon: CheckCircle },
+      { key: 'in_progress', label: 'En cours', icon: Car },
+      { key: 'completed', label: 'Terminée', icon: CheckCircle },
+    ];
+
+    const statusOrder = ['pending', 'accepted', 'in_progress', 'completed'];
+    const currentIndex = statusOrder.indexOf(status);
+    const isCancelled = status === 'refused' || status === 'cancelled';
+
+    return steps.map((step, index) => ({
+      ...step,
+      isActive: !isCancelled && index <= currentIndex,
+      isCurrent: step.key === status,
+      isCancelled: isCancelled && index === 0,
+    }));
   };
 
   if (loading) {
@@ -192,6 +338,9 @@ const GuestBookingTracking = () => {
   }
 
   const driverDisplayName = booking.driver_company || booking.driver_name || "Votre chauffeur";
+  const timelineSteps = getTimelineSteps(booking.status);
+  const showPaymentSection = booking.status === 'completed' && driverUsesStripe && paymentStatus !== 'paid';
+  const showPaymentSuccess = booking.status === 'completed' && paymentStatus === 'paid';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -205,7 +354,7 @@ const GuestBookingTracking = () => {
           <p className="text-muted-foreground">Bonjour {booking.guest_name}</p>
         </div>
 
-        {/* Status Card */}
+        {/* Status Timeline */}
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -220,11 +369,91 @@ const GuestBookingTracking = () => {
             <div className="flex justify-center">
               {getStatusBadge(booking.status)}
             </div>
-            <p className="text-center text-muted-foreground">
+            
+            {/* Timeline visualization */}
+            {booking.status !== 'refused' && booking.status !== 'cancelled' && (
+              <div className="flex items-center justify-between px-4 py-3">
+                {timelineSteps.map((step, index) => (
+                  <div key={step.key} className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-colors ${
+                      step.isActive 
+                        ? step.isCurrent ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <step.icon className="w-4 h-4" />
+                    </div>
+                    <span className={`text-xs text-center ${step.isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                      {step.label}
+                    </span>
+                    {index < timelineSteps.length - 1 && (
+                      <div className={`absolute h-0.5 w-full ${step.isActive ? 'bg-primary/30' : 'bg-muted'}`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-center text-muted-foreground text-sm">
               {getStatusMessage(booking.status)}
             </p>
           </CardContent>
         </Card>
+
+        {/* Payment Section - When course is completed and driver uses Stripe */}
+        {showPaymentSection && (
+          <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2 text-amber-700">
+                <CreditCard className="h-5 w-5" />
+                Paiement de la course
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-background rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Montant à régler</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                  </span>
+                </div>
+              </div>
+              <Button 
+                onClick={handlePayment} 
+                className="w-full" 
+                size="lg"
+                disabled={paymentLoading}
+              >
+                {paymentLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Chargement...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Payer maintenant
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Paiement sécurisé par Stripe
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment Success */}
+        {showPaymentSuccess && (
+          <Card className="mb-6 border-emerald-500/30 bg-emerald-500/5">
+            <CardContent className="pt-6 text-center">
+              <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+              <h3 className="font-semibold text-emerald-700 mb-1">Paiement confirmé</h3>
+              <p className="text-sm text-muted-foreground">
+                Votre paiement de {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Booking Details */}
         <Card className="mb-6">
@@ -261,7 +490,6 @@ const GuestBookingTracking = () => {
               </div>
             </div>
 
-            {/* Afficher le prix du devis si disponible, sinon l'estimation */}
             {(booking.devis_amount || booking.guest_estimated_price) && (
               <div className="bg-muted/50 rounded-lg p-4 mt-4">
                 <div className="flex justify-between items-center">
@@ -293,7 +521,6 @@ const GuestBookingTracking = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Main driver */}
             <div className="flex items-center gap-4">
               <Avatar className="w-14 h-14">
                 <AvatarImage src={booking.driver_avatar_url || undefined} alt={driverDisplayName} />
@@ -304,7 +531,7 @@ const GuestBookingTracking = () => {
               <div>
                 <p className="font-semibold">{driverDisplayName}</p>
                 <p className="text-xs text-muted-foreground">Chauffeur principal</p>
-                {booking.driver_phone && booking.status === 'accepted' && (
+                {booking.driver_phone && (booking.status === 'accepted' || booking.status === 'in_progress') && (
                   <a 
                     href={`tel:${booking.driver_phone}`}
                     className="flex items-center gap-1 text-primary hover:underline text-sm mt-1"
@@ -316,7 +543,6 @@ const GuestBookingTracking = () => {
               </div>
             </div>
 
-            {/* Shared drivers */}
             {booking.is_shared_course && booking.shared_drivers && booking.shared_drivers.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2 mb-3">
@@ -344,7 +570,7 @@ const GuestBookingTracking = () => {
             
             {booking.status === 'pending' && (
               <p className="text-sm text-muted-foreground mt-3">
-                Le chauffeur vous contactera par téléphone ou email pour confirmer votre réservation.
+                Le chauffeur va examiner votre demande et vous confirmer la course rapidement.
               </p>
             )}
           </CardContent>
@@ -372,9 +598,8 @@ const GuestBookingTracking = () => {
           </AlertDescription>
         </Alert>
 
-        {/* Bookmark Reminder */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          💡 Conservez ce lien pour suivre l'évolution de votre réservation
+          💡 Cette page se met à jour automatiquement
         </p>
       </div>
     </div>
