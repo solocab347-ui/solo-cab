@@ -342,15 +342,18 @@ async function refreshCacheInBackground(userId: string): Promise<void> {
     const primaryRole = extractPrimaryRole(roles);
     const isEmployee = !!employeeResult?.data;
     
-    const cached = getAuthCache();
-    if (cached && cached.user.id === userId) {
-      saveAuthCache({
-        ...cached,
-        role: primaryRole || cached.role,
-        roles: roles.length > 0 ? roles : cached.roles,
-        isEmployee,
-        timestamp: Date.now(),
-      });
+    // Only update cache if we got valid roles from DB
+    if (roles.length > 0 && primaryRole) {
+      const cached = getAuthCache();
+      if (cached && cached.user.id === userId) {
+        saveAuthCache({
+          ...cached,
+          role: primaryRole,
+          roles,
+          isEmployee,
+          timestamp: Date.now(),
+        });
+      }
     }
   } catch (e) {
     // Échec silencieux - le cache reste valide
