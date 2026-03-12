@@ -325,6 +325,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       toast.error("Erreur lors de la création de la course");
     } finally {
       setCreatingCourse(false);
+      isSubmittingRef.current = false;
     }
   };
 
