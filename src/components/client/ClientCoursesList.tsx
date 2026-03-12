@@ -184,7 +184,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         filter: `client_id=eq.${clientId}`,
         debounceMs: 1000
       },
-      () => fetchCourses()
+      () => { fetchCourses(); fetchTotalCounts(); }
     );
   };
 
