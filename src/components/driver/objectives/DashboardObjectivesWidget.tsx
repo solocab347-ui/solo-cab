@@ -56,6 +56,7 @@ export function DashboardObjectivesWidget({
   refreshKey = 0
 }: DashboardObjectivesWidgetProps) {
   const [summary, setSummary] = useState<ObjectiveSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const { getTapProps } = useInstantTap();
 
   useEffect(() => {
