@@ -294,89 +294,51 @@ export function useCourseCreation() {
 
       logger.info("Course created successfully", { courseId: course.id });
 
-      // GÉNÉRATION DEVIS: Appeler l'edge function pour créer le devis automatiquement
-      // PROTECTION RENFORCÉE: 5 tentatives avec délai progressif pour fiabilité maximale
-      let devisCreated = false;
-      const maxAttempts = 5;
+      // GÉNÉRATION DEVIS: Non-bloquant pour l'UI - fire-and-forget avec retry en arrière-plan
+      toast.success("Course créée avec succès !");
       
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-          logger.info(`Génération devis - tentative ${attempt}/${maxAttempts}`, { 
-            courseId: course.id, 
-            driverId,
-            courseType 
-          });
-
-          const { data: devisData, error: devisError } = await supabase.functions.invoke(
-            "create-devis-auto",
-            {
-              body: {
-                course_id: course.id,
-                driver_id: driverId,
-                use_hourly_rate: courseType === "hourly",
-              },
-            }
-          );
-
-          if (devisError) {
-            logger.error(`Devis generation failed (attempt ${attempt}/${maxAttempts})`, { 
-              error: devisError, 
-              courseId: course.id,
-              errorDetails: JSON.stringify(devisError)
+      // Lancer la génération du devis en arrière-plan (ne bloque pas le retour)
+      (async () => {
+        const maxAttempts = 3;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            logger.info(`Génération devis - tentative ${attempt}/${maxAttempts}`, { 
+              courseId: course.id, driverId, courseType 
             });
+
+            const { error: devisError } = await supabase.functions.invoke(
+              "create-devis-auto",
+              {
+                body: {
+                  course_id: course.id,
+                  driver_id: driverId,
+                  use_hourly_rate: courseType === "hourly",
+                },
+              }
+            );
+
+            if (!devisError) {
+              logger.info("✅ Devis généré avec succès", { courseId: course.id, attempt });
+              return;
+            }
             
-            // Dernière tentative échouée - alerter l'utilisateur
-            if (attempt === maxAttempts) {
-              toast.error("❌ Erreur critique: Le devis n'a pas pu être généré automatiquement. Veuillez contacter le support.");
-              logger.error("CRITIQUE: Échec définitif génération devis après 5 tentatives", { 
-                courseId: course.id 
-              });
-            }
-          } else {
-            // Succès!
-            logger.info("✅ Devis généré avec succès", { 
-              courseId: course.id, 
-              devisId: devisData?.devis?.id,
-              attempt 
+            logger.error(`Devis generation failed (attempt ${attempt}/${maxAttempts})`, { 
+              error: devisError, courseId: course.id 
             });
-            toast.success("Course et devis créés avec succès !");
-            devisCreated = true;
-            break;
+          } catch (err) {
+            logger.exception(err as Error, { attempt, courseId: course.id });
           }
-        } catch (devisError) {
-          logger.exception(devisError as Error, { 
-            attempt, 
-            maxAttempts,
-            courseId: course.id,
-            context: "Génération devis automatique"
-          });
           
-          // Dernière tentative - notifier l'échec
-          if (attempt === maxAttempts) {
-            toast.error("❌ Impossible de générer le devis. Veuillez réessayer ou contacter le support.");
-            logger.error("CRITIQUE: Exception définitive génération devis", { 
-              courseId: course.id,
-              error: devisError
-            });
-          } else {
-            // Attendre progressivement plus longtemps entre les tentatives (1s, 2s, 3s, 4s)
-            const delayMs = attempt * 1000;
-            logger.info(`Attente ${delayMs}ms avant nouvelle tentative...`, { attempt });
-            await new Promise(resolve => setTimeout(resolve, delayMs));
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, attempt * 1500));
           }
         }
-      }
-
-      // Si le devis n'a pas été créé après toutes les tentatives, logguer pour investigation
-      if (!devisCreated) {
-        logger.error("ALERTE: Course créée sans devis après 5 tentatives", {
-          courseId: course.id,
-          clientId,
-          driverId,
-          pickupAddress,
-          destinationAddress
+        
+        logger.error("ALERTE: Course créée sans devis après 3 tentatives", {
+          courseId: course.id, clientId, driverId
         });
-      }
+        toast.error("Le devis n'a pas pu être généré automatiquement. Contactez le support.");
+      })();
 
       return course;
     } catch (error: any) {

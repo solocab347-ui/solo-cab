@@ -46,6 +46,8 @@ interface ClientCoursesListProps {
   defaultTab?: string | null;
 }
 
+const COURSES_PAGE_SIZE = 20;
+
 const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => {
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -56,6 +58,8 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   }, [defaultTab]);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
   
   // État pour le signalement
@@ -73,8 +77,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   } | null>(null);
 
   useEffect(() => {
-    fetchCourses();
-    setupRealtimeSubscription();
+    fetchCourses(0);
+    const cleanup = setupRealtimeSubscription();
+    return () => { cleanup?.(); };
   }, [clientId]);
   
   useEffect(() => {
@@ -85,8 +90,11 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     getCurrentUser();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (pageNum: number = 0, append: boolean = false) => {
     try {
+      const from = pageNum * COURSES_PAGE_SIZE;
+      const to = from + COURSES_PAGE_SIZE - 1;
+
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -119,15 +127,31 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           )
         `)
         .eq("client_id", clientId)
-        .order("scheduled_date", { ascending: false });
+        .order("scheduled_date", { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
-      setCourses(data || []);
+      
+      const newData = data || [];
+      setHasMore(newData.length === COURSES_PAGE_SIZE);
+      
+      if (append) {
+        setCourses(prev => [...prev, ...newData]);
+      } else {
+        setCourses(newData);
+      }
+      setPage(pageNum);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (hasMore && !loading) {
+      fetchCourses(page + 1, true);
     }
   };
 
@@ -891,6 +915,14 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             cancelledCourses.map(renderCourseCard)
           )}
         </TabsContent>
+
+        {hasMore && (
+          <div className="flex justify-center pt-4">
+            <Button variant="outline" onClick={loadMore} disabled={loading}>
+              Charger plus de courses
+            </Button>
+          </div>
+        )}
       </Tabs>
 
       {/* Cancel Confirmation Dialog */}
