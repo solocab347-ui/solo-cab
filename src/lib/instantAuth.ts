@@ -300,15 +300,17 @@ export async function instantGetSession(): Promise<AuthResult> {
   const primaryRole = extractPrimaryRole(roles);
   const isEmployee = !!employeeResult?.data;
   
-  // Mettre à jour le cache
-  saveAuthCache({
-    user,
-    role: primaryRole || 'client',
-    roles,
-    isEmployee,
-    timestamp: Date.now(),
-    sessionExpiry: session.expires_at,
-  });
+  // Only save cache if we got a valid role
+  if (primaryRole) {
+    saveAuthCache({
+      user,
+      role: primaryRole,
+      roles,
+      isEmployee,
+      timestamp: Date.now(),
+      sessionExpiry: session.expires_at,
+    });
+  }
   
   logger.info('Fresh auth data fetched', { 
     duration: Date.now() - startTime,
