@@ -915,6 +915,14 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             cancelledCourses.map(renderCourseCard)
           )}
         </TabsContent>
+
+        {hasMore && (
+          <div className="flex justify-center pt-4">
+            <Button variant="outline" onClick={loadMore} disabled={loading}>
+              Charger plus de courses
+            </Button>
+          </div>
+        )}
       </Tabs>
 
       {/* Cancel Confirmation Dialog */}
