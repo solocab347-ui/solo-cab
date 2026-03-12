@@ -283,7 +283,20 @@ export const ProtectedRoute = ({
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-    return <Navigate to="/login" replace />;
+    // Redirect to the correct dashboard instead of login
+    const correctDashboard: Record<string, string> = {
+      admin: "/admin-dashboard",
+      driver: "/driver-dashboard",
+      client: "/client-dashboard",
+    };
+    const target = correctDashboard[userRole] || "/login";
+    logger.warn("ProtectedRoute: role mismatch, redirecting", { 
+      userRole, 
+      allowedRoles, 
+      redirectTo: target,
+      attempted: location.pathname 
+    });
+    return <Navigate to={target} replace />;
   }
 
   // CRITIQUE: Bloquer les collaborateurs d'entreprise et les rediriger vers leur dashboard
