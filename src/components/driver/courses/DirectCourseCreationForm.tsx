@@ -94,7 +94,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("*")
+        .select("id, user_id, status, max_passengers, base_fare, per_km_rate, hourly_rate, tva_included, minimum_price, is_pioneer, free_access_end_date, created_at, billing_type, stripe_connect_account_id, stripe_connect_charges_enabled")
         .eq("user_id", user.id)
         .maybeSingle();
 

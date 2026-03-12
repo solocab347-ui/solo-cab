@@ -60,6 +60,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [totalCounts, setTotalCounts] = useState({ pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
   
   // État pour le signalement
@@ -78,6 +79,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   useEffect(() => {
     fetchCourses(0);
+    fetchTotalCounts();
     const cleanup = setupRealtimeSubscription();
     return () => { cleanup?.(); };
   }, [clientId]);
@@ -149,6 +151,22 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     }
   };
 
+  const fetchTotalCounts = async () => {
+    if (!clientId) return;
+    const [pendingRes, confirmedRes, completedRes, cancelledRes] = await Promise.all([
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "pending"),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).in("status", ["accepted", "in_progress"]),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "completed"),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "cancelled"),
+    ]);
+    setTotalCounts({
+      pending: pendingRes.count || 0,
+      confirmed: confirmedRes.count || 0,
+      completed: completedRes.count || 0,
+      cancelled: cancelledRes.count || 0,
+    });
+  };
+
   const loadMore = () => {
     if (hasMore && !loading) {
       fetchCourses(page + 1, true);
@@ -166,7 +184,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         filter: `client_id=eq.${clientId}`,
         debounceMs: 1000
       },
-      () => fetchCourses()
+      () => { fetchCourses(); fetchTotalCounts(); }
     );
   };
 
@@ -832,7 +850,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <Clock className="w-4 h-4" />
             <span className="text-xs md:text-sm">En attente</span>
-            <Badge className="bg-yellow-500/30 text-xs">{pendingCourses.length}</Badge>
+            <Badge className="bg-yellow-500/30 text-xs">{totalCounts.pending}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="confirmed"
@@ -840,7 +858,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <CheckCircle className="w-4 h-4" />
             <span className="text-xs md:text-sm">Confirmée</span>
-            <Badge className="bg-blue-500/30 text-xs">{confirmedCourses.length}</Badge>
+            <Badge className="bg-blue-500/30 text-xs">{totalCounts.confirmed}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="completed"
@@ -848,7 +866,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <FileText className="w-4 h-4" />
             <span className="text-xs md:text-sm">Terminée</span>
-            <Badge className="bg-green-500/30 text-xs">{completedCourses.length}</Badge>
+            <Badge className="bg-green-500/30 text-xs">{totalCounts.completed}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="cancelled"
@@ -856,7 +874,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <XCircle className="w-4 h-4" />
             <span className="text-xs md:text-sm">Refusé</span>
-            <Badge className="bg-red-500/30 text-xs">{cancelledCourses.length}</Badge>
+            <Badge className="bg-red-500/30 text-xs">{totalCounts.cancelled}</Badge>
           </TabsTrigger>
         </TabsList>
 

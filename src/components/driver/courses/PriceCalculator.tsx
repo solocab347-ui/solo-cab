@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const isSubmittingRef = React.useRef(false);
   
   // État pour l'invitation nouveau client
   const [creatingInvitation, setCreatingInvitation] = useState(false);
@@ -211,7 +212,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         price: calculatedPrice,
       });
 
-      // Étape 3: Charger les clients
+      // Étape 3: Charger les clients (limité pour la scalabilité)
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -222,7 +223,8 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
             email
           )
         `)
-        .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`);
+        .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`)
+        .limit(200);
 
       if (clientsError) {
         logger.warn("Erreur chargement clients", { error: clientsError });
@@ -251,6 +253,13 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       return;
     }
 
+    // Protection anti-double-submit
+    if (isSubmittingRef.current) {
+      toast.warning("Veuillez patienter, votre demande est en cours...");
+      return;
+    }
+    isSubmittingRef.current = true;
+
     setCreatingCourse(true);
     logger.info("Création de course depuis calculatrice", {
       clientId: selectedClientId,
@@ -258,12 +267,16 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     });
 
     try {
+      // Récupérer le user_id du driver pour created_by_user_id
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Créer la course
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .insert({
           client_id: selectedClientId,
           driver_id: driverProfile.driver.id,
+          driver_ids: [driverProfile.driver.id],
           pickup_address: pickupAddress,
           pickup_latitude: pickupCoordinates?.latitude,
           pickup_longitude: pickupCoordinates?.longitude,
@@ -275,6 +288,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           scheduled_date: new Date().toISOString(),
           passengers_count: 1,
           status: "pending",
+          created_by_user_id: user?.id || null,
         })
         .select()
         .single();
@@ -311,6 +325,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       toast.error("Erreur lors de la création de la course");
     } finally {
       setCreatingCourse(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -327,11 +342,14 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     });
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // 1. Créer la course sans client_id (en attente d'inscription)
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .insert({
           driver_id: driverProfile.driver.id,
+          driver_ids: [driverProfile.driver.id],
           client_id: null, // Sera rempli après inscription
           pickup_address: pickupAddress,
           pickup_latitude: pickupCoordinates?.latitude,
@@ -344,6 +362,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           scheduled_date: new Date().toISOString(),
           passengers_count: 1,
           status: "pending",
+          created_by_user_id: user?.id || null,
           notes: "En attente d'inscription client via lien d'invitation"
         })
         .select()
