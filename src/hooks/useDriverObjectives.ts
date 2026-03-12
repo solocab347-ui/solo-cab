@@ -385,19 +385,14 @@ export function useDriverObjectives(driverId: string | null) {
     fetchAll();
   }, [fetchAll]);
 
+  // Recalculate progress when data loads or entries change
   useEffect(() => {
     if (!loading && driverId) {
       calculateProgress();
-    }
-  }, [loading, driverId, objectives, calculateProgress]);
-
-  // Fetch driver stats when data changes
-  useEffect(() => {
-    if (!loading && driverId) {
       fetchDriverStats();
       fetchSoloCabFullStats();
     }
-  }, [loading, driverId, dailyEntries, objectives, fetchDriverStats, fetchSoloCabFullStats]);
+  }, [loading, driverId, objectives, dailyEntries, calculateProgress, fetchDriverStats, fetchSoloCabFullStats]);
 
   // CRUD operations
   const upsertObjective = async (data: Partial<DriverObjective> & { period_type: string }) => {
