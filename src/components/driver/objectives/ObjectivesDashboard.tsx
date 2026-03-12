@@ -118,8 +118,10 @@ function CollapsibleSection({
   return (
     <div>
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors touch-manipulation"
       >
         <div className="flex items-center gap-2">
           {icon}
