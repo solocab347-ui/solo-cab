@@ -184,15 +184,17 @@ export async function instantSignIn(
     const primaryRole = extractPrimaryRole(roles);
     const isEmployee = !!employeeResult?.data;
     
-    // Sauvegarder dans le cache pour connexions futures instantanées
-    saveAuthCache({
-      user,
-      role: primaryRole || 'client',
-      roles,
-      isEmployee,
-      timestamp: Date.now(),
-      sessionExpiry: session.expires_at,
-    });
+    // Save cache ONLY if we got a valid role from DB
+    if (primaryRole) {
+      saveAuthCache({
+        user,
+        role: primaryRole,
+        roles,
+        isEmployee,
+        timestamp: Date.now(),
+        sessionExpiry: session.expires_at,
+      });
+    }
     
     logger.info('Instant sign in success', { 
       duration: Date.now() - startTime,
