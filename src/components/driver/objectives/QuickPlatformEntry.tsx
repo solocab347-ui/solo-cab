@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, subDays, isToday, isBefore, startOfDay, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   ChevronDown,
   ChevronUp,
@@ -407,17 +407,14 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
   return (
     <Card className="relative overflow-hidden border-border/50">
       {/* Header */}
-      <CardHeader
-        className="pb-2 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center">
               <PlusCircle className="w-5 h-5 text-white" />
             </div>
-            <div>
-               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                 Saisie rapide
                 {hasUnsaved && (
                   <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
@@ -425,285 +422,295 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                   </Badge>
                 )}
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {getDateLabel()} • {grandTotalRevenue.toFixed(0)}€ • {grandTotalCourses} courses
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             {totalExternalRevenue > 0 && !expanded && (
               <Badge variant="secondary" className="text-[10px]">
                 Apps : {totalExternalRevenue.toFixed(0)}€
               </Badge>
             )}
-            {expanded ? (
-              <ChevronUp className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setExpanded((prev) => !prev)}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Réduire la saisie rapide' : 'Ouvrir la saisie rapide'}
+            >
+              {expanded ? (
+                <ChevronUp className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              )}
+            </Button>
           </div>
         </div>
       </CardHeader>
 
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <CardContent className="pt-0 space-y-4">
-              {/* Date Navigation */}
-              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => { e.stopPropagation(); navigateDate('prev'); }}
-                  disabled={!canGoPrev}
+      {expanded && (
+        <CardContent className="pt-0 space-y-4">
+          {/* Date Navigation */}
+          <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigateDate('prev')}
+              disabled={!canGoPrev}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium capitalize">{getDateLabel()}</span>
+              {!isSelectedToday && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  onClick={() => setSelectedDate(new Date())}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  Aujourd'hui
                 </Button>
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium capitalize">{getDateLabel()}</span>
-                  {!isSelectedToday && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-[10px] px-2"
-                      onClick={(e) => { e.stopPropagation(); setSelectedDate(new Date()); }}
-                    >
-                      Aujourd'hui
-                    </Button>
-                  )}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={(e) => { e.stopPropagation(); navigateDate('next'); }}
-                  disabled={!canGoNext}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigateDate('next')}
+              disabled={!canGoNext}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
 
-              {/* SoloCab auto row */}
-              <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">SoloCab</span>
-                  <Badge variant="secondary" className="text-[10px]">
-                    <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-500" /> Auto
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="font-bold">{soloCabStats.revenue.toFixed(0)}€</span>
-                  <span className="text-muted-foreground">{soloCabStats.coursesCount} courses</span>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); loadData(); }} disabled={syncing}>
-                    <RefreshCw className={cn("w-3.5 h-3.5", syncing && "animate-spin")} />
+          {/* SoloCab auto row */}
+          <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">SoloCab</span>
+              <Badge variant="secondary" className="text-[10px]">
+                <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-500" /> Auto
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-bold">{soloCabStats.revenue.toFixed(0)}€</span>
+              <span className="text-muted-foreground">{soloCabStats.coursesCount} courses</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={loadData}
+                disabled={syncing}
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", syncing && "animate-spin")} />
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* External platforms */}
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {entries.length === 0 && !showManage && (
+                <div className="text-center py-3">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Aucune plateforme externe configurée
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowManage(true)}
+                    className="gap-1"
+                  >
+                    <Plus className="w-4 h-4" /> Ajouter des plateformes
                   </Button>
                 </div>
-              </div>
+              )}
+
+              {entries.map((entry, index) => {
+                const platform = platforms.find(p => p.id === entry.platformId);
+                const IconComp = ICON_MAP[platform?.platform_icon || 'car'] || Car;
+                return (
+                  <div key={entry.platformId}>
+                    {index > 0 && <Separator className="mb-3" />}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <IconComp className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{entry.platformName}</span>
+                      </div>
+                      {entry.isSaved && !entry.isModified && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <CheckCircle2 className="w-3 h-3 mr-0.5" /> Sauvé
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-emerald-500" /> CA (€)
+                        </Label>
+                        <Input
+                          type="number"
+                          value={entry.revenue || ''}
+                          onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] flex items-center gap-1">
+                          <Car className="w-3 h-3 text-blue-500" /> Courses
+                        </Label>
+                        <Input
+                          type="number"
+                          value={entry.coursesCount || ''}
+                          onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-orange-500" /> Heures
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          value={entry.hoursWorked || ''}
+                          onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-red-500" /> Km
+                        </Label>
+                        <Input
+                          type="number"
+                          value={entry.kmDriven || ''}
+                          onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Save button */}
+              {entries.length > 0 && (
+                <Button
+                  type="button"
+                  onClick={saveAll}
+                  disabled={saving || !hasUnsaved}
+                  className="w-full"
+                  size="sm"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : hasUnsaved ? (
+                    <Save className="w-4 h-4 mr-2" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                  )}
+                  {saving ? 'Enregistrement...' : hasUnsaved ? 'Valider les résultats' : 'Tout est à jour'}
+                </Button>
+              )}
 
               <Separator />
 
-              {/* External platforms */}
-              {loading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {entries.length === 0 && !showManage && (
-                    <div className="text-center py-3">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Aucune plateforme externe configurée
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); setShowManage(true); }}
-                        className="gap-1"
-                      >
-                        <Plus className="w-4 h-4" /> Ajouter des plateformes
-                      </Button>
+              {/* Manage platforms toggle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowManage(!showManage)}
+                className="w-full gap-2 text-muted-foreground"
+              >
+                <Settings className="w-4 h-4" />
+                {showManage ? 'Fermer la gestion' : 'Gérer mes plateformes'}
+              </Button>
+
+              {/* Platform management panel */}
+              {showManage && (
+                <div className="space-y-3">
+                  {/* Current platforms with remove */}
+                  {platforms.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Mes plateformes actives</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {platforms.map(p => {
+                          const IconComp = ICON_MAP[p.platform_icon] || Car;
+                          return (
+                            <Badge
+                              key={p.id}
+                              variant="secondary"
+                              className="gap-1 cursor-pointer hover:bg-destructive/20 hover:text-destructive pr-1"
+                              onClick={() => removePlatform(p.id)}
+                            >
+                              <IconComp className="w-3 h-3" />
+                              {p.platform_name}
+                              <X className="w-3 h-3 ml-0.5" />
+                            </Badge>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  {entries.map((entry, index) => {
-                    const platform = platforms.find(p => p.id === entry.platformId);
-                    const IconComp = ICON_MAP[platform?.platform_icon || 'car'] || Car;
-                    return (
-                      <div key={entry.platformId}>
-                        {index > 0 && <Separator className="mb-3" />}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <IconComp className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{entry.platformName}</span>
-                          </div>
-                          {entry.isSaved && !entry.isModified && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              <CheckCircle2 className="w-3 h-3 mr-0.5" /> Sauvé
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <TrendingUp className="w-3 h-3 text-emerald-500" /> CA (€)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={entry.revenue || ''}
-                              onChange={(e) => updateEntry(entry.platformId, 'revenue', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Car className="w-3 h-3 text-blue-500" /> Courses
-                            </Label>
-                            <Input
-                              type="number"
-                              value={entry.coursesCount || ''}
-                              onChange={(e) => updateEntry(entry.platformId, 'coursesCount', parseInt(e.target.value) || 0)}
-                              placeholder="0"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-orange-500" /> Heures
-                            </Label>
-                            <Input
-                              type="number"
-                              step="0.5"
-                              value={entry.hoursWorked || ''}
-                              onChange={(e) => updateEntry(entry.platformId, 'hoursWorked', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-red-500" /> Km
-                            </Label>
-                            <Input
-                              type="number"
-                              value={entry.kmDriven || ''}
-                              onChange={(e) => updateEntry(entry.platformId, 'kmDriven', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                        </div>
+                  {/* Available platforms to add */}
+                  {availableToAdd.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Ajouter une plateforme</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableToAdd.map(ap => {
+                          const IconComp = ICON_MAP[ap.icon] || Car;
+                          return (
+                            <Button
+                              type="button"
+                              key={ap.name}
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 h-7 text-xs"
+                              disabled={addingPlatform}
+                              onClick={() => addPlatform(ap.name, ap.icon)}
+                            >
+                              <IconComp className="w-3 h-3" />
+                              {ap.name}
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-
-                  {/* Save button */}
-                  {entries.length > 0 && (
-                    <Button
-                      onClick={saveAll}
-                      disabled={saving || !hasUnsaved}
-                      className="w-full"
-                      size="sm"
-                    >
-                      {saving ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : hasUnsaved ? (
-                        <Save className="w-4 h-4 mr-2" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                      )}
-                      {saving ? 'Enregistrement...' : hasUnsaved ? 'Valider les résultats' : 'Tout est à jour'}
-                    </Button>
+                    </div>
                   )}
-
-                  <Separator />
-
-                  {/* Manage platforms toggle */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setShowManage(!showManage); }}
-                    className="w-full gap-2 text-muted-foreground"
-                  >
-                    <Settings className="w-4 h-4" />
-                    {showManage ? 'Fermer la gestion' : 'Gérer mes plateformes'}
-                  </Button>
-
-                  {/* Platform management panel */}
-                  <AnimatePresence>
-                    {showManage && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="space-y-3"
-                      >
-                        {/* Current platforms with remove */}
-                        {platforms.length > 0 && (
-                          <div className="space-y-1.5">
-                            <p className="text-xs font-medium text-muted-foreground">Mes plateformes actives</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {platforms.map(p => {
-                                const IconComp = ICON_MAP[p.platform_icon] || Car;
-                                return (
-                                  <Badge
-                                    key={p.id}
-                                    variant="secondary"
-                                    className="gap-1 cursor-pointer hover:bg-destructive/20 hover:text-destructive pr-1"
-                                    onClick={() => removePlatform(p.id)}
-                                  >
-                                    <IconComp className="w-3 h-3" />
-                                    {p.platform_name}
-                                    <X className="w-3 h-3 ml-0.5" />
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Available platforms to add */}
-                        {availableToAdd.length > 0 && (
-                          <div className="space-y-1.5">
-                            <p className="text-xs font-medium text-muted-foreground">Ajouter une plateforme</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {availableToAdd.map(ap => {
-                                const IconComp = ICON_MAP[ap.icon] || Car;
-                                return (
-                                  <Button
-                                    key={ap.name}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1 h-7 text-xs"
-                                    disabled={addingPlatform}
-                                    onClick={() => addPlatform(ap.name, ap.icon)}
-                                  >
-                                    <IconComp className="w-3 h-3" />
-                                    {ap.name}
-                                    <Plus className="w-3 h-3" />
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               )}
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
