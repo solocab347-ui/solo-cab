@@ -432,33 +432,65 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
                       <h4 className="text-xs font-semibold uppercase text-muted-foreground">
                         Majorations
                       </h4>
-                      <div className="grid gap-3 grid-cols-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Moon className="w-3.5 h-3.5" />
-                            Soirée (%) 20h-6h
-                          </Label>
-                          <NumericInput
-                            value={pricing.evening_surcharge}
-                            onChange={(v) => updatePricing(pricing.id!, { evening_surcharge: parseFloat(v) || 0 })}
-                            placeholder="0"
-                            min={0}
-                            max={100}
-                          />
+                      <div className="p-2 rounded bg-muted/50 text-xs text-muted-foreground flex items-start gap-1.5">
+                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                        <span>
+                          Le système applique automatiquement la <strong>plus grande majoration</strong> entre 
+                          vos tarifs classiques et ceux de cette ville. Pas de doublon.
+                        </span>
+                      </div>
+                      
+                      {/* Evening time slot */}
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Moon className="w-3.5 h-3.5" />
+                          Créneau soirée
+                        </Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Début</Label>
+                            <Input
+                              type="time"
+                              value={pricing.evening_start || "20:00"}
+                              onChange={(e) => updatePricing(pricing.id!, { evening_start: e.target.value })}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Fin</Label>
+                            <Input
+                              type="time"
+                              value={pricing.evening_end || "06:00"}
+                              onChange={(e) => updatePricing(pricing.id!, { evening_end: e.target.value })}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Majoration %</Label>
+                            <NumericInput
+                              value={pricing.evening_surcharge}
+                              onChange={(v) => updatePricing(pricing.id!, { evening_surcharge: parseFloat(v) || 0 })}
+                              placeholder="0"
+                              min={0}
+                              max={100}
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            Week-end (%)
-                          </Label>
-                          <NumericInput
-                            value={pricing.weekend_surcharge}
-                            onChange={(v) => updatePricing(pricing.id!, { weekend_surcharge: parseFloat(v) || 0 })}
-                            placeholder="0"
-                            min={0}
-                            max={100}
-                          />
-                        </div>
+                      </div>
+                      
+                      {/* Weekend surcharge */}
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Majoration week-end (%)
+                        </Label>
+                        <NumericInput
+                          value={pricing.weekend_surcharge}
+                          onChange={(v) => updatePricing(pricing.id!, { weekend_surcharge: parseFloat(v) || 0 })}
+                          placeholder="0"
+                          min={0}
+                          max={100}
+                        />
                       </div>
                     </div>
 
