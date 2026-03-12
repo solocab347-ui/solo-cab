@@ -399,7 +399,7 @@ export function getNavigationPath(
     created_at?: string;
   }
 ): string {
-  if (!role) return "/client-dashboard";
+  if (!role) return "/login";
   
   switch (role) {
     case "admin":
