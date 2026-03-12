@@ -79,6 +79,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   useEffect(() => {
     fetchCourses(0);
+    fetchTotalCounts();
     const cleanup = setupRealtimeSubscription();
     return () => { cleanup?.(); };
   }, [clientId]);
