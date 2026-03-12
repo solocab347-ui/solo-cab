@@ -192,20 +192,21 @@ const GuestBookingTracking = () => {
     
     setPaymentLoading(true);
     try {
-      // Check if there's a facture with a Stripe payment URL
+      // Check if there's a facture with a Stripe payment ID
       const { data: facture } = await supabase
         .from('factures')
-        .select('stripe_payment_url')
+        .select('stripe_payment_id, final_payment_amount')
         .eq('course_id', booking.id)
         .maybeSingle();
 
-      if (facture?.stripe_payment_url) {
-        window.location.href = facture.stripe_payment_url;
+      if (facture?.stripe_payment_id) {
+        // Redirect to Stripe payment - the driver should have sent a payment link
+        toast.info("Veuillez utiliser le lien de paiement envoyé par votre chauffeur par SMS ou email.");
         return;
       }
 
-      // If no payment URL yet, inform the user
-      toast.info("Le chauffeur n'a pas encore finalisé la course. Vous recevrez un lien de paiement par email.");
+      // If no payment yet, inform the user
+      toast.info("Le chauffeur n'a pas encore finalisé la course. Vous recevrez un lien de paiement par email ou SMS.");
     } catch (error) {
       console.error('Payment error:', error);
       toast.error("Erreur lors du paiement. Veuillez réessayer.");
