@@ -333,83 +333,66 @@ export function useDriverObjectives(driverId: string | null) {
     };
   }, [driverId]);
 
-  // Calculate progress for all periods
+  // Calculate progress using RPC for accurate data (no 100-row limit)
   const calculateProgress = useCallback(async () => {
     if (!driverId) return;
 
-    const now = new Date();
-    const periods: ('daily' | 'weekly' | 'monthly' | 'yearly')[] = ['daily', 'weekly', 'monthly', 'yearly'];
-    const progressData: ObjectiveProgress[] = [];
+    try {
+      const { data: rpcData, error } = await supabase.rpc('get_driver_dashboard_stats', { p_driver_id: driverId });
+      if (error) {
+        console.error('Error fetching stats for progress:', error);
+        return;
+      }
+      const d = rpcData as any;
+      if (!d) return;
 
-    for (const period of periods) {
-      let startDate: Date, endDate: Date;
-      
-      switch (period) {
-        case 'daily':
-          startDate = startOfDay(now);
-          endDate = endOfDay(now);
-          break;
-        case 'weekly':
-          startDate = startOfWeek(now, { locale: fr });
-          endDate = endOfWeek(now, { locale: fr });
-          break;
-        case 'monthly':
-          startDate = startOfMonth(now);
-          endDate = endOfMonth(now);
-          break;
-        case 'yearly':
-          startDate = startOfYear(now);
-          endDate = endOfYear(now);
-          break;
+      const periods: ('daily' | 'weekly' | 'monthly' | 'yearly')[] = ['daily', 'weekly', 'monthly', 'yearly'];
+      const prefixMap = { daily: 'today', weekly: 'week', monthly: 'month', yearly: 'year' };
+      const progressData: ObjectiveProgress[] = [];
+
+      for (const period of periods) {
+        const p = prefixMap[period];
+        // Combine SoloCab (from courses table) + external (from driver_daily_entries)
+        const current: PeriodStats = {
+          revenue: Number(d[`${p}_revenue`] || 0) + Number(d[`${p}_ext_revenue`] || 0),
+          courses: Number(d[`${p}_courses`] || 0) + Number(d[`${p}_ext_courses`] || 0),
+          newClients: Number(d[`${p}_clients`] || 0) + Number(d[`${p}_ext_clients`] || 0),
+          hours: Number(d[`${p}_hours`] || 0) + Number(d[`${p}_ext_hours`] || 0),
+          km: Number(d[`${p}_km`] || 0) + Number(d[`${p}_ext_km`] || 0),
+          averageRating: 0,
+        };
+
+        const objective = objectives.find(o => o.period_type === period) || null;
+
+        const percentage = {
+          revenue: objective?.revenue_target ? (current.revenue / objective.revenue_target) * 100 : 0,
+          courses: objective?.courses_target ? (current.courses / objective.courses_target) * 100 : 0,
+          newClients: objective?.new_clients_target ? (current.newClients / objective.new_clients_target) * 100 : 0,
+          hours: objective?.hours_target ? (current.hours / objective.hours_target) * 100 : 0,
+          km: objective?.km_target ? (current.km / objective.km_target) * 100 : 0,
+        };
+
+        progressData.push({ period, objective, current, percentage });
       }
 
-      // Get entries for this period
-      const periodEntries = dailyEntries.filter(e => {
-        const entryDate = new Date(e.entry_date);
-        return entryDate >= startDate && entryDate <= endDate;
-      });
-
-      // Calculate current stats
-      const current: PeriodStats = {
-        revenue: periodEntries.reduce((sum, e) => sum + (e.revenue || 0), 0),
-        courses: periodEntries.reduce((sum, e) => sum + (e.courses_count || 0), 0),
-        newClients: periodEntries.reduce((sum, e) => sum + (e.new_clients_count || 0), 0),
-        hours: periodEntries.reduce((sum, e) => sum + (e.hours_worked || 0), 0),
-        km: periodEntries.reduce((sum, e) => sum + (e.km_driven || 0), 0),
-        averageRating: 0,
-      };
-
-      const objective = objectives.find(o => o.period_type === period) || null;
-
-      const percentage = {
-        revenue: objective?.revenue_target ? (current.revenue / objective.revenue_target) * 100 : 0,
-        courses: objective?.courses_target ? (current.courses / objective.courses_target) * 100 : 0,
-        newClients: objective?.new_clients_target ? (current.newClients / objective.new_clients_target) * 100 : 0,
-        hours: objective?.hours_target ? (current.hours / objective.hours_target) * 100 : 0,
-        km: objective?.km_target ? (current.km / objective.km_target) * 100 : 0,
-      };
-
-      progressData.push({ period, objective, current, percentage });
+      setProgress(progressData);
+    } catch (error) {
+      console.error('Error calculating progress:', error);
     }
-
-    setProgress(progressData);
-  }, [driverId, dailyEntries, objectives]);
+  }, [driverId, objectives]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
-  useEffect(() => {
-    calculateProgress();
-  }, [dailyEntries, objectives, calculateProgress]);
-
-  // Fetch driver stats when data changes
+  // Recalculate progress when data loads or entries change
   useEffect(() => {
     if (!loading && driverId) {
+      calculateProgress();
       fetchDriverStats();
       fetchSoloCabFullStats();
     }
-  }, [loading, driverId, dailyEntries, objectives, fetchDriverStats, fetchSoloCabFullStats]);
+  }, [loading, driverId, objectives, dailyEntries, calculateProgress, fetchDriverStats, fetchSoloCabFullStats]);
 
   // CRUD operations
   const upsertObjective = async (data: Partial<DriverObjective> & { period_type: string }) => {
