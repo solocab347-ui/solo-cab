@@ -874,7 +874,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <XCircle className="w-4 h-4" />
             <span className="text-xs md:text-sm">Refusé</span>
-            <Badge className="bg-red-500/30 text-xs">{cancelledCourses.length}</Badge>
+            <Badge className="bg-red-500/30 text-xs">{totalCounts.cancelled}</Badge>
           </TabsTrigger>
         </TabsList>
 
