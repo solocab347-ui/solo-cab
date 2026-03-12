@@ -866,7 +866,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <FileText className="w-4 h-4" />
             <span className="text-xs md:text-sm">Terminée</span>
-            <Badge className="bg-green-500/30 text-xs">{completedCourses.length}</Badge>
+            <Badge className="bg-green-500/30 text-xs">{totalCounts.completed}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="cancelled"
