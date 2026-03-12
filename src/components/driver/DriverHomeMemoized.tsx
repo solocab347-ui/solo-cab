@@ -179,7 +179,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           Accès Rapide
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-success group touch-manipulation active:scale-[0.98]" onClick={() => navigate("/driver/create-course")}>
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-success group touch-manipulation active:scale-[0.98]"
+            {...getTapProps<HTMLDivElement>(() => navigate("/driver/create-course"))}
+          >
             <div className="absolute inset-0 bg-gradient-success opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-success rounded-xl sm:rounded-2xl flex items-center justify-center shadow-success group-hover:scale-110 transition-transform">
@@ -192,7 +195,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-premium group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("qrcode")}>
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-premium group touch-manipulation active:scale-[0.98]"
+            {...getTapProps<HTMLDivElement>(() => onTabChange("qrcode"))}
+          >
             <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-premium rounded-xl sm:rounded-2xl flex items-center justify-center shadow-premium group-hover:scale-110 transition-transform">
@@ -205,7 +211,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-trust group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("calculator")}>
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-trust group touch-manipulation active:scale-[0.98]"
+            {...getTapProps<HTMLDivElement>(() => onTabChange("calculator"))}
+          >
             <div className="absolute inset-0 bg-gradient-trust opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-trust rounded-xl sm:rounded-2xl flex items-center justify-center shadow-trust group-hover:scale-110 transition-transform">
@@ -218,7 +227,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-warning group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("planning")}>
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-warning group touch-manipulation active:scale-[0.98]"
+            {...getTapProps<HTMLDivElement>(() => onTabChange("planning"))}
+          >
             <div className="absolute inset-0 bg-gradient-warning opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-warning rounded-xl sm:rounded-2xl flex items-center justify-center shadow-warning group-hover:scale-110 transition-transform">
@@ -232,7 +244,10 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           </Card>
 
           {/* Objectives Shortcut */}
-          <Card className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-lg group touch-manipulation active:scale-[0.98]" onClick={() => onTabChange("objectives")}>
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-lg group touch-manipulation active:scale-[0.98]"
+            {...getTapProps<HTMLDivElement>(() => onTabChange("objectives"))}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-accent to-primary rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
@@ -246,13 +261,13 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           </Card>
 
           {/* Partner Courses Shortcut - Coming Soon */}
-          <Card 
-            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/40 via-card/30 to-card/40 backdrop-blur-xl transition-all cursor-pointer border border-border/30 shadow-lg group touch-manipulation opacity-60" 
-            onClick={() => {
+          <Card
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/40 via-card/30 to-card/40 backdrop-blur-xl transition-all cursor-pointer border border-border/30 shadow-lg group touch-manipulation opacity-60"
+            {...getTapProps<HTMLDivElement>(() => {
               toast.info("Bientôt disponible !", {
                 description: "La fonctionnalité de partenariats entre chauffeurs arrive très prochainement."
               });
-            }}
+            })}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-muted/10 opacity-50"></div>
             {/* Badge Bientôt */}
