@@ -374,15 +374,21 @@ const DriverProgressionTracker = () => {
       return { step: null, message: "✅ Tunnel complet" };
     }
     
-    if (pendingStep) {
-      return { step: pendingStep, message: `⏳ ${pendingStep.label} - ${pendingStep.details || "En attente"}` };
-    }
-    
     if (currentStep) {
       return { step: currentStep, message: `📍 ${currentStep.label}${currentStep.details ? ` - ${currentStep.details}` : ""}` };
     }
     
-    return { step: null, message: "❓ État inconnu" };
+    if (pendingStep) {
+      return { step: pendingStep, message: `⏳ ${pendingStep.label} - ${pendingStep.details || "En attente"}` };
+    }
+    
+    // Fallback: trouver la première étape incomplète
+    const firstIncomplete = steps.find(s => !s.isComplete);
+    if (firstIncomplete) {
+      return { step: firstIncomplete, message: `📍 ${firstIncomplete.label}${firstIncomplete.details ? ` - ${firstIncomplete.details}` : " - À compléter"}` };
+    }
+    
+    return { step: null, message: "✅ Tunnel complet" };
   };
 
   const filteredDrivers = useMemo(() => {
