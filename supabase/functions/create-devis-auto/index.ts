@@ -71,13 +71,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // LOGIQUE MÉTIER: Pour les guest bookings, le client a déjà vu et accepté le prix
-    // en soumettant sa demande, donc le devis sera automatiquement accepté
+    // LOGIQUE MÉTIER: Les guest bookings NE sont PAS auto-acceptés.
+    // Le chauffeur doit explicitement accepter la course depuis l'onglet "En attente".
+    // Le client a vu le prix estimé mais le chauffeur doit valider la disponibilité.
     const isGuestBooking = course.is_guest_booking === true;
-    const autoAcceptDevis = isGuestBooking;
+    const autoAcceptDevis = false; // Toujours pending, le chauffeur décide
     
     if (isGuestBooking) {
-      console.log('👤 Guest booking détecté - le devis sera auto-accepté');
+      console.log('👤 Guest booking détecté - le devis restera en attente de validation chauffeur');
     }
 
     // Vérifier si c'est une course d'entreprise (company_courses)

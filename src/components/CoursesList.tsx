@@ -759,6 +759,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
+      // Pour les guest bookings, accepter aussi le devis associé
+      const course = courses.find(c => c.id === courseId);
+      if (course?.is_guest_booking) {
+        await supabase
+          .from("devis")
+          .update({ status: "accepted" })
+          .eq("course_id", courseId)
+          .eq("status", "pending");
+      }
+
+      if (error) throw error;
+
       // Notifier l'entreprise en background (ne bloque pas)
       notifyCompanyForCourse(courseId, 'accepted').catch(console.error);
 
@@ -776,7 +788,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     } finally {
       setActionLoading(courseId, false);
     }
-  }, [isActionLoading, setActionLoading, notifyCompanyForCourse]);
+  }, [isActionLoading, setActionLoading, notifyCompanyForCourse, courses]);
 
   const handleStartCourse = useCallback(async (courseId: string) => {
     if (isActionLoading(courseId)) return;

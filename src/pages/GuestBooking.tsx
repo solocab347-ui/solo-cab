@@ -280,9 +280,18 @@ const GuestBooking = () => {
         },
         { maxRetries: 3, context: 'Création devis guest booking' }
       ).then(() => {
-        console.log('✅ Devis généré et auto-accepté avec succès');
+        console.log('✅ Devis généré avec succès (en attente de validation chauffeur)');
       }).catch((devisError) => {
         console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
+      });
+
+      // Envoyer l'email de suivi au client (non bloquant)
+      supabase.functions.invoke('send-guest-tracking-email', {
+        body: { course_id: data.id }
+      }).then(() => {
+        console.log('✅ Email de suivi envoyé au client');
+      }).catch((emailError) => {
+        console.error('⚠️ Erreur envoi email suivi (non bloquant):', emailError);
       });
 
       // Check if driver requires card hold (uses Stripe Connect)
