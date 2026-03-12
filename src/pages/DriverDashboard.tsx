@@ -76,8 +76,21 @@ const DriverDashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   useUserLanguage(); // Sync language with user profile
-  const { signOut, user } = useAuth();
+  const { signOut, user, userRole } = useAuth();
   const queryClient = useQueryClient();
+
+  // SÉCURITÉ: Double vérification du rôle pour éviter les mélanges de dashboard
+  useEffect(() => {
+    if (userRole && userRole !== "driver") {
+      logger.warn("DriverDashboard: wrong role detected, redirecting", { userRole });
+      const redirectMap: Record<string, string> = {
+        admin: "/admin-dashboard",
+        client: "/client-dashboard",
+      };
+      navigate(redirectMap[userRole] || "/login", { replace: true });
+    }
+  }, [userRole, navigate]);
+
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating, accessStatus } = useOptimizedDriverProfile(user?.id);
   
   // Mettre à jour last_seen_at à chaque visite du dashboard
