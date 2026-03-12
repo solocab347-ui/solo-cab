@@ -31,6 +31,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const isSubmittingRef = React.useRef(false);
   
   // État pour l'invitation nouveau client
   const [creatingInvitation, setCreatingInvitation] = useState(false);
