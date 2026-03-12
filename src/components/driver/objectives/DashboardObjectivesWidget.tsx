@@ -187,8 +187,8 @@ export function DashboardObjectivesWidget({
       transition={{ duration: 0.5 }}
     >
       <Card 
-        className="relative overflow-hidden p-4 sm:p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border/50 cursor-pointer hover:scale-[1.01] transition-all group"
-        onClick={onNavigateToObjectives}
+        className="relative overflow-hidden p-4 sm:p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-border/50 cursor-pointer hover:scale-[1.01] transition-all group touch-manipulation"
+        {...getTapProps<HTMLDivElement>(() => onNavigateToObjectives())}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-30"></div>
         
