@@ -407,17 +407,14 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
   return (
     <Card className="relative overflow-hidden border-border/50">
       {/* Header */}
-      <CardHeader
-        className="pb-2 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center">
               <PlusCircle className="w-5 h-5 text-white" />
             </div>
-            <div>
-               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                 Saisie rapide
                 {hasUnsaved && (
                   <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
@@ -425,22 +422,34 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                   </Badge>
                 )}
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {getDateLabel()} • {grandTotalRevenue.toFixed(0)}€ • {grandTotalCourses} courses
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             {totalExternalRevenue > 0 && !expanded && (
               <Badge variant="secondary" className="text-[10px]">
                 Apps : {totalExternalRevenue.toFixed(0)}€
               </Badge>
             )}
-            {expanded ? (
-              <ChevronUp className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setExpanded((prev) => !prev)}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Réduire la saisie rapide' : 'Ouvrir la saisie rapide'}
+            >
+              {expanded ? (
+                <ChevronUp className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              )}
+            </Button>
           </div>
         </div>
       </CardHeader>
