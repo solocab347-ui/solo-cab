@@ -342,11 +342,14 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     });
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // 1. Créer la course sans client_id (en attente d'inscription)
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .insert({
           driver_id: driverProfile.driver.id,
+          driver_ids: [driverProfile.driver.id],
           client_id: null, // Sera rempli après inscription
           pickup_address: pickupAddress,
           pickup_latitude: pickupCoordinates?.latitude,
@@ -359,6 +362,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           scheduled_date: new Date().toISOString(),
           passengers_count: 1,
           status: "pending",
+          created_by_user_id: user?.id || null,
           notes: "En attente d'inscription client via lien d'invitation"
         })
         .select()
