@@ -443,6 +443,8 @@ export type Database = {
           city_name: string
           created_at: string
           driver_id: string | null
+          evening_end: string | null
+          evening_start: string | null
           evening_surcharge: number | null
           fleet_manager_id: string | null
           hourly_rate: number | null
@@ -480,6 +482,8 @@ export type Database = {
           city_name: string
           created_at?: string
           driver_id?: string | null
+          evening_end?: string | null
+          evening_start?: string | null
           evening_surcharge?: number | null
           fleet_manager_id?: string | null
           hourly_rate?: number | null
@@ -517,6 +521,8 @@ export type Database = {
           city_name?: string
           created_at?: string
           driver_id?: string | null
+          evening_end?: string | null
+          evening_start?: string | null
           evening_surcharge?: number | null
           fleet_manager_id?: string | null
           hourly_rate?: number | null
