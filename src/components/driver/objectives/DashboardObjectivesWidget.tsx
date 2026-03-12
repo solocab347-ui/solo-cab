@@ -16,7 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useInstantTap } from '@/hooks/useInstantTap';
 
 interface DashboardObjectivesWidgetProps {
   driverId: string;
