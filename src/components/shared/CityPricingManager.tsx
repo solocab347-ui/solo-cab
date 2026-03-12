@@ -57,6 +57,8 @@ interface CityPricing {
   tva_included: boolean;
   evening_surcharge: number;
   weekend_surcharge: number;
+  evening_start: string | null;
+  evening_end: string | null;
   is_active: boolean;
   priority: number;
   // Keep fields for DB compatibility but don't expose in UI
