@@ -126,11 +126,11 @@ const GuestBookingTracking = () => {
       if (bookingData.status === 'completed') {
         const { data: facture } = await supabase
           .from('factures')
-          .select('status, stripe_payment_url')
+          .select('payment_status, stripe_payment_id')
           .eq('course_id', bookingData.id)
           .maybeSingle();
 
-        if (facture?.status === 'paid') {
+        if (facture?.payment_status === 'paid') {
           setPaymentStatus('paid');
         }
       }
