@@ -211,7 +211,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         price: calculatedPrice,
       });
 
-      // Étape 3: Charger les clients
+      // Étape 3: Charger les clients (limité pour la scalabilité)
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -222,7 +222,8 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
             email
           )
         `)
-        .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`);
+        .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`)
+        .limit(200);
 
       if (clientsError) {
         logger.warn("Erreur chargement clients", { error: clientsError });
