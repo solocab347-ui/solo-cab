@@ -850,7 +850,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           >
             <Clock className="w-4 h-4" />
             <span className="text-xs md:text-sm">En attente</span>
-            <Badge className="bg-yellow-500/30 text-xs">{pendingCourses.length}</Badge>
+            <Badge className="bg-yellow-500/30 text-xs">{totalCounts.pending}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="confirmed"
