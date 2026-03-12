@@ -99,6 +99,8 @@ const defaultPricing: Omit<CityPricing, "id"> = {
   tva_included: false,
   evening_surcharge: 0,
   weekend_surcharge: 0,
+  evening_start: "20:00",
+  evening_end: "06:00",
   is_active: true,
   priority: 0,
   peak_hours_enabled: false,
