@@ -386,8 +386,10 @@ export function useDriverObjectives(driverId: string | null) {
   }, [fetchAll]);
 
   useEffect(() => {
-    calculateProgress();
-  }, [dailyEntries, objectives, calculateProgress]);
+    if (!loading && driverId) {
+      calculateProgress();
+    }
+  }, [loading, driverId, objectives, calculateProgress]);
 
   // Fetch driver stats when data changes
   useEffect(() => {
