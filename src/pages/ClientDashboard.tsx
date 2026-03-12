@@ -42,10 +42,22 @@ import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
-  const { signOut, user } = useAuth();
+  const { signOut, user, userRole } = useAuth();
   const { t } = useLocale();
   useUserLanguage();
   const navigate = useNavigate();
+
+  // SÉCURITÉ: Double vérification du rôle pour éviter les mélanges de dashboard
+  useEffect(() => {
+    if (userRole && userRole !== "client") {
+      console.warn("ClientDashboard: wrong role detected, redirecting", userRole);
+      const redirectMap: Record<string, string> = {
+        admin: "/admin-dashboard",
+        driver: "/driver-dashboard",
+      };
+      navigate(redirectMap[userRole] || "/login", { replace: true });
+    }
+  }, [userRole, navigate]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [clientProfile, setClientProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);

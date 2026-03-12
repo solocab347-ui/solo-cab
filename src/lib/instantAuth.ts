@@ -121,11 +121,10 @@ async function quickRetry<T>(
   throw lastError;
 }
 
-// === ROLE EXTRACTION ===
+// === ROLE EXTRACTION — MUST MATCH useAuth.tsx priority ===
 function extractPrimaryRole(roles: string[]): string | null {
+  // Priority: admin > driver > client (same as useAuth.tsx)
   if (roles.includes("admin")) return "admin";
-  if (roles.includes("fleet_manager")) return "fleet_manager";
-  if (roles.includes("company")) return "company";
   if (roles.includes("driver")) return "driver";
   if (roles.includes("client")) return "client";
   return null;
@@ -185,15 +184,17 @@ export async function instantSignIn(
     const primaryRole = extractPrimaryRole(roles);
     const isEmployee = !!employeeResult?.data;
     
-    // Sauvegarder dans le cache pour connexions futures instantanées
-    saveAuthCache({
-      user,
-      role: primaryRole || 'client',
-      roles,
-      isEmployee,
-      timestamp: Date.now(),
-      sessionExpiry: session.expires_at,
-    });
+    // Save cache ONLY if we got a valid role from DB
+    if (primaryRole) {
+      saveAuthCache({
+        user,
+        role: primaryRole,
+        roles,
+        isEmployee,
+        timestamp: Date.now(),
+        sessionExpiry: session.expires_at,
+      });
+    }
     
     logger.info('Instant sign in success', { 
       duration: Date.now() - startTime,
@@ -299,15 +300,17 @@ export async function instantGetSession(): Promise<AuthResult> {
   const primaryRole = extractPrimaryRole(roles);
   const isEmployee = !!employeeResult?.data;
   
-  // Mettre à jour le cache
-  saveAuthCache({
-    user,
-    role: primaryRole || 'client',
-    roles,
-    isEmployee,
-    timestamp: Date.now(),
-    sessionExpiry: session.expires_at,
-  });
+  // Only save cache if we got a valid role
+  if (primaryRole) {
+    saveAuthCache({
+      user,
+      role: primaryRole,
+      roles,
+      isEmployee,
+      timestamp: Date.now(),
+      sessionExpiry: session.expires_at,
+    });
+  }
   
   logger.info('Fresh auth data fetched', { 
     duration: Date.now() - startTime,
@@ -339,15 +342,18 @@ async function refreshCacheInBackground(userId: string): Promise<void> {
     const primaryRole = extractPrimaryRole(roles);
     const isEmployee = !!employeeResult?.data;
     
-    const cached = getAuthCache();
-    if (cached && cached.user.id === userId) {
-      saveAuthCache({
-        ...cached,
-        role: primaryRole || cached.role,
-        roles: roles.length > 0 ? roles : cached.roles,
-        isEmployee,
-        timestamp: Date.now(),
-      });
+    // Only update cache if we got valid roles from DB
+    if (roles.length > 0 && primaryRole) {
+      const cached = getAuthCache();
+      if (cached && cached.user.id === userId) {
+        saveAuthCache({
+          ...cached,
+          role: primaryRole,
+          roles,
+          isEmployee,
+          timestamp: Date.now(),
+        });
+      }
     }
   } catch (e) {
     // Échec silencieux - le cache reste valide
@@ -396,7 +402,7 @@ export function getNavigationPath(
     created_at?: string;
   }
 ): string {
-  if (!role) return "/client-dashboard";
+  if (!role) return "/login";
   
   switch (role) {
     case "admin":
