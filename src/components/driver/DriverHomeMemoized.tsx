@@ -15,6 +15,7 @@ import { DashboardObjectivesWidget } from "./objectives/DashboardObjectivesWidge
 import { QuickPlatformEntry } from "./objectives/QuickPlatformEntry";
 import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
 import { useProactiveCoach } from "./objectives/hooks/useProactiveCoach";
+import { useInstantTap } from "@/hooks/useInstantTap";
 
 interface DriverHomeProps {
   driverProfile: any;
