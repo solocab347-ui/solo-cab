@@ -253,6 +253,13 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       return;
     }
 
+    // Protection anti-double-submit
+    if (isSubmittingRef.current) {
+      toast.warning("Veuillez patienter, votre demande est en cours...");
+      return;
+    }
+    isSubmittingRef.current = true;
+
     setCreatingCourse(true);
     logger.info("Création de course depuis calculatrice", {
       clientId: selectedClientId,
@@ -260,12 +267,16 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     });
 
     try {
+      // Récupérer le user_id du driver pour created_by_user_id
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Créer la course
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .insert({
           client_id: selectedClientId,
           driver_id: driverProfile.driver.id,
+          driver_ids: [driverProfile.driver.id],
           pickup_address: pickupAddress,
           pickup_latitude: pickupCoordinates?.latitude,
           pickup_longitude: pickupCoordinates?.longitude,
@@ -277,6 +288,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           scheduled_date: new Date().toISOString(),
           passengers_count: 1,
           status: "pending",
+          created_by_user_id: user?.id || null,
         })
         .select()
         .single();
