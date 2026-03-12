@@ -304,8 +304,8 @@ export const usePushNotificationsV2 = () => {
         tag: `solocab-${Date.now()}`,
         data: { url: link || '/notifications' },
         requireInteraction: false,
-        vibrate: [100, 50, 200, 80, 150]
-      };
+        vibrate: [100, 50, 200, 80, 150] as any
+      } as NotificationOptions;
 
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification(title, options);
