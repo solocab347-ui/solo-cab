@@ -49,6 +49,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
   });
   const [loading, setLoading] = useState(true);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+  const { getTapProps } = useInstantTap();
 
   useEffect(() => {
     let mounted = true;
