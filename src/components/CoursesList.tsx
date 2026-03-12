@@ -2773,7 +2773,44 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       return null;
                     }
                     
-                    // ========== CAS 2: CLIENT CRÉÉ LA COURSE ==========
+                    // ========== CAS 2: GUEST BOOKING (client non inscrit) ==========
+                    // Le guest a validé le prix lors de la réservation, le chauffeur doit accepter directement
+                    if (course.is_guest_booking) {
+                      return (
+                        <div className="space-y-2">
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                              👤 Réservation client non inscrit
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {course.guest_name} a demandé cette course. Acceptez ou refusez la demande.
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleAcceptCourse(course.id)}
+                              className="flex-1 bg-success/90 hover:bg-success text-success-foreground border-0"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Accepter
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelCourse(course.id)}
+                              className="flex-1 border-border hover:bg-muted"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Refuser
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // ========== CAS 3: CLIENT INSCRIT CRÉÉ LA COURSE ==========
                     // Flux: Client crée → Client accepte devis → Chauffeur accepte course → Confirmée
                     
                     // Client n'a pas encore accepté le devis
