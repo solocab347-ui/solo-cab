@@ -60,6 +60,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [totalCounts, setTotalCounts] = useState({ pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
   
   // État pour le signalement
