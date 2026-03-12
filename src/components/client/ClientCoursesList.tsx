@@ -151,6 +151,22 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     }
   };
 
+  const fetchTotalCounts = async () => {
+    if (!clientId) return;
+    const [pendingRes, confirmedRes, completedRes, cancelledRes] = await Promise.all([
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "pending"),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).in("status", ["accepted", "in_progress"]),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "completed"),
+      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "cancelled"),
+    ]);
+    setTotalCounts({
+      pending: pendingRes.count || 0,
+      confirmed: confirmedRes.count || 0,
+      completed: completedRes.count || 0,
+      cancelled: cancelledRes.count || 0,
+    });
+  };
+
   const loadMore = () => {
     if (hasMore && !loading) {
       fetchCourses(page + 1, true);
