@@ -121,11 +121,10 @@ async function quickRetry<T>(
   throw lastError;
 }
 
-// === ROLE EXTRACTION ===
+// === ROLE EXTRACTION — MUST MATCH useAuth.tsx priority ===
 function extractPrimaryRole(roles: string[]): string | null {
+  // Priority: admin > driver > client (same as useAuth.tsx)
   if (roles.includes("admin")) return "admin";
-  if (roles.includes("fleet_manager")) return "fleet_manager";
-  if (roles.includes("company")) return "company";
   if (roles.includes("driver")) return "driver";
   if (roles.includes("client")) return "client";
   return null;
