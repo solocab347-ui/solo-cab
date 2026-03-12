@@ -121,10 +121,7 @@ export const PushNotificationListener = () => {
     }
   }, []);
 
-  // Précharger le son au montage
-  useEffect(() => {
-    initNotificationSound();
-  }, []);
+  // Le son SoloCab est généré à la demande via Web Audio API (pas besoin de préchargement)
 
   // Demander la permission au montage si pas encore fait
   useEffect(() => {
