@@ -25,7 +25,7 @@ const PAYMENT_METHODS = [
   { value: "other", label: "Autre", icon: Wallet, description: "Chèque, autre moyen", color: "bg-orange-500/10 text-orange-600 border-orange-500/30" },
 ];
 
-interface SmartCoursePaymentSelectorProps {
+interface CoursePaymentMethodSelectorProps {
   value: string;
   onChange: (value: string) => void;
   driverId?: string;
@@ -36,13 +36,8 @@ interface SmartCoursePaymentSelectorProps {
   label?: string;
   className?: string;
 }
-  clientName?: string;
-  onCardHoldSuccess?: (paymentMethodId: string) => void;
-  label?: string;
-  className?: string;
-}
 
-export function SmartCoursePaymentSelector({
+export const CoursePaymentMethodSelector = ({
   value,
   onChange,
   driverId,
@@ -52,11 +47,10 @@ export function SmartCoursePaymentSelector({
   onCardHoldSuccess,
   label = "Moyen de paiement",
   className = "",
-}: SmartCoursePaymentSelectorProps) {
+}: CoursePaymentMethodSelectorProps) => {
   const [driverHasStripe, setDriverHasStripe] = useState<boolean | null>(null);
   const [cardHoldDone, setCardHoldDone] = useState(false);
 
-  // Check if driver uses Stripe Connect
   useEffect(() => {
     const checkDriver = async () => {
       if (!driverId) return;
@@ -95,11 +89,11 @@ export function SmartCoursePaymentSelector({
             <div key={method.value}>
               <RadioGroupItem
                 value={method.value}
-                id={`smart-payment-${method.value}`}
+                id={`payment-${method.value}`}
                 className="peer sr-only"
               />
               <Label
-                htmlFor={`smart-payment-${method.value}`}
+                htmlFor={`payment-${method.value}`}
                 className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all relative"
               >
                 <IconComponent className="mb-1 h-5 w-5" />
@@ -116,11 +110,9 @@ export function SmartCoursePaymentSelector({
         })}
       </RadioGroup>
 
-      {/* Card selected + Stripe Connect driver → show info or CardHoldForm */}
       {value === 'card' && driverHasStripe && (
         <>
           {!courseId ? (
-            // Course not yet created - show info about what will happen
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs">
@@ -130,7 +122,6 @@ export function SmartCoursePaymentSelector({
               </AlertDescription>
             </Alert>
           ) : cardHoldDone ? (
-            // Card hold already done
             <Alert className="bg-emerald-500/5 border-emerald-500/20">
               <CheckCircle className="h-4 w-4 text-emerald-500" />
               <AlertDescription className="text-xs">
@@ -138,15 +129,14 @@ export function SmartCoursePaymentSelector({
               </AlertDescription>
             </Alert>
           ) : (
-            // Show CardHoldForm
             <CardHoldForm
-              driverId={driverId}
+              driverId={driverId!}
               courseId={courseId}
               clientEmail={clientEmail}
               clientName={clientName}
-              onSuccess={(pmId) => {
+              onSuccess={() => {
                 setCardHoldDone(true);
-                onCardHoldSuccess?.(pmId);
+                onCardHoldSuccess?.();
               }}
               onSkip={() => setCardHoldDone(true)}
             />
@@ -154,7 +144,6 @@ export function SmartCoursePaymentSelector({
         </>
       )}
 
-      {/* Card selected but driver doesn't have Stripe */}
       {value === 'card' && driverHasStripe === false && (
         <Alert className="bg-muted/30 border-border">
           <Info className="h-4 w-4" />
@@ -165,7 +154,6 @@ export function SmartCoursePaymentSelector({
         </Alert>
       )}
 
-      {/* Non-card method info */}
       {value && value !== 'card' && value !== 'not_specified' && (
         <p className="text-xs text-muted-foreground">
           Le règlement s'effectuera directement avec votre chauffeur en fin de course.
@@ -173,10 +161,7 @@ export function SmartCoursePaymentSelector({
       )}
     </div>
   );
-}
-
-// Re-export legacy components for backward compatibility
-export const CoursePaymentMethodSelector = SmartCoursePaymentSelector;
+};
 
 export const getPaymentMethodLabel = (value: string): string => {
   const method = PAYMENT_METHODS.find((m) => m.value === value);
