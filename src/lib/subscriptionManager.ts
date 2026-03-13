@@ -34,13 +34,11 @@ class SubscriptionManager {
       this.unsubscribe(oldestChannel);
     }
 
-    // Réutiliser channel existant si possible
-    if (this.channels.has(channelName) && this.isActive(channelName)) {
-      return this.cleanupCallbacks.get(channelName)!;
+    // Si le channel existe déjà, le remplacer pour garantir le bon callback
+    // Ne PAS réutiliser l'ancien car le callback peut avoir changé
+    if (this.channels.has(channelName)) {
+      this.unsubscribe(channelName);
     }
-
-    // Unsubscribe existing channel if any
-    this.unsubscribe(channelName);
 
     // Créer callback debounced si demandé
     const debouncedCallback = config.debounceMs 

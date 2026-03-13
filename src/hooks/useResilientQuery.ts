@@ -270,17 +270,20 @@ export function useResilientQuery<T>({
       setTimeout(() => executeQuery(true), 1000);
     };
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         handleFocus();
       }
-    });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [refetchOnFocus, queryKey, executeQuery]);
 
