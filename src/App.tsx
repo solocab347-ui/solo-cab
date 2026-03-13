@@ -73,6 +73,7 @@ const RGPDData = lazy(() => import("./pages/RGPDData"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 
 const App = () => (
