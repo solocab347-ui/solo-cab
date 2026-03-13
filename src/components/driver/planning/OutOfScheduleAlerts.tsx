@@ -13,6 +13,7 @@ import {
   CalendarClock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -162,17 +163,33 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
           const scheduledDate = parseISO(course.scheduled_date);
           const clientName = (course.clients as any)?.profiles?.full_name || 'Client';
           const amount = course.devis?.[0]?.amount;
+          
+          // Detect buffer zone vs fully outside
+          const courseMin = parseInt(alert.course_time.split(':')[0]) * 60 + parseInt(alert.course_time.split(':')[1]);
+          const startMin = parseInt(alert.driver_start_time.split(':')[0]) * 60 + parseInt(alert.driver_start_time.split(':')[1]);
+          const endMin = parseInt(alert.driver_end_time.split(':')[0]) * 60 + parseInt(alert.driver_end_time.split(':')[1]);
+          const isBufferZone = courseMin >= startMin && courseMin <= endMin;
 
           return (
-            <div key={alert.id} className="rounded-lg border border-amber-500/20 bg-background p-3 space-y-2">
+            <div key={alert.id} className={cn(
+              "rounded-lg border p-3 space-y-2",
+              isBufferZone 
+                ? "border-blue-500/20 bg-blue-500/5" 
+                : "border-amber-500/20 bg-background"
+            )}>
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <CalendarClock className="w-4 h-4 text-amber-500 shrink-0" />
+                    <CalendarClock className={cn("w-4 h-4 shrink-0", isBufferZone ? "text-blue-500" : "text-amber-500")} />
                     <span className="font-medium text-sm truncate">
                       {DAYS_LABELS[alert.day_of_week]} {format(scheduledDate, 'dd MMM', { locale: fr })}
                     </span>
+                    {isBufferZone && (
+                      <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-600">
+                        Zone tampon
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Course à <strong>{alert.course_time}</strong> — vos horaires : {alert.driver_start_time}-{alert.driver_end_time}

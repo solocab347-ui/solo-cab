@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -13,7 +15,8 @@ import {
   Sparkles,
   Check,
   Smartphone,
-  UserCheck
+  UserCheck,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,7 +29,7 @@ interface OnboardingPlanningStepProps {
 
 const PLANNING_STEPS = [
   { id: 'split', title: 'Répartition' },
-  { id: 'days', title: 'Jours' },
+  { id: 'days', title: 'Jours & Horaires' },
   { id: 'targets', title: 'Objectifs' },
 ];
 
@@ -51,8 +54,10 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
   const [platformPercentage, setPlatformPercentage] = useState(70); // Starting dependent on platforms
   const [targetWeeklyRevenue, setTargetWeeklyRevenue] = useState(1250); // Will be loaded from goals
 
-  // Step 2: Selected work days
+  // Step 2: Selected work days + hours
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
+  const [workStartTime, setWorkStartTime] = useState('08:00');
+  const [workEndTime, setWorkEndTime] = useState('20:00');
 
   // Calculate SoloCab percentage
   const solocabPercentage = 100 - platformPercentage;
@@ -145,6 +150,7 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
         };
       });
 
+      // Save objectives data
       await supabase
         .from('drivers')
         .update({
@@ -157,10 +163,40 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
             solocab_weekly_target: solocabWeeklyTarget,
             selected_work_days: selectedDays,
             daily_targets: dailyTargetsMap,
+            work_start_time: workStartTime,
+            work_end_time: workEndTime,
             planning_completed_at: new Date().toISOString()
           }
         })
         .eq('id', driverId);
+
+      // Save availability slots to driver_availability_slots table
+      // Map day names to day_of_week numbers (0=Sunday, 1=Monday...)
+      const dayNameToNumber: Record<string, number> = {
+        'dimanche': 0, 'lundi': 1, 'mardi': 2, 'mercredi': 3,
+        'jeudi': 4, 'vendredi': 5, 'samedi': 6
+      };
+
+      // Delete existing recurring slots
+      await supabase
+        .from('driver_availability_slots')
+        .delete()
+        .eq('driver_id', driverId)
+        .eq('slot_type', 'recurring');
+
+      // Create slots for all 7 days
+      const slotsToInsert = DAYS_OF_WEEK.map(day => ({
+        driver_id: driverId,
+        day_of_week: dayNameToNumber[day.id],
+        start_time: workStartTime,
+        end_time: workEndTime,
+        is_available: selectedDays.includes(day.id),
+        slot_type: 'recurring'
+      }));
+
+      await supabase
+        .from('driver_availability_slots')
+        .insert(slotsToInsert);
 
       toast.success('Ton planning est prêt !');
       onComplete();
@@ -261,7 +297,7 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
       case 1:
         return (
           <div className="flex flex-col h-full justify-center">
-            <div className="text-center mb-6">
+            <div className="text-center mb-4">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -270,10 +306,10 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
                 <Calendar className="w-7 h-7 text-white" />
               </motion.div>
               <h2 className="text-xl font-bold text-foreground mb-1">
-                Tes jours de travail
+                Tes jours & horaires
               </h2>
               <p className="text-sm text-muted-foreground">
-                Sélectionne les jours où tu travailles
+                Définis quand tu travailles pour une gestion intelligente
               </p>
             </div>
 
@@ -299,6 +335,38 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
                 ))}
               </div>
 
+              {/* Work hours */}
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Horaires de travail</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Début</Label>
+                    <Input
+                      type="time"
+                      value={workStartTime}
+                      onChange={(e) => setWorkStartTime(e.target.value)}
+                      className="text-center"
+                    />
+                  </div>
+                  <span className="text-muted-foreground mt-5">→</span>
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Fin</Label>
+                    <Input
+                      type="time"
+                      value={workEndTime}
+                      onChange={(e) => setWorkEndTime(e.target.value)}
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                  Les courses demandées hors de ces horaires seront signalées
+                </p>
+              </div>
+
               {/* Activity level hints */}
               <div className="bg-card border border-border rounded-xl p-3">
                 <p className="text-xs text-muted-foreground mb-2">Potentiel de CA par jour :</p>
@@ -319,17 +387,6 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
                       <span className="text-[10px] text-muted-foreground mt-1">{day.label}</span>
                     </div>
                   ))}
-                </div>
-                <div className="flex gap-4 mt-2 text-[10px] text-muted-foreground justify-center">
-                  <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded bg-emerald-500" /> Fort
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded bg-amber-500" /> Moyen
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded bg-muted" /> Faible
-                  </span>
                 </div>
               </div>
 

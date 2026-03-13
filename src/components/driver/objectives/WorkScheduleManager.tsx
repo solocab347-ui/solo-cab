@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import {
 
 interface WorkScheduleManagerProps {
   schedule: DriverWorkSchedule[];
+  driverId?: string;
   onSave: (dayOfWeek: number, data: Partial<DriverWorkSchedule>) => Promise<any>;
   dailyProgress?: {
     revenue: number;
@@ -38,7 +40,7 @@ interface WorkScheduleManagerProps {
   };
 }
 
-export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkScheduleManagerProps) {
+export function WorkScheduleManager({ schedule, driverId, onSave, dailyProgress }: WorkScheduleManagerProps) {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('schedule');
   const [localSchedule, setLocalSchedule] = useState<Record<number, DaySchedule>>({});
@@ -83,6 +85,36 @@ export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkSch
           notes: localSchedule[i].notes || null,
         });
       }
+
+      // Sync to driver_availability_slots + re-check courses
+      if (driverId) {
+        // Delete existing recurring slots
+        await supabase
+          .from('driver_availability_slots')
+          .delete()
+          .eq('driver_id', driverId)
+          .eq('slot_type', 'recurring');
+
+        // Insert updated slots
+        const slotsToInsert = Array.from({ length: 7 }, (_, i) => ({
+          driver_id: driverId,
+          day_of_week: i,
+          start_time: localSchedule[i].start_time,
+          end_time: localSchedule[i].end_time,
+          is_available: localSchedule[i].is_working_day,
+          slot_type: 'recurring'
+        }));
+
+        await supabase
+          .from('driver_availability_slots')
+          .insert(slotsToInsert);
+
+        // Re-check all upcoming courses against new schedule
+        supabase.functions.invoke('batch-check-schedule-conflicts', {
+          body: { driver_id: driverId }
+        }).catch(console.error);
+      }
+
       toast.success('Planning enregistré avec succès');
     } catch (error) {
       toast.error('Erreur lors de l\'enregistrement');
