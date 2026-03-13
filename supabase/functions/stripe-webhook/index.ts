@@ -826,7 +826,9 @@ serve(async (req) => {
         const courseId = metadata.course_id;
         const senderDriverId = metadata.sender_driver_id;
         const receiverDriverId = metadata.receiver_driver_id;
+        // New commission model: fixed 15%(<30€) / 20%(≥30€) + 0.10€ SoloCab fee
         const commissionAmount = parseFloat(metadata.commission_amount || "0");
+        const solocabFee = parseFloat(metadata.solocab_fee || "0.10");
         const senderStripeAccount = metadata.sender_stripe_account;
 
         logStep("Shared course payment completed", { 
