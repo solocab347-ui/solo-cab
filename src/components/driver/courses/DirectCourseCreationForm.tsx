@@ -118,6 +118,11 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
       if (driver) {
         setDriverProfile(driver);
         setMaxPassengers(driver.max_passengers || 4);
+        // Check Stripe Connect availability
+        setDriverHasStripeConnect(
+          !!driver.stripe_connect_account_id && 
+          driver.stripe_connect_charges_enabled === true
+        );
       }
     } catch (err) {
       console.error("Exception fetching driver profile:", err);
