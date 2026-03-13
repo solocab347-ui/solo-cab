@@ -29,40 +29,46 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     const { 
-      setup_intent_id,
+      payment_intent_id,
       course_id,
     } = await req.json();
 
-    if (!setup_intent_id) throw new Error("setup_intent_id required");
+    if (!payment_intent_id) throw new Error("payment_intent_id required");
     if (!course_id) throw new Error("course_id required");
 
-    logStep("Confirming card hold", { setup_intent_id, course_id });
+    logStep("Confirming card hold", { payment_intent_id, course_id });
 
-    // Retrieve the SetupIntent to get the payment method
-    const setupIntent = await stripe.setupIntents.retrieve(setup_intent_id);
+    // Retrieve the PaymentIntent to verify status
+    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
     
-    if (setupIntent.status !== "succeeded") {
-      throw new Error(`SetupIntent not completed: ${setupIntent.status}`);
+    // For manual capture, status should be "requires_capture" after confirmation
+    if (paymentIntent.status !== "requires_capture") {
+      logStep("PaymentIntent status", { status: paymentIntent.status });
+      if (paymentIntent.status === "succeeded") {
+        // Already captured somehow
+      } else if (paymentIntent.status === "requires_payment_method" || paymentIntent.status === "requires_confirmation") {
+        throw new Error(`Payment not yet confirmed by client: ${paymentIntent.status}`);
+      } else {
+        throw new Error(`Unexpected PaymentIntent status: ${paymentIntent.status}`);
+      }
     }
 
-    const paymentMethodId = setupIntent.payment_method as string;
-    if (!paymentMethodId) {
-      throw new Error("No payment method attached to SetupIntent");
-    }
+    const paymentMethodId = paymentIntent.payment_method as string;
 
-    logStep("SetupIntent confirmed", { 
-      status: setupIntent.status,
+    logStep("PaymentIntent confirmed (hold active)", { 
+      status: paymentIntent.status,
       paymentMethodId 
     });
 
-    // Update course with card hold info
+    // Update course with card hold confirmation
     const { error: updateError } = await supabaseClient
       .from("courses")
       .update({
-        stripe_setup_intent_id: setup_intent_id,
-        stripe_payment_method_id: paymentMethodId,
+        stripe_hold_payment_intent_id: payment_intent_id,
+        stripe_payment_method_id: paymentMethodId || null,
         card_hold_status: "confirmed",
         card_hold_confirmed_at: new Date().toISOString(),
+        card_hold_amount: 10.00,
       })
       .eq("id", course_id);
 
@@ -71,7 +77,7 @@ serve(async (req) => {
       throw new Error("Failed to update course with card hold info");
     }
 
-    // Get course and driver info for notification
+    // Notify driver
     const { data: course } = await supabaseClient
       .from("courses")
       .select(`
@@ -81,12 +87,11 @@ serve(async (req) => {
       .eq("id", course_id)
       .single();
 
-    // Notify driver
     if (course?.driver?.user_id) {
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
-        title: "✅ Empreinte bancaire validée",
-        message: `${course.guest_name || "Un client"} a validé son empreinte bancaire pour une réservation.`,
+        title: "💳 Avance de 10€ validée",
+        message: `${course.guest_name || "Un client"} a confirmé son avance de 10€ pour réserver la course.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
@@ -97,13 +102,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Empreinte bancaire confirmée",
+        message: "Avance de 10€ confirmée - la course est réservée",
         payment_method_id: paymentMethodId,
+        hold_amount: 10.00,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -111,10 +114,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

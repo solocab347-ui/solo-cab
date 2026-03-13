@@ -502,6 +502,7 @@ const CreateCourse = () => {
               <CoursePaymentMethodSelector
                 value={paymentMethodPreference}
                 onChange={setPaymentMethodPreference}
+                driverId={driverId || undefined}
               />
             </div>
 

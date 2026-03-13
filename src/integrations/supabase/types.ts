@@ -3708,6 +3708,7 @@ export type Database = {
           status: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id: string | null
           stripe_fee_amount: number | null
+          stripe_hold_payment_intent_id: string | null
           stripe_payment_intent_id: string | null
           stripe_payment_method_id: string | null
           stripe_setup_intent_id: string | null
@@ -3793,6 +3794,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
           stripe_fee_amount?: number | null
+          stripe_hold_payment_intent_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
           stripe_setup_intent_id?: string | null
@@ -3878,6 +3880,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
           stripe_fee_amount?: number | null
+          stripe_hold_payment_intent_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_payment_method_id?: string | null
           stripe_setup_intent_id?: string | null
