@@ -265,7 +265,7 @@ const TermsOfService = () => {
 
             {/* Contact */}
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold">Article 12 - Contact</h2>
+              <h2 className="text-xl font-semibold">Article 13 - Contact</h2>
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                 <p><strong>SOLOCAB</strong></p>
                 <p>Société par actions simplifiée à associé unique (SASU)</p>
