@@ -89,7 +89,7 @@ export function FavoriteDriversList() {
           sharing_number: d.sharing_number,
           rating: d.rating || 0,
           rides: d.total_rides || 0,
-          has_stripe: d.stripe_account_status === 'active',
+          has_stripe: !!d.stripe_connect_account_id && d.stripe_connect_status === 'active',
           show_rating: d.show_rating_for_sharing ?? false,
           show_rides: d.show_rides_for_sharing ?? false,
           show_phone: d.show_phone_for_sharing ?? false,
