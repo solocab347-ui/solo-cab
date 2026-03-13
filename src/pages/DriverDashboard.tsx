@@ -758,6 +758,7 @@ const DriverDashboard = () => {
                     <p className="text-sm text-muted-foreground">Visualisez et gérez votre planning</p>
                   </div>
                 </div>
+                <OutOfScheduleAlerts driverId={driverProfile.driver.id} />
                 <DriverPlanning driverId={driverProfile.driver.id} />
               </Card>
             )}
