@@ -774,6 +774,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       // Notifier l'entreprise en background (ne bloque pas)
       notifyCompanyForCourse(courseId, 'accepted').catch(console.error);
 
+      // Check schedule conflict in background
+      if (course?.driver_id) {
+        supabase.functions.invoke('check-schedule-conflict', {
+          body: { course_id: courseId, driver_id: course.driver_id }
+        }).catch(console.error);
+      }
+
       toast.success("Course confirmée !");
       
       // Refresh en background avec transition pour éviter le freeze
