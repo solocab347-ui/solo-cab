@@ -52,6 +52,7 @@ import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManag
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
+import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
 import { DriverSettingsSimplified } from "@/components/driver/settings/DriverSettingsSimplified";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
