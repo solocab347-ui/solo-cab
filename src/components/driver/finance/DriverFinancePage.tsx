@@ -168,8 +168,8 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
       </div>
 
       {/* Info banner */}
-      <Card className="p-4 bg-blue-500/10 border-blue-500/20">
-        <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">💡 Comment fonctionne le règlement ?</h4>
+      <Card className="p-4 bg-primary/10 border-primary/20">
+        <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• Les commissions de vos courses partagées sont accumulées pendant la semaine</li>
           <li>• Les frais de gestion SoloCab (0,50€/course en ligne + 0,10€/partage) sont déduits</li>

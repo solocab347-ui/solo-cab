@@ -70,7 +70,7 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
         .from("courses")
         .select("id", { count: "exact", head: true })
         .eq("driver_id", driverId)
-        .in("status", ["completed", "paid"])
+        .in("status", ["completed"])
         .gte("completed_at", monday.toISOString());
 
       const { count: sharedCount } = await supabase
