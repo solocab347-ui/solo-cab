@@ -158,6 +158,18 @@ const App = () => (
                 }
               />
               <Route
+                path="/driver/create-quote"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <DriverCreateQuote />
+                      </ErrorBoundary>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/driver-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
