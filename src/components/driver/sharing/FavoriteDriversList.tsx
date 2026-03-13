@@ -68,7 +68,7 @@ export function FavoriteDriversList() {
     for (const fav of data || []) {
       const { data: d } = await supabase
         .from('drivers')
-        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_account_id, stripe_account_status')
+        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status')
         .eq('id', fav.favorite_driver_id)
         .single();
 
