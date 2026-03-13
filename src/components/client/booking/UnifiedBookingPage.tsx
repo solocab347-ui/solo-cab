@@ -10,6 +10,7 @@ import {
   Zap, ChevronDown, Send, Users, ArrowLeft, Car
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { DriverResultCard } from './DriverResultCard';
 import { DriverMap } from './DriverMap';
 import { Link, useNavigate } from 'react-router-dom';
@@ -19,13 +20,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-solocab.png';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg';
-
 type BookingMode = 'reservation' | 'immediate';
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { token: mapboxToken, isLoading: isTokenLoading } = useMapboxToken();
   const [mode, setMode] = useState<BookingMode>('reservation');
   
   // Addresses
@@ -75,16 +75,16 @@ export function UnifiedBookingPage() {
 
   // Debounced autocomplete
   const fetchSuggestions = useCallback(async (query: string, setter: (s: any[]) => void, showSetter: (b: boolean) => void) => {
-    if (query.length < 3) { setter([]); showSetter(false); return; }
+    if (query.length < 3 || !mapboxToken) { setter([]); showSetter(false); return; }
     try {
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=fr&types=address,place,locality,poi&language=fr&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=address,place,locality,poi&language=fr&limit=5`
       );
       const data = await res.json();
       setter(data.features || []);
       showSetter(true);
     } catch { setter([]); }
-  }, []);
+  }, [mapboxToken]);
 
   const handlePickupChange = (val: string) => {
     setPickupAddress(val);
@@ -123,7 +123,7 @@ export function UnifiedBookingPage() {
         const { latitude, longitude } = pos.coords;
         setPickupCoords({ lat: latitude, lng: longitude });
         try {
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&language=fr`);
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`);
           const data = await res.json();
           if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
         } catch {}
@@ -146,7 +146,7 @@ export function UnifiedBookingPage() {
 
     try {
       const geocode = async (addr: string) => {
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&country=fr&language=fr`);
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${mapboxToken}&country=fr&language=fr`);
         const data = await res.json();
         if (data.features?.[0]) return { lat: data.features[0].center[1], lng: data.features[0].center[0] };
         return null;
@@ -164,7 +164,7 @@ export function UnifiedBookingPage() {
       setDestCoords(dest);
 
       // Calculate route
-      const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${MAPBOX_TOKEN}`);
+      const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`);
       const dirData = await dirRes.json();
       const distance = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
       const duration = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
@@ -448,6 +448,7 @@ export function UnifiedBookingPage() {
             selectedDriverIds={selectedDriverIds}
             onDriverClick={toggleDriverSelection}
             searchRadius={searchRadius}
+            mapboxToken={mapboxToken}
           />
         )}
 

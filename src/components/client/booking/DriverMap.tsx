@@ -3,8 +3,6 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg';
-
 interface DriverMapProps {
   clientPosition: { lat: number; lng: number } | null;
   destinationPosition?: { lat: number; lng: number } | null;
@@ -12,6 +10,7 @@ interface DriverMapProps {
   selectedDriverIds: Set<string>;
   onDriverClick: (driverId: string) => void;
   searchRadius?: number | null;
+  mapboxToken?: string | null;
 }
 
 export function DriverMap({
@@ -21,6 +20,7 @@ export function DriverMap({
   selectedDriverIds,
   onDriverClick,
   searchRadius,
+  mapboxToken,
 }: DriverMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -30,9 +30,9 @@ export function DriverMap({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || !mapboxToken) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = mapboxToken;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -48,7 +48,7 @@ export function DriverMap({
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [mapboxToken]);
 
   // Update client marker
   useEffect(() => {
