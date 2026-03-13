@@ -270,10 +270,10 @@ const QuoteAcceptance = () => {
 
         {/* Action */}
         {accepted ? (
-          <Card className="p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
-            <h2 className="text-lg font-bold text-green-700 dark:text-green-400">Devis accepté !</h2>
-            <p className="text-sm text-green-600 dark:text-green-500">
+          <Card className="p-6 bg-primary/5 border-primary/20 text-center space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
+            <h2 className="text-lg font-bold text-foreground">Devis accepté !</h2>
+            <p className="text-sm text-muted-foreground">
               Votre chauffeur a été notifié et prendra contact avec vous pour confirmer les détails de votre course.
             </p>
           </Card>
