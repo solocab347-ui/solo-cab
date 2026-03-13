@@ -537,9 +537,8 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           .single();
 
         const driverUsesStripe = 
-          driver?.billing_type === "solocab_stripe" &&
-          driver?.stripe_connect_account_id &&
-          driver?.stripe_connect_charges_enabled;
+          !!driver?.stripe_connect_account_id &&
+          driver?.stripe_connect_charges_enabled === true;
 
         if (driverUsesStripe) {
           // Déclencher le flux d'empreinte bancaire

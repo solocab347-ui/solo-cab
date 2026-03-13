@@ -302,9 +302,8 @@ const GuestBooking = () => {
         .single();
 
       const driverUsesStripe = 
-        driverPayment?.billing_type === 'solocab_stripe' &&
-        driverPayment?.stripe_connect_account_id &&
-        driverPayment?.stripe_connect_charges_enabled;
+        !!driverPayment?.stripe_connect_account_id &&
+        driverPayment?.stripe_connect_charges_enabled === true;
 
       if (driverUsesStripe) {
         // Show card hold flow
