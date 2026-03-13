@@ -29,7 +29,7 @@ interface OnboardingPlanningStepProps {
 
 const PLANNING_STEPS = [
   { id: 'split', title: 'Répartition' },
-  { id: 'days', title: 'Jours' },
+  { id: 'days', title: 'Jours & Horaires' },
   { id: 'targets', title: 'Objectifs' },
 ];
 
