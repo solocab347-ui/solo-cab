@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Calendar, 
   Clock, 
-  Plus,
-  Trash2,
   Save,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  Share2,
+  BadgePercent,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface DriverAvailabilitySlotsProps {
   driverId: string;
@@ -31,19 +32,20 @@ interface AvailabilitySlot {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 1, label: 'Lundi' },
-  { value: 2, label: 'Mardi' },
-  { value: 3, label: 'Mercredi' },
-  { value: 4, label: 'Jeudi' },
-  { value: 5, label: 'Vendredi' },
-  { value: 6, label: 'Samedi' },
-  { value: 0, label: 'Dimanche' },
+  { value: 1, label: 'Lundi', shortLabel: 'Lun' },
+  { value: 2, label: 'Mardi', shortLabel: 'Mar' },
+  { value: 3, label: 'Mercredi', shortLabel: 'Mer' },
+  { value: 4, label: 'Jeudi', shortLabel: 'Jeu' },
+  { value: 5, label: 'Vendredi', shortLabel: 'Ven' },
+  { value: 6, label: 'Samedi', shortLabel: 'Sam' },
+  { value: 0, label: 'Dimanche', shortLabel: 'Dim' },
 ];
 
 export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsProps) {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     fetchSlots();
@@ -70,12 +72,11 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
           slot_type: 'recurring' as const
         })));
       } else {
-        // Default slots for all days
         setSlots(DAYS_OF_WEEK.map(day => ({
           day_of_week: day.value,
           start_time: '08:00',
           end_time: '20:00',
-          is_available: true,
+          is_available: day.value >= 1 && day.value <= 5,
           slot_type: 'recurring' as const
         })));
       }
@@ -92,19 +93,18 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
         ? { ...slot, [field]: value }
         : slot
     ));
+    setHasChanges(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Delete existing slots
       await supabase
         .from('driver_availability_slots')
         .delete()
         .eq('driver_id', driverId)
         .eq('slot_type', 'recurring');
 
-      // Insert new slots
       const slotsToInsert = slots.map(slot => ({
         driver_id: driverId,
         day_of_week: slot.day_of_week,
@@ -125,7 +125,8 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
         body: { driver_id: driverId }
       }).catch(console.error);
       
-      toast.success('Disponibilités mises à jour');
+      setHasChanges(false);
+      toast.success('Planning mis à jour — vos courses sont en cours de vérification');
       fetchSlots();
     } catch (error) {
       console.error('Error saving slots:', error);
@@ -134,6 +135,8 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
       setSaving(false);
     }
   };
+
+  const activeDays = slots.filter(s => s.is_available).length;
 
   if (loading) {
     return (
@@ -144,80 +147,124 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          Mes disponibilités hebdomadaires
-        </CardTitle>
-        <CardDescription>
-          Définissez vos horaires de travail pour chaque jour de la semaine
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {DAYS_OF_WEEK.map(day => {
-          const slot = slots.find(s => s.day_of_week === day.value);
-          if (!slot) return null;
-          
-          return (
-            <div 
-              key={day.value} 
-              className={`flex items-center gap-4 p-3 rounded-lg border transition-all ${
-                slot.is_available 
-                  ? 'bg-success/5 border-success/20' 
-                  : 'bg-muted/50 border-border'
-              }`}
-            >
-              <div className="w-24">
-                <span className={`font-medium ${slot.is_available ? '' : 'text-muted-foreground'}`}>
-                  {day.label}
-                </span>
-              </div>
-              
-              <Switch
-                checked={slot.is_available}
-                onCheckedChange={(checked) => updateSlot(day.value, 'is_available', checked)}
-              />
-              
-              {slot.is_available ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
+    <div className="space-y-4">
+      {/* Explanation banner */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Share2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-1">Pourquoi définir tes horaires ?</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Les courses demandées en dehors de tes horaires sont automatiquement proposées au réseau SoloCab. 
+                Si un partenaire l'accepte, tu touches <span className="font-semibold text-emerald-600">15% (courses &lt; 30€) ou 20% (≥ 30€)</span> de commission.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calendar className="w-5 h-5 text-primary" />
+            Mes horaires de travail
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Personnalise tes horaires par jour — de minuit à minuit selon tes besoins
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {DAYS_OF_WEEK.map(day => {
+            const slot = slots.find(s => s.day_of_week === day.value);
+            if (!slot) return null;
+            
+            return (
+              <div 
+                key={day.value} 
+                className={cn(
+                  "p-3 rounded-xl border transition-all",
+                  slot.is_available 
+                    ? 'bg-card border-primary/15' 
+                    : 'bg-muted/30 border-border/50'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Switch
+                      checked={slot.is_available}
+                      onCheckedChange={(checked) => updateSlot(day.value, 'is_available', checked)}
+                    />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      slot.is_available ? 'text-foreground' : 'text-muted-foreground'
+                    )}>
+                      {day.label}
+                    </span>
+                  </div>
+                  {slot.is_available ? (
+                    <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Actif
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px]">Repos</Badge>
+                  )}
+                </div>
+                
+                {slot.is_available && (
+                  <div className="flex items-center gap-2 mt-2.5 ml-10">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <Input
                       type="time"
                       value={slot.start_time}
                       onChange={(e) => updateSlot(day.value, 'start_time', e.target.value)}
-                      className="w-32"
+                      className="h-8 text-sm text-center flex-1"
                     />
-                    <span className="text-muted-foreground">à</span>
+                    <span className="text-xs text-muted-foreground">à</span>
                     <Input
                       type="time"
                       value={slot.end_time}
                       onChange={(e) => updateSlot(day.value, 'end_time', e.target.value)}
-                      className="w-32"
+                      className="h-8 text-sm text-center flex-1"
                     />
                   </div>
-                  <Badge variant="outline" className="text-success border-success/30">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Disponible
-                  </Badge>
-                </>
-              ) : (
-                <Badge variant="secondary">Non disponible</Badge>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Summary + Save */}
+          <div className="pt-3 space-y-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span>{activeDays} jour{activeDays > 1 ? 's' : ''} de travail configuré{activeDays > 1 ? 's' : ''}</span>
+              {hasChanges && (
+                <span className="flex items-center gap-1 text-amber-600">
+                  <AlertTriangle className="w-3 h-3" />
+                  Modifications non sauvegardées
+                </span>
               )}
             </div>
-          );
-        })}
-
-        <Button onClick={handleSave} disabled={saving} className="w-full gap-2 mt-4">
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Sauvegarder mes disponibilités
-        </Button>
-      </CardContent>
-    </Card>
+            
+            <Button 
+              onClick={handleSave} 
+              disabled={saving || !hasChanges} 
+              className="w-full gap-2"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {saving ? 'Sauvegarde et vérification des courses...' : 'Sauvegarder mon planning'}
+            </Button>
+            
+            <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+              Toutes vos courses à venir seront automatiquement re-vérifiées par rapport à vos nouveaux horaires
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
