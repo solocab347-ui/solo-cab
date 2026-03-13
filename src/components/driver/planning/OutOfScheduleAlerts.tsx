@@ -170,15 +170,25 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
           const isBufferZone = courseMin >= startMin && courseMin <= endMin;
 
           return (
-            <div key={alert.id} className="rounded-lg border border-amber-500/20 bg-background p-3 space-y-2">
+            <div key={alert.id} className={cn(
+              "rounded-lg border p-3 space-y-2",
+              isBufferZone 
+                ? "border-blue-500/20 bg-blue-500/5" 
+                : "border-amber-500/20 bg-background"
+            )}>
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <CalendarClock className="w-4 h-4 text-amber-500 shrink-0" />
+                    <CalendarClock className={cn("w-4 h-4 shrink-0", isBufferZone ? "text-blue-500" : "text-amber-500")} />
                     <span className="font-medium text-sm truncate">
                       {DAYS_LABELS[alert.day_of_week]} {format(scheduledDate, 'dd MMM', { locale: fr })}
                     </span>
+                    {isBufferZone && (
+                      <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-600">
+                        Zone tampon
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Course à <strong>{alert.course_time}</strong> — vos horaires : {alert.driver_start_time}-{alert.driver_end_time}
