@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
         scheduled_date,
         passengers_count: parseInt(passengers_count) || 1,
         notes: notes ? notes.trim().slice(0, 1000).replace(/[<>]/g, '') : null,
-        status: 'pending',
+        status: 'accepted',
         origin_type: 'driver_quote',
         is_guest_booking: true,
         guest_name: guest_client_name.trim().slice(0, 200),
