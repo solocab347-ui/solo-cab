@@ -1,64 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Send, Star, Car, AlertTriangle, Hash, Phone, UserCheck, CreditCard, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { 
+  Users, Send, UserCheck, Star, Car, Phone, Hash, 
+  Globe, Heart, AlertTriangle, CreditCard, ExternalLink, Loader2, Euro
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 
-interface Partner {
+interface Favorite {
   id: string;
-  driver_a_id: string;
-  driver_b_id: string;
-  commission_percentage: number;
-  status: string;
-  partner_name: string;
-  partner_photo: string | null;
-  partner_card_photo: string | null;
-  partner_code: string;
-  partner_rating: number;
-  partner_rides: number;
-  partner_driver_id: string;
-  sharing_blocked: boolean;
-  sharing_number: number | null;
-  partner_phone: string | null;
-  partner_company_name: string | null;
-  show_rating_for_sharing: boolean;
-  show_rides_for_sharing: boolean;
-  show_phone_for_sharing: boolean;
+  favorite_driver_id: string;
+  driver_name: string;
+  driver_photo: string | null;
+  driver_company: string | null;
+  driver_sharing_number: number | null;
+  driver_rating: number;
+  driver_rides: number;
+  show_rating: boolean;
+  show_rides: boolean;
+  show_phone: boolean;
+  driver_phone: string | null;
+  has_stripe_connect: boolean;
 }
 
 interface ShareCourseWithPartnerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  course: {
-    id: string;
-    pickup_address: string;
-    destination_address: string;
-    scheduled_date: string;
-    client_id: string;
-    clients?: {
-      profiles?: {
-        full_name?: string;
-      };
-    };
-    devis?: Array<{
-      amount: number;
-    }>;
-  } | null;
+  course: any;
   driverId: string;
   onSuccess: () => void;
 }
 
-type ShareMode = 'choose' | 'specific' | 'all';
+type ShareMode = 'choose' | 'network' | 'favorites' | 'specific';
 
 export function ShareCourseWithPartnerDialog({
   open,
@@ -67,91 +50,81 @@ export function ShareCourseWithPartnerDialog({
   driverId,
   onSuccess,
 }: ShareCourseWithPartnerDialogProps) {
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [selectedFavorite, setSelectedFavorite] = useState<Favorite | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [notifyClient, setNotifyClient] = useState(true);
   const [clientMessage, setClientMessage] = useState('');
   const [shareMode, setShareMode] = useState<ShareMode>('choose');
   
-  // Check Stripe Connect status
   const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
 
   useEffect(() => {
     if (open && driverId) {
-      loadPartners();
+      loadFavorites();
       setShareMode('choose');
-      setSelectedPartner(null);
+      setSelectedFavorite(null);
     }
   }, [open, driverId]);
 
   useEffect(() => {
-    if (selectedPartner) {
+    if (selectedFavorite) {
       setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner.partner_name} qui prendra soin de vous. Vous restez mon client et pourrez me recontacter pour vos prochaines courses.`
+        `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedFavorite.driver_name} qui prendra soin de vous.`
       );
-    } else if (shareMode === 'all') {
+    } else if (shareMode === 'network' || shareMode === 'favorites') {
       setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous. Vous restez mon client et pourrez me recontacter pour vos prochaines courses.`
+        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous.`
       );
     }
-  }, [selectedPartner, shareMode]);
+  }, [selectedFavorite, shareMode]);
 
-  const loadPartners = async () => {
+  const loadFavorites = async () => {
     setLoading(true);
     try {
-      const { data: partnershipsData, error } = await supabase
-        .from('driver_partnerships')
-        .select('*')
-        .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-        .eq('status', 'active');
+      const { data: favData, error } = await supabase
+        .from('driver_favorites')
+        .select('id, favorite_driver_id')
+        .eq('driver_id', driverId);
 
       if (error) throw error;
 
-      const enrichedPartners: Partner[] = [];
-      for (const p of partnershipsData || []) {
-        const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
-        
-        const { data: partnerData } = await supabase
+      const enriched: Favorite[] = [];
+      for (const fav of favData || []) {
+        const { data: driverData } = await supabase
           .from('drivers')
-          .select('driver_code, rating, total_rides, user_id, sharing_number, card_photo_url, company_name, show_rating_for_sharing, show_rides_for_sharing, show_phone_for_sharing, contact_phone')
-          .eq('id', partnerId)
+        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status')
+          .eq('id', fav.favorite_driver_id)
           .single();
 
-        if (partnerData) {
-          const { data: profileData } = await supabase
+        if (driverData) {
+          const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, profile_photo_url, phone')
-            .eq('id', partnerData.user_id)
+            .eq('id', driverData.user_id)
             .single();
 
-          // Extract first name for proximity relationship
-          const fullName = profileData?.full_name || '';
-          const firstName = fullName.split(' ')[0] || 'Partenaire';
-
-          enrichedPartners.push({
-            ...p,
-            partner_name: firstName,
-            partner_photo: profileData?.profile_photo_url,
-            partner_card_photo: partnerData.card_photo_url,
-            partner_phone: partnerData.show_phone_for_sharing ? (partnerData.contact_phone || profileData?.phone) : null,
-            partner_code: partnerData.driver_code,
-            partner_rating: partnerData.rating || 0,
-            partner_rides: partnerData.total_rides || 0,
-            partner_driver_id: partnerId,
-            sharing_number: partnerData.sharing_number,
-            partner_company_name: partnerData.company_name,
-            show_rating_for_sharing: partnerData.show_rating_for_sharing ?? false,
-            show_rides_for_sharing: partnerData.show_rides_for_sharing ?? false,
-            show_phone_for_sharing: partnerData.show_phone_for_sharing ?? false,
+          enriched.push({
+            id: fav.id,
+            favorite_driver_id: fav.favorite_driver_id,
+            driver_name: profile?.full_name?.split(' ')[0] || 'Chauffeur',
+            driver_photo: driverData.card_photo_url || profile?.profile_photo_url || null,
+            driver_company: driverData.company_name,
+            driver_sharing_number: driverData.sharing_number,
+            driver_rating: driverData.rating || 0,
+            driver_rides: driverData.total_rides || 0,
+            show_rating: driverData.show_rating_for_sharing ?? false,
+            show_rides: driverData.show_rides_for_sharing ?? false,
+            show_phone: driverData.show_phone_for_sharing ?? false,
+            driver_phone: driverData.show_phone_for_sharing ? (driverData.contact_phone || profile?.phone) : null,
+            has_stripe_connect: !!driverData.stripe_connect_account_id && driverData.stripe_connect_status === 'active',
           });
         }
       }
-      setPartners(enrichedPartners);
+      setFavorites(enriched);
     } catch (error) {
-      console.error('Error loading partners:', error);
-      toast.error('Erreur lors du chargement des partenaires');
+      console.error('Error loading favorites:', error);
     } finally {
       setLoading(false);
     }
@@ -162,26 +135,25 @@ export function ShareCourseWithPartnerDialog({
     return `SOLO-${String(num).padStart(6, '0')}`;
   };
 
+  // Calculate commission based on new rules
+  const getCourseAmount = () => {
+    const acceptedDevis = course?.devis?.find((d: any) => d.status === 'accepted');
+    return acceptedDevis?.amount || 0;
+  };
+
+  const getCommissionInfo = () => {
+    const amount = getCourseAmount();
+    const percentage = amount < 30 ? 15 : 20;
+    const commission = (amount * percentage) / 100;
+    const solocabFee = 0.10;
+    const receiverEarnings = amount - commission - solocabFee;
+    return { percentage, commission, solocabFee, receiverEarnings, amount };
+  };
+
   const handleSendCourse = async () => {
-    if (shareMode === 'specific' && !selectedPartner) {
-      toast.error('Veuillez sélectionner un partenaire');
-      return;
-    }
     if (!course) return;
     
-    // Check if course is already shared and locked
-    const { data: lockStatus } = await supabase.rpc('is_course_shared_locked', {
-      p_course_id: course.id
-    });
-    
-    const lockResult = lockStatus as unknown as { is_locked?: boolean };
-    if (lockResult?.is_locked) {
-      toast.error('Cette course est déjà partagée et en attente de réponse');
-      return;
-    }
-    
-    // VÉRIFICATION CRITIQUE: Seules les courses avec devis accepté peuvent être partagées
-    const acceptedDevis = course.devis?.find(d => (d as any).status === 'accepted');
+    const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
     if (!acceptedDevis) {
       toast.error('Le devis doit être accepté avant de partager la course');
       return;
@@ -189,47 +161,75 @@ export function ShareCourseWithPartnerDialog({
 
     setSending(true);
     try {
-      const finalClientMessage = notifyClient && clientMessage
-        ? clientMessage
-        : shareMode === 'all'
-        ? `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance.`
-        : `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner?.partner_name}.`;
+      const { amount, percentage, commission, solocabFee } = getCommissionInfo();
+      const poolGroupId = crypto.randomUUID();
 
-      // Generate pool_group_id for pool sharing
-      const poolGroupId = shareMode === 'all' ? crypto.randomUUID() : null;
+      if (shareMode === 'network') {
+        // Push to open network pool - visible to all Stripe Connect drivers
+        const { error } = await supabase.from('partner_course_pool').insert({
+          course_id: course.id,
+          sender_driver_id: driverId,
+          partnership_ids: null,
+          course_amount: amount,
+          commission_percentage: percentage,
+          estimated_commission: commission,
+          message: null,
+          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // No expiration
+          sharing_scope: 'network',
+          target_driver_ids: null,
+          solocab_fee_cents: 10,
+          pickup_latitude: course.pickup_latitude || null,
+          pickup_longitude: course.pickup_longitude || null,
+        });
 
-      if (shareMode === 'all') {
-        // Send to all partners
-        const courseAmount = course.devis?.[0]?.amount || 0;
+        if (error) throw error;
+
+        // Notify client
+        if (notifyClient && course.client_id) {
+          await notifyClientAboutShare(course.client_id, clientMessage);
+        }
+
+        toast.success('Course publiée sur le réseau de partage !');
+      } else if (shareMode === 'favorites') {
+        // Push to favorites only
+        const stripeReadyFavorites = favorites.filter(f => f.has_stripe_connect);
+        if (stripeReadyFavorites.length === 0) {
+          toast.error('Aucun favori avec Stripe Connect actif');
+          setSending(false);
+          return;
+        }
+
+        const targetIds = stripeReadyFavorites.map(f => f.favorite_driver_id);
         
-        for (const partner of partners.filter(p => !p.sharing_blocked)) {
-          const commissionAmount = (courseAmount * partner.commission_percentage) / 100;
-          
-          await supabase.from('shared_courses').insert({
-            course_id: course.id,
-            partnership_id: partner.id,
-            sender_driver_id: driverId,
-            receiver_driver_id: partner.partner_driver_id,
-            course_amount: courseAmount,
-            commission_percentage: partner.commission_percentage,
-            commission_amount: commissionAmount,
-            status: 'pending',
-            sharing_mode: 'pool',
-            pool_group_id: poolGroupId,
-            client_notified: false,
-            client_message: null,
-          });
+        const { error } = await supabase.from('partner_course_pool').insert({
+          course_id: course.id,
+          sender_driver_id: driverId,
+          partnership_ids: null,
+          course_amount: amount,
+          commission_percentage: percentage,
+          estimated_commission: commission,
+          message: null,
+          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          sharing_scope: 'favorites',
+          target_driver_ids: targetIds,
+          solocab_fee_cents: 10,
+          pickup_latitude: course.pickup_latitude || null,
+          pickup_longitude: course.pickup_longitude || null,
+        });
 
-          // Notify each partner
-          const { data: receiverData } = await supabase
+        if (error) throw error;
+
+        // Notify each favorite
+        for (const fav of stripeReadyFavorites) {
+          const { data: driverData } = await supabase
             .from('drivers')
             .select('user_id')
-            .eq('id', partner.partner_driver_id)
+            .eq('id', fav.favorite_driver_id)
             .single();
-
-          if (receiverData?.user_id) {
+          
+          if (driverData?.user_id) {
             await supabase.from('notifications').insert({
-              user_id: receiverData.user_id,
+              user_id: driverData.user_id,
               title: '🤝 Nouvelle course disponible',
               message: `Une course est disponible pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
               type: 'info',
@@ -238,110 +238,102 @@ export function ShareCourseWithPartnerDialog({
           }
         }
 
-        // Notify client once if enabled
         if (notifyClient && course.client_id) {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('user_id')
-            .eq('id', course.client_id)
-            .single();
-
-          if (clientData?.user_id) {
-            await supabase.from('notifications').insert({
-              user_id: clientData.user_id,
-              title: '🚗 Information sur votre course',
-              message: finalClientMessage,
-              type: 'info',
-              link: '/client-dashboard',
-            });
-          }
+          await notifyClientAboutShare(course.client_id, clientMessage);
         }
 
-        toast.success(`Course envoyée à ${partners.filter(p => !p.sharing_blocked).length} partenaires !`);
-      } else if (shareMode === 'specific' && selectedPartner) {
-        // Send to specific partner
-        if (selectedPartner.sharing_blocked) {
-          toast.error('Le partage est bloqué pour ce partenariat');
+        toast.success(`Course envoyée à ${stripeReadyFavorites.length} favori(s) !`);
+      } else if (shareMode === 'specific' && selectedFavorite) {
+        if (!selectedFavorite.has_stripe_connect) {
+          toast.error('Ce chauffeur n\'a pas Stripe Connect actif');
           setSending(false);
           return;
         }
 
-        const courseAmount = course.devis?.[0]?.amount || 0;
-        const commissionAmount = (courseAmount * selectedPartner.commission_percentage) / 100;
-
+        // Direct share to specific driver
         const { error } = await supabase.from('shared_courses').insert({
           course_id: course.id,
-          partnership_id: selectedPartner.id,
+          partnership_id: null,
           sender_driver_id: driverId,
-          receiver_driver_id: selectedPartner.partner_driver_id,
-          course_amount: courseAmount,
-          commission_percentage: selectedPartner.commission_percentage,
-          commission_amount: commissionAmount,
+          receiver_driver_id: selectedFavorite.favorite_driver_id,
+          course_amount: amount,
+          commission_percentage: percentage,
+          commission_amount: commission,
+          solocab_fee_cents: 10,
+          sharing_scope: 'specific',
           status: 'pending',
           sharing_mode: 'single',
           client_notified: notifyClient,
           client_notified_at: notifyClient ? new Date().toISOString() : null,
-          client_message: notifyClient ? finalClientMessage : null,
+          client_message: notifyClient ? clientMessage : null,
+          earnings_for_receiver: amount - commission - 0.10,
         });
 
         if (error) throw error;
 
-        // Notify client
-        if (notifyClient && course.client_id) {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('user_id')
-            .eq('id', course.client_id)
-            .single();
-
-          if (clientData?.user_id) {
-            await supabase.from('notifications').insert({
-              user_id: clientData.user_id,
-              title: '🚗 Changement de chauffeur pour votre course',
-              message: finalClientMessage,
-              type: 'info',
-              link: '/client-dashboard',
-            });
-          }
-        }
-
-        // Notify receiving driver
+        // Notify receiver
         const { data: receiverData } = await supabase
           .from('drivers')
           .select('user_id')
-          .eq('id', selectedPartner.partner_driver_id)
+          .eq('id', selectedFavorite.favorite_driver_id)
           .single();
 
         if (receiverData?.user_id) {
           await supabase.from('notifications').insert({
             user_id: receiverData.user_id,
             title: '🤝 Nouvelle course partagée',
-            message: `Un partenaire vous a envoyé une course pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
+            message: `Un chauffeur vous a envoyé une course pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
             type: 'info',
             link: '/driver-dashboard',
           });
         }
 
-        toast.success(`Course envoyée à ${selectedPartner.partner_name} !`);
+        if (notifyClient && course.client_id) {
+          await notifyClientAboutShare(course.client_id, clientMessage);
+        }
+
+        toast.success(`Course envoyée à ${selectedFavorite.driver_name} !`);
       }
 
       onOpenChange(false);
-      setSelectedPartner(null);
+      setSelectedFavorite(null);
       setClientMessage('');
       setShareMode('choose');
       onSuccess();
     } catch (error: any) {
       console.error('Error sending course:', error);
-      const errorMessage = error?.message || error?.details || 'Erreur inconnue';
-      toast.error(`Erreur lors de l'envoi: ${errorMessage}`);
+      if (error?.code === '23505') {
+        toast.error('Cette course est déjà partagée');
+      } else {
+        toast.error(`Erreur lors de l'envoi: ${error?.message || 'Erreur inconnue'}`);
+      }
     } finally {
       setSending(false);
     }
   };
 
+  const notifyClientAboutShare = async (clientId: string, message: string) => {
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('user_id')
+      .eq('id', clientId)
+      .single();
+
+    if (clientData?.user_id) {
+      await supabase.from('notifications').insert({
+        user_id: clientData.user_id,
+        title: '🚗 Information sur votre course',
+        message,
+        type: 'info',
+        link: '/client-dashboard',
+      });
+    }
+  };
+
   if (!course) return null;
 
-  const availablePartners = partners.filter(p => !p.sharing_blocked);
+  const commissionInfo = getCommissionInfo();
+  const stripeReadyFavorites = favorites.filter(f => f.has_stripe_connect);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -352,26 +344,21 @@ export function ShareCourseWithPartnerDialog({
             Partager la course
           </DialogTitle>
           <DialogDescription>
-            Envoyez cette course à un ou plusieurs partenaires.
+            Choisissez comment partager cette course sur le réseau SoloCab.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Stripe Connect Required Alert */}
+          {/* Stripe Connect Required */}
           {stripeNotConnected && (
             <Alert className="border-amber-500/50 bg-amber-500/10">
               <CreditCard className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-700 font-semibold">Stripe Connect requis</AlertTitle>
               <AlertDescription className="text-amber-600 text-sm space-y-2">
-                <p>Pour partager des courses et recevoir des commissions automatiques, vous devez configurer Stripe Connect.</p>
+                <p>Pour partager des courses, vous devez configurer Stripe Connect.</p>
                 <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="mt-2"
-                  onClick={() => {
-                    onOpenChange(false);
-                    window.location.href = '/driver-dashboard?tab=settings';
-                  }}
+                  size="sm" variant="outline" className="mt-2"
+                  onClick={() => { onOpenChange(false); window.location.href = '/driver-dashboard?tab=settings'; }}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Configurer Stripe
@@ -388,174 +375,183 @@ export function ShareCourseWithPartnerDialog({
             </p>
             <p className="text-xs text-muted-foreground truncate">{course.pickup_address}</p>
             <p className="text-xs text-muted-foreground truncate">→ {course.destination_address}</p>
-            {course.devis?.[0] && (
-              <p className="text-primary font-semibold mt-2">{course.devis[0].amount.toFixed(2)}€</p>
+            {commissionInfo.amount > 0 && (
+              <p className="text-primary font-semibold mt-2">{commissionInfo.amount.toFixed(2)}€</p>
             )}
           </div>
+
+          {/* Commission breakdown */}
+          {commissionInfo.amount > 0 && (
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-1 text-xs">
+              <p className="font-medium text-sm flex items-center gap-1">
+                <Euro className="h-3.5 w-3.5" />
+                Répartition automatique
+              </p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Votre commission ({commissionInfo.percentage}%)</span>
+                <span className="font-medium text-primary">{commissionInfo.commission.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Chauffeur exécutant</span>
+                <span className="font-medium">{commissionInfo.receiverEarnings.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Frais de transaction</span>
+                <span className="font-medium">0.10€</span>
+              </div>
+            </div>
+          )}
 
           {/* Share mode selection */}
           {shareMode === 'choose' && (
             <div className="space-y-3">
               <Label>Comment souhaitez-vous partager ?</Label>
-              {loading ? (
-                <p className="text-sm text-muted-foreground">Chargement...</p>
-              ) : partners.length === 0 ? (
-                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                  <p className="text-sm text-warning font-medium flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    Aucun partenaire actif
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Créez un partenariat depuis l'onglet "Partage" de votre tableau de bord.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto py-3"
+                  onClick={() => setShareMode('network')}
+                  disabled={stripeNotConnected}
+                >
+                  <Globe className="w-5 h-5 mr-3 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium">Réseau ouvert</p>
+                    <p className="text-xs text-muted-foreground">
+                      Tous les chauffeurs Stripe Connect proches
+                    </p>
+                  </div>
+                </Button>
+                
+                {favorites.length > 0 && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    onClick={() => setShareMode('favorites')}
+                    disabled={stripeNotConnected}
+                  >
+                    <Heart className="w-5 h-5 mr-3 text-primary" />
+                    <div className="text-left">
+                      <p className="font-medium">Mes favoris ({stripeReadyFavorites.length})</p>
+                      <p className="text-xs text-muted-foreground">
+                        Envoyer uniquement à vos chauffeurs privilégiés
+                      </p>
+                    </div>
+                  </Button>
+                )}
+                
+                {favorites.length > 0 && (
                   <Button
                     variant="outline"
                     className="w-full justify-start h-auto py-3"
                     onClick={() => setShareMode('specific')}
+                    disabled={stripeNotConnected}
                   >
                     <UserCheck className="w-5 h-5 mr-3 text-primary" />
                     <div className="text-left">
-                      <p className="font-medium">Choisir un partenaire</p>
+                      <p className="font-medium">Chauffeur spécifique</p>
                       <p className="text-xs text-muted-foreground">
-                        Sélectionnez un partenaire spécifique
+                        Choisir un chauffeur en particulier
                       </p>
                     </div>
                   </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => setShareMode('all')}
-                  >
-                    <Users className="w-5 h-5 mr-3 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">Envoyer à tous ({availablePartners.length})</p>
-                      <p className="text-xs text-muted-foreground">
-                        Le premier à accepter prend la course
-                      </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Network confirmation */}
+          {shareMode === 'network' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Publier sur le réseau</Label>
+                <Button variant="ghost" size="sm" onClick={() => setShareMode('choose')}>Retour</Button>
+              </div>
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium text-primary flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Réseau ouvert SoloCab
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tous les chauffeurs avec Stripe Connect actif pourront voir et accepter cette course.
+                  Les chauffeurs proches de la zone de prise en charge seront prioritaires.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Favorites confirmation */}
+          {shareMode === 'favorites' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Envoyer aux favoris</Label>
+                <Button variant="ghost" size="sm" onClick={() => setShareMode('choose')}>Retour</Button>
+              </div>
+              {stripeReadyFavorites.length === 0 ? (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>Aucun favori avec Stripe Connect actif.</AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {stripeReadyFavorites.map((fav) => (
+                    <div key={fav.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={fav.driver_photo || undefined} />
+                        <AvatarFallback className="text-xs">{fav.driver_name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 truncate">{fav.driver_name}</span>
+                      <span className="text-xs text-primary font-mono">{formatSharingNumber(fav.driver_sharing_number)}</span>
                     </div>
-                  </Button>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Partner selection */}
+          {/* Specific driver selection */}
           {shareMode === 'specific' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Sélectionner un partenaire</Label>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    setShareMode('choose');
-                    setSelectedPartner(null);
-                  }}
-                >
-                  Retour
-                </Button>
+                <Label>Choisir un chauffeur</Label>
+                <Button variant="ghost" size="sm" onClick={() => { setShareMode('choose'); setSelectedFavorite(null); }}>Retour</Button>
               </div>
-              
               <div className="space-y-2 max-h-56 overflow-y-auto">
-                {partners.map((partner) => (
+                {favorites.map((fav) => (
                   <div
-                    key={partner.id}
-                    onClick={() => !partner.sharing_blocked && setSelectedPartner(partner)}
+                    key={fav.id}
+                    onClick={() => fav.has_stripe_connect && setSelectedFavorite(fav)}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedPartner?.id === partner.id
+                      selectedFavorite?.id === fav.id
                         ? 'border-primary bg-primary/10'
-                        : partner.sharing_blocked
-                        ? 'border-destructive/30 bg-destructive/5 cursor-not-allowed opacity-60'
+                        : !fav.has_stripe_connect
+                        ? 'border-muted bg-muted/30 cursor-not-allowed opacity-60'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={partner.partner_card_photo || partner.partner_photo || undefined} />
-                        <AvatarFallback>{partner.partner_name.charAt(0)}</AvatarFallback>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={fav.driver_photo || undefined} />
+                        <AvatarFallback>{fav.driver_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{partner.partner_name}</p>
-                        {partner.partner_company_name && (
-                          <p className="text-xs text-muted-foreground truncate">{partner.partner_company_name}</p>
+                        <p className="font-medium text-sm truncate">{fav.driver_name}</p>
+                        {fav.driver_company && (
+                          <p className="text-xs text-muted-foreground truncate">{fav.driver_company}</p>
                         )}
-                        
-                        {/* Sharing number prominently displayed */}
-                        <div className="flex items-center gap-1 text-primary font-mono text-sm">
+                        <div className="flex items-center gap-1 text-primary font-mono text-xs">
                           <Hash className="w-3 h-3" />
-                          {formatSharingNumber(partner.sharing_number)}
+                          {formatSharingNumber(fav.driver_sharing_number)}
                         </div>
-                        
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          {partner.show_rating_for_sharing && (
-                            <span className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-500" />
-                              {partner.partner_rating?.toFixed(1) || '0.0'}
-                            </span>
-                          )}
-                          {partner.show_rides_for_sharing && (
-                            <span className="flex items-center gap-1">
-                              <Car className="w-3 h-3" />
-                              {partner.partner_rides || 0}
-                            </span>
-                          )}
-                          {partner.show_phone_for_sharing && partner.partner_phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {partner.partner_phone}
-                            </span>
-                          )}
+                          {fav.show_rating && <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" />{fav.driver_rating.toFixed(1)}</span>}
+                          {fav.show_rides && <span className="flex items-center gap-1"><Car className="w-3 h-3" />{fav.driver_rides}</span>}
+                          {fav.show_phone && fav.driver_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{fav.driver_phone}</span>}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {partner.commission_percentage}%
-                      </Badge>
+                      {!fav.has_stripe_connect && (
+                        <Badge variant="destructive" className="text-xs">Pas Stripe</Badge>
+                      )}
                     </div>
-                    {partner.sharing_blocked && (
-                      <p className="text-xs text-destructive mt-2">Partage bloqué</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* All partners confirmation */}
-          {shareMode === 'all' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Envoyer à tous les partenaires</Label>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShareMode('choose')}
-                >
-                  Retour
-                </Button>
-              </div>
-              
-              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-sm font-medium text-primary">
-                  {availablePartners.length} partenaire{availablePartners.length > 1 ? 's' : ''} recevr{availablePartners.length > 1 ? 'ont' : 'a'} cette course
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Le premier à accepter prendra la course automatiquement.
-                </p>
-              </div>
-
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {availablePartners.map((partner) => (
-                  <div key={partner.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={partner.partner_photo || undefined} />
-                      <AvatarFallback className="text-xs">{partner.partner_name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1 truncate">{partner.partner_name}</span>
-                    <span className="text-xs text-primary font-mono">{formatSharingNumber(partner.sharing_number)}</span>
                   </div>
                 ))}
               </div>
@@ -563,15 +559,11 @@ export function ShareCourseWithPartnerDialog({
           )}
 
           {/* Client notification */}
-          {(shareMode === 'specific' && selectedPartner) || shareMode === 'all' ? (
+          {shareMode !== 'choose' && (
             <div className="space-y-3 pt-2 border-t">
               <div className="flex items-center justify-between">
                 <Label htmlFor="notify-client">Notifier le client</Label>
-                <Switch
-                  id="notify-client"
-                  checked={notifyClient}
-                  onCheckedChange={setNotifyClient}
-                />
+                <Switch id="notify-client" checked={notifyClient} onCheckedChange={setNotifyClient} />
               </div>
               {notifyClient && (
                 <div className="space-y-2">
@@ -586,20 +578,22 @@ export function ShareCourseWithPartnerDialog({
                 </div>
               )}
             </div>
-          ) : null}
+          )}
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          {(shareMode === 'specific' || shareMode === 'all') && (
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+          {shareMode !== 'choose' && (
             <Button
               onClick={handleSendCourse}
-              disabled={(shareMode === 'specific' && !selectedPartner) || sending || availablePartners.length === 0}
+              disabled={
+                (shareMode === 'specific' && !selectedFavorite) || 
+                (shareMode === 'favorites' && stripeReadyFavorites.length === 0) ||
+                sending || stripeNotConnected
+              }
             >
-              <Send className="w-4 h-4 mr-2" />
-              {sending ? 'Envoi...' : shareMode === 'all' ? 'Envoyer à tous' : 'Envoyer'}
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+              {sending ? 'Envoi...' : shareMode === 'network' ? 'Publier' : shareMode === 'favorites' ? 'Envoyer aux favoris' : 'Envoyer'}
             </Button>
           )}
         </DialogFooter>

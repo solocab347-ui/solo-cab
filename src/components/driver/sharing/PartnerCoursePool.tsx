@@ -389,6 +389,10 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
   const loadPooledCourses = async () => {
     try {
+      // Load all available pool courses - new open network model
+      // Filter: not sender, status available, and either:
+      // - scope=network (visible to all Stripe Connect drivers)
+      // - scope=favorites with current driver in target_driver_ids
       const { data, error } = await supabase
         .from('partner_course_pool')
         .select(`
@@ -401,6 +405,11 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           message,
           expires_at,
           created_at,
+          sharing_scope,
+          target_driver_ids,
+          solocab_fee_cents,
+          pickup_latitude,
+          pickup_longitude,
           courses!inner(
             pickup_address,
             destination_address,
@@ -410,14 +419,24 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           )
         `)
         .eq('status', 'available')
-        .gt('expires_at', new Date().toISOString())
+        .neq('sender_driver_id', driverId || '')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Filter by scope: network = visible to all, favorites = only if driver is in target_driver_ids
+      const filteredData = (data || []).filter(item => {
+        const scope = (item as any).sharing_scope || 'network';
+        if (scope === 'network') return true;
+        if (scope === 'favorites') {
+          const targets = (item as any).target_driver_ids as string[] | null;
+          return targets?.includes(driverId || '') ?? false;
+        }
+        return false;
+      });
+
       const enrichedCourses: PooledCourse[] = [];
-      for (const item of data || []) {
-        // Récupérer TOUTES les infos du driver sender
+      for (const item of filteredData) {
         const { data: driverData } = await supabase
           .from('drivers')
           .select(`
