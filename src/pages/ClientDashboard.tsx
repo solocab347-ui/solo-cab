@@ -20,6 +20,7 @@ import {
   Car,
   ShieldOff,
   Search,
+  QrCode,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
