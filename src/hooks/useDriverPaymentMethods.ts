@@ -90,6 +90,6 @@ export function useDriverPaymentMethods(driverId: string | undefined) {
     error,
     refresh: fetchConfig,
     getAvailableMethodsForForm,
-    isStripeEnabled: config.billingType === 'solocab_stripe' && config.stripeConnected
+    isStripeEnabled: config.stripeConnected
   };
 }
