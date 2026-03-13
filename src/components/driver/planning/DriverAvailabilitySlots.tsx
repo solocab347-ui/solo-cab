@@ -119,6 +119,12 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
         .insert(slotsToInsert);
 
       if (error) throw error;
+      
+      // Re-check all upcoming courses against new schedule
+      supabase.functions.invoke('batch-check-schedule-conflicts', {
+        body: { driver_id: driverId }
+      }).catch(console.error);
+      
       toast.success('Disponibilités mises à jour');
       fetchSlots();
     } catch (error) {
