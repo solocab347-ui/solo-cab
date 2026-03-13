@@ -282,7 +282,11 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
 
     if (course) {
       toast.success("Course confirmée créée avec succès !");
-      onSuccess?.();
+      setCreatedCourse(course);
+      // If driver has Stripe Connect, show payment link option instead of navigating away
+      if (!driverHasStripeConnect) {
+        onSuccess?.();
+      }
     }
   };
 
