@@ -10,6 +10,7 @@ interface DriverMapProps {
   selectedDriverIds: Set<string>;
   onDriverClick: (driverId: string) => void;
   searchRadius?: number | null;
+  mapboxToken?: string | null;
 }
 
 export function DriverMap({
