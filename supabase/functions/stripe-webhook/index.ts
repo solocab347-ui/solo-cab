@@ -934,11 +934,12 @@ serve(async (req) => {
           .single();
 
         if (receiverData?.user_id) {
-          const receiverAmount = (parseFloat(session.amount_total?.toString() || "0") / 100) - commissionAmount;
+          const totalAmount = parseFloat(session.amount_total?.toString() || "0") / 100;
+          const receiverAmount = totalAmount - commissionAmount - solocabFee;
           await supabaseClient.from("notifications").insert({
             user_id: receiverData.user_id,
             title: "✅ Paiement course partagée reçu",
-            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ après commission partenaire.`,
+            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (commission ${commissionAmount.toFixed(2)}€ + frais 0.10€).`,
             type: "info",
           });
         }
