@@ -88,6 +88,8 @@ interface EnrichedCourse {
   isFleetCourse?: boolean;
   fleetPartnerCourseId?: string;
   earningsForDriver?: number;
+  is_out_of_schedule?: boolean;
+  out_of_schedule_action?: string | null;
 }
 
 const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
