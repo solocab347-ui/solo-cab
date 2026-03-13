@@ -722,17 +722,10 @@ const DriverDashboard = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.statistics')}</span>
               </TabsTrigger>
-              {/* Partenariats - Bientôt disponible */}
-              <button 
-                disabled
-                className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium opacity-50 cursor-not-allowed text-muted-foreground"
-              >
+              <TabsTrigger value="sharing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.partnerships')}</span>
-                <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">
-                  Bientôt
-                </Badge>
-              </button>
+              </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.settings')}</span>
