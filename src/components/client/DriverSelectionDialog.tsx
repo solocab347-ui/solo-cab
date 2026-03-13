@@ -222,6 +222,23 @@ export function DriverSelectionDialog({
               <p>Aucun chauffeur associé</p>
             </div>
           )}
+
+          {!loading && drivers.length > 1 && (
+            <div className="pt-2 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground gap-2"
+                onClick={() => {
+                  onOpenChange(false);
+                  window.location.href = "/chauffeurs";
+                }}
+              >
+                <Star className="w-3 h-3" />
+                Comparer les prix sur la vitrine
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
