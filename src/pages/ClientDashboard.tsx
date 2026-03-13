@@ -322,19 +322,30 @@ const ClientDashboard = () => {
         
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-bold">
                 {clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs"}
               </h2>
               {!clientProfile?.client?.is_exclusive && (
-                <Button
-                  onClick={() => navigate("/chauffeurs")}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Search className="w-4 h-4" />
-                  Ajouter un chauffeur
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleTabChange("scan-qr")}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Scanner QR
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/chauffeurs")}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    Rechercher
+                  </Button>
+                </div>
               )}
             </div>
 
