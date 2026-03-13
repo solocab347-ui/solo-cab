@@ -282,9 +282,18 @@ export function UnifiedBookingPage() {
             <h1 className="text-lg font-bold text-foreground hidden sm:block">Trouver un chauffeur</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="text-xs">Connexion</Button>
-            </Link>
+            {user ? (
+              <Link to="/client-dashboard">
+                <Button variant="outline" size="sm" className="text-xs gap-1">
+                  <ArrowLeft className="h-3 w-3" />
+                  Mon espace
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="text-xs">Connexion</Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
