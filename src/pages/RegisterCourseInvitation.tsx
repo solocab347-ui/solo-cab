@@ -81,15 +81,21 @@ const RegisterCourseInvitation = () => {
       // Fetch driver info separately
       const { data: driverData } = await supabase
         .from("drivers")
-        .select("company_name, profile_photo_url, user_id, profiles:user_id(full_name)")
+        .select("company_name, user_id")
         .eq("id", inv.driver_id)
+        .single();
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, profile_photo_url")
+        .eq("id", driverData?.user_id)
         .single();
 
       setInvitation({
         ...inv,
-        driver_name: (driverData as any)?.profiles?.full_name || "Chauffeur",
+        driver_name: profileData?.full_name || "Chauffeur",
         driver_company: driverData?.company_name || "",
-        driver_photo: driverData?.profile_photo_url || "",
+        driver_photo: profileData?.profile_photo_url || "",
       });
     } catch (err: any) {
       console.error("Erreur:", err);
