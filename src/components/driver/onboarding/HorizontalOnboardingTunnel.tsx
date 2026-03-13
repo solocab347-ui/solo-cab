@@ -514,6 +514,17 @@ export function HorizontalOnboardingTunnel({
             }}
           />
         );
+      case 'planning':
+        return (
+          <OnboardingWorkScheduleStep
+            driverId={driverId}
+            onComplete={() => {
+              setCompletedSteps(prev => ({ ...prev, planning: true }));
+              setDirection(1);
+              setCurrentStep(prev => prev + 1);
+            }}
+          />
+        );
       case 'settings':
         // Récupérer le prénom depuis full_name (profil utilisateur)
         const settingsFirstName = driverProfile?.full_name?.split(' ')[0] || '';
