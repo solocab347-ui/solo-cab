@@ -393,6 +393,16 @@ const ClientDashboard = () => {
         );
       case "compte":
         return <ClientProfile />;
+      case "scan-qr":
+        return (
+          <ClientQRScannerInApp 
+            onDriverAdded={() => {
+              // Refresh and go back to chauffeurs
+              handleTabChange("chauffeurs");
+              window.location.reload();
+            }} 
+          />
+        );
       default:
         return null;
     }
