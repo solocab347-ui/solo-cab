@@ -28,18 +28,24 @@ const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Charger les identifiants sauvegardés au montage
+  // Charger uniquement l'email sauvegardé (JAMAIS le mot de passe)
   useEffect(() => {
     try {
+      // Migration: supprimer les anciennes données contenant le mot de passe
       const saved = localStorage.getItem(REMEMBER_ME_KEY);
       if (saved) {
-        const { email, password, remember } = JSON.parse(saved);
-        if (email) setLoginEmail(email);
-        if (password) setLoginPassword(password);
-        if (remember) setRememberMe(true);
+        const parsed = JSON.parse(saved);
+        if (parsed.password) {
+          // Ancienne version avec mot de passe - migrer en supprimant le password
+          localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
+            email: parsed.email,
+            remember: true
+          }));
+        }
+        if (parsed.email) setLoginEmail(parsed.email);
+        if (parsed.remember) setRememberMe(true);
       }
     } catch (e) {
-      // Ignorer les erreurs de parsing
       localStorage.removeItem(REMEMBER_ME_KEY);
     }
   }, []);
