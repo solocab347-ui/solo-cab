@@ -42,6 +42,7 @@ serve(async (req) => {
       course_id,
       client_email,
       client_name,
+      amount: requestedAmount,
     } = await req.json();
 
     if (!course_id) throw new Error("course_id required");
