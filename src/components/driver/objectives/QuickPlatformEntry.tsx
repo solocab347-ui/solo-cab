@@ -183,7 +183,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
     setLoading(true);
 
     try {
-      const [platformsRes, entriesRes, coursesRes] = await Promise.all([
+      const [platformsRes, entriesRes, dayStatsRes] = await Promise.all([
         supabase
           .from('driver_platforms')
           .select('id, platform_name, platform_icon')
@@ -195,13 +195,10 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           .select('*')
           .eq('driver_id', driverId)
           .eq('entry_date', dateStr),
-        supabase
-          .from('courses')
-          .select('id, final_payment_amount, guest_estimated_price, client_id')
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .eq('status', 'completed')
-          .gte('scheduled_date', `${dateStr}T00:00:00`)
-          .lte('scheduled_date', `${dateStr}T23:59:59`)
+        supabase.rpc('get_driver_solocab_day_stats', {
+          p_driver_id: driverId,
+          p_day: dateStr,
+        }),
       ]);
 
       let platformsList = platformsRes.data || [];
@@ -210,12 +207,19 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
       platformsList = await seedPlatformsFromOnboarding(platformsList);
       setPlatforms(platformsList);
 
-      // SoloCab auto stats
-      const courses = coursesRes.data || [];
+      // SoloCab auto stats (source unique backend, cohérent avec le dashboard)
+      if (dayStatsRes.error) {
+        throw dayStatsRes.error;
+      }
+
+      const dayStats = Array.isArray(dayStatsRes.data)
+        ? dayStatsRes.data[0]
+        : (dayStatsRes.data as any);
+
       setSoloCabStats({
-        revenue: courses.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0),
-        coursesCount: courses.length,
-        newClientsCount: 0,
+        revenue: Number(dayStats?.revenue || 0),
+        coursesCount: Number(dayStats?.courses_count || 0),
+        newClientsCount: Number(dayStats?.new_clients_count || 0),
       });
 
       // Build entries for each platform
