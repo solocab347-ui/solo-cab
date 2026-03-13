@@ -292,6 +292,16 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         </div>
       </div>
 
+      {/* Finance Widget */}
+      {driverProfile?.driver?.id && (
+        <div className="animate-fade-in mb-6">
+          <DriverFinanceWidget
+            driverId={driverProfile.driver.id}
+            onViewDetails={() => onTabChange("finances")}
+          />
+        </div>
+      )}
+
       {/* Aujourd'hui */}
       <div className="animate-fade-in">
         <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-foreground flex items-center gap-2">
