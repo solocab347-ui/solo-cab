@@ -338,8 +338,10 @@ const DriverCreateQuote = () => {
                     <Label>Adresse de départ *</Label>
                     <AddressAutocomplete
                       value={pickupAddress}
-                      onChange={setPickupAddress}
-                      onCoordinatesChange={setPickupCoordinates}
+                      onChange={(address, coords) => {
+                        setPickupAddress(address);
+                        if (coords) setPickupCoordinates(coords);
+                      }}
                       placeholder="Adresse de prise en charge"
                     />
                   </div>
@@ -347,8 +349,10 @@ const DriverCreateQuote = () => {
                     <Label>Adresse d'arrivée *</Label>
                     <AddressAutocomplete
                       value={destinationAddress}
-                      onChange={setDestinationAddress}
-                      onCoordinatesChange={setDestinationCoordinates}
+                      onChange={(address, coords) => {
+                        setDestinationAddress(address);
+                        if (coords) setDestinationCoordinates(coords);
+                      }}
                       placeholder="Adresse de destination"
                     />
                   </div>
