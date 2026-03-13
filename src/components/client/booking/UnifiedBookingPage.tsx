@@ -164,7 +164,7 @@ export function UnifiedBookingPage() {
       setDestCoords(dest);
 
       // Calculate route
-      const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${MAPBOX_TOKEN}`);
+      const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`);
       const dirData = await dirRes.json();
       const distance = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
       const duration = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
