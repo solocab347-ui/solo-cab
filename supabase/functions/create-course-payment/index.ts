@@ -81,7 +81,7 @@ serve(async (req) => {
       ? course.devis?.find((d: any) => d.id === devis_id)
       : course.devis?.[0];
     
-    const amount = devisData?.amount || course.final_price || course.estimated_price;
+    const amount = devisData?.amount || course.final_payment_amount || course.guest_estimated_price;
     if (!amount || amount <= 0) {
       throw new Error("Montant de la course invalide");
     }
