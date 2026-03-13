@@ -58,8 +58,7 @@ serve(async (req) => {
     }
 
     // Validate driver has Stripe Connect
-    if (driver.billing_type !== "solocab_stripe" || 
-        !driver.stripe_connect_account_id || 
+    if (!driver.stripe_connect_account_id || 
         !driver.stripe_connect_charges_enabled) {
       logStep("Driver does not have Stripe Connect, skipping card hold");
       return new Response(
