@@ -60,7 +60,7 @@ const BILLING_OPTIONS = [
     features: [
       { text: 'Demandez des acomptes automatiquement', icon: Lock },
       { text: 'Factures & devis générés pour vous', icon: Euro },
-      { text: 'Partage de courses entre chauffeurs (bientôt)', icon: Users },
+      { text: 'Partage de courses entre chauffeurs', icon: Users },
       { text: 'Gestion simplifiée de votre clientèle', icon: Shield },
       { text: 'Virements directs J+2 sur votre compte', icon: Banknote },
     ],
