@@ -29,6 +29,7 @@ import { OnboardingBillingStep } from './OnboardingBillingStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
 import { OnboardingGoalsStep } from './OnboardingGoalsStep';
+import { OnboardingWorkScheduleStep } from './OnboardingWorkScheduleStep';
 import { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 import { HorizontalSettingsFlow } from './HorizontalSettingsFlow';
 import { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
