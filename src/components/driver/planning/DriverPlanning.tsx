@@ -27,7 +27,8 @@ import {
   ExternalLink,
   Info,
   MessageSquare,
-  Handshake
+  Handshake,
+  AlertTriangle
 } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, differenceInMinutes } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -87,6 +88,8 @@ interface EnrichedCourse {
   isFleetCourse?: boolean;
   fleetPartnerCourseId?: string;
   earningsForDriver?: number;
+  is_out_of_schedule?: boolean;
+  out_of_schedule_action?: string | null;
 }
 
 const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
@@ -642,6 +645,12 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           </div>
           
           <div className="flex items-center gap-2 flex-wrap">
+            {course.is_out_of_schedule && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500/30 text-amber-600 bg-amber-500/10">
+                <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
+                Hors planning
+              </Badge>
+            )}
             {course.courseType && (
               <CourseTypeBadge 
                 typeInfo={course.courseType} 
@@ -696,6 +705,12 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {course.is_out_of_schedule && (
+                <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-600 bg-amber-500/10 gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Hors planning
+                </Badge>
+              )}
               {course.courseType && (
                 <CourseTypeBadge 
                   typeInfo={course.courseType} 

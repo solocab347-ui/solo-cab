@@ -3685,10 +3685,12 @@ export type Database = {
           hours_before_cancellation: number | null
           id: string
           is_guest_booking: boolean | null
+          is_out_of_schedule: boolean | null
           last_dispatched_at: string | null
           net_amount_to_driver: number | null
           notes: string | null
           origin_type: string
+          out_of_schedule_action: string | null
           passengers_count: number
           payment_captured_at: string | null
           payment_confirmed_at: string | null
@@ -3768,10 +3770,12 @@ export type Database = {
           hours_before_cancellation?: number | null
           id?: string
           is_guest_booking?: boolean | null
+          is_out_of_schedule?: boolean | null
           last_dispatched_at?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
           origin_type?: string
+          out_of_schedule_action?: string | null
           passengers_count?: number
           payment_captured_at?: string | null
           payment_confirmed_at?: string | null
@@ -3851,10 +3855,12 @@ export type Database = {
           hours_before_cancellation?: number | null
           id?: string
           is_guest_booking?: boolean | null
+          is_out_of_schedule?: boolean | null
           last_dispatched_at?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
           origin_type?: string
+          out_of_schedule_action?: string | null
           passengers_count?: number
           payment_captured_at?: string | null
           payment_confirmed_at?: string | null
@@ -11537,6 +11543,66 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      out_of_schedule_alerts: {
+        Row: {
+          action: string | null
+          course_id: string
+          course_time: string
+          created_at: string | null
+          day_of_week: number
+          driver_end_time: string
+          driver_id: string
+          driver_start_time: string
+          id: string
+          notified_at: string | null
+          resolved_at: string | null
+          scheduled_date: string
+        }
+        Insert: {
+          action?: string | null
+          course_id: string
+          course_time: string
+          created_at?: string | null
+          day_of_week: number
+          driver_end_time: string
+          driver_id: string
+          driver_start_time: string
+          id?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          scheduled_date: string
+        }
+        Update: {
+          action?: string | null
+          course_id?: string
+          course_time?: string
+          created_at?: string | null
+          day_of_week?: number
+          driver_end_time?: string
+          driver_id?: string
+          driver_start_time?: string
+          id?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          scheduled_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "out_of_schedule_alerts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "out_of_schedule_alerts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+        ]
       }
       partner_course_pool: {
         Row: {
