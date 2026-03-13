@@ -77,9 +77,8 @@ serve(async (req) => {
       depositPercentage: course.driver.deposit_percentage
     });
 
-    // Validate driver has Stripe Connect
-    if (course.driver.billing_type !== "solocab_stripe" || 
-        !course.driver.stripe_connect_account_id || 
+    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    if (!course.driver.stripe_connect_account_id || 
         !course.driver.stripe_connect_charges_enabled) {
       throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
     }

@@ -69,11 +69,11 @@ serve(async (req) => {
       billingType: course.driver.billing_type 
     });
 
-    // Validate driver has Stripe Connect if using solocab_stripe
-    if (course.driver.billing_type === "solocab_stripe") {
-      if (!course.driver.stripe_connect_account_id || !course.driver.stripe_connect_charges_enabled) {
-        throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
-      }
+    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    const hasStripeConnect = !!course.driver.stripe_connect_account_id && 
+                             course.driver.stripe_connect_charges_enabled === true;
+    if (!hasStripeConnect) {
+      throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
     }
 
     // Get amount from devis or course
@@ -81,7 +81,7 @@ serve(async (req) => {
       ? course.devis?.find((d: any) => d.id === devis_id)
       : course.devis?.[0];
     
-    const amount = devisData?.amount || course.final_price || course.estimated_price;
+    const amount = devisData?.amount || course.final_payment_amount || course.guest_estimated_price;
     if (!amount || amount <= 0) {
       throw new Error("Montant de la course invalide");
     }
@@ -122,8 +122,8 @@ serve(async (req) => {
       cancel_url: `${origin}/reservation-tracking/${course.tracking_token}?payment=cancelled`,
     };
 
-    // If driver uses SoloCab Stripe Connect, add transfer and application fee
-    if (course.driver.billing_type === "solocab_stripe" && course.driver.stripe_connect_account_id) {
+    // If driver has Stripe Connect, add transfer and application fee
+    if (hasStripeConnect) {
       sessionConfig.payment_intent_data = {
         // Manual capture for bank imprint (capture when course completed)
         capture_method: capture_method === "manual" ? "manual" : "automatic",
@@ -179,7 +179,7 @@ serve(async (req) => {
         checkout_url: session.url,
         session_id: session.id,
         capture_method,
-        solocab_fee: course.driver.billing_type === "solocab_stripe" ? 0.50 : 0,
+        solocab_fee: hasStripeConnect ? 0.50 : 0,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

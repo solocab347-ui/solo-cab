@@ -24,7 +24,12 @@ import {
   Mail,
   User,
   CheckCircle,
-  Zap
+  Zap,
+  Send,
+  Loader2,
+  Wallet,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { useDirectCourseCreation } from "@/hooks/useDirectCourseCreation";
@@ -44,6 +49,12 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
   // Driver profile
   const [driverProfile, setDriverProfile] = useState<any>(null);
   const [maxPassengers, setMaxPassengers] = useState(4);
+
+  // Post-creation state
+  const [createdCourse, setCreatedCourse] = useState<any>(null);
+  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  const [paymentLinkGenerated, setPaymentLinkGenerated] = useState(false);
+  const [driverHasStripeConnect, setDriverHasStripeConnect] = useState(false);
 
   // Client info (non inscrit)
   const [guestName, setGuestName] = useState("");
@@ -107,6 +118,11 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
       if (driver) {
         setDriverProfile(driver);
         setMaxPassengers(driver.max_passengers || 4);
+        // Check Stripe Connect availability
+        setDriverHasStripeConnect(
+          !!driver.stripe_connect_account_id && 
+          driver.stripe_connect_charges_enabled === true
+        );
       }
     } catch (err) {
       console.error("Exception fetching driver profile:", err);
@@ -266,9 +282,108 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
 
     if (course) {
       toast.success("Course confirmée créée avec succès !");
-      onSuccess?.();
+      setCreatedCourse(course);
+      // If driver has Stripe Connect, show payment link option instead of navigating away
+      if (!driverHasStripeConnect) {
+        onSuccess?.();
+      }
     }
   };
+
+  const handleGeneratePaymentLink = async () => {
+    if (!createdCourse) return;
+    setPaymentLinkLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-request', {
+        body: {
+          course_id: createdCourse.id,
+          client_email: guestEmail || undefined,
+          client_name: guestName,
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.checkout_url) {
+        await navigator.clipboard.writeText(data.checkout_url);
+        toast.success('Lien de paiement copié ! Envoyez-le au client par SMS ou WhatsApp.');
+        setPaymentLinkGenerated(true);
+      }
+    } catch (err: any) {
+      console.error('Error generating payment link:', err);
+      toast.error(err.message || 'Erreur lors de la création du lien de paiement');
+    } finally {
+      setPaymentLinkLoading(false);
+    }
+  };
+
+  // Show success screen with payment link option
+  if (createdCourse && driverHasStripeConnect) {
+    return (
+      <Card className="p-6 bg-card border-primary/10">
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Course créée avec succès !</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {guestName} — {calculatedPrice?.toFixed(2)}€
+            </p>
+          </div>
+
+          {/* Stripe payment link section */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 justify-center">
+              <Wallet className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">Envoyer un lien de paiement CB</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Générez un lien de paiement sécurisé et envoyez-le au client par SMS ou WhatsApp.
+            </p>
+
+            {paymentLinkGenerated ? (
+              <Alert className="bg-green-500/10 border-green-500/30">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700">
+                  Lien copié ! Envoyez-le au client par SMS ou WhatsApp.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Button
+                onClick={handleGeneratePaymentLink}
+                disabled={paymentLinkLoading}
+                className="w-full"
+              >
+                {paymentLinkLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Création du lien...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Créer lien de paiement ({calculatedPrice?.toFixed(2)}€)
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => onSuccess?.()}
+              className="flex-1"
+            >
+              Retour au tableau de bord
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 bg-card border-primary/10">

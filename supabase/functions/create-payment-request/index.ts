@@ -81,16 +81,15 @@ serve(async (req) => {
       hasStripeConnect: !!course.driver.stripe_connect_account_id
     });
 
-    // Validate driver has Stripe Connect
-    if (course.driver.billing_type !== "solocab_stripe" || 
-        !course.driver.stripe_connect_account_id || 
+    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    if (!course.driver.stripe_connect_account_id || 
         !course.driver.stripe_connect_charges_enabled) {
       throw new Error("Stripe Connect non configuré. Veuillez d'abord configurer vos encaissements.");
     }
 
     // Get the amount from devis or course
     const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
-    const totalAmount = acceptedDevis?.amount || course.final_price || course.estimated_price;
+    const totalAmount = acceptedDevis?.amount || course.final_payment_amount || course.guest_estimated_price;
     
     if (!totalAmount || totalAmount <= 0) {
       throw new Error("Montant de la course invalide");
