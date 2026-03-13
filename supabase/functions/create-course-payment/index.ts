@@ -69,11 +69,11 @@ serve(async (req) => {
       billingType: course.driver.billing_type 
     });
 
-    // Validate driver has Stripe Connect if using solocab_stripe
-    if (course.driver.billing_type === "solocab_stripe") {
-      if (!course.driver.stripe_connect_account_id || !course.driver.stripe_connect_charges_enabled) {
-        throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
-      }
+    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    const hasStripeConnect = !!course.driver.stripe_connect_account_id && 
+                             course.driver.stripe_connect_charges_enabled === true;
+    if (!hasStripeConnect) {
+      throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
     }
 
     // Get amount from devis or course
