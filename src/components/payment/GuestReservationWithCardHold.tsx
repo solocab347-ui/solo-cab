@@ -186,12 +186,14 @@ export function GuestReservationWithCardHold({
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Avance de réservation sécurisée</p>
+              <p className="font-medium">Empreinte bancaire sécurisée</p>
               <p className="text-sm text-muted-foreground">
-                Une avance de 10€ est requise pour garantir votre réservation. 
-                Ce montant sera déduit du prix final de votre course.
-                En cas d'annulation tardive (moins de 1h avant), les 10€ sont conservés par le chauffeur.
-                Si le chauffeur annule : remboursement intégral.
+                Une empreinte bancaire est requise pour garantir votre réservation. 
+                Votre carte ne sera pas débitée immédiatement. Le paiement s'effectuera à la fin de la course.
+                En validant, vous acceptez notre{' '}
+                <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
+                  politique d'annulation
+                </a>.
               </p>
             </div>
           </div>

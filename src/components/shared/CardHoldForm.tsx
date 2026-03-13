@@ -216,8 +216,8 @@ export function CardHoldForm({
         <div className="flex items-center gap-3">
           <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-sm text-foreground">Avance de 10€ confirmée</p>
-            <p className="text-xs text-muted-foreground">Votre course est réservée. Les 10€ seront déduits du montant final.</p>
+            <p className="font-semibold text-sm text-foreground">Empreinte bancaire validée</p>
+            <p className="text-xs text-muted-foreground">Votre course est réservée. Le paiement sera effectué à la fin de la course.</p>
           </div>
         </div>
       </CardContent>
