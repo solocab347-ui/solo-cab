@@ -12,9 +12,11 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Sub-components - Only driver partnerships now (companies and fleets removed)
+// Sub-components
 import { DriverPartnershipsTab } from './partnership/DriverPartnershipsTab';
 import { PartnershipSettings } from './partnership/PartnershipSettings';
+import { PartnershipStripeGate } from './partnership/PartnershipStripeGate';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 
 type MainTab = 'drivers' | 'settings';
 
@@ -32,6 +34,9 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
   // Stats for badges
   const [driverPartnersCount, setDriverPartnersCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Stripe Connect status check
+  const { status: stripeStatus, loading: stripeLoading, isReady: stripeReady, isPending: stripePending, refresh: refreshStripe } = useStripeConnectStatus(driverInfo?.id);
 
   useEffect(() => {
     if (user?.id) {
@@ -72,7 +77,6 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
   const loadStats = async () => {
     if (!driverInfo?.id) return;
 
-    // Pending requests for driver partnerships (for badges)
     const { count: driverPending } = await supabase
       .from('driver_partnerships')
       .select('*', { count: 'exact', head: true })
@@ -83,10 +87,24 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
     setPendingCount(driverPending || 0);
   };
 
-  if (loading) {
+  if (loading || stripeLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Stripe Connect gate: show onboarding page if not connected
+  if (!stripeReady) {
+    const gateStatus = stripePending ? 'pending' : 'not_connected';
+    return (
+      <div className="space-y-4 pb-20">
+        <PartnershipStripeGate 
+          driverId={driverInfo?.id || ''} 
+          stripeStatus={gateStatus}
+          onRefresh={refreshStripe}
+        />
       </div>
     );
   }
@@ -103,7 +121,7 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
         </Alert>
       )}
 
-      {/* Pending requests notification with guidance */}
+      {/* Pending requests notification */}
       {pendingCount > 0 && (
         <Card 
           className="bg-warning/10 border-warning/30 cursor-pointer hover:bg-warning/20 transition-colors"
@@ -135,7 +153,7 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
                 className="relative flex-1 min-w-0 flex flex-col items-center gap-1 py-2 px-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
               >
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-xs font-medium truncate">Chauffeurs partenaires</span>
+                <span className="text-xs font-medium truncate">Réseau de Partage</span>
                 {driverPartnersCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] bg-orange-500 hover:bg-orange-500">
                     {driverPartnersCount}
