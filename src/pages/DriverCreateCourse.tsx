@@ -370,7 +370,7 @@ const DriverCreateCourse = () => {
                   Client *
                 </Label>
                 <Select 
-                  value={selectedClientId} 
+                  value={selectedClientId || undefined} 
                   onValueChange={(value) => {
                     if (value === "__unregistered__") {
                       navigate("/driver/create-direct-course");
@@ -596,7 +596,7 @@ const DriverCreateCourse = () => {
               <CoursePaymentMethodSelector
                 value={paymentMethodPreference}
                 onChange={setPaymentMethodPreference}
-                driverId={undefined}
+                driverId={driverProfile?.id}
               />
             </div>
 

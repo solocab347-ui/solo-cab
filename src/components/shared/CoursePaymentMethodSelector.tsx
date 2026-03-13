@@ -56,12 +56,12 @@ export const CoursePaymentMethodSelector = ({
       if (!driverId) return;
       const { data } = await supabase
         .from('drivers')
-        .select('billing_type, stripe_connect_charges_enabled')
+        .select('billing_type, stripe_connect_charges_enabled, stripe_connect_account_id')
         .eq('id', driverId)
         .single();
       
       setDriverHasStripe(
-        data?.billing_type === 'solocab_stripe' && 
+        !!data?.stripe_connect_account_id && 
         data?.stripe_connect_charges_enabled === true
       );
     };
