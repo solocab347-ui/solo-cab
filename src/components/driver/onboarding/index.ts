@@ -12,6 +12,7 @@ export { OnboardingNfcStep } from './OnboardingNfcStep';
 export { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
 export { OnboardingGoalsStep } from './OnboardingGoalsStep';
 export { OnboardingPlanningStep } from './OnboardingPlanningStep';
+export { OnboardingWorkScheduleStep } from './OnboardingWorkScheduleStep';
 export { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 export { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 export { OnboardingAIAssistant } from './OnboardingAIAssistant';

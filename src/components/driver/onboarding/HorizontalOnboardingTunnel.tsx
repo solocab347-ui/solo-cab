@@ -12,6 +12,7 @@ import {
   Loader2,
   CreditCard,
   Save,
+  Clock,
   Wallet,
   Target,
   Play,
@@ -29,6 +30,7 @@ import { OnboardingBillingStep } from './OnboardingBillingStep';
 import { OnboardingNfcStep } from './OnboardingNfcStep';
 import { OnboardingObjectivesStep } from './OnboardingObjectivesStep';
 import { OnboardingGoalsStep } from './OnboardingGoalsStep';
+import { OnboardingWorkScheduleStep } from './OnboardingWorkScheduleStep';
 import { OnboardingTrialStartStep } from './OnboardingTrialStartStep';
 import { HorizontalSettingsFlow } from './HorizontalSettingsFlow';
 import { useOnboardingAutoSave } from './hooks/useOnboardingAutoSave';
@@ -44,11 +46,11 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
-// Ordre: Vision → Objectifs → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
-// Note: Planning est maintenant intégré dans Objectifs pour simplifier le parcours
+// Ordre: Vision → Objectifs → Planning → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
 const ALL_STEPS = [
   { id: 'vision', title: 'Vision', icon: Compass },
   { id: 'goals', title: 'Objectifs', icon: TrendingUp },
+  { id: 'planning', title: 'Horaires', icon: Clock },
   { id: 'settings', title: 'Tarifs', icon: Settings },
   { id: 'profile', title: 'Profil', icon: User },
   { id: 'documents', title: 'Docs', icon: FileText },
@@ -144,11 +146,10 @@ export function HorizontalOnboardingTunnel({
 
   // Calculer les étapes complétées basées sur l'étape sauvegardée et les données réelles
   const getCompletedStepsFromSavedStep = () => {
-    const stepOrder = ['vision', 'goals', 'settings', 'profile', 'documents', 'nfc', 'billing', 'trial_start'];
+    const stepOrder = ['vision', 'goals', 'planning', 'settings', 'profile', 'documents', 'nfc', 'billing', 'trial_start'];
     const savedStep = driverProfile?.driver?.onboarding_step;
     const savedIndex = savedStep ? stepOrder.indexOf(savedStep) : -1;
     
-    // NFC est complété seulement si le chauffeur a déjà une plaque OU a fait un choix explicite
     const nfcCompleted = !!(
       driverProfile?.driver?.has_nfc_plate || 
       driverProfile?.driver?.nfc_tag_number || 
@@ -156,18 +157,22 @@ export function HorizontalOnboardingTunnel({
       driverProfile?.driver?.onboarding_nfc_completed
     );
     
-    // Billing est complété seulement si un type de facturation a été explicitement choisi
     const billingCompleted = !!(
       driverProfile?.driver?.onboarding_billing_completed ||
       (savedIndex > stepOrder.indexOf('billing'))
     );
+
+    // Planning is completed if driver has availability slots
+    const planningCompleted = savedIndex > stepOrder.indexOf('planning') || 
+      !!(driverProfile?.driver?.objectives_data?.schedule_configured_at);
     
     return {
       vision: savedIndex > 0 || driverProfile?.driver?.onboarding_objectives_completed || false,
       goals: savedIndex > 1 || !!(driverProfile?.driver?.objectives_data?.target_monthly_revenue),
-      settings: savedIndex > 2 || driverProfile?.driver?.onboarding_settings_completed || false,
-      profile: savedIndex > 3 || driverProfile?.driver?.onboarding_profile_completed || false,
-      documents: savedIndex > 4 || driverProfile?.driver?.onboarding_documents_completed || false,
+      planning: planningCompleted,
+      settings: savedIndex > 3 || driverProfile?.driver?.onboarding_settings_completed || false,
+      profile: savedIndex > 4 || driverProfile?.driver?.onboarding_profile_completed || false,
+      documents: savedIndex > 5 || driverProfile?.driver?.onboarding_documents_completed || false,
       nfc: nfcCompleted,
       billing: billingCompleted,
     };
@@ -241,19 +246,20 @@ export function HorizontalOnboardingTunnel({
     switch (currentStepId) {
       case 'vision': return true;
       case 'goals': return true;
+      case 'planning': return true; // Self-navigated
       case 'settings': return isSettingsValid();
       case 'profile': return isProfileValid();
       case 'billing': return true;
-      case 'documents': return true; // Can pass even without all docs, blocked at launch
+      case 'documents': return true;
       case 'nfc': return true;
-      case 'trial_start': return false; // Self-navigated
+      case 'trial_start': return false;
       default: return false;
     }
   };
 
   const isSelfNavigatedStep = () => {
     const currentStepId = STEPS[currentStep]?.id;
-    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'trial_start' || currentStepId === 'settings';
+    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'planning' || currentStepId === 'trial_start' || currentStepId === 'settings';
   };
 
   const saveSettings = async () => {
@@ -503,6 +509,17 @@ export function HorizontalOnboardingTunnel({
             driverId={driverId}
             onComplete={() => {
               setCompletedSteps(prev => ({ ...prev, goals: true }));
+              setDirection(1);
+              setCurrentStep(prev => prev + 1);
+            }}
+          />
+        );
+      case 'planning':
+        return (
+          <OnboardingWorkScheduleStep
+            driverId={driverId}
+            onComplete={() => {
+              setCompletedSteps(prev => ({ ...prev, planning: true }));
               setDirection(1);
               setCurrentStep(prev => prev + 1);
             }}
