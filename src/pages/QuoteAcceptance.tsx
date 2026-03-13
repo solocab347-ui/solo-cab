@@ -195,14 +195,14 @@ const QuoteAcceptance = () => {
         <Card className="p-6 bg-card border-border space-y-5">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Départ</p>
                 <p className="text-sm font-medium text-foreground">{course?.pickup_address}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+              <MapPin className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Arrivée</p>
                 <p className="text-sm font-medium text-foreground">{course?.destination_address}</p>
