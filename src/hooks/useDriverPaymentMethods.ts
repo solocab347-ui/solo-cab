@@ -43,12 +43,15 @@ export function useDriverPaymentMethods(driverId: string | undefined) {
 
       if (data) {
         const driverData = data as any;
+        const hasStripeConnect = !!driverData.stripe_connect_account_id && 
+          driverData.stripe_connect_charges_enabled === true;
+        
         setConfig({
           acceptedMethods: driverData.accepted_payment_methods || DEFAULT_CONFIG.acceptedMethods,
           billingType: (driverData.billing_type as 'own_equipment' | 'solocab_stripe') || DEFAULT_CONFIG.billingType,
           showPublicly: driverData.show_payment_methods_publicly ?? DEFAULT_CONFIG.showPublicly,
           defaultMethod: driverData.default_payment_method || DEFAULT_CONFIG.defaultMethod,
-          stripeConnected: !!driverData.stripe_account_id
+          stripeConnected: hasStripeConnect
         });
       }
     } catch (err: any) {
@@ -67,8 +70,8 @@ export function useDriverPaymentMethods(driverId: string | undefined) {
   const getAvailableMethodsForForm = useCallback(() => {
     const methods = config.acceptedMethods;
     
-    // If using SoloCab Stripe, card payments go through Stripe
-    if (config.billingType === 'solocab_stripe') {
+    // If driver has Stripe Connect active, card payments go through Stripe
+    if (config.stripeConnected) {
       return methods.map(m => ({
         value: m,
         isOnline: m === 'card' // Card is processed online via Stripe
@@ -87,6 +90,6 @@ export function useDriverPaymentMethods(driverId: string | undefined) {
     error,
     refresh: fetchConfig,
     getAvailableMethodsForForm,
-    isStripeEnabled: config.billingType === 'solocab_stripe' && config.stripeConnected
+    isStripeEnabled: config.stripeConnected
   };
 }
