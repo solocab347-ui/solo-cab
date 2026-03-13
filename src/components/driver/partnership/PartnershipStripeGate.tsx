@@ -138,6 +138,10 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <span>SoloCab prélève uniquement 0,10€ de frais de transaction par partage</span>
               </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <span><strong>Versement hebdomadaire</strong> : les commissions sont agrégées et versées chaque lundi pour minimiser les frais bancaires</span>
+              </li>
             </ul>
           </div>
         </CardContent>
