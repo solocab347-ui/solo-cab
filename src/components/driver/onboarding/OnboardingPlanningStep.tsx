@@ -54,8 +54,10 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
   const [platformPercentage, setPlatformPercentage] = useState(70); // Starting dependent on platforms
   const [targetWeeklyRevenue, setTargetWeeklyRevenue] = useState(1250); // Will be loaded from goals
 
-  // Step 2: Selected work days
+  // Step 2: Selected work days + hours
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
+  const [workStartTime, setWorkStartTime] = useState('08:00');
+  const [workEndTime, setWorkEndTime] = useState('20:00');
 
   // Calculate SoloCab percentage
   const solocabPercentage = 100 - platformPercentage;
