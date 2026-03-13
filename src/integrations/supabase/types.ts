@@ -18214,27 +18214,61 @@ export type Database = {
           profile_photo_url: string
         }[]
       }
+      get_company_employee_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          can_create_courses: boolean | null
+          can_invite_drivers: boolean | null
+          can_view_invoices: boolean | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          department: string | null
+          email: string | null
+          employee_name: string | null
+          expires_at: string | null
+          id: string
+          is_used: boolean | null
+          max_monthly_budget: number | null
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "company_employee_invitations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_company_id: { Args: { _user_id: string }; Returns: string }
       get_company_id_for_user: { Args: { user_id: string }; Returns: string }
       get_course_invitation_by_token: {
-        Args: { _token: string }
+        Args: { p_token: string }
         Returns: {
+          client_id: string | null
+          completed_at: string | null
           course_id: string
+          created_at: string
           destination_address: string
-          distance_km: number
-          driver_company: string
+          distance_km: number | null
           driver_id: string
-          driver_name: string
-          driver_photo: string
-          duration_minutes: number
+          duration_minutes: number | null
           estimated_price: number
           expires_at: string
           id: string
           pickup_address: string
-          price_details: Json
+          price_details: Json | null
           status: string
           token: string
+          updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "course_invitations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_course_partner_info: {
         Args: { p_client_user_id: string; p_course_id: string }
@@ -18321,11 +18355,81 @@ export type Database = {
           phone: string
         }[]
       }
+      get_fleet_client_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "fleet_client_invitations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_fleet_driver_count: {
         Args: { _fleet_manager_id: string }
         Returns: number
       }
+      get_fleet_driver_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          commission_accepted: boolean | null
+          commission_accepted_at: string | null
+          commission_percentage: number | null
+          created_at: string
+          driver_cost: number | null
+          driver_type: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          is_paid: boolean | null
+          token: string
+          used: boolean | null
+          used_at: string | null
+          used_by_driver_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "fleet_driver_invitations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_fleet_manager_id: { Args: { _user_id: string }; Returns: string }
+      get_fleet_manager_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          token: string
+          used: boolean | null
+          used_at: string | null
+          used_by_driver_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "fleet_manager_invitations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_guest_booking_by_token: {
         Args: { _token: string }
         Returns: {
