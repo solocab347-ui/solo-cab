@@ -793,6 +793,13 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
+          {/* Finances Tab */}
+          <TabsContent value="finances">
+            {driverProfile?.driver?.id && (
+              <DriverFinancePage driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
           {/* Subscription Tab */}
           <TabsContent value="subscription">
             <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
