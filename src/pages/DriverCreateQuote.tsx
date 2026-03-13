@@ -213,7 +213,7 @@ const DriverCreateQuote = () => {
                 <Copy className="w-4 h-4" /> Copier le lien
               </Button>
 
-              <Button onClick={handleShareWhatsApp} className="w-full gap-2 bg-[#25D366] hover:bg-[#20BD5A] text-white">
+              <Button onClick={handleShareWhatsApp} className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
                 <MessageCircle className="w-4 h-4" /> Envoyer par WhatsApp
               </Button>
 
