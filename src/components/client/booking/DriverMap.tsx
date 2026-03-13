@@ -48,7 +48,7 @@ export function DriverMap({
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [mapboxToken]);
 
   // Update client marker
   useEffect(() => {
