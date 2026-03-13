@@ -259,7 +259,7 @@ export function HorizontalOnboardingTunnel({
 
   const isSelfNavigatedStep = () => {
     const currentStepId = STEPS[currentStep]?.id;
-    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'trial_start' || currentStepId === 'settings';
+    return currentStepId === 'vision' || currentStepId === 'goals' || currentStepId === 'planning' || currentStepId === 'trial_start' || currentStepId === 'settings';
   };
 
   const saveSettings = async () => {
