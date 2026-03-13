@@ -93,7 +93,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
 
     loadStats();
     return () => { mounted = false; };
-  }, [driverProfile?.driver?.id]);
+  }, [driverProfile?.driver?.id, statsRefreshKey]);
 
   // Extraire le prénom pour l'affichage
   const displayName = driverProfile?.full_name 
