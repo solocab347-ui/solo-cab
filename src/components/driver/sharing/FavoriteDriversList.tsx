@@ -117,7 +117,7 @@ export function FavoriteDriversList() {
 
       const { data: targetDriver } = await supabase
         .from('drivers')
-        .select('id, stripe_account_status')
+        .select('id, stripe_connect_status')
         .eq('sharing_number', sharingNum)
         .single();
 

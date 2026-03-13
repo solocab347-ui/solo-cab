@@ -118,7 +118,7 @@ export function ShareCourseWithPartnerDialog({
             show_rides: driverData.show_rides_for_sharing ?? false,
             show_phone: driverData.show_phone_for_sharing ?? false,
             driver_phone: driverData.show_phone_for_sharing ? (driverData.contact_phone || profile?.phone) : null,
-            has_stripe_connect: driverData.stripe_account_status === 'active',
+            has_stripe_connect: !!driverData.stripe_connect_account_id && driverData.stripe_connect_status === 'active',
           });
         }
       }
