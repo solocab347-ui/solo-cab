@@ -705,6 +705,12 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {course.is_out_of_schedule && (
+                <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-600 bg-amber-500/10 gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Hors planning
+                </Badge>
+              )}
               {course.courseType && (
                 <CourseTypeBadge 
                   typeInfo={course.courseType} 
