@@ -122,8 +122,8 @@ serve(async (req) => {
       cancel_url: `${origin}/reservation-tracking/${course.tracking_token}?payment=cancelled`,
     };
 
-    // If driver uses SoloCab Stripe Connect, add transfer and application fee
-    if (course.driver.billing_type === "solocab_stripe" && course.driver.stripe_connect_account_id) {
+    // If driver has Stripe Connect, add transfer and application fee
+    if (hasStripeConnect) {
       sessionConfig.payment_intent_data = {
         // Manual capture for bank imprint (capture when course completed)
         capture_method: capture_method === "manual" ? "manual" : "automatic",
