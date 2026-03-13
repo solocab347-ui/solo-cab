@@ -73,14 +73,14 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         const d = statsResult.data as any;
         if (d) {
           setStats({
-            todayCourses: d.today_courses || 0,
-            todayRevenue: Number(d.today_revenue) || 0,
-            weekRevenue: Number(d.week_revenue) || 0,
-            weekCourses: d.week_courses || 0,
-            monthClients: d.month_clients || 0,
-            monthCourses: d.month_courses || 0,
+            todayCourses: (d.today_courses || 0) + (d.today_ext_courses || 0),
+            todayRevenue: Number(d.today_revenue || 0) + Number(d.today_ext_revenue || 0),
+            weekRevenue: Number(d.week_revenue || 0) + Number(d.week_ext_revenue || 0),
+            weekCourses: (d.week_courses || 0) + (d.week_ext_courses || 0),
+            monthClients: (d.month_clients || 0) + Number(d.month_ext_clients || 0),
+            monthCourses: (d.month_courses || 0) + (d.month_ext_courses || 0),
             monthCompleted: d.month_completed || 0,
-            monthRevenue: Number(d.month_revenue) || 0,
+            monthRevenue: Number(d.month_revenue || 0) + Number(d.month_ext_revenue || 0),
             availablePartnerCourses: partnerPoolData.count || 0,
           });
         }
