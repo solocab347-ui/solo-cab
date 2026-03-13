@@ -18315,6 +18315,16 @@ export type Database = {
         Args: { _driver_id: string }
         Returns: string[]
       }
+      get_driver_solocab_day_stats: {
+        Args: { p_day: string; p_driver_id: string }
+        Returns: {
+          courses_count: number
+          hours_worked: number
+          km_driven: number
+          new_clients_count: number
+          revenue: number
+        }[]
+      }
       get_drivers_with_full_access: {
         Args: { limit_count?: number; visibility_field: string }
         Returns: {
