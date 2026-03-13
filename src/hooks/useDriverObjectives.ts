@@ -166,55 +166,42 @@ export function useDriverObjectives(driverId: string | null) {
     if (!driverId) return;
 
     try {
-      const now = new Date();
-      const todayStart = startOfDay(now);
-      const todayEnd = endOfDay(now);
-      const weekStart = startOfWeek(now, { locale: fr });
-      const weekEnd = endOfWeek(now, { locale: fr });
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
-      const yearStart = startOfYear(now);
-      const yearEnd = endOfYear(now);
+      const { data: rpcData, error } = await supabase.rpc('get_driver_dashboard_stats', { p_driver_id: driverId });
+      if (error) throw error;
 
-      // Helper to fetch stats for a period
-      const fetchPeriodStats = async (start: Date, end: Date): Promise<SoloCabPeriodStats> => {
-        const startStr = format(start, "yyyy-MM-dd'T'HH:mm:ss");
-        const endStr = format(end, "yyyy-MM-dd'T'HH:mm:ss");
+      const d = rpcData as any;
+      if (!d) {
+        setSoloCabFullStats({
+          today: { courses: 0, revenue: 0, clients: 0 },
+          week: { courses: 0, revenue: 0, clients: 0 },
+          month: { courses: 0, revenue: 0, clients: 0 },
+          year: { courses: 0, revenue: 0, clients: 0 },
+        });
+        return;
+      }
 
-        const [coursesRes, clientsRes] = await Promise.all([
-          supabase
-            .from('courses')
-            .select('id, final_payment_amount, guest_estimated_price')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .eq('status', 'completed')
-            .gte('scheduled_date', startStr)
-            .lte('scheduled_date', endStr),
-          supabase
-            .from('clients')
-            .select('id')
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-            .gte('created_at', startStr)
-            .lte('created_at', endStr),
-        ]);
-
-        const courses = coursesRes.data || [];
-        const clients = clientsRes.data || [];
-
-        return {
-          courses: courses.length,
-          revenue: courses.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0),
-          clients: clients.length,
-        };
-      };
-
-      const [today, week, month, year] = await Promise.all([
-        fetchPeriodStats(todayStart, todayEnd),
-        fetchPeriodStats(weekStart, weekEnd),
-        fetchPeriodStats(monthStart, monthEnd),
-        fetchPeriodStats(yearStart, yearEnd),
-      ]);
-
-      setSoloCabFullStats({ today, week, month, year });
+      setSoloCabFullStats({
+        today: {
+          courses: Number(d.today_courses || 0),
+          revenue: Number(d.today_revenue || 0),
+          clients: Number(d.today_clients || 0),
+        },
+        week: {
+          courses: Number(d.week_courses || 0),
+          revenue: Number(d.week_revenue || 0),
+          clients: Number(d.week_clients || 0),
+        },
+        month: {
+          courses: Number(d.month_courses || 0),
+          revenue: Number(d.month_revenue || 0),
+          clients: Number(d.month_clients || 0),
+        },
+        year: {
+          courses: Number(d.year_courses || 0),
+          revenue: Number(d.year_revenue || 0),
+          clients: Number(d.year_clients || 0),
+        },
+      });
     } catch (error) {
       console.error('Error fetching SoloCab full stats:', error);
     }

@@ -66,12 +66,10 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
       monday.setUTCDate(now.getUTCDate() - ((dayOfWeek + 6) % 7));
       monday.setUTCHours(0, 0, 0, 0);
 
-      const { count: courseCount } = await supabase
-        .from("courses")
-        .select("id", { count: "exact", head: true })
-        .eq("driver_id", driverId)
-        .in("status", ["completed"])
-        .gte("completed_at", monday.toISOString());
+      const { data: dashboardStats } = await supabase
+        .rpc("get_driver_dashboard_stats", { p_driver_id: driverId });
+
+      const courseCount = Number((dashboardStats as any)?.week_courses || 0);
 
       const { count: sharedCount } = await supabase
         .from("shared_course_payments")
