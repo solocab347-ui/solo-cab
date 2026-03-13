@@ -327,7 +327,7 @@ const RegisterDriverPromoFree = () => {
                 
                 <p className="text-[10px] text-center text-muted-foreground">
                   En vous inscrivant, vous acceptez nos{" "}
-                  <a href="/terms" className="underline hover:text-foreground">conditions d'utilisation</a>
+                  <a href="/terms-of-service" className="underline hover:text-foreground">conditions d'utilisation</a>
                   {" "}• Puis 29,99€/mois après l'essai
                 </p>
 
