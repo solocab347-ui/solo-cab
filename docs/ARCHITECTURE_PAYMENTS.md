@@ -100,6 +100,28 @@ Les formulaires de réservation et la vitrine s'adaptent automatiquement.
 
 ---
 
-## Compensation partenariat (Netting)
+## Règlement hebdomadaire (Netting)
 
-Table `partnership_balances` pour suivre les parts de partenariat sur les courses partagées. Règlement périodique par transfert net unique pour minimiser les coûts de transaction.
+### Principe
+Au lieu de transférer les commissions et collecter les frais **à chaque transaction**, SoloCab agrège tout sur une semaine et exécute un **transfert net unique** par chauffeur chaque lundi à 6h.
+
+### Avantages
+- **Réduction des frais Stripe** : 1 transfert au lieu de N (économie ~0,25€ par transaction évitée)
+- **Simplification comptable** : un seul mouvement hebdomadaire par chauffeur
+- **Transparence** : détail complet dans `driver_weekly_balances`
+
+### Calcul du solde net par chauffeur
+| Élément | Direction |
+|---------|-----------|
+| Commissions gagnées (courses partagées) | + Chauffeur reçoit |
+| Frais SoloCab 0,50€ × courses standard en ligne | - SoloCab collecte |
+| Frais SoloCab 0,10€ × courses partagées reçues | - SoloCab collecte |
+| **Net** | Positif → transfert au chauffeur |
+
+### Tables
+- `weekly_settlements` : batch de règlement (par semaine)
+- `driver_weekly_balances` : solde net par chauffeur par semaine
+- `shared_course_payments.settlement_id` : lien vers le batch
+
+### Cron
+Edge Function `process-weekly-settlement` déclenchée chaque lundi 6h UTC via pg_cron.
