@@ -35,6 +35,7 @@ import { VehiclePhotosManager } from "@/components/driver/vehicles/VehiclePhotos
 import { DriverPublicProfileSimplified } from "@/components/driver/profile/DriverPublicProfileSimplified";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
+import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
 import { GuestBookingsList } from "@/components/driver/clients/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
