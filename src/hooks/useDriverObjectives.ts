@@ -9,8 +9,7 @@ import {
   PeriodStats,
   ObjectiveProgress 
 } from '@/components/driver/objectives/types';
-import { startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, format, differenceInDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { format, differenceInDays } from 'date-fns';
 
 export interface DriverStats {
   totalClients: number;
