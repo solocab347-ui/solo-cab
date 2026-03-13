@@ -61,6 +61,8 @@ const TrialExpiredSubscribe = lazy(() => import("./pages/chauffeur/TrialExpiredS
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
 const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
+const DriverCreateQuote = lazy(() => import("./pages/DriverCreateQuote"));
+const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
@@ -106,6 +108,7 @@ const App = () => (
               
               <Route path="/reservation-rapide/:driverId" element={<Suspense fallback={<LoadingFallback />}><GuestBooking /></Suspense>} />
               <Route path="/reservation-suivi/:token" element={<Suspense fallback={<LoadingFallback />}><GuestBookingTracking /></Suspense>} />
+              <Route path="/devis/:token" element={<Suspense fallback={<LoadingFallback />}><QuoteAcceptance /></Suspense>} />
               <Route path="/register-course-invitation" element={<Suspense fallback={<LoadingFallback />}><RegisterCourseInvitation /></Suspense>} />
               <Route path="/register-client" element={<Suspense fallback={<LoadingFallback />}><RegisterClient /></Suspense>} />
               <Route path="/inscription-client" element={<Suspense fallback={<LoadingFallback />}><RegisterGuestClient /></Suspense>} />
@@ -149,6 +152,18 @@ const App = () => (
                     <Suspense fallback={<LoadingFallback />}>
                       <ErrorBoundary>
                         <DriverCreateDirectCourse />
+                      </ErrorBoundary>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/driver/create-quote"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <DriverCreateQuote />
                       </ErrorBoundary>
                     </Suspense>
                   </ProtectedRoute>
