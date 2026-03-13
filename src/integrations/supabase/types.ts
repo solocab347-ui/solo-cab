@@ -5041,6 +5041,143 @@ export type Database = {
           },
         ]
       }
+      driver_favorites: {
+        Row: {
+          created_at: string
+          driver_id: string
+          favorite_driver_id: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          favorite_driver_id: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          favorite_driver_id?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_favorites_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_feedback: {
         Row: {
           admin_id: string | null
@@ -11616,9 +11753,16 @@ export type Database = {
           expires_at: string
           id: string
           message: string | null
-          partnership_ids: string[]
+          partnership_ids: string[] | null
+          pickup_city: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          pickup_sectors: string[] | null
           sender_driver_id: string
+          sharing_scope: string
+          solocab_fee_cents: number
           status: string
+          target_driver_ids: string[] | null
           updated_at: string
         }
         Insert: {
@@ -11632,9 +11776,16 @@ export type Database = {
           expires_at: string
           id?: string
           message?: string | null
-          partnership_ids: string[]
+          partnership_ids?: string[] | null
+          pickup_city?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          pickup_sectors?: string[] | null
           sender_driver_id: string
+          sharing_scope?: string
+          solocab_fee_cents?: number
           status?: string
+          target_driver_ids?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -11648,9 +11799,16 @@ export type Database = {
           expires_at?: string
           id?: string
           message?: string | null
-          partnership_ids?: string[]
+          partnership_ids?: string[] | null
+          pickup_city?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          pickup_sectors?: string[] | null
           sender_driver_id?: string
+          sharing_scope?: string
+          solocab_fee_cents?: number
           status?: string
+          target_driver_ids?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -14312,13 +14470,14 @@ export type Database = {
           earnings_for_receiver: number | null
           id: string
           partner_reference_number: string | null
-          partnership_id: string
+          partnership_id: string | null
           payment_id: string | null
           payment_method_used: string | null
           payment_required: boolean | null
           payment_settled: boolean | null
           payment_settled_at: string | null
           payment_status: string | null
+          pool_entry_id: string | null
           pool_group_id: string | null
           receiver_course_number: string | null
           receiver_driver_id: string
@@ -14326,6 +14485,8 @@ export type Database = {
           sender_driver_id: string
           sender_notified_at: string | null
           sharing_mode: string | null
+          sharing_scope: string | null
+          solocab_fee_cents: number
           started_at: string | null
           status: string | null
           updated_at: string | null
@@ -14351,13 +14512,14 @@ export type Database = {
           earnings_for_receiver?: number | null
           id?: string
           partner_reference_number?: string | null
-          partnership_id: string
+          partnership_id?: string | null
           payment_id?: string | null
           payment_method_used?: string | null
           payment_required?: boolean | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           payment_status?: string | null
+          pool_entry_id?: string | null
           pool_group_id?: string | null
           receiver_course_number?: string | null
           receiver_driver_id: string
@@ -14365,6 +14527,8 @@ export type Database = {
           sender_driver_id: string
           sender_notified_at?: string | null
           sharing_mode?: string | null
+          sharing_scope?: string | null
+          solocab_fee_cents?: number
           started_at?: string | null
           status?: string | null
           updated_at?: string | null
@@ -14390,13 +14554,14 @@ export type Database = {
           earnings_for_receiver?: number | null
           id?: string
           partner_reference_number?: string | null
-          partnership_id?: string
+          partnership_id?: string | null
           payment_id?: string | null
           payment_method_used?: string | null
           payment_required?: boolean | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           payment_status?: string | null
+          pool_entry_id?: string | null
           pool_group_id?: string | null
           receiver_course_number?: string | null
           receiver_driver_id?: string
@@ -14404,6 +14569,8 @@ export type Database = {
           sender_driver_id?: string
           sender_notified_at?: string | null
           sharing_mode?: string | null
+          sharing_scope?: string | null
+          solocab_fee_cents?: number
           started_at?: string | null
           status?: string | null
           updated_at?: string | null
@@ -14442,6 +14609,20 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "shared_course_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_pool_entry_id_fkey"
+            columns: ["pool_entry_id"]
+            isOneToOne: false
+            referencedRelation: "available_partner_courses"
+            referencedColumns: ["pool_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_pool_entry_id_fkey"
+            columns: ["pool_entry_id"]
+            isOneToOne: false
+            referencedRelation: "partner_course_pool"
             referencedColumns: ["id"]
           },
           {
@@ -14557,6 +14738,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sharing_weekly_reports: {
+        Row: {
+          created_at: string
+          id: string
+          report_data: Json | null
+          total_commission_cents: number
+          total_course_amount_cents: number
+          total_shares: number
+          total_solocab_fees_cents: number
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_data?: Json | null
+          total_commission_cents?: number
+          total_course_amount_cents?: number
+          total_shares?: number
+          total_solocab_fees_cents?: number
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_data?: Json | null
+          total_commission_cents?: number
+          total_course_amount_cents?: number
+          total_shares?: number
+          total_solocab_fees_cents?: number
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
       }
       social_links: {
         Row: {
@@ -17124,6 +17341,15 @@ export type Database = {
       calculate_payment_due_date: {
         Args: { created_at: string; payment_schedule: string }
         Returns: string
+      }
+      calculate_sharing_commission: {
+        Args: { course_amount_cents: number }
+        Returns: {
+          commission_cents: number
+          commission_percentage: number
+          receiver_cents: number
+          solocab_fee_cents: number
+        }[]
       }
       calculate_stripe_fee: { Args: { amount_eur: number }; Returns: number }
       can_add_free_driver: {
