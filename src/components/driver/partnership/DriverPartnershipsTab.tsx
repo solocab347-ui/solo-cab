@@ -1,29 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  UsersRound, 
-  Search, 
-  Wallet,
-  Inbox,
-  Send,
-  FileText,
-  Handshake,
-  CreditCard,
-  Receipt,
-  Bell,
-  ArrowRight
+  UsersRound, Inbox, Send, Handshake, CreditCard, Receipt, Bell, ArrowRight, Heart, Globe
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
 
-// Import sub-components
-import { MyPartnersList } from '../sharing/MyPartnersList';
+// Sub-components
+import { FavoriteDriversList } from '../sharing/FavoriteDriversList';
 import { PartnerCoursePool } from '../sharing/PartnerCoursePool';
-import { DriverPartnerSearch } from '../sharing/DriverPartnerSearch';
 import { ReceivedPartnerCourses } from './ReceivedPartnerCourses';
 import { SentPartnerCourses } from './SentPartnerCourses';
 import { PartnerInvoicesList } from './PartnerInvoicesList';
@@ -31,235 +19,103 @@ import { PartnerPaymentsManager } from './PartnerPaymentsManager';
 
 interface DriverPartnershipsTabProps {
   driverId: string;
-  initialSubTab?: 'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices';
+  initialSubTab?: string;
 }
 
-export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: DriverPartnershipsTabProps) {
-  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices'>(initialSubTab);
+type TabId = 'pool' | 'favorites' | 'received' | 'sent' | 'payments' | 'invoices';
+
+export function DriverPartnershipsTab({ driverId, initialSubTab = 'pool' }: DriverPartnershipsTabProps) {
+  const [activeTab, setActiveTab] = useState<TabId>((initialSubTab as TabId) || 'pool');
   const [receivedCount, setReceivedCount] = useState(0);
-  const [pendingPartnershipRequestsCount, setPendingPartnershipRequestsCount] = useState(0);
   
-  // Get the function to mark notifications as read
   const { markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverId);
 
-  // Sync with initialSubTab when it changes (e.g., from URL params)
   useEffect(() => {
-    if (initialSubTab) {
-      setActiveTab(initialSubTab);
-    }
+    if (initialSubTab) setActiveTab(initialSubTab as TabId);
   }, [initialSubTab]);
 
-  // Mark partnership notifications as read when user navigates to payments tab
   useEffect(() => {
-    if (activeTab === 'payments') {
-      markPartnershipNotificationsAsRead();
-    }
+    if (activeTab === 'payments') markPartnershipNotificationsAsRead();
   }, [activeTab, markPartnershipNotificationsAsRead]);
 
   // Count pending received courses
   useEffect(() => {
     if (!driverId) return;
-
-    const loadReceivedCount = async () => {
-      try {
-        const { count } = await supabase
-          .from('shared_courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('receiver_driver_id', driverId)
-          .eq('status', 'pending')
-          .is('cancelled_at', null);
-        
-        setReceivedCount(count || 0);
-      } catch (error) {
-        console.error('Error loading received count:', error);
-      }
+    const loadCount = async () => {
+      const { count } = await supabase
+        .from('shared_courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_driver_id', driverId)
+        .eq('status', 'pending')
+        .is('cancelled_at', null);
+      setReceivedCount(count || 0);
     };
-
-    loadReceivedCount();
-
-    // Realtime subscription
-    const channel = supabase
-      .channel('received-count-updates')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'shared_courses' },
-        () => loadReceivedCount()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    loadCount();
+    const channel = supabase.channel('received-count').on('postgres_changes', { event: '*', schema: 'public', table: 'shared_courses' }, () => loadCount()).subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [driverId]);
 
-  // Count pending partnership requests (demandes reçues)
-  useEffect(() => {
-    if (!driverId) return;
-
-    const loadPendingPartnershipRequests = async () => {
-      try {
-        // Demandes reçues = status pending ET proposed_by !== moi
-        const { count } = await supabase
-          .from('driver_partnerships')
-          .select('*', { count: 'exact', head: true })
-          .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-          .eq('status', 'pending')
-          .neq('proposed_by', driverId);
-        
-        setPendingPartnershipRequestsCount(count || 0);
-      } catch (error) {
-        console.error('Error loading pending partnership requests count:', error);
-      }
-    };
-
-    loadPendingPartnershipRequests();
-
-    // Realtime subscription
-    const channel = supabase
-      .channel('pending-partnership-requests-count')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'driver_partnerships' },
-        () => loadPendingPartnershipRequests()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [driverId]);
+  const tabs: { id: TabId; label: string; icon: React.ReactNode; color: string; count?: number }[] = [
+    { id: 'pool', label: 'Disponibles', icon: <Globe className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-blue-400 to-blue-600' },
+    { id: 'favorites', label: 'Favoris', icon: <Heart className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-pink-400 to-pink-600' },
+    { id: 'received', label: 'Reçues', icon: <Inbox className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-emerald-400 to-emerald-600', count: receivedCount },
+    { id: 'sent', label: 'Envoyées', icon: <Send className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-orange-400 to-orange-600' },
+    { id: 'payments', label: 'Paiements', icon: <CreditCard className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-amber-400 to-amber-600' },
+    { id: 'invoices', label: 'Factures', icon: <Receipt className="h-6 w-6 text-white" strokeWidth={2.5} />, color: 'from-cyan-400 to-cyan-600' },
+  ];
 
   return (
     <div className="space-y-4">
-      {/* Alerte de guidance pour les demandes de partenariat en attente */}
-      {pendingPartnershipRequestsCount > 0 && activeTab !== 'list' && (
-        <Alert className="border-orange-500/50 bg-orange-500/10 cursor-pointer hover:bg-orange-500/20 transition-colors" onClick={() => setActiveTab('list')}>
-          <Bell className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-sm">
-              <strong className="text-orange-500">{pendingPartnershipRequestsCount} demande{pendingPartnershipRequestsCount > 1 ? 's' : ''} de partenariat</strong>
-              {' '}en attente de votre réponse
-            </span>
-            <Button size="sm" variant="ghost" className="gap-1 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10">
-              Voir dans Partenaires
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
-            <UsersRound className="h-5 w-5 text-primary" />
-            Partenariats Chauffeurs
+            <Handshake className="h-5 w-5 text-primary" />
+            Réseau de Partage
           </CardTitle>
           <CardDescription>
-            Gérez vos partenariats avec d'autres chauffeurs VTC indépendants
+            Partagez vos courses avec le réseau SoloCab ou vos chauffeurs favoris
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full h-auto gap-3 p-0 bg-transparent" style={{ overflow: 'visible' }}>
-              {/* Ligne 1 */}
-              <TabsTrigger value="received" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(16,185,129,0.6)] data-[state=active]:border-emerald-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-950/80 data-[state=active]:via-emerald-900/60 data-[state=active]:to-emerald-950/80 transition-all duration-300 h-auto group">
-                {receivedCount > 0 && (
+          {/* Navigation Grid */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  relative flex flex-col items-center justify-center gap-2 p-4 rounded-2xl
+                  border-2 transition-all duration-300 h-auto group
+                  ${activeTab === tab.id
+                    ? 'border-primary shadow-lg scale-[1.02] bg-primary/5'
+                    : 'border-transparent bg-card/80 hover:bg-muted/50 hover:scale-[1.01]'
+                  }
+                `}
+              >
+                {tab.count !== undefined && tab.count > 0 && (
                   <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg z-50 border-2 border-background">
-                    {receivedCount}
+                    {tab.count}
                   </Badge>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 group-hover:from-emerald-500/20 group-hover:to-emerald-600/10 group-data-[state=active]:from-emerald-500/30 group-data-[state=active]:to-emerald-600/20 transition-all rounded-2xl"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_4px_20px_rgb(16,185,129,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(16,185,129,0.7)] transition-transform">
-                  <Inbox className="h-6 w-6 text-white" strokeWidth={2.5} />
+                <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${tab.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                  {tab.icon}
                 </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-emerald-400">Courses reçues</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="search" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(59,130,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(59,130,246,0.6)] data-[state=active]:border-blue-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-950/80 data-[state=active]:via-blue-900/60 data-[state=active]:to-blue-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 group-hover:from-blue-500/20 group-hover:to-blue-600/10 group-data-[state=active]:from-blue-500/30 group-data-[state=active]:to-blue-600/20 transition-all"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-[0_4px_20px_rgb(59,130,246,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(59,130,246,0.7)] transition-transform">
-                  <Search className="h-6 w-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-blue-400">Trouver partenaire</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="sent" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(249,115,22,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(249,115,22,0.6)] data-[state=active]:border-orange-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-950/80 data-[state=active]:via-orange-900/60 data-[state=active]:to-orange-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-orange-600/5 group-hover:from-orange-500/20 group-hover:to-orange-600/10 group-data-[state=active]:from-orange-500/30 group-data-[state=active]:to-orange-600/20 transition-all"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-[0_4px_20px_rgb(249,115,22,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(249,115,22,0.7)] transition-transform">
-                  <Send className="h-6 w-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-orange-400">Mes envois</span>
-              </TabsTrigger>
-              
-              {/* Ligne 2 */}
-              <TabsTrigger value="list" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(139,92,246,0.6)] data-[state=active]:border-violet-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-950/80 data-[state=active]:via-violet-900/60 data-[state=active]:to-violet-950/80 transition-all duration-300 h-auto group">
-                {pendingPartnershipRequestsCount > 0 && (
-                  <Badge className="absolute -top-3 -right-3 h-6 min-w-6 p-0 flex items-center justify-center text-xs font-bold bg-red-500 text-white animate-pulse shadow-xl border-2 border-background" style={{ zIndex: 100 }}>
-                    {pendingPartnershipRequestsCount}
-                  </Badge>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5 group-hover:from-violet-500/20 group-hover:to-violet-600/10 group-data-[state=active]:from-violet-500/30 group-data-[state=active]:to-violet-600/20 transition-all rounded-2xl"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-[0_4px_20px_rgb(139,92,246,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(139,92,246,0.7)] transition-transform">
-                  <Handshake className="h-6 w-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-violet-400">Partenaires</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="payments" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(245,158,11,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(245,158,11,0.6)] data-[state=active]:border-amber-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-950/80 data-[state=active]:via-amber-900/60 data-[state=active]:to-amber-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-600/5 group-hover:from-amber-500/20 group-hover:to-amber-600/10 group-data-[state=active]:from-amber-500/30 group-data-[state=active]:to-amber-600/20 transition-all"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_4px_20px_rgb(245,158,11,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(245,158,11,0.7)] transition-transform">
-                  <CreditCard className="h-6 w-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-amber-400">Paiements</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="invoices" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(6,182,212,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(6,182,212,0.6)] data-[state=active]:border-cyan-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-950/80 data-[state=active]:via-cyan-900/60 data-[state=active]:to-cyan-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 group-hover:from-cyan-500/20 group-hover:to-cyan-600/10 group-data-[state=active]:from-cyan-500/30 group-data-[state=active]:to-cyan-600/20 transition-all"></div>
-                <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-[0_4px_20px_rgb(6,182,212,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(6,182,212,0.7)] transition-transform">
-                  <Receipt className="h-6 w-6 text-white" strokeWidth={2.5} />
-                </div>
-                <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-cyan-400">Factures</span>
-              </TabsTrigger>
-            </TabsList>
+                <span className={`text-[11px] font-semibold text-center ${activeTab === tab.id ? 'text-primary' : 'text-foreground'}`}>
+                  {tab.label}
+                </span>
+              </button>
+            ))}
+          </div>
 
-            <TabsContent value="list" className="mt-4">
-              <MyPartnersList />
-            </TabsContent>
-
-            <TabsContent value="search" className="mt-4">
-              <DriverPartnerSearch driverId={driverId} />
-            </TabsContent>
-
-            <TabsContent value="received" className="mt-4 space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-primary" />
-                  Courses disponibles des partenaires
-                </h3>
-                <PartnerCoursePool driverId={driverId} />
-              </div>
-              
-              <div className="border-t pt-4">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-green-600" />
-                  Courses acceptées
-                </h3>
-                <ReceivedPartnerCourses driverId={driverId} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="sent" className="mt-4">
-              <SentPartnerCourses driverId={driverId} />
-            </TabsContent>
-
-            <TabsContent value="payments" className="mt-4">
-              <PartnerPaymentsManager driverId={driverId} />
-            </TabsContent>
-
-            <TabsContent value="invoices" className="mt-4">
-              <PartnerInvoicesList driverId={driverId} />
-            </TabsContent>
-          </Tabs>
+          {/* Tab Content */}
+          <div className="mt-4">
+            {activeTab === 'pool' && <PartnerCoursePool driverId={driverId} />}
+            {activeTab === 'favorites' && <FavoriteDriversList />}
+            {activeTab === 'received' && <ReceivedPartnerCourses driverId={driverId} />}
+            {activeTab === 'sent' && <SentPartnerCourses driverId={driverId} />}
+            {activeTab === 'payments' && <PartnerPaymentsManager driverId={driverId} />}
+            {activeTab === 'invoices' && <PartnerInvoicesList driverId={driverId} />}
+          </div>
         </CardContent>
       </Card>
     </div>

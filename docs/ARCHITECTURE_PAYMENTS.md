@@ -24,8 +24,16 @@ SoloCab ne prélève **AUCUNE commission**. Toutes les déductions sont étiquet
 | Frais SoloCab | 0,50€ (fixe) |
 | **Net chauffeur** | Brut - Frais Stripe - Frais SoloCab |
 
-### Frais sur partage de course
-SoloCab ne prélève **AUCUN frais** sur les transferts de partenariat entre chauffeurs.
+### Frais sur partage de course (Réseau de Partage)
+| Élément | Montant |
+|---------|---------|
+| Commission expéditeur (< 30€) | 15% |
+| Commission expéditeur (≥ 30€) | 20% |
+| Frais de transaction SoloCab | 0,10€ (fixe par course) |
+| **Net chauffeur exécutant** | Montant course - Commission - 0,10€ |
+
+Les commissions sont gérées automatiquement via Stripe Connect (split payment).
+Les partenariats bilatéraux ne sont plus requis : tout chauffeur avec Stripe Connect actif peut participer au réseau.
 
 ---
 
