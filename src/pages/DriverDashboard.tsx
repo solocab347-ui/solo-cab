@@ -642,6 +642,10 @@ const DriverDashboard = () => {
                 <CreditCard className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.invoices')}</span>
               </TabsTrigger>
+              <TabsTrigger value="finances" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
+                <Wallet className="w-4 h-4" />
+                <span>Finances</span>
+              </TabsTrigger>
             </div>
             
             {/* Deuxième ligne */}
