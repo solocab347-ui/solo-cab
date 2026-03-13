@@ -155,11 +155,10 @@ const Login = () => {
         }
       }
 
-      // Sauvegarder ou supprimer les identifiants selon le choix de l'utilisateur
+      // Sauvegarder uniquement l'email (JAMAIS le mot de passe - sécurité)
       if (rememberMe) {
         localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
           email: loginEmail,
-          password: loginPassword,
           remember: true
         }));
       } else {

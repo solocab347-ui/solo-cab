@@ -27,15 +27,10 @@ Deno.serve(async (req) => {
 
     const { secret_token } = await req.json();
 
-    // Debug: log more details to diagnose mismatch without exposing full secrets
-    console.log('Token comparison:', {
-      receivedLength: secret_token?.length,
-      expectedLength: ADMIN_INIT_SECRET?.length,
-      receivedFirst6: secret_token?.substring(0, 6),
-      expectedFirst6: ADMIN_INIT_SECRET?.substring(0, 6),
-      receivedLast4: secret_token?.substring(secret_token.length - 4),
-      expectedLast4: ADMIN_INIT_SECRET?.substring(ADMIN_INIT_SECRET.length - 4),
-      match: secret_token === ADMIN_INIT_SECRET
+    // Safe logging: never expose token values
+    console.log('Token validation:', {
+      match: secret_token === ADMIN_INIT_SECRET,
+      receivedLength: secret_token?.length
     });
 
     if (secret_token !== ADMIN_INIT_SECRET) {
