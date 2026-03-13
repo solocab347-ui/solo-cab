@@ -355,9 +355,8 @@ serve(async (req) => {
     }
 
     // ===== CALCUL DES FRAIS DÉTAILLÉS =====
-    const isStripePayment = driverData?.billing_type === "solocab_stripe" && 
-                            driverData?.stripe_connect_account_id && 
-                            driverData?.stripe_connect_charges_enabled;
+    const isStripePayment = !!driverData?.stripe_connect_account_id && 
+                            driverData?.stripe_connect_charges_enabled === true;
     
     const grossAmount = acceptedDevis.amount || 0;
     const depositAmount = course.deposit_amount || 0;

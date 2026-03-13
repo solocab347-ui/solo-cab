@@ -89,7 +89,7 @@ serve(async (req) => {
 
     // Get the amount from devis or course
     const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
-    const totalAmount = acceptedDevis?.amount || course.final_price || course.estimated_price;
+    const totalAmount = acceptedDevis?.amount || course.final_payment_amount || course.guest_estimated_price;
     
     if (!totalAmount || totalAmount <= 0) {
       throw new Error("Montant de la course invalide");

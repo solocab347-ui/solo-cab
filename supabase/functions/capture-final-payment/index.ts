@@ -94,7 +94,7 @@ serve(async (req) => {
 
     // Get the remaining amount to charge
     const finalAmount = course.final_payment_amount || 
-      (course.final_price || course.estimated_price) - (course.deposit_amount || 0);
+      (course.guest_estimated_price || 0) - (course.deposit_amount || 0);
     
     if (!finalAmount || finalAmount <= 0) {
       // If course was fully paid by deposit (unlikely but handle it)

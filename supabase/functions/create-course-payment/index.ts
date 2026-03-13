@@ -179,7 +179,7 @@ serve(async (req) => {
         checkout_url: session.url,
         session_id: session.id,
         capture_method,
-        solocab_fee: course.driver.billing_type === "solocab_stripe" ? 0.50 : 0,
+        solocab_fee: hasStripeConnect ? 0.50 : 0,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
