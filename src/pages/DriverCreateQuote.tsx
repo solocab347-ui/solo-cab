@@ -128,7 +128,7 @@ const DriverCreateQuote = () => {
 
       setQuoteResult(result);
       setCreated(true);
-      toast.success("Devis créé avec succès !");
+      toast.success("Course confirmée et devis créé !");
     } catch (error: any) {
       console.error("❌ Erreur création devis:", error);
       toast.error(error.message || "Erreur lors de la création du devis");
