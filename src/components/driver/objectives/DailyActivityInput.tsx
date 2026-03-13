@@ -98,29 +98,25 @@ export function DailyActivityInput({ driverId, platforms, onEntryUpdated }: Dail
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // Get completed & paid courses today
-      const { data: courses } = await supabase
-        .from('courses')
-        .select('id, final_payment_amount, guest_estimated_price, distance_km, duration_minutes, client_id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .eq('status', 'completed')
-        .gte('scheduled_date', `${dateStr}T00:00:00`)
-        .lte('scheduled_date', `${dateStr}T23:59:59`);
-        
-      // Get new clients registered today
-      const { data: newClients } = await supabase
-        .from('clients')
-        .select('id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .gte('created_at', `${dateStr}T00:00:00`)
-        .lte('created_at', `${dateStr}T23:59:59`);
+      const { data: dayStatsRows, error: dayStatsError } = await supabase.rpc('get_driver_solocab_day_stats', {
+        p_driver_id: driverId,
+        p_day: dateStr,
+      });
+
+      if (dayStatsError) {
+        throw dayStatsError;
+      }
+
+      const dayStats = Array.isArray(dayStatsRows)
+        ? dayStatsRows[0]
+        : (dayStatsRows as any);
 
       const stats = {
-        revenue: courses?.reduce((sum, c: any) => sum + (c.final_payment_amount || c.guest_estimated_price || 0), 0) || 0,
-        coursesCount: courses?.length || 0,
-        newClientsCount: newClients?.length || 0,
-        kmDriven: courses?.reduce((sum, c: any) => sum + (c.distance_km || 0), 0) || 0,
-        hoursWorked: courses?.reduce((sum, c: any) => sum + ((c.duration_minutes || 0) / 60), 0) || 0,
+        revenue: Number(dayStats?.revenue || 0),
+        coursesCount: Number(dayStats?.courses_count || 0),
+        newClientsCount: Number(dayStats?.new_clients_count || 0),
+        kmDriven: Number(dayStats?.km_driven || 0),
+        hoursWorked: Number(dayStats?.hours_worked || 0),
       };
 
       // Update UI
