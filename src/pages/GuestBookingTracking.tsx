@@ -116,9 +116,8 @@ const GuestBookingTracking = () => {
         .single();
 
       const usesStripe = 
-        driverData?.billing_type === 'solocab_stripe' &&
         !!driverData?.stripe_connect_account_id &&
-        !!driverData?.stripe_connect_charges_enabled;
+        driverData?.stripe_connect_charges_enabled === true;
       
       setDriverUsesStripe(usesStripe);
 

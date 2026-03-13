@@ -157,9 +157,9 @@ export function useDepositPayment() {
 
       const driverData = driver as any;
 
-      // Check if deposit is possible
+      // Check if deposit is possible (Stripe Connect required)
       if (!driverData.deposit_enabled || 
-          driverData.billing_type !== 'solocab_stripe' || 
+          !driverData.stripe_connect_account_id || 
           !driverData.stripe_connect_charges_enabled) {
         return { required: false, percentage: 0 };
       }

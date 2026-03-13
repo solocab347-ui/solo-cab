@@ -65,9 +65,8 @@ export function CoursePaymentDialogContent({
           .eq('id', driverId)
           .single();
 
-        const hasStripe = data?.billing_type === 'solocab_stripe' && 
-                          data?.stripe_connect_account_id && 
-                          data?.stripe_connect_charges_enabled;
+        const hasStripe = !!data?.stripe_connect_account_id && 
+                          data?.stripe_connect_charges_enabled === true;
         setDriverHasStripeConnect(hasStripe);
       } catch (err) {
         console.error('Error checking Stripe Connect:', err);
