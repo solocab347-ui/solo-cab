@@ -223,7 +223,11 @@ export function CancellationDialog({
 
           {/* Policy reminder */}
           <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
-            <p className="font-medium mb-1">Politique d'annulation :</p>
+            <p className="font-medium mb-1">
+              <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
+                Voir la politique d'annulation complète
+              </a>
+            </p>
             {hasDeposit ? (
               <ul className="list-disc list-inside space-y-0.5">
                 <li>Avant T-{FREE_CANCELLATION_HOURS_WITH_DEPOSIT}h : remboursement intégral</li>
@@ -233,7 +237,7 @@ export function CancellationDialog({
             ) : (
               <ul className="list-disc list-inside space-y-0.5">
                 <li>Avant T-{FREE_CANCELLATION_HOURS_NO_DEPOSIT}h : aucun frais</li>
-                <li>Après T-{FREE_CANCELLATION_HOURS_NO_DEPOSIT}h : {CANCELLATION_FEE_NO_DEPOSIT}€ de frais</li>
+                <li>Après T-{FREE_CANCELLATION_HOURS_NO_DEPOSIT}h : frais d'annulation tardive</li>
                 <li>Si le chauffeur annule : aucun frais</li>
               </ul>
             )}
