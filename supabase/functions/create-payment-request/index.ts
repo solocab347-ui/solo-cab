@@ -88,12 +88,12 @@ serve(async (req) => {
       throw new Error("Stripe Connect non configuré. Veuillez d'abord configurer vos encaissements.");
     }
 
-    // Get the amount from devis or course
+    // Get the amount: priority = requestedAmount > acceptedDevis > final_payment_amount > guest_estimated_price
     const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
-    const totalAmount = acceptedDevis?.amount || course.final_payment_amount || course.guest_estimated_price;
+    const totalAmount = requestedAmount || acceptedDevis?.amount || course.final_payment_amount || course.guest_estimated_price;
     
     if (!totalAmount || totalAmount <= 0) {
-      throw new Error("Montant de la course invalide");
+      throw new Error("Montant de la course invalide. Veuillez spécifier un montant.");
     }
 
     // Calculate remaining amount (minus any deposit already paid)
