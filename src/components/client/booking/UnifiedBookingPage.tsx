@@ -25,6 +25,7 @@ type BookingMode = 'reservation' | 'immediate';
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { token: mapboxToken, isLoading: isTokenLoading } = useMapboxToken();
   const [mode, setMode] = useState<BookingMode>('reservation');
   
   // Addresses
