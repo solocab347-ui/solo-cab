@@ -185,14 +185,15 @@ const DriverCreateQuote = () => {
         <div className="container mx-auto px-4 py-8 max-w-lg">
           <NavigationHeader showBack showHome homeRoute="/driver-dashboard" />
 
-          <Card className="p-8 bg-card border-primary/20 mt-6 text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <FileText className="w-10 h-10 text-white" />
+           <Card className="p-8 bg-card border-primary/20 mt-6 text-center space-y-6">
+            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto shadow-lg">
+              <FileText className="w-10 h-10 text-primary" />
             </div>
 
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Devis créé !</h1>
-              <p className="text-muted-foreground mt-1">N° {quoteResult.reservation_number}</p>
+              <h1 className="text-2xl font-bold text-foreground">Course confirmée !</h1>
+              <p className="text-muted-foreground mt-1">Devis N° {quoteResult.reservation_number}</p>
+              <p className="text-xs text-muted-foreground mt-1">La course est prête à démarrer</p>
             </div>
 
             <div className="bg-muted/30 rounded-xl p-4 text-left space-y-2">
@@ -205,7 +206,7 @@ const DriverCreateQuote = () => {
             <div className="space-y-3">
               <h3 className="font-semibold text-foreground flex items-center gap-2 justify-center">
                 <Share2 className="w-5 h-5" />
-                Partager le devis
+                Envoyer la confirmation au client
               </h3>
 
               <Button onClick={handleCopyLink} variant="outline" className="w-full gap-2">
