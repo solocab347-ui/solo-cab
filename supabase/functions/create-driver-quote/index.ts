@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
         amount: custom_price,
         discount_amount: 0,
         valid_until: validUntil.toISOString(),
-        status: 'pending',
+        status: 'accepted',
         origin_type: 'driver_quote',
         quote_token: quoteToken,
         guest_client_name: guest_client_name.trim().slice(0, 200),
