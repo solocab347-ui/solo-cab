@@ -39,6 +39,7 @@ import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ClientHomeView } from "@/components/client/ClientHomeView";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
 import { NoDriversBanner } from "@/components/client/NoDriversBanner";
+import ClientQRScannerInApp from "@/components/client/ClientQRScannerInApp";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { cn } from "@/lib/utils";
 
