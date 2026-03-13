@@ -150,6 +150,7 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
         };
       });
 
+      // Save objectives data
       await supabase
         .from('drivers')
         .update({
@@ -162,10 +163,40 @@ export function OnboardingPlanningStep({ driverId, onComplete }: OnboardingPlann
             solocab_weekly_target: solocabWeeklyTarget,
             selected_work_days: selectedDays,
             daily_targets: dailyTargetsMap,
+            work_start_time: workStartTime,
+            work_end_time: workEndTime,
             planning_completed_at: new Date().toISOString()
           }
         })
         .eq('id', driverId);
+
+      // Save availability slots to driver_availability_slots table
+      // Map day names to day_of_week numbers (0=Sunday, 1=Monday...)
+      const dayNameToNumber: Record<string, number> = {
+        'dimanche': 0, 'lundi': 1, 'mardi': 2, 'mercredi': 3,
+        'jeudi': 4, 'vendredi': 5, 'samedi': 6
+      };
+
+      // Delete existing recurring slots
+      await supabase
+        .from('driver_availability_slots')
+        .delete()
+        .eq('driver_id', driverId)
+        .eq('slot_type', 'recurring');
+
+      // Create slots for all 7 days
+      const slotsToInsert = DAYS_OF_WEEK.map(day => ({
+        driver_id: driverId,
+        day_of_week: dayNameToNumber[day.id],
+        start_time: workStartTime,
+        end_time: workEndTime,
+        is_available: selectedDays.includes(day.id),
+        slot_type: 'recurring'
+      }));
+
+      await supabase
+        .from('driver_availability_slots')
+        .insert(slotsToInsert);
 
       toast.success('Ton planning est prêt !');
       onComplete();
