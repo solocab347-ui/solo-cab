@@ -4,6 +4,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
+import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
