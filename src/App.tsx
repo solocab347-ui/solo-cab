@@ -306,6 +306,11 @@ const App = () => (
                   <TermsOfService />
                 </Suspense>
               } />
+              <Route path="/politique-annulation" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CancellationPolicy />
+                </Suspense>
+              } />
               <Route
                 path="/driver/partner-search"
                 element={
