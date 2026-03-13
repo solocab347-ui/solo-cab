@@ -81,9 +81,8 @@ serve(async (req) => {
       hasStripeConnect: !!course.driver.stripe_connect_account_id
     });
 
-    // Validate driver has Stripe Connect
-    if (course.driver.billing_type !== "solocab_stripe" || 
-        !course.driver.stripe_connect_account_id || 
+    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    if (!course.driver.stripe_connect_account_id || 
         !course.driver.stripe_connect_charges_enabled) {
       throw new Error("Stripe Connect non configuré. Veuillez d'abord configurer vos encaissements.");
     }
