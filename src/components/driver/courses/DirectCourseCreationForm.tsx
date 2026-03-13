@@ -24,7 +24,12 @@ import {
   Mail,
   User,
   CheckCircle,
-  Zap
+  Zap,
+  Send,
+  Loader2,
+  Wallet,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { useDirectCourseCreation } from "@/hooks/useDirectCourseCreation";
