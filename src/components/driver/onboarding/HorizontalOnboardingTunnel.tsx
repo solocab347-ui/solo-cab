@@ -246,12 +246,13 @@ export function HorizontalOnboardingTunnel({
     switch (currentStepId) {
       case 'vision': return true;
       case 'goals': return true;
+      case 'planning': return true; // Self-navigated
       case 'settings': return isSettingsValid();
       case 'profile': return isProfileValid();
       case 'billing': return true;
-      case 'documents': return true; // Can pass even without all docs, blocked at launch
+      case 'documents': return true;
       case 'nfc': return true;
-      case 'trial_start': return false; // Self-navigated
+      case 'trial_start': return false;
       default: return false;
     }
   };
