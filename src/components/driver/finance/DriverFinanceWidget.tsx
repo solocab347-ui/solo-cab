@@ -60,11 +60,7 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
       }
 
       // Count current week courses
-      const now = new Date();
-      const dayOfWeek = now.getUTCDay();
-      const monday = new Date(now);
-      monday.setUTCDate(now.getUTCDate() - ((dayOfWeek + 6) % 7));
-      monday.setUTCHours(0, 0, 0, 0);
+      // Weekly course count from unified dashboard RPC (same source as driver stats widgets)
 
       const { data: dashboardStats } = await supabase
         .rpc("get_driver_dashboard_stats", { p_driver_id: driverId });
