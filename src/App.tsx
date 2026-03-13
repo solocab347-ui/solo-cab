@@ -108,6 +108,7 @@ const App = () => (
               
               <Route path="/reservation-rapide/:driverId" element={<Suspense fallback={<LoadingFallback />}><GuestBooking /></Suspense>} />
               <Route path="/reservation-suivi/:token" element={<Suspense fallback={<LoadingFallback />}><GuestBookingTracking /></Suspense>} />
+              <Route path="/devis/:token" element={<Suspense fallback={<LoadingFallback />}><QuoteAcceptance /></Suspense>} />
               <Route path="/register-course-invitation" element={<Suspense fallback={<LoadingFallback />}><RegisterCourseInvitation /></Suspense>} />
               <Route path="/register-client" element={<Suspense fallback={<LoadingFallback />}><RegisterClient /></Suspense>} />
               <Route path="/inscription-client" element={<Suspense fallback={<LoadingFallback />}><RegisterGuestClient /></Suspense>} />
