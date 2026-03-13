@@ -20,6 +20,7 @@ export function DriverMap({
   selectedDriverIds,
   onDriverClick,
   searchRadius,
+  mapboxToken,
 }: DriverMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
