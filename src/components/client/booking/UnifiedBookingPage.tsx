@@ -123,7 +123,7 @@ export function UnifiedBookingPage() {
         const { latitude, longitude } = pos.coords;
         setPickupCoords({ lat: latitude, lng: longitude });
         try {
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&language=fr`);
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`);
           const data = await res.json();
           if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
         } catch {}
