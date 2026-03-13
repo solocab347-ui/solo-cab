@@ -66,7 +66,7 @@ const RegisterCourseInvitation = () => {
   const fetchInvitation = async () => {
     try {
       const { data, error } = await supabase.rpc("get_course_invitation_by_token", {
-        _token: token
+        p_token: token
       });
 
       if (error) throw error;
@@ -76,7 +76,21 @@ const RegisterCourseInvitation = () => {
         return;
       }
 
-      setInvitation(data[0]);
+      const inv = data[0];
+      
+      // Fetch driver info separately
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("company_name, profile_photo_url, user_id, profiles:user_id(full_name)")
+        .eq("id", inv.driver_id)
+        .single();
+
+      setInvitation({
+        ...inv,
+        driver_name: (driverData as any)?.profiles?.full_name || "Chauffeur",
+        driver_company: driverData?.company_name || "",
+        driver_photo: driverData?.profile_photo_url || "",
+      });
     } catch (err: any) {
       console.error("Erreur:", err);
       setError("Erreur lors du chargement de l'invitation");
