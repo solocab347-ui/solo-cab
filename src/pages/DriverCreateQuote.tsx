@@ -128,7 +128,7 @@ const DriverCreateQuote = () => {
 
       setQuoteResult(result);
       setCreated(true);
-      toast.success("Devis créé avec succès !");
+      toast.success("Course confirmée et devis créé !");
     } catch (error: any) {
       console.error("❌ Erreur création devis:", error);
       toast.error(error.message || "Erreur lors de la création du devis");
@@ -153,10 +153,11 @@ const DriverCreateQuote = () => {
     }
   };
 
+  const formatDate = () => new Date(scheduledDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
   const handleShareWhatsApp = () => {
-    const url = getQuoteUrl();
     const price = parseFloat(customPrice).toFixed(2);
-    const message = `Bonjour ${clientName}, voici votre devis SoloCab n°${quoteResult?.reservation_number} pour un montant de ${price}€.\n\nTrajet : ${pickupAddress} → ${destinationAddress}\nDate : ${new Date(scheduledDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\nAcceptez votre devis ici : ${url}`;
+    const message = `Bonjour ${clientName}, voici la confirmation de votre course SoloCab n°${quoteResult?.reservation_number} pour un montant de ${price}€.\n\nTrajet : ${pickupAddress} → ${destinationAddress}\nDate : ${formatDate()}\n\nMerci pour votre confiance !`;
     const phoneNumber = clientPhone?.replace(/\s/g, '').replace(/^0/, '33');
     const whatsappUrl = phoneNumber 
       ? `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
@@ -165,17 +166,15 @@ const DriverCreateQuote = () => {
   };
 
   const handleShareSMS = () => {
-    const url = getQuoteUrl();
     const price = parseFloat(customPrice).toFixed(2);
-    const message = `Votre devis SoloCab ${quoteResult?.reservation_number}: ${price}€ - ${pickupAddress} → ${destinationAddress}. Accepter: ${url}`;
+    const message = `Confirmation course SoloCab ${quoteResult?.reservation_number}: ${price}€ - ${pickupAddress} → ${destinationAddress} le ${formatDate()}`;
     window.open(`sms:${clientPhone || ''}?body=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleShareEmail = () => {
-    const url = getQuoteUrl();
     const price = parseFloat(customPrice).toFixed(2);
-    const subject = `Devis SoloCab ${quoteResult?.reservation_number} - ${price}€`;
-    const body = `Bonjour ${clientName},\n\nVoici votre devis pour votre trajet :\n\nDépart : ${pickupAddress}\nArrivée : ${destinationAddress}\nDate : ${new Date(scheduledDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}\nMontant : ${price}€\n\nPour accepter votre devis, cliquez ici : ${url}\n\nCordialement,\nVotre chauffeur SoloCab`;
+    const subject = `Confirmation course SoloCab ${quoteResult?.reservation_number} - ${price}€`;
+    const body = `Bonjour ${clientName},\n\nVoici la confirmation de votre course :\n\nDépart : ${pickupAddress}\nArrivée : ${destinationAddress}\nDate : ${formatDate()}\nMontant : ${price}€\n\nN° de réservation : ${quoteResult?.reservation_number}\n\nMerci pour votre confiance !\nVotre chauffeur SoloCab`;
     window.open(`mailto:${clientEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
@@ -186,14 +185,15 @@ const DriverCreateQuote = () => {
         <div className="container mx-auto px-4 py-8 max-w-lg">
           <NavigationHeader showBack showHome homeRoute="/driver-dashboard" />
 
-          <Card className="p-8 bg-card border-primary/20 mt-6 text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <FileText className="w-10 h-10 text-white" />
+           <Card className="p-8 bg-card border-primary/20 mt-6 text-center space-y-6">
+            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto shadow-lg">
+              <FileText className="w-10 h-10 text-primary" />
             </div>
 
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Devis créé !</h1>
-              <p className="text-muted-foreground mt-1">N° {quoteResult.reservation_number}</p>
+              <h1 className="text-2xl font-bold text-foreground">Course confirmée !</h1>
+              <p className="text-muted-foreground mt-1">Devis N° {quoteResult.reservation_number}</p>
+              <p className="text-xs text-muted-foreground mt-1">La course est prête à démarrer</p>
             </div>
 
             <div className="bg-muted/30 rounded-xl p-4 text-left space-y-2">
@@ -206,7 +206,7 @@ const DriverCreateQuote = () => {
             <div className="space-y-3">
               <h3 className="font-semibold text-foreground flex items-center gap-2 justify-center">
                 <Share2 className="w-5 h-5" />
-                Partager le devis
+                Envoyer la confirmation au client
               </h3>
 
               <Button onClick={handleCopyLink} variant="outline" className="w-full gap-2">
