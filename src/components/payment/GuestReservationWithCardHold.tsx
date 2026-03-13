@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { CardHoldForm } from "./CardHoldForm";
+import { useState, useEffect } from "react";
+import { CardHoldForm } from "../shared/CardHoldForm";
 import { DepositPaymentForm } from "./DepositPaymentForm";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, CreditCard, XCircle, Shield, Wallet } from "lucide-react";
+import { CheckCircle, Loader2, Shield, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GuestReservationWithCardHoldProps {
@@ -35,7 +35,7 @@ export function GuestReservationWithCardHold({
   } | null>(null);
 
   // Check driver config on mount
-  useState(() => {
+  useEffect(() => {
     const checkDriverConfig = async () => {
       try {
         const { data: driver } = await supabase
@@ -51,12 +51,10 @@ export function GuestReservationWithCardHold({
           .single();
 
         const hasStripeConnect = 
-          driver?.billing_type === "solocab_stripe" &&
-          driver?.stripe_connect_account_id &&
-          driver?.stripe_connect_charges_enabled;
+          !!driver?.stripe_connect_account_id &&
+          driver?.stripe_connect_charges_enabled === true;
 
         if (!hasStripeConnect) {
-          // Pas de Stripe Connect → pas d'empreinte requise
           setStep("no_hold_required");
           setTimeout(onComplete, 1500);
           return;
@@ -68,11 +66,9 @@ export function GuestReservationWithCardHold({
           depositPercentage: driver?.deposit_percentage || 20,
         });
 
-        // Si le chauffeur demande un acompte, afficher le formulaire d'acompte
         if (driver?.deposit_enabled) {
           setStep("deposit");
         } else {
-          // Sinon, empreinte bancaire seule
           setStep("card_hold");
         }
       } catch (error) {
@@ -83,7 +79,7 @@ export function GuestReservationWithCardHold({
     };
 
     checkDriverConfig();
-  });
+  }, [driverId, onComplete]);
 
   const handleDepositSuccess = () => {
     setStep("complete");
@@ -96,7 +92,6 @@ export function GuestReservationWithCardHold({
   };
 
   const handleSkipDeposit = () => {
-    // Si le client ne veut pas payer d'acompte, passer à l'empreinte bancaire seule
     setStep("card_hold");
   };
 
@@ -123,9 +118,6 @@ export function GuestReservationWithCardHold({
             <p className="text-sm text-muted-foreground">
               Votre demande a été transmise au chauffeur.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Redirection vers le suivi...
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -141,9 +133,6 @@ export function GuestReservationWithCardHold({
             <h3 className="font-semibold text-foreground">Réservation confirmée !</h3>
             <p className="text-sm text-muted-foreground">
               Votre réservation est sécurisée.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Redirection vers le suivi...
             </p>
           </div>
         </CardContent>
@@ -189,7 +178,7 @@ export function GuestReservationWithCardHold({
     );
   }
 
-  // Card hold step
+  // Card hold step - uses the unified shared/CardHoldForm (Checkout redirect)
   return (
     <div className="space-y-4">
       <Card className="bg-muted/50">
@@ -197,11 +186,12 @@ export function GuestReservationWithCardHold({
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Empreinte bancaire sécurisée</p>
+              <p className="font-medium">Avance de réservation sécurisée</p>
               <p className="text-sm text-muted-foreground">
-                Une vérification de carte à 0€ est requise pour garantir votre réservation. 
-                Vous ne serez débité qu'en fin de course. En cas d'annulation tardive (moins de 1h avant), 
-                des frais de 10€ s'appliquent. Si le chauffeur annule : aucun frais.
+                Une avance de 10€ est requise pour garantir votre réservation. 
+                Ce montant sera déduit du prix final de votre course.
+                En cas d'annulation tardive (moins de 1h avant), les 10€ sont conservés par le chauffeur.
+                Si le chauffeur annule : remboursement intégral.
               </p>
             </div>
           </div>
@@ -213,7 +203,6 @@ export function GuestReservationWithCardHold({
         courseId={courseId}
         clientEmail={clientEmail}
         clientName={clientName}
-        estimatedAmount={estimatedAmount}
         onSuccess={handleCardHoldSuccess}
       />
     </div>
