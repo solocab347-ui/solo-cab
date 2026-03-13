@@ -45,11 +45,11 @@ export interface OnboardingTunnelProps {
   initialStep?: number;
 }
 
-// Ordre: Vision → Objectifs → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
-// Note: Planning est maintenant intégré dans Objectifs pour simplifier le parcours
+// Ordre: Vision → Objectifs → Planning → Tarifs → Profil → Documents → NFC → Encaissements → Lancement
 const ALL_STEPS = [
   { id: 'vision', title: 'Vision', icon: Compass },
   { id: 'goals', title: 'Objectifs', icon: TrendingUp },
+  { id: 'planning', title: 'Horaires', icon: Clock },
   { id: 'settings', title: 'Tarifs', icon: Settings },
   { id: 'profile', title: 'Profil', icon: User },
   { id: 'documents', title: 'Docs', icon: FileText },
