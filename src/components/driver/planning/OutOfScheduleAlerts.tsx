@@ -162,6 +162,12 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
           const scheduledDate = parseISO(course.scheduled_date);
           const clientName = (course.clients as any)?.profiles?.full_name || 'Client';
           const amount = course.devis?.[0]?.amount;
+          
+          // Detect buffer zone vs fully outside
+          const courseMin = parseInt(alert.course_time.split(':')[0]) * 60 + parseInt(alert.course_time.split(':')[1]);
+          const startMin = parseInt(alert.driver_start_time.split(':')[0]) * 60 + parseInt(alert.driver_start_time.split(':')[1]);
+          const endMin = parseInt(alert.driver_end_time.split(':')[0]) * 60 + parseInt(alert.driver_end_time.split(':')[1]);
+          const isBufferZone = courseMin >= startMin && courseMin <= endMin;
 
           return (
             <div key={alert.id} className="rounded-lg border border-amber-500/20 bg-background p-3 space-y-2">
