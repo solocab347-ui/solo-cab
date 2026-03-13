@@ -3688,6 +3688,7 @@ export type Database = {
           last_dispatched_at: string | null
           net_amount_to_driver: number | null
           notes: string | null
+          origin_type: string
           passengers_count: number
           payment_captured_at: string | null
           payment_confirmed_at: string | null
@@ -3770,6 +3771,7 @@ export type Database = {
           last_dispatched_at?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
+          origin_type?: string
           passengers_count?: number
           payment_captured_at?: string | null
           payment_confirmed_at?: string | null
@@ -3852,6 +3854,7 @@ export type Database = {
           last_dispatched_at?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
+          origin_type?: string
           passengers_count?: number
           payment_captured_at?: string | null
           payment_confirmed_at?: string | null
@@ -4192,13 +4195,19 @@ export type Database = {
           estimated_net_to_driver: number | null
           estimated_stripe_fee: number | null
           evening_surcharge_amount: number | null
+          guest_client_email: string | null
+          guest_client_name: string | null
+          guest_client_phone: string | null
           id: string
+          is_custom_price: boolean | null
           is_stripe_payment: boolean | null
           notes: string | null
+          origin_type: string
           peak_hours_surcharge_amount: number | null
           pricing_source: string | null
           promo_code: string | null
           quote_number: string | null
+          quote_token: string | null
           solocab_fee_amount: number | null
           status: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id: string | null
@@ -4230,13 +4239,19 @@ export type Database = {
           estimated_net_to_driver?: number | null
           estimated_stripe_fee?: number | null
           evening_surcharge_amount?: number | null
+          guest_client_email?: string | null
+          guest_client_name?: string | null
+          guest_client_phone?: string | null
           id?: string
+          is_custom_price?: boolean | null
           is_stripe_payment?: boolean | null
           notes?: string | null
+          origin_type?: string
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
+          quote_token?: string | null
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id?: string | null
@@ -4268,13 +4283,19 @@ export type Database = {
           estimated_net_to_driver?: number | null
           estimated_stripe_fee?: number | null
           evening_surcharge_amount?: number | null
+          guest_client_email?: string | null
+          guest_client_name?: string | null
+          guest_client_phone?: string | null
           id?: string
+          is_custom_price?: boolean | null
           is_stripe_payment?: boolean | null
           notes?: string | null
+          origin_type?: string
           peak_hours_surcharge_amount?: number | null
           pricing_source?: string | null
           promo_code?: string | null
           quote_number?: string | null
+          quote_token?: string | null
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["devis_status"]
           stripe_checkout_session_id?: string | null
