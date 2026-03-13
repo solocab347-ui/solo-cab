@@ -596,7 +596,7 @@ const DriverCreateCourse = () => {
               <CoursePaymentMethodSelector
                 value={paymentMethodPreference}
                 onChange={setPaymentMethodPreference}
-                driverId={undefined}
+                driverId={driverProfile?.id}
               />
             </div>
 
