@@ -4,6 +4,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
+import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
@@ -290,6 +291,16 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           </Card>
         </div>
       </div>
+
+      {/* Finance Widget */}
+      {driverProfile?.driver?.id && (
+        <div className="animate-fade-in mb-6">
+          <DriverFinanceWidget
+            driverId={driverProfile.driver.id}
+            onViewDetails={() => onTabChange("finances")}
+          />
+        </div>
+      )}
 
       {/* Aujourd'hui */}
       <div className="animate-fade-in">

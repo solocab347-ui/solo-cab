@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
   Car,
   ShieldOff,
   Search,
+  QrCode,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -38,6 +39,7 @@ import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ClientHomeView } from "@/components/client/ClientHomeView";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
 import { NoDriversBanner } from "@/components/client/NoDriversBanner";
+import ClientQRScannerInApp from "@/components/client/ClientQRScannerInApp";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { cn } from "@/lib/utils";
 
@@ -320,19 +322,30 @@ const ClientDashboard = () => {
         
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-bold">
                 {clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs"}
               </h2>
               {!clientProfile?.client?.is_exclusive && (
-                <Button
-                  onClick={() => navigate("/chauffeurs")}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Search className="w-4 h-4" />
-                  Ajouter un chauffeur
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleTabChange("scan-qr")}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Scanner QR
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/chauffeurs")}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    Rechercher
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -380,6 +393,16 @@ const ClientDashboard = () => {
         );
       case "compte":
         return <ClientProfile />;
+      case "scan-qr":
+        return (
+          <ClientQRScannerInApp 
+            onDriverAdded={() => {
+              // Refresh and go back to chauffeurs
+              handleTabChange("chauffeurs");
+              window.location.reload();
+            }} 
+          />
+        );
       default:
         return null;
     }

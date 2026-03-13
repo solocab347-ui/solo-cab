@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -52,6 +52,7 @@ import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManag
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
+import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
 import { DriverSettingsSimplified } from "@/components/driver/settings/DriverSettingsSimplified";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -641,6 +642,10 @@ const DriverDashboard = () => {
                 <CreditCard className="w-4 h-4" />
                 <span>{t('driverDashboard.menu.invoices')}</span>
               </TabsTrigger>
+              <TabsTrigger value="finances" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
+                <Wallet className="w-4 h-4" />
+                <span>Finances</span>
+              </TabsTrigger>
             </div>
             
             {/* Deuxième ligne */}
@@ -785,6 +790,13 @@ const DriverDashboard = () => {
           <TabsContent value="calculator">
             {driverProfile?.driver?.id && (
               <PriceCalculator driverProfile={driverProfile} />
+            )}
+          </TabsContent>
+
+          {/* Finances Tab */}
+          <TabsContent value="finances">
+            {driverProfile?.driver?.id && (
+              <DriverFinancePage driverId={driverProfile.driver.id} />
             )}
           </TabsContent>
 

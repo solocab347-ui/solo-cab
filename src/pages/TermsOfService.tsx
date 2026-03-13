@@ -229,9 +229,33 @@ const TermsOfService = () => {
               </p>
             </section>
 
-            {/* Article 11 */}
+            {/* Article 11 - Règlement financier */}
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold">Article 11 - Modifications des CGU</h2>
+              <h2 className="text-xl font-semibold">Article 11 - Règlement financier et frais</h2>
+              <p>
+                SoloCab applique des frais de gestion transparents pour assurer le fonctionnement 
+                de la plateforme :
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li><strong>Frais de gestion standard</strong> : 0,50€ par course réglée en ligne via la plateforme</li>
+                <li><strong>Frais de transaction partage</strong> : 0,10€ par course partagée entre chauffeurs</li>
+                <li><strong>Frais Stripe</strong> : environ 1,5% + 0,25€ (frais du prestataire de paiement, non fixés par SoloCab)</li>
+              </ul>
+              <p>
+                <strong>Règlement hebdomadaire</strong> : afin de minimiser les frais de transaction pour les chauffeurs,
+                SoloCab agrège l'ensemble des commissions et frais sur une semaine civile (lundi à dimanche). 
+                Un versement net unique est effectué chaque lundi sur le compte Stripe Connect du chauffeur. 
+                Ce système réduit considérablement les frais bancaires par rapport à un règlement par transaction.
+              </p>
+              <p>
+                SoloCab ne prélève <strong>aucune commission</strong> sur le montant des courses. 
+                Les montants mentionnés ci-dessus sont exclusivement des frais de gestion et de transaction.
+              </p>
+            </section>
+
+            {/* Article 12 - Modifications des CGU */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold">Article 12 - Modifications des CGU</h2>
               <p>
                 SoloCab se réserve le droit de modifier les présentes CGU à tout moment. 
                 Les utilisateurs seront informés des modifications importantes. La poursuite 
@@ -241,7 +265,7 @@ const TermsOfService = () => {
 
             {/* Contact */}
             <section className="space-y-4">
-              <h2 className="text-xl font-semibold">Article 12 - Contact</h2>
+              <h2 className="text-xl font-semibold">Article 13 - Contact</h2>
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                 <p><strong>SOLOCAB</strong></p>
                 <p>Société par actions simplifiée à associé unique (SASU)</p>
