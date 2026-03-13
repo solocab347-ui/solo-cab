@@ -125,7 +125,7 @@ export function CardHoldForm({
         if (course?.card_hold_status === 'confirmed') {
           clearInterval(interval);
           setStatus('confirmed');
-          toast.success('Avance de 10€ confirmée — course réservée !');
+          toast.success('Empreinte bancaire confirmée — course réservée !');
           onSuccess?.();
         }
       } catch (e) {
