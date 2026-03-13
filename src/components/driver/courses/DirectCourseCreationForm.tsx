@@ -50,6 +50,12 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
   const [driverProfile, setDriverProfile] = useState<any>(null);
   const [maxPassengers, setMaxPassengers] = useState(4);
 
+  // Post-creation state
+  const [createdCourse, setCreatedCourse] = useState<any>(null);
+  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  const [paymentLinkGenerated, setPaymentLinkGenerated] = useState(false);
+  const [driverHasStripeConnect, setDriverHasStripeConnect] = useState(false);
+
   // Client info (non inscrit)
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
