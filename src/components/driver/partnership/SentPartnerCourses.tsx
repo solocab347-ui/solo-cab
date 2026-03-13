@@ -7,22 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Car, 
-  Calendar, 
-  Euro, 
-  FileText,
-  AlertCircle,
-  Loader2,
-  CheckCircle2,
-  CircleDot,
-  ArrowRight,
-  TrendingUp,
-  Send,
-  Receipt,
-  Plus
+  Car, Calendar, Euro, FileText, AlertCircle, Loader2, 
+  ArrowRight, TrendingUp, Send, Receipt, Plus, Globe, Heart, XCircle, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
 
 interface Props {
@@ -32,15 +22,15 @@ interface Props {
 interface SentCourse {
   id: string;
   course_id: string;
-  partnership_id: string;
-  receiver_driver_id: string;
+  receiver_driver_id: string | null;
   course_amount: number;
   commission_percentage: number;
   commission_amount: number;
+  solocab_fee: number;
   status: string;
+  sharing_scope: string;
   created_at: string;
   completed_at: string | null;
-  // Course details
   pickup_address: string;
   destination_address: string;
   scheduled_date: string;
@@ -48,15 +38,12 @@ interface SentCourse {
   distance_km: number | null;
   course_status: string;
   course_number: string | null;
-  // Receiver info
-  receiver_name: string;
+  receiver_name: string | null;
   receiver_photo: string | null;
   receiver_company: string | null;
   receiver_sharing_number: number | null;
-  // Invoice info
-  has_invoice: boolean;
-  invoice_number: string | null;
-  invoice_amount: number | null;
+  source: 'direct' | 'pool';
+  pool_id?: string;
 }
 
 export function SentPartnerCourses({ driverId }: Props) {
@@ -64,102 +51,97 @@ export function SentPartnerCourses({ driverId }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [showPropose, setShowPropose] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (driverId) {
-      loadSentCourses();
-    }
+    if (driverId) loadSentCourses();
   }, [driverId]);
 
   const loadSentCourses = async () => {
     if (!driverId) return;
-    
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Load direct shared courses
+      const { data: sharedData } = await supabase
         .from('shared_courses')
         .select(`
-          id,
-          course_id,
-          partnership_id,
-          receiver_driver_id,
-          course_amount,
-          commission_percentage,
-          commission_amount,
-          status,
-          created_at,
-          completed_at,
-          courses!inner(
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            passengers_count,
-            distance_km,
-            status,
-            course_number
-          )
+          id, course_id, receiver_driver_id, course_amount,
+          commission_percentage, commission_amount, solocab_fee_cents,
+          status, sharing_scope, created_at, completed_at,
+          courses!inner(pickup_address, destination_address, scheduled_date, passengers_count, distance_km, status, course_number)
         `)
         .eq('sender_driver_id', driverId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Load pool courses
+      const { data: poolData } = await supabase
+        .from('partner_course_pool')
+        .select(`
+          id, course_id, sender_driver_id, course_amount,
+          commission_percentage, estimated_commission, solocab_fee_cents,
+          status, sharing_scope, created_at,
+          courses!inner(pickup_address, destination_address, scheduled_date, passengers_count, distance_km, status, course_number)
+        `)
+        .eq('sender_driver_id', driverId)
+        .order('created_at', { ascending: false });
 
-      const enrichedCourses: SentCourse[] = [];
-      
-      for (const item of data || []) {
-        // Get receiver driver info
-        const { data: driverData } = await supabase
-          .from('drivers')
-          .select('user_id, company_name, sharing_number')
-          .eq('id', item.receiver_driver_id)
-          .single();
+      const allCourses: SentCourse[] = [];
 
-        // Check for invoice
-        const { data: invoiceData } = await supabase
-          .from('factures')
-          .select('invoice_number, amount')
-          .eq('course_id', item.course_id)
-          .eq('driver_id', driverId)
-          .single();
+      // Enrich direct shares
+      for (const item of sharedData || []) {
+        let receiverInfo: any = null;
+        if (item.receiver_driver_id) {
+          const { data: d } = await supabase.from('drivers').select('user_id, company_name, sharing_number').eq('id', item.receiver_driver_id).single();
+          if (d) {
+            const { data: p } = await supabase.from('profiles').select('full_name, profile_photo_url').eq('id', d.user_id).single();
+            receiverInfo = { name: p?.full_name?.split(' ')[0] || 'Chauffeur', photo: p?.profile_photo_url, company: d.company_name, sharing_number: d.sharing_number };
+          }
+        }
+        const course = item.courses as any;
+        const solocabFee = ((item as any).solocab_fee_cents || 10) / 100;
+        allCourses.push({
+          id: item.id, course_id: item.course_id, receiver_driver_id: item.receiver_driver_id,
+          course_amount: item.course_amount, commission_percentage: item.commission_percentage,
+          commission_amount: item.commission_amount, solocab_fee: solocabFee,
+          status: item.status, sharing_scope: (item as any).sharing_scope || 'specific',
+          created_at: item.created_at, completed_at: item.completed_at,
+          pickup_address: course.pickup_address, destination_address: course.destination_address,
+          scheduled_date: course.scheduled_date, passengers_count: course.passengers_count,
+          distance_km: course.distance_km, course_status: course.status, course_number: course.course_number,
+          receiver_name: receiverInfo?.name || null, receiver_photo: receiverInfo?.photo || null,
+          receiver_company: receiverInfo?.company || null, receiver_sharing_number: receiverInfo?.sharing_number || null,
+          source: 'direct',
+        });
+      }
 
-        if (driverData) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, profile_photo_url')
-            .eq('id', driverData.user_id)
-            .single();
+      // Enrich pool courses
+      for (const item of poolData || []) {
+        const course = item.courses as any;
+        const solocabFee = ((item as any).solocab_fee_cents || 10) / 100;
+        allCourses.push({
+          id: item.id, course_id: item.course_id, receiver_driver_id: null,
+          course_amount: item.course_amount, commission_percentage: item.commission_percentage,
+          commission_amount: item.estimated_commission, solocab_fee: solocabFee,
+          status: item.status, sharing_scope: (item as any).sharing_scope || 'network',
+          created_at: item.created_at, completed_at: null,
+          pickup_address: course.pickup_address, destination_address: course.destination_address,
+          scheduled_date: course.scheduled_date, passengers_count: course.passengers_count,
+          distance_km: course.distance_km, course_status: course.status, course_number: course.course_number,
+          receiver_name: null, receiver_photo: null, receiver_company: null, receiver_sharing_number: null,
+          source: 'pool', pool_id: item.id,
+        });
+      }
 
-          const course = item.courses as any;
-          enrichedCourses.push({
-            id: item.id,
-            course_id: item.course_id,
-            partnership_id: item.partnership_id,
-            receiver_driver_id: item.receiver_driver_id,
-            course_amount: item.course_amount,
-            commission_percentage: item.commission_percentage,
-            commission_amount: item.commission_amount,
-            status: item.status,
-            created_at: item.created_at,
-            completed_at: item.completed_at,
-            pickup_address: course.pickup_address,
-            destination_address: course.destination_address,
-            scheduled_date: course.scheduled_date,
-            passengers_count: course.passengers_count,
-            distance_km: course.distance_km,
-            course_status: course.status,
-            course_number: course.course_number,
-            receiver_name: (profile?.full_name?.split(' ')[0]) || 'Partenaire',
-            receiver_photo: profile?.profile_photo_url,
-            receiver_company: driverData.company_name,
-            receiver_sharing_number: driverData.sharing_number,
-            has_invoice: !!invoiceData,
-            invoice_number: invoiceData?.invoice_number,
-            invoice_amount: invoiceData?.amount,
-          });
+      // Deduplicate by course_id - keep direct shares over pool entries
+      const seen = new Map<string, SentCourse>();
+      for (const c of allCourses) {
+        const existing = seen.get(c.course_id);
+        if (!existing || (c.source === 'direct' && existing.source === 'pool')) {
+          seen.set(c.course_id, c);
         }
       }
 
-      setCourses(enrichedCourses);
+      setCourses(Array.from(seen.values()).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     } catch (error) {
       console.error('Error loading sent courses:', error);
     } finally {
@@ -167,293 +149,209 @@ export function SentPartnerCourses({ driverId }: Props) {
     }
   };
 
-  const shortenAddress = (address: string) => {
-    if (address.length > 35) {
-      return address.substring(0, 32) + '...';
-    }
-    return address;
+  const cancelPoolCourse = async (courseId: string, poolId?: string) => {
+    setCancellingId(courseId);
+    try {
+      if (poolId) {
+        await supabase.from('partner_course_pool').update({ status: 'cancelled' }).eq('id', poolId);
+      }
+      await supabase.from('shared_courses').update({ status: 'cancelled', cancelled_at: new Date().toISOString() }).eq('course_id', courseId).eq('sender_driver_id', driverId!).eq('status', 'pending');
+      toast.success('Partage annulé');
+      loadSentCourses();
+    } catch { toast.error('Erreur'); } finally { setCancellingId(null); }
   };
 
-  const formatSharingNumber = (num: number | null) => {
-    if (!num) return null;
-    return `SOLO-${String(num).padStart(6, '0')}`;
-  };
+  const shortenAddress = (a: string) => a.length > 35 ? a.substring(0, 32) + '...' : a;
 
-  const getStatusBadge = (sharedStatus: string, courseStatus: string) => {
-    // Priority: shared course status first
-    switch (sharedStatus) {
-      case 'pending':
-        return <Badge className="bg-amber-500/20 text-amber-600 border-0">En attente d'acceptation</Badge>;
-      case 'declined':
-        return <Badge className="bg-red-500/20 text-red-600 border-0">Refusée</Badge>;
-    }
-    // Then course status
-    switch (courseStatus) {
-      case 'completed':
-        return <Badge className="bg-green-500/20 text-green-600 border-0">Terminée</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-blue-500/20 text-blue-600 border-0">En cours</Badge>;
-      case 'confirmed':
-        return <Badge className="bg-primary/20 text-primary border-0">Acceptée</Badge>;
-      default:
-        return <Badge variant="outline">{courseStatus}</Badge>;
+  const getScopeIcon = (scope: string) => {
+    switch (scope) {
+      case 'network': return <Globe className="h-3 w-3 text-blue-500" />;
+      case 'favorites': return <Heart className="h-3 w-3 text-pink-500" />;
+      default: return <Send className="h-3 w-3 text-orange-500" />;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Filter out cancelled/declined to avoid duplicates
-  const activeCourses = courses.filter(c => c.status !== 'cancelled' && c.status !== 'declined');
-  const pendingCourses = activeCourses.filter(c => c.status === 'pending' || (c.status === 'accepted' && c.course_status !== 'completed'));
-  // Use unique course_id to prevent duplicates
-  const seenCourseIds = new Set<string>();
-  const completedCourses = activeCourses.filter(c => {
-    if (c.status === 'completed' || c.course_status === 'completed') {
-      if (seenCourseIds.has(c.course_id)) return false;
-      seenCourseIds.add(c.course_id);
-      return true;
+  const getScopeLabel = (scope: string) => {
+    switch (scope) {
+      case 'network': return 'Réseau ouvert';
+      case 'favorites': return 'Favoris';
+      default: return 'Direct';
     }
-    return false;
-  });
-  const declinedCourses = courses.filter(c => c.status === 'declined');
+  };
 
-  // Calculate totals
-  const totalCommissionToReceive = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
-  const pendingCommission = pendingCourses.reduce((acc, c) => acc + c.commission_amount, 0);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending': case 'available': return <Badge className="bg-amber-500/20 text-amber-600 border-0">En attente</Badge>;
+      case 'accepted': case 'claimed': return <Badge className="bg-blue-500/20 text-blue-600 border-0">Acceptée</Badge>;
+      case 'completed': return <Badge className="bg-green-500/20 text-green-600 border-0">Terminée</Badge>;
+      case 'declined': return <Badge className="bg-red-500/20 text-red-600 border-0">Refusée</Badge>;
+      case 'cancelled': return <Badge className="bg-muted text-muted-foreground border-0">Annulée</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   if (showPropose) {
     return (
       <div className="space-y-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowPropose(false)}
-          className="mb-4"
-        >
-          ← Retour aux courses envoyées
-        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowPropose(false)}>← Retour</Button>
         <PushCourseToPartners />
       </div>
     );
   }
 
+  const activeCourses = courses.filter(c => !['cancelled', 'declined', 'completed'].includes(c.status));
+  const completedCourses = courses.filter(c => c.status === 'completed');
+  const totalCommission = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
+
   return (
     <div className="space-y-4">
-      {/* Action button */}
-      <Button
-        onClick={() => setShowPropose(true)}
-        className="w-full"
-        size="lg"
-      >
-        <Plus className="h-5 w-5 mr-2" />
-        Proposer une course à un partenaire
+      <Button onClick={() => setShowPropose(true)} className="w-full" size="lg">
+        <Plus className="h-5 w-5 mr-2" />Partager une course
       </Button>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-amber-500/10 border-amber-500/30">
           <CardContent className="p-3 text-center">
             <Send className="h-5 w-5 text-amber-600 mx-auto mb-1" />
             <p className="text-xs text-amber-600 font-medium">En cours</p>
-            <p className="text-lg font-bold">{pendingCourses.length}</p>
-            <p className="text-xs text-muted-foreground">{pendingCommission.toFixed(2)} € comm.</p>
+            <p className="text-lg font-bold">{activeCourses.length}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-3 text-center">
             <TrendingUp className="h-5 w-5 text-green-600 mx-auto mb-1" />
-            <p className="text-xs text-green-600 font-medium">À recevoir</p>
-            <p className="text-lg font-bold text-green-600">{totalCommissionToReceive.toFixed(2)} €</p>
-            <p className="text-xs text-muted-foreground">{completedCourses.length} courses</p>
+            <p className="text-xs text-green-600 font-medium">Commission gagnée</p>
+            <p className="text-lg font-bold text-green-600">{totalCommission.toFixed(2)} €</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Info box */}
       <Alert className="bg-primary/10 border-primary/30">
         <Receipt className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Vos courses déléguées</strong> : Vous conservez la relation client et la facture. 
-          Votre partenaire vous reverse la commission négociée après chaque course.
+          <strong>Vos courses partagées</strong> : Vous conservez la relation client. Votre commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est versée automatiquement via Stripe Connect.
         </AlertDescription>
       </Alert>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'completed')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending" className="text-xs">
-            En cours ({pendingCourses.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs">
-            Terminées ({completedCourses.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending" className="text-xs">En cours ({activeCourses.length})</TabsTrigger>
+          <TabsTrigger value="completed" className="text-xs">Terminées ({completedCourses.length})</TabsTrigger>
         </TabsList>
 
-        {/* Pending courses */}
         <TabsContent value="pending" className="mt-4 space-y-3">
-          {pendingCourses.length === 0 ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                Aucune course envoyée en cours.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            pendingCourses.map((course) => (
-              <SentCourseCard 
-                key={course.id} 
-                course={course} 
-                shortenAddress={shortenAddress}
-                formatSharingNumber={formatSharingNumber}
-                getStatusBadge={getStatusBadge}
-              />
-            ))
-          )}
+          {activeCourses.length === 0 ? (
+            <Alert><AlertCircle className="h-4 w-4" /><AlertDescription className="text-sm">Aucune course partagée en cours.</AlertDescription></Alert>
+          ) : activeCourses.map(course => (
+            <Card key={course.id} className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {course.receiver_name ? (
+                      <>
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={course.receiver_photo || undefined} />
+                          <AvatarFallback className="text-xs">{course.receiver_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">→ {course.receiver_name}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            {getScopeIcon(course.sharing_scope)}
+                            <span>{getScopeLabel(course.sharing_scope)}</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {getScopeIcon(course.sharing_scope)}
+                        <div>
+                          <p className="text-sm font-medium">{getScopeLabel(course.sharing_scope)}</p>
+                          <p className="text-xs text-muted-foreground">En attente d'un chauffeur</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {getStatusBadge(course.status)}
+                </div>
+
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                    <span className="truncate">{shortenAddress(course.pickup_address)}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  </div>
+                </div>
+
+                <div className="p-3 border-t bg-muted/20">
+                  <div className="flex items-center justify-between text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Montant</p>
+                      <p className="font-semibold">{course.course_amount.toFixed(2)} €</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Votre commission</p>
+                      <p className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Frais</p>
+                      <p className="text-xs text-muted-foreground">0.10€</p>
+                    </div>
+                  </div>
+                  {(course.status === 'pending' || course.status === 'available') && (
+                    <Button 
+                      variant="outline" size="sm" className="w-full mt-2 text-destructive" 
+                      onClick={() => cancelPoolCourse(course.course_id, course.pool_id)}
+                      disabled={cancellingId === course.course_id}
+                    >
+                      {cancellingId === course.course_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="h-3 w-3 mr-1" />Annuler le partage</>}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </TabsContent>
 
-        {/* Completed courses */}
         <TabsContent value="completed" className="mt-4 space-y-3">
           {completedCourses.length === 0 ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                Aucune course déléguée terminée.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            completedCourses.map((course) => (
-              <SentCourseCard 
-                key={course.id} 
-                course={course} 
-                shortenAddress={shortenAddress}
-                formatSharingNumber={formatSharingNumber}
-                getStatusBadge={getStatusBadge}
-              />
-            ))
-          )}
+            <Alert><AlertCircle className="h-4 w-4" /><AlertDescription className="text-sm">Aucune course terminée.</AlertDescription></Alert>
+          ) : completedCourses.map(course => (
+            <Card key={course.id} className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={course.receiver_photo || undefined} />
+                      <AvatarFallback className="text-xs">{(course.receiver_name || '?').charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium">{course.receiver_name || 'Chauffeur'}</p>
+                  </div>
+                  {getStatusBadge(course.status)}
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    {format(new Date(course.scheduled_date), "d MMM yyyy", { locale: fr })}
+                  </div>
+                </div>
+                <div className="p-3 border-t bg-green-500/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Commission reçue</span>
+                    <span className="font-bold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-interface SentCourseCardProps {
-  course: SentCourse;
-  shortenAddress: (address: string) => string;
-  formatSharingNumber: (num: number | null) => string | null;
-  getStatusBadge: (sharedStatus: string, courseStatus: string) => JSX.Element;
-}
-
-function SentCourseCard({ course, shortenAddress, formatSharingNumber, getStatusBadge }: SentCourseCardProps) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        {/* Header - Receiver info */}
-        <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={course.receiver_photo || undefined} />
-              <AvatarFallback className="text-sm">{course.receiver_name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium flex items-center gap-1">
-                <Send className="h-3 w-3 text-muted-foreground" />
-                Envoyé à {course.receiver_name}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {course.receiver_sharing_number && (
-                  <span className="font-mono text-primary">{formatSharingNumber(course.receiver_sharing_number)}</span>
-                )}
-                {course.receiver_company && (
-                  <span>• {course.receiver_company}</span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="text-right">
-            {getStatusBadge(course.status, course.course_status)}
-            {course.course_number && (
-              <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Course details */}
-        <div className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Calendar className="h-4 w-4 text-primary" />
-            {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
-          </div>
-
-          <div className="space-y-1.5 text-sm">
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
-              <span>{shortenAddress(course.pickup_address)}</span>
-            </div>
-            <div className="flex items-center gap-2 ml-0.5">
-              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-              <span>{shortenAddress(course.destination_address)}</span>
-            </div>
-          </div>
-
-          {course.distance_km && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Car className="h-3 w-3" />
-              {course.distance_km.toFixed(0)} km
-            </div>
-          )}
-        </div>
-
-        {/* Footer - Financial info */}
-        <div className="p-3 border-t bg-muted/20">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Facture client</p>
-              <p className="font-semibold">{course.invoice_amount?.toFixed(2) || course.course_amount.toFixed(2)} €</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">Commission ({course.commission_percentage}%)</p>
-              <p className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Vous recevez</p>
-              <p className="font-bold text-primary">{course.commission_amount.toFixed(2)} €</p>
-            </div>
-          </div>
-          
-          {/* Invoice status */}
-          {course.has_invoice && (
-            <div className="p-2 bg-green-500/10 rounded-md border border-green-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-600">Facture générée</span>
-              </div>
-              <span className="text-sm font-mono text-green-600">{course.invoice_number}</span>
-            </div>
-          )}
-
-          {course.course_status === 'completed' && (
-            <div className="mt-2 p-2 bg-green-500/10 rounded-md border border-green-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Commission à recevoir</span>
-                </div>
-                <span className="font-bold text-green-600">{course.commission_amount.toFixed(2)} €</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
