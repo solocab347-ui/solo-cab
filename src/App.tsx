@@ -61,6 +61,8 @@ const TrialExpiredSubscribe = lazy(() => import("./pages/chauffeur/TrialExpiredS
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
 const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
+const DriverCreateQuote = lazy(() => import("./pages/DriverCreateQuote"));
+const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
