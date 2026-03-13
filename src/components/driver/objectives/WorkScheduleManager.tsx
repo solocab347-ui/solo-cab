@@ -28,6 +28,7 @@ import {
 
 interface WorkScheduleManagerProps {
   schedule: DriverWorkSchedule[];
+  driverId?: string;
   onSave: (dayOfWeek: number, data: Partial<DriverWorkSchedule>) => Promise<any>;
   dailyProgress?: {
     revenue: number;
