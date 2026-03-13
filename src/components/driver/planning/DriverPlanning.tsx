@@ -27,7 +27,8 @@ import {
   ExternalLink,
   Info,
   MessageSquare,
-  Handshake
+  Handshake,
+  AlertTriangle
 } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, differenceInMinutes } from "date-fns";
 import { fr } from "date-fns/locale";
