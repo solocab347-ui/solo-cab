@@ -75,16 +75,16 @@ export function UnifiedBookingPage() {
 
   // Debounced autocomplete
   const fetchSuggestions = useCallback(async (query: string, setter: (s: any[]) => void, showSetter: (b: boolean) => void) => {
-    if (query.length < 3) { setter([]); showSetter(false); return; }
+    if (query.length < 3 || !mapboxToken) { setter([]); showSetter(false); return; }
     try {
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=fr&types=address,place,locality,poi&language=fr&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=address,place,locality,poi&language=fr&limit=5`
       );
       const data = await res.json();
       setter(data.features || []);
       showSetter(true);
     } catch { setter([]); }
-  }, []);
+  }, [mapboxToken]);
 
   const handlePickupChange = (val: string) => {
     setPickupAddress(val);
