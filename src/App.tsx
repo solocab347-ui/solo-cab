@@ -73,6 +73,7 @@ const RGPDData = lazy(() => import("./pages/RGPDData"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 
 const App = () => (
@@ -303,6 +304,11 @@ const App = () => (
               <Route path="/terms-of-service" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <TermsOfService />
+                </Suspense>
+              } />
+              <Route path="/politique-annulation" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CancellationPolicy />
                 </Suspense>
               } />
               <Route

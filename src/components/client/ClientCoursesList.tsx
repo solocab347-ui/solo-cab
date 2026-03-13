@@ -981,7 +981,8 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           <DialogHeader>
             <DialogTitle>Empreinte bancaire requise</DialogTitle>
             <DialogDescription>
-              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. Aucun débit immédiat.
+              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
+              Consultez notre <a href="/politique-annulation" target="_blank" className="underline text-primary">politique d'annulation</a>.
             </DialogDescription>
           </DialogHeader>
           {cardHoldData && (

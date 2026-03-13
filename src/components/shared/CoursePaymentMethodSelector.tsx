@@ -116,16 +116,19 @@ export const CoursePaymentMethodSelector = ({
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs">
-                <strong>Paiement par carte sécurisé via Stripe.</strong> Après création de la course, 
-                une avance de <strong>10€</strong> sera requise pour confirmer la réservation. 
-                Ce montant sera déduit du prix final.
+                <strong>Paiement par carte sécurisé.</strong> Après création de la course, 
+                une empreinte bancaire sera requise pour confirmer la réservation. 
+                Consultez notre{' '}
+                <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
+                  politique d'annulation
+                </a>.
               </AlertDescription>
             </Alert>
           ) : cardHoldDone ? (
             <Alert className="bg-emerald-500/5 border-emerald-500/20">
               <CheckCircle className="h-4 w-4 text-emerald-500" />
               <AlertDescription className="text-xs">
-                Avance de 10€ confirmée. Votre réservation est sécurisée.
+                Empreinte bancaire validée. Votre réservation est sécurisée.
               </AlertDescription>
             </Alert>
           ) : (

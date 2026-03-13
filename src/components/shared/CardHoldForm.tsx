@@ -125,7 +125,7 @@ export function CardHoldForm({
         if (course?.card_hold_status === 'confirmed') {
           clearInterval(interval);
           setStatus('confirmed');
-          toast.success('Avance de 10€ confirmée — course réservée !');
+          toast.success('Empreinte bancaire confirmée — course réservée !');
           onSuccess?.();
         }
       } catch (e) {
@@ -147,10 +147,10 @@ export function CardHoldForm({
               <CreditCard className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm text-foreground">Avance de réservation — 10€</h3>
+              <h3 className="font-semibold text-sm text-foreground">Empreinte bancaire requise</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Pour confirmer votre réservation, une avance de <strong>10€</strong> est requise. 
-                Ce montant sera <strong>déduit du prix final</strong> de votre course.
+                Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
+                Votre carte ne sera <strong>pas débitée immédiatement</strong>.
               </p>
             </div>
           </div>
@@ -165,14 +165,16 @@ export function CardHoldForm({
           <Alert className="bg-muted/30 border-border">
             <Shield className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              <strong>Politique d'annulation :</strong> annulation gratuite jusqu'à 1h avant la course. 
-              Après ce délai, l'avance de 10€ est conservée par le chauffeur.
+              En validant, vous acceptez notre{' '}
+              <a href="/politique-annulation" target="_blank" className="underline font-medium text-primary hover:text-primary/80">
+                politique d'annulation
+              </a>.
             </AlertDescription>
           </Alert>
 
           <Button onClick={initiateHold} className="w-full gap-2">
             <Lock className="w-4 h-4" />
-            Payer l'avance de 10€
+            Valider l'empreinte bancaire
           </Button>
         </CardContent>
       </Card>
@@ -214,8 +216,8 @@ export function CardHoldForm({
         <div className="flex items-center gap-3">
           <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-sm text-foreground">Avance de 10€ confirmée</p>
-            <p className="text-xs text-muted-foreground">Votre course est réservée. Les 10€ seront déduits du montant final.</p>
+            <p className="font-semibold text-sm text-foreground">Empreinte bancaire validée</p>
+            <p className="text-xs text-muted-foreground">Votre course est réservée. Le paiement sera effectué à la fin de la course.</p>
           </div>
         </div>
       </CardContent>
