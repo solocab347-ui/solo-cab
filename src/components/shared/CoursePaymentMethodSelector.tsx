@@ -28,9 +28,14 @@ const PAYMENT_METHODS = [
 interface SmartCoursePaymentSelectorProps {
   value: string;
   onChange: (value: string) => void;
-  driverId: string;
-  courseId?: string; // If course already created
+  driverId?: string;
+  courseId?: string;
   clientEmail?: string;
+  clientName?: string;
+  onCardHoldSuccess?: () => void;
+  label?: string;
+  className?: string;
+}
   clientName?: string;
   onCardHoldSuccess?: (paymentMethodId: string) => void;
   label?: string;
