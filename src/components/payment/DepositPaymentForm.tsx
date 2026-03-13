@@ -101,16 +101,14 @@ export function DepositPaymentForm({
           </AlertDescription>
         </Alert>
 
-        {/* Cancellation policy with deposit */}
-        <Alert className="bg-warning/10 border-warning/30">
-          <AlertTriangle className="h-4 w-4 text-warning" />
+        {/* Cancellation policy reference */}
+        <Alert className="bg-muted/30 border-border">
+          <Shield className="h-4 w-4" />
           <AlertDescription className="text-foreground text-sm">
-            <strong>Politique d'annulation (avec acompte) :</strong>
-            <ul className="list-disc list-inside mt-1 space-y-1">
-              <li>Annulation plus de 4h avant : remboursement intégral</li>
-              <li>Annulation moins de 4h avant : acompte non remboursable</li>
-              <li>Si le chauffeur annule : remboursement complet</li>
-            </ul>
+            En validant le paiement, vous acceptez notre{' '}
+            <a href="/politique-annulation" target="_blank" className="underline font-medium text-primary hover:text-primary/80">
+              politique d'annulation
+            </a>.
           </AlertDescription>
         </Alert>
 
