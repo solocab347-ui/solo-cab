@@ -40,7 +40,7 @@ interface WorkScheduleManagerProps {
   };
 }
 
-export function WorkScheduleManager({ schedule, onSave, dailyProgress }: WorkScheduleManagerProps) {
+export function WorkScheduleManager({ schedule, driverId, onSave, dailyProgress }: WorkScheduleManagerProps) {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('schedule');
   const [localSchedule, setLocalSchedule] = useState<Record<number, DaySchedule>>({});
