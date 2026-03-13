@@ -70,8 +70,8 @@ export function useDriverPaymentMethods(driverId: string | undefined) {
   const getAvailableMethodsForForm = useCallback(() => {
     const methods = config.acceptedMethods;
     
-    // If using SoloCab Stripe, card payments go through Stripe
-    if (config.billingType === 'solocab_stripe') {
+    // If driver has Stripe Connect active, card payments go through Stripe
+    if (config.stripeConnected) {
       return methods.map(m => ({
         value: m,
         isOnline: m === 'card' // Card is processed online via Stripe
