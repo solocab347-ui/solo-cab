@@ -864,66 +864,42 @@ serve(async (req) => {
           .update({ status: "completed" })
           .eq("id", courseId);
 
-        // Transfer commission to sender driver's Stripe account
+        // NETTING: Commission transfer is now DEFERRED to weekly settlement
+        // Instead of immediate transfer, mark payment as completed for weekly batch processing
         if (senderStripeAccount && commissionAmount > 0) {
-          try {
-            const transfer = await stripe.transfers.create({
-              amount: Math.round(commissionAmount * 100), // In cents
-              currency: "eur",
-              destination: senderStripeAccount,
-              metadata: {
-                shared_course_id: sharedCourseId,
-                type: "partner_commission",
-              },
+          await supabaseClient
+            .from("shared_course_payments")
+            .update({
+              status: "completed",
+              platform_fee: solocabFee || 0.10,
+            })
+            .eq("stripe_checkout_session_id", session.id);
+
+          await supabaseClient
+            .from("shared_courses")
+            .update({ payment_status: "paid_pending_settlement" })
+            .eq("id", sharedCourseId);
+
+          // Notify sender that commission will be settled weekly
+          const { data: senderData } = await supabaseClient
+            .from("drivers")
+            .select("user_id")
+            .eq("id", senderDriverId)
+            .single();
+
+          if (senderData?.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: senderData.user_id,
+              title: "💰 Commission en attente",
+              message: `${commissionAmount.toFixed(2)}€ de commission enregistrée. Versement groupé chaque lundi.`,
+              type: "info",
             });
-
-            logStep("Commission transferred to sender", { 
-              transferId: transfer.id, 
-              amount: commissionAmount 
-            });
-
-            // Update payment record with transfer info
-            await supabaseClient
-              .from("shared_course_payments")
-              .update({
-                stripe_transfer_to_sender_id: transfer.id,
-                status: "completed",
-                transfer_completed_at: new Date().toISOString(),
-              })
-              .eq("stripe_checkout_session_id", session.id);
-
-            // Update shared course
-            await supabaseClient
-              .from("shared_courses")
-              .update({ payment_status: "transferred" })
-              .eq("id", sharedCourseId);
-
-            // Notify sender driver
-            const { data: senderData } = await supabaseClient
-              .from("drivers")
-              .select("user_id")
-              .eq("id", senderDriverId)
-              .single();
-
-            if (senderData?.user_id) {
-              await supabaseClient.from("notifications").insert({
-                user_id: senderData.user_id,
-                title: "💰 Commission reçue",
-                message: `Vous avez reçu ${commissionAmount.toFixed(2)}€ de commission pour une course partagée.`,
-                type: "info",
-              });
-            }
-          } catch (transferError) {
-            logStep("Transfer error", { error: String(transferError) });
-            // Mark as pending transfer
-            await supabaseClient
-              .from("shared_course_payments")
-              .update({
-                status: "transfer_pending",
-                error_message: String(transferError),
-              })
-              .eq("stripe_checkout_session_id", session.id);
           }
+
+          logStep("Commission deferred to weekly settlement", {
+            amount: commissionAmount,
+            sender: senderDriverId,
+          });
         }
 
         // Notify receiver driver

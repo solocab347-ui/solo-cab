@@ -6215,6 +6215,124 @@ export type Database = {
           },
         ]
       }
+      driver_weekly_balances: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          net_amount: number | null
+          settlement_id: string
+          shared_courses_as_receiver: number | null
+          shared_courses_as_sender: number | null
+          standard_courses_count: number | null
+          stripe_transfer_id: string | null
+          total_commissions_earned: number | null
+          total_solocab_fees: number | null
+          transfer_error: string | null
+          transfer_executed_at: string | null
+          transfer_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          net_amount?: number | null
+          settlement_id: string
+          shared_courses_as_receiver?: number | null
+          shared_courses_as_sender?: number | null
+          standard_courses_count?: number | null
+          stripe_transfer_id?: string | null
+          total_commissions_earned?: number | null
+          total_solocab_fees?: number | null
+          transfer_error?: string | null
+          transfer_executed_at?: string | null
+          transfer_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          net_amount?: number | null
+          settlement_id?: string
+          shared_courses_as_receiver?: number | null
+          shared_courses_as_sender?: number | null
+          standard_courses_count?: number | null
+          stripe_transfer_id?: string | null
+          total_commissions_earned?: number | null
+          total_solocab_fees?: number | null
+          transfer_error?: string | null
+          transfer_executed_at?: string | null
+          transfer_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_weekly_balances_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_work_schedule: {
         Row: {
           created_at: string
@@ -14256,6 +14374,8 @@ export type Database = {
           receiver_payout_amount: number
           sender_commission_amount: number
           sender_driver_id: string
+          settled_at: string | null
+          settlement_id: string | null
           shared_course_id: string
           status: string
           stripe_checkout_session_id: string | null
@@ -14278,6 +14398,8 @@ export type Database = {
           receiver_payout_amount: number
           sender_commission_amount: number
           sender_driver_id: string
+          settled_at?: string | null
+          settlement_id?: string | null
           shared_course_id: string
           status?: string
           stripe_checkout_session_id?: string | null
@@ -14300,6 +14422,8 @@ export type Database = {
           receiver_payout_amount?: number
           sender_commission_amount?: number
           sender_driver_id?: string
+          settled_at?: string | null
+          settlement_id?: string | null
           shared_course_id?: string
           status?: string
           stripe_checkout_session_id?: string | null
@@ -14433,6 +14557,13 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_course_payments_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
             referencedColumns: ["id"]
           },
           {
@@ -15616,6 +15747,60 @@ export type Database = {
           id?: string
           image_url?: string
           model?: string
+        }
+        Relationships: []
+      }
+      weekly_settlements: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          status: string
+          stripe_fees_saved_estimate: number | null
+          total_commission_volume: number | null
+          total_platform_fees: number | null
+          total_shared_courses: number | null
+          total_solocab_standard_fees: number | null
+          total_transfer_amount: number | null
+          total_transfers_executed: number | null
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_fees_saved_estimate?: number | null
+          total_commission_volume?: number | null
+          total_platform_fees?: number | null
+          total_shared_courses?: number | null
+          total_solocab_standard_fees?: number | null
+          total_transfer_amount?: number | null
+          total_transfers_executed?: number | null
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_fees_saved_estimate?: number | null
+          total_commission_volume?: number | null
+          total_platform_fees?: number | null
+          total_shared_courses?: number | null
+          total_solocab_standard_fees?: number | null
+          total_transfer_amount?: number | null
+          total_transfers_executed?: number | null
+          updated_at?: string
+          week_end?: string
+          week_start?: string
         }
         Relationships: []
       }
