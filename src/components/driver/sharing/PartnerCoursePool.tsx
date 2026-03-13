@@ -424,9 +424,19 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
       if (error) throw error;
 
+      // Filter by scope: network = visible to all, favorites = only if driver is in target_driver_ids
+      const filteredData = (data || []).filter(item => {
+        const scope = (item as any).sharing_scope || 'network';
+        if (scope === 'network') return true;
+        if (scope === 'favorites') {
+          const targets = (item as any).target_driver_ids as string[] | null;
+          return targets?.includes(driverId || '') ?? false;
+        }
+        return false;
+      });
+
       const enrichedCourses: PooledCourse[] = [];
-      for (const item of data || []) {
-        // Récupérer TOUTES les infos du driver sender
+      for (const item of filteredData) {
         const { data: driverData } = await supabase
           .from('drivers')
           .select(`
