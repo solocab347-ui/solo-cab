@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const RESERVATION_HOLD_CENTS = 1000; // 10€ fixed reservation hold
+
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CARD-HOLD] ${step}${detailsStr}`);
@@ -33,24 +35,19 @@ serve(async (req) => {
       course_id,
       client_email,
       client_name,
-      amount, // Le montant estimé de la course pour l'affichage
     } = await req.json();
 
     if (!driver_id) throw new Error("driver_id required");
 
-    logStep("Creating card hold setup", { driver_id, course_id, client_email });
+    logStep("Creating 10€ reservation hold", { driver_id, course_id, client_email });
 
     // Get driver Stripe Connect info
     const { data: driver, error: driverError } = await supabaseClient
       .from("drivers")
       .select(`
-        id,
-        user_id,
-        billing_type,
+        id, user_id, billing_type,
         stripe_connect_account_id,
         stripe_connect_charges_enabled,
-        deposit_enabled,
-        deposit_percentage,
         company_name
       `)
       .eq("id", driver_id)
@@ -71,45 +68,48 @@ serve(async (req) => {
           card_hold_required: false,
           message: "Card hold not required - driver uses other payment methods",
         }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
-    logStep("Driver has Stripe Connect, creating SetupIntent");
+    logStep("Driver has Stripe Connect, creating 10€ PaymentIntent with manual capture");
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
-
-    // Create a SetupIntent to collect card details for future charges
-    // This creates a "card hold" without actually charging
-    const setupIntent = await stripe.setupIntents.create({
+    // Create a PaymentIntent with manual capture = "hold" the 10€
+    // The 10€ is NOT charged yet, just authorized on the card
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: RESERVATION_HOLD_CENTS,
+      currency: "eur",
+      capture_method: "manual", // Hold only, do not charge
       payment_method_types: ["card"],
       metadata: {
         driver_id,
         course_id: course_id || "",
         client_email: client_email || "",
         client_name: client_name || "",
-        type: "card_hold_reservation",
+        type: "reservation_hold",
+        hold_amount_cents: RESERVATION_HOLD_CENTS.toString(),
       },
-      // On behalf of the connected account to comply with Stripe Connect rules
-      on_behalf_of: driver.stripe_connect_account_id,
-      usage: "off_session", // Allows future off-session payments
+      // Transfer to driver's connected account if captured
+      transfer_data: {
+        destination: driver.stripe_connect_account_id,
+      },
+      description: `Avance de réservation 10€ - Course VTC${course_id ? ` #${course_id.slice(0, 8)}` : ''}`,
     });
 
-    logStep("SetupIntent created", { 
-      setupIntentId: setupIntent.id,
-      clientSecret: setupIntent.client_secret?.slice(0, 20) + "..." 
+    logStep("PaymentIntent created for hold", { 
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret?.slice(0, 20) + "..." 
     });
 
-    // If we have a course_id, update it with the setup intent info
+    // Update course with hold info
     if (course_id) {
       await supabaseClient
         .from("courses")
         .update({
-          stripe_setup_intent_id: setupIntent.id,
+          stripe_hold_payment_intent_id: paymentIntent.id,
           card_hold_status: "pending",
+          card_hold_amount: 10.00,
+          payment_method: "card",
         })
         .eq("id", course_id);
     }
@@ -118,16 +118,13 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         card_hold_required: true,
-        setup_intent_id: setupIntent.id,
-        client_secret: setupIntent.client_secret,
+        payment_intent_id: paymentIntent.id,
+        client_secret: paymentIntent.client_secret,
         stripe_account_id: driver.stripe_connect_account_id,
-        deposit_enabled: driver.deposit_enabled,
-        deposit_percentage: driver.deposit_percentage || 20,
+        hold_amount: 10.00,
+        hold_amount_cents: RESERVATION_HOLD_CENTS,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -135,10 +132,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
