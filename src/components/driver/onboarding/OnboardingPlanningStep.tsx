@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -13,7 +15,8 @@ import {
   Sparkles,
   Check,
   Smartphone,
-  UserCheck
+  UserCheck,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
