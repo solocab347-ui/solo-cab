@@ -452,7 +452,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                 <AlertDescription className="text-xs text-muted-foreground">
                   <p>En attendant de recevoir votre matériel, vous pourrez encaisser en espèces ou par virement.</p>
                   <p className="font-medium text-foreground mt-1.5">
-                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents.
+                    💡 Votre compte sera activé après validation de vos documents.
                   </p>
                 </AlertDescription>
               </Alert>
