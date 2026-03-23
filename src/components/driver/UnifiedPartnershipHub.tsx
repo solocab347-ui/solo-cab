@@ -28,6 +28,7 @@ interface UnifiedPartnershipHubProps {
 
 export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershipHubProps = {}) {
   const { user } = useAuth();
+  const { isPremium, loading: premiumLoading } = useDriverPremium();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState<MainTab>('drivers');
