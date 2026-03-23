@@ -248,7 +248,7 @@ export function TrialStartBanner({
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              Démarrer mes 14 jours
+              Activer mon compte
             </Button>
           </DialogFooter>
         </DialogContent>
