@@ -43,7 +43,7 @@ serve(async (req) => {
     if (error) throw error;
 
     const totalShares = sharedCourses?.length || 0;
-    const totalSolocabFees = sharedCourses?.reduce((acc, c) => acc + (c.solocab_fee_cents || 20), 0) || 0;
+    const totalSolocabFees = sharedCourses?.reduce((acc, c) => acc + (c.solocab_fee_cents || 25), 0) || 0;
     const totalCommission = sharedCourses?.reduce((acc, c) => acc + Math.round((c.commission_amount || 0) * 100), 0) || 0;
     const totalCourseAmount = sharedCourses?.reduce((acc, c) => acc + Math.round((c.course_amount || 0) * 100), 0) || 0;
 
