@@ -33,6 +33,7 @@ interface Favorite {
   show_phone: boolean;
   driver_phone: string | null;
   has_stripe_connect: boolean;
+  is_premium: boolean;
 }
 
 interface ShareCourseWithPartnerDialogProps {
@@ -116,9 +117,9 @@ export function ShareCourseWithPartnerDialog({
 
       const enriched: Favorite[] = [];
       for (const fav of favData || []) {
-        const { data: driverData } = await supabase
+          const { data: driverData } = await supabase
           .from('drivers')
-        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status')
+        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status, subscription_tier, subscription_paid, free_access_granted, free_access_type')
           .eq('id', fav.favorite_driver_id)
           .single();
 
@@ -143,6 +144,8 @@ export function ShareCourseWithPartnerDialog({
             show_phone: driverData.show_phone_for_sharing ?? false,
             driver_phone: driverData.show_phone_for_sharing ? (driverData.contact_phone || profile?.phone) : null,
             has_stripe_connect: !!driverData.stripe_connect_account_id && driverData.stripe_connect_status === 'active',
+            is_premium: (driverData.subscription_tier === 'premium' && driverData.subscription_paid) || 
+              (driverData.free_access_granted && (driverData.free_access_type === 'unlimited' || driverData.free_access_type === 'administrative')),
           });
         }
       }
@@ -543,11 +546,11 @@ export function ShareCourseWithPartnerDialog({
                 {favorites.map((fav) => (
                   <div
                     key={fav.id}
-                    onClick={() => fav.has_stripe_connect && setSelectedFavorite(fav)}
+                    onClick={() => fav.has_stripe_connect && fav.is_premium && setSelectedFavorite(fav)}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
                       selectedFavorite?.id === fav.id
                         ? 'border-primary bg-primary/10'
-                        : !fav.has_stripe_connect
+                        : (!fav.has_stripe_connect || !fav.is_premium)
                         ? 'border-muted bg-muted/30 cursor-not-allowed opacity-60'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -574,6 +577,9 @@ export function ShareCourseWithPartnerDialog({
                       </div>
                       {!fav.has_stripe_connect && (
                         <Badge variant="destructive" className="text-xs">Pas Stripe</Badge>
+                      )}
+                      {fav.has_stripe_connect && !fav.is_premium && (
+                        <Badge variant="secondary" className="text-xs">Non Premium</Badge>
                       )}
                     </div>
                   </div>

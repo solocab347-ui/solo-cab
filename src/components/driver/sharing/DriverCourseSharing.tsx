@@ -116,22 +116,18 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  if (!isPremium) {
-    return (
-      <PremiumGate 
-        isPremium={false} 
-        featureName="Partage de courses" 
-        featureDescription="Partagez vos courses avec d'autres chauffeurs du réseau, gérez vos favoris et gagnez des commissions."
-      />
-    );
-  }
-
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
-    { id: 'favorites', label: 'Favoris', icon: <Heart className="h-4 w-4" />, count: favoritesCount },
-    { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
-    { id: 'sent', label: 'Envoyées', icon: <Send className="h-4 w-4" />, count: sentCount },
-  ];
+  // Free users can see pool & received courses, but not favorites or sent
+  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = isPremium
+    ? [
+        { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
+        { id: 'favorites', label: 'Favoris', icon: <Heart className="h-4 w-4" />, count: favoritesCount },
+        { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
+        { id: 'sent', label: 'Envoyées', icon: <Send className="h-4 w-4" />, count: sentCount },
+      ]
+    : [
+        { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
+        { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
+      ];
 
   return (
     <div className="space-y-4 pb-20">
@@ -144,38 +140,50 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
         </Alert>
       )}
 
-      {/* Sharing Number Card */}
-      <Card className="mx-1 bg-gradient-to-br from-primary/10 via-background to-primary/5 border-primary/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10">
-              <Handshake className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">Votre N° de Partage</p>
-              <p className="text-xs text-muted-foreground truncate">Partagez-le pour être ajouté en favori</p>
-            </div>
-          </div>
-          
-          <div className="mt-3 flex items-center gap-2">
-            <div className="flex-1 bg-background/80 backdrop-blur rounded-lg px-4 py-2.5 border border-border/50">
-              <span className="font-mono text-xl font-bold tracking-wider text-primary">
-                {formattedSharingNumber || '---'}
-              </span>
-            </div>
-            <Button variant="outline" size="icon" onClick={copyToClipboard} className="h-11 w-11 shrink-0">
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Info banner for free users */}
+      {!isPremium && (
+        <Alert className="mx-1 border-primary/30 bg-primary/5">
+          <Globe className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-sm">
+            <strong>Vous pouvez recevoir et accepter des courses partagées.</strong> Pour partager vos propres courses et gagner des commissions, passez en Premium.
+          </AlertDescription>
+        </Alert>
+      )}
 
-          {/* Commission info */}
-          <div className="mt-3 p-2 bg-background/60 rounded-lg border border-border/30">
-            <p className="text-xs text-muted-foreground">
-              <strong>Commissions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.25€/course
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Sharing Number Card - only for premium */}
+      {isPremium && (
+        <Card className="mx-1 bg-gradient-to-br from-primary/10 via-background to-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Handshake className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Votre N° de Partage</p>
+                <p className="text-xs text-muted-foreground truncate">Partagez-le pour être ajouté en favori</p>
+              </div>
+            </div>
+            
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex-1 bg-background/80 backdrop-blur rounded-lg px-4 py-2.5 border border-border/50">
+                <span className="font-mono text-xl font-bold tracking-wider text-primary">
+                  {formattedSharingNumber || '---'}
+                </span>
+              </div>
+              <Button variant="outline" size="icon" onClick={copyToClipboard} className="h-11 w-11 shrink-0">
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Commission info */}
+            <div className="mt-3 p-2 bg-background/60 rounded-lg border border-border/30">
+              <p className="text-xs text-muted-foreground">
+                <strong>Commissions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.25€/course
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Navigation Tabs */}
       <div className="mx-1">

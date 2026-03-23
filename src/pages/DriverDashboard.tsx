@@ -37,6 +37,7 @@ import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
 import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
+import { DriverCourseSharing } from "@/components/driver/sharing/DriverCourseSharing";
 import { PremiumGate } from "@/components/premium/PremiumGate";
 import { GuestBookingsList } from "@/components/driver/clients/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
@@ -75,6 +76,7 @@ import { logger } from "@/lib/productionLogger";
 import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificationCount";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
+import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -504,6 +506,18 @@ const DriverDashboard = () => {
     <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        {/* Availability Toggle - Top bar */}
+        {driverProfile?.driver?.id && (
+          <div className="bg-muted/30 border-b border-border/30 px-2 sm:px-4 py-1.5">
+            <div className="container mx-auto flex items-center justify-center">
+              <DriverAvailabilityToggle 
+                driverId={driverProfile.driver.id} 
+                initialAvailable={true}
+                compact={true} 
+              />
+            </div>
+          </div>
+        )}
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -1014,12 +1028,12 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Partage & Partenariats Tab - PREMIUM */}
+          {/* Partage & Partenariats Tab - Premium can send, all can receive */}
           <TabsContent value="sharing" className="space-y-6">
             {isPremium ? (
               <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
             ) : (
-              <PremiumGate isPremium={false} featureName="Partenariats & Partage de courses" featureDescription="Échangez des courses avec d'autres chauffeurs et développez votre réseau professionnel." />
+              <DriverCourseSharing />
             )}
           </TabsContent>
 
