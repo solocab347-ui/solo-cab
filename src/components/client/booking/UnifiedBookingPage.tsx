@@ -671,7 +671,7 @@ export function UnifiedBookingPage() {
           <DriverMap
             clientPosition={pickupCoords}
             destinationPosition={destCoords}
-            drivers={drivers}
+            drivers={filteredDrivers}
             selectedDriverIds={selectedDriverIds}
             onDriverClick={toggleDriverSelection}
             searchRadius={searchRadius}
