@@ -98,9 +98,9 @@ export const MobileDriverNav = ({
       gradient: "from-blue-500 to-cyan-600",
       items: [
         { value: "objectives", icon: Target, label: t('driverDashboard.menu.objectives') },
-        { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign') },
+        { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign'), premium: true },
         { value: "profitability", icon: PieChart, label: t('driverDashboard.menu.profitability') },
-        { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection') },
+        { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection'), premium: true },
       ],
     },
   ];
