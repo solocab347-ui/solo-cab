@@ -646,60 +646,17 @@ export function UnifiedBookingPage() {
           </Card>
         )}
 
-        {/* Payment method selection - shown after search results */}
-        {drivers.length > 0 && !confirmationStep && (
-          <Card className="border-border/50">
-            <CardContent className="p-4 space-y-3">
-              <h4 className="font-semibold text-foreground text-sm flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-primary" />
-                Mode de paiement
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setClientPaymentMethod('card')}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium",
-                    clientPaymentMethod === 'card'
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border"
-                  )}
-                >
-                  <CreditCard className="h-5 w-5 shrink-0" />
-                  <span>Carte bancaire</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setClientPaymentMethod('cash');
-                    setSelectedDriverIds(prev => {
-                      const next = new Set<string>();
-                      prev.forEach(id => {
-                        const d = drivers.find(dr => dr.driver_id === id);
-                        if (d?.accepted_payment_methods?.includes('cash')) next.add(id);
-                      });
-                      return next;
-                    });
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium",
-                    clientPaymentMethod === 'cash'
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border"
-                  )}
-                >
-                  <Banknote className="h-5 w-5 shrink-0" />
-                  <span>Espèces</span>
-                </button>
-              </div>
-              {clientPaymentMethod === 'cash' && filteredDrivers.length === 0 && drivers.length > 0 && (
-                <p className="text-xs text-destructive">Aucun chauffeur dans cette zone n'accepte les espèces. Choisissez carte bancaire.</p>
-              )}
-              {clientPaymentMethod === 'cash' && filteredDrivers.length > 0 && filteredDrivers.length < drivers.length && (
-                <p className="text-xs text-muted-foreground">
-                  {drivers.length - filteredDrivers.length} chauffeur{drivers.length - filteredDrivers.length > 1 ? 's' : ''} masqué{drivers.length - filteredDrivers.length > 1 ? 's' : ''} (n'accepte{drivers.length - filteredDrivers.length > 1 ? 'nt' : ''} pas les espèces)
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Cash filter info */}
+        {hasSearched && clientPaymentMethod === 'cash' && filteredDrivers.length === 0 && drivers.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Aucun chauffeur dans cette zone n'accepte les espèces. Modifiez votre mode de paiement.</AlertDescription>
+          </Alert>
+        )}
+        {hasSearched && clientPaymentMethod === 'cash' && filteredDrivers.length > 0 && filteredDrivers.length < drivers.length && (
+          <p className="text-xs text-muted-foreground px-1">
+            {drivers.length - filteredDrivers.length} chauffeur{drivers.length - filteredDrivers.length > 1 ? 's' : ''} masqué{drivers.length - filteredDrivers.length > 1 ? 's' : ''} (n'accepte{drivers.length - filteredDrivers.length > 1 ? 'nt' : ''} pas les espèces)
+          </p>
         )}
 
         {hasSearched && (
