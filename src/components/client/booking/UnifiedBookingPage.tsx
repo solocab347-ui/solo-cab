@@ -872,20 +872,6 @@ export function UnifiedBookingPage() {
                   variant="outline"
                   className="w-full h-12 justify-start gap-3 text-sm font-medium"
                   onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}
-                >
-                  <LogIn className="h-5 w-5 shrink-0" />
-                  <div className="text-left">
-                    <div>Se connecter</div>
-                    <div className="text-[10px] text-muted-foreground font-normal">J'ai déjà un compte</div>
-                  </div>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Guest info form - only after choosing "guest" */}
-        {!user && showGuestForm && authChoice === 'guest' && selectedCount > 0 && (
           <Card className="border-primary/30">
             <CardContent className="p-4 space-y-3">
               <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
