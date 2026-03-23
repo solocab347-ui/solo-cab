@@ -812,6 +812,51 @@ export function UnifiedBookingPage() {
               </CardContent>
             </Card>
 
+            {/* Payment info banner */}
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {clientPaymentMethod === 'card' ? (
+                    <CreditCard className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Banknote className="h-4 w-4 text-primary" />
+                  )}
+                  <span>Paiement : {clientPaymentMethod === 'card' ? 'Carte bancaire' : 'Espèces'}</span>
+                </div>
+                {(() => {
+                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+                  const hasNonStripeDriver = selectedDriversList.some(d => !d.stripe_connect_charges_enabled);
+                  
+                  if (clientPaymentMethod === 'card' && hasStripeDriver) {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <span>Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course.</span>
+                      </div>
+                    );
+                  }
+                  if (clientPaymentMethod === 'card' && hasNonStripeDriver && !hasStripeDriver) {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <span>Le paiement en carte bancaire sera effectué directement auprès du chauffeur (TPE).</span>
+                      </div>
+                    );
+                  }
+                  if (clientPaymentMethod === 'cash') {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                        <Banknote className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <span>Le paiement en espèces sera effectué directement auprès du chauffeur à la fin de la course.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </CardContent>
+            </Card>
+
             {/* Auth options for non-authenticated users */}
             {!user && !authChoice && (
               <Card className="border-primary/30 shadow-lg">
