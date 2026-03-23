@@ -115,7 +115,7 @@ Au lieu de transférer les commissions et collecter les frais **à chaque transa
 |---------|-----------|
 | Commissions gagnées (courses partagées) | + Chauffeur reçoit |
 | Frais SoloCab 0,50€ × courses standard en ligne | - SoloCab collecte |
-| Frais SoloCab 0,10€ × courses partagées reçues | - SoloCab collecte |
+| Frais SoloCab 0,20€ × courses partagées reçues | - SoloCab collecte |
 | **Net** | Positif → transfert au chauffeur |
 
 ### Tables

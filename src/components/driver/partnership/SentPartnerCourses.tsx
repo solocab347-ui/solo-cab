@@ -301,7 +301,7 @@ export function SentPartnerCourses({ driverId }: Props) {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Frais</p>
-                      <p className="text-xs text-muted-foreground">0.10€</p>
+                      <p className="text-xs text-muted-foreground">0.20€</p>
                     </div>
                   </div>
                   {(course.status === 'pending' || course.status === 'available') && (
