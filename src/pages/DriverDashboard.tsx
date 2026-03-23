@@ -60,6 +60,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { MobileDriverNav } from "@/components/driver/ui/MobileDriverNav";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useDriverPremium } from "@/hooks/useDriverPremium";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { useLocale } from "@/hooks/useLocale";
 import { useUserLanguage } from "@/hooks/useUserLanguage";
