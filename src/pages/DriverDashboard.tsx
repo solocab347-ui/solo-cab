@@ -72,6 +72,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { logger } from "@/lib/productionLogger";
 import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificationCount";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
+import { geocodeAddress } from "@/lib/geocoding";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -343,6 +344,25 @@ const DriverDashboard = () => {
     
     try {
       logger.info("Début de la sauvegarde du profil");
+
+      let resolvedHomeAddress = homeAddress?.trim() || "";
+      let resolvedHomeCoordinates = homeCoordinates;
+
+      if (!resolvedHomeCoordinates && companyAddress?.trim()) {
+        const geocodedCompanyAddress = await geocodeAddress(companyAddress.trim());
+        if (geocodedCompanyAddress.success && geocodedCompanyAddress.coordinates) {
+          resolvedHomeAddress = resolvedHomeAddress || companyAddress.trim();
+          resolvedHomeCoordinates = geocodedCompanyAddress.coordinates;
+          setHomeAddress(resolvedHomeAddress);
+          setHomeCoordinates(geocodedCompanyAddress.coordinates);
+        }
+      }
+
+      if (!resolvedHomeCoordinates) {
+        toast.error("Ajoutez une adresse de départ valide pour être visible sur la carte et dans la recherche.");
+        setLoading(false);
+        return;
+      }
       
       // 1. Sauvegarder les données du driver - profil toujours public
       const driverUpdates = {
@@ -353,9 +373,9 @@ const DriverDashboard = () => {
         contact_email: contactEmail || null,
         working_sectors: workingSectors,
         service_description: serviceDescription,
-        home_address: homeAddress,
-        home_latitude: homeCoordinates?.latitude || null,
-        home_longitude: homeCoordinates?.longitude || null,
+        home_address: resolvedHomeAddress,
+        home_latitude: resolvedHomeCoordinates.latitude,
+        home_longitude: resolvedHomeCoordinates.longitude,
         base_fare: baseFare ? parseFloat(baseFare) : null,
         per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
