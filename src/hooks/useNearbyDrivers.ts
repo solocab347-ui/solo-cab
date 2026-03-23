@@ -45,6 +45,7 @@ interface UseNearbyDriversResult {
   error: string | null;
   searchRadius: number | null;
   noDriversFound: boolean;
+  fallbackToReservation: boolean;
   searchNearbyDrivers: (
     latitude: number,
     longitude: number,
@@ -64,6 +65,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
   const [error, setError] = useState<string | null>(null);
   const [searchRadius, setSearchRadius] = useState<number | null>(null);
   const [noDriversFound, setNoDriversFound] = useState(false);
+  const [fallbackToReservation, setFallbackToReservation] = useState(false);
 
   const searchNearbyDrivers = useCallback(
     async (
@@ -80,21 +82,33 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       setIsLoading(true);
       setError(null);
       setNoDriversFound(false);
+      setFallbackToReservation(false);
 
       try {
-        const { data, error: rpcError } = await supabase.rpc('find_nearby_drivers', {
+        const searchDrivers = async (searchMode: SearchMode) => supabase.rpc('find_nearby_drivers', {
           p_latitude: latitude,
           p_longitude: longitude,
           p_limit: 10,
           p_max_radius_km: maxSearchRadiusKm,
-          p_mode: mode,
+          p_mode: searchMode,
         });
+
+        let { data, error: rpcError } = await searchDrivers(mode);
 
         if (rpcError) {
           console.error('RPC error:', rpcError);
           setError('Erreur lors de la recherche des chauffeurs');
           setDrivers([]);
           return;
+        }
+
+        if ((!data || data.length === 0) && mode === 'immediate') {
+          const fallbackResponse = await searchDrivers('reservation');
+
+          if (!fallbackResponse.error && fallbackResponse.data && fallbackResponse.data.length > 0) {
+            data = fallbackResponse.data;
+            setFallbackToReservation(true);
+          }
         }
 
         if (!data || data.length === 0) {
@@ -113,7 +127,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
               supabase.rpc('calculate_course_price', {
                 _driver_id: driver.driver_id,
                 _distance_km: routeDistanceKm,
-                _duration_minutes: routeDurationMinutes || 0,
+                _duration_minutes: Math.round(routeDurationMinutes || 0),
                 _use_hourly_rate: false,
                 _scheduled_date: scheduledDateStr,
                 _pickup_address: pickupAddress || null,
@@ -174,6 +188,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
     error,
     searchRadius,
     noDriversFound,
+    fallbackToReservation,
     searchNearbyDrivers,
   };
 }
