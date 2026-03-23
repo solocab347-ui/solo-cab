@@ -392,7 +392,7 @@ export function OnboardingTrialStartStep({
         transition={{ delay: 0.6 }}
         className="w-full max-w-sm space-y-3"
       >
-        {canStartTrial() ? (
+        {canActivate() ? (
           <Button 
             onClick={handleLaunchWithVideo} 
             disabled={activating || loading}
@@ -403,7 +403,7 @@ export function OnboardingTrialStartStep({
             ) : (
               <>
                 <Play className="w-5 h-5 mr-2" />
-                Lancer mon indépendance
+                Activer mon compte
               </>
             )}
           </Button>
