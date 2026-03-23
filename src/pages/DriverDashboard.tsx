@@ -982,9 +982,13 @@ const DriverDashboard = () => {
             <DriverStatisticsComplete driverProfile={driverProfile} />
           </TabsContent>
 
-          {/* Campaigns Tab */}
+          {/* Campaigns Tab - PREMIUM */}
           <TabsContent value="campaigns" className="space-y-6">
-            <DriverCampaigns driverProfile={driverProfile} />
+            {isPremium ? (
+              <DriverCampaigns driverProfile={driverProfile} />
+            ) : (
+              <PremiumGate isPremium={false} featureName="Campagnes & Promotions" featureDescription="Créez des codes promo et des campagnes marketing pour fidéliser vos clients." />
+            )}
           </TabsContent>
 
           {/* Profitability Tab */}
@@ -997,17 +1001,25 @@ const DriverDashboard = () => {
             <DriverFeedback />
           </TabsContent>
 
-          {/* Prospection Tab */}
+          {/* Prospection Tab - PREMIUM */}
           <TabsContent value="prospection" className="space-y-6">
-            <DriverProspectionFlyer 
-              qrCode={qrCode} 
-              driverProfile={driverProfile} 
-            />
+            {isPremium ? (
+              <DriverProspectionFlyer 
+                qrCode={qrCode} 
+                driverProfile={driverProfile} 
+              />
+            ) : (
+              <PremiumGate isPremium={false} featureName="Prospection avancée" featureDescription="Générez des flyers personnalisés et des outils de prospection pour développer votre clientèle." />
+            )}
           </TabsContent>
 
-          {/* Partage & Partenariats Tab */}
+          {/* Partage & Partenariats Tab - PREMIUM */}
           <TabsContent value="sharing" className="space-y-6">
-            <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
+            {isPremium ? (
+              <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
+            ) : (
+              <PremiumGate isPremium={false} featureName="Partenariats & Partage de courses" featureDescription="Échangez des courses avec d'autres chauffeurs et développez votre réseau professionnel." />
+            )}
           </TabsContent>
 
           {/* Documents Tab - Hub unifié */}
