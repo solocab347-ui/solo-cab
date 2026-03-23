@@ -193,10 +193,10 @@ export function TrialStartBanner({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="w-5 h-5 text-primary" />
-              Démarrer votre essai gratuit
+              Activer votre compte
             </DialogTitle>
             <DialogDescription>
-              Une fois activé, vous aurez accès à toutes les fonctionnalités pendant 14 jours.
+              Une fois activé, vous aurez accès à toutes les fonctionnalités gratuitement.
             </DialogDescription>
           </DialogHeader>
 
