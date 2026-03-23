@@ -40,6 +40,8 @@ export const CSP_DIRECTIVES = {
     'https://*.supabase.co',
     'https://api.mapbox.com',
     'https://*.mapbox.com',
+    'https://*.tile.openstreetmap.org',
+    'https://*.basemaps.cartocdn.com',
   ],
   'connect-src': [
     "'self'",
@@ -48,6 +50,8 @@ export const CSP_DIRECTIVES = {
     'https://api.mapbox.com',
     'https://*.mapbox.com',
     'https://events.mapbox.com',
+    'https://*.tile.openstreetmap.org',
+    'https://*.basemaps.cartocdn.com',
     'https://api.stripe.com',
     'https://*.sentry.io',
   ],
