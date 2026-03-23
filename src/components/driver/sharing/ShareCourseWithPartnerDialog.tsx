@@ -546,11 +546,11 @@ export function ShareCourseWithPartnerDialog({
                 {favorites.map((fav) => (
                   <div
                     key={fav.id}
-                    onClick={() => fav.has_stripe_connect && setSelectedFavorite(fav)}
+                    onClick={() => fav.has_stripe_connect && fav.is_premium && setSelectedFavorite(fav)}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
                       selectedFavorite?.id === fav.id
                         ? 'border-primary bg-primary/10'
-                        : !fav.has_stripe_connect
+                        : (!fav.has_stripe_connect || !fav.is_premium)
                         ? 'border-muted bg-muted/30 cursor-not-allowed opacity-60'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -577,6 +577,9 @@ export function ShareCourseWithPartnerDialog({
                       </div>
                       {!fav.has_stripe_connect && (
                         <Badge variant="destructive" className="text-xs">Pas Stripe</Badge>
+                      )}
+                      {fav.has_stripe_connect && !fav.is_premium && (
+                        <Badge variant="secondary" className="text-xs">Non Premium</Badge>
                       )}
                     </div>
                   </div>
