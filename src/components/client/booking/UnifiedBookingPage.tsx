@@ -684,8 +684,56 @@ export function UnifiedBookingPage() {
           </div>
         )}
 
-        {/* Guest info form */}
-        {!user && showGuestForm && selectedCount > 0 && (
+        {/* Auth step - shown after driver selection for non-authenticated users */}
+        {!user && showAuthStep && selectedCount > 0 && !authChoice && (
+          <Card className="border-primary/30 shadow-lg">
+            <CardContent className="p-4 space-y-3">
+              <h4 className="font-semibold text-foreground text-base text-center">Comment souhaitez-vous continuer ?</h4>
+              <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
+              <div className="space-y-2">
+                <Button
+                  variant="default"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => {
+                    setAuthChoice('guest');
+                    setShowGuestForm(true);
+                  }}
+                >
+                  <UserX className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Commander sans inscription</div>
+                    <div className="text-[10px] opacity-80 font-normal">Rapide, sans compte</div>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}
+                >
+                  <UserPlus className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Créer un compte</div>
+                    <div className="text-[10px] text-muted-foreground font-normal">Suivez vos courses, fidélité</div>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}
+                >
+                  <LogIn className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Se connecter</div>
+                    <div className="text-[10px] text-muted-foreground font-normal">J'ai déjà un compte</div>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Guest info form - only after choosing "guest" */}
+        {!user && showGuestForm && authChoice === 'guest' && selectedCount > 0 && (
           <Card className="border-primary/30">
             <CardContent className="p-4 space-y-3">
               <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
