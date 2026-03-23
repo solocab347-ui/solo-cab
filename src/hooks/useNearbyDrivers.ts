@@ -11,12 +11,32 @@ export interface NearbyDriver {
   minimum_price: number;
   distance_meters: number;
   search_radius_used: number;
-  evening_surcharge: number | null;
-  weekend_surcharge: number | null;
+  evening_surcharge?: number | null;
+  weekend_surcharge?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_live_location?: boolean | null;
   // Calculated fields
   estimated_price?: number;
   distance_km?: number;
   has_surcharge?: boolean;
+}
+
+type SearchMode = 'reservation' | 'immediate';
+
+interface NearbyDriverRpcRow {
+  driver_id: string;
+  company_name: string | null;
+  display_name: string | null;
+  profile_photo_url: string | null;
+  base_fare: number;
+  per_km_rate: number;
+  minimum_price: number;
+  distance_meters: number;
+  search_radius_used: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_live_location?: boolean | null;
 }
 
 interface UseNearbyDriversResult {
@@ -32,7 +52,9 @@ interface UseNearbyDriversResult {
     routeDurationMinutes?: number,
     scheduledDate?: Date,
     pickupAddress?: string,
-    destinationAddress?: string
+    destinationAddress?: string,
+    maxSearchRadiusKm?: number,
+    mode?: SearchMode
   ) => Promise<void>;
 }
 
@@ -51,7 +73,9 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       routeDurationMinutes?: number,
       scheduledDate?: Date,
       pickupAddress?: string,
-      destinationAddress?: string
+      destinationAddress?: string,
+      maxSearchRadiusKm: number = 20,
+      mode: SearchMode = 'reservation'
     ) => {
       setIsLoading(true);
       setError(null);
@@ -62,6 +86,8 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           p_latitude: latitude,
           p_longitude: longitude,
           p_limit: 10,
+          p_max_radius_km: maxSearchRadiusKm,
+          p_mode: mode,
         });
 
         if (rpcError) {
@@ -74,7 +100,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         if (!data || data.length === 0) {
           setNoDriversFound(true);
           setDrivers([]);
-          setSearchRadius(20); // Max radius tried
+          setSearchRadius(maxSearchRadiusKm);
           return;
         }
 
@@ -83,7 +109,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         const scheduledDateStr = scheduledDate ? scheduledDate.toISOString() : new Date().toISOString();
         
         const pricePromises = routeDistanceKm 
-          ? data.map((driver: NearbyDriver) => 
+          ? data.map((driver: NearbyDriverRpcRow) => 
               supabase.rpc('calculate_course_price', {
                 _driver_id: driver.driver_id,
                 _distance_km: routeDistanceKm,
@@ -99,7 +125,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         const priceResults = await Promise.all(pricePromises);
         const priceMap = new Map(priceResults.map(r => [r.driver_id, r]));
 
-        const driversWithPrices = data.map((driver: NearbyDriver) => {
+        const driversWithPrices = data.map((driver: NearbyDriverRpcRow) => {
           const distanceKm = driver.distance_meters / 1000;
           let estimatedPrice = driver.base_fare;
           let hasSurcharge = false;
@@ -121,6 +147,8 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
 
           return {
             ...driver,
+            evening_surcharge: null,
+            weekend_surcharge: null,
             distance_km: distanceKm,
             estimated_price: Math.round(estimatedPrice * 100) / 100,
             has_surcharge: hasSurcharge,
