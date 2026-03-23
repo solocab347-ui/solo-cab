@@ -116,12 +116,12 @@ export const NfcHeroSection = () => {
           </div>
         </div>
 
-        {/* Subscription Advantage */}
+        {/* Trust badge */}
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 max-w-xl mx-auto">
           <p className="text-muted-foreground text-sm">
             <Star className="w-4 h-4 inline mr-2 text-primary" />
-            <strong className="text-primary">-20% avec l'abonnement</strong> : 
-            Profil pro, réservations, avis clients et CRM inclus !
+            <strong className="text-primary">Livraison rapide</strong> : 
+            Recevez votre plaque NFC personnalisée directement chez vous !
           </p>
         </div>
       </div>
