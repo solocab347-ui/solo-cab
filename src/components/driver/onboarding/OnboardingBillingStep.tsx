@@ -438,9 +438,9 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertTitle className="text-sm text-green-700">Commande confirmée ! 🎉</AlertTitle>
                 <AlertDescription className="text-xs text-green-600 mt-1">
-                  <p>Votre TPE sera livré sous quelques jours.</p>
+                   <p>Votre TPE sera livré sous quelques jours.</p>
                   <p className="mt-2 font-medium">
-                    💡 Vos 14 jours d'essai ne démarrent qu'après validation de vos documents — vous aurez le temps de recevoir votre matériel !
+                    💡 Votre compte sera activé après validation de vos documents — vous aurez le temps de recevoir votre matériel !
                   </p>
                 </AlertDescription>
               </Alert>
