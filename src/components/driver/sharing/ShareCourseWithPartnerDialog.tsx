@@ -117,9 +117,9 @@ export function ShareCourseWithPartnerDialog({
 
       const enriched: Favorite[] = [];
       for (const fav of favData || []) {
-        const { data: driverData } = await supabase
+          const { data: driverData } = await supabase
           .from('drivers')
-        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status')
+        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status, subscription_tier, subscription_paid, free_access_granted, free_access_type')
           .eq('id', fav.favorite_driver_id)
           .single();
 
