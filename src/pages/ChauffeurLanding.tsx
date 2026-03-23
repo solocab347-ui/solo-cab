@@ -354,13 +354,13 @@ const ChauffeurLanding = () => {
           <Link to="/register-driver-promo" className="inline-block w-full sm:w-auto px-2 sm:px-0">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-primary-foreground text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 shadow-2xl shadow-blue-500/30">
               <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Commencer maintenant
+              S'inscrire gratuitement
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
             </Button>
           </Link>
 
           <p className="text-xs sm:text-sm text-muted-foreground mt-3 sm:mt-4">
-            14 jours gratuits • Sans carte bancaire • Sans engagement
+            Gratuit • Sans carte bancaire • Sans engagement
           </p>
         </div>
       </section>
