@@ -63,6 +63,26 @@ export function ShareCourseWithPartnerDialog({
   const { isPremium } = useDriverPremium();
   const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
 
+  useEffect(() => {
+    if (open && driverId && isPremium) {
+      loadFavorites();
+      setShareMode('choose');
+      setSelectedFavorite(null);
+    }
+  }, [open, driverId, isPremium]);
+
+  useEffect(() => {
+    if (selectedFavorite) {
+      setClientMessage(
+        `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedFavorite.driver_name} qui prendra soin de vous.`
+      );
+    } else if (shareMode === 'network' || shareMode === 'favorites') {
+      setClientMessage(
+        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous.`
+      );
+    }
+  }, [selectedFavorite, shareMode]);
+
   // Block sharing for non-premium users
   if (open && !isPremium) {
     return (
@@ -83,26 +103,6 @@ export function ShareCourseWithPartnerDialog({
       </Dialog>
     );
   }
-
-  useEffect(() => {
-    if (open && driverId) {
-      loadFavorites();
-      setShareMode('choose');
-      setSelectedFavorite(null);
-    }
-  }, [open, driverId]);
-
-  useEffect(() => {
-    if (selectedFavorite) {
-      setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedFavorite.driver_name} qui prendra soin de vous.`
-      );
-    } else if (shareMode === 'network' || shareMode === 'favorites') {
-      setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous.`
-      );
-    }
-  }, [selectedFavorite, shareMode]);
 
   const loadFavorites = async () => {
     setLoading(true);
