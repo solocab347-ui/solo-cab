@@ -1,8 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Car, Eye, Check } from "lucide-react";
+import { MapPin, Eye, Check, Clock } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
 
 interface DriverResultCardProps {
@@ -12,6 +11,20 @@ interface DriverResultCardProps {
   onToggleSelect: (driverId: string) => void;
   onViewProfile: (driver: NearbyDriver) => void;
   rank: number;
+}
+
+// Estimate approach time based on distance (avg 30km/h in urban, 60km/h highway)
+function estimateApproachTime(distanceMeters: number): string {
+  const km = distanceMeters / 1000;
+  let minutes: number;
+  if (km < 5) {
+    minutes = Math.round(km * 2); // ~30km/h urban
+  } else if (km < 20) {
+    minutes = Math.round(10 + (km - 5) * 1.5); // mixed
+  } else {
+    minutes = Math.round(10 + 22.5 + (km - 20) * 1); // ~60km/h
+  }
+  return minutes < 1 ? '< 1 min' : `~${Math.max(minutes, 2)} min`;
 }
 
 export function DriverResultCard({
@@ -34,6 +47,8 @@ export function DriverResultCard({
     if (meters < 1000) return `${Math.round(meters)} m`;
     return `${(meters / 1000).toFixed(1)} km`;
   };
+
+  const approachTime = estimateApproachTime(driver.distance_meters);
 
   return (
     <Card
@@ -71,11 +86,10 @@ export function DriverResultCard({
                 <MapPin className="h-3 w-3" />
                 À {formatDistance(driver.distance_meters)}
               </span>
-              {driver.has_surcharge && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">
-                  Majoration
-                </Badge>
-              )}
+              <span className="flex items-center gap-0.5 text-primary/80">
+                <Clock className="h-3 w-3" />
+                Approche {approachTime}
+              </span>
             </div>
 
             {/* Actions */}
@@ -97,7 +111,7 @@ export function DriverResultCard({
 
           {/* Price + Select */}
           <div className="flex flex-col items-end gap-2 shrink-0">
-            {driver.estimated_price !== undefined && (
+            {driver.estimated_price !== undefined && driver.estimated_price > 0 && (
               <div className="text-right">
                 <div className="text-xl font-bold text-primary">
                   {driver.estimated_price.toFixed(0)}€
@@ -107,6 +121,13 @@ export function DriverResultCard({
                     {routeDistanceKm.toFixed(1)} km
                   </div>
                 )}
+              </div>
+            )}
+            {driver.estimated_price !== undefined && driver.estimated_price === 0 && (
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground italic">
+                  Sur devis
+                </div>
               </div>
             )}
 
