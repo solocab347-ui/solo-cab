@@ -490,6 +490,7 @@ export function UnifiedBookingPage() {
             onDriverClick={toggleDriverSelection}
             searchRadius={searchRadius}
             mapboxToken={mapboxToken}
+            tokenLoading={isTokenLoading}
           />
         )}
 
