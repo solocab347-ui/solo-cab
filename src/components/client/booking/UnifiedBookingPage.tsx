@@ -838,9 +838,6 @@ export function UnifiedBookingPage() {
     </div>
   );
 }
-          <Card className="border-primary/30 shadow-lg">
-            <CardContent className="p-4 space-y-3">
-              <h4 className="font-semibold text-foreground text-base text-center">Comment souhaitez-vous continuer ?</h4>
               <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
               <div className="space-y-2">
                 <Button
