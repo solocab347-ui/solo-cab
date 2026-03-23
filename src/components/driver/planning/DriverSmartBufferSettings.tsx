@@ -35,6 +35,7 @@ interface SmartBufferSettings {
 }
 
 export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSettingsProps) {
+  const { isPremium } = useDriverPremium();
   const [settings, setSettings] = useState<SmartBufferSettings>({
     smart_buffer_enabled: false,
     smart_buffer_min_minutes: 15,
