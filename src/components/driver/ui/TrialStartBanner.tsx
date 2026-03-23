@@ -134,7 +134,7 @@ export function TrialStartBanner({
     if (isEquipmentPurchase) {
       return 'Confirmez la réception de votre matériel de paiement';
     }
-    return 'Démarrez vos 14 jours gratuits dès maintenant';
+    return 'Activez votre compte gratuit dès maintenant';
   };
 
   const getConfirmationText = () => {
