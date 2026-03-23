@@ -6684,6 +6684,7 @@ export type Database = {
           subscription_paid: boolean | null
           subscription_status: string | null
           subscription_stripe_id: string | null
+          subscription_tier: string
           total_rides: number | null
           tpe_received_at: string | null
           trial_activated_at: string | null
@@ -6862,6 +6863,7 @@ export type Database = {
           subscription_paid?: boolean | null
           subscription_status?: string | null
           subscription_stripe_id?: string | null
+          subscription_tier?: string
           total_rides?: number | null
           tpe_received_at?: string | null
           trial_activated_at?: string | null
@@ -7040,6 +7042,7 @@ export type Database = {
           subscription_paid?: boolean | null
           subscription_status?: string | null
           subscription_stripe_id?: string | null
+          subscription_tier?: string
           total_rides?: number | null
           tpe_received_at?: string | null
           trial_activated_at?: string | null
