@@ -27,7 +27,7 @@ export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { token: mapboxToken, isLoading: isTokenLoading } = useMapboxToken();
-  const [mode, setMode] = useState<BookingMode>('immediate');
+  const [mode, setMode] = useState<BookingMode>('reservation');
   
   // Addresses
   const [pickupAddress, setPickupAddress] = useState('');
@@ -506,7 +506,9 @@ export function UnifiedBookingPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Aucun chauffeur disponible dans un rayon de {maxSearchRadiusKm} km. Essayez d’élargir la zone de recherche ou une autre adresse de départ.
+              {mode === 'immediate'
+                ? `Aucun chauffeur n’est disponible immédiatement dans un rayon de ${maxSearchRadiusKm} km. Essayez d’élargir la zone de recherche ou passez en réservation.`
+                : `Aucun chauffeur disponible dans un rayon de ${maxSearchRadiusKm} km. Essayez d’élargir la zone de recherche ou une autre adresse de départ.`}
             </AlertDescription>
           </Alert>
         )}
