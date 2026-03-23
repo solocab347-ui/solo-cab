@@ -717,23 +717,20 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Comparison - Updated for pioneers */}
       {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && !isPioneer && (
-        <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
-          <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
-            💰 Économisez jusqu'à 15 000€/an
+        <Card className="p-3 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 overflow-hidden">
+          <h4 className="font-bold text-sm sm:text-lg text-foreground mb-2 sm:mb-4 text-center sm:text-left">
+            💰 Modèle Freemium — Aucune commission
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-            <div className="bg-premium-foreground/10 rounded-lg p-3 sm:p-4">
-              <p className="text-premium-foreground/80 mb-1 sm:mb-2 text-xs sm:text-sm">Uber / Bolt</p>
-              <p className="text-lg sm:text-2xl font-bold text-premium-foreground break-words">~1 250€/mois</p>
-              <p className="text-premium-foreground/70 text-xs">Commission 25%</p>
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4">
+              <p className="text-muted-foreground mb-1 sm:mb-2 text-xs sm:text-sm">Uber / Bolt</p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground break-words">~1 250€/mois</p>
+              <p className="text-muted-foreground text-xs">Commission 25%</p>
             </div>
-            <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
-              <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
-              <p className="text-lg sm:text-2xl font-bold text-premium break-words">
-                <span className="text-green-400 text-sm">14 jours gratuits</span>
-                <br />29,99€/mois
-              </p>
-              <p className="text-premium/70 text-xs">0% commission</p>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
+              <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab Premium</p>
+              <p className="text-lg sm:text-2xl font-bold text-white break-words">9,99€/mois</p>
+              <p className="text-white/80 text-xs">0% commission • Gratuit de base</p>
             </div>
           </div>
         </Card>
