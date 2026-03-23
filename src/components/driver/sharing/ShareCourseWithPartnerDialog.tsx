@@ -144,6 +144,8 @@ export function ShareCourseWithPartnerDialog({
             show_phone: driverData.show_phone_for_sharing ?? false,
             driver_phone: driverData.show_phone_for_sharing ? (driverData.contact_phone || profile?.phone) : null,
             has_stripe_connect: !!driverData.stripe_connect_account_id && driverData.stripe_connect_status === 'active',
+            is_premium: (driverData.subscription_tier === 'premium' && driverData.subscription_paid) || 
+              (driverData.free_access_granted && (driverData.free_access_type === 'unlimited' || driverData.free_access_type === 'administrative')),
           });
         }
       }
