@@ -26,6 +26,7 @@ interface DriverCourseSharingProps {
 
 export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
   const { user } = useAuth();
+  const { isPremium, loading: premiumLoading } = useDriverPremium();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'pool');
