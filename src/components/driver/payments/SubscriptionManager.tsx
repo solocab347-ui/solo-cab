@@ -607,10 +607,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
           ) : !hasAdminFreeAccess && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
-              <span className="text-xs sm:text-sm text-gray-300">Offre</span>
+              <span className="text-xs sm:text-sm text-gray-300">Abonnement Premium</span>
               <div className="flex flex-col items-end">
-                <Badge className="bg-green-500 mb-1">14 jours d'essai gratuit</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 29,99€ / mois</span>
+                <span className="font-bold text-sm sm:text-base text-white">9,99€ / mois</span>
+                <span className="text-xs text-gray-400">Sans engagement</span>
               </div>
             </div>
           )}
