@@ -380,8 +380,13 @@ export function UnifiedBookingPage() {
     }
   };
 
+  // Filter drivers based on selected payment method
+  const filteredDrivers = clientPaymentMethod === 'cash'
+    ? drivers.filter(d => d.accepted_payment_methods?.includes('cash'))
+    : drivers;
+
   const selectedCount = selectedDriverIds.size;
-  const lowestPrice = drivers
+  const lowestPrice = filteredDrivers
     .filter(d => selectedDriverIds.has(d.driver_id))
     .reduce((min, d) => Math.min(min, d.estimated_price || Infinity), Infinity);
 
