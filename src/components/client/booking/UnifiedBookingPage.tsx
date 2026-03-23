@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
-  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX
+  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
+  CreditCard, Banknote, ShieldCheck, Info
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-solocab.png';
 
 type BookingMode = 'reservation' | 'immediate';
+type ClientPaymentMethod = 'card' | 'cash' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
@@ -61,6 +63,7 @@ export function UnifiedBookingPage() {
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -351,6 +354,7 @@ export function UnifiedBookingPage() {
           selected_driver_id: driver.driver_id,
           estimated_price: driver.estimated_price,
           timeout_at: new Date(Date.now() + timeoutMs).toISOString(),
+          payment_method: clientPaymentMethod || 'card',
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime 
             ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() 
             : null,
@@ -377,8 +381,13 @@ export function UnifiedBookingPage() {
     }
   };
 
+  // Filter drivers based on selected payment method
+  const filteredDrivers = clientPaymentMethod === 'cash'
+    ? drivers.filter(d => d.accepted_payment_methods?.includes('cash'))
+    : drivers;
+
   const selectedCount = selectedDriverIds.size;
-  const lowestPrice = drivers
+  const lowestPrice = filteredDrivers
     .filter(d => selectedDriverIds.has(d.driver_id))
     .reduce((min, d) => Math.min(min, d.estimated_price || Infinity), Infinity);
 
@@ -603,12 +612,67 @@ export function UnifiedBookingPage() {
           </Card>
         )}
 
-        {/* Map */}
+        {/* Payment method selection - shown after search results */}
+        {drivers.length > 0 && !confirmationStep && (
+          <Card className="border-border/50">
+            <CardContent className="p-4 space-y-3">
+              <h4 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-primary" />
+                Mode de paiement
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setClientPaymentMethod('card')}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium",
+                    clientPaymentMethod === 'card'
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border/50 text-muted-foreground hover:border-border"
+                  )}
+                >
+                  <CreditCard className="h-5 w-5 shrink-0" />
+                  <span>Carte bancaire</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setClientPaymentMethod('cash');
+                    setSelectedDriverIds(prev => {
+                      const next = new Set<string>();
+                      prev.forEach(id => {
+                        const d = drivers.find(dr => dr.driver_id === id);
+                        if (d?.accepted_payment_methods?.includes('cash')) next.add(id);
+                      });
+                      return next;
+                    });
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium",
+                    clientPaymentMethod === 'cash'
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border/50 text-muted-foreground hover:border-border"
+                  )}
+                >
+                  <Banknote className="h-5 w-5 shrink-0" />
+                  <span>Espèces</span>
+                </button>
+              </div>
+              {clientPaymentMethod === 'cash' && filteredDrivers.length === 0 && drivers.length > 0 && (
+                <p className="text-xs text-destructive">Aucun chauffeur dans cette zone n'accepte les espèces. Choisissez carte bancaire.</p>
+              )}
+              {clientPaymentMethod === 'cash' && filteredDrivers.length > 0 && filteredDrivers.length < drivers.length && (
+                <p className="text-xs text-muted-foreground">
+                  {drivers.length - filteredDrivers.length} chauffeur{drivers.length - filteredDrivers.length > 1 ? 's' : ''} masqué{drivers.length - filteredDrivers.length > 1 ? 's' : ''} (n'accepte{drivers.length - filteredDrivers.length > 1 ? 'nt' : ''} pas les espèces)
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {hasSearched && (
           <DriverMap
             clientPosition={pickupCoords}
             destinationPosition={destCoords}
-            drivers={drivers}
+            drivers={filteredDrivers}
             selectedDriverIds={selectedDriverIds}
             onDriverClick={toggleDriverSelection}
             searchRadius={searchRadius}
@@ -656,11 +720,11 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - hidden when in confirmation step */}
-        {drivers.length > 0 && !confirmationStep && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-semibold text-foreground text-sm">
-                {drivers.length} chauffeur{drivers.length > 1 ? 's' : ''} disponible{drivers.length > 1 ? 's' : ''}
+                {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
               </h3>
               {selectedCount > 0 && (
                 <Badge className="bg-primary text-primary-foreground gap-1">
@@ -670,7 +734,7 @@ export function UnifiedBookingPage() {
               )}
             </div>
             <div className="space-y-2">
-              {drivers.map((driver, index) => (
+              {filteredDrivers.map((driver, index) => (
                 <DriverResultCard
                   key={driver.driver_id}
                   driver={driver}
@@ -746,6 +810,51 @@ export function UnifiedBookingPage() {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Payment info banner */}
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {clientPaymentMethod === 'card' ? (
+                    <CreditCard className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Banknote className="h-4 w-4 text-primary" />
+                  )}
+                  <span>Paiement : {clientPaymentMethod === 'card' ? 'Carte bancaire' : 'Espèces'}</span>
+                </div>
+                {(() => {
+                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+                  const hasNonStripeDriver = selectedDriversList.some(d => !d.stripe_connect_charges_enabled);
+                  
+                  if (clientPaymentMethod === 'card' && hasStripeDriver) {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <span>Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course.</span>
+                      </div>
+                    );
+                  }
+                  if (clientPaymentMethod === 'card' && hasNonStripeDriver && !hasStripeDriver) {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <span>Le paiement en carte bancaire sera effectué directement auprès du chauffeur (TPE).</span>
+                      </div>
+                    );
+                  }
+                  if (clientPaymentMethod === 'cash') {
+                    return (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                        <Banknote className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <span>Le paiement en espèces sera effectué directement auprès du chauffeur à la fin de la course.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </CardContent>
             </Card>
 
