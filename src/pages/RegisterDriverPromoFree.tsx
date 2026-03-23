@@ -321,14 +321,13 @@ const RegisterDriverPromoFree = () => {
 
                 <Button type="submit" disabled={loading} className="w-full h-12 bg-success hover:bg-success/90 text-success-foreground font-semibold text-sm">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
-                  Démarrer mon essai gratuit
+                  Créer mon compte gratuit
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
                 
                 <p className="text-[10px] text-center text-muted-foreground">
                   En vous inscrivant, vous acceptez nos{" "}
                   <a href="/terms-of-service" className="underline hover:text-foreground">conditions d'utilisation</a>
-                  {" "}• Accès gratuit, Premium à 9,99€/mois
                 </p>
 
                 <div className="relative py-2">
