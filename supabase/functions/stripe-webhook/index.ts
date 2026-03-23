@@ -826,9 +826,9 @@ serve(async (req) => {
         const courseId = metadata.course_id;
         const senderDriverId = metadata.sender_driver_id;
         const receiverDriverId = metadata.receiver_driver_id;
-        // New commission model: fixed 15%(<30€) / 20%(≥30€) + 0.10€ SoloCab fee
+        // New commission model: fixed 15%(<30€) / 20%(≥30€) + 0.20€ SoloCab fee
         const commissionAmount = parseFloat(metadata.commission_amount || "0");
-        const solocabFee = parseFloat(metadata.solocab_fee || "0.10");
+        const solocabFee = parseFloat(metadata.solocab_fee || "0.20");
         const senderStripeAccount = metadata.sender_stripe_account;
 
         logStep("Shared course payment completed", { 
@@ -871,7 +871,7 @@ serve(async (req) => {
             .from("shared_course_payments")
             .update({
               status: "completed",
-              platform_fee: solocabFee || 0.10,
+              platform_fee: solocabFee || 0.20,
             })
             .eq("stripe_checkout_session_id", session.id);
 
@@ -915,7 +915,7 @@ serve(async (req) => {
           await supabaseClient.from("notifications").insert({
             user_id: receiverData.user_id,
             title: "✅ Paiement course partagée reçu",
-            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (commission ${commissionAmount.toFixed(2)}€ + frais 0.10€).`,
+            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (commission ${commissionAmount.toFixed(2)}€ + frais 0.20€).`,
             type: "info",
           });
         }

@@ -98,7 +98,7 @@ export function SentPartnerCourses({ driverId }: Props) {
           }
         }
         const course = item.courses as any;
-        const solocabFee = ((item as any).solocab_fee_cents || 10) / 100;
+        const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: item.receiver_driver_id,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
@@ -117,7 +117,7 @@ export function SentPartnerCourses({ driverId }: Props) {
       // Enrich pool courses
       for (const item of poolData || []) {
         const course = item.courses as any;
-        const solocabFee = ((item as any).solocab_fee_cents || 10) / 100;
+        const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: null,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
@@ -301,7 +301,7 @@ export function SentPartnerCourses({ driverId }: Props) {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Frais</p>
-                      <p className="text-xs text-muted-foreground">0.10€</p>
+                      <p className="text-xs text-muted-foreground">0.20€</p>
                     </div>
                   </div>
                   {(course.status === 'pending' || course.status === 'available') && (

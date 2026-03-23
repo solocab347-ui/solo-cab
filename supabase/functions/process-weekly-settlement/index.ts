@@ -132,14 +132,14 @@ serve(async (req) => {
       driverBalances[payment.sender_driver_id].commissions_earned += payment.sender_commission_amount;
       driverBalances[payment.sender_driver_id].shared_as_sender += 1;
 
-      // Both pay 0.10€ platform fee for the sharing
+      // Both pay 0.20€ platform fee for the sharing
       ensureDriver(payment.sender_driver_id);
       ensureDriver(payment.receiver_driver_id);
-      driverBalances[payment.receiver_driver_id].solocab_fees += 0.10;
+      driverBalances[payment.receiver_driver_id].solocab_fees += 0.20;
       driverBalances[payment.receiver_driver_id].shared_as_receiver += 1;
 
       totalCommissionVolume += payment.commission_amount;
-      totalPlatformFees += 0.10;
+      totalPlatformFees += 0.20;
     }
 
     // Process standard course SoloCab fees (0.50€ per online course)

@@ -158,7 +158,7 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
           {/* Commission info */}
           <div className="mt-3 p-2 bg-background/60 rounded-lg border border-border/30">
             <p className="text-xs text-muted-foreground">
-              <strong>Commissions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.10€/course
+              <strong>Commissions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.20€/course
             </p>
           </div>
         </CardContent>

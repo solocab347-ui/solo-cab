@@ -43,7 +43,7 @@ serve(async (req) => {
     if (error) throw error;
 
     const totalShares = sharedCourses?.length || 0;
-    const totalSolocabFees = sharedCourses?.reduce((acc, c) => acc + (c.solocab_fee_cents || 10), 0) || 0;
+    const totalSolocabFees = sharedCourses?.reduce((acc, c) => acc + (c.solocab_fee_cents || 20), 0) || 0;
     const totalCommission = sharedCourses?.reduce((acc, c) => acc + Math.round((c.commission_amount || 0) * 100), 0) || 0;
     const totalCourseAmount = sharedCourses?.reduce((acc, c) => acc + Math.round((c.course_amount || 0) * 100), 0) || 0;
 
@@ -55,7 +55,7 @@ serve(async (req) => {
         amount: c.course_amount,
         commission_pct: c.commission_percentage,
         commission: c.commission_amount,
-        solocab_fee: (c.solocab_fee_cents || 10) / 100,
+        solocab_fee: (c.solocab_fee_cents || 20) / 100,
         sender: c.sender_driver_id,
         receiver: c.receiver_driver_id,
         scope: c.sharing_scope,
