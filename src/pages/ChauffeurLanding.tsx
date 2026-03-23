@@ -53,7 +53,7 @@ const ChauffeurLanding = () => {
           <div className="text-center mb-4 sm:mb-6">
             <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-primary-foreground border-0 text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5">
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              14 JOURS GRATUITS - Offre limitée
+              GRATUIT — Inscrivez-vous maintenant
             </Badge>
           </div>
 
@@ -67,24 +67,24 @@ const ChauffeurLanding = () => {
           </h1>
 
           <p className="text-sm sm:text-lg md:text-xl text-muted-foreground text-center mb-6 sm:mb-8 max-w-2xl mx-auto px-2">
-            0% de commission. Seulement {monthlyPrice.toFixed(2)}€/mois. Vos clients vous appartiennent.
+            0% de commission. Accès gratuit. Vos clients vous appartiennent.
           </p>
 
-          {/* CTA Principal - VISIBLE IMMÉDIATEMENT */}
+          {/* CTA Principal */}
           <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-10">
             <Link to="/register-driver-promo" className="w-full sm:w-auto px-2 sm:px-0">
               <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-primary-foreground text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 shadow-2xl shadow-blue-500/30">
                 <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Commencer gratuitement
+                S'inscrire gratuitement
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
             </Link>
             <p className="text-xs sm:text-sm text-muted-foreground text-center">
-              Sans engagement • Résiliable à tout moment
+              Inscription gratuite • Aucun paiement requis
             </p>
           </div>
 
-          {/* 3 avantages clés - Format compact */}
+          {/* 3 avantages clés */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 sm:mb-10 px-1">
             <Card className="p-3 sm:p-5 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-400 mb-0.5 sm:mb-1">0%</div>
