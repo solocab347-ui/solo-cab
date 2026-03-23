@@ -188,33 +188,56 @@ export function UnifiedBookingPage() {
     setDestSuggestions([]);
   };
 
-  // Geolocation
+  // Geolocation - fast with fallback
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      toast.error('La géolocalisation n’est pas disponible sur cet appareil');
+      toast.error('La géolocalisation n\'est pas disponible sur cet appareil');
       return;
     }
     setIsGettingLocation(true);
+    
+    let resolved = false;
+    const resolve = async (lat: number, lng: number) => {
+      if (resolved) return;
+      resolved = true;
+      setPickupCoords({ lat, lng });
+      try {
+        if (!mapboxToken) { setIsGettingLocation(false); return; }
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr`);
+        const data = await res.json();
+        if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
+      } catch {
+        toast.error('Impossible de récupérer votre adresse actuelle');
+      }
+      setIsGettingLocation(false);
+    };
+
+    // Fast attempt (low accuracy, 3s)
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setPickupCoords({ lat: latitude, lng: longitude });
-        try {
-          if (!mapboxToken) return;
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`);
-          const data = await res.json();
-          if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
-        } catch {
-          toast.error('Impossible de récupérer votre adresse actuelle');
-        }
-        setIsGettingLocation(false);
-      },
-      () => {
-        toast.error('Autorisez la localisation pour utiliser votre position');
-        setIsGettingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      () => {},
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
     );
+
+    // High accuracy in parallel (5s)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      () => {
+        if (!resolved) {
+          toast.error('Autorisez la localisation pour utiliser votre position');
+          setIsGettingLocation(false);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+    );
+
+    // Safety timeout
+    setTimeout(() => {
+      if (!resolved) {
+        setIsGettingLocation(false);
+        toast.error('Détection GPS trop lente. Saisissez votre adresse manuellement.');
+      }
+    }, 6000);
   }, [mapboxToken]);
 
   // Search
