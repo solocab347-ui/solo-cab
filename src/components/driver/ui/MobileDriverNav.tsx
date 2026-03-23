@@ -115,8 +115,8 @@ export const MobileDriverNav = ({
       value: "sharing", 
       icon: Handshake, 
       label: t('driverDashboard.menu.partnerships'), 
-      gradient: "from-gray-400 to-gray-500",
-      comingSoon: true
+      gradient: "from-amber-500 to-orange-600",
+      premium: true
     },
     { value: "settings", icon: Settings, label: t('driverDashboard.menu.settings'), gradient: "from-gray-500 to-slate-600" },
   ];
