@@ -93,19 +93,6 @@ export default function DriverPartnerSearch() {
   const [drivers, setDrivers] = useState<AvailableDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
-
-  // Gate Premium access
-  if (!isPremium) {
-    return (
-      <div className="container max-w-2xl mx-auto p-4 pt-8">
-        <PremiumGate 
-          isPremium={false} 
-          featureName="Recherche de partenaires" 
-          featureDescription="Trouvez des chauffeurs partenaires pour échanger vos courses et développer votre réseau."
-        />
-      </div>
-    );
-  }
   
   // Filtres
   const [searchNumber, setSearchNumber] = useState('');
@@ -127,6 +114,19 @@ export default function DriverPartnerSearch() {
   
   // Hook pour récupérer les statuts des demandes de partenariat
   const { getStatus, refresh: refreshStatuses } = useDriverPartnershipStatus(driverInfo?.id || null, driverIds);
+
+  // Gate Premium access
+  if (!isPremium) {
+    return (
+      <div className="container max-w-2xl mx-auto p-4 pt-8">
+        <PremiumGate 
+          isPremium={false} 
+          featureName="Recherche de partenaires" 
+          featureDescription="Trouvez des chauffeurs partenaires pour échanger vos courses et développer votre réseau."
+        />
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (user?.id) {
