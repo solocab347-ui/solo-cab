@@ -76,18 +76,89 @@ export function UnifiedBookingPage() {
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
-  // Debounced autocomplete
+  // Strategic places for quick search (airports, stations, monuments)
+  const STRATEGIC_PLACES = [
+    // Aéroports Paris
+    { name: "Aéroport Paris-Charles de Gaulle (CDG)", place_name: "Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France, France", center: [2.5479, 49.0097], keywords: ["cdg", "roissy", "charles de gaulle"] },
+    { name: "CDG Terminal 1", place_name: "Terminal 1, Aéroport CDG, 95700 Roissy-en-France, France", center: [2.5145, 49.0198], keywords: ["terminal 1", "t1", "cdg 1"] },
+    { name: "CDG Terminal 2", place_name: "Terminal 2, Aéroport CDG, 95700 Roissy-en-France, France", center: [2.5479, 49.0037], keywords: ["terminal 2", "t2", "cdg 2"] },
+    { name: "CDG Terminal 3", place_name: "Terminal 3, Aéroport CDG, 95700 Roissy-en-France, France", center: [2.5145, 49.0060], keywords: ["terminal 3", "t3", "cdg 3"] },
+    { name: "Aéroport Paris-Orly", place_name: "Aéroport Paris-Orly, 94390 Orly, France", center: [2.3592, 48.7262], keywords: ["orly"] },
+    { name: "Orly Terminal 1-2-3", place_name: "Terminal 1-2-3, Aéroport Orly, 94390 Orly, France", center: [2.3653, 48.7310], keywords: ["orly 1", "orly 2", "orly 3", "terminal orly"] },
+    { name: "Orly Terminal 4", place_name: "Terminal 4, Aéroport Orly, 94390 Orly, France", center: [2.3560, 48.7230], keywords: ["orly 4", "terminal 4 orly"] },
+    { name: "Aéroport de Beauvais-Tillé", place_name: "Aéroport de Beauvais-Tillé, 60000 Tillé, France", center: [2.1106, 49.4544], keywords: ["beauvais", "tillé"] },
+    { name: "Aéroport du Bourget", place_name: "Aéroport du Bourget, 93350 Le Bourget, France", center: [2.4414, 48.9694], keywords: ["bourget", "le bourget"] },
+    // Gares Paris
+    { name: "Gare du Nord", place_name: "Gare du Nord, 75010 Paris, France", center: [2.3553, 48.8809], keywords: ["gare du nord", "nord"] },
+    { name: "Gare de Lyon", place_name: "Gare de Lyon, 75012 Paris, France", center: [2.3731, 48.8443], keywords: ["gare de lyon", "lyon"] },
+    { name: "Gare Montparnasse", place_name: "Gare Montparnasse, 75015 Paris, France", center: [2.3200, 48.8413], keywords: ["montparnasse"] },
+    { name: "Gare de l'Est", place_name: "Gare de l'Est, 75010 Paris, France", center: [2.3591, 48.8763], keywords: ["gare de l'est", "est"] },
+    { name: "Gare Saint-Lazare", place_name: "Gare Saint-Lazare, 75008 Paris, France", center: [2.3253, 48.8762], keywords: ["saint-lazare", "saint lazare", "st lazare"] },
+    { name: "Gare d'Austerlitz", place_name: "Gare d'Austerlitz, 75013 Paris, France", center: [2.3656, 48.8424], keywords: ["austerlitz"] },
+    // Monuments Paris
+    { name: "Tour Eiffel", place_name: "Tour Eiffel, Champ de Mars, 75007 Paris, France", center: [2.2945, 48.8584], keywords: ["eiffel", "tour eiffel"] },
+    { name: "Arc de Triomphe", place_name: "Arc de Triomphe, Place Charles de Gaulle, 75008 Paris, France", center: [2.2950, 48.8738], keywords: ["arc de triomphe", "triomphe", "étoile"] },
+    { name: "Champs-Élysées", place_name: "Avenue des Champs-Élysées, 75008 Paris, France", center: [2.3067, 48.8698], keywords: ["champs-élysées", "champs élysées", "champs elysees"] },
+    { name: "Musée du Louvre", place_name: "Musée du Louvre, 75001 Paris, France", center: [2.3376, 48.8606], keywords: ["louvre", "musée du louvre"] },
+    { name: "Notre-Dame de Paris", place_name: "Notre-Dame de Paris, Île de la Cité, 75004 Paris, France", center: [2.3499, 48.8530], keywords: ["notre-dame", "notre dame"] },
+    { name: "Sacré-Cœur", place_name: "Basilique du Sacré-Cœur, 75018 Paris, France", center: [2.3431, 48.8867], keywords: ["sacré-coeur", "sacré coeur", "montmartre"] },
+    { name: "Disneyland Paris", place_name: "Disneyland Paris, 77777 Marne-la-Vallée, France", center: [2.7836, 48.8722], keywords: ["disneyland", "disney", "eurodisney", "marne la vallée"] },
+    { name: "La Défense", place_name: "La Défense, 92800 Puteaux, France", center: [2.2378, 48.8918], keywords: ["la défense", "defense", "grande arche"] },
+    // Autres aéroports France
+    { name: "Aéroport Lyon Saint-Exupéry", place_name: "Aéroport Lyon Saint-Exupéry, 69125 Colombier-Saugnieu, France", center: [5.0887, 45.7256], keywords: ["lyon saint exupéry", "saint exupery", "lyon aéroport"] },
+    { name: "Aéroport Nice Côte d'Azur", place_name: "Aéroport Nice Côte d'Azur, 06206 Nice, France", center: [7.2159, 43.6584], keywords: ["nice aéroport", "nice côte d'azur"] },
+    { name: "Aéroport Marseille Provence", place_name: "Aéroport Marseille Provence, 13700 Marignane, France", center: [5.2144, 43.4393], keywords: ["marseille aéroport", "marignane", "marseille provence"] },
+    { name: "Aéroport Toulouse-Blagnac", place_name: "Aéroport Toulouse-Blagnac, 31700 Blagnac, France", center: [1.3642, 43.6293], keywords: ["toulouse aéroport", "blagnac"] },
+    // Centres d'exposition
+    { name: "Parc des Expositions de Villepinte", place_name: "Parc des Expositions, 93420 Villepinte, France", center: [2.5139, 48.9697], keywords: ["villepinte", "parc des expositions", "nord villepinte"] },
+    { name: "Palais des Congrès", place_name: "Palais des Congrès, 75017 Paris, France", center: [2.2834, 48.8789], keywords: ["palais des congrès", "porte maillot"] },
+    { name: "Paris Expo Porte de Versailles", place_name: "Paris Expo Porte de Versailles, 75015 Paris, France", center: [2.2875, 48.8323], keywords: ["porte de versailles", "expo versailles", "parc expo"] },
+  ];
+
+  // Search strategic places by query
+  const searchStrategicPlaces = useCallback((query: string) => {
+    const q = query.toLowerCase().trim();
+    if (q.length < 2) return [];
+    return STRATEGIC_PLACES.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.keywords.some(k => k.includes(q) || q.includes(k))
+    ).map(p => ({
+      place_name: p.place_name,
+      center: p.center,
+      text: p.name,
+      _isStrategic: true,
+    }));
+  }, []);
+
+  // Debounced autocomplete with strategic places priority
   const fetchSuggestions = useCallback(async (query: string, setter: (s: any[]) => void, showSetter: (b: boolean) => void) => {
-    if (query.length < 3 || !mapboxToken) { setter([]); showSetter(false); return; }
+    if (query.length < 2) { setter([]); showSetter(false); return; }
+    
+    // Search strategic places first
+    const strategicResults = searchStrategicPlaces(query);
+    
+    if (query.length < 3 || !mapboxToken) {
+      if (strategicResults.length > 0) { setter(strategicResults); showSetter(true); }
+      else { setter([]); showSetter(false); }
+      return;
+    }
+    
     try {
       const res = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=address,place,locality,poi&language=fr&limit=5`
       );
       const data = await res.json();
-      setter(data.features || []);
+      // Merge: strategic places first, then Mapbox results (deduped)
+      const mapboxResults = (data.features || []).filter((f: any) => 
+        !strategicResults.some(s => s.place_name === f.place_name)
+      );
+      setter([...strategicResults, ...mapboxResults].slice(0, 8));
       showSetter(true);
-    } catch { setter([]); }
-  }, [mapboxToken]);
+    } catch { 
+      if (strategicResults.length > 0) { setter(strategicResults); showSetter(true); }
+      else { setter([]); }
+    }
+  }, [mapboxToken, searchStrategicPlaces]);
 
   const handlePickupChange = (val: string) => {
     setPickupAddress(val);
@@ -117,33 +188,56 @@ export function UnifiedBookingPage() {
     setDestSuggestions([]);
   };
 
-  // Geolocation
+  // Geolocation - fast with fallback
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      toast.error('La géolocalisation n’est pas disponible sur cet appareil');
+      toast.error('La géolocalisation n\'est pas disponible sur cet appareil');
       return;
     }
     setIsGettingLocation(true);
+    
+    let resolved = false;
+    const resolve = async (lat: number, lng: number) => {
+      if (resolved) return;
+      resolved = true;
+      setPickupCoords({ lat, lng });
+      try {
+        if (!mapboxToken) { setIsGettingLocation(false); return; }
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr`);
+        const data = await res.json();
+        if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
+      } catch {
+        toast.error('Impossible de récupérer votre adresse actuelle');
+      }
+      setIsGettingLocation(false);
+    };
+
+    // Fast attempt (low accuracy, 3s)
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setPickupCoords({ lat: latitude, lng: longitude });
-        try {
-          if (!mapboxToken) return;
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`);
-          const data = await res.json();
-          if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
-        } catch {
-          toast.error('Impossible de récupérer votre adresse actuelle');
-        }
-        setIsGettingLocation(false);
-      },
-      () => {
-        toast.error('Autorisez la localisation pour utiliser votre position');
-        setIsGettingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      () => {},
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
     );
+
+    // High accuracy in parallel (5s)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      () => {
+        if (!resolved) {
+          toast.error('Autorisez la localisation pour utiliser votre position');
+          setIsGettingLocation(false);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+    );
+
+    // Safety timeout
+    setTimeout(() => {
+      if (!resolved) {
+        setIsGettingLocation(false);
+        toast.error('Détection GPS trop lente. Saisissez votre adresse manuellement.');
+      }
+    }, 6000);
   }, [mapboxToken]);
 
   // Search
@@ -358,11 +452,18 @@ export function UnifiedBookingPage() {
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
                   {showPickupSuggestions && pickupSuggestions.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
                       {pickupSuggestions.map((f, i) => (
                         <button key={i} className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted/50 flex items-start gap-2 border-b border-border/30 last:border-0" onMouseDown={() => selectPickupSuggestion(f)}>
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <span className="text-foreground">{f.place_name}</span>
+                          {f._isStrategic ? (
+                            <Navigation className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                          ) : (
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          )}
+                          <div>
+                            {f._isStrategic && <span className="text-[10px] text-primary font-medium block">Lieu stratégique</span>}
+                            <span className="text-foreground">{f.place_name}</span>
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -391,11 +492,18 @@ export function UnifiedBookingPage() {
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
                   {showDestSuggestions && destSuggestions.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
                       {destSuggestions.map((f, i) => (
                         <button key={i} className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted/50 flex items-start gap-2 border-b border-border/30 last:border-0" onMouseDown={() => selectDestSuggestion(f)}>
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <span className="text-foreground">{f.place_name}</span>
+                          {f._isStrategic ? (
+                            <Navigation className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                          ) : (
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          )}
+                          <div>
+                            {f._isStrategic && <span className="text-[10px] text-primary font-medium block">Lieu stratégique</span>}
+                            <span className="text-foreground">{f.place_name}</span>
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -463,22 +571,32 @@ export function UnifiedBookingPage() {
 
         {/* Route info */}
         {routeDistanceKm !== null && (
-          <div className="flex items-center gap-3 px-1">
-            <Badge variant="secondary" className="gap-1">
-              <Car className="h-3 w-3" />
-              {routeDistanceKm.toFixed(1)} km
-            </Badge>
-            {routeDurationMin !== null && (
-              <Badge variant="outline" className="gap-1">
-                ~{Math.round(routeDurationMin)} min
-              </Badge>
-            )}
-            {searchRadius && (
-              <Badge variant="outline" className="gap-1 text-muted-foreground">
-                Rayon: {searchRadius} km
-              </Badge>
-            )}
-          </div>
+          <Card className="border-border/50">
+            <CardContent className="p-3 flex items-center justify-around text-center">
+              <div>
+                <div className="text-lg font-bold text-foreground">{routeDistanceKm.toFixed(1)} km</div>
+                <div className="text-[11px] text-muted-foreground">Distance de la course</div>
+              </div>
+              {routeDurationMin !== null && (
+                <>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-lg font-bold text-foreground">~{Math.round(routeDurationMin)} min</div>
+                    <div className="text-[11px] text-muted-foreground">Temps estimé</div>
+                  </div>
+                </>
+              )}
+              {searchRadius && (
+                <>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-lg font-bold text-muted-foreground">{searchRadius} km</div>
+                    <div className="text-[11px] text-muted-foreground">Rayon de recherche</div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Map */}
@@ -601,7 +719,10 @@ export function UnifiedBookingPage() {
                 ? `Continuer (${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''})`
                 : `Envoyer la demande à ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
               }
-              {lowestPrice !== Infinity && (
+              {lowestPrice !== Infinity && selectedCount === 1 && (
+                <span className="ml-1">• {lowestPrice.toFixed(0)}€</span>
+              )}
+              {lowestPrice !== Infinity && selectedCount > 1 && (
                 <span className="ml-1">• à partir de {lowestPrice.toFixed(0)}€</span>
               )}
             </Button>
