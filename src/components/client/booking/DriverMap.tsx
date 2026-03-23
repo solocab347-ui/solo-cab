@@ -1,8 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import type { Circle as LeafletCircle, CircleMarker, LayerGroup, Map as LeafletMap, Marker } from 'leaflet';
+import type { Circle as LeafletCircle, CircleMarker, LayerGroup, Map as LeafletMap, Marker, TileLayer } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
+
+const TILE_PROVIDERS = [
+  {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    options: {
+      subdomains: 'abcd',
+      maxZoom: 20,
+      crossOrigin: true,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    },
+  },
+  {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: {
+      subdomains: ['a', 'b', 'c'],
+      maxZoom: 19,
+      crossOrigin: true,
+      attribution: '&copy; OpenStreetMap contributors',
+    },
+  },
+] as const;
 
 interface DriverMapProps {
   clientPosition: { lat: number; lng: number } | null;
@@ -52,6 +73,8 @@ export function DriverMap({
   const radiusCircleRef = useRef<LeafletCircle | null>(null);
   const destinationMarkerRef = useRef<Marker | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const tileLayerRef = useRef<TileLayer | null>(null);
+  const tileProviderIndexRef = useRef(0);
   const [mapStatus, setMapStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -67,25 +90,48 @@ export function DriverMap({
       preferCanvas: true,
     }).setView(clientPosition ? [clientPosition.lat, clientPosition.lng] : [46.6034, 2.3522], clientPosition ? 11 : 5);
 
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      subdomains: ['a', 'b', 'c'],
-      crossOrigin: true,
-      attribution: '&copy; OpenStreetMap contributors',
-    });
+    const attachTileLayer = (providerIndex: number) => {
+      const provider = TILE_PROVIDERS[providerIndex];
+      if (!provider) {
+        setMapStatus('error');
+        setMapError('Le fond de carte ne peut pas se charger pour le moment.');
+        return;
+      }
 
-    tileLayer.on('load', () => {
-      setMapStatus('ready');
-      setMapError(null);
-      requestAnimationFrame(() => map.invalidateSize());
-    });
+      tileLayerRef.current?.remove();
+      tileProviderIndexRef.current = providerIndex;
 
-    tileLayer.on('tileerror', () => {
-      setMapStatus('error');
-      setMapError('La carte ne peut pas se charger pour le moment.');
-    });
+      const tileLayer = L.tileLayer(provider.url, provider.options);
+      let hasLoadedTiles = false;
 
-    tileLayer.addTo(map);
+      tileLayer.on('loading', () => {
+        setMapStatus('loading');
+      });
+
+      tileLayer.on('load', () => {
+        hasLoadedTiles = true;
+        setMapStatus('ready');
+        setMapError(null);
+        requestAnimationFrame(() => map.invalidateSize());
+      });
+
+      tileLayer.on('tileerror', () => {
+        if (hasLoadedTiles) return;
+
+        const nextProviderIndex = providerIndex + 1;
+        if (nextProviderIndex < TILE_PROVIDERS.length) {
+          attachTileLayer(nextProviderIndex);
+        } else {
+          setMapStatus('error');
+          setMapError('Le fond de carte ne peut pas se charger pour le moment.');
+        }
+      });
+
+      tileLayer.addTo(map);
+      tileLayerRef.current = tileLayer;
+    };
+
+    attachTileLayer(0);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
 
@@ -109,6 +155,7 @@ export function DriverMap({
       resizeObserverRef.current = null;
       map.remove();
       mapRef.current = null;
+      tileLayerRef.current = null;
       driverLayerRef.current = null;
       routeLayerRef.current = null;
       clientMarkerRef.current = null;
@@ -210,7 +257,7 @@ export function DriverMap({
   }, [mapStatus, drivers.length]);
 
   return (
-    <div className="relative w-full min-h-[250px] overflow-hidden rounded-xl border border-border/50 bg-muted/40 shadow-lg sm:min-h-[350px]">
+    <div className="relative w-full min-h-[250px] overflow-hidden rounded-xl border border-border/50 bg-muted shadow-lg sm:min-h-[350px]">
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
       {(tokenLoading || mapStatus === 'loading') && (
