@@ -93,22 +93,57 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           p_mode: searchMode,
         });
 
-        let { data, error: rpcError } = await searchDrivers(mode);
+        let data: NearbyDriverRpcRow[] | null = null;
+        let rpcError: unknown = null;
+
+        if (mode === 'immediate') {
+          const [immediateResponse, reservationResponse] = await Promise.all([
+            searchDrivers('immediate'),
+            searchDrivers('reservation'),
+          ]);
+
+          if (immediateResponse.error && reservationResponse.error) {
+            rpcError = immediateResponse.error;
+          } else {
+            const immediateDrivers = (immediateResponse.data ?? []) as NearbyDriverRpcRow[];
+            const reservationDrivers = (reservationResponse.data ?? []) as NearbyDriverRpcRow[];
+            const mergedDrivers = new Map<string, NearbyDriverRpcRow>();
+
+            immediateDrivers.forEach((driver) => {
+              mergedDrivers.set(driver.driver_id, {
+                ...driver,
+                is_live_location: true,
+              });
+            });
+
+            reservationDrivers.forEach((driver) => {
+              if (!mergedDrivers.has(driver.driver_id)) {
+                mergedDrivers.set(driver.driver_id, driver);
+              }
+            });
+
+            data = Array.from(mergedDrivers.values()).sort((a, b) => {
+              const aLive = a.is_live_location ? 1 : 0;
+              const bLive = b.is_live_location ? 1 : 0;
+              if (aLive !== bLive) return bLive - aLive;
+              return a.distance_meters - b.distance_meters;
+            });
+
+            if (reservationDrivers.length > 0) {
+              setFallbackToReservation(immediateDrivers.length === 0 || reservationDrivers.length > immediateDrivers.length);
+            }
+          }
+        } else {
+          const response = await searchDrivers(mode);
+          data = (response.data ?? []) as NearbyDriverRpcRow[];
+          rpcError = response.error;
+        }
 
         if (rpcError) {
           console.error('RPC error:', rpcError);
           setError('Erreur lors de la recherche des chauffeurs');
           setDrivers([]);
           return;
-        }
-
-        if ((!data || data.length === 0) && mode === 'immediate') {
-          const fallbackResponse = await searchDrivers('reservation');
-
-          if (!fallbackResponse.error && fallbackResponse.data && fallbackResponse.data.length > 0) {
-            data = fallbackResponse.data;
-            setFallbackToReservation(true);
-          }
         }
 
         if (!data || data.length === 0) {
@@ -170,7 +205,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         });
 
         setDrivers(driversWithPrices);
-        setSearchRadius(data[0]?.search_radius_used || 5);
+        setSearchRadius(Math.max(...driversWithPrices.map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
         setError('Erreur de connexion');
