@@ -141,11 +141,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     try {
       toast.loading("Redirection vers le paiement...");
       
-      // Use pioneer subscription for pioneers
-      const functionName = isPioneer ? "create-pioneer-subscription" : "create-driver-subscription";
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: isPioneer ? { driver_id: driverProfile?.driver?.id } : undefined
-      });
+      const { data, error } = await supabase.functions.invoke("create-premium-checkout");
 
       if (error) throw error;
 
