@@ -141,11 +141,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     try {
       toast.loading("Redirection vers le paiement...");
       
-      // Use pioneer subscription for pioneers
-      const functionName = isPioneer ? "create-pioneer-subscription" : "create-driver-subscription";
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: isPioneer ? { driver_id: driverProfile?.driver?.id } : undefined
-      });
+      const { data, error } = await supabase.functions.invoke("create-premium-checkout");
 
       if (error) throw error;
 
@@ -240,59 +236,36 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Section Réabonnement après résiliation */}
       {isCanceled && !isActive && (
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-500/30">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="p-3 bg-primary/20 rounded-xl">
-              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            <div className="p-3 bg-amber-500/20 rounded-xl">
+              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500" />
             </div>
             <div className="flex-1 w-full space-y-4">
               <div>
                 <h3 className="font-bold text-base sm:text-lg text-foreground mb-2">
-                  Réactiver votre abonnement
+                  Réactiver Premium
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  Votre abonnement a été résilié. Reprenez l'accès complet à SoloCab en vous réabonnant.
+                  Votre abonnement Premium a été résilié. Vous gardez l'accès gratuit aux fonctionnalités de base. Réabonnez-vous pour retrouver les fonctionnalités avancées.
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button
-                  onClick={() => handleResubscribe("monthly")}
-                  disabled={resubscribing}
-                  className="w-full py-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                >
-                  {resubscribing ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <CreditCard className="w-5 h-5 mr-2" />
-                  )}
-                    <div className="text-left">
-                    <div className="font-bold">Mensuel</div>
-                    <div className="text-xs opacity-80">29,99€/mois</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => handleResubscribe("annual")}
-                  disabled={resubscribing}
-                  variant="outline"
-                  className="w-full py-6 border-2 border-primary/50 hover:bg-primary/10"
-                >
-                  {resubscribing ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <Gift className="w-5 h-5 mr-2 text-primary" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-bold">Annuel</div>
-                    <div className="text-xs text-muted-foreground">305,90€/an (-15%)</div>
-                  </div>
-                </Button>
-              </div>
-              
-              <p className="text-xs text-center text-muted-foreground">
-                Paiement immédiat • Accès instantané • Sans engagement
-              </p>
+              <Button
+                onClick={handleSubscribe}
+                disabled={loading}
+                className="w-full py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="w-5 h-5 mr-2" />
+                )}
+                <div className="text-left">
+                  <div className="font-bold">Repasser Premium — 9,99€/mois</div>
+                  <div className="text-xs opacity-80">Sans engagement</div>
+                </div>
+              </Button>
             </div>
           </div>
         </Card>
@@ -457,25 +430,27 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Status Alert - Only when truly inactive (no trial, no free access) */}
+      {/* Free Tier Info - When user has free access (no premium) */}
       {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
-        <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
+            <div className="p-3 bg-amber-500/20 rounded-xl">
+              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 flex-shrink-0" />
+            </div>
             <div className="flex-1 w-full">
-              <h3 className="font-bold text-base sm:text-lg text-destructive mb-2">
-                Abonnement Inactif
+              <h3 className="font-bold text-base sm:text-lg text-foreground mb-2">
+                Passez Premium pour aller plus loin
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                Votre accès à la plateforme est limité. Souscrivez à l'abonnement pour activer toutes les fonctionnalités et commencer à recevoir des clients.
+                Vous bénéficiez de l'accès gratuit à toutes les fonctionnalités de base. Passez Premium pour accéder aux partenariats, au partage de courses et aux outils de prospection.
               </p>
               <Button
                 onClick={handleSubscribe}
                 disabled={loading}
-                className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">14 jours d'essai gratuit puis 29,99€/mois</span>
+                <span className="truncate">Passer Premium — 9,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -560,10 +535,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
             <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-foreground">
-              {isPioneer ? 'Abonnement Pionnier SoloCab' : 'Abonnement SoloCab'}
+              Abonnement SoloCab Premium
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              {isPioneer ? 'Tarif exclusif à vie pour les pionniers' : 'Accès complet à la plateforme professionnelle'}
+              Débloquez les fonctionnalités avancées pour développer votre activité
             </p>
           </div>
           {isPioneer ? (
@@ -609,10 +584,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
           ) : !hasAdminFreeAccess && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
-              <span className="text-xs sm:text-sm text-gray-300">Offre</span>
+              <span className="text-xs sm:text-sm text-gray-300">Abonnement Premium</span>
               <div className="flex flex-col items-end">
-                <Badge className="bg-green-500 mb-1">14 jours d'essai gratuit</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 29,99€ / mois</span>
+                <span className="font-bold text-sm sm:text-base text-white">9,99€ / mois</span>
+                <span className="text-xs text-gray-400">Sans engagement</span>
               </div>
             </div>
           )}
@@ -629,7 +604,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
           <div className="bg-white/5 rounded-lg p-3 sm:p-4 space-y-2 border border-white/10">
             <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">
-              {(isInTrialPeriod || hasAdminFreeAccess) ? "✓ Vous avez accès à :" : "✓ Inclus dans l'abonnement :"}
+              ✓ Accès Gratuit (inclus pour tous) :
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
@@ -642,23 +617,37 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Génération automatique de devis et factures</span>
+                <span className="text-gray-200">Devis et factures automatiques</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">QR Code personnel pour recruter des clients</span>
+                <span className="text-gray-200">QR Code et profil public</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Profil public sur la vitrine</span>
+                <span className="text-gray-200">0% de commission</span>
+              </li>
+            </ul>
+            
+            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-amber-400 pt-3 border-t border-white/10">
+              👑 Premium (9,99€/mois) :
+            </h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+              <li className="flex items-center gap-2">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Partenariats entre chauffeurs</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">0% de commission sur vos courses</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Échange et partage de courses</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Support 7j/7</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Codes promotionnels</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Prospection avancée</span>
               </li>
             </ul>
           </div>
@@ -668,11 +657,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
-              className={`w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 ${isPioneer ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : 'bg-gradient-premium'}`}
+              className="w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">
-                {isPioneer ? 'Activer - Offre Pionnier' : '14 jours gratuits puis 29,99€/mois'}
+                Passer Premium — 9,99€/mois
               </span>
             </Button>
           )}
@@ -689,7 +678,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         trialEndDate={isInTrialPeriod ? trialEndDate : (isPioneer ? new Date(pioneerTrialEnd!) : undefined)}
         trialCancelled={trialCancelled}
         nextBillingDate={driverProfile?.driver?.subscription_end_date}
-        nextBillingAmount={isPioneer ? 39.99 : 29.99}
+        nextBillingAmount={9.99}
         cancelAtPeriodEnd={driverProfile?.driver?.subscription_cancel_at_period_end}
         cancelAt={driverProfile?.driver?.subscription_cancel_at}
         hasFreeAccess={hasAdminFreeAccess}
@@ -705,23 +694,20 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Comparison - Updated for pioneers */}
       {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && !isPioneer && (
-        <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
-          <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
-            💰 Économisez jusqu'à 15 000€/an
+        <Card className="p-3 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 overflow-hidden">
+          <h4 className="font-bold text-sm sm:text-lg text-foreground mb-2 sm:mb-4 text-center sm:text-left">
+            💰 Modèle Freemium — Aucune commission
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-            <div className="bg-premium-foreground/10 rounded-lg p-3 sm:p-4">
-              <p className="text-premium-foreground/80 mb-1 sm:mb-2 text-xs sm:text-sm">Uber / Bolt</p>
-              <p className="text-lg sm:text-2xl font-bold text-premium-foreground break-words">~1 250€/mois</p>
-              <p className="text-premium-foreground/70 text-xs">Commission 25%</p>
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4">
+              <p className="text-muted-foreground mb-1 sm:mb-2 text-xs sm:text-sm">Uber / Bolt</p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground break-words">~1 250€/mois</p>
+              <p className="text-muted-foreground text-xs">Commission 25%</p>
             </div>
-            <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
-              <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
-              <p className="text-lg sm:text-2xl font-bold text-premium break-words">
-                <span className="text-green-400 text-sm">14 jours gratuits</span>
-                <br />29,99€/mois
-              </p>
-              <p className="text-premium/70 text-xs">0% commission</p>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
+              <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab Premium</p>
+              <p className="text-lg sm:text-2xl font-bold text-white break-words">9,99€/mois</p>
+              <p className="text-white/80 text-xs">0% commission • Gratuit de base</p>
             </div>
           </div>
         </Card>

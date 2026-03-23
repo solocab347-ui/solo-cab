@@ -412,69 +412,12 @@ export function getNavigationPath(
     case "company":
       return "/company-dashboard";
     case "driver":
-      // Helper pour le dashboard approprié
-      const getDriverDashboard = () => {
-        return driverData?.is_fleet_driver && driverData?.fleet_manager_id 
-          ? "/fleet-driver-dashboard" 
-          : "/driver-dashboard";
-      };
-
-      // ========================================
-      // RÈGLE 1: Accès gratuit administratif PERMANENT
-      // Types: "unlimited", "administrative" = JAMAIS de paiement demandé
-      // ========================================
-      if (driverData?.free_access_granted === true) {
-        const isUnlimitedAccess = 
-          driverData.free_access_type === "unlimited" || 
-          driverData.free_access_type === "administrative";
-        
-        if (isUnlimitedAccess) {
-          // Accès illimité = TOUJOURS accès, même si end_date passée par erreur
-          return getDriverDashboard();
-        }
-        
-        // ========================================
-        // RÈGLE 2: Accès gratuit temporaire (avec date de fin)
-        // ========================================
-        if (driverData.free_access_end_date) {
-          const endDate = new Date(driverData.free_access_end_date);
-          if (endDate > new Date()) {
-            // Date pas encore passée = accès valide
-            return getDriverDashboard();
-          }
-          // Date passée mais pas unlimited = continuer vers vérifications payantes
-        } else {
-          // free_access_granted mais pas de date = considérer comme illimité
-          return getDriverDashboard();
-        }
+      // MODÈLE FREEMIUM: Tous les chauffeurs validés accèdent au dashboard
+      // Le gating premium se fait à l'intérieur du dashboard, pas à la navigation
+      if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
+        return "/fleet-driver-dashboard";
       }
-
-      // ========================================
-      // RÈGLE 3: Abonnement payé via Stripe
-      // ========================================
-      if (driverData?.subscription_paid === true) {
-        return getDriverDashboard();
-      }
-
-      // ========================================
-      // RÈGLE 4: Essai pionnier actif (30 jours depuis création)
-      // Uniquement pour les pionniers sans autre accès
-      // ========================================
-      if (driverData?.is_pioneer && driverData.created_at) {
-        const createdAt = new Date(driverData.created_at);
-        const pioneerTrialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-        if (new Date() < pioneerTrialEnd) {
-          return getDriverDashboard();
-        }
-        // Essai pionnier expiré = paiement requis
-        return "/pioneer-payment";
-      }
-
-      // ========================================
-      // RÈGLE 5: Chauffeur normal sans accès spécial
-      // Le dashboard vérifiera l'essai 14 jours standard
-      // ========================================
-      return getDriverDashboard();
+      return "/driver-dashboard";
       
     case "client":
       return isEmployee ? "/company-employee-dashboard" : "/client-dashboard";

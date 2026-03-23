@@ -12,7 +12,7 @@ import {
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
   FolderOpen, Calendar, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
@@ -32,6 +32,7 @@ interface NavItem {
   gradient?: string;
   badge?: number;
   comingSoon?: boolean;
+  premium?: boolean;
 }
 
 interface NavGroup {
@@ -97,9 +98,9 @@ export const MobileDriverNav = ({
       gradient: "from-blue-500 to-cyan-600",
       items: [
         { value: "objectives", icon: Target, label: t('driverDashboard.menu.objectives') },
-        { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign') },
+        { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign'), premium: true },
         { value: "profitability", icon: PieChart, label: t('driverDashboard.menu.profitability') },
-        { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection') },
+        { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection'), premium: true },
       ],
     },
   ];
@@ -114,8 +115,8 @@ export const MobileDriverNav = ({
       value: "sharing", 
       icon: Handshake, 
       label: t('driverDashboard.menu.partnerships'), 
-      gradient: "from-gray-400 to-gray-500",
-      comingSoon: true
+      gradient: "from-amber-500 to-orange-600",
+      premium: true
     },
     { value: "settings", icon: Settings, label: t('driverDashboard.menu.settings'), gradient: "from-gray-500 to-slate-600" },
   ];
@@ -141,13 +142,19 @@ export const MobileDriverNav = ({
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-left font-medium truncate">{item.label}</span>
+        {item.premium && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
+            <Crown className="w-3 h-3" />
+            Premium
+          </Badge>
+        )}
         {item.comingSoon && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" />
             Bientôt
           </Badge>
         )}
-        {!item.comingSoon && item.badge && item.badge > 0 && (
+        {!item.comingSoon && !item.premium && item.badge && item.badge > 0 && (
           <Badge className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5">
             {item.badge}
           </Badge>
