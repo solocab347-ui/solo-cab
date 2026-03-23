@@ -112,8 +112,18 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
     }
   };
 
-  if (loading) {
+  if (loading || premiumLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!isPremium) {
+    return (
+      <PremiumGate 
+        isPremium={false} 
+        featureName="Partage de courses" 
+        featureDescription="Partagez vos courses avec d'autres chauffeurs du réseau, gérez vos favoris et gagnez des commissions."
+      />
+    );
   }
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
