@@ -719,11 +719,11 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - hidden when in confirmation step */}
-        {drivers.length > 0 && !confirmationStep && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-semibold text-foreground text-sm">
-                {drivers.length} chauffeur{drivers.length > 1 ? 's' : ''} disponible{drivers.length > 1 ? 's' : ''}
+                {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
               </h3>
               {selectedCount > 0 && (
                 <Badge className="bg-primary text-primary-foreground gap-1">
@@ -733,7 +733,7 @@ export function UnifiedBookingPage() {
               )}
             </div>
             <div className="space-y-2">
-              {drivers.map((driver, index) => (
+              {filteredDrivers.map((driver, index) => (
                 <DriverResultCard
                   key={driver.driver_id}
                   driver={driver}
