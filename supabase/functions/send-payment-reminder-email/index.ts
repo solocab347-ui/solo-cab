@@ -76,7 +76,7 @@ serve(async (req) => {
           
           <p>${urgencyText}</p>
           
-          <p>Nous avons tenté de prélever votre abonnement mensuel SoloCab de <strong>29,99€</strong>, mais le paiement n'a pas pu être effectué.</p>
+          <p>Nous avons tenté de prélever votre abonnement Premium SoloCab de <strong>9,99€</strong>, mais le paiement n'a pas pu être effectué.</p>
           
           <div style="background: ${isUrgent ? '#fef2f2' : '#fef9c3'}; border: 2px solid ${isUrgent ? '#dc2626' : '#ca8a04'}; padding: 20px; border-radius: 12px; margin: 24px 0;">
             <h3 style="color: ${isUrgent ? '#dc2626' : '#ca8a04'}; margin-top: 0;">${urgencyEmoji} Action requise immédiatement</h3>
