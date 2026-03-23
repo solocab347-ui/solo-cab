@@ -719,7 +719,10 @@ export function UnifiedBookingPage() {
                 ? `Continuer (${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''})`
                 : `Envoyer la demande à ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
               }
-              {lowestPrice !== Infinity && (
+              {lowestPrice !== Infinity && selectedCount === 1 && (
+                <span className="ml-1">• {lowestPrice.toFixed(0)}€</span>
+              )}
+              {lowestPrice !== Infinity && selectedCount > 1 && (
                 <span className="ml-1">• à partir de {lowestPrice.toFixed(0)}€</span>
               )}
             </Button>
