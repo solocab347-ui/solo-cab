@@ -4,7 +4,10 @@ import type { Circle as LeafletCircle, CircleMarker, LayerGroup, Map as LeafletM
 import 'leaflet/dist/leaflet.css';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 
-const TILE_PROVIDERS = [
+const TILE_PROVIDERS: Array<{
+  url: string;
+  options: L.TileLayerOptions;
+}> = [
   {
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     options: {
@@ -23,7 +26,7 @@ const TILE_PROVIDERS = [
       attribution: '&copy; OpenStreetMap contributors',
     },
   },
-] as const;
+];
 
 interface DriverMapProps {
   clientPosition: { lat: number; lng: number } | null;
