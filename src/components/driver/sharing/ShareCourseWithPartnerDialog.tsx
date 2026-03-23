@@ -33,6 +33,7 @@ interface Favorite {
   show_phone: boolean;
   driver_phone: string | null;
   has_stripe_connect: boolean;
+  is_premium: boolean;
 }
 
 interface ShareCourseWithPartnerDialogProps {
