@@ -178,7 +178,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
       <Alert className="bg-blue-500/10 border-blue-500/30">
         <FileText className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est déduite automatiquement via Stripe Connect. Frais de transaction : 0.10€.
+          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est déduite automatiquement via Stripe Connect. Frais de transaction : 0.20€.
         </AlertDescription>
       </Alert>
 

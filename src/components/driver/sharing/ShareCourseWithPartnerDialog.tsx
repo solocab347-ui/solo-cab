@@ -397,7 +397,7 @@ export function ShareCourseWithPartnerDialog({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Frais de transaction</span>
-                <span className="font-medium">0.10€</span>
+                <span className="font-medium">0.20€</span>
               </div>
             </div>
           )}

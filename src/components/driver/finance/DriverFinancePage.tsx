@@ -172,7 +172,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
         <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• Les commissions de vos courses partagées sont accumulées pendant la semaine</li>
-          <li>• Les frais de gestion SoloCab (0,50€/course en ligne + 0,10€/partage) sont déduits</li>
+          <li>• Les frais de gestion SoloCab (0,50€/course en ligne + 0,20€/partage) sont déduits</li>
           <li>• Un versement net unique est effectué chaque <strong>lundi à 6h</strong> sur votre compte Stripe</li>
           <li>• Ce système réduit considérablement les frais de transaction Stripe</li>
         </ul>
