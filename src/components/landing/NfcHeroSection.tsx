@@ -56,11 +56,7 @@ export const NfcHeroSection = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xl font-bold text-orange-500">29,99€</p>
-                <p className="text-xs text-primary">23,99€ avec abo</p>
               </div>
-              <Badge variant="outline" className="border-orange-500/50 text-orange-400 text-xs">
-                -20%
-              </Badge>
             </div>
 
             <Link to="/plaque-nfc">
