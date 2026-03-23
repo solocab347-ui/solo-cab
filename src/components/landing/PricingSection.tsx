@@ -6,8 +6,8 @@ import { Link } from "react-router-dom";
 
 const PricingSection = () => {
   // Prix calculés
-  const monthlyPrice = 29.99;
-  const annualPrice = 305.90;
+  const monthlyPrice = 9.99;
+  const annualPrice = 99.90;
   const annualMonthlyEquiv = (annualPrice / 12).toFixed(2);
   const savings = (monthlyPrice * 12 - annualPrice).toFixed(2);
 

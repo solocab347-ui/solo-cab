@@ -579,7 +579,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <span className="text-xs sm:text-sm text-gray-300">Période d'essai</span>
               <div className="flex flex-col items-end">
                 <Badge className="bg-blue-500 mb-1">{trialDaysLeft} jour{trialDaysLeft > 1 ? 's' : ''} restant{trialDaysLeft > 1 ? 's' : ''}</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 29,99€ / mois</span>
+                <span className="font-bold text-sm sm:text-base text-white">puis 9,99€ / mois</span>
               </div>
             </div>
           ) : !hasAdminFreeAccess && (

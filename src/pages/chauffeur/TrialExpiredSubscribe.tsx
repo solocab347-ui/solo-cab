@@ -215,7 +215,7 @@ export default function TrialExpiredSubscribe() {
     {
       id: "monthly" as const,
       name: "Mensuel",
-      price: 29.99,
+      price: 9.99,
       period: "/mois",
       description: "Abonnement sans engagement",
       features: [
