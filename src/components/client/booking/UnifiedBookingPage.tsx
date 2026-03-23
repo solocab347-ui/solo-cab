@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
-  Zap, ChevronDown, Send, Users, ArrowLeft, Car
+  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -56,6 +56,8 @@ export function UnifiedBookingPage() {
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [showGuestForm, setShowGuestForm] = useState(false);
+  const [showAuthStep, setShowAuthStep] = useState(false);
+  const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Autocomplete
@@ -682,8 +684,56 @@ export function UnifiedBookingPage() {
           </div>
         )}
 
-        {/* Guest info form */}
-        {!user && showGuestForm && selectedCount > 0 && (
+        {/* Auth step - shown after driver selection for non-authenticated users */}
+        {!user && showAuthStep && selectedCount > 0 && !authChoice && (
+          <Card className="border-primary/30 shadow-lg">
+            <CardContent className="p-4 space-y-3">
+              <h4 className="font-semibold text-foreground text-base text-center">Comment souhaitez-vous continuer ?</h4>
+              <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
+              <div className="space-y-2">
+                <Button
+                  variant="default"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => {
+                    setAuthChoice('guest');
+                    setShowGuestForm(true);
+                  }}
+                >
+                  <UserX className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Commander sans inscription</div>
+                    <div className="text-[10px] opacity-80 font-normal">Rapide, sans compte</div>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}
+                >
+                  <UserPlus className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Créer un compte</div>
+                    <div className="text-[10px] text-muted-foreground font-normal">Suivez vos courses, fidélité</div>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 justify-start gap-3 text-sm font-medium"
+                  onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}
+                >
+                  <LogIn className="h-5 w-5 shrink-0" />
+                  <div className="text-left">
+                    <div>Se connecter</div>
+                    <div className="text-[10px] text-muted-foreground font-normal">J'ai déjà un compte</div>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Guest info form - only after choosing "guest" */}
+        {!user && showGuestForm && authChoice === 'guest' && selectedCount > 0 && (
           <Card className="border-primary/30">
             <CardContent className="p-4 space-y-3">
               <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
@@ -697,38 +747,41 @@ export function UnifiedBookingPage() {
 
       {/* Fixed bottom CTA */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
-              className="w-full h-14 text-base font-bold gap-2"
+              className="w-full h-12 text-sm font-bold gap-2"
               onClick={() => {
-                if (!user && !showGuestForm) {
-                  setShowGuestForm(true);
+                if (!user && !showAuthStep) {
+                  setShowAuthStep(true);
                   return;
+                }
+                if (!user && !showGuestForm) {
+                  return; // waiting for auth choice
                 }
                 handleSubmitRequest();
               }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || (!user && showAuthStep && !authChoice)}
             >
               {isSubmitting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               )}
-              {!user && !showGuestForm
-                ? `Continuer (${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''})`
-                : `Envoyer la demande à ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
-              }
-              {lowestPrice !== Infinity && selectedCount === 1 && (
-                <span className="ml-1">• {lowestPrice.toFixed(0)}€</span>
-              )}
-              {lowestPrice !== Infinity && selectedCount > 1 && (
-                <span className="ml-1">• à partir de {lowestPrice.toFixed(0)}€</span>
+              <span className="truncate">
+                {!user && !showAuthStep
+                  ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
+                  : !user && showAuthStep && !authChoice
+                    ? 'Choisissez une option ci-dessus'
+                    : `Envoyer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
+                }
+              </span>
+              {lowestPrice !== Infinity && (
+                <span className="shrink-0">
+                  {selectedCount === 1 ? `${lowestPrice.toFixed(0)}€` : `dès ${lowestPrice.toFixed(0)}€`}
+                </span>
               )}
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Premier chauffeur qui accepte = votre chauffeur • Timeout 5 min
-            </p>
           </div>
         </div>
       )}
