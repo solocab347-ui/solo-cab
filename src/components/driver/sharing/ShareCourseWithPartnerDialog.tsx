@@ -177,7 +177,7 @@ export function ShareCourseWithPartnerDialog({
           expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // No expiration
           sharing_scope: 'network',
           target_driver_ids: null,
-          solocab_fee_cents: 20,
+          solocab_fee_cents: 25,
           pickup_latitude: course.pickup_latitude || null,
           pickup_longitude: course.pickup_longitude || null,
         });
