@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-solocab.png';
 
 type BookingMode = 'reservation' | 'immediate';
+type ClientPaymentMethod = 'card' | 'cash' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
