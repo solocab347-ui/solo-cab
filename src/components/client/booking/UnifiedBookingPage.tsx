@@ -429,11 +429,18 @@ export function UnifiedBookingPage() {
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
                   {showPickupSuggestions && pickupSuggestions.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
                       {pickupSuggestions.map((f, i) => (
                         <button key={i} className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted/50 flex items-start gap-2 border-b border-border/30 last:border-0" onMouseDown={() => selectPickupSuggestion(f)}>
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <span className="text-foreground">{f.place_name}</span>
+                          {f._isStrategic ? (
+                            <Navigation className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                          ) : (
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          )}
+                          <div>
+                            {f._isStrategic && <span className="text-[10px] text-primary font-medium block">Lieu stratégique</span>}
+                            <span className="text-foreground">{f.place_name}</span>
+                          </div>
                         </button>
                       ))}
                     </div>
