@@ -84,152 +84,65 @@ const Tarifs = () => {
       <section className="py-16 text-center">
         <div className="container mx-auto px-4">
           <Badge className="mb-4 bg-gradient-to-r from-green-500 to-emerald-600 text-primary-foreground border-0">
-            💰 Tarification transparente
+            💰 Modèle transparent
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-            Tous nos <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">tarifs</span>
+            <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Gratuit</span> pour les chauffeurs
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Une tarification simple et transparente. Zéro commission sur vos courses, 
+            SoloCab est gratuit. Zéro commission sur vos courses, 
             vous gardez 100% de vos revenus.
           </p>
         </div>
       </section>
 
-      {/* Abonnements Chauffeurs */}
+      {/* Accès gratuit */}
       <section className="py-16 bg-storefront">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
               <Car className="w-4 h-4 mr-1" />
-              Abonnement Chauffeur VTC
+              Accès Chauffeur VTC
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              Un prix unique, zéro commission
+              Tout inclus, sans frais
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Contrairement aux plateformes classiques qui prélèvent 20-25% sur chaque course,
-              SoloCab propose un abonnement fixe. Vos revenus restent les vôtres.
+              Toutes les fonctionnalités essentielles pour gérer votre activité de chauffeur VTC.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-            {/* Abonnement Mensuel */}
-            <Card className="p-8 bg-muted/30 backdrop-blur-sm border-border hover:border-blue-500/50 transition-all">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Calendar className="w-6 h-6 text-blue-400" />
-                  <h3 className="text-2xl font-bold text-foreground">Mensuel</h3>
-                </div>
-                <div className="mb-2">
-                  <span className="text-5xl font-bold text-foreground">{monthlyPrice}€</span>
-                  <span className="text-muted-foreground">/mois</span>
-                </div>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
-                  14 jours d'essai gratuit
-                </Badge>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Empreinte bancaire uniquement (0€)</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Résiliable à tout moment</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Accès complet immédiat</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Facturation après l'essai</span>
-                </div>
-              </div>
-
-              <Link to="/devenir-chauffeur">
-                <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-lg">
-                  Commencer l'essai gratuit
-                </Button>
-              </Link>
-            </Card>
-
-            {/* Abonnement Annuel */}
-            <Card className="p-8 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 hover:border-green-500/50 transition-all relative">
+          <div className="max-w-lg mx-auto mb-12">
+            <Card className="p-8 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-1">
-                  <Star className="w-4 h-4 mr-1 inline" />
-                  Économisez 15%
+                  <Zap className="w-4 h-4 mr-1 inline" />
+                  Gratuit
                 </Badge>
               </div>
 
               <div className="text-center mb-6 pt-4">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Shield className="w-6 h-6 text-green-400" />
-                  <h3 className="text-2xl font-bold text-foreground">Annuel</h3>
-                </div>
                 <div className="mb-2">
-                  <span className="text-5xl font-bold text-foreground">{annualPrice}€</span>
-                  <span className="text-muted-foreground">/an</span>
+                  <span className="text-5xl font-bold text-foreground">0€</span>
                 </div>
-                <div className="text-sm text-muted-foreground mb-2">
-                  soit <span className="text-green-400 font-semibold">{annualMonthlyEquiv}€/mois</span>
-                </div>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
-                  Économisez {savings}€/an
-                </Badge>
+                <p className="text-muted-foreground">Aucun frais d'inscription ni d'abonnement</p>
               </div>
 
               <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Tous les avantages du mensuel</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>15% de réduction garantie</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>Paiement unique pour l'année</span>
-                </div>
-                <div className="flex items-center gap-3 text-amber-400">
-                  <CreditCard className="w-5 h-5 flex-shrink-0" />
-                  <span className="text-sm">Non remboursable une fois payé</span>
-                </div>
+                {subscriptionFeatures.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-3 text-muted-foreground">
+                    <feature.icon className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>{feature.label}</span>
+                  </div>
+                ))}
               </div>
 
-              <Link to="/devenir-chauffeur">
+              <Link to="/register-driver-promo">
                 <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white h-12 text-lg">
-                  Choisir l'annuel
+                  S'inscrire gratuitement
                 </Button>
               </Link>
             </Card>
-          </div>
-
-          {/* Features included */}
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-xl font-bold text-center text-foreground mb-8">
-              ✓ Inclus dans tous les abonnements
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {subscriptionFeatures.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <feature.icon className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span>{feature.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Info relance paiement */}
-          <div className="mt-12 text-center">
-            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-              En cas de problème de paiement, vous recevrez jusqu'à 3 relances avant la suspension de votre compte.
-              Vous pourrez toujours accéder à la gestion de votre abonnement pour régulariser votre situation.
-            </p>
           </div>
         </div>
       </section>
