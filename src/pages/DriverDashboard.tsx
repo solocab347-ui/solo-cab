@@ -1027,12 +1027,12 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Partage & Partenariats Tab - PREMIUM */}
+          {/* Partage & Partenariats Tab - Premium can send, all can receive */}
           <TabsContent value="sharing" className="space-y-6">
             {isPremium ? (
               <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
             ) : (
-              <PremiumGate isPremium={false} featureName="Partenariats & Partage de courses" featureDescription="Échangez des courses avec d'autres chauffeurs et développez votre réseau professionnel." />
+              <DriverCourseSharing />
             )}
           </TabsContent>
 
