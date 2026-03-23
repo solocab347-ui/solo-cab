@@ -17,6 +17,8 @@ import { FavoriteDriversList } from './FavoriteDriversList';
 import { ReceivedPartnerCourses } from '../partnership/ReceivedPartnerCourses';
 import { SentPartnerCourses } from '../partnership/SentPartnerCourses';
 import { PartnerCoursePool } from './PartnerCoursePool';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 type TabType = 'favorites' | 'pool' | 'received' | 'sent';
 
