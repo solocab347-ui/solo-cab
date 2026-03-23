@@ -156,8 +156,8 @@ serve(async (req) => {
           <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-top: 24px;">
             <h4 style="margin-top: 0; color: #1e40af;">📊 Votre abonnement</h4>
             <p style="margin: 0; color: #1e40af;">
-              <strong>Tarif :</strong> 29,99€/mois<br>
-              <strong>Avantages :</strong> 0% de commission, clients illimités, QR code personnalisé, profil public
+              <strong>Tarif :</strong> 9,99€/mois (Premium)<br>
+              <strong>Avantages :</strong> Partenariats, promotions, prospection + toutes les fonctionnalités gratuites
             </p>
           </div>
 

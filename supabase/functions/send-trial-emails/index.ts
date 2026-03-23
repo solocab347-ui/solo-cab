@@ -295,8 +295,8 @@ const getEmailTemplate = (emailType: string, data: {
                 
                 <p><strong>Pour retrouver l'accès complet :</strong></p>
                 <ul>
-                  <li>💳 Souscrivez à l'abonnement mensuel à 29,99€/mois</li>
-                  <li>📅 Ou optez pour l'abonnement annuel à 305,90€/an (économisez 15%)</li>
+                  <li>✅ L'accès de base reste <strong>gratuit</strong> (clients, courses, factures)</li>
+                  <li>💳 Passez au Premium à 9,99€/mois pour les partenariats et promotions</li>
                   <li>🔓 Accès immédiat après paiement</li>
                 </ul>
                 
