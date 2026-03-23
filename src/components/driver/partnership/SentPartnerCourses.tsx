@@ -117,7 +117,7 @@ export function SentPartnerCourses({ driverId }: Props) {
       // Enrich pool courses
       for (const item of poolData || []) {
         const course = item.courses as any;
-        const solocabFee = ((item as any).solocab_fee_cents || 10) / 100;
+        const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: null,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
