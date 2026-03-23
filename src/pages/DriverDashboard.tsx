@@ -576,7 +576,7 @@ const DriverDashboard = () => {
                     <span className="text-[10px] text-muted-foreground max-w-32 text-right">
                       {driverProfile?.driver?.subscription_status === "past_due" 
                         ? "Réglez votre abonnement" 
-                        : "Abonnement non actif"}
+                        : "Compte en attente d'activation"}
                     </span>
                   )}
                 </div>
