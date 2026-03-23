@@ -15,7 +15,7 @@ import {
 import { motion } from "framer-motion";
 import logo from "@/assets/logo-solocab.png";
 
-const TRIAL_DAYS = 14;
+// Registration page - Free access model
 
 const RegisterDriverPromoFree = () => {
   const navigate = useNavigate();
