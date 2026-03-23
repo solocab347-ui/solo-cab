@@ -63,6 +63,7 @@ export function UnifiedBookingPage() {
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
