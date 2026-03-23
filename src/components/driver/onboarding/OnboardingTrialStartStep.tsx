@@ -372,7 +372,7 @@ export function OnboardingTrialStartStep({
         )}
       </motion.div>
 
-      {/* Trial info - minimal */}
+      {/* Info - minimal */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -380,8 +380,8 @@ export function OnboardingTrialStartStep({
         className="w-full max-w-sm p-3 rounded-xl bg-primary/5 border border-primary/15 mb-6 text-left"
       >
         <p className="text-xs text-foreground/80">
-          <strong className="text-primary">🎁 Tes 14 jours ne démarrent que lorsque</strong> tes documents sont validés et que tu appuies sur le bouton ci-dessous.
-          <span className="text-emerald-500 font-medium"> Aucun jour perdu !</span>
+          <strong className="text-primary">🎁 Votre compte sera activé</strong> dès que vos documents sont validés par notre équipe et que vous appuyez sur le bouton ci-dessous.
+          <span className="text-emerald-500 font-medium"> Accès gratuit et illimité !</span>
         </p>
       </motion.div>
 
