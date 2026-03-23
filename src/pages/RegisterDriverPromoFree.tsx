@@ -285,7 +285,7 @@ const RegisterDriverPromoFree = () => {
           ) : (
             <Card className="p-5 border-border">
               <h2 className="text-lg font-bold text-foreground mb-1">Créez votre compte</h2>
-              <p className="text-xs text-muted-foreground mb-4">Essai gratuit {TRIAL_DAYS} jours – accès complet – aucun paiement requis</p>
+              <p className="text-xs text-muted-foreground mb-4">Accès gratuit – toutes les fonctionnalités de base – aucun paiement requis</p>
               
               <form onSubmit={handleRegister} className="space-y-3">
                 <div>
