@@ -139,7 +139,7 @@ serve(async (req) => {
 
           <h2 style="color: #1a1a1a;">Bonjour ${driver.profiles.full_name},</h2>
           
-          <p>Votre prochain prélèvement mensuel SoloCab de <strong>29,99€</strong> aura lieu dans 3 jours.</p>
+          <p>Votre prochain prélèvement Premium SoloCab de <strong>9,99€</strong> aura lieu dans 3 jours.</p>
           
           <div style="background: #f0fdf4; border: 2px solid #16a34a; padding: 20px; border-radius: 12px; margin: 24px 0;">
             <h3 style="color: #16a34a; margin-top: 0;">✅ Simple rappel</h3>
