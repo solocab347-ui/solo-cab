@@ -55,7 +55,7 @@ serve(async (req) => {
         amount: c.course_amount,
         commission_pct: c.commission_percentage,
         commission: c.commission_amount,
-        solocab_fee: (c.solocab_fee_cents || 20) / 100,
+        solocab_fee: (c.solocab_fee_cents || 25) / 100,
         sender: c.sender_driver_id,
         receiver: c.receiver_driver_id,
         scope: c.sharing_scope,

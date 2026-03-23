@@ -915,7 +915,7 @@ serve(async (req) => {
           await supabaseClient.from("notifications").insert({
             user_id: receiverData.user_id,
             title: "✅ Paiement course partagée reçu",
-            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (commission ${commissionAmount.toFixed(2)}€ + frais 0.20€).`,
+            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (commission ${commissionAmount.toFixed(2)}€ + frais 0.25€).`,
             type: "info",
           });
         }
