@@ -116,22 +116,18 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  if (!isPremium) {
-    return (
-      <PremiumGate 
-        isPremium={false} 
-        featureName="Partage de courses" 
-        featureDescription="Partagez vos courses avec d'autres chauffeurs du réseau, gérez vos favoris et gagnez des commissions."
-      />
-    );
-  }
-
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
-    { id: 'favorites', label: 'Favoris', icon: <Heart className="h-4 w-4" />, count: favoritesCount },
-    { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
-    { id: 'sent', label: 'Envoyées', icon: <Send className="h-4 w-4" />, count: sentCount },
-  ];
+  // Free users can see pool & received courses, but not favorites or sent
+  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = isPremium
+    ? [
+        { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
+        { id: 'favorites', label: 'Favoris', icon: <Heart className="h-4 w-4" />, count: favoritesCount },
+        { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
+        { id: 'sent', label: 'Envoyées', icon: <Send className="h-4 w-4" />, count: sentCount },
+      ]
+    : [
+        { id: 'pool', label: 'Disponibles', icon: <Globe className="h-4 w-4" />, count: poolCount },
+        { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCount },
+      ];
 
   return (
     <div className="space-y-4 pb-20">
