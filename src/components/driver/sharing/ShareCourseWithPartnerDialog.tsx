@@ -59,7 +59,29 @@ export function ShareCourseWithPartnerDialog({
   const [clientMessage, setClientMessage] = useState('');
   const [shareMode, setShareMode] = useState<ShareMode>('choose');
   
+  const { isPremium } = useDriverPremium();
   const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
+
+  // Block sharing for non-premium users
+  if (open && !isPremium) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Fonctionnalité Premium</DialogTitle>
+            <DialogDescription>
+              Le partage de courses est réservé aux abonnés Premium.
+            </DialogDescription>
+          </DialogHeader>
+          <PremiumGate 
+            isPremium={false} 
+            featureName="Partage de courses" 
+            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des commissions."
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   useEffect(() => {
     if (open && driverId) {
