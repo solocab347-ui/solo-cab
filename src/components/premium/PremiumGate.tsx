@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 interface PremiumGateProps {
   /** Content to show if user has premium */
-  children: ReactNode;
+  children?: ReactNode;
   /** Whether the user has premium access */
   isPremium: boolean;
   /** Feature name for the upgrade prompt */
