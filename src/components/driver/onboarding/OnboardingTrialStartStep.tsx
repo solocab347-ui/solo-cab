@@ -150,10 +150,9 @@ export function OnboardingTrialStartStep({
   const areDocumentsPending = documentsStatus === 'submitted'; // All docs uploaded, waiting admin
   const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
-  // NOUVEAU: L'essai peut démarrer dès que les documents sont validés par l'admin
-  // Plus de condition de paiement - l'essai est GRATUIT pendant 14 jours
-  const canStartTrial = () => {
-    // Documents must be validated by admin first - SEULE condition obligatoire
+  // L'activation peut se faire dès que les documents sont validés par l'admin
+  const canActivate = () => {
+    // Documents must be validated by admin first
     if (!areDocumentsValidated) return false;
     
     // Pour Stripe Connect, attendre que le compte soit activé
