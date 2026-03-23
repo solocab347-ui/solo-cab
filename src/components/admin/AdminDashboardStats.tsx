@@ -63,7 +63,7 @@ const AdminDashboardStats = () => {
         connectedToday: connectedTodayRes.count || 0,
         newDriversThisWeek: newWeekRes.count || 0,
         activeSubscriptions: p?.active_subscriptions || 0,
-        mrr: (p?.active_subscriptions || 0) * 29.99,
+        mrr: (p?.active_subscriptions || 0) * 9.99,
         totalClients: p?.total_clients || 0,
         neverConnected: neverConnectedRes.count || 0,
       });

@@ -594,7 +594,7 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
                   <li>Vous appuierez sur le bouton "Lancer mon indépendance"</li>
                 </ul>
                 <p className="text-foreground font-medium pt-1">
-                  → À la fin des 14 jours, vous pourrez souscrire à l'abonnement (29,99€/mois) pour continuer.
+                  → L'accès de base est gratuit. Pour les fonctionnalités Premium : 9,99€/mois.
                 </p>
               </AlertDescription>
             </Alert>

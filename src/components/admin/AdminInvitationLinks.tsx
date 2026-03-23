@@ -185,7 +185,7 @@ const AdminInvitationLinks = () => {
 
           <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
             <p>📋 <strong>Parcours utilisateur :</strong> Inscription → Documents → Onboarding → Accès gratuit ({DURATION_OPTIONS.find(d => d.value === duration)?.label})</p>
-            <p className="mt-1">💳 Après la période gratuite → Abonnement à 29,99€/mois requis</p>
+            <p className="mt-1">💳 Après la période gratuite → Accès de base gratuit, Premium à 9,99€/mois</p>
           </div>
         </CardContent>
       </Card>
