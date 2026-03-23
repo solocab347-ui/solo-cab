@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
-  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX
+  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
+  CreditCard, Banknote, ShieldCheck, Info
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
