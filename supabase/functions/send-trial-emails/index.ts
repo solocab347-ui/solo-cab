@@ -252,7 +252,7 @@ const getEmailTemplate = (emailType: string, data: {
                   <li>🔓 Vous pourrez réactiver votre compte à tout moment en vous abonnant</li>
                 </ul>
                 
-                <p><strong>Pour continuer à utiliser SoloCab</strong>, il vous suffit de souscrire à l'abonnement mensuel à 29,99€/mois (sans engagement).</p>
+                <p><strong>L'accès de base reste gratuit.</strong> Pour les fonctionnalités avancées, abonnez-vous au Premium à 9,99€/mois (sans engagement).</p>
                 
                 <div style="text-align: center;">
                   <a href="https://solocab.fr/chauffeur/subscription" class="button">M'abonner maintenant →</a>
