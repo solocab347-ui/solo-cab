@@ -157,7 +157,7 @@ export function TrialStartBanner({
                 <Rocket className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">Prêt à démarrer votre essai gratuit ?</h3>
+                <h3 className="font-semibold text-sm">Prêt à activer votre compte ?</h3>
                 <p className="text-xs text-muted-foreground">
                   {getSubtitle()}
                 </p>
