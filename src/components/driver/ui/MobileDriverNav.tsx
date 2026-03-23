@@ -32,6 +32,7 @@ interface NavItem {
   gradient?: string;
   badge?: number;
   comingSoon?: boolean;
+  premium?: boolean;
 }
 
 interface NavGroup {
