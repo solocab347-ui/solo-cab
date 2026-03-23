@@ -136,7 +136,7 @@ const AdminInvitationLinks = () => {
           <CardDescription>
             Créez des liens d'inscription uniques. Les utilisateurs suivront le parcours classique 
             (documents, onboarding) mais bénéficieront d'un accès gratuit pendant la durée choisie.
-            Après expiration, ils devront payer 29,99€/mois.
+            Après expiration, ils conservent l'accès gratuit. Premium disponible à 9,99€/mois.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
