@@ -175,8 +175,8 @@ export function OnboardingTrialStartStep({
     handleStartTrial();
   };
 
-  const handleStartTrial = async () => {
-    if (!canStartTrial()) return;
+  const handleActivateAccount = async () => {
+    if (!canActivate()) return;
 
     setActivating(true);
     try {
@@ -187,17 +187,17 @@ export function OnboardingTrialStartStep({
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🎉 Vos 14 jours gratuits commencent !');
+        toast.success('🎉 Votre compte est activé ! Bienvenue sur SoloCab.');
         onComplete();
       } else if (data?.already_active) {
-        toast.info('Votre essai est déjà actif');
+        toast.info('Votre compte est déjà actif');
         onComplete();
       } else if (data?.already_subscribed) {
         toast.info('Vous avez déjà un abonnement');
         onComplete();
       }
     } catch (error: any) {
-      console.error('Error starting trial:', error);
+      console.error('Error activating account:', error);
       toast.error('Erreur lors de l\'activation');
     } finally {
       setActivating(false);
