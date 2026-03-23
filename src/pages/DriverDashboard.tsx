@@ -75,6 +75,7 @@ import { logger } from "@/lib/productionLogger";
 import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificationCount";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
+import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
