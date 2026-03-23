@@ -259,7 +259,7 @@ export function ShareCourseWithPartnerDialog({
           course_amount: amount,
           commission_percentage: percentage,
           commission_amount: commission,
-          solocab_fee_cents: 20,
+          solocab_fee_cents: 25,
           sharing_scope: 'specific',
           status: 'pending',
           sharing_mode: 'single',
