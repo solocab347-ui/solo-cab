@@ -457,25 +457,27 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Status Alert - Only when truly inactive (no trial, no free access) */}
+      {/* Free Tier Info - When user has free access (no premium) */}
       {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
-        <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
+            <div className="p-3 bg-amber-500/20 rounded-xl">
+              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 flex-shrink-0" />
+            </div>
             <div className="flex-1 w-full">
-              <h3 className="font-bold text-base sm:text-lg text-destructive mb-2">
-                Abonnement Inactif
+              <h3 className="font-bold text-base sm:text-lg text-foreground mb-2">
+                Passez Premium pour aller plus loin
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                Votre accès à la plateforme est limité. Souscrivez à l'abonnement pour activer toutes les fonctionnalités et commencer à recevoir des clients.
+                Vous bénéficiez de l'accès gratuit à toutes les fonctionnalités de base. Passez Premium pour accéder aux partenariats, au partage de courses et aux outils de prospection.
               </p>
               <Button
                 onClick={handleSubscribe}
                 disabled={loading}
-                className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">14 jours d'essai gratuit puis 29,99€/mois</span>
+                <span className="truncate">Passer Premium — 9,99€/mois</span>
               </Button>
             </div>
           </div>
