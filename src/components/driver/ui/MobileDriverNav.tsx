@@ -142,13 +142,19 @@ export const MobileDriverNav = ({
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-left font-medium truncate">{item.label}</span>
+        {item.premium && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
+            <Crown className="w-3 h-3" />
+            Premium
+          </Badge>
+        )}
         {item.comingSoon && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" />
             Bientôt
           </Badge>
         )}
-        {!item.comingSoon && item.badge && item.badge > 0 && (
+        {!item.comingSoon && !item.premium && item.badge && item.badge > 0 && (
           <Badge className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5">
             {item.badge}
           </Badge>
