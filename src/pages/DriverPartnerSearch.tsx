@@ -115,6 +115,18 @@ export default function DriverPartnerSearch() {
   // Hook pour récupérer les statuts des demandes de partenariat
   const { getStatus, refresh: refreshStatuses } = useDriverPartnershipStatus(driverInfo?.id || null, driverIds);
 
+  useEffect(() => {
+    if (user?.id) {
+      loadDriverInfo();
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (driverInfo?.id && !driverInfo.is_fleet_driver) {
+      searchDrivers();
+    }
+  }, [driverInfo, selectedDepartment, minRating]);
+
   // Gate Premium access
   if (!isPremium) {
     return (
