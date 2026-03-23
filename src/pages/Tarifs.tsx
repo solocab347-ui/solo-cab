@@ -4,8 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import {
   Check,
-  Star,
-  Calendar,
   Shield,
   CreditCard,
   Car,
