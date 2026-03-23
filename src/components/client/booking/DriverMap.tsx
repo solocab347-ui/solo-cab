@@ -11,6 +11,7 @@ interface DriverMapProps {
   onDriverClick: (driverId: string) => void;
   searchRadius?: number | null;
   mapboxToken?: string | null;
+  tokenLoading?: boolean;
 }
 
 export function DriverMap({
@@ -21,40 +22,146 @@ export function DriverMap({
   onDriverClick,
   searchRadius,
   mapboxToken,
+  tokenLoading = false,
 }: DriverMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const clientMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const destMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const mapLoadedRef = useRef(false);
+  const [mapStatus, setMapStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  const resizeMap = useCallback(() => {
+    if (!map.current) return;
+
+    requestAnimationFrame(() => {
+      map.current?.resize();
+    });
+  }, []);
+
+  const fitMapBounds = useCallback(() => {
+    if (!map.current || !clientPosition || !mapLoadedRef.current) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    bounds.extend([clientPosition.lng, clientPosition.lat]);
+
+    if (destinationPosition) {
+      bounds.extend([destinationPosition.lng, destinationPosition.lat]);
+    }
+
+    drivers.forEach((d) => {
+      if (d.latitude != null && d.longitude != null) {
+        bounds.extend([d.longitude, d.latitude]);
+      }
+    });
+
+    if (!destinationPosition && drivers.length === 0 && searchRadius) {
+      map.current.flyTo({
+        center: [clientPosition.lng, clientPosition.lat],
+        zoom: searchRadius <= 5 ? 12 : searchRadius <= 10 ? 11 : 10,
+        duration: 800,
+      });
+      return;
+    }
+
+    map.current.fitBounds(bounds, {
+      padding: { top: 60, bottom: 60, left: 40, right: 40 },
+      maxZoom: 14,
+      duration: 800,
+    });
+  }, [clientPosition, destinationPosition, drivers, searchRadius]);
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || map.current || !mapboxToken) return;
 
+    setMapStatus('loading');
+    setMapError(null);
     mapboxgl.accessToken = mapboxToken;
-    
-    map.current = new mapboxgl.Map({
+
+    const initialCenter: [number, number] = clientPosition
+      ? [clientPosition.lng, clientPosition.lat]
+      : [2.3522, 46.6034];
+
+    const instance = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [2.3522, 46.6034], // France center
-      zoom: 5,
+      center: initialCenter,
+      zoom: clientPosition ? 11 : 5,
       attributionControl: false,
+      antialias: true,
+      fadeDuration: 0,
     });
 
-    map.current.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
+    map.current = instance;
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    instance.on('load', () => {
+      mapLoadedRef.current = true;
+      setMapStatus('ready');
+      resizeMap();
+      window.setTimeout(resizeMap, 150);
+      window.setTimeout(() => {
+        resizeMap();
+        fitMapBounds();
+      }, 350);
+    });
+
+    instance.on('style.load', () => {
+      resizeMap();
+    });
+
+    instance.on('error', (event) => {
+      console.error('Mapbox error:', event?.error || event);
+
+      if (!mapLoadedRef.current) {
+        setMapStatus('error');
+        setMapError('La carte n’a pas pu se charger correctement.');
+      }
+    });
+
+    instance.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
+
+    instance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
     return () => {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      mapLoadedRef.current = false;
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken]);
+  }, [clientPosition, fitMapBounds, mapboxToken, resizeMap]);
+
+  useEffect(() => {
+    if (!map.current || !mapContainer.current) return;
+
+    const handleResize = () => resizeMap();
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    if ('ResizeObserver' in window) {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = new ResizeObserver(() => {
+        resizeMap();
+      });
+      resizeObserverRef.current.observe(mapContainer.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+    };
+  }, [resizeMap]);
 
   // Update client marker
   useEffect(() => {
-    if (!map.current || !clientPosition) return;
+    if (!map.current || !clientPosition || !mapLoadedRef.current) return;
 
     if (clientMarkerRef.current) {
       clientMarkerRef.current.setLngLat([clientPosition.lng, clientPosition.lat]);
@@ -73,11 +180,11 @@ export function DriverMap({
 
     // Fit to show client and drivers
     fitMapBounds();
-  }, [clientPosition, drivers]);
+  }, [clientPosition, drivers, fitMapBounds]);
 
   // Update destination marker
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapLoadedRef.current) return;
 
     if (destMarkerRef.current) {
       destMarkerRef.current.remove();
@@ -95,11 +202,11 @@ export function DriverMap({
     }
 
     fitMapBounds();
-  }, [destinationPosition]);
+  }, [destinationPosition, fitMapBounds]);
 
   // Update driver markers
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapLoadedRef.current) return;
 
     // Clear old markers
     markersRef.current.forEach(m => m.remove());
@@ -141,44 +248,42 @@ export function DriverMap({
     });
   }, [drivers, selectedDriverIds, onDriverClick]);
 
-  const fitMapBounds = useCallback(() => {
-    if (!map.current || !clientPosition) return;
-
-    const bounds = new mapboxgl.LngLatBounds();
-    bounds.extend([clientPosition.lng, clientPosition.lat]);
-
-    if (destinationPosition) {
-      bounds.extend([destinationPosition.lng, destinationPosition.lat]);
+  useEffect(() => {
+    if (mapStatus === 'ready') {
+      resizeMap();
+      fitMapBounds();
     }
-
-    drivers.forEach(d => {
-      if (d.latitude != null && d.longitude != null) {
-        bounds.extend([d.longitude, d.latitude]);
-      }
-    });
-
-    // If only client position, zoom to search radius
-    if (!destinationPosition && drivers.length === 0 && searchRadius) {
-      map.current.flyTo({
-        center: [clientPosition.lng, clientPosition.lat],
-        zoom: searchRadius <= 5 ? 12 : searchRadius <= 10 ? 11 : 10,
-        duration: 1000,
-      });
-      return;
-    }
-
-    map.current.fitBounds(bounds, {
-      padding: { top: 60, bottom: 60, left: 40, right: 40 },
-      maxZoom: 14,
-      duration: 1000,
-    });
-  }, [clientPosition, destinationPosition, drivers, searchRadius]);
+  }, [mapStatus, fitMapBounds, resizeMap]);
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden border border-border/50 shadow-lg">
-      <div ref={mapContainer} className="w-full h-[250px] sm:h-[350px]" />
+    <div className="mapbox-driver-map relative w-full min-h-[250px] overflow-hidden rounded-xl border border-border/50 bg-muted/40 shadow-lg sm:min-h-[350px]">
+      <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+
+      {(tokenLoading || mapStatus === 'loading' || mapStatus === 'idle') && mapboxToken && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/65 backdrop-blur-sm">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary" />
+          <p className="text-sm text-muted-foreground">Chargement de la carte…</p>
+        </div>
+      )}
+
+      {!mapboxToken && !tokenLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/90 backdrop-blur-sm">
+          <p className="text-sm text-muted-foreground text-center px-4">
+            Impossible d’initialiser la carte pour le moment.
+          </p>
+        </div>
+      )}
+
+      {mapStatus === 'error' && mapError && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/90 backdrop-blur-sm">
+          <p className="text-sm text-muted-foreground text-center px-4">
+            {mapError}
+          </p>
+        </div>
+      )}
+
       {!clientPosition && (
-        <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-sm">
           <p className="text-sm text-muted-foreground text-center px-4">
             Entrez votre adresse de départ pour voir les chauffeurs sur la carte
           </p>

@@ -315,6 +315,44 @@ All colors MUST be HSL.
   .drop-shadow-glow {
     filter: drop-shadow(0 0 8px currentColor);
   }
+
+  .mapbox-driver-map .mapboxgl-map,
+  .mapbox-driver-map .mapboxgl-canvas-container,
+  .mapbox-driver-map .mapboxgl-canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .mapbox-driver-map .mapboxgl-canvas {
+    background: hsl(var(--muted));
+  }
+
+  .mapbox-driver-map .mapboxgl-ctrl-bottom-left,
+  .mapbox-driver-map .mapboxgl-ctrl-bottom-right,
+  .mapbox-driver-map .mapboxgl-ctrl-top-left,
+  .mapbox-driver-map .mapboxgl-ctrl-top-right {
+    z-index: 2;
+  }
+
+  .mapbox-driver-map .mapboxgl-ctrl-group {
+    border-color: hsl(var(--border) / 0.8);
+    background: hsl(var(--card) / 0.9);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px -18px hsl(var(--background) / 0.7);
+  }
+
+  .mapbox-driver-map .mapboxgl-ctrl button .mapboxgl-ctrl-icon {
+    filter: brightness(0) saturate(100%) invert(100%);
+  }
+
+  .mapbox-driver-map .mapboxgl-ctrl-attrib {
+    background: hsl(var(--background) / 0.72);
+    color: hsl(var(--foreground));
+  }
+
+  .mapbox-driver-map .mapboxgl-ctrl-attrib a {
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer utilities {
