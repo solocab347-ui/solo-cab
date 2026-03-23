@@ -277,16 +277,23 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
           )}
 
           {/* Auto-accept from partners */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+          <div className={`flex items-center justify-between p-4 rounded-lg ${isPremium ? 'bg-muted/50' : 'bg-muted/30 opacity-60'}`}>
             <div>
-              <Label className="text-base font-medium">Acceptation auto des partenaires</Label>
+              <Label className="text-base font-medium flex items-center gap-2">
+                Acceptation auto des partenaires
+                {!isPremium && <Badge variant="outline" className="text-[10px] px-1.5">Premium</Badge>}
+              </Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Accepter automatiquement les courses de mes partenaires de confiance
+                {isPremium 
+                  ? 'Accepter automatiquement les courses de mes partenaires de confiance'
+                  : 'Disponible avec le Premium à 9,99€/mois'
+                }
               </p>
             </div>
             <Switch
               checked={settings.auto_accept_from_partners}
               onCheckedChange={(checked) => setSettings({ ...settings, auto_accept_from_partners: checked })}
+              disabled={!isPremium}
             />
           </div>
 
