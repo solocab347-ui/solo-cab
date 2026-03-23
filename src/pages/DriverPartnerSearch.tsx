@@ -140,18 +140,6 @@ export default function DriverPartnerSearch() {
     );
   }
 
-  useEffect(() => {
-    if (user?.id) {
-      loadDriverInfo();
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (driverInfo?.id && !driverInfo.is_fleet_driver) {
-      searchDrivers();
-    }
-  }, [driverInfo, selectedDepartment, minRating]);
-
   const loadDriverInfo = async () => {
     try {
       const { data, error } = await supabase
