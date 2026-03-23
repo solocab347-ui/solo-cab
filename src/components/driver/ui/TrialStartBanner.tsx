@@ -119,7 +119,7 @@ export function TrialStartBanner({
       }
     } catch (error: any) {
       console.error('Error starting trial:', error);
-      toast.error('Erreur lors de l\'activation de l\'essai');
+      toast.error('Erreur lors de l\'activation du compte');
     } finally {
       setActivating(false);
     }
