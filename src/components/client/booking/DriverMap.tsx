@@ -36,7 +36,7 @@ export function DriverMap({
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/navigation-night-v1',
       center: [2.3522, 46.6034], // France center
       zoom: 5,
       attributionControl: false,
