@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { geocodeAddress } from '@/lib/geocoding';
 
 interface SettingsData {
   baseFare: string;
@@ -81,6 +82,16 @@ export function useOnboardingAutoSave(
 
   const saveProfile = useCallback(async (data: ProfileData) => {
     try {
+      let resolvedHomeAddress = data.homeAddress?.trim() || '';
+      let resolvedHomeCoordinates = data.homeCoordinates;
+
+      if (!resolvedHomeCoordinates && resolvedHomeAddress) {
+        const geocodedAddress = await geocodeAddress(resolvedHomeAddress);
+        if (geocodedAddress.success && geocodedAddress.coordinates) {
+          resolvedHomeCoordinates = geocodedAddress.coordinates;
+        }
+      }
+
       // Update profile photo in profiles table
       if (data.profilePhotoUrl) {
         await supabase
@@ -101,9 +112,9 @@ export function useOnboardingAutoSave(
           vehicle_category: data.vehicleCategories,
           display_driver_name: data.displayDriverName,
           display_company_name: data.displayCompanyName,
-          home_address: data.homeAddress || null,
-          home_latitude: data.homeCoordinates?.latitude || null,
-          home_longitude: data.homeCoordinates?.longitude || null,
+          home_address: resolvedHomeAddress || null,
+          home_latitude: resolvedHomeCoordinates?.latitude || null,
+          home_longitude: resolvedHomeCoordinates?.longitude || null,
         })
         .eq('id', driverId);
 
