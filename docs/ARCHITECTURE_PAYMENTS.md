@@ -29,8 +29,8 @@ SoloCab ne prélève **AUCUNE commission**. Toutes les déductions sont étiquet
 |---------|---------|
 | Commission expéditeur (< 30€) | 15% |
 | Commission expéditeur (≥ 30€) | 20% |
-| Frais de transaction SoloCab | 0,20€ (fixe par course) |
-| **Net chauffeur exécutant** | Montant course - Commission - 0,20€ |
+| Frais de transaction SoloCab | 0,25€ (fixe par course) |
+| **Net chauffeur exécutant** | Montant course - Commission - 0,25€ |
 
 Les commissions sont gérées automatiquement via Stripe Connect (split payment).
 Les partenariats bilatéraux ne sont plus requis : tout chauffeur avec Stripe Connect actif peut participer au réseau.
