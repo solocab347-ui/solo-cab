@@ -17,6 +17,8 @@ import { DriverPartnershipsTab } from './partnership/DriverPartnershipsTab';
 import { PartnershipSettings } from './partnership/PartnershipSettings';
 import { PartnershipStripeGate } from './partnership/PartnershipStripeGate';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 type MainTab = 'drivers' | 'settings';
 
