@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
-  Zap, ChevronDown, Send, Users, ArrowLeft, Car
+  Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
