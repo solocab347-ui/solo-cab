@@ -838,9 +838,6 @@ export function UnifiedBookingPage() {
     </div>
   );
 }
-              <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
-              <div className="space-y-2">
-                <Button
                   variant="default"
                   className="w-full h-12 justify-start gap-3 text-sm font-medium"
                   onClick={() => {
