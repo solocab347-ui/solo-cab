@@ -72,6 +72,7 @@ export function UnifiedBookingPage() {
     error,
     searchRadius,
     noDriversFound,
+    fallbackToReservation,
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
@@ -499,6 +500,15 @@ export function UnifiedBookingPage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {fallbackToReservation && mode === 'immediate' && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Aucun chauffeur n’est connecté en temps réel pour une course immédiate dans cette zone. Voici les chauffeurs disponibles sur réservation autour de vous.
+            </AlertDescription>
           </Alert>
         )}
 

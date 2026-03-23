@@ -133,7 +133,7 @@ export function DriverMap({
       map.current?.remove();
       map.current = null;
     };
-  }, [clientPosition, fitMapBounds, mapboxToken, resizeMap]);
+  }, [mapboxToken, resizeMap, fitMapBounds]);
 
   useEffect(() => {
     if (!map.current || !mapContainer.current) return;
