@@ -82,6 +82,7 @@ const DriverDashboard = () => {
   useUserLanguage(); // Sync language with user profile
   const { signOut, user, userRole } = useAuth();
   const queryClient = useQueryClient();
+  const { isPremium } = useDriverPremium();
 
   // SÉCURITÉ: Double vérification du rôle pour éviter les mélanges de dashboard
   useEffect(() => {
