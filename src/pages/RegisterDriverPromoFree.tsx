@@ -224,8 +224,8 @@ const RegisterDriverPromoFree = () => {
             transition={{ delay: 0.3 }}
           >
             <Badge className="bg-success/20 text-success border-success/30 px-4 py-1.5 text-sm font-semibold">
-              <Clock className="w-3.5 h-3.5 mr-1.5" />
-              {TRIAL_DAYS} jours gratuits • Sans carte bancaire
+              <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+              Inscription gratuite • Sans carte bancaire
             </Badge>
           </motion.div>
         </div>
