@@ -15,6 +15,14 @@ export const CSP_DIRECTIVES = {
     'https://js.stripe.com',
     'https://api.mapbox.com',
   ],
+  'worker-src': [
+    "'self'",
+    'blob:',
+  ],
+  'child-src': [
+    "'self'",
+    'blob:',
+  ],
   'style-src': [
     "'self'",
     "'unsafe-inline'", // Tailwind CSS inline styles
@@ -39,6 +47,7 @@ export const CSP_DIRECTIVES = {
     'wss://*.supabase.co',
     'https://api.mapbox.com',
     'https://*.mapbox.com',
+    'https://events.mapbox.com',
     'https://api.stripe.com',
     'https://*.sentry.io',
   ],
