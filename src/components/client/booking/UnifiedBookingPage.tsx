@@ -56,6 +56,8 @@ export function UnifiedBookingPage() {
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [showGuestForm, setShowGuestForm] = useState(false);
+  const [showAuthStep, setShowAuthStep] = useState(false);
+  const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Autocomplete
