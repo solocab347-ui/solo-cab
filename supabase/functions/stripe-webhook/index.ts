@@ -871,7 +871,7 @@ serve(async (req) => {
             .from("shared_course_payments")
             .update({
               status: "completed",
-              platform_fee: solocabFee || 0.10,
+              platform_fee: solocabFee || 0.20,
             })
             .eq("stripe_checkout_session_id", session.id);
 
