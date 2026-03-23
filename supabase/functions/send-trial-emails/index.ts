@@ -207,7 +207,7 @@ const getEmailTemplate = (emailType: string, data: {
                 
                 <p><strong>SoloCab, c'est votre outil pour devenir vraiment indépendant.</strong> Plus besoin de dépendre des plateformes qui prennent une commission sur chaque course.</p>
                 
-                <p>À l'issue de votre essai, l'abonnement est à seulement <strong>29,99€/mois</strong> - moins qu'une course !</p>
+                <p>L'accès de base est <strong>gratuit</strong>. Pour débloquer les fonctionnalités Premium (partenariats, promotions, prospection), l'abonnement est à seulement <strong>9,99€/mois</strong> !</p>
                 
                 <div style="text-align: center;">
                   <a href="https://solocab.fr/driver-dashboard" class="button">Continuer l'aventure →</a>
