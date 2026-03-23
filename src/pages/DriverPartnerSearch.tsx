@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 import { useDriverProfileRealtime, PUBLIC_DRIVERS_QUERY_KEY } from '@/hooks/usePublicDriverProfile';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,6 +84,7 @@ export default function DriverPartnerSearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isPremium } = useDriverPremium();
   
   // Active realtime pour synchronisation instantanée
   useDriverProfileRealtime();
@@ -123,6 +126,19 @@ export default function DriverPartnerSearch() {
       searchDrivers();
     }
   }, [driverInfo, selectedDepartment, minRating]);
+
+  // Gate Premium access
+  if (!isPremium) {
+    return (
+      <div className="container max-w-2xl mx-auto p-4 pt-8">
+        <PremiumGate 
+          isPremium={false} 
+          featureName="Recherche de partenaires" 
+          featureDescription="Trouvez des chauffeurs partenaires pour échanger vos courses et développer votre réseau."
+        />
+      </div>
+    );
+  }
 
   const loadDriverInfo = async () => {
     try {

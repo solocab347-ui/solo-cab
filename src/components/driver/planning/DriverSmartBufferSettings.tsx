@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { 
   Brain, 
   Clock, 
@@ -14,10 +15,12 @@ import {
   Share2,
   Save,
   Loader2,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
 
 interface DriverSmartBufferSettingsProps {
   driverId: string;
@@ -32,6 +35,7 @@ interface SmartBufferSettings {
 }
 
 export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSettingsProps) {
+  const { isPremium } = useDriverPremium();
   const [settings, setSettings] = useState<SmartBufferSettings>({
     smart_buffer_enabled: false,
     smart_buffer_min_minutes: 15,
@@ -213,18 +217,28 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
                   </div>
 
                   <div className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    settings.smart_buffer_fallback_action === 'share_with_partner' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                    !isPremium 
+                      ? 'border-muted bg-muted/30 opacity-60 cursor-not-allowed'
+                      : settings.smart_buffer_fallback_action === 'share_with_partner' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
                   }`}>
-                    <RadioGroupItem value="share_with_partner" id="share_with_partner" />
-                    <Share2 className="w-4 h-4 text-success" />
+                    <RadioGroupItem value="share_with_partner" id="share_with_partner" disabled={!isPremium} />
+                    {isPremium ? (
+                      <Share2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                    )}
                     <div className="flex-1">
-                      <Label htmlFor="share_with_partner" className="cursor-pointer font-medium">
+                      <Label htmlFor="share_with_partner" className={`cursor-pointer font-medium ${!isPremium ? 'text-muted-foreground' : ''}`}>
                         Proposer à un partenaire
+                        {!isPremium && <Badge variant="outline" className="ml-2 text-[10px] px-1.5">Premium</Badge>}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        La course sera partagée avec mes partenaires
+                        {isPremium 
+                          ? 'La course sera partagée avec mes partenaires'
+                          : 'Passez au Premium (9,99€/mois) pour partager automatiquement'
+                        }
                       </p>
                     </div>
                   </div>
@@ -263,16 +277,23 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
           )}
 
           {/* Auto-accept from partners */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+          <div className={`flex items-center justify-between p-4 rounded-lg ${isPremium ? 'bg-muted/50' : 'bg-muted/30 opacity-60'}`}>
             <div>
-              <Label className="text-base font-medium">Acceptation auto des partenaires</Label>
+              <Label className="text-base font-medium flex items-center gap-2">
+                Acceptation auto des partenaires
+                {!isPremium && <Badge variant="outline" className="text-[10px] px-1.5">Premium</Badge>}
+              </Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Accepter automatiquement les courses de mes partenaires de confiance
+                {isPremium 
+                  ? 'Accepter automatiquement les courses de mes partenaires de confiance'
+                  : 'Disponible avec le Premium à 9,99€/mois'
+                }
               </p>
             </div>
             <Switch
               checked={settings.auto_accept_from_partners}
               onCheckedChange={(checked) => setSettings({ ...settings, auto_accept_from_partners: checked })}
+              disabled={!isPremium}
             />
           </div>
 

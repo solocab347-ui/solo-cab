@@ -177,7 +177,7 @@ export function ShareCourseWithPartnerDialog({
           expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // No expiration
           sharing_scope: 'network',
           target_driver_ids: null,
-          solocab_fee_cents: 20,
+          solocab_fee_cents: 25,
           pickup_latitude: course.pickup_latitude || null,
           pickup_longitude: course.pickup_longitude || null,
         });
@@ -212,7 +212,7 @@ export function ShareCourseWithPartnerDialog({
           expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
           sharing_scope: 'favorites',
           target_driver_ids: targetIds,
-          solocab_fee_cents: 20,
+          solocab_fee_cents: 25,
           pickup_latitude: course.pickup_latitude || null,
           pickup_longitude: course.pickup_longitude || null,
         });
@@ -259,7 +259,7 @@ export function ShareCourseWithPartnerDialog({
           course_amount: amount,
           commission_percentage: percentage,
           commission_amount: commission,
-          solocab_fee_cents: 20,
+          solocab_fee_cents: 25,
           sharing_scope: 'specific',
           status: 'pending',
           sharing_mode: 'single',
@@ -397,7 +397,7 @@ export function ShareCourseWithPartnerDialog({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Frais de transaction</span>
-                <span className="font-medium">0.20€</span>
+                <span className="font-medium">0.25€</span>
               </div>
             </div>
           )}

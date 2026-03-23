@@ -95,7 +95,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             .single();
 
           const course = item.courses as any;
-          const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
+          const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
           const earnings = (item as any).earnings_for_receiver || (item.course_amount - item.commission_amount - solocabFee);
 
           enriched.push({
@@ -178,7 +178,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
       <Alert className="bg-blue-500/10 border-blue-500/30">
         <FileText className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est déduite automatiquement via Stripe Connect. Frais de transaction : 0.20€.
+          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est déduite automatiquement via Stripe Connect. Frais de transaction : 0.25€.
         </AlertDescription>
       </Alert>
 
