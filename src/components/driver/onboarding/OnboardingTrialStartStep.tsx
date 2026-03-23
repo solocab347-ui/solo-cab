@@ -244,7 +244,7 @@ export function OnboardingTrialStartStep({
       >
         <h2 className="text-2xl font-bold text-foreground">Prêt à démarrer ? 🚀</h2>
         <p className="text-muted-foreground text-sm mt-2">
-          14 jours gratuits pour développer ta clientèle
+          Activez votre compte gratuit et commencez à développer votre clientèle
         </p>
       </motion.div>
 
