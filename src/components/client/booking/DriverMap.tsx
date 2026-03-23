@@ -10,7 +10,8 @@ const TILE_PROVIDERS: Array<{
   options: L.TileLayerOptions;
 }> = [
   {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    // CARTO Voyager - balanced style, French labels via OSM
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     options: {
       subdomains: 'abcd',
       maxZoom: 20,
@@ -19,12 +20,13 @@ const TILE_PROVIDERS: Array<{
     },
   },
   {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    // OSM France - noms français garantis
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
     options: {
-      subdomains: 'abcd',
+      subdomains: ['a', 'b', 'c'],
       maxZoom: 20,
       crossOrigin: true,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: '&copy; OpenStreetMap France',
     },
   },
   {
