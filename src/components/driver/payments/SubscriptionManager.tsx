@@ -236,59 +236,36 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Section Réabonnement après résiliation */}
       {isCanceled && !isActive && (
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-500/30">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="p-3 bg-primary/20 rounded-xl">
-              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            <div className="p-3 bg-amber-500/20 rounded-xl">
+              <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500" />
             </div>
             <div className="flex-1 w-full space-y-4">
               <div>
                 <h3 className="font-bold text-base sm:text-lg text-foreground mb-2">
-                  Réactiver votre abonnement
+                  Réactiver Premium
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  Votre abonnement a été résilié. Reprenez l'accès complet à SoloCab en vous réabonnant.
+                  Votre abonnement Premium a été résilié. Vous gardez l'accès gratuit aux fonctionnalités de base. Réabonnez-vous pour retrouver les fonctionnalités avancées.
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button
-                  onClick={() => handleResubscribe("monthly")}
-                  disabled={resubscribing}
-                  className="w-full py-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                >
-                  {resubscribing ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <CreditCard className="w-5 h-5 mr-2" />
-                  )}
-                    <div className="text-left">
-                    <div className="font-bold">Mensuel</div>
-                    <div className="text-xs opacity-80">29,99€/mois</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => handleResubscribe("annual")}
-                  disabled={resubscribing}
-                  variant="outline"
-                  className="w-full py-6 border-2 border-primary/50 hover:bg-primary/10"
-                >
-                  {resubscribing ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <Gift className="w-5 h-5 mr-2 text-primary" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-bold">Annuel</div>
-                    <div className="text-xs text-muted-foreground">305,90€/an (-15%)</div>
-                  </div>
-                </Button>
-              </div>
-              
-              <p className="text-xs text-center text-muted-foreground">
-                Paiement immédiat • Accès instantané • Sans engagement
-              </p>
+              <Button
+                onClick={handleSubscribe}
+                disabled={loading}
+                className="w-full py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="w-5 h-5 mr-2" />
+                )}
+                <div className="text-left">
+                  <div className="font-bold">Repasser Premium — 9,99€/mois</div>
+                  <div className="text-xs opacity-80">Sans engagement</div>
+                </div>
+              </Button>
             </div>
           </div>
         </Card>
