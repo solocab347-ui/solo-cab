@@ -61,6 +61,7 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
   const [alerts, setAlerts] = useState<ScheduleAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { isPremium } = useDriverPremium();
 
   useEffect(() => {
     fetchAlerts();
