@@ -113,13 +113,13 @@ export function TrialStartBanner({
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🎉 Votre période d\'essai de 14 jours a commencé !');
+        toast.success('🎉 Votre compte est activé ! Bienvenue sur SoloCab.');
         setDialogOpen(false);
         onTrialStarted?.();
       }
     } catch (error: any) {
       console.error('Error starting trial:', error);
-      toast.error('Erreur lors de l\'activation de l\'essai');
+      toast.error('Erreur lors de l\'activation du compte');
     } finally {
       setActivating(false);
     }
@@ -134,7 +134,7 @@ export function TrialStartBanner({
     if (isEquipmentPurchase) {
       return 'Confirmez la réception de votre matériel de paiement';
     }
-    return 'Démarrez vos 14 jours gratuits dès maintenant';
+    return 'Activez votre compte gratuit dès maintenant';
   };
 
   const getConfirmationText = () => {
@@ -157,7 +157,7 @@ export function TrialStartBanner({
                 <Rocket className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">Prêt à démarrer votre essai gratuit ?</h3>
+                <h3 className="font-semibold text-sm">Prêt à activer votre compte ?</h3>
                 <p className="text-xs text-muted-foreground">
                   {getSubtitle()}
                 </p>
@@ -193,10 +193,10 @@ export function TrialStartBanner({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="w-5 h-5 text-primary" />
-              Démarrer votre essai gratuit
+              Activer votre compte
             </DialogTitle>
             <DialogDescription>
-              Une fois activé, vous aurez accès à toutes les fonctionnalités pendant 14 jours.
+              Une fois activé, vous aurez accès à toutes les fonctionnalités gratuitement.
             </DialogDescription>
           </DialogHeader>
 
@@ -248,7 +248,7 @@ export function TrialStartBanner({
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              Démarrer mes 14 jours
+              Activer mon compte
             </Button>
           </DialogFooter>
         </DialogContent>

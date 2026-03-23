@@ -3,15 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[ACTIVATE-DRIVER-TRIAL] ${step}${detailsStr}`);
+  console.log(`[ACTIVATE-DRIVER] ${step}${detailsStr}`);
 };
-
-const TRIAL_DURATION_DAYS = 14;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,12 +31,12 @@ serve(async (req) => {
       throw new Error("driver_id is required");
     }
 
-    logStep("Activating trial for driver", { driver_id });
+    logStep("Activating account for driver", { driver_id });
 
-    // Check driver exists and is not already on trial or subscribed
+    // Check driver exists
     const { data: driver, error: driverError } = await supabase
       .from('drivers')
-      .select('id, trial_status, subscription_status, subscription_paid')
+      .select('id, trial_status, subscription_status, subscription_paid, subscription_tier')
       .eq('id', driver_id)
       .single();
 
@@ -46,8 +44,21 @@ serve(async (req) => {
       throw new Error(`Driver not found: ${driverError.message}`);
     }
 
-    // Don't activate if already has active subscription
-    if (driver.subscription_paid || driver.subscription_status === 'active') {
+    // Already active
+    if (driver.subscription_status === 'active') {
+      logStep("Driver already active", { driver_id });
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Driver already active",
+        already_active: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Already subscribed (premium)
+    if (driver.subscription_paid) {
       logStep("Driver already has active subscription", { driver_id });
       return new Response(JSON.stringify({
         success: true,
@@ -59,59 +70,29 @@ serve(async (req) => {
       });
     }
 
-    // Don't re-activate if already on active trial
-    if (driver.trial_status === 'active') {
-      logStep("Trial already active", { driver_id });
-      return new Response(JSON.stringify({
-        success: true,
-        message: "Trial already active",
-        already_active: true,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    // Calculate trial dates
     const now = new Date();
-    const trialEndDate = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
-    // Activate trial
+    // Activate free account - no trial limit, permanent free access
     const { error: updateError } = await supabase
       .from('drivers')
       .update({
         trial_status: 'active',
         trial_start_date: now.toISOString(),
-        trial_end_date: trialEndDate.toISOString(),
         trial_activated_at: now.toISOString(),
-        subscription_status: 'trialing',
-        subscription_paid: false, // Important: no payment yet
+        subscription_status: 'active',
+        subscription_tier: 'free',
+        subscription_paid: false,
+        status: 'active',
       })
       .eq('id', driver_id);
 
     if (updateError) {
-      throw new Error(`Failed to activate trial: ${updateError.message}`);
+      throw new Error(`Failed to activate account: ${updateError.message}`);
     }
 
-    // Schedule trial emails using the database function
-    const { error: scheduleError } = await supabase
-      .rpc('schedule_trial_emails', {
-        p_driver_id: driver_id,
-        p_trial_start: now.toISOString(),
-      });
+    logStep("Account activated successfully (free tier)", { driver_id });
 
-    if (scheduleError) {
-      logStep("Warning: Failed to schedule trial emails", { error: scheduleError.message });
-      // Don't fail the whole operation for this
-    }
-
-    logStep("Trial activated successfully", { 
-      driver_id, 
-      trial_end_date: trialEndDate.toISOString(),
-      days: TRIAL_DURATION_DAYS 
-    });
-
-    // Send welcome email for trial
+    // Send welcome email
     try {
       await fetch(
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`,
@@ -133,9 +114,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      trial_start_date: now.toISOString(),
-      trial_end_date: trialEndDate.toISOString(),
-      trial_days: TRIAL_DURATION_DAYS,
+      activated_at: now.toISOString(),
+      tier: 'free',
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

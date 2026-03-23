@@ -150,10 +150,9 @@ export function OnboardingTrialStartStep({
   const areDocumentsPending = documentsStatus === 'submitted'; // All docs uploaded, waiting admin
   const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
-  // NOUVEAU: L'essai peut démarrer dès que les documents sont validés par l'admin
-  // Plus de condition de paiement - l'essai est GRATUIT pendant 14 jours
-  const canStartTrial = () => {
-    // Documents must be validated by admin first - SEULE condition obligatoire
+  // L'activation peut se faire dès que les documents sont validés par l'admin
+  const canActivate = () => {
+    // Documents must be validated by admin first
     if (!areDocumentsValidated) return false;
     
     // Pour Stripe Connect, attendre que le compte soit activé
@@ -166,18 +165,18 @@ export function OnboardingTrialStartStep({
     return true;
   };
 
-  // Afficher la vidéo de bienvenue puis lancer l'essai
+  // Afficher la vidéo de bienvenue puis activer le compte
   const handleLaunchWithVideo = () => {
     setShowWelcomeVideo(true);
   };
 
   const handleVideoComplete = () => {
     setShowWelcomeVideo(false);
-    handleStartTrial();
+    handleActivateAccount();
   };
 
-  const handleStartTrial = async () => {
-    if (!canStartTrial()) return;
+  const handleActivateAccount = async () => {
+    if (!canActivate()) return;
 
     setActivating(true);
     try {
@@ -188,17 +187,17 @@ export function OnboardingTrialStartStep({
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🎉 Vos 14 jours gratuits commencent !');
+        toast.success('🎉 Votre compte est activé ! Bienvenue sur SoloCab.');
         onComplete();
       } else if (data?.already_active) {
-        toast.info('Votre essai est déjà actif');
+        toast.info('Votre compte est déjà actif');
         onComplete();
       } else if (data?.already_subscribed) {
         toast.info('Vous avez déjà un abonnement');
         onComplete();
       }
     } catch (error: any) {
-      console.error('Error starting trial:', error);
+      console.error('Error activating account:', error);
       toast.error('Erreur lors de l\'activation');
     } finally {
       setActivating(false);
@@ -213,11 +212,10 @@ export function OnboardingTrialStartStep({
           onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           onboarding_step: 'complete',
-          trial_status: 'pending_equipment',
         })
         .eq('id', driverId);
 
-      toast.success('Inscription complète. Démarrez votre essai quand vous êtes prêt !');
+      toast.success('Inscription complète. Activez votre compte quand vous êtes prêt !');
       onComplete();
     } catch (error) {
       console.error('Error:', error);
@@ -245,7 +243,7 @@ export function OnboardingTrialStartStep({
       >
         <h2 className="text-2xl font-bold text-foreground">Prêt à démarrer ? 🚀</h2>
         <p className="text-muted-foreground text-sm mt-2">
-          14 jours gratuits pour développer ta clientèle
+          Activez votre compte gratuit et commencez à développer votre clientèle
         </p>
       </motion.div>
 
@@ -373,7 +371,7 @@ export function OnboardingTrialStartStep({
         )}
       </motion.div>
 
-      {/* Trial info - minimal */}
+      {/* Info - minimal */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -381,8 +379,8 @@ export function OnboardingTrialStartStep({
         className="w-full max-w-sm p-3 rounded-xl bg-primary/5 border border-primary/15 mb-6 text-left"
       >
         <p className="text-xs text-foreground/80">
-          <strong className="text-primary">🎁 Tes 14 jours ne démarrent que lorsque</strong> tes documents sont validés et que tu appuies sur le bouton ci-dessous.
-          <span className="text-emerald-500 font-medium"> Aucun jour perdu !</span>
+          <strong className="text-primary">🎁 Votre compte sera activé</strong> dès que vos documents sont validés par notre équipe et que vous appuyez sur le bouton ci-dessous.
+          <span className="text-emerald-500 font-medium"> Accès gratuit et illimité !</span>
         </p>
       </motion.div>
 
@@ -393,7 +391,7 @@ export function OnboardingTrialStartStep({
         transition={{ delay: 0.6 }}
         className="w-full max-w-sm space-y-3"
       >
-        {canStartTrial() ? (
+        {canActivate() ? (
           <Button 
             onClick={handleLaunchWithVideo} 
             disabled={activating || loading}
@@ -404,7 +402,7 @@ export function OnboardingTrialStartStep({
             ) : (
               <>
                 <Play className="w-5 h-5 mr-2" />
-                Lancer mon indépendance
+                Activer mon compte
               </>
             )}
           </Button>
