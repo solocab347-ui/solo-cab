@@ -36,11 +36,13 @@ export function DriverMap({
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/navigation-night-v1',
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [2.3522, 46.6034], // France center
       zoom: 5,
       attributionControl: false,
     });
+
+    map.current.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
@@ -173,8 +175,8 @@ export function DriverMap({
   }, [clientPosition, destinationPosition, drivers, searchRadius]);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-border/50 shadow-lg">
-      <div ref={mapContainer} className="w-full h-[300px] sm:h-[400px]" />
+    <div className="relative w-full rounded-xl overflow-hidden border border-border/50 shadow-lg">
+      <div ref={mapContainer} className="w-full h-[250px] sm:h-[350px]" />
       {!clientPosition && (
         <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm">
           <p className="text-sm text-muted-foreground text-center px-4">
