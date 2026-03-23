@@ -354,8 +354,8 @@ const RegisterDriverPromoFree = () => {
             <span className="text-[10px] text-muted-foreground">Sans engagement</span>
           </div>
           <div className="flex flex-col items-center gap-1">
-            <Clock className="w-5 h-5 text-secondary" />
-            <span className="text-[10px] text-muted-foreground">{TRIAL_DAYS}j gratuits</span>
+            <CheckCircle className="w-5 h-5 text-success" />
+            <span className="text-[10px] text-muted-foreground">Gratuit</span>
           </div>
         </div>
       </div>
