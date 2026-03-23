@@ -534,22 +534,32 @@ export function UnifiedBookingPage() {
 
         {/* Route info */}
         {routeDistanceKm !== null && (
-          <div className="flex items-center gap-3 px-1">
-            <Badge variant="secondary" className="gap-1">
-              <Car className="h-3 w-3" />
-              {routeDistanceKm.toFixed(1)} km
-            </Badge>
-            {routeDurationMin !== null && (
-              <Badge variant="outline" className="gap-1">
-                ~{Math.round(routeDurationMin)} min
-              </Badge>
-            )}
-            {searchRadius && (
-              <Badge variant="outline" className="gap-1 text-muted-foreground">
-                Rayon: {searchRadius} km
-              </Badge>
-            )}
-          </div>
+          <Card className="border-border/50">
+            <CardContent className="p-3 flex items-center justify-around text-center">
+              <div>
+                <div className="text-lg font-bold text-foreground">{routeDistanceKm.toFixed(1)} km</div>
+                <div className="text-[11px] text-muted-foreground">Distance de la course</div>
+              </div>
+              {routeDurationMin !== null && (
+                <>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-lg font-bold text-foreground">~{Math.round(routeDurationMin)} min</div>
+                    <div className="text-[11px] text-muted-foreground">Temps estimé</div>
+                  </div>
+                </>
+              )}
+              {searchRadius && (
+                <>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-lg font-bold text-muted-foreground">{searchRadius} km</div>
+                    <div className="text-[11px] text-muted-foreground">Rayon de recherche</div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Map */}
