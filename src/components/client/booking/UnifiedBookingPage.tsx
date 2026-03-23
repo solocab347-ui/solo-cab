@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
@@ -26,7 +27,7 @@ export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { token: mapboxToken, isLoading: isTokenLoading } = useMapboxToken();
-  const [mode, setMode] = useState<BookingMode>('reservation');
+  const [mode, setMode] = useState<BookingMode>('immediate');
   
   // Addresses
   const [pickupAddress, setPickupAddress] = useState('');
@@ -44,6 +45,7 @@ export function UnifiedBookingPage() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(20);
   
   // Driver selection
   const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set());
@@ -116,23 +118,32 @@ export function UnifiedBookingPage() {
 
   // Geolocation
   const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      toast.error('La géolocalisation n’est pas disponible sur cet appareil');
+      return;
+    }
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         setPickupCoords({ lat: latitude, lng: longitude });
         try {
+          if (!mapboxToken) return;
           const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`);
           const data = await res.json();
           if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
-        } catch {}
+        } catch {
+          toast.error('Impossible de récupérer votre adresse actuelle');
+        }
         setIsGettingLocation(false);
       },
-      () => setIsGettingLocation(false),
+      () => {
+        toast.error('Autorisez la localisation pour utiliser votre position');
+        setIsGettingLocation(false);
+      },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, []);
+  }, [mapboxToken]);
 
   // Search
   const handleSearch = useCallback(async () => {
@@ -183,7 +194,9 @@ export function UnifiedBookingPage() {
         duration || undefined,
         schedDate,
         pickupAddress,
-        destinationAddress
+        destinationAddress,
+        maxSearchRadiusKm,
+        mode
       );
     } catch (err) {
       console.error('Search error:', err);
@@ -191,7 +204,7 @@ export function UnifiedBookingPage() {
     } finally {
       setIsGeocoding(false);
     }
-  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers]);
+  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
 
   const toggleDriverSelection = (driverId: string) => {
     setSelectedDriverIds(prev => {
@@ -302,18 +315,6 @@ export function UnifiedBookingPage() {
         {/* Mode Toggle */}
         <div className="flex gap-2 p-1 bg-muted/50 rounded-xl border border-border/50">
           <button
-            onClick={() => setMode('reservation')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
-              mode === 'reservation'
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <CalendarClock className="h-4 w-4" />
-            Réservation
-          </button>
-          <button
             onClick={() => setMode('immediate')}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
@@ -324,6 +325,18 @@ export function UnifiedBookingPage() {
           >
             <Zap className="h-4 w-4" />
             Course immédiate
+          </button>
+          <button
+            onClick={() => setMode('reservation')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
+              mode === 'reservation'
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <CalendarClock className="h-4 w-4" />
+            Réservation
           </button>
         </div>
 
@@ -413,6 +426,25 @@ export function UnifiedBookingPage() {
               </div>
             )}
 
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="text-sm text-foreground">Zone de recherche</Label>
+                <span className="text-sm font-medium text-primary">{maxSearchRadiusKm} km</span>
+              </div>
+              <Slider
+                value={[maxSearchRadiusKm]}
+                min={5}
+                max={100}
+                step={5}
+                onValueChange={([value]) => setMaxSearchRadiusKm(value)}
+              />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>5 km</span>
+                <span>50 km</span>
+                <span>100 km</span>
+              </div>
+            </div>
+
             {/* Search button */}
             <Button
               className="w-full h-12 text-base font-semibold"
@@ -474,7 +506,7 @@ export function UnifiedBookingPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Aucun chauffeur disponible dans un rayon de 20 km. Essayez une autre adresse de départ.
+              Aucun chauffeur disponible dans un rayon de {maxSearchRadiusKm} km. Essayez d’élargir la zone de recherche ou une autre adresse de départ.
             </AlertDescription>
           </Alert>
         )}

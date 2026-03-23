@@ -104,11 +104,7 @@ export function DriverMap({
     markersRef.current = [];
 
     drivers.forEach(driver => {
-      // Drivers from RPC don't have lat/lng directly, they have distance_meters
-      // We need to compute approximate positions using client position + bearing
-      // For now, if we don't have exact positions, skip map markers
-      // The RPC returns home_latitude/home_longitude in driver data
-      if (!(driver as any).home_latitude || !(driver as any).home_longitude) return;
+      if (driver.latitude == null || driver.longitude == null) return;
 
       const isSelected = selectedDriverIds.has(driver.driver_id);
       const el = document.createElement('div');
@@ -136,7 +132,7 @@ export function DriverMap({
       el.addEventListener('click', () => onDriverClick(driver.driver_id));
 
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([(driver as any).home_longitude, (driver as any).home_latitude])
+        .setLngLat([driver.longitude, driver.latitude])
         .addTo(map.current!);
 
       markersRef.current.push(marker);
@@ -154,8 +150,8 @@ export function DriverMap({
     }
 
     drivers.forEach(d => {
-      if ((d as any).home_latitude && (d as any).home_longitude) {
-        bounds.extend([(d as any).home_longitude, (d as any).home_latitude]);
+      if (d.latitude != null && d.longitude != null) {
+        bounds.extend([d.longitude, d.latitude]);
       }
     });
 
