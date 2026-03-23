@@ -680,11 +680,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
-              className={`w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 ${isPioneer ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : 'bg-gradient-premium'}`}
+              className="w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">
-                {isPioneer ? 'Activer - Offre Pionnier' : '14 jours gratuits puis 29,99€/mois'}
+                Passer Premium — 9,99€/mois
               </span>
             </Button>
           )}
