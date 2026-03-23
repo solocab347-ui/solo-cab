@@ -217,7 +217,7 @@ const Tarifs = () => {
         </div>
       </section>
 
-      {/* Comparatif avec plateformes */}
+      {/* Comparatif */}
       <section className="py-16 bg-storefront">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -253,20 +253,20 @@ const Tarifs = () => {
 
             <Card className="p-8 bg-green-500/10 border-green-500/30">
               <h3 className="text-xl font-bold text-foreground mb-4">Avec SoloCab</h3>
-              <p className="text-muted-foreground mb-4">Abonnement fixe - 0% commission</p>
+              <p className="text-muted-foreground mb-4">Gratuit - 0% commission</p>
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CA mensuel</span>
                   <span className="text-foreground font-semibold">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Abonnement</span>
-                  <span className="text-green-400 font-semibold">-{monthlyPrice}€</span>
+                  <span className="text-muted-foreground">Frais SoloCab</span>
+                  <span className="text-green-400 font-semibold">0€</span>
                 </div>
                 <div className="border-t border-border pt-4">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Vous gardez</span>
-                    <span className="text-green-400 font-bold text-xl">{(5000 - monthlyPrice).toFixed(2)}€</span>
+                    <span className="text-green-400 font-bold text-xl">5 000€</span>
                   </div>
                 </div>
               </div>
@@ -276,10 +276,10 @@ const Tarifs = () => {
           <div className="mt-8 text-center">
             <Card className="inline-block p-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30">
               <p className="text-2xl font-bold text-green-400">
-                💰 Économie annuelle : {((1250 - monthlyPrice) * 12).toFixed(2)}€
+                💰 Économie annuelle : 15 000€
               </p>
               <p className="text-muted-foreground mt-2">
-                Soit +{(((1250 - monthlyPrice) * 12 / 1250 / 12) * 100).toFixed(0)}% de revenus en plus par rapport aux plateformes
+                Par rapport aux plateformes classiques (25% commission) sur un CA de 5 000€/mois
               </p>
             </Card>
           </div>
@@ -296,10 +296,10 @@ const Tarifs = () => {
             Rejoignez les chauffeurs indépendants qui gardent 100% de leurs revenus
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/devenir-chauffeur">
+            <Link to="/register-driver-promo">
               <Button size="lg" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white">
                 <Zap className="w-5 h-5 mr-2" />
-                Commencer l'essai gratuit
+                S'inscrire gratuitement
               </Button>
             </Link>
             <Link to="/">
