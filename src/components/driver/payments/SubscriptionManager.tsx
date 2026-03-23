@@ -558,10 +558,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
             <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-foreground">
-              {isPioneer ? 'Abonnement Pionnier SoloCab' : 'Abonnement SoloCab'}
+              Abonnement SoloCab Premium
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              {isPioneer ? 'Tarif exclusif à vie pour les pionniers' : 'Accès complet à la plateforme professionnelle'}
+              Débloquez les fonctionnalités avancées pour développer votre activité
             </p>
           </div>
           {isPioneer ? (
