@@ -13928,10 +13928,12 @@ export type Database = {
           guest_name: string | null
           guest_phone: string | null
           id: string
+          payment_method: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
           ride_type: string | null
+          scheduled_date: string | null
           search_radius_km: number | null
           selected_driver_id: string | null
           status: string | null
@@ -13952,10 +13954,12 @@ export type Database = {
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          payment_method?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           ride_type?: string | null
+          scheduled_date?: string | null
           search_radius_km?: number | null
           selected_driver_id?: string | null
           status?: string | null
@@ -13976,10 +13980,12 @@ export type Database = {
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          payment_method?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           ride_type?: string | null
+          scheduled_date?: string | null
           search_radius_km?: number | null
           selected_driver_id?: string | null
           status?: string | null
