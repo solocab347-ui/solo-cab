@@ -56,6 +56,7 @@ export function useDriverLocationTracker({
             current_latitude: latitude,
             current_longitude: longitude,
             last_location_update: new Date().toISOString(),
+            is_available_now: true,
           })
           .eq('id', driverId);
 

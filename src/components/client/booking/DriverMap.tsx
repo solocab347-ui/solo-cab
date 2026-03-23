@@ -31,6 +31,7 @@ export function DriverMap({
   const destMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const mapLoadedRef = useRef(false);
+  const loadTimeoutRef = useRef<number | null>(null);
   const [mapStatus, setMapStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -98,20 +99,38 @@ export function DriverMap({
 
     map.current = instance;
 
-    instance.on('load', () => {
+    const markMapReady = () => {
+      if (mapLoadedRef.current) return;
+
       mapLoadedRef.current = true;
       setMapStatus('ready');
+
+      if (loadTimeoutRef.current) {
+        window.clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+
       resizeMap();
       window.setTimeout(resizeMap, 150);
       window.setTimeout(() => {
         resizeMap();
         fitMapBounds();
       }, 350);
-    });
+    };
+
+    instance.once('render', markMapReady);
+    instance.on('load', markMapReady);
 
     instance.on('style.load', () => {
       resizeMap();
     });
+
+    loadTimeoutRef.current = window.setTimeout(() => {
+      if (!mapLoadedRef.current) {
+        setMapStatus('error');
+        setMapError('La carte met trop de temps à se charger. Réessayez dans quelques secondes.');
+      }
+    }, 8000);
 
     instance.on('error', (event) => {
       console.error('Mapbox error:', event?.error || event);
@@ -129,11 +148,15 @@ export function DriverMap({
     return () => {
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+      if (loadTimeoutRef.current) {
+        window.clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
       mapLoadedRef.current = false;
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken, resizeMap]);
+  }, [mapboxToken, resizeMap, fitMapBounds]);
 
   useEffect(() => {
     if (!map.current || !mapContainer.current) return;
