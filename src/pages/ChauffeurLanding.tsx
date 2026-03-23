@@ -19,7 +19,7 @@ import SocialLinks from "@/components/SocialLinks";
 
 const ChauffeurLanding = () => {
   // Prix correct selon unified-driver-plan-v4
-  const monthlyPrice = 29.99;
+  const monthlyPrice = 9.99;
 
   // Scroll to top on mount
   useEffect(() => {
