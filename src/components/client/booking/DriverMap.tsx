@@ -26,12 +26,12 @@ export function DriverMap({
 }: DriverMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const mapReadyRef = useRef(false);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const clientMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const destMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const mapLoadedRef = useRef(false);
-  const loadTimeoutRef = useRef<number | null>(null);
+  const initTimeoutRef = useRef<number | null>(null);
   const [mapStatus, setMapStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export function DriverMap({
   }, []);
 
   const fitMapBounds = useCallback(() => {
-    if (!map.current || !clientPosition || !mapLoadedRef.current) return;
+    if (!map.current || !clientPosition || !mapReadyRef.current) return;
 
     const bounds = new mapboxgl.LngLatBounds();
     bounds.extend([clientPosition.lng, clientPosition.lat]);
@@ -75,9 +75,40 @@ export function DriverMap({
     });
   }, [clientPosition, destinationPosition, drivers, searchRadius]);
 
-  // Initialize map
+  const clearDriverMarkers = useCallback(() => {
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+  }, []);
+
+  const cleanupMap = useCallback(() => {
+    resizeObserverRef.current?.disconnect();
+    resizeObserverRef.current = null;
+
+    if (initTimeoutRef.current) {
+      window.clearTimeout(initTimeoutRef.current);
+      initTimeoutRef.current = null;
+    }
+
+    clearDriverMarkers();
+    clientMarkerRef.current?.remove();
+    clientMarkerRef.current = null;
+    destMarkerRef.current?.remove();
+    destMarkerRef.current = null;
+    mapReadyRef.current = false;
+    map.current?.remove();
+    map.current = null;
+  }, [clearDriverMarkers]);
+
   useEffect(() => {
-    if (!mapContainer.current || map.current || !mapboxToken) return;
+    if (!mapContainer.current) return;
+
+    if (!mapboxToken) {
+      cleanupMap();
+      setMapStatus(tokenLoading ? 'loading' : 'idle');
+      return;
+    }
+
+    if (map.current) return;
 
     setMapStatus('loading');
     setMapError(null);
@@ -99,75 +130,54 @@ export function DriverMap({
 
     map.current = instance;
 
-    const markMapReady = () => {
-      if (mapLoadedRef.current) return;
+    const handleLoad = () => {
+      if (!map.current || mapReadyRef.current) return;
 
-      mapLoadedRef.current = true;
+      mapReadyRef.current = true;
       setMapStatus('ready');
 
-      if (loadTimeoutRef.current) {
-        window.clearTimeout(loadTimeoutRef.current);
-        loadTimeoutRef.current = null;
+      if (initTimeoutRef.current) {
+        window.clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
       }
 
       resizeMap();
-      window.setTimeout(resizeMap, 150);
       window.setTimeout(() => {
         resizeMap();
         fitMapBounds();
-      }, 350);
+      }, 120);
     };
 
-    instance.once('render', markMapReady);
-    instance.on('load', markMapReady);
+    instance.on('load', handleLoad);
 
     instance.on('style.load', () => {
       resizeMap();
     });
 
-    loadTimeoutRef.current = window.setTimeout(() => {
-      if (!mapLoadedRef.current) {
-        setMapStatus('error');
-        setMapError('La carte met trop de temps à se charger. Réessayez dans quelques secondes.');
-      }
-    }, 8000);
-
     instance.on('error', (event) => {
       console.error('Mapbox error:', event?.error || event);
 
-      if (!mapLoadedRef.current) {
+      if (!mapReadyRef.current) {
         setMapStatus('error');
         setMapError('La carte n’a pas pu se charger correctement.');
       }
     });
 
-    instance.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
+    initTimeoutRef.current = window.setTimeout(() => {
+      if (!mapReadyRef.current) {
+        setMapStatus('error');
+        setMapError('Le chargement de la carte a expiré.');
+      }
+    }, 10000);
 
+    instance.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
     instance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-    return () => {
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
-      if (loadTimeoutRef.current) {
-        window.clearTimeout(loadTimeoutRef.current);
-        loadTimeoutRef.current = null;
-      }
-      mapLoadedRef.current = false;
-      map.current?.remove();
-      map.current = null;
-    };
-  }, [mapboxToken, resizeMap, fitMapBounds]);
-
-  useEffect(() => {
-    if (!map.current || !mapContainer.current) return;
-
     const handleResize = () => resizeMap();
-
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
 
     if ('ResizeObserver' in window) {
-      resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = new ResizeObserver(() => {
         resizeMap();
       });
@@ -177,14 +187,22 @@ export function DriverMap({
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
+      cleanupMap();
     };
-  }, [resizeMap]);
+  }, [mapboxToken, tokenLoading, resizeMap, fitMapBounds, cleanupMap]);
 
-  // Update client marker
   useEffect(() => {
-    if (!map.current || !clientPosition || !mapLoadedRef.current) return;
+    if (!map.current || !clientPosition || !mapReadyRef.current) return;
+
+    map.current.easeTo({
+      center: [clientPosition.lng, clientPosition.lat],
+      duration: 600,
+      zoom: Math.max(map.current.getZoom(), 11),
+    });
+  }, [clientPosition]);
+
+  useEffect(() => {
+    if (!map.current || !clientPosition || !mapReadyRef.current) return;
 
     if (clientMarkerRef.current) {
       clientMarkerRef.current.setLngLat([clientPosition.lng, clientPosition.lat]);
@@ -201,13 +219,11 @@ export function DriverMap({
         .addTo(map.current);
     }
 
-    // Fit to show client and drivers
     fitMapBounds();
-  }, [clientPosition, drivers, fitMapBounds]);
+  }, [clientPosition, fitMapBounds]);
 
-  // Update destination marker
   useEffect(() => {
-    if (!map.current || !mapLoadedRef.current) return;
+    if (!map.current || !mapReadyRef.current) return;
 
     if (destMarkerRef.current) {
       destMarkerRef.current.remove();
@@ -227,13 +243,10 @@ export function DriverMap({
     fitMapBounds();
   }, [destinationPosition, fitMapBounds]);
 
-  // Update driver markers
   useEffect(() => {
-    if (!map.current || !mapLoadedRef.current) return;
+    if (!map.current || !mapReadyRef.current) return;
 
-    // Clear old markers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
+    clearDriverMarkers();
 
     drivers.forEach(driver => {
       if (driver.latitude == null || driver.longitude == null) return;
@@ -269,7 +282,7 @@ export function DriverMap({
 
       markersRef.current.push(marker);
     });
-  }, [drivers, selectedDriverIds, onDriverClick]);
+  }, [drivers, selectedDriverIds, onDriverClick, clearDriverMarkers]);
 
   useEffect(() => {
     if (mapStatus === 'ready') {
@@ -282,7 +295,7 @@ export function DriverMap({
     <div className="mapbox-driver-map relative w-full min-h-[250px] overflow-hidden rounded-xl border border-border/50 bg-muted/40 shadow-lg sm:min-h-[350px]">
       <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
 
-      {(tokenLoading || mapStatus === 'loading' || mapStatus === 'idle') && mapboxToken && (
+      {(tokenLoading || mapStatus === 'loading') && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/65 backdrop-blur-sm">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary" />
           <p className="text-sm text-muted-foreground">Chargement de la carte…</p>

@@ -26,7 +26,7 @@ type BookingMode = 'reservation' | 'immediate';
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { token: mapboxToken, isLoading: isTokenLoading } = useMapboxToken();
+  const { token: mapboxToken, isLoading: isTokenLoading, error: mapboxError } = useMapboxToken();
   const [mode, setMode] = useState<BookingMode>('reservation');
   
   // Addresses
@@ -493,6 +493,15 @@ export function UnifiedBookingPage() {
             mapboxToken={mapboxToken}
             tokenLoading={isTokenLoading}
           />
+        )}
+
+        {hasSearched && mapboxError && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              La carte est temporairement indisponible, mais la liste des chauffeurs reste fonctionnelle.
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Error */}
