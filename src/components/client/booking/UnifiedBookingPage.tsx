@@ -747,38 +747,41 @@ export function UnifiedBookingPage() {
 
       {/* Fixed bottom CTA */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
-              className="w-full h-14 text-base font-bold gap-2"
+              className="w-full h-12 text-sm font-bold gap-2"
               onClick={() => {
-                if (!user && !showGuestForm) {
-                  setShowGuestForm(true);
+                if (!user && !showAuthStep) {
+                  setShowAuthStep(true);
                   return;
+                }
+                if (!user && !showGuestForm) {
+                  return; // waiting for auth choice
                 }
                 handleSubmitRequest();
               }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || (!user && showAuthStep && !authChoice)}
             >
               {isSubmitting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               )}
-              {!user && !showGuestForm
-                ? `Continuer (${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''})`
-                : `Envoyer la demande à ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
-              }
-              {lowestPrice !== Infinity && selectedCount === 1 && (
-                <span className="ml-1">• {lowestPrice.toFixed(0)}€</span>
-              )}
-              {lowestPrice !== Infinity && selectedCount > 1 && (
-                <span className="ml-1">• à partir de {lowestPrice.toFixed(0)}€</span>
+              <span className="truncate">
+                {!user && !showAuthStep
+                  ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
+                  : !user && showAuthStep && !authChoice
+                    ? 'Choisissez une option ci-dessus'
+                    : `Envoyer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
+                }
+              </span>
+              {lowestPrice !== Infinity && (
+                <span className="shrink-0">
+                  {selectedCount === 1 ? `${lowestPrice.toFixed(0)}€` : `dès ${lowestPrice.toFixed(0)}€`}
+                </span>
               )}
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Premier chauffeur qui accepte = votre chauffeur • Timeout 5 min
-            </p>
           </div>
         </div>
       )}

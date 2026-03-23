@@ -134,7 +134,7 @@ export function DriverResultCard({
             <Button
               size="sm"
               variant={isSelected ? 'default' : 'outline'}
-              className={`h-8 text-xs gap-1 ${isSelected ? 'bg-primary' : ''}`}
+              className={`h-8 text-xs gap-1 min-w-[70px] max-w-[100px] ${isSelected ? 'bg-primary' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleSelect(driver.driver_id);
@@ -142,8 +142,8 @@ export function DriverResultCard({
             >
               {isSelected ? (
                 <>
-                  <Check className="h-3 w-3" />
-                  Sélectionné
+                  <Check className="h-3 w-3 shrink-0" />
+                  <span className="truncate">Sélectionné</span>
                 </>
               ) : (
                 'Choisir'

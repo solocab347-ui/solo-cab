@@ -80,24 +80,43 @@ export function ClientHomeView({
 
       {/* Main CTA - Book a ride */}
       {hasDrivers && (
-        <button
-          onClick={onNewReservation}
-          className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
-          
-          <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-              <CalendarPlus className="w-7 h-7" />
+        <>
+          <button
+            onClick={onNewReservation}
+            className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
+            
+            <div className="relative flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                <CalendarPlus className="w-7 h-7" />
+              </div>
+              <div className="flex-1 text-left">
+                <h2 className="text-xl font-bold mb-0.5">Réserver une course</h2>
+                <p className="text-white/80 text-sm">Votre chauffeur vous attend</p>
+              </div>
+              <ChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
             </div>
-            <div className="flex-1 text-left">
-              <h2 className="text-xl font-bold mb-0.5">Réserver une course</h2>
-              <p className="text-white/80 text-sm">Votre chauffeur vous attend</p>
+          </button>
+
+          {/* Storefront access for free clients */}
+          <button
+            onClick={() => navigate("/chauffeurs")}
+            className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/80 p-4 text-foreground shadow transition-all duration-300 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] border border-border/50"
+          >
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Search className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="text-base font-semibold mb-0.5">Trouver un chauffeur</h3>
+                <p className="text-muted-foreground text-xs">Explorez notre réseau VTC</p>
+              </div>
+              <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
             </div>
-            <ChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </button>
+          </button>
+        </>
       )}
 
       {/* Find a driver CTA for clients without drivers */}
