@@ -302,13 +302,13 @@ const ChauffeurLanding = () => {
                   <span className="text-foreground font-medium">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Abonnement</span>
-                  <span className="text-green-400 font-medium">-{monthlyPrice.toFixed(2)}€</span>
+                  <span className="text-muted-foreground">Commission</span>
+                  <span className="text-green-400 font-medium">0€</span>
                 </div>
                 <div className="border-t border-border pt-2 sm:pt-3">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground font-medium">Vous gardez</span>
-                    <span className="text-green-400 font-bold text-base sm:text-lg">{(5000 - monthlyPrice).toFixed(2)}€</span>
+                    <span className="text-green-400 font-bold text-base sm:text-lg">5 000€</span>
                   </div>
                 </div>
               </div>
@@ -329,10 +329,10 @@ const ChauffeurLanding = () => {
             </Card>
           </div>
 
-          {/* Économie annuelle mise en avant */}
+          {/* Économie annuelle */}
           <Card className="p-4 sm:p-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30 text-center">
             <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-400 mb-2">
-              💰 Économie annuelle : {((1250 - monthlyPrice) * 12).toFixed(2)}€
+              💰 Économie annuelle : {(1250 * 12).toLocaleString()}€
             </p>
             <p className="text-muted-foreground text-xs sm:text-sm">
               Par rapport à Uber (25% de commission) sur un CA de 5 000€/mois
