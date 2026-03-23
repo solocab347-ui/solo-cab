@@ -20,6 +20,9 @@ export interface NearbyDriver {
   estimated_price?: number;
   distance_km?: number;
   has_surcharge?: boolean;
+  // Payment info
+  accepted_payment_methods?: string[] | null;
+  stripe_connect_charges_enabled?: boolean;
 }
 
 type SearchMode = 'reservation' | 'immediate';
