@@ -140,7 +140,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
     }
   };
 
-  // Share course with a partner
+  // Share course with a partner (PREMIUM ONLY - caller must verify premium status)
   const shareWithPartner = async (queueId: string, courseId: string, partnerId: string) => {
     try {
       // First, get the partnership

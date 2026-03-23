@@ -16,6 +16,8 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 interface Favorite {
   id: string;
@@ -58,15 +60,16 @@ export function ShareCourseWithPartnerDialog({
   const [clientMessage, setClientMessage] = useState('');
   const [shareMode, setShareMode] = useState<ShareMode>('choose');
   
+  const { isPremium } = useDriverPremium();
   const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
 
   useEffect(() => {
-    if (open && driverId) {
+    if (open && driverId && isPremium) {
       loadFavorites();
       setShareMode('choose');
       setSelectedFavorite(null);
     }
-  }, [open, driverId]);
+  }, [open, driverId, isPremium]);
 
   useEffect(() => {
     if (selectedFavorite) {
@@ -79,6 +82,27 @@ export function ShareCourseWithPartnerDialog({
       );
     }
   }, [selectedFavorite, shareMode]);
+
+  // Block sharing for non-premium users
+  if (open && !isPremium) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Fonctionnalité Premium</DialogTitle>
+            <DialogDescription>
+              Le partage de courses est réservé aux abonnés Premium.
+            </DialogDescription>
+          </DialogHeader>
+          <PremiumGate 
+            isPremium={false} 
+            featureName="Partage de courses" 
+            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des commissions."
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const loadFavorites = async () => {
     setLoading(true);

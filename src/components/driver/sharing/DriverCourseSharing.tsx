@@ -17,6 +17,8 @@ import { FavoriteDriversList } from './FavoriteDriversList';
 import { ReceivedPartnerCourses } from '../partnership/ReceivedPartnerCourses';
 import { SentPartnerCourses } from '../partnership/SentPartnerCourses';
 import { PartnerCoursePool } from './PartnerCoursePool';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 type TabType = 'favorites' | 'pool' | 'received' | 'sent';
 
@@ -26,6 +28,7 @@ interface DriverCourseSharingProps {
 
 export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
   const { user } = useAuth();
+  const { isPremium, loading: premiumLoading } = useDriverPremium();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'pool');
@@ -109,8 +112,18 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
     }
   };
 
-  if (loading) {
+  if (loading || premiumLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!isPremium) {
+    return (
+      <PremiumGate 
+        isPremium={false} 
+        featureName="Partage de courses" 
+        featureDescription="Partagez vos courses avec d'autres chauffeurs du réseau, gérez vos favoris et gagnez des commissions."
+      />
+    );
   }
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [

@@ -17,6 +17,8 @@ import { DriverPartnershipsTab } from './partnership/DriverPartnershipsTab';
 import { PartnershipSettings } from './partnership/PartnershipSettings';
 import { PartnershipStripeGate } from './partnership/PartnershipStripeGate';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 type MainTab = 'drivers' | 'settings';
 
@@ -26,6 +28,7 @@ interface UnifiedPartnershipHubProps {
 
 export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershipHubProps = {}) {
   const { user } = useAuth();
+  const { isPremium, loading: premiumLoading } = useDriverPremium();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState<MainTab>('drivers');
@@ -87,11 +90,21 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
     setPendingCount(driverPending || 0);
   };
 
-  if (loading || stripeLoading) {
+  if (loading || stripeLoading || premiumLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <PremiumGate 
+        isPremium={false} 
+        featureName="Partenariats & Partage de courses" 
+        featureDescription="Échangez des courses avec d'autres chauffeurs, gérez vos partenariats et gagnez des commissions."
+      />
     );
   }
 
