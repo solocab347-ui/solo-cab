@@ -627,7 +627,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
           <div className="bg-white/5 rounded-lg p-3 sm:p-4 space-y-2 border border-white/10">
             <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">
-              {(isInTrialPeriod || hasAdminFreeAccess) ? "✓ Vous avez accès à :" : "✓ Inclus dans l'abonnement :"}
+              ✓ Accès Gratuit (inclus pour tous) :
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
@@ -640,23 +640,37 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Génération automatique de devis et factures</span>
+                <span className="text-gray-200">Devis et factures automatiques</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">QR Code personnel pour recruter des clients</span>
+                <span className="text-gray-200">QR Code et profil public</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Profil public sur la vitrine</span>
+                <span className="text-gray-200">0% de commission</span>
+              </li>
+            </ul>
+            
+            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-amber-400 pt-3 border-t border-white/10">
+              👑 Premium (9,99€/mois) :
+            </h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+              <li className="flex items-center gap-2">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Partenariats entre chauffeurs</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">0% de commission sur vos courses</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Échange et partage de courses</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">Support 7j/7</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Codes promotionnels</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-gray-200">Prospection avancée</span>
               </li>
             </ul>
           </div>
