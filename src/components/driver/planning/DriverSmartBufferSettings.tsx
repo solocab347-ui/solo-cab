@@ -217,18 +217,28 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
                   </div>
 
                   <div className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    settings.smart_buffer_fallback_action === 'share_with_partner' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                    !isPremium 
+                      ? 'border-muted bg-muted/30 opacity-60 cursor-not-allowed'
+                      : settings.smart_buffer_fallback_action === 'share_with_partner' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
                   }`}>
-                    <RadioGroupItem value="share_with_partner" id="share_with_partner" />
-                    <Share2 className="w-4 h-4 text-success" />
+                    <RadioGroupItem value="share_with_partner" id="share_with_partner" disabled={!isPremium} />
+                    {isPremium ? (
+                      <Share2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                    )}
                     <div className="flex-1">
-                      <Label htmlFor="share_with_partner" className="cursor-pointer font-medium">
+                      <Label htmlFor="share_with_partner" className={`cursor-pointer font-medium ${!isPremium ? 'text-muted-foreground' : ''}`}>
                         Proposer à un partenaire
+                        {!isPremium && <Badge variant="outline" className="ml-2 text-[10px] px-1.5">Premium</Badge>}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        La course sera partagée avec mes partenaires
+                        {isPremium 
+                          ? 'La course sera partagée avec mes partenaires'
+                          : 'Passez au Premium (9,99€/mois) pour partager automatiquement'
+                        }
                       </p>
                     </div>
                   </div>
