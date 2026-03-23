@@ -113,7 +113,7 @@ export function TrialStartBanner({
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('🎉 Votre période d\'essai de 14 jours a commencé !');
+        toast.success('🎉 Votre compte est activé ! Bienvenue sur SoloCab.');
         setDialogOpen(false);
         onTrialStarted?.();
       }
