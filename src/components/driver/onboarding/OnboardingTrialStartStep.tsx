@@ -212,11 +212,10 @@ export function OnboardingTrialStartStep({
           onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           onboarding_step: 'complete',
-          trial_status: 'pending_equipment',
         })
         .eq('id', driverId);
 
-      toast.success('Inscription complète. Démarrez votre essai quand vous êtes prêt !');
+      toast.success('Inscription complète. Activez votre compte quand vous êtes prêt !');
       onComplete();
     } catch (error) {
       console.error('Error:', error);
