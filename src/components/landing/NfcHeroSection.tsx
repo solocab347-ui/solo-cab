@@ -56,11 +56,7 @@ export const NfcHeroSection = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xl font-bold text-orange-500">29,99€</p>
-                <p className="text-xs text-primary">23,99€ avec abo</p>
               </div>
-              <Badge variant="outline" className="border-orange-500/50 text-orange-400 text-xs">
-                -20%
-              </Badge>
             </div>
 
             <Link to="/plaque-nfc">
@@ -92,11 +88,7 @@ export const NfcHeroSection = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xl font-bold text-success">14,99€</p>
-                <p className="text-xs text-primary">11,99€ avec abo</p>
               </div>
-              <Badge variant="outline" className="border-success/50 text-success text-xs">
-                -20%
-              </Badge>
             </div>
 
             <Link to="/plaque-nfc">
@@ -124,12 +116,12 @@ export const NfcHeroSection = () => {
           </div>
         </div>
 
-        {/* Subscription Advantage */}
+        {/* Trust badge */}
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 max-w-xl mx-auto">
           <p className="text-muted-foreground text-sm">
             <Star className="w-4 h-4 inline mr-2 text-primary" />
-            <strong className="text-primary">-20% avec l'abonnement</strong> : 
-            Profil pro, réservations, avis clients et CRM inclus !
+            <strong className="text-primary">Livraison rapide</strong> : 
+            Recevez votre plaque NFC personnalisée directement chez vous !
           </p>
         </div>
       </div>

@@ -15,7 +15,7 @@ import {
 import { motion } from "framer-motion";
 import logo from "@/assets/logo-solocab.png";
 
-const TRIAL_DAYS = 14;
+// Registration page - Free access model
 
 const RegisterDriverPromoFree = () => {
   const navigate = useNavigate();
@@ -224,8 +224,8 @@ const RegisterDriverPromoFree = () => {
             transition={{ delay: 0.3 }}
           >
             <Badge className="bg-success/20 text-success border-success/30 px-4 py-1.5 text-sm font-semibold">
-              <Clock className="w-3.5 h-3.5 mr-1.5" />
-              {TRIAL_DAYS} jours gratuits • Sans carte bancaire
+              <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+              Inscription gratuite • Sans carte bancaire
             </Badge>
           </motion.div>
         </div>
@@ -285,7 +285,7 @@ const RegisterDriverPromoFree = () => {
           ) : (
             <Card className="p-5 border-border">
               <h2 className="text-lg font-bold text-foreground mb-1">Créez votre compte</h2>
-              <p className="text-xs text-muted-foreground mb-4">Essai gratuit {TRIAL_DAYS} jours – accès complet – aucun paiement requis</p>
+              <p className="text-xs text-muted-foreground mb-4">Accès gratuit – toutes les fonctionnalités de base – aucun paiement requis</p>
               
               <form onSubmit={handleRegister} className="space-y-3">
                 <div>
@@ -321,14 +321,13 @@ const RegisterDriverPromoFree = () => {
 
                 <Button type="submit" disabled={loading} className="w-full h-12 bg-success hover:bg-success/90 text-success-foreground font-semibold text-sm">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
-                  Démarrer mon essai gratuit
+                  Créer mon compte gratuit
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
                 
                 <p className="text-[10px] text-center text-muted-foreground">
                   En vous inscrivant, vous acceptez nos{" "}
                   <a href="/terms-of-service" className="underline hover:text-foreground">conditions d'utilisation</a>
-                  {" "}• Accès gratuit, Premium à 9,99€/mois
                 </p>
 
                 <div className="relative py-2">
@@ -355,8 +354,8 @@ const RegisterDriverPromoFree = () => {
             <span className="text-[10px] text-muted-foreground">Sans engagement</span>
           </div>
           <div className="flex flex-col items-center gap-1">
-            <Clock className="w-5 h-5 text-secondary" />
-            <span className="text-[10px] text-muted-foreground">{TRIAL_DAYS}j gratuits</span>
+            <CheckCircle className="w-5 h-5 text-success" />
+            <span className="text-[10px] text-muted-foreground">Gratuit</span>
           </div>
         </div>
       </div>
