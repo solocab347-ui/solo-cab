@@ -165,14 +165,14 @@ export function OnboardingTrialStartStep({
     return true;
   };
 
-  // Afficher la vidéo de bienvenue puis lancer l'essai
+  // Afficher la vidéo de bienvenue puis activer le compte
   const handleLaunchWithVideo = () => {
     setShowWelcomeVideo(true);
   };
 
   const handleVideoComplete = () => {
     setShowWelcomeVideo(false);
-    handleStartTrial();
+    handleActivateAccount();
   };
 
   const handleActivateAccount = async () => {
