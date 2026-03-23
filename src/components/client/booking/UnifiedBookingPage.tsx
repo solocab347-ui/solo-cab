@@ -354,6 +354,7 @@ export function UnifiedBookingPage() {
           selected_driver_id: driver.driver_id,
           estimated_price: driver.estimated_price,
           timeout_at: new Date(Date.now() + timeoutMs).toISOString(),
+          payment_method: clientPaymentMethod || 'card',
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime 
             ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() 
             : null,
