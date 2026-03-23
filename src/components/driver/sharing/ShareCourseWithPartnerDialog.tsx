@@ -16,6 +16,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
 
 interface Favorite {
   id: string;
