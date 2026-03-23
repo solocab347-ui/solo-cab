@@ -98,7 +98,7 @@ export function SentPartnerCourses({ driverId }: Props) {
           }
         }
         const course = item.courses as any;
-        const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
+        const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: item.receiver_driver_id,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
