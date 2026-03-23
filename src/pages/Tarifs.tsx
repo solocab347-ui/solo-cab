@@ -22,11 +22,6 @@ import logo from "@/assets/logo-solocab.png";
 import SocialLinks from "@/components/SocialLinks";
 
 const Tarifs = () => {
-  // Prix des abonnements chauffeurs
-  const monthlyPrice = 9.99;
-  const annualPrice = 99.90;
-  const annualMonthlyEquiv = (annualPrice / 12).toFixed(2);
-  const savings = (monthlyPrice * 12 - annualPrice).toFixed(2);
 
   // Prix des plaques NFC
   const nfcPlates = [
