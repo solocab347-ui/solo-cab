@@ -95,7 +95,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             .single();
 
           const course = item.courses as any;
-          const solocabFee = ((item as any).solocab_fee_cents || 20) / 100;
+          const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
           const earnings = (item as any).earnings_for_receiver || (item.course_amount - item.commission_amount - solocabFee);
 
           enriched.push({
