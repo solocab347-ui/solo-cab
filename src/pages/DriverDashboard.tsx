@@ -37,6 +37,7 @@ import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
 import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
+import { DriverCourseSharing } from "@/components/driver/sharing/DriverCourseSharing";
 import { PremiumGate } from "@/components/premium/PremiumGate";
 import { GuestBookingsList } from "@/components/driver/clients/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
