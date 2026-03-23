@@ -240,16 +240,38 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
                   )}
                   Conserver
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-8 text-xs gap-1 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
-                  disabled={actionLoading === alert.id}
-                  onClick={() => handleAction(alert.id, alert.course_id, 'share_partner')}
-                >
-                  <Handshake className="w-3 h-3" />
-                  Partenaire
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            "w-full h-8 text-xs gap-1",
+                            isPremium 
+                              ? "border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
+                              : "border-muted text-muted-foreground opacity-60 cursor-not-allowed"
+                          )}
+                          disabled={actionLoading === alert.id || !isPremium}
+                          onClick={() => isPremium && handleAction(alert.id, alert.course_id, 'share_partner')}
+                        >
+                          {isPremium ? (
+                            <Handshake className="w-3 h-3" />
+                          ) : (
+                            <Lock className="w-3 h-3" />
+                          )}
+                          Partenaire
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {!isPremium && (
+                      <TooltipContent>
+                        <p>Fonctionnalité Premium — Passez à 9,99€/mois pour partager vos courses</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   size="sm"
                   variant="ghost"
