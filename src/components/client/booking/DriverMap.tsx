@@ -4,17 +4,27 @@ import type { Circle as LeafletCircle, CircleMarker, LayerGroup, Map as LeafletM
 import 'leaflet/dist/leaflet.css';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 
+// Dark map tiles similar to Uber/Bolt style
 const TILE_PROVIDERS: Array<{
   url: string;
   options: L.TileLayerOptions;
 }> = [
+  {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: {
+      subdomains: 'abcd',
+      maxZoom: 20,
+      crossOrigin: true,
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+    },
+  },
   {
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     options: {
       subdomains: 'abcd',
       maxZoom: 20,
       crossOrigin: true,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
     },
   },
   {
@@ -39,24 +49,61 @@ interface DriverMapProps {
   tokenLoading?: boolean;
 }
 
-const createDriverIcon = (isSelected: boolean, price?: number) =>
-  L.divIcon({
-    className: 'driver-map-icon',
+const createDriverIcon = (driver: NearbyDriver, isSelected: boolean) => {
+  const price = driver.estimated_price;
+  const photoUrl = driver.profile_photo_url;
+  const initials = (driver.display_name || driver.company_name || 'VTC')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const borderColor = isSelected ? '#3b82f6' : '#ffffff';
+  const glowColor = isSelected ? 'rgba(59,130,246,0.5)' : 'rgba(0,0,0,0.3)';
+  const priceDisplay = price && price > 0 ? `${price.toFixed(0)}€` : '';
+
+  const avatarContent = photoUrl
+    ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><div style="display:none;width:100%;height:100%;border-radius:50%;background:#3b82f6;color:white;font-size:12px;font-weight:700;align-items:center;justify-content:center;">${initials}</div>`
+    : `<div style="width:100%;height:100%;border-radius:50%;background:#3b82f6;color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">${initials}</div>`;
+
+  return L.divIcon({
+    className: 'driver-avatar-marker',
     html: `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; transform: translateY(-8px);">
-        <div style="width: 40px; height: 40px; border-radius: 12px; background: ${isSelected ? 'hsl(var(--primary))' : 'hsl(var(--card))'}; border: 2px solid ${isSelected ? 'hsl(var(--primary-foreground))' : 'hsl(var(--border))'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px hsl(var(--foreground) / 0.16); font-size: 18px;">🚗</div>
-        ${price ? `<div style="padding: 2px 6px; border-radius: 999px; background: ${isSelected ? 'hsl(var(--primary))' : 'hsl(var(--background))'}; color: ${isSelected ? 'hsl(var(--primary-foreground))' : 'hsl(var(--foreground))'}; border: 1px solid hsl(var(--border)); font-size: 10px; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 20px hsl(var(--foreground) / 0.12);">${price.toFixed(0)}€</div>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(-6px);filter:drop-shadow(0 4px 12px ${glowColor});">
+        <div style="width:44px;height:44px;border-radius:50%;border:3px solid ${borderColor};overflow:hidden;background:#1a1a2e;box-shadow:0 2px 8px rgba(0,0,0,0.4);">
+          ${avatarContent}
+        </div>
+        ${priceDisplay ? `<div style="padding:2px 8px;border-radius:12px;background:${isSelected ? '#3b82f6' : '#1a1a2e'};color:white;font-size:11px;font-weight:700;white-space:nowrap;border:1.5px solid ${isSelected ? '#60a5fa' : '#334155'};box-shadow:0 2px 8px rgba(0,0,0,0.3);">${priceDisplay}</div>` : ''}
       </div>
     `,
-    iconSize: [56, 56],
-    iconAnchor: [28, 40],
+    iconSize: [52, 62],
+    iconAnchor: [26, 50],
   });
+};
+
+const pickupIcon = L.divIcon({
+  className: 'pickup-marker',
+  html: `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:4px solid #ffffff;box-shadow:0 0 0 2px #3b82f6, 0 4px 12px rgba(59,130,246,0.4);"></div>
+      <div style="width:3px;height:12px;background:linear-gradient(to bottom, #3b82f6, transparent);border-radius:2px;"></div>
+    </div>
+  `,
+  iconSize: [28, 38],
+  iconAnchor: [14, 34],
+});
 
 const destinationIcon = L.divIcon({
-  className: 'driver-map-destination-icon',
-  html: '<div style="width: 18px; height: 18px; background: hsl(var(--destructive)); border: 3px solid hsl(var(--background)); border-radius: 4px; transform: rotate(45deg); box-shadow: 0 10px 20px hsl(var(--foreground) / 0.18);"></div>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 18],
+  className: 'destination-marker',
+  html: `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="width:20px;height:20px;border-radius:4px;background:#ef4444;border:4px solid #ffffff;transform:rotate(45deg);box-shadow:0 0 0 2px #ef4444, 0 4px 12px rgba(239,68,68,0.4);"></div>
+      <div style="width:3px;height:12px;background:linear-gradient(to bottom, #ef4444, transparent);border-radius:2px;margin-top:2px;"></div>
+    </div>
+  `,
+  iconSize: [28, 40],
+  iconAnchor: [14, 36],
 });
 
 export function DriverMap({
@@ -72,7 +119,7 @@ export function DriverMap({
   const mapRef = useRef<LeafletMap | null>(null);
   const driverLayerRef = useRef<LayerGroup | null>(null);
   const routeLayerRef = useRef<LayerGroup | null>(null);
-  const clientMarkerRef = useRef<CircleMarker | null>(null);
+  const pickupMarkerRef = useRef<Marker | null>(null);
   const radiusCircleRef = useRef<LeafletCircle | null>(null);
   const destinationMarkerRef = useRef<Marker | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -97,7 +144,7 @@ export function DriverMap({
       const provider = TILE_PROVIDERS[providerIndex];
       if (!provider) {
         setMapStatus('error');
-        setMapError('Le fond de carte ne peut pas se charger pour le moment.');
+        setMapError('Le fond de carte ne peut pas se charger.');
         return;
       }
 
@@ -106,10 +153,6 @@ export function DriverMap({
 
       const tileLayer = L.tileLayer(provider.url, provider.options);
       let hasLoadedTiles = false;
-
-      tileLayer.on('loading', () => {
-        setMapStatus('loading');
-      });
 
       tileLayer.on('load', () => {
         hasLoadedTiles = true;
@@ -120,13 +163,12 @@ export function DriverMap({
 
       tileLayer.on('tileerror', () => {
         if (hasLoadedTiles) return;
-
-        const nextProviderIndex = providerIndex + 1;
-        if (nextProviderIndex < TILE_PROVIDERS.length) {
-          attachTileLayer(nextProviderIndex);
+        const nextIndex = providerIndex + 1;
+        if (nextIndex < TILE_PROVIDERS.length) {
+          attachTileLayer(nextIndex);
         } else {
           setMapStatus('error');
-          setMapError('Le fond de carte ne peut pas se charger pour le moment.');
+          setMapError('Le fond de carte ne peut pas se charger.');
         }
       });
 
@@ -161,61 +203,67 @@ export function DriverMap({
       tileLayerRef.current = null;
       driverLayerRef.current = null;
       routeLayerRef.current = null;
-      clientMarkerRef.current = null;
+      pickupMarkerRef.current = null;
       radiusCircleRef.current = null;
       destinationMarkerRef.current = null;
     };
   }, [clientPosition]);
 
+  // Update route layer (pickup, destination, radius)
   useEffect(() => {
     const map = mapRef.current;
     const routeLayer = routeLayerRef.current;
     if (!map || !routeLayer) return;
 
     routeLayer.clearLayers();
-    clientMarkerRef.current = null;
+    pickupMarkerRef.current = null;
     radiusCircleRef.current = null;
     destinationMarkerRef.current = null;
 
     if (!clientPosition) return;
 
-    clientMarkerRef.current = L.circleMarker([clientPosition.lat, clientPosition.lng], {
-      radius: 10,
-      color: 'hsl(var(--background))',
-      weight: 3,
-      fillColor: 'hsl(var(--primary))',
-      fillOpacity: 1,
+    // Pickup marker
+    pickupMarkerRef.current = L.marker([clientPosition.lat, clientPosition.lng], {
+      icon: pickupIcon,
+      zIndexOffset: 1000,
     }).addTo(routeLayer);
 
+    // Search radius circle
     if (searchRadius) {
       radiusCircleRef.current = L.circle([clientPosition.lat, clientPosition.lng], {
         radius: searchRadius * 1000,
-        color: 'hsl(var(--primary))',
-        weight: 1.5,
-        fillColor: 'hsl(var(--primary))',
-        fillOpacity: 0.08,
+        color: '#3b82f6',
+        weight: 1,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.06,
+        dashArray: '6 4',
       }).addTo(routeLayer);
     }
 
+    // Destination marker + route line
     if (destinationPosition) {
       destinationMarkerRef.current = L.marker([destinationPosition.lat, destinationPosition.lng], {
         icon: destinationIcon,
+        zIndexOffset: 900,
       }).addTo(routeLayer);
 
+      // Curved dotted route line
       L.polyline(
         [
           [clientPosition.lat, clientPosition.lng],
           [destinationPosition.lat, destinationPosition.lng],
         ],
         {
-          color: 'hsl(var(--accent))',
+          color: '#3b82f6',
           weight: 3,
-          opacity: 0.85,
-          dashArray: '8 10',
+          opacity: 0.7,
+          dashArray: '10 8',
+          lineCap: 'round',
         }
       ).addTo(routeLayer);
     }
 
+    // Fit bounds
     const bounds = L.latLngBounds([[clientPosition.lat, clientPosition.lng]]);
 
     if (destinationPosition) {
@@ -230,12 +278,13 @@ export function DriverMap({
 
     if (bounds.isValid()) {
       map.fitBounds(bounds, {
-        padding: [40, 40],
-        maxZoom: destinationPosition || drivers.length > 0 ? 14 : searchRadius && searchRadius <= 5 ? 12 : 11,
+        padding: [50, 50],
+        maxZoom: destinationPosition || drivers.length > 0 ? 13 : searchRadius && searchRadius <= 5 ? 12 : 11,
       });
     }
   }, [clientPosition, destinationPosition, drivers, searchRadius]);
 
+  // Update driver markers
   useEffect(() => {
     const driverLayer = driverLayerRef.current;
     if (!driverLayer) return;
@@ -245,8 +294,10 @@ export function DriverMap({
     drivers.forEach((driver) => {
       if (driver.latitude == null || driver.longitude == null) return;
 
+      const isSelected = selectedDriverIds.has(driver.driver_id);
       const marker = L.marker([driver.latitude, driver.longitude], {
-        icon: createDriverIcon(selectedDriverIds.has(driver.driver_id), driver.estimated_price),
+        icon: createDriverIcon(driver, isSelected),
+        zIndexOffset: isSelected ? 500 : 0,
       });
 
       marker.on('click', () => onDriverClick(driver.driver_id));
@@ -260,25 +311,25 @@ export function DriverMap({
   }, [mapStatus, drivers.length]);
 
   return (
-    <div className="relative w-full min-h-[250px] overflow-hidden rounded-xl border border-border/50 bg-muted shadow-lg sm:min-h-[350px]">
+    <div className="relative w-full min-h-[280px] overflow-hidden rounded-2xl border border-border/30 shadow-2xl sm:min-h-[380px]">
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
       {(tokenLoading || mapStatus === 'loading') && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-sm">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary" />
-          <p className="text-sm text-muted-foreground">Chargement de la carte…</p>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#1a1a2e]/80 backdrop-blur-sm">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#334155] border-t-[#3b82f6]" />
+          <p className="text-sm text-[#94a3b8]">Chargement de la carte…</p>
         </div>
       )}
 
       {mapStatus === 'error' && mapError && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/90 px-4 text-center backdrop-blur-sm">
-          <p className="text-sm text-muted-foreground">{mapError}</p>
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1a1a2e]/90 px-4 text-center backdrop-blur-sm">
+          <p className="text-sm text-[#94a3b8]">{mapError}</p>
         </div>
       )}
 
       {!clientPosition && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80 px-4 text-center backdrop-blur-sm">
-          <p className="text-sm text-muted-foreground">Entrez votre adresse de départ pour voir les chauffeurs sur la carte</p>
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1a1a2e]/80 px-4 text-center backdrop-blur-sm">
+          <p className="text-sm text-[#94a3b8]">Entrez votre adresse de départ pour voir les chauffeurs sur la carte</p>
         </div>
       )}
     </div>
