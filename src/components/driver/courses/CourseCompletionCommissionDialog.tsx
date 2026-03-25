@@ -34,6 +34,8 @@ interface StripePaymentInfo {
   hasCardHold: boolean;
   depositPaid: number;
   remainingAmount: number;
+  paymentMethod: string;
+  driverHasStripe: boolean;
 }
 
 interface CourseCompletionCommissionDialogProps {
