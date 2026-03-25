@@ -1072,6 +1072,166 @@ serve(async (req) => {
       }
     }
 
+    // ========================================
+    // PAYMENT INTENT EVENTS (course payments)
+    // ========================================
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const metadata = paymentIntent.metadata || {};
+      
+      if (metadata.course_id && metadata.type === "course_final_payment") {
+        logStep("PaymentIntent succeeded for course", { 
+          courseId: metadata.course_id, 
+          amount: paymentIntent.amount / 100 
+        });
+
+        // Record in payments table
+        await supabaseClient.from("payments").insert({
+          course_id: metadata.course_id,
+          driver_id: metadata.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_charge_id: paymentIntent.latest_charge as string || null,
+          amount: paymentIntent.amount / 100,
+          captured_amount: paymentIntent.amount_received / 100,
+          application_fee_amount: (paymentIntent.application_fee_amount || 0) / 100,
+          status: "succeeded",
+          payment_type: metadata.type || "course_payment",
+          capture_method: paymentIntent.capture_method,
+          authorized_at: new Date().toISOString(),
+          captured_at: new Date().toISOString(),
+          metadata: metadata,
+        });
+      }
+
+      // Card hold captured
+      if (metadata.type === "reservation_hold") {
+        logStep("Card hold PaymentIntent succeeded", { 
+          courseId: metadata.course_id 
+        });
+
+        await supabaseClient.from("payments").insert({
+          course_id: metadata.course_id || null,
+          driver_id: metadata.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          captured_amount: paymentIntent.amount_received / 100,
+          status: "succeeded",
+          payment_type: "card_hold",
+          capture_method: "manual",
+          captured_at: new Date().toISOString(),
+          metadata: metadata,
+        });
+      }
+
+      return new Response(JSON.stringify({ received: true, type: "payment_intent.succeeded" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const metadata = paymentIntent.metadata || {};
+      const lastError = paymentIntent.last_payment_error;
+
+      logStep("PaymentIntent failed", { 
+        piId: paymentIntent.id,
+        courseId: metadata.course_id,
+        error: lastError?.message 
+      });
+
+      if (metadata.course_id) {
+        // Update course
+        await supabaseClient
+          .from("courses")
+          .update({
+            payment_status: "failed",
+            last_payment_error: lastError?.message || "Payment failed",
+            payment_retry_count: (await supabaseClient
+              .from("courses")
+              .select("payment_retry_count")
+              .eq("id", metadata.course_id)
+              .single()
+            ).data?.payment_retry_count + 1 || 1,
+          })
+          .eq("id", metadata.course_id);
+
+        // Record in payments table
+        await supabaseClient.from("payments").insert({
+          course_id: metadata.course_id,
+          driver_id: metadata.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          status: "failed",
+          payment_type: metadata.type || "course_payment",
+          last_error: lastError?.message || "Payment failed",
+          failure_code: lastError?.code || null,
+          failed_at: new Date().toISOString(),
+          metadata: metadata,
+        });
+
+        // Notify driver
+        if (metadata.driver_id) {
+          const { data: driverData } = await supabaseClient
+            .from("drivers")
+            .select("user_id")
+            .eq("id", metadata.driver_id)
+            .single();
+
+          if (driverData?.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "❌ Échec de paiement client",
+              message: `Le paiement de ${(paymentIntent.amount / 100).toFixed(2)}€ a échoué. Le client doit réessayer.`,
+              type: "warning",
+              priority: "high",
+            });
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ received: true, type: "payment_intent.payment_failed" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (event.type === "payment_intent.canceled") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const metadata = paymentIntent.metadata || {};
+
+      logStep("PaymentIntent canceled", { 
+        piId: paymentIntent.id, 
+        courseId: metadata.course_id 
+      });
+
+      if (metadata.course_id) {
+        await supabaseClient
+          .from("courses")
+          .update({
+            payment_status: "canceled",
+            card_hold_status: metadata.type === "reservation_hold" ? "canceled" : undefined,
+          })
+          .eq("id", metadata.course_id);
+
+        await supabaseClient.from("payments").insert({
+          course_id: metadata.course_id,
+          driver_id: metadata.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          status: "canceled",
+          payment_type: metadata.type || "course_payment",
+          canceled_at: new Date().toISOString(),
+          metadata: metadata,
+        });
+      }
+
+      return new Response(JSON.stringify({ received: true, type: "payment_intent.canceled" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     return new Response(JSON.stringify({ received: true }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
