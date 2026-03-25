@@ -138,6 +138,7 @@ export const MobileDriverNav = ({
     const isActive = activeTab === item.value;
     const Icon = item.icon;
     const isDisabled = item.comingSoon;
+    const isPremiumLocked = item.premium && isFree;
     
     return (
       <button
@@ -148,14 +149,20 @@ export const MobileDriverNav = ({
           isDisabled 
             ? "opacity-50 cursor-not-allowed bg-muted/20"
             : "active:scale-[0.98]",
-          !isDisabled && isActive
+          !isDisabled && isActive && !isPremiumLocked
             ? `bg-gradient-to-r ${item.gradient || "from-primary to-accent"} text-primary-foreground shadow-lg`
             : !isDisabled && "bg-muted/30 text-muted-foreground hover:bg-muted/50"
         )}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-left font-medium truncate">{item.label}</span>
-        {item.premium && (
+        {item.premium && isFree && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            Premium
+          </Badge>
+        )}
+        {item.premium && !isFree && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
             <Crown className="w-3 h-3" />
             Premium
