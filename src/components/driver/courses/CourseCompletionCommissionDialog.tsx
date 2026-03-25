@@ -494,7 +494,13 @@ export function CourseCompletionCommissionDialog({
         <DialogFooter>
           <Button onClick={handleConfirm} className="w-full">
             <CheckCircle className="w-4 h-4 mr-2" />
-            {stripeInfo.isStripePayment ? 'Clôturer et encaisser' : 'Compris !'}
+            {stripeInfo.isStripePayment 
+              ? 'Clôturer et encaisser automatiquement' 
+              : stripeInfo.paymentMethod === 'card' 
+                ? 'J\'ai encaissé avec mon TPE' 
+                : stripeInfo.paymentMethod === 'cash' 
+                  ? 'J\'ai encaissé en espèces' 
+                  : 'Confirmer la clôture'}
           </Button>
         </DialogFooter>
       </DialogContent>

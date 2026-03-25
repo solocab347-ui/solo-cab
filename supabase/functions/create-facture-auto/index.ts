@@ -385,6 +385,39 @@ serve(async (req) => {
       netToDriver
     });
 
+    // ===== DÉTERMINER LE MODE DE PAIEMENT CORRECT =====
+    // Logique: stripe > card (TPE) > cash
+    let resolvedPaymentMethod = payment_method || course.payment_method || "cash";
+    let resolvedPaymentStatus = "pending";
+    let paidAt: string | null = null;
+
+    if (isStripePayment && (resolvedPaymentMethod === "stripe" || resolvedPaymentMethod === "card")) {
+      // Chauffeur avec Stripe Connect + paiement en ligne → auto-encaissé
+      resolvedPaymentMethod = "stripe";
+      resolvedPaymentStatus = "paid";
+      paidAt = new Date().toISOString();
+    } else if (resolvedPaymentMethod === "card") {
+      // Chauffeur SANS Stripe → il encaisse avec son propre TPE
+      resolvedPaymentMethod = "card";
+      resolvedPaymentStatus = "pending"; // Marqué en attente jusqu'à confirmation
+    } else if (resolvedPaymentMethod === "cash") {
+      // Espèces → le chauffeur encaisse directement
+      resolvedPaymentMethod = "cash";
+      resolvedPaymentStatus = "pending";
+    } else {
+      // Fallback
+      resolvedPaymentMethod = "cash";
+      resolvedPaymentStatus = "pending";
+    }
+
+    console.log("[CREATE-FACTURE-AUTO] Payment resolution:", {
+      input: payment_method,
+      courseMethod: course.payment_method,
+      isStripePayment,
+      resolved: resolvedPaymentMethod,
+      status: resolvedPaymentStatus
+    });
+
     // Create facture with complete fee breakdown
     const factureData: any = {
       driver_id: course.driver_id,
@@ -394,9 +427,9 @@ serve(async (req) => {
       amount: grossAmount,
       discount_amount: acceptedDevis.discount_amount || 0,
       promo_code: acceptedDevis.promo_code || null,
-      payment_method: payment_method || (isStripePayment ? "stripe" : "other"),
-      payment_status: "paid",
-      paid_at: new Date().toISOString(),
+      payment_method: resolvedPaymentMethod,
+      payment_status: resolvedPaymentStatus,
+      paid_at: paidAt,
       
       // Détails prix
       base_price: acceptedDevis.base_price || 0,
@@ -409,7 +442,7 @@ serve(async (req) => {
       city_pricing_name: acceptedDevis.city_pricing_name,
       distance_km: acceptedDevis.distance_km || course.distance_km,
       
-      // ===== NOUVEAUX CHAMPS FRAIS =====
+      // ===== CHAMPS FRAIS =====
       is_stripe_payment: isStripePayment,
       solocab_fee_amount: solocabFee,
       stripe_fee_amount: stripeFee,

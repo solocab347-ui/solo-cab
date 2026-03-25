@@ -120,6 +120,39 @@ export function useInvoiceAutoCreate(driverId: string | undefined) {
 
       const invoiceNumber = `FAC-${String(nextNumber).padStart(6, '0')}`;
 
+      // Récupérer les infos Stripe du chauffeur pour déterminer le mode de paiement
+      const { data: driverInfo } = await supabase
+        .from('drivers')
+        .select('stripe_connect_account_id, stripe_connect_charges_enabled')
+        .eq('id', course.driver_id)
+        .maybeSingle();
+
+      // Récupérer le mode de paiement de la course
+      const { data: coursePayment } = await supabase
+        .from('courses')
+        .select('payment_method')
+        .eq('id', courseId)
+        .maybeSingle();
+
+      const isStripeDriver = !!driverInfo?.stripe_connect_account_id && 
+                             driverInfo?.stripe_connect_charges_enabled === true;
+      const coursePaymentMethod = coursePayment?.payment_method;
+
+      // Déterminer le payment_method de la facture
+      let facturePaymentMethod = 'cash';
+      let facturePaymentStatus = 'pending';
+
+      if (coursePaymentMethod === 'stripe' || (coursePaymentMethod === 'card' && isStripeDriver)) {
+        facturePaymentMethod = 'stripe';
+        facturePaymentStatus = 'paid';
+      } else if (coursePaymentMethod === 'card') {
+        facturePaymentMethod = 'card';
+        facturePaymentStatus = 'pending'; // TPE - le chauffeur encaisse lui-même
+      } else if (coursePaymentMethod === 'cash') {
+        facturePaymentMethod = 'cash';
+        facturePaymentStatus = 'pending'; // Espèces - le chauffeur encaisse lui-même
+      }
+
       // Créer la facture
       const { error: insertError } = await supabase
         .from('factures')
@@ -129,9 +162,10 @@ export function useInvoiceAutoCreate(driverId: string | undefined) {
           driver_id: course.driver_id,
           devis_id: acceptedDevis.id,
           amount: acceptedDevis.amount,
-          payment_method: 'pending',
-          payment_status: 'pending',
-          invoice_number: invoiceNumber
+          payment_method: facturePaymentMethod,
+          payment_status: facturePaymentStatus,
+          invoice_number: invoiceNumber,
+          ...(facturePaymentStatus === 'paid' ? { paid_at: new Date().toISOString() } : {}),
         });
 
       if (insertError) {
