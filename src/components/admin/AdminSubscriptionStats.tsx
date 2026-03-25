@@ -75,8 +75,8 @@ const AdminSubscriptionStats = () => {
 
       if (error) throw error;
 
-      // Calculer les KPIs
-      const allDrivers = await supabase.from("drivers").select("*");
+      // Calculer les KPIs avec colonnes sélectives (pas de select("*"))
+      const allDrivers = await supabase.from("drivers").select("id, subscription_status, free_access_granted, created_at, status");
       const totalDrivers = allDrivers.data || [];
 
       const activeSubscriptions = totalDrivers.filter(d => 
