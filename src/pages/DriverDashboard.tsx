@@ -721,17 +721,19 @@ const DriverDashboard = () => {
                     <Target className="w-4 h-4" />
                     {t('driverDashboard.menu.objectives')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 9,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Megaphone className="w-4 h-4" />
                     {t('driverDashboard.menu.campaign')}
+                    {!isPremium && <Lock className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-muted">
                     <PieChart className="w-4 h-4" />
                     {t('driverDashboard.menu.profitability')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("prospection")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 9,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Sparkles className="w-4 h-4" />
                     {t('driverDashboard.menu.prospection')}
+                    {!isPremium && <Lock className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
