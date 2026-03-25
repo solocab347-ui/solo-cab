@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -151,34 +152,23 @@ const GuestBookingTracking = () => {
   useEffect(() => {
     if (!booking?.id) return;
 
-    const channel = supabase
-      .channel(`guest-tracking-${booking.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'courses',
-          filter: `id=eq.${booking.id}`
-        },
-        (payload) => {
-          console.log('📡 Course update received:', payload.new);
-          const newStatus = (payload.new as any).status;
-          const newPaymentStatus = (payload.new as any).payment_status;
-          
-          if (newStatus && booking) {
-            setBooking(prev => prev ? { ...prev, status: newStatus } : null);
-          }
-          if (newPaymentStatus) {
-            setPaymentStatus(newPaymentStatus);
-          }
+    const cleanup = subscriptionManager.subscribe(
+      `guest-tracking-${booking.id}`,
+      { table: 'courses', event: 'UPDATE', filter: `id=eq.${booking.id}` },
+      (payload) => {
+        const newStatus = (payload.new as any).status;
+        const newPaymentStatus = (payload.new as any).payment_status;
+        
+        if (newStatus && booking) {
+          setBooking(prev => prev ? { ...prev, status: newStatus } : null);
         }
-      )
-      .subscribe();
+        if (newPaymentStatus) {
+          setPaymentStatus(newPaymentStatus);
+        }
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [booking?.id]);
 
   const handleRefresh = () => {

@@ -87,16 +87,45 @@ export function SentPartnerCourses({ driverId }: Props) {
 
       const allCourses: SentCourse[] = [];
 
-      // Enrich direct shares
-      for (const item of sharedData || []) {
-        let receiverInfo: any = null;
-        if (item.receiver_driver_id) {
-          const { data: d } = await supabase.from('drivers').select('user_id, company_name, sharing_number').eq('id', item.receiver_driver_id).single();
-          if (d) {
-            const { data: p } = await supabase.from('profiles').select('full_name, profile_photo_url').eq('id', d.user_id).single();
-            receiverInfo = { name: p?.full_name?.split(' ')[0] || 'Chauffeur', photo: p?.profile_photo_url, company: d.company_name, sharing_number: d.sharing_number };
+      // Batch fetch all receiver driver info in parallel (eliminates N+1)
+      const receiverIds = (sharedData || [])
+        .map(item => item.receiver_driver_id)
+        .filter((id): id is string => !!id);
+      
+      const uniqueReceiverIds = [...new Set(receiverIds)];
+      
+      // Single batch query for all receiver drivers + profiles
+      const receiverMap = new Map<string, any>();
+      if (uniqueReceiverIds.length > 0) {
+        const { data: driversData } = await supabase
+          .from('drivers')
+          .select('id, user_id, company_name, sharing_number')
+          .in('id', uniqueReceiverIds);
+        
+        if (driversData && driversData.length > 0) {
+          const userIds = driversData.map(d => d.user_id).filter(Boolean);
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name, profile_photo_url')
+            .in('id', userIds);
+          
+          const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
+          
+          for (const d of driversData) {
+            const p = profileMap.get(d.user_id);
+            receiverMap.set(d.id, {
+              name: p?.full_name?.split(' ')[0] || 'Chauffeur',
+              photo: p?.profile_photo_url,
+              company: d.company_name,
+              sharing_number: d.sharing_number,
+            });
           }
         }
+      }
+
+      // Enrich direct shares using the batch-fetched map
+      for (const item of sharedData || []) {
+        const receiverInfo = item.receiver_driver_id ? receiverMap.get(item.receiver_driver_id) : null;
         const course = item.courses as any;
         const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
         allCourses.push({

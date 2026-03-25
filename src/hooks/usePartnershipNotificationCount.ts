@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 
 /**
  * Hook to count all partnership-related notifications that require attention:
@@ -138,52 +139,29 @@ export function usePartnershipNotificationCount(driverId: string | null) {
 
     loadNotificationCount();
 
-    // Realtime subscription for shared courses
-    const sharedCoursesChannel = supabase
-      .channel('partnership-notifications-shared')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shared_courses'
-        },
-        () => loadNotificationCount()
-      )
-      .subscribe();
+    // Realtime subscriptions via centralized manager
+    const cleanupShared = subscriptionManager.subscribe(
+      `partnership-notifs-shared-${driverId}`,
+      { table: 'shared_courses', event: '*', debounceMs: 1000 },
+      () => loadNotificationCount()
+    );
 
-    // Realtime subscription for partnerships
-    const partnershipsChannel = supabase
-      .channel('partnership-notifications-partnerships')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'driver_partnerships'
-        },
-        () => loadNotificationCount()
-      )
-      .subscribe();
+    const cleanupPartnerships = subscriptionManager.subscribe(
+      `partnership-notifs-partnerships-${driverId}`,
+      { table: 'driver_partnerships', event: '*', debounceMs: 1000 },
+      () => loadNotificationCount()
+    );
 
-    // Realtime subscription for notifications
-    const notificationsChannel = supabase
-      .channel('partnership-notifications-notifs')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications'
-        },
-        () => loadNotificationCount()
-      )
-      .subscribe();
+    const cleanupNotifs = subscriptionManager.subscribe(
+      `partnership-notifs-notifs-${driverId}`,
+      { table: 'notifications', event: '*', debounceMs: 1000 },
+      () => loadNotificationCount()
+    );
 
     return () => {
-      supabase.removeChannel(sharedCoursesChannel);
-      supabase.removeChannel(partnershipsChannel);
-      supabase.removeChannel(notificationsChannel);
+      cleanupShared();
+      cleanupPartnerships();
+      cleanupNotifs();
     };
   }, [driverId, loadNotificationCount]);
 

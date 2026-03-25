@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,16 +67,13 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
   useEffect(() => {
     fetchAlerts();
 
-    const channel = supabase
-      .channel(`schedule-alerts-${driverId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'out_of_schedule_alerts',
-      }, () => fetchAlerts())
-      .subscribe();
+    const cleanup = subscriptionManager.subscribe(
+      `schedule-alerts-${driverId}`,
+      { table: 'out_of_schedule_alerts', event: '*', debounceMs: 500 },
+      () => fetchAlerts()
+    );
 
-    return () => { supabase.removeChannel(channel); };
+    return cleanup;
   }, [driverId]);
 
   const fetchAlerts = async () => {

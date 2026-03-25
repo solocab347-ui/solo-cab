@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,24 +39,14 @@ export function CourseQueueAlert({ driverId, compact = false }: CourseQueueAlert
 
     fetchCount();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel('queue-alert-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'course_queue',
-          filter: `driver_id=eq.${driverId}`
-        },
-        () => fetchCount()
-      )
-      .subscribe();
+    // Realtime subscription via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `queue-alert-count-${driverId}`,
+      { table: 'course_queue', event: '*', filter: `driver_id=eq.${driverId}`, debounceMs: 500 },
+      () => fetchCount()
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId]);
 
   if (loading || queueCount === 0) return null;

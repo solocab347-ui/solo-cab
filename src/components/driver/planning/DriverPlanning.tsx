@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { 
   Calendar as CalendarIcon, 
@@ -455,33 +456,23 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
   }, [fetchCourses]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`planning-driver-${driverId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'courses'
-        },
-        (payload) => {
-          const course = payload.new as any || payload.old as any;
-          if (course) {
-            const concernsDriver = 
-              course.driver_id === driverId || 
-              (course.driver_ids && Array.isArray(course.driver_ids) && course.driver_ids.includes(driverId));
-            
-            if (concernsDriver) {
-              fetchCourses();
-            }
+    const cleanup = subscriptionManager.subscribe(
+      `planning-driver-${driverId}`,
+      { table: 'courses', event: '*', debounceMs: 500 },
+      (payload) => {
+        const course = payload.new as any || payload.old as any;
+        if (course) {
+          const concernsDriver = 
+            course.driver_id === driverId || 
+            (course.driver_ids && Array.isArray(course.driver_ids) && course.driver_ids.includes(driverId));
+          if (concernsDriver) {
+            fetchCourses();
           }
         }
-      )
-      .subscribe();
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId, fetchCourses]);
 
   // Auto-navigate to first upcoming course

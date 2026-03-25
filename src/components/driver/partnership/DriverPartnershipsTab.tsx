@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
 
 // Sub-components
@@ -51,8 +52,12 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'pool' }: Driv
       setReceivedCount(count || 0);
     };
     loadCount();
-    const channel = supabase.channel('received-count').on('postgres_changes', { event: '*', schema: 'public', table: 'shared_courses' }, () => loadCount()).subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const cleanup = subscriptionManager.subscribe(
+      `received-count-${driverId}`,
+      { table: 'shared_courses', event: '*', debounceMs: 500 },
+      () => loadCount()
+    );
+    return cleanup;
   }, [driverId]);
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode; color: string; count?: number }[] = [

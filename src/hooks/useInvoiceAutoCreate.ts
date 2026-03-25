@@ -5,6 +5,7 @@
 
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { logger } from "@/lib/productionLogger";
 
 interface CourseForInvoice {
@@ -24,32 +25,22 @@ export function useInvoiceAutoCreate(driverId: string | undefined) {
   useEffect(() => {
     if (!driverId) return;
 
-    // S'abonner aux changements de statut des courses
-    const channel = supabase
-      .channel(`invoice-auto-create-${driverId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'courses',
-          filter: `driver_id=eq.${driverId}`
-        },
-        async (payload) => {
-          const newCourse = payload.new as CourseForInvoice;
-          const oldCourse = payload.old as CourseForInvoice;
+    // S'abonner aux changements de statut des courses via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `invoice-auto-create-${driverId}`,
+      { table: 'courses', event: 'UPDATE', filter: `driver_id=eq.${driverId}` },
+      async (payload) => {
+        const newCourse = payload.new as CourseForInvoice;
+        const oldCourse = payload.old as CourseForInvoice;
 
-          // Vérifier si la course vient de passer à "completed"
-          if (newCourse.status === 'completed' && oldCourse.status !== 'completed') {
-            await createInvoiceIfMissing(newCourse.id);
-          }
+        // Vérifier si la course vient de passer à "completed"
+        if (newCourse.status === 'completed' && oldCourse.status !== 'completed') {
+          await createInvoiceIfMissing(newCourse.id);
         }
-      )
-      .subscribe();
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId]);
 
   /**

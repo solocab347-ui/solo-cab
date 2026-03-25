@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -48,38 +49,28 @@ export function CourseFinalizationButton({
   const remainingAmount = totalAmount - (depositStatus === 'paid' ? depositPaid : 0);
   const isFullyPaidViaDeposit = depositStatus === 'paid' && depositPaid >= totalAmount;
 
-  // Subscribe to realtime updates for payment status
+  // Subscribe to realtime updates for payment status via centralized manager
   useEffect(() => {
-    const channel = supabase
-      .channel(`course-payment-${courseId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'courses',
-          filter: `id=eq.${courseId}`,
-        },
-        (payload) => {
-          const newStatus = payload.new.final_payment_status as PaymentStatus;
-          if (newStatus && newStatus !== status) {
-            setStatus(newStatus);
-            
-            if (newStatus === 'succeeded') {
-              toast.success('🎉 Paiement encaissé avec succès !');
-              onSuccess?.();
-            } else if (newStatus === 'failed') {
-              setError(payload.new.last_payment_error || 'Échec du paiement');
-              toast.error('Échec du paiement');
-            }
+    const cleanup = subscriptionManager.subscribe(
+      `course-payment-${courseId}`,
+      { table: 'courses', event: 'UPDATE', filter: `id=eq.${courseId}` },
+      (payload) => {
+        const newStatus = payload.new.final_payment_status as PaymentStatus;
+        if (newStatus && newStatus !== status) {
+          setStatus(newStatus);
+          
+          if (newStatus === 'succeeded') {
+            toast.success('🎉 Paiement encaissé avec succès !');
+            onSuccess?.();
+          } else if (newStatus === 'failed') {
+            setError(payload.new.last_payment_error || 'Échec du paiement');
+            toast.error('Échec du paiement');
           }
         }
-      )
-      .subscribe();
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [courseId, status, onSuccess]);
 
   const handleFinalize = async () => {

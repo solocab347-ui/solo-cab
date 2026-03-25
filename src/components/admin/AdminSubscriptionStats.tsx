@@ -69,14 +69,14 @@ const AdminSubscriptionStats = () => {
       // Récupérer tous les chauffeurs avec leurs données d'abonnement
       const { data: drivers, error } = await supabase
         .from("drivers")
-        .select("*")
+        .select("id, subscription_status, free_access_granted, created_at, status")
         .gte("created_at", start.toISOString())
         .lte("created_at", end.toISOString());
 
       if (error) throw error;
 
-      // Calculer les KPIs
-      const allDrivers = await supabase.from("drivers").select("*");
+      // Calculer les KPIs avec colonnes sélectives (pas de select("*"))
+      const allDrivers = await supabase.from("drivers").select("id, subscription_status, free_access_granted, created_at, status");
       const totalDrivers = allDrivers.data || [];
 
       const activeSubscriptions = totalDrivers.filter(d => 

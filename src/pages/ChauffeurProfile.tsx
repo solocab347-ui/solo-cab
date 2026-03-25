@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";
@@ -160,54 +161,29 @@ const ChauffeurProfile = () => {
     loadDriver();
   }, [id, navigate, loadDriver]);
 
-  // Mises à jour instantanées via Supabase Realtime
+  // Mises à jour instantanées via centralized subscription manager
   useEffect(() => {
     if (!id) return;
 
-    console.log("📡 Setting up realtime subscription for driver:", id);
+    const cleanupDriver = subscriptionManager.subscribe(
+      `public-driver-profile-${id}`,
+      { table: 'drivers', event: 'UPDATE', filter: `id=eq.${id}`, debounceMs: 500 },
+      () => loadDriver()
+    );
 
-    // Écouter les changements sur la table drivers pour ce chauffeur
-    const driversChannel = supabase
-      .channel(`public-driver-profile-${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'drivers',
-          filter: `id=eq.${id}`
-        },
-        (payload) => {
-          console.log('🔄 Driver profile updated in realtime:', payload);
-          loadDriver(); // Recharger le profil instantanément
+    const cleanupProfile = subscriptionManager.subscribe(
+      `public-user-profile-for-driver-${id}`,
+      { table: 'profiles', event: 'UPDATE', debounceMs: 500 },
+      (payload) => {
+        if (driver?.user_id && payload.new && (payload.new as any).id === driver.user_id) {
+          loadDriver();
         }
-      )
-      .subscribe();
-
-    // Écouter aussi les changements sur profiles (nom, photo, etc.)
-    const profilesChannel = supabase
-      .channel(`public-user-profile-for-driver-${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles'
-        },
-        (payload) => {
-          // Si c'est le profil associé au driver, recharger
-          if (driver?.user_id && payload.new && (payload.new as any).id === driver.user_id) {
-            console.log('🔄 User profile updated in realtime:', payload);
-            loadDriver();
-          }
-        }
-      )
-      .subscribe();
+      }
+    );
 
     return () => {
-      console.log("📡 Cleaning up realtime subscriptions");
-      supabase.removeChannel(driversChannel);
-      supabase.removeChannel(profilesChannel);
+      cleanupDriver();
+      cleanupProfile();
     };
   }, [id, driver?.user_id, loadDriver]);
 

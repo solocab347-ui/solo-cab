@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { toast } from 'sonner';
 
 export interface QueuedCourse {
@@ -289,41 +290,25 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
     };
   }, [driverId, autoRefresh]);
 
-  // Realtime subscription
+  // Realtime subscription via centralized manager
   useEffect(() => {
     if (!driverId || !autoRefresh) return;
 
-    const channel = supabase
-      .channel('course-queue-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'course_queue',
-          filter: `driver_id=eq.${driverId}`
-        },
-        () => {
-          fetchQueue();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'courses',
-          filter: `driver_id=eq.${driverId}`
-        },
-        () => {
-          // When any course changes, check if queue items can be auto-placed
-          checkAutoPlace();
-        }
-      )
-      .subscribe();
+    const cleanupQueue = subscriptionManager.subscribe(
+      `course-queue-changes-${driverId}`,
+      { table: 'course_queue', event: '*', filter: `driver_id=eq.${driverId}`, debounceMs: 500 },
+      () => fetchQueue()
+    );
+
+    const cleanupCourses = subscriptionManager.subscribe(
+      `course-queue-courses-${driverId}`,
+      { table: 'courses', event: '*', filter: `driver_id=eq.${driverId}`, debounceMs: 500 },
+      () => checkAutoPlace()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanupQueue();
+      cleanupCourses();
     };
   }, [driverId, autoRefresh, fetchQueue]);
 
