@@ -154,19 +154,23 @@ export function useInvoiceAutoCreate(driverId: string | undefined) {
       }
 
       // Créer la facture
+      const factureInsert: Record<string, any> = {
+        course_id: courseId,
+        client_id: course.client_id,
+        driver_id: course.driver_id,
+        devis_id: acceptedDevis.id,
+        amount: acceptedDevis.amount,
+        payment_method: facturePaymentMethod,
+        payment_status: facturePaymentStatus,
+        invoice_number: invoiceNumber,
+      };
+      if (facturePaymentStatus === 'paid') {
+        factureInsert.paid_at = new Date().toISOString();
+      }
+
       const { error: insertError } = await supabase
         .from('factures')
-        .insert({
-          course_id: courseId,
-          client_id: course.client_id,
-          driver_id: course.driver_id,
-          devis_id: acceptedDevis.id,
-          amount: acceptedDevis.amount,
-          payment_method: facturePaymentMethod,
-          payment_status: facturePaymentStatus,
-          invoice_number: invoiceNumber,
-          ...(facturePaymentStatus === 'paid' ? { paid_at: new Date().toISOString() } : {}),
-        });
+        .insert(factureInsert as any);
 
       if (insertError) {
         logger.error("Failed to auto-create invoice", { courseId, error: insertError.message });
