@@ -46,7 +46,7 @@ export function AutoDriverAvailabilitySync() {
     document.addEventListener('visibilitychange', handleVisibility);
     intervalRef.current = window.setInterval(() => {
       void syncDriverAvailability();
-    }, 60000);
+    }, 120000); // 120s au lieu de 60s pour réduire la charge DB
 
     return () => {
       isCancelled = true;
