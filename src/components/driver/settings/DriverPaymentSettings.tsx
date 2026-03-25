@@ -97,7 +97,7 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
 
       if (driver) {
         const driverData = driver as any;
-        setAcceptedMethods(driverData.accepted_payment_methods || ["cash", "card", "transfer"]);
+        setAcceptedMethods(driverData.accepted_payment_methods || ["cash", "card"]);
         setBillingType(driverData.billing_type || "own_equipment");
         setShowPublicly(driverData.show_payment_methods_publicly ?? true);
         setDefaultMethod(driverData.default_payment_method || "not_specified");
