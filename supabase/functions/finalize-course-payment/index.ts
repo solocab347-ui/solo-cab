@@ -219,6 +219,29 @@ serve(async (req) => {
           description: `Course finalisée - ${course.pickup_address} → ${course.destination_address}`,
         });
 
+      // Record in unified payments table
+      await supabaseClient.from("payments").insert({
+        course_id,
+        driver_id: course.driver_id,
+        client_id: course.client_id,
+        stripe_payment_intent_id: paymentIntent.id,
+        stripe_charge_id: paymentIntent.latest_charge as string || null,
+        amount: remainingAmount,
+        captured_amount: remainingAmount,
+        application_fee_amount: remainingFee / 100,
+        stripe_fee_amount: stripeFee,
+        net_to_driver: netToDriver,
+        status: "succeeded",
+        payment_type: depositPaid > 0 ? "final_payment" : "course_payment",
+        capture_method: "automatic",
+        captured_at: new Date().toISOString(),
+        metadata: {
+          total_amount: totalAmount,
+          deposit_paid: depositPaid,
+          remaining_amount: remainingAmount,
+        },
+      });
+
       // Créer la facture automatiquement
       await supabaseClient.functions.invoke("create-facture-auto", {
         body: { course_id }

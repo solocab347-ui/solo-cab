@@ -33,14 +33,16 @@ serve(async (req) => {
     const { 
       course_id, 
       devis_id,
-      capture_method = "automatic", // "automatic" or "manual" (for bank imprint)
+      capture_method = "automatic",
       client_email,
       client_name,
+      client_user_id,
+      save_card = false,
     } = await req.json();
 
     if (!course_id) throw new Error("course_id required");
 
-    logStep("Processing payment request", { course_id, devis_id, capture_method });
+    logStep("Processing payment request", { course_id, devis_id, capture_method, save_card });
 
     // Get course and driver details
     const { data: course, error: courseError } = await supabaseClient
@@ -50,7 +52,6 @@ serve(async (req) => {
         driver:drivers!courses_driver_id_fkey(
           id, 
           user_id,
-          billing_type,
           stripe_connect_account_id,
           stripe_connect_charges_enabled,
           company_name
@@ -64,19 +65,16 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
-    logStep("Course found", { 
-      driverId: course.driver.id, 
-      billingType: course.driver.billing_type 
-    });
+    logStep("Course found", { driverId: course.driver.id });
 
-    // Validate driver has Stripe Connect (detection based on account status, not billing_type)
+    // Validate driver has Stripe Connect
     const hasStripeConnect = !!course.driver.stripe_connect_account_id && 
                              course.driver.stripe_connect_charges_enabled === true;
     if (!hasStripeConnect) {
       throw new Error("Le chauffeur n'a pas configuré Stripe Connect. Paiement en ligne impossible.");
     }
 
-    // Get amount from devis or course
+    // Get amount
     const devisData = devis_id 
       ? course.devis?.find((d: any) => d.id === devis_id)
       : course.devis?.[0];
@@ -89,13 +87,67 @@ serve(async (req) => {
     const amountCents = Math.round(amount * 100);
     const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
 
-    logStep("Creating payment", { amount, amountCents, capture_method });
+    // =============================================
+    // STRIPE CUSTOMER MANAGEMENT
+    // =============================================
+    let stripeCustomerId: string | undefined;
 
-    // Create Stripe Checkout Session
+    // Check if client has existing Stripe Customer
+    if (client_user_id) {
+      const { data: clientData } = await supabaseClient
+        .from("clients")
+        .select("id, stripe_customer_id")
+        .eq("user_id", client_user_id)
+        .single();
+
+      if (clientData?.stripe_customer_id) {
+        stripeCustomerId = clientData.stripe_customer_id;
+        logStep("Existing Stripe Customer found", { customerId: stripeCustomerId });
+      }
+    }
+
+    // Create Stripe Customer if not exists
+    if (!stripeCustomerId && client_email) {
+      const existingCustomers = await stripe.customers.list({ 
+        email: client_email, 
+        limit: 1 
+      });
+
+      if (existingCustomers.data.length > 0) {
+        stripeCustomerId = existingCustomers.data[0].id;
+        logStep("Found existing Stripe Customer by email", { customerId: stripeCustomerId });
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email: client_email,
+          name: client_name || undefined,
+          metadata: {
+            platform: "solocab",
+            client_user_id: client_user_id || "",
+          },
+        });
+        stripeCustomerId = newCustomer.id;
+        logStep("New Stripe Customer created", { customerId: stripeCustomerId });
+      }
+
+      // Save customer ID to client record
+      if (client_user_id && stripeCustomerId) {
+        await supabaseClient
+          .from("clients")
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq("user_id", client_user_id);
+      }
+    }
+
+    logStep("Creating payment", { amount, amountCents, capture_method, save_card });
+
+    // =============================================
+    // CREATE CHECKOUT SESSION
+    // =============================================
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       payment_method_types: ["card"],
-      customer_email: client_email,
+      customer: stripeCustomerId,
+      customer_email: stripeCustomerId ? undefined : client_email,
       line_items: [
         {
           price_data: {
@@ -122,31 +174,35 @@ serve(async (req) => {
       cancel_url: `${origin}/reservation-tracking/${course.tracking_token}?payment=cancelled`,
     };
 
-    // If driver has Stripe Connect, add transfer and application fee
-    if (hasStripeConnect) {
-      sessionConfig.payment_intent_data = {
-        // Manual capture for bank imprint (capture when course completed)
-        capture_method: capture_method === "manual" ? "manual" : "automatic",
-        // Transfer to driver's Stripe Connect account
-        transfer_data: {
-          destination: course.driver.stripe_connect_account_id,
-        },
-        // SoloCab application fee: 0.50€
-        application_fee_amount: SOLOCAB_FEE_CENTS,
-        metadata: {
-          course_id,
-          driver_id: course.driver_id,
-          type: "course_payment",
-          solocab_fee: "0.50",
-        },
-      };
-
-      logStep("Stripe Connect payment configured", {
+    // Payment intent data with Connect transfer
+    const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData = {
+      capture_method: capture_method === "manual" ? "manual" : "automatic",
+      transfer_data: {
         destination: course.driver.stripe_connect_account_id,
-        applicationFee: SOLOCAB_FEE_CENTS / 100,
-        captureMethod: capture_method,
-      });
+      },
+      application_fee_amount: SOLOCAB_FEE_CENTS,
+      metadata: {
+        course_id,
+        driver_id: course.driver_id,
+        type: "course_payment",
+        solocab_fee: "0.50",
+      },
+    };
+
+    // Save card for future use (1-click payments)
+    if (save_card && stripeCustomerId) {
+      paymentIntentData.setup_future_usage = "off_session";
+      logStep("Card will be saved for future payments");
     }
+
+    sessionConfig.payment_intent_data = paymentIntentData;
+
+    logStep("Stripe Connect payment configured", {
+      destination: course.driver.stripe_connect_account_id,
+      applicationFee: SOLOCAB_FEE_CENTS / 100,
+      captureMethod: capture_method,
+      saveCard: save_card,
+    });
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
@@ -162,7 +218,24 @@ serve(async (req) => {
       })
       .eq("id", course_id);
 
-    // If devis exists, update its status
+    // Record in payments table
+    await supabaseClient.from("payments").insert({
+      course_id,
+      driver_id: course.driver_id,
+      client_id: course.client_id,
+      guest_email: client_email,
+      guest_name: client_name,
+      stripe_checkout_session_id: session.id,
+      stripe_customer_id: stripeCustomerId,
+      amount: amount,
+      application_fee_amount: SOLOCAB_FEE_CENTS / 100,
+      status: "pending",
+      payment_type: "course_payment",
+      capture_method: capture_method,
+      metadata: { save_card, devis_id: devis_id || devisData?.id },
+    });
+
+    // Update devis if exists
     if (devisData?.id) {
       await supabaseClient
         .from("devis")
@@ -179,7 +252,9 @@ serve(async (req) => {
         checkout_url: session.url,
         session_id: session.id,
         capture_method,
-        solocab_fee: hasStripeConnect ? 0.50 : 0,
+        solocab_fee: 0.50,
+        customer_id: stripeCustomerId,
+        card_saved: save_card,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

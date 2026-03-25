@@ -876,6 +876,7 @@ export type Database = {
       clients: {
         Row: {
           created_at: string
+          default_payment_method_id: string | null
           driver_id: string | null
           driver_ids: string[] | null
           favorite_driver_id: string | null
@@ -884,6 +885,8 @@ export type Database = {
           is_exclusive: boolean
           preferred_fleet_driver_id: string | null
           qr_code_id: string | null
+          saved_cards: Json | null
+          stripe_customer_id: string | null
           total_rides: number | null
           total_spent: number | null
           updated_at: string
@@ -891,6 +894,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_payment_method_id?: string | null
           driver_id?: string | null
           driver_ids?: string[] | null
           favorite_driver_id?: string | null
@@ -899,6 +903,8 @@ export type Database = {
           is_exclusive?: boolean
           preferred_fleet_driver_id?: string | null
           qr_code_id?: string | null
+          saved_cards?: Json | null
+          stripe_customer_id?: string | null
           total_rides?: number | null
           total_spent?: number | null
           updated_at?: string
@@ -906,6 +912,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_payment_method_id?: string | null
           driver_id?: string | null
           driver_ids?: string[] | null
           favorite_driver_id?: string | null
@@ -914,6 +921,8 @@ export type Database = {
           is_exclusive?: boolean
           preferred_fleet_driver_id?: string | null
           qr_code_id?: string | null
+          saved_cards?: Json | null
+          stripe_customer_id?: string | null
           total_rides?: number | null
           total_spent?: number | null
           updated_at?: string
@@ -13381,6 +13390,218 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          application_fee_amount: number | null
+          authorized_at: string | null
+          canceled_at: string | null
+          capture_method: string | null
+          captured_amount: number | null
+          captured_at: string | null
+          client_id: string | null
+          course_id: string | null
+          created_at: string
+          currency: string | null
+          devis_id: string | null
+          driver_id: string | null
+          failed_at: string | null
+          failure_code: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_phone: string | null
+          id: string
+          last_error: string | null
+          metadata: Json | null
+          net_to_driver: number | null
+          payment_method: string | null
+          payment_type: string
+          refunded_amount: number | null
+          refunded_at: string | null
+          retry_count: number | null
+          status: string
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          stripe_fee_amount: number | null
+          stripe_payment_intent_id: string | null
+          stripe_payment_method_id: string | null
+          stripe_refund_id: string | null
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          application_fee_amount?: number | null
+          authorized_at?: string | null
+          canceled_at?: string | null
+          capture_method?: string | null
+          captured_amount?: number | null
+          captured_at?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          devis_id?: string | null
+          driver_id?: string | null
+          failed_at?: string | null
+          failure_code?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          last_error?: string | null
+          metadata?: Json | null
+          net_to_driver?: number | null
+          payment_method?: string | null
+          payment_type?: string
+          refunded_amount?: number | null
+          refunded_at?: string | null
+          retry_count?: number | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_fee_amount?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          application_fee_amount?: number | null
+          authorized_at?: string | null
+          canceled_at?: string | null
+          capture_method?: string | null
+          captured_amount?: number | null
+          captured_at?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          devis_id?: string | null
+          driver_id?: string | null
+          failed_at?: string | null
+          failure_code?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          last_error?: string | null
+          metadata?: Json | null
+          net_to_driver?: number | null
+          payment_method?: string | null
+          payment_type?: string
+          refunded_amount?: number | null
+          refunded_at?: string | null
+          retry_count?: number | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_fee_amount?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "payments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "payments_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
