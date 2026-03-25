@@ -1084,12 +1084,22 @@ const DriverDashboard = () => {
       <DriverAssistant />
 
       {/* Incoming Course Overlay - Uber/Bolt style */}
+      {/* Incoming Course Overlay - only if permission granted */}
       <IncomingCourseOverlay
         course={incomingCourse}
         onDismiss={dismissIncoming}
         onAccepted={clearIncoming}
         driverId={driverProfile?.driver?.id || null}
       />
+
+      {/* Overlay Permission Prompt - shown if not yet granted */}
+      {driverProfile?.driver?.id && (
+        <OverlayPermissionPrompt
+          visible={showOverlayPrompt && !incomingCourse}
+          onGrant={grantOverlay}
+          onDeny={denyOverlay}
+        />
+      )}
 
     </div>
   );
