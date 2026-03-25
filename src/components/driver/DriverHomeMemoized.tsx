@@ -421,6 +421,13 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           </Card>
         </div>
       </div>
+
+      {/* Premium CTA Banner - only for free users */}
+      {isFree && (
+        <div className="animate-fade-in">
+          <PremiumUpgradeBanner message="Boostez votre activité avec Premium" />
+        </div>
+      )}
     </div>
   );
 };
