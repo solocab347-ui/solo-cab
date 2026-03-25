@@ -11,7 +11,10 @@ import {
   Truck, 
   Euro,
   ArrowRight,
-  Info
+  Info,
+  CreditCard,
+  Banknote,
+  Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,6 +26,14 @@ interface CommissionInfo {
   commissionAmount: number;
   courseAmount: number;
   netAmount: number;
+}
+
+interface StripePaymentInfo {
+  isStripePayment: boolean;
+  paymentStatus: string | null;
+  hasCardHold: boolean;
+  depositPaid: number;
+  remainingAmount: number;
 }
 
 interface CourseCompletionCommissionDialogProps {
@@ -50,12 +61,47 @@ export function CourseCompletionCommissionDialog({
 }: CourseCompletionCommissionDialogProps) {
   const [loading, setLoading] = useState(true);
   const [commissionInfo, setCommissionInfo] = useState<CommissionInfo | null>(null);
+  const [stripeInfo, setStripeInfo] = useState<StripePaymentInfo>({
+    isStripePayment: false,
+    paymentStatus: null,
+    hasCardHold: false,
+    depositPaid: 0,
+    remainingAmount: courseAmount,
+  });
 
   useEffect(() => {
     if (open && courseId && driverId) {
       loadCommissionInfo();
+      loadStripePaymentInfo();
     }
   }, [open, courseId, driverId]);
+
+  const loadStripePaymentInfo = async () => {
+    try {
+      const { data: course } = await supabase
+        .from('courses')
+        .select('payment_method, payment_status, card_hold_status, deposit_amount, deposit_status, stripe_payment_method_id, final_payment_amount, guest_estimated_price')
+        .eq('id', courseId)
+        .single();
+
+      if (course) {
+        const isStripe = course.payment_method === 'stripe' || 
+          (course.payment_method === 'card' && !!course.stripe_payment_method_id);
+        const depositPaid = course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0;
+        const totalAmount = course.final_payment_amount || course.guest_estimated_price || courseAmount;
+
+        setStripeInfo({
+          isStripePayment: isStripe,
+          paymentStatus: course.payment_status,
+          hasCardHold: course.card_hold_status === 'confirmed',
+          depositPaid,
+          remainingAmount: totalAmount - depositPaid,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stripe payment info:', error);
+    }
+  };
 
   const loadCommissionInfo = async () => {
     setLoading(true);
@@ -77,7 +123,6 @@ export function CourseCompletionCommissionDialog({
         .maybeSingle();
 
       if (sharedCourse) {
-        // Récupérer le nom du partenaire émetteur
         const { data: senderDriver } = await supabase
           .from('drivers')
           .select('user_id')
@@ -107,18 +152,14 @@ export function CourseCompletionCommissionDialog({
         return;
       }
 
-      // Vérifier si c'est une course entreprise via company_driver_agreements
+      // Vérifier si c'est une course entreprise
       const { data: companyCourse } = await supabase
         .from('company_courses')
-        .select(`
-          *,
-          company:companies(company_name)
-        `)
+        .select(`*, company:companies(company_name)`)
         .eq('course_id', courseId)
         .maybeSingle();
 
       if (companyCourse) {
-        // Récupérer l'accord entreprise-chauffeur
         const { data: agreement } = await supabase
           .from('company_driver_agreements')
           .select('*')
@@ -128,14 +169,13 @@ export function CourseCompletionCommissionDialog({
           .maybeSingle();
 
         if (agreement) {
-          // Les entreprises ont généralement des réductions, pas de commissions
           setCommissionInfo({
             type: 'company',
             partnerName: companyCourse.company?.company_name || 'Entreprise',
             commissionPercentage: agreement.discount_percentage || 0,
-            commissionAmount: 0, // Pas de commission à reverser pour les entreprises
+            commissionAmount: 0,
             courseAmount,
-            netAmount: courseAmount, // Le chauffeur garde tout
+            netAmount: courseAmount,
           });
           setLoading(false);
           return;
@@ -180,7 +220,6 @@ export function CourseCompletionCommissionDialog({
         }
       }
 
-      // Pas de commission partenaire - course personnelle
       setCommissionInfo(null);
     } catch (error) {
       console.error('Error loading commission info:', error);
@@ -193,36 +232,27 @@ export function CourseCompletionCommissionDialog({
   const getIcon = () => {
     if (!commissionInfo) return <CheckCircle className="w-6 h-6 text-green-500" />;
     switch (commissionInfo.type) {
-      case 'partner':
-        return <Handshake className="w-6 h-6 text-blue-500" />;
-      case 'company':
-        return <Building2 className="w-6 h-6 text-purple-500" />;
-      case 'fleet':
-        return <Truck className="w-6 h-6 text-orange-500" />;
+      case 'partner': return <Handshake className="w-6 h-6 text-blue-500" />;
+      case 'company': return <Building2 className="w-6 h-6 text-purple-500" />;
+      case 'fleet': return <Truck className="w-6 h-6 text-orange-500" />;
     }
   };
 
   const getTypeLabel = () => {
     if (!commissionInfo) return 'Course personnelle';
     switch (commissionInfo.type) {
-      case 'partner':
-        return 'Course partenaire';
-      case 'company':
-        return 'Course entreprise';
-      case 'fleet':
-        return 'Course gestionnaire';
+      case 'partner': return 'Course partenaire';
+      case 'company': return 'Course entreprise';
+      case 'fleet': return 'Course gestionnaire';
     }
   };
 
   const getTypeBadgeVariant = () => {
     if (!commissionInfo) return 'secondary' as const;
     switch (commissionInfo.type) {
-      case 'partner':
-        return 'default' as const;
-      case 'company':
-        return 'secondary' as const;
-      case 'fleet':
-        return 'outline' as const;
+      case 'partner': return 'default' as const;
+      case 'company': return 'secondary' as const;
+      case 'fleet': return 'outline' as const;
     }
   };
 
@@ -268,15 +298,65 @@ export function CourseCompletionCommissionDialog({
             </div>
           </div>
 
+          {/* ============================================ */}
+          {/* STRIPE PAYMENT INFO - Key driver messaging   */}
+          {/* ============================================ */}
+          {stripeInfo.isStripePayment && (
+            <Alert className="bg-primary/5 border-primary/20">
+              <Zap className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-primary">Paiement par carte en ligne</p>
+                <p>
+                  Le montant de <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> sera 
+                  prélevé automatiquement sur la carte du client lors de la clôture.
+                </p>
+                <p className="text-muted-foreground">
+                  ⚠️ Ne demandez <strong>pas</strong> de paiement au client — il sera débité automatiquement via Stripe.
+                </p>
+                {stripeInfo.depositPaid > 0 && (
+                  <p className="text-muted-foreground">
+                    Acompte déjà payé : {stripeInfo.depositPaid.toFixed(2)}€
+                  </p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!stripeInfo.isStripePayment && (
+            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+              <Banknote className="h-5 w-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                Encaissez le paiement directement auprès du client (espèces ou TPE).
+              </span>
+            </div>
+          )}
+
           {/* Détails financiers */}
           <div className="space-y-3 p-4 border rounded-lg bg-card">
             <div className="flex items-center justify-between">
-              <span className="font-medium">Montant encaissé</span>
+              <span className="font-medium">Montant total</span>
               <span className="text-lg font-bold text-foreground flex items-center gap-1">
                 <Euro className="w-4 h-4" />
                 {courseAmount.toFixed(2)} €
               </span>
             </div>
+
+            {stripeInfo.isStripePayment && stripeInfo.depositPaid > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Acompte payé</span>
+                <span className="text-green-600">-{stripeInfo.depositPaid.toFixed(2)} €</span>
+              </div>
+            )}
+
+            {stripeInfo.isStripePayment && (
+              <div className="flex items-center justify-between text-sm border-t pt-2">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <CreditCard className="w-3 h-3" />
+                  Sera prélevé automatiquement
+                </span>
+                <span className="font-semibold text-primary">{stripeInfo.remainingAmount.toFixed(2)} €</span>
+              </div>
+            )}
 
             {commissionInfo && commissionInfo.commissionAmount > 0 && (
               <>
@@ -333,11 +413,20 @@ export function CourseCompletionCommissionDialog({
             </Alert>
           )}
 
-          {!loading && !commissionInfo && (
+          {!loading && !commissionInfo && !stripeInfo.isStripePayment && (
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle className="w-4 h-4 text-green-500" />
               <AlertDescription className="text-xs text-green-700">
                 C'est votre course personnelle - vous conservez 100% du montant.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!loading && !commissionInfo && stripeInfo.isStripePayment && (
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <AlertDescription className="text-xs text-green-700">
+                Le paiement sera automatiquement crédité sur votre compte Stripe Connect (frais de gestion de 0,50€ déduits).
               </AlertDescription>
             </Alert>
           )}
@@ -346,7 +435,7 @@ export function CourseCompletionCommissionDialog({
         <DialogFooter>
           <Button onClick={handleConfirm} className="w-full">
             <CheckCircle className="w-4 h-4 mr-2" />
-            Compris !
+            {stripeInfo.isStripePayment ? 'Clôturer et encaisser' : 'Compris !'}
           </Button>
         </DialogFooter>
       </DialogContent>
