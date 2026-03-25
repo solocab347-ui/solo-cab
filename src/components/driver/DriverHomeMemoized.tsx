@@ -265,30 +265,38 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          {/* Partner Courses Shortcut - Coming Soon */}
+          {/* Premium CTA - Partenariats */}
           <Card
-            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/40 via-card/30 to-card/40 backdrop-blur-xl transition-all cursor-pointer border border-border/30 shadow-lg group touch-manipulation opacity-60"
+            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-amber-500/10 via-card/60 to-orange-500/10 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-amber-500/30 shadow-lg group touch-manipulation active:scale-[0.98]"
             {...getTapProps<HTMLDivElement>(() => {
-              toast.info("Bientôt disponible !", {
-                description: "La fonctionnalité de partenariats entre chauffeurs arrive très prochainement."
-              });
+              if (isFree) {
+                onTabChange("subscription");
+              } else {
+                onTabChange("sharing");
+              }
             })}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-muted/10 opacity-50"></div>
-            {/* Badge Bientôt */}
-            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
-              <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-muted-foreground/30 text-muted-foreground bg-background/50">
-                Bientôt
-              </Badge>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            {isFree && (
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
+                <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10">
+                  <Crown className="w-3 h-3 mr-0.5" />
+                  Premium
+                </Badge>
+              </div>
+            )}
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-muted to-muted/80 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-                <Handshake className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-muted-foreground" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                {isFree ? (
+                  <Lock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                ) : (
+                  <Handshake className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                )}
               </div>
               <div>
-                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-muted-foreground">Partenaires</h3>
+                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Partenaires</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground/70 hidden sm:block">
-                  Bientôt disponible
+                  {isFree ? "9,99€/mois" : "Réseau de partage"}
                 </p>
               </div>
             </div>
