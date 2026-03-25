@@ -4,6 +4,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
+import { DriverAvailabilityToggleBig } from "./planning/DriverAvailabilityToggleBig";
 import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
