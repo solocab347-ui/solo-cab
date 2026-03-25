@@ -44,27 +44,6 @@ const PAYMENT_METHODS = [
     description: "CB, Visa, Mastercard",
     color: "text-blue-600 bg-blue-500/10 border-blue-500/30"
   },
-  { 
-    value: "transfer", 
-    label: "Virement", 
-    icon: Building2, 
-    description: "Virement bancaire",
-    color: "text-purple-600 bg-purple-500/10 border-purple-500/30"
-  },
-  { 
-    value: "check", 
-    label: "Chèque", 
-    icon: Wallet, 
-    description: "Paiement par chèque",
-    color: "text-amber-600 bg-amber-500/10 border-amber-500/30"
-  },
-  { 
-    value: "other", 
-    label: "Autre", 
-    icon: Settings2, 
-    description: "Autre moyen de paiement",
-    color: "text-gray-600 bg-gray-500/10 border-gray-500/30"
-  },
 ];
 
 const BILLING_TYPES = [

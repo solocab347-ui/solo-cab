@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Banknote, Building2, Wallet, HelpCircle, Settings2, Zap } from "lucide-react";
+import { CreditCard, Banknote, HelpCircle, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDriverPaymentMethods, DriverPaymentConfig } from "@/hooks/useDriverPaymentMethods";
 
@@ -19,24 +19,6 @@ const PAYMENT_METHOD_INFO: Record<string, { label: string; icon: any; descriptio
     icon: CreditCard, 
     description: "CB, Visa, Mastercard", 
     color: "bg-blue-500/10 text-blue-600 border-blue-500/30" 
-  },
-  transfer: { 
-    label: "Virement", 
-    icon: Building2, 
-    description: "Virement bancaire", 
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/30" 
-  },
-  check: { 
-    label: "Chèque", 
-    icon: Wallet, 
-    description: "Paiement par chèque", 
-    color: "bg-amber-500/10 text-amber-600 border-amber-500/30" 
-  },
-  other: { 
-    label: "Autre", 
-    icon: Settings2, 
-    description: "Autre moyen", 
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/30" 
   },
   not_specified: { 
     label: "Non précisé", 

@@ -10,7 +10,7 @@ export interface DriverPaymentConfig {
 }
 
 const DEFAULT_CONFIG: DriverPaymentConfig = {
-  acceptedMethods: ['cash', 'card', 'transfer'],
+  acceptedMethods: ['cash', 'card'],
   billingType: 'own_equipment',
   showPublicly: true,
   defaultMethod: 'not_specified',

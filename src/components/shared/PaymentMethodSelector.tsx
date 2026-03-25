@@ -4,19 +4,11 @@ import { Card } from "@/components/ui/card";
 import {
   CreditCard,
   Banknote,
-  Building2,
-  Smartphone,
-  Receipt,
-  Check,
 } from "lucide-react";
 
 export const PAYMENT_METHODS = [
   { value: "cash", label: "Espèces", icon: Banknote, description: "Paiement en liquide" },
   { value: "card", label: "Carte bancaire", icon: CreditCard, description: "CB, Visa, Mastercard" },
-  { value: "transfer", label: "Virement", icon: Building2, description: "Virement bancaire" },
-  { value: "mobile", label: "Paiement mobile", icon: Smartphone, description: "Apple Pay, Google Pay, etc." },
-  { value: "check", label: "Chèque", icon: Check, description: "Chèque bancaire" },
-  { value: "invoice", label: "Facturation", icon: Receipt, description: "Paiement différé sur facture" },
 ] as const;
 
 export type PaymentMethodValue = typeof PAYMENT_METHODS[number]['value'];

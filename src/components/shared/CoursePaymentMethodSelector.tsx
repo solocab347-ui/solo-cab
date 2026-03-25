@@ -4,8 +4,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   CreditCard, 
   Banknote, 
-  Building2, 
-  Wallet, 
   HelpCircle, 
   Shield, 
   Info,
@@ -21,8 +19,6 @@ const PAYMENT_METHODS = [
   { value: "not_specified", label: "Non précisé", icon: HelpCircle, description: "Je déciderai plus tard", color: "bg-muted text-muted-foreground" },
   { value: "cash", label: "Espèces", icon: Banknote, description: "Paiement en liquide", color: "bg-green-500/10 text-green-600 border-green-500/30" },
   { value: "card", label: "Carte", icon: CreditCard, description: "CB, Visa, Mastercard", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
-  { value: "transfer", label: "Virement", icon: Building2, description: "Virement bancaire", color: "bg-purple-500/10 text-purple-600 border-purple-500/30" },
-  { value: "other", label: "Autre", icon: Wallet, description: "Chèque, autre moyen", color: "bg-orange-500/10 text-orange-600 border-orange-500/30" },
 ];
 
 interface CoursePaymentMethodSelectorProps {
@@ -80,7 +76,7 @@ export const CoursePaymentMethodSelector = ({
       <RadioGroup
         value={value}
         onValueChange={onChange}
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5"
+        className="grid grid-cols-3 gap-2"
       >
         {PAYMENT_METHODS.map((method) => {
           const IconComponent = method.icon;

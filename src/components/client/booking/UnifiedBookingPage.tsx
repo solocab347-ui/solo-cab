@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -819,7 +819,29 @@ export function UnifiedBookingPage() {
                   const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
                   const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
                   const hasNonStripeDriver = selectedDriversList.some(d => !d.stripe_connect_charges_enabled);
+                  const isMixed = hasStripeDriver && hasNonStripeDriver;
                   
+                  if (isMixed && clientPaymentMethod === 'card') {
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-500/10 p-2 rounded-lg border border-amber-500/30">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>Attention :</strong> Certains chauffeurs acceptent le paiement en ligne sécurisé (empreinte bancaire), 
+                            d'autres utilisent leur propre terminal (TPE). Le mode de paiement dépendra du chauffeur qui acceptera votre course.
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedDriversList.map(d => (
+                            <Badge key={d.driver_id} variant="outline" className={cn("text-[10px]", d.stripe_connect_charges_enabled ? "border-primary/30 text-primary" : "border-muted-foreground/30 text-muted-foreground")}>
+                              {d.display_name || d.company_name || 'Chauffeur'}
+                              {d.stripe_connect_charges_enabled ? ' 🔒' : ' 💳 TPE'}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
                   if (clientPaymentMethod === 'card' && hasStripeDriver) {
                     return (
                       <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
