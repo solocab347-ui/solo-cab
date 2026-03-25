@@ -259,10 +259,17 @@ export function UnifiedBookingPage() {
 
     try {
       const geocode = async (addr: string) => {
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${mapboxToken}&country=fr&language=fr`);
-        const data = await res.json();
-        if (data.features?.[0]) return { lat: data.features[0].center[1], lng: data.features[0].center[0] };
-        return null;
+        try {
+          if (!mapboxToken) throw new Error('No mapbox token');
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${mapboxToken}&country=fr&language=fr`);
+          if (!res.ok) throw new Error(`Geocode HTTP ${res.status}`);
+          const data = await res.json();
+          if (data.features?.[0]) return { lat: data.features[0].center[1], lng: data.features[0].center[0] };
+          return null;
+        } catch (err) {
+          console.error('Geocode error for:', addr, err);
+          return null;
+        }
       };
 
       const [pickup, dest] = await Promise.all([
@@ -276,11 +283,21 @@ export function UnifiedBookingPage() {
       setPickupCoords(pickup);
       setDestCoords(dest);
 
-      // Calculate route
-      const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`);
-      const dirData = await dirRes.json();
-      const distance = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
-      const duration = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
+      // Calculate route (non-blocking — search works even without distance)
+      let distance: number | null = null;
+      let duration: number | null = null;
+      try {
+        if (mapboxToken) {
+          const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`);
+          if (dirRes.ok) {
+            const dirData = await dirRes.json();
+            distance = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
+            duration = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
+          }
+        }
+      } catch (dirErr) {
+        console.warn('Directions API failed, continuing without distance:', dirErr);
+      }
       setRouteDistanceKm(distance);
       setRouteDurationMin(duration);
 
