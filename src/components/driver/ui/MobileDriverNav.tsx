@@ -258,7 +258,7 @@ export const MobileDriverNav = ({
             <div className="space-y-1.5 pt-2 border-t border-border">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 mb-2">Autre</p>
               {secondaryItems.map(item => (
-                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value)} />
+                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value, item.premium)} />
               ))}
             </div>
           </div>
