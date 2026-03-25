@@ -1,6 +1,7 @@
 /**
  * Navigation mobile optimisée pour iOS
  * Navigation verticale avec sections collapsibles
+ * Premium gating: les items premium redirigent vers l'onglet subscription si free
  */
 
 import { useState } from "react";
@@ -12,10 +13,12 @@ import {
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
   FolderOpen, Calendar, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
+import { useDriverPremium } from "@/hooks/useDriverPremium";
+import { toast } from "sonner";
 
 interface MobileDriverNavProps {
   activeTab: string;
@@ -51,8 +54,18 @@ export const MobileDriverNav = ({
   const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["main"]);
+  const { isFree } = useDriverPremium();
 
-  const handleSelect = (value: string) => {
+  const handleSelect = (value: string, isPremiumItem?: boolean) => {
+    // Si l'item est premium et que l'utilisateur est free, rediriger vers subscription
+    if (isPremiumItem && isFree) {
+      onTabChange("subscription");
+      setIsOpen(false);
+      toast.info("Fonctionnalité Premium", {
+        description: "Passez à Premium pour accéder à cette fonctionnalité — 9,99€/mois"
+      });
+      return;
+    }
     onTabChange(value);
     setIsOpen(false);
   };
