@@ -4,6 +4,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
+import { DriverAvailabilityToggleBig } from "./planning/DriverAvailabilityToggleBig";
 import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +158,14 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           )}
         </div>
+
+        {/* Availability Toggle - Prominent */}
+        {driverProfile?.driver?.id && (
+          <DriverAvailabilityToggleBig
+            driverId={driverProfile.driver.id}
+            initialAvailable={true}
+          />
+        )}
       </div>
 
       {/* AI Objectives Widget - Always visible at top */}

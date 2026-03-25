@@ -518,18 +518,7 @@ const DriverDashboard = () => {
     <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        {/* Availability Toggle - Top bar */}
-        {driverProfile?.driver?.id && (
-          <div className="bg-muted/30 border-b border-border/30 px-2 sm:px-4 py-1.5">
-            <div className="container mx-auto flex items-center justify-center">
-              <DriverAvailabilityToggle 
-                driverId={driverProfile.driver.id} 
-                initialAvailable={true}
-                compact={true} 
-              />
-            </div>
-          </div>
-        )}
+        {/* Availability toggle moved to DriverHome */}
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
