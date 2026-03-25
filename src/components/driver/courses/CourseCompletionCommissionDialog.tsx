@@ -69,6 +69,8 @@ export function CourseCompletionCommissionDialog({
     hasCardHold: false,
     depositPaid: 0,
     remainingAmount: courseAmount,
+    paymentMethod: 'cash',
+    driverHasStripe: false,
   });
 
   useEffect(() => {
