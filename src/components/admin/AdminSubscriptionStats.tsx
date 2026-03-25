@@ -69,7 +69,7 @@ const AdminSubscriptionStats = () => {
       // Récupérer tous les chauffeurs avec leurs données d'abonnement
       const { data: drivers, error } = await supabase
         .from("drivers")
-        .select("*")
+        .select("id, subscription_status, free_access_granted, created_at, status")
         .gte("created_at", start.toISOString())
         .lte("created_at", end.toISOString());
 
