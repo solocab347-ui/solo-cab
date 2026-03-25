@@ -359,7 +359,7 @@ const App = () => (
             </Routes>
             </ErrorBoundary>
             </MaintenanceGuard>
-            <SafeModeIndicator />
+            
           </TooltipProvider>
           </PWABannerProvider>
           </MaintenanceProvider>
