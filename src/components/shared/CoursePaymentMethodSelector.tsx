@@ -78,7 +78,7 @@ export const CoursePaymentMethodSelector = ({
       <RadioGroup
         value={value}
         onValueChange={onChange}
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5"
+        className="grid grid-cols-3 gap-2"
       >
         {PAYMENT_METHODS.map((method) => {
           const IconComponent = method.icon;

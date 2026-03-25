@@ -127,13 +127,6 @@ export function CoursePaymentDialogContent({
               Espèces
             </Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="Virement" id="transfer" />
-            <Label htmlFor="transfer" className="flex items-center gap-2 cursor-pointer">
-              <Building2 className="w-4 h-4 text-purple-500" />
-              Virement
-            </Label>
-          </div>
         </RadioGroup>
       </div>
 
