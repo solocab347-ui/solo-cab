@@ -93,7 +93,7 @@ const App = () => (
                 <NotificationPermissionPrompt />
                 <EmergencyReset />
                 <ConnectionIndicator />
-                <OfflineSyncIndicator />
+                
                 <AutoDriverAvailabilitySync />
                 <MaintenanceGuard>
                 <ErrorBoundary>
