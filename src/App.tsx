@@ -24,7 +24,7 @@ import { AutoDriverAvailabilitySync } from "@/components/driver/AutoDriverAvaila
 // Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { SafeModeIndicator } from "@/components/SafeModeIndicator";
+
 
 // Lazy load ALL other pages
 const Login = lazy(() => import("./pages/Login"));
