@@ -625,21 +625,10 @@ const DriverDashboard = () => {
           />
         )}
 
-        {/* Trial Start Banner - Pour les chauffeurs en attente de matériel/Stripe */}
-        {/* NE PAS afficher pour les utilisateurs avec accès gratuit ou abonnement payé */}
-        {driverProfile?.driver?.id && !driverProfile.driver.free_access_granted && !driverProfile.driver.subscription_paid && (
+        {/* Premium Upgrade Banner - Pour les chauffeurs gratuits */}
+        {driverProfile?.driver?.id && !isPremium && (
           <div className="mb-4">
-            <TrialStartBanner
-              driverId={driverProfile.driver.id}
-              billingType={driverProfile.driver.billing_type}
-              stripeAccountStatus={driverProfile.driver.stripe_connect_status}
-              trialStatus={driverProfile.driver.trial_status}
-              subscriptionPaid={driverProfile.driver.subscription_paid}
-              freeAccessGranted={driverProfile.driver.free_access_granted}
-              freeAccessEndDate={driverProfile.driver.free_access_end_date}
-              trialStartDate={driverProfile.driver.trial_start_date}
-              onTrialStarted={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
-            />
+            <PremiumUpgradeBanner message="Passez Premium pour débloquer toutes les fonctionnalités" />
           </div>
         )}
 
