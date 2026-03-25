@@ -51,6 +51,8 @@ import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
 import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
 import { DriverTutorial } from "@/components/driver/tutorial/DriverTutorial";
+import { IncomingCourseOverlay } from "@/components/driver/courses/IncomingCourseOverlay";
+import { useIncomingCourseListener } from "@/hooks/useIncomingCourseListener";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
@@ -111,6 +113,12 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+
+  // Incoming course overlay (Uber/Bolt style)
+  const { incomingCourse, dismiss: dismissIncoming, clearCurrent: clearIncoming } = useIncomingCourseListener({
+    driverId: driverProfile?.driver?.id || null,
+    enabled: !!driverProfile?.driver?.id,
+  });
 
   // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
   useEffect(() => {
@@ -1069,6 +1077,14 @@ const DriverDashboard = () => {
       
       {/* Assistant virtuel Max */}
       <DriverAssistant />
+
+      {/* Incoming Course Overlay - Uber/Bolt style */}
+      <IncomingCourseOverlay
+        course={incomingCourse}
+        onDismiss={dismissIncoming}
+        onAccepted={clearIncoming}
+        driverId={driverProfile?.driver?.id || null}
+      />
 
     </div>
   );

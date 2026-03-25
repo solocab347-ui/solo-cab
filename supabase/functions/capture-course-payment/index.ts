@@ -68,6 +68,11 @@ serve(async (req) => {
       throw new Error("Unauthorized: only the course driver can capture payment");
     }
 
+    // Verify Stripe Connect is active
+    if (!course.driver.stripe_connect_account_id || !course.driver.stripe_connect_charges_enabled) {
+      throw new Error("Stripe Connect non configuré ou désactivé pour ce chauffeur");
+    }
+
     if (!course.stripe_payment_intent_id && !course.stripe_hold_payment_intent_id) {
       throw new Error("No payment intent found for this course");
     }
