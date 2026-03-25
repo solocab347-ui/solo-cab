@@ -114,6 +114,12 @@ export const FleetClientDevisFactures = ({ clientId }: FleetClientDevisFacturesP
                         <Badge variant={f.payment_status === "paid" ? "default" : "secondary"}>
                           {f.payment_status === "paid" ? "Payée" : "En attente"}
                         </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {f.payment_method === "stripe" && "💳 Carte en ligne"}
+                          {f.payment_method === "card" && "💳 Carte (TPE)"}
+                          {f.payment_method === "cash" && "💵 Espèces"}
+                          {!["stripe", "card", "cash"].includes(f.payment_method) && (f.payment_method || "—")}
+                        </Badge>
                         <span className="text-sm text-muted-foreground">
                           {format(new Date(f.created_at), "dd MMM yyyy", { locale: fr })}
                         </span>
