@@ -651,6 +651,18 @@ const DriverDashboard = () => {
           </div>
         )}
 
+        {/* Tutorial interactif pour les nouveaux chauffeurs */}
+        <DriverTutorial
+          isVisible={showTutorial}
+          onNavigateToTab={(tab) => handleTabChange(tab)}
+          onComplete={() => {
+            setShowTutorial(false);
+            if (driverProfile?.driver?.id) {
+              localStorage.setItem(`solocab_tutorial_done_${driverProfile.driver.id}`, "true");
+            }
+          }}
+        />
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Desktop TabsList - hidden on mobile, using MobileDriverNav instead */}
           <TabsList className="hidden md:flex w-full bg-muted/30 backdrop-blur-sm flex-col gap-2 h-auto p-2 shadow-lg border border-border">
