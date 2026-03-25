@@ -54,6 +54,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
   const [loading, setLoading] = useState(true);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const { getTapProps } = useInstantTap();
+  const { isFree } = useDriverPremium();
 
   useEffect(() => {
     let mounted = true;
