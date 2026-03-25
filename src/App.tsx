@@ -16,7 +16,7 @@ import { PushNotificationListener } from "@/components/PushNotificationListener"
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
-import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
+
 import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { AutoDriverAvailabilitySync } from "@/components/driver/AutoDriverAvailabilitySync";
