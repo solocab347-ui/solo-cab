@@ -110,6 +110,17 @@ const DriverDashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
+  useEffect(() => {
+    if (driverProfile?.driver?.onboarding_completed) {
+      const tutorialKey = `solocab_tutorial_done_${driverProfile.driver.id}`;
+      if (!localStorage.getItem(tutorialKey)) {
+        setShowTutorial(true);
+      }
+    }
+  }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
   
   // REDIRECTION AUTOMATIQUE vers le tunnel d'onboarding si non complété
   useEffect(() => {
