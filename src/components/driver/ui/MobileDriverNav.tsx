@@ -1,6 +1,7 @@
 /**
  * Navigation mobile optimisée pour iOS
  * Navigation verticale avec sections collapsibles
+ * Premium gating: les items premium redirigent vers l'onglet subscription si free
  */
 
 import { useState } from "react";
@@ -12,10 +13,12 @@ import {
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
   FolderOpen, Calendar, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
+import { useDriverPremium } from "@/hooks/useDriverPremium";
+import { toast } from "sonner";
 
 interface MobileDriverNavProps {
   activeTab: string;
@@ -51,8 +54,18 @@ export const MobileDriverNav = ({
   const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(["main"]);
+  const { isFree } = useDriverPremium();
 
-  const handleSelect = (value: string) => {
+  const handleSelect = (value: string, isPremiumItem?: boolean) => {
+    // Si l'item est premium et que l'utilisateur est free, rediriger vers subscription
+    if (isPremiumItem && isFree) {
+      onTabChange("subscription");
+      setIsOpen(false);
+      toast.info("Fonctionnalité Premium", {
+        description: "Passez à Premium pour accéder à cette fonctionnalité — 9,99€/mois"
+      });
+      return;
+    }
     onTabChange(value);
     setIsOpen(false);
   };
@@ -125,6 +138,7 @@ export const MobileDriverNav = ({
     const isActive = activeTab === item.value;
     const Icon = item.icon;
     const isDisabled = item.comingSoon;
+    const isPremiumLocked = item.premium && isFree;
     
     return (
       <button
@@ -135,14 +149,20 @@ export const MobileDriverNav = ({
           isDisabled 
             ? "opacity-50 cursor-not-allowed bg-muted/20"
             : "active:scale-[0.98]",
-          !isDisabled && isActive
+          !isDisabled && isActive && !isPremiumLocked
             ? `bg-gradient-to-r ${item.gradient || "from-primary to-accent"} text-primary-foreground shadow-lg`
             : !isDisabled && "bg-muted/30 text-muted-foreground hover:bg-muted/50"
         )}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-left font-medium truncate">{item.label}</span>
-        {item.premium && (
+        {item.premium && isFree && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            Premium
+          </Badge>
+        )}
+        {item.premium && !isFree && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10 flex items-center gap-1">
             <Crown className="w-3 h-3" />
             Premium
@@ -203,7 +223,7 @@ export const MobileDriverNav = ({
             <div className="space-y-1.5">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 mb-2">Principal</p>
               {mainItems.map(item => (
-                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value)} />
+                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value, item.premium)} />
               ))}
             </div>
 
@@ -228,7 +248,7 @@ export const MobileDriverNav = ({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-1.5 ml-4 space-y-1.5">
                   {group.items.map(item => (
-                    <NavButton key={item.value} item={{ ...item, gradient: group.gradient }} onClick={() => handleSelect(item.value)} />
+                    <NavButton key={item.value} item={{ ...item, gradient: group.gradient }} onClick={() => handleSelect(item.value, item.premium)} />
                   ))}
                 </CollapsibleContent>
               </Collapsible>
@@ -238,7 +258,7 @@ export const MobileDriverNav = ({
             <div className="space-y-1.5 pt-2 border-t border-border">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 mb-2">Autre</p>
               {secondaryItems.map(item => (
-                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value)} />
+                <NavButton key={item.value} item={item} onClick={() => handleSelect(item.value, item.premium)} />
               ))}
             </div>
           </div>

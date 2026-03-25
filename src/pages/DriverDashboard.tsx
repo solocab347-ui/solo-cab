@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -49,7 +49,7 @@ import { DocumentWarningBanner } from "@/components/driver/ui/DocumentWarningBan
 import { DocumentsBlockedOverlay } from "@/components/driver/ui/DocumentsBlockedOverlay";
 import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
-import { TrialStartBanner } from "@/components/driver/ui/TrialStartBanner";
+import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
@@ -625,21 +625,10 @@ const DriverDashboard = () => {
           />
         )}
 
-        {/* Trial Start Banner - Pour les chauffeurs en attente de matériel/Stripe */}
-        {/* NE PAS afficher pour les utilisateurs avec accès gratuit ou abonnement payé */}
-        {driverProfile?.driver?.id && !driverProfile.driver.free_access_granted && !driverProfile.driver.subscription_paid && (
+        {/* Premium Upgrade Banner - Pour les chauffeurs gratuits */}
+        {driverProfile?.driver?.id && !isPremium && (
           <div className="mb-4">
-            <TrialStartBanner
-              driverId={driverProfile.driver.id}
-              billingType={driverProfile.driver.billing_type}
-              stripeAccountStatus={driverProfile.driver.stripe_connect_status}
-              trialStatus={driverProfile.driver.trial_status}
-              subscriptionPaid={driverProfile.driver.subscription_paid}
-              freeAccessGranted={driverProfile.driver.free_access_granted}
-              freeAccessEndDate={driverProfile.driver.free_access_end_date}
-              trialStartDate={driverProfile.driver.trial_start_date}
-              onTrialStarted={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
-            />
+            <PremiumUpgradeBanner message="Passez Premium pour débloquer toutes les fonctionnalités" />
           </div>
         )}
 
@@ -732,17 +721,19 @@ const DriverDashboard = () => {
                     <Target className="w-4 h-4" />
                     {t('driverDashboard.menu.objectives')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 9,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Megaphone className="w-4 h-4" />
                     {t('driverDashboard.menu.campaign')}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-muted">
                     <PieChart className="w-4 h-4" />
                     {t('driverDashboard.menu.profitability')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("prospection")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 9,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Sparkles className="w-4 h-4" />
                     {t('driverDashboard.menu.prospection')}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
