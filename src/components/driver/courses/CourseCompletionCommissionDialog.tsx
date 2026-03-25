@@ -85,8 +85,21 @@ export function CourseCompletionCommissionDialog({
         .single();
 
       if (course) {
-        const isStripe = course.payment_method === 'stripe' || 
-          (course.payment_method === 'card' && !!course.stripe_payment_method_id);
+        // Vérifier si le chauffeur a Stripe Connect
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('stripe_connect_account_id, stripe_connect_charges_enabled')
+          .eq('id', driverId)
+          .single();
+
+        const driverHasStripe = !!driverData?.stripe_connect_account_id && 
+          driverData?.stripe_connect_charges_enabled === true;
+
+        const isStripe = driverHasStripe && (
+          course.payment_method === 'stripe' || 
+          (course.payment_method === 'card' && !!course.stripe_payment_method_id)
+        );
+
         const depositPaid = course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0;
         const totalAmount = course.final_payment_amount || course.guest_estimated_price || courseAmount;
 
@@ -96,6 +109,8 @@ export function CourseCompletionCommissionDialog({
           hasCardHold: course.card_hold_status === 'confirmed',
           depositPaid,
           remainingAmount: totalAmount - depositPaid,
+          paymentMethod: course.payment_method || 'cash',
+          driverHasStripe,
         });
       }
     } catch (error) {
