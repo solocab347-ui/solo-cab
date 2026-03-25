@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 
 /**
  * Hook to count all partnership-related notifications that require attention:

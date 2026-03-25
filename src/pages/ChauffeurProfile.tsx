@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 
 // Keys pour invalidation centralisée
 export const PUBLIC_DRIVERS_QUERY_KEY = 'public-drivers';

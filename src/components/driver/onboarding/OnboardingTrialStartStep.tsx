@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { WelcomeVideoModal } from '../ui/WelcomeVideoModal';

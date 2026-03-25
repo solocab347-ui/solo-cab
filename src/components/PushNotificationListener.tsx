@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/lib/productionLogger';
 import type { RealtimeChannel } from '@supabase/supabase-js';

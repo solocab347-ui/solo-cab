@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';

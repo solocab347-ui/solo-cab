@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
