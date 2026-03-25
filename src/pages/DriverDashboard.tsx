@@ -116,10 +116,13 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
-  // Incoming course overlay (Uber/Bolt style)
+  // Overlay permission system
+  const { isEnabled: overlayEnabled, shouldPrompt: showOverlayPrompt, grant: grantOverlay, deny: denyOverlay } = useOverlayPermission(driverProfile?.driver?.id || null);
+
+  // Incoming course overlay (Uber/Bolt style) — only active if permission granted
   const { incomingCourse, dismiss: dismissIncoming, clearCurrent: clearIncoming } = useIncomingCourseListener({
     driverId: driverProfile?.driver?.id || null,
-    enabled: !!driverProfile?.driver?.id,
+    enabled: !!driverProfile?.driver?.id && overlayEnabled,
   });
 
   // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
