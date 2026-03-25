@@ -146,7 +146,6 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             <p className="text-muted-foreground text-sm sm:text-lg">Tableau de bord professionnel</p>
           </div>
           {driverProfile?.driver?.rating && driverProfile.driver.rating > 0 && (
-          {driverProfile?.driver?.rating && driverProfile.driver.rating > 0 && (
             <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-border/50 shadow-lg flex-shrink-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-warning text-warning" />
@@ -159,6 +158,14 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           )}
         </div>
+
+        {/* Availability Toggle - Prominent */}
+        {driverProfile?.driver?.id && (
+          <DriverAvailabilityToggleBig
+            driverId={driverProfile.driver.id}
+            initialAvailable={true}
+          />
+        )}
       </div>
 
       {/* AI Objectives Widget - Always visible at top */}
