@@ -50,6 +50,7 @@ import { DocumentsBlockedOverlay } from "@/components/driver/ui/DocumentsBlocked
 import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
 import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
+import { DriverTutorial } from "@/components/driver/tutorial/DriverTutorial";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
@@ -109,6 +110,17 @@ const DriverDashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
+  useEffect(() => {
+    if (driverProfile?.driver?.onboarding_completed) {
+      const tutorialKey = `solocab_tutorial_done_${driverProfile.driver.id}`;
+      if (!localStorage.getItem(tutorialKey)) {
+        setShowTutorial(true);
+      }
+    }
+  }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
   
   // REDIRECTION AUTOMATIQUE vers le tunnel d'onboarding si non complété
   useEffect(() => {
@@ -638,6 +650,18 @@ const DriverDashboard = () => {
             <CourseQueueAlert driverId={driverProfile.driver.id} />
           </div>
         )}
+
+        {/* Tutorial interactif pour les nouveaux chauffeurs */}
+        <DriverTutorial
+          isVisible={showTutorial}
+          onNavigateToTab={(tab) => handleTabChange(tab)}
+          onComplete={() => {
+            setShowTutorial(false);
+            if (driverProfile?.driver?.id) {
+              localStorage.setItem(`solocab_tutorial_done_${driverProfile.driver.id}`, "true");
+            }
+          }}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Desktop TabsList - hidden on mobile, using MobileDriverNav instead */}
