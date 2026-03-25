@@ -59,24 +59,14 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
   useEffect(() => {
     fetchCourses();
     
-    // Realtime subscription
-    const channel = supabase
-      .channel('fleet_partner_courses_driver')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'fleet_partner_courses',
-          filter: `driver_id=eq.${driverId}`
-        },
-        () => fetchCourses()
-      )
-      .subscribe();
+    // Realtime subscription via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `fleet-partner-courses-${driverId}`,
+      { table: 'fleet_partner_courses', event: '*', filter: `driver_id=eq.${driverId}`, debounceMs: 500 },
+      () => fetchCourses()
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId]);
 
   const fetchCourses = async () => {

@@ -76,37 +76,26 @@ export function OnboardingTrialStartStep({
     // Polling RAPIDE toutes les 2 secondes pour réactivité maximale
     const interval = setInterval(fetchStatus, 2000);
 
-    // Écouter les changements en temps réel (méthode principale)
-    const channel = supabase
-      .channel(`driver-docs-realtime-${driverId}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'drivers',
-          filter: `id=eq.${driverId}`,
-        },
-        (payload) => {
-          if (!isMounted) return;
-          const newDocStatus = (payload.new as any)?.documents_status;
-          console.log('[TrialStartStep] Realtime update received:', newDocStatus);
-          if (newDocStatus && newDocStatus !== documentsStatus) {
-            setDocumentsStatus(newDocStatus);
-            if (newDocStatus === 'validated') {
-              toast.success('🎉 Vos documents ont été validés ! Vous pouvez démarrer votre essai.');
-            }
+    // Écouter les changements en temps réel via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `driver-docs-realtime-${driverId}`,
+      { table: 'drivers', event: 'UPDATE', filter: `id=eq.${driverId}` },
+      (payload) => {
+        if (!isMounted) return;
+        const newDocStatus = (payload.new as any)?.documents_status;
+        if (newDocStatus && newDocStatus !== documentsStatus) {
+          setDocumentsStatus(newDocStatus);
+          if (newDocStatus === 'validated') {
+            toast.success('🎉 Vos documents ont été validés ! Vous pouvez démarrer votre essai.');
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('[TrialStartStep] Realtime channel status:', status);
-      });
+      }
+    );
 
     return () => {
       isMounted = false;
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      cleanup();
     };
   }, [driverId]); // Removed documentsStatus to avoid re-creating interval
 

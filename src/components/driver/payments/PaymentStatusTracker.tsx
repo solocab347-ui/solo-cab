@@ -64,35 +64,25 @@ export function PaymentStatusTracker({ courseId, className }: PaymentStatusTrack
 
     fetchPaymentStatus();
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel(`payment-status-${courseId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'courses',
-          filter: `id=eq.${courseId}`,
-        },
-        (payload) => {
-          const newData = payload.new as any;
-          setPaymentState({
-            depositStatus: newData.deposit_status,
-            depositAmount: newData.deposit_amount,
-            cardHoldStatus: newData.card_hold_status,
-            finalPaymentStatus: newData.final_payment_status,
-            finalPaymentAmount: newData.final_payment_amount,
-            totalAmount: newData.final_payment_amount || newData.guest_estimated_price,
-            paymentMethod: newData.payment_method,
-          });
-        }
-      )
-      .subscribe();
+    // Subscribe to realtime updates via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `payment-status-${courseId}`,
+      { table: 'courses', event: 'UPDATE', filter: `id=eq.${courseId}` },
+      (payload) => {
+        const newData = payload.new as any;
+        setPaymentState({
+          depositStatus: newData.deposit_status,
+          depositAmount: newData.deposit_amount,
+          cardHoldStatus: newData.card_hold_status,
+          finalPaymentStatus: newData.final_payment_status,
+          finalPaymentAmount: newData.final_payment_amount,
+          totalAmount: newData.final_payment_amount || newData.guest_estimated_price,
+          paymentMethod: newData.payment_method,
+        });
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [courseId]);
 
   const getStatusIcon = (status: string | null) => {

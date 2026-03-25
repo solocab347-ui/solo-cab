@@ -138,43 +138,25 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
     }
   }, [user?.id, propDriverId]);
 
-  // Realtime subscription
+  // Realtime subscription via centralized manager
   useEffect(() => {
     if (!driverId) return;
 
-    const poolChannel = supabase
-      .channel('pool-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'partner_course_pool'
-        },
-        () => {
-          loadPooledCourses();
-        }
-      )
-      .subscribe();
+    const cleanupPool = subscriptionManager.subscribe(
+      `pool-changes-${driverId}`,
+      { table: 'partner_course_pool', event: '*', debounceMs: 500 },
+      () => loadPooledCourses()
+    );
 
-    const sharedChannel = supabase
-      .channel('shared-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shared_courses'
-        },
-        () => {
-          loadSharedCourses();
-        }
-      )
-      .subscribe();
+    const cleanupShared = subscriptionManager.subscribe(
+      `shared-changes-${driverId}`,
+      { table: 'shared_courses', event: '*', debounceMs: 500 },
+      () => loadSharedCourses()
+    );
 
     return () => {
-      supabase.removeChannel(poolChannel);
-      supabase.removeChannel(sharedChannel);
+      cleanupPool();
+      cleanupShared();
     };
   }, [driverId]);
 

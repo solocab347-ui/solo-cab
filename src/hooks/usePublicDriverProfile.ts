@@ -14,50 +14,31 @@ export function useDriverProfileRealtime() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Écouter les changements sur la table drivers
-    const driversChannel = supabase
-      .channel('public-drivers-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'drivers'
-        },
-        (payload) => {
-          console.log('Driver profile changed:', payload);
-          // Invalider tous les caches des profils publics
-          queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVERS_QUERY_KEY] });
-          if (payload.new && typeof payload.new === 'object' && 'id' in payload.new) {
-            queryClient.invalidateQueries({ 
-              queryKey: [PUBLIC_DRIVER_PROFILE_KEY, payload.new.id] 
-            });
-          }
+    // Écouter les changements via centralized manager
+    const cleanupDrivers = subscriptionManager.subscribe(
+      'public-drivers-changes',
+      { table: 'drivers', event: '*', debounceMs: 1000 },
+      (payload) => {
+        queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVERS_QUERY_KEY] });
+        if (payload.new && typeof payload.new === 'object' && 'id' in payload.new) {
+          queryClient.invalidateQueries({ 
+            queryKey: [PUBLIC_DRIVER_PROFILE_KEY, payload.new.id] 
+          });
         }
-      )
-      .subscribe();
+      }
+    );
 
-    // Écouter les changements sur la table profiles également
-    const profilesChannel = supabase
-      .channel('public-profiles-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles'
-        },
-        (payload) => {
-          console.log('Profile changed:', payload);
-          // Invalider tous les caches des profils publics
-          queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVERS_QUERY_KEY] });
-        }
-      )
-      .subscribe();
+    const cleanupProfiles = subscriptionManager.subscribe(
+      'public-profiles-changes',
+      { table: 'profiles', event: '*', debounceMs: 1000 },
+      () => {
+        queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVERS_QUERY_KEY] });
+      }
+    );
 
     return () => {
-      supabase.removeChannel(driversChannel);
-      supabase.removeChannel(profilesChannel);
+      cleanupDrivers();
+      cleanupProfiles();
     };
   }, [queryClient]);
 }

@@ -151,67 +151,39 @@ export const PushNotificationListener = () => {
 
     logger.info('Démarrage écoute notifications', { userId: user.id });
 
-    // Nettoyer l'ancien canal s'il existe
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
+    // S'abonner via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `push-notifications-${user.id}`,
+      { table: 'notifications', event: 'INSERT', filter: `user_id=eq.${user.id}` },
+      (payload) => {
+        const notification = payload.new as {
+          id: string;
+          title: string;
+          message: string;
+          type: string;
+          link?: string;
+        };
 
-    // S'abonner aux nouvelles notifications avec un canal unique
-    const channelName = `push-notifications-${user.id}-${Date.now()}`;
-    
-    channelRef.current = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const notification = payload.new as {
-            id: string;
-            title: string;
-            message: string;
-            type: string;
-            link?: string;
-          };
+        logger.info('Nouvelle notification reçue', {
+          id: notification.id,
+          title: notification.title,
+          type: notification.type
+        });
 
-          logger.info('Nouvelle notification reçue', {
-            id: notification.id,
-            title: notification.title,
-            type: notification.type
-          });
+        showBrowserNotification(
+          notification.title,
+          notification.message,
+          notification.link,
+          `solocab-${notification.id}`
+        );
+      }
+    );
 
-          // Afficher la notification push du navigateur
-          showBrowserNotification(
-            notification.title,
-            notification.message,
-            notification.link,
-            `solocab-${notification.id}`
-          );
-        }
-      )
-      .subscribe((status) => {
-        const statusStr = String(status);
-        logger.info('Statut écoute notifications', { status: statusStr });
-        setIsListening(statusStr === 'SUBSCRIBED');
-        
-        if (statusStr === 'SUBSCRIBED') {
-          logger.info('Écoute notifications activée', {});
-        } else if (statusStr === 'CHANNEL_ERROR') {
-          // Log silencieux, pas de reconnexion automatique pour éviter les boucles
-          console.warn('[Notifications] Canal en erreur, pas de reconnexion automatique');
-        }
-      });
+    setIsListening(true);
 
     return () => {
       logger.info('Arrêt écoute notifications', {});
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanup();
       setIsListening(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

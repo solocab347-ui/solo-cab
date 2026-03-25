@@ -111,41 +111,29 @@ export const useAdminNotifications = () => {
 
     fetchSummary();
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('admin-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => fetchSummary()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'drivers'
-        },
-        () => fetchSummary()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'error_reports'
-        },
-        () => fetchSummary()
-      )
-      .subscribe();
+    // Subscribe to realtime updates via centralized manager
+    const cleanupNotifs = subscriptionManager.subscribe(
+      `admin-notifs-${user.id}`,
+      { table: 'notifications', event: '*', filter: `user_id=eq.${user.id}`, debounceMs: 1000 },
+      () => fetchSummary()
+    );
+
+    const cleanupDrivers = subscriptionManager.subscribe(
+      `admin-drivers-changes`,
+      { table: 'drivers', event: '*', debounceMs: 2000 },
+      () => fetchSummary()
+    );
+
+    const cleanupErrors = subscriptionManager.subscribe(
+      `admin-errors-changes`,
+      { table: 'error_reports', event: '*', debounceMs: 2000 },
+      () => fetchSummary()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanupNotifs();
+      cleanupDrivers();
+      cleanupErrors();
     };
   }, [user, fetchSummary]);
 

@@ -162,23 +162,14 @@ export function PendingFleetCoursesInCoursesList({
   useEffect(() => {
     fetchCourses();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel(`pending-fleet-courses-${driverId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'courses',
-        },
-        () => fetchCourses()
-      )
-      .subscribe();
+    // Realtime subscription via centralized manager
+    const cleanup = subscriptionManager.subscribe(
+      `pending-fleet-courses-${driverId}`,
+      { table: 'courses', event: '*', debounceMs: 500 },
+      () => fetchCourses()
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId, fetchCourses]);
 
   const handleAccept = async (course: PendingFleetCourse) => {
