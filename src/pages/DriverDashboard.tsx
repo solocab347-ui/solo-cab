@@ -114,6 +114,12 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
+  // Incoming course overlay (Uber/Bolt style)
+  const { incomingCourse, dismiss: dismissIncoming, clearCurrent: clearIncoming } = useIncomingCourseListener({
+    driverId: driverProfile?.driver?.id || null,
+    enabled: !!driverProfile?.driver?.id,
+  });
+
   // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
   useEffect(() => {
     if (driverProfile?.driver?.onboarding_completed) {
