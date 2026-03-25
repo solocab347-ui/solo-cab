@@ -359,8 +359,8 @@ export function CourseCompletionCommissionDialog({
             </Alert>
           )}
 
-          {/* CAS 3: Espèces */}
-          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod !== 'card' && (
+          {/* CAS 3: Espèces - chauffeur SANS Stripe */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod !== 'card' && !stripeInfo.driverHasStripe && (
             <Alert className="bg-green-500/10 border-green-500/30">
               <Banknote className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-xs space-y-1.5">
@@ -376,8 +376,8 @@ export function CourseCompletionCommissionDialog({
             </Alert>
           )}
 
-          {/* CAS Stripe + espèces */}
-          {stripeInfo.driverHasStripe && stripeInfo.paymentMethod === 'cash' && (
+          {/* CAS 4: Espèces - chauffeur AVEC Stripe (le client a choisi espèces) */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod === 'cash' && stripeInfo.driverHasStripe && (
             <Alert className="bg-green-500/10 border-green-500/30">
               <Banknote className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-xs space-y-1.5">
@@ -385,6 +385,9 @@ export function CourseCompletionCommissionDialog({
                 <p>
                   Malgré votre compte Stripe, ce client a choisi le paiement en <strong>espèces</strong>.
                   Encaissez <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> directement.
+                </p>
+                <p className="text-green-600 font-semibold">
+                  ⚠️ Encaissez le client avant de le laisser partir.
                 </p>
               </AlertDescription>
             </Alert>
