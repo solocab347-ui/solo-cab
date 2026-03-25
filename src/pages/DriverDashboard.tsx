@@ -49,7 +49,7 @@ import { DocumentWarningBanner } from "@/components/driver/ui/DocumentWarningBan
 import { DocumentsBlockedOverlay } from "@/components/driver/ui/DocumentsBlockedOverlay";
 import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
-import { TrialStartBanner } from "@/components/driver/ui/TrialStartBanner";
+import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
