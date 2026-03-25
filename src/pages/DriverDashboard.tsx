@@ -1078,6 +1078,14 @@ const DriverDashboard = () => {
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
+      {/* Incoming Course Overlay - Uber/Bolt style */}
+      <IncomingCourseOverlay
+        course={incomingCourse}
+        onDismiss={dismissIncoming}
+        onAccepted={clearIncoming}
+        driverId={driverProfile?.driver?.id || null}
+      />
+
     </div>
   );
 };
