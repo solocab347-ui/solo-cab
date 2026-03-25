@@ -352,7 +352,7 @@ describe("Calcul des frais SoloCab et Stripe", () => {
   it("course à 45€ via Stripe → frais Stripe = 0.93€, SoloCab = 0.50€", () => {
     const stripeFee = calculateStripeFee(45);
     expect(stripeFee).toBe(0.93);
-    const totalFees = SOLOCAB_FEE + stripeFee;
+    const totalFees = Math.round((SOLOCAB_FEE + stripeFee) * 100) / 100;
     expect(totalFees).toBe(1.43);
     const net = Math.round((45 - totalFees) * 100) / 100;
     expect(net).toBe(43.57);
