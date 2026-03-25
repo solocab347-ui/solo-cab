@@ -349,7 +349,7 @@ export function UnifiedBookingPage() {
           pickup_address: pickupAddress,
           destination_address: destinationAddress,
           distance_km: routeDistanceKm || 0,
-          ride_type: mode,
+          ride_type: mode === 'reservation' ? 'scheduled' : 'immediate',
           status: 'pending',
           selected_driver_id: driver.driver_id,
           estimated_price: driver.estimated_price,
