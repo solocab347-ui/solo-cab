@@ -248,7 +248,7 @@ export const MobileDriverNav = ({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-1.5 ml-4 space-y-1.5">
                   {group.items.map(item => (
-                    <NavButton key={item.value} item={{ ...item, gradient: group.gradient }} onClick={() => handleSelect(item.value)} />
+                    <NavButton key={item.value} item={{ ...item, gradient: group.gradient }} onClick={() => handleSelect(item.value, item.premium)} />
                   ))}
                 </CollapsibleContent>
               </Collapsible>
