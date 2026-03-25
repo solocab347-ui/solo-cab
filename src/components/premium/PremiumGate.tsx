@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Crown, Sparkles, ArrowRight, Loader2, Lock, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -58,7 +58,7 @@ export function PremiumGate({
   if (inline) {
     return (
       <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-        <Crown className="h-4 w-4 text-amber-500 shrink-0" />
+        <Lock className="h-4 w-4 text-amber-500 shrink-0" />
         <span className="text-sm text-muted-foreground flex-1">
           {featureName} — <span className="font-medium text-foreground">Fonctionnalité Premium</span>
         </span>
@@ -77,9 +77,14 @@ export function PremiumGate({
         </div>
         
         <div>
-          <Badge variant="outline" className="mb-2 border-amber-500/40 text-amber-600 bg-amber-500/10">
-            <Sparkles className="h-3 w-3 mr-1" /> Premium
-          </Badge>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10">
+              <Sparkles className="h-3 w-3 mr-1" /> Premium
+            </Badge>
+            <Badge variant="outline" className="border-green-500/40 text-green-600 bg-green-500/10">
+              <Zap className="h-3 w-3 mr-1" /> Prix de lancement
+            </Badge>
+          </div>
           <h3 className="text-lg font-bold">{featureName}</h3>
           {featureDescription && (
             <p className="text-sm text-muted-foreground mt-1">{featureDescription}</p>
@@ -97,7 +102,7 @@ export function PremiumGate({
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Codes promotionnels
+            Campagnes marketing & codes promo
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
@@ -119,7 +124,7 @@ export function PremiumGate({
         </Button>
         
         <p className="text-xs text-muted-foreground">
-          Sans engagement · Résiliable à tout moment
+          Abonnement direct · Sans engagement · Résiliable à tout moment
         </p>
       </CardContent>
     </Card>
