@@ -17,6 +17,9 @@ import { QuickPlatformEntry } from "./objectives/QuickPlatformEntry";
 import { ProactiveCoachPopup } from "./objectives/coaching/ProactiveCoachPopup";
 import { useProactiveCoach } from "./objectives/hooks/useProactiveCoach";
 import { useInstantTap } from "@/hooks/useInstantTap";
+import { useDriverPremium } from "@/hooks/useDriverPremium";
+import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
+import { Crown, Lock } from "lucide-react";
 
 interface DriverHomeProps {
   driverProfile: any;
