@@ -28,7 +28,7 @@ class SubscriptionManager {
     callback: (payload: any) => void
   ): () => void {
     // Limite de sécurité: max 10 channels simultanés
-    if (this.channels.size >= 10) {
+    if (this.channels.size >= 15) {
       console.warn(`⚠️ Limite de channels atteinte (${this.channels.size}), nettoyage forcé`);
       const oldestChannel = Array.from(this.channels.keys())[0];
       this.unsubscribe(oldestChannel);
