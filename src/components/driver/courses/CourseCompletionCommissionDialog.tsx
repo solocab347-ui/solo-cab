@@ -320,17 +320,18 @@ export function CourseCompletionCommissionDialog({
           {/* ============================================ */}
           {/* STRIPE PAYMENT INFO - Key driver messaging   */}
           {/* ============================================ */}
+          {/* CAS 1: Stripe Connect → paiement auto */}
           {stripeInfo.isStripePayment && (
             <Alert className="bg-primary/5 border-primary/20">
               <Zap className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs space-y-1.5">
-                <p className="font-semibold text-primary">Paiement par carte en ligne</p>
+                <p className="font-semibold text-primary">💳 Paiement par carte en ligne (Stripe)</p>
                 <p>
                   Le montant de <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> sera 
                   prélevé automatiquement sur la carte du client lors de la clôture.
                 </p>
-                <p className="text-muted-foreground">
-                  ⚠️ Ne demandez <strong>pas</strong> de paiement au client — il sera débité automatiquement via Stripe.
+                <p className="text-destructive font-semibold">
+                  ⚠️ Ne demandez PAS de paiement au client — il sera débité automatiquement.
                 </p>
                 {stripeInfo.depositPaid > 0 && (
                   <p className="text-muted-foreground">
@@ -341,13 +342,52 @@ export function CourseCompletionCommissionDialog({
             </Alert>
           )}
 
-          {!stripeInfo.isStripePayment && (
-            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-              <Banknote className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                Encaissez le paiement directement auprès du client (espèces ou TPE).
-              </span>
-            </div>
+          {/* CAS 2: Carte bancaire SANS Stripe → TPE physique */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod === 'card' && (
+            <Alert className="bg-amber-500/10 border-amber-500/30">
+              <CreditCard className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-amber-700">💳 Paiement par carte bancaire (TPE)</p>
+                <p>
+                  Vous devez encaisser <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> directement 
+                  avec votre terminal de paiement (TPE).
+                </p>
+                <p className="text-amber-600 font-semibold">
+                  ⚠️ Encaissez le client avec votre propre terminal avant de le laisser partir.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* CAS 3: Espèces */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod !== 'card' && (
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Banknote className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-green-700">💵 Paiement en espèces</p>
+                <p>
+                  Vous devez encaisser <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> en espèces 
+                  directement auprès du client.
+                </p>
+                <p className="text-green-600 font-semibold">
+                  ⚠️ Encaissez le client avant de le laisser partir.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* CAS Stripe + espèces */}
+          {stripeInfo.driverHasStripe && stripeInfo.paymentMethod === 'cash' && (
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Banknote className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-green-700">💵 Paiement en espèces</p>
+                <p>
+                  Malgré votre compte Stripe, ce client a choisi le paiement en <strong>espèces</strong>.
+                  Encaissez <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> directement.
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Détails financiers */}
