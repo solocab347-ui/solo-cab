@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Banknote, Building2, Wallet, HelpCircle, Settings2, Zap } from "lucide-react";
+import { CreditCard, Banknote, HelpCircle, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDriverPaymentMethods, DriverPaymentConfig } from "@/hooks/useDriverPaymentMethods";
 

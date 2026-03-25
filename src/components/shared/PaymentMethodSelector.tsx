@@ -4,10 +4,6 @@ import { Card } from "@/components/ui/card";
 import {
   CreditCard,
   Banknote,
-  Building2,
-  Smartphone,
-  Receipt,
-  Check,
 } from "lucide-react";
 
 export const PAYMENT_METHODS = [

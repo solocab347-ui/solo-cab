@@ -4,8 +4,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   CreditCard, 
   Banknote, 
-  Building2, 
-  Wallet, 
   HelpCircle, 
   Shield, 
   Info,
