@@ -34,6 +34,8 @@ interface StripePaymentInfo {
   hasCardHold: boolean;
   depositPaid: number;
   remainingAmount: number;
+  paymentMethod: string;
+  driverHasStripe: boolean;
 }
 
 interface CourseCompletionCommissionDialogProps {
@@ -67,6 +69,8 @@ export function CourseCompletionCommissionDialog({
     hasCardHold: false,
     depositPaid: 0,
     remainingAmount: courseAmount,
+    paymentMethod: 'cash',
+    driverHasStripe: false,
   });
 
   useEffect(() => {
@@ -85,8 +89,21 @@ export function CourseCompletionCommissionDialog({
         .single();
 
       if (course) {
-        const isStripe = course.payment_method === 'stripe' || 
-          (course.payment_method === 'card' && !!course.stripe_payment_method_id);
+        // Vérifier si le chauffeur a Stripe Connect
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('stripe_connect_account_id, stripe_connect_charges_enabled')
+          .eq('id', driverId)
+          .single();
+
+        const driverHasStripe = !!driverData?.stripe_connect_account_id && 
+          driverData?.stripe_connect_charges_enabled === true;
+
+        const isStripe = driverHasStripe && (
+          course.payment_method === 'stripe' || 
+          (course.payment_method === 'card' && !!course.stripe_payment_method_id)
+        );
+
         const depositPaid = course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0;
         const totalAmount = course.final_payment_amount || course.guest_estimated_price || courseAmount;
 
@@ -96,6 +113,8 @@ export function CourseCompletionCommissionDialog({
           hasCardHold: course.card_hold_status === 'confirmed',
           depositPaid,
           remainingAmount: totalAmount - depositPaid,
+          paymentMethod: course.payment_method || 'cash',
+          driverHasStripe,
         });
       }
     } catch (error) {
@@ -301,17 +320,18 @@ export function CourseCompletionCommissionDialog({
           {/* ============================================ */}
           {/* STRIPE PAYMENT INFO - Key driver messaging   */}
           {/* ============================================ */}
+          {/* CAS 1: Stripe Connect → paiement auto */}
           {stripeInfo.isStripePayment && (
             <Alert className="bg-primary/5 border-primary/20">
               <Zap className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs space-y-1.5">
-                <p className="font-semibold text-primary">Paiement par carte en ligne</p>
+                <p className="font-semibold text-primary">💳 Paiement par carte en ligne (Stripe)</p>
                 <p>
                   Le montant de <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> sera 
                   prélevé automatiquement sur la carte du client lors de la clôture.
                 </p>
-                <p className="text-muted-foreground">
-                  ⚠️ Ne demandez <strong>pas</strong> de paiement au client — il sera débité automatiquement via Stripe.
+                <p className="text-destructive font-semibold">
+                  ⚠️ Ne demandez PAS de paiement au client — il sera débité automatiquement.
                 </p>
                 {stripeInfo.depositPaid > 0 && (
                   <p className="text-muted-foreground">
@@ -322,13 +342,52 @@ export function CourseCompletionCommissionDialog({
             </Alert>
           )}
 
-          {!stripeInfo.isStripePayment && (
-            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-              <Banknote className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                Encaissez le paiement directement auprès du client (espèces ou TPE).
-              </span>
-            </div>
+          {/* CAS 2: Carte bancaire SANS Stripe → TPE physique */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod === 'card' && (
+            <Alert className="bg-amber-500/10 border-amber-500/30">
+              <CreditCard className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-amber-700">💳 Paiement par carte bancaire (TPE)</p>
+                <p>
+                  Vous devez encaisser <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> directement 
+                  avec votre terminal de paiement (TPE).
+                </p>
+                <p className="text-amber-600 font-semibold">
+                  ⚠️ Encaissez le client avec votre propre terminal avant de le laisser partir.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* CAS 3: Espèces */}
+          {!stripeInfo.isStripePayment && stripeInfo.paymentMethod !== 'card' && (
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Banknote className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-green-700">💵 Paiement en espèces</p>
+                <p>
+                  Vous devez encaisser <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> en espèces 
+                  directement auprès du client.
+                </p>
+                <p className="text-green-600 font-semibold">
+                  ⚠️ Encaissez le client avant de le laisser partir.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* CAS Stripe + espèces */}
+          {stripeInfo.driverHasStripe && stripeInfo.paymentMethod === 'cash' && (
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Banknote className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs space-y-1.5">
+                <p className="font-semibold text-green-700">💵 Paiement en espèces</p>
+                <p>
+                  Malgré votre compte Stripe, ce client a choisi le paiement en <strong>espèces</strong>.
+                  Encaissez <strong>{stripeInfo.remainingAmount.toFixed(2)}€</strong> directement.
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Détails financiers */}
@@ -435,7 +494,13 @@ export function CourseCompletionCommissionDialog({
         <DialogFooter>
           <Button onClick={handleConfirm} className="w-full">
             <CheckCircle className="w-4 h-4 mr-2" />
-            {stripeInfo.isStripePayment ? 'Clôturer et encaisser' : 'Compris !'}
+            {stripeInfo.isStripePayment 
+              ? 'Clôturer et encaisser automatiquement' 
+              : stripeInfo.paymentMethod === 'card' 
+                ? 'J\'ai encaissé avec mon TPE' 
+                : stripeInfo.paymentMethod === 'cash' 
+                  ? 'J\'ai encaissé en espèces' 
+                  : 'Confirmer la clôture'}
           </Button>
         </DialogFooter>
       </DialogContent>
