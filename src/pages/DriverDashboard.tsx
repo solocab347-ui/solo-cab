@@ -724,7 +724,7 @@ const DriverDashboard = () => {
                   <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 9,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Megaphone className="w-4 h-4" />
                     {t('driverDashboard.menu.campaign')}
-                    {!isPremium && <Lock className="w-3 h-3 ml-auto text-amber-500" />}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-muted">
                     <PieChart className="w-4 h-4" />
