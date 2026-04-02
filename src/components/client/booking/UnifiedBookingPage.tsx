@@ -399,9 +399,22 @@ export function UnifiedBookingPage() {
   };
 
   // Filter drivers based on selected payment method
-  const filteredDrivers = clientPaymentMethod === 'cash'
-    ? drivers.filter(d => d.accepted_payment_methods?.includes('cash'))
-    : drivers;
+  // Card: show Stripe drivers first, then TPE drivers with warning badge
+  // Cash: only drivers accepting cash
+  const filteredDrivers = (() => {
+    if (clientPaymentMethod === 'cash') {
+      return drivers.filter(d => d.accepted_payment_methods?.includes('cash'));
+    }
+    if (clientPaymentMethod === 'card') {
+      // Show all drivers but Stripe-enabled ones first
+      return [...drivers].sort((a, b) => {
+        const aStripe = a.stripe_connect_charges_enabled ? 1 : 0;
+        const bStripe = b.stripe_connect_charges_enabled ? 1 : 0;
+        return bStripe - aStripe;
+      });
+    }
+    return drivers;
+  })();
 
   const selectedCount = selectedDriverIds.size;
   const lowestPrice = filteredDrivers
