@@ -148,31 +148,47 @@ serve(async (req) => {
 
     logStep("PaymentIntent created for hold", { 
       paymentIntentId: paymentIntent.id,
-      clientSecret: paymentIntent.client_secret?.slice(0, 20) + "..." 
+      status: paymentIntent.status,
+      autoConfirmed: paymentIntent.status === "requires_capture",
     });
+
+    // Determine hold status based on PI status
+    const isAutoConfirmed = paymentIntent.status === "requires_capture";
+    const holdStatus = isAutoConfirmed ? "confirmed" : "pending";
 
     // Update course with hold info
     if (course_id) {
+      const courseUpdate: Record<string, unknown> = {
+        stripe_hold_payment_intent_id: paymentIntent.id,
+        card_hold_status: holdStatus,
+        card_hold_amount: 10.00,
+        payment_method: "card",
+      };
+
+      // If auto-confirmed with saved card, also save payment method reference
+      if (isAutoConfirmed && savedPaymentMethodId) {
+        courseUpdate.stripe_payment_method_id = savedPaymentMethodId;
+        courseUpdate.stripe_customer_id = stripeCustomerId;
+        courseUpdate.payment_status = "bank_imprint_confirmed";
+      }
+
       await supabaseClient
         .from("courses")
-        .update({
-          stripe_hold_payment_intent_id: paymentIntent.id,
-          card_hold_status: "pending",
-          card_hold_amount: 10.00,
-          payment_method: "card",
-        })
+        .update(courseUpdate)
         .eq("id", course_id);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        card_hold_required: true,
+        card_hold_required: !isAutoConfirmed, // false if auto-confirmed
+        auto_confirmed: isAutoConfirmed,
         payment_intent_id: paymentIntent.id,
-        client_secret: paymentIntent.client_secret,
+        client_secret: isAutoConfirmed ? undefined : paymentIntent.client_secret,
         stripe_account_id: driver.stripe_connect_account_id,
         hold_amount: 10.00,
         hold_amount_cents: RESERVATION_HOLD_CENTS,
+        status: paymentIntent.status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
