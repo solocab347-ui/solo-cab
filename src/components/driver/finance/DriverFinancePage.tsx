@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -39,9 +39,31 @@ interface PendingPayment {
   receiver_driver_id: string;
 }
 
+interface WalletStats {
+  totalEarned: number;
+  totalFees: number;
+  totalNet: number;
+  totalCourses: number;
+  avgPerCourse: number;
+  recentTransactions: Array<{
+    id: string;
+    course_id: string;
+    amount: number;
+    net_to_driver: number;
+    stripe_fee_amount: number;
+    solocab_fee_amount: number;
+    status: string;
+    payment_type: string;
+    created_at: string;
+    pickup?: string;
+    destination?: string;
+  }>;
+}
+
 export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
+  const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,36 +72,69 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
 
   const loadData = async () => {
     try {
-      // Load historical settlements
-      const { data: balances } = await supabase
-        .from("driver_weekly_balances")
-        .select(`
-          id, net_amount, total_commissions_earned, total_solocab_fees,
-          shared_courses_as_sender, shared_courses_as_receiver, standard_courses_count,
-          transfer_status, stripe_transfer_id, transfer_executed_at, transfer_error,
-          settlement:weekly_settlements(id, week_start, week_end)
-        `)
-        .eq("driver_id", driverId)
-        .order("created_at", { ascending: false })
-        .limit(20);
+      // Load all data in parallel
+      const [balancesResult, pendingResult, paymentsResult] = await Promise.all([
+        supabase
+          .from("driver_weekly_balances")
+          .select(`
+            id, net_amount, total_commissions_earned, total_solocab_fees,
+            shared_courses_as_sender, shared_courses_as_receiver, standard_courses_count,
+            transfer_status, stripe_transfer_id, transfer_executed_at, transfer_error,
+            settlement:weekly_settlements(id, week_start, week_end)
+          `)
+          .eq("driver_id", driverId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("shared_course_payments")
+          .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
+          .eq("status", "completed")
+          .is("settlement_id", null)
+          .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("payments")
+          .select("id, course_id, amount, net_to_driver, stripe_fee_amount, application_fee_amount, status, payment_type, created_at")
+          .eq("driver_id", driverId)
+          .eq("status", "succeeded")
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
 
-      const mapped = (balances || []).map((b: any) => ({
+      const mapped = (balancesResult.data || []).map((b: any) => ({
         ...b,
         week_start: b.settlement?.week_start,
         week_end: b.settlement?.week_end,
       }));
       setSettlements(mapped);
+      setPendingPayments(pendingResult.data || []);
 
-      // Load pending (unsettled) payments
-      const { data: pending } = await supabase
-        .from("shared_course_payments")
-        .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
-        .eq("status", "completed")
-        .is("settlement_id", null)
-        .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
-        .order("created_at", { ascending: false });
+      // Calculate wallet stats from payments
+      const payments = paymentsResult.data || [];
+      const totalEarned = payments.reduce((s, p) => s + (p.amount || 0), 0);
+      const totalStripeFees = payments.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
+      const totalSolocabFees = payments.reduce((s, p) => s + (p.application_fee_amount || 0), 0);
+      const totalFees = totalStripeFees + totalSolocabFees;
+      const totalNet = payments.reduce((s, p) => s + (p.net_to_driver || p.amount - totalFees / payments.length), 0);
 
-      setPendingPayments(pending || []);
+      setWalletStats({
+        totalEarned,
+        totalFees,
+        totalNet,
+        totalCourses: payments.length,
+        avgPerCourse: payments.length > 0 ? totalEarned / payments.length : 0,
+        recentTransactions: payments.slice(0, 20).map(p => ({
+          id: p.id,
+          course_id: p.course_id,
+          amount: p.amount,
+          net_to_driver: p.net_to_driver || 0,
+          stripe_fee_amount: p.stripe_fee_amount || 0,
+          solocab_fee_amount: p.application_fee_amount || 0,
+          status: p.status,
+          payment_type: p.payment_type || "course_payment",
+          created_at: p.created_at,
+        })),
+      });
     } catch (err) {
       console.error("Error loading finance data:", err);
     } finally {
@@ -99,6 +154,17 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
         return <Badge variant="secondary" className="gap-1"><AlertCircle className="w-3 h-3" />Ignoré</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPaymentTypeLabel = (type: string) => {
+    switch (type) {
+      case "course_payment": return "Course complète";
+      case "final_payment": return "Solde final";
+      case "auto_bank_hold": return "Empreinte auto";
+      case "bank_imprint": return "Empreinte";
+      case "card_hold": return "Empreinte";
+      default: return type;
     }
   };
 
@@ -130,12 +196,42 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           <Wallet className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Finances & Règlements</h2>
-          <p className="text-sm text-muted-foreground">Versements hebdomadaires chaque lundi</p>
+          <h2 className="text-xl font-bold text-foreground">Portefeuille & Finances</h2>
+          <p className="text-sm text-muted-foreground">Vue complète de vos revenus et versements</p>
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Wallet summary cards */}
+      {walletStats && (
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Total encaissé (Stripe)</p>
+                <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
+              </div>
+              <div className="p-3 rounded-full bg-primary/20">
+                <DollarSign className="w-6 h-6 text-primary" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+              <TrendingUp className="w-3 h-3 text-success" />
+              <span>{walletStats.totalCourses} courses • Moy. {walletStats.avgPerCourse.toFixed(2)}€/course</span>
+            </div>
+          </Card>
+
+          <Card className="p-3 bg-success/5 border-success/20">
+            <p className="text-xs text-muted-foreground mb-1">Net reçu</p>
+            <p className="text-xl font-bold text-success">{walletStats.totalNet.toFixed(2)}€</p>
+          </Card>
+          <Card className="p-3 bg-destructive/5 border-destructive/20">
+            <p className="text-xs text-muted-foreground mb-1">Total frais</p>
+            <p className="text-xl font-bold text-destructive">-{walletStats.totalFees.toFixed(2)}€</p>
+          </Card>
+        </div>
+      )}
+
+      {/* Weekly settlement summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="p-4 bg-success/5 border-success/20">
           <div className="flex items-center gap-2 text-success text-sm mb-1">
@@ -167,22 +263,15 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
         </Card>
       </div>
 
-      {/* Info banner */}
-      <Card className="p-4 bg-primary/10 border-primary/20">
-        <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
-        <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• Les commissions de vos courses partagées sont accumulées pendant la semaine</li>
-          <li>• Les frais de gestion SoloCab (0,50€/course en ligne + 0,25€/partage) sont déduits</li>
-          <li>• Un versement net unique est effectué chaque <strong>lundi à 6h</strong> sur votre compte Stripe</li>
-          <li>• Ce système réduit considérablement les frais de transaction Stripe</li>
-        </ul>
-      </Card>
-
-      <Tabs defaultValue="history" className="space-y-4">
+      <Tabs defaultValue="wallet" className="space-y-4">
         <TabsList className="w-full">
+          <TabsTrigger value="wallet" className="flex-1 gap-1">
+            <CreditCard className="w-4 h-4" />
+            Transactions
+          </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1">
             <Calendar className="w-4 h-4" />
-            Historique
+            Versements
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
@@ -190,7 +279,53 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           </TabsTrigger>
         </TabsList>
 
+        {/* Wallet / Transaction History */}
+        <TabsContent value="wallet" className="space-y-3">
+          {!walletStats?.recentTransactions.length ? (
+            <Card className="p-8 text-center text-muted-foreground">
+              <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>Aucune transaction Stripe pour le moment</p>
+            </Card>
+          ) : (
+            walletStats.recentTransactions.map((t) => (
+              <Card key={t.id} className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-success/10">
+                      <CheckCircle className="w-4 h-4 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{getPaymentTypeLabel(t.payment_type)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(t.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-foreground">{t.amount.toFixed(2)}€</p>
+                    <p className="text-xs text-success">Net: {t.net_to_driver.toFixed(2)}€</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground">
+                  <span>Stripe: -{t.stripe_fee_amount.toFixed(2)}€</span>
+                  <span>SoloCab: -{t.solocab_fee_amount.toFixed(2)}€</span>
+                </div>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
         <TabsContent value="history" className="space-y-3">
+          {/* Info banner */}
+          <Card className="p-4 bg-primary/10 border-primary/20">
+            <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Les commissions sont accumulées pendant la semaine</li>
+              <li>• Les frais de gestion SoloCab (0,50€/course + 0,25€/partage) sont déduits</li>
+              <li>• Versement net unique chaque <strong>lundi à 6h</strong></li>
+            </ul>
+          </Card>
+
           {settlements.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">
               <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
