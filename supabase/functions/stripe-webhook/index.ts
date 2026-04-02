@@ -1075,6 +1075,95 @@ serve(async (req) => {
     // ========================================
     // PAYMENT INTENT EVENTS (course payments)
     // ========================================
+
+    // payment_intent.amount_capturable_updated = Bank hold confirmed (manual capture)
+    if (event.type === "payment_intent.amount_capturable_updated") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const metadata = paymentIntent.metadata || {};
+
+      logStep("🔒 Bank hold confirmed (amount_capturable_updated)", { 
+        piId: paymentIntent.id,
+        courseId: metadata.course_id,
+        amountCapturable: paymentIntent.amount_capturable / 100,
+        status: paymentIntent.status,
+      });
+
+      if (metadata.course_id && paymentIntent.status === "requires_capture") {
+        const paymentMethodId = typeof paymentIntent.payment_method === 'string' 
+          ? paymentIntent.payment_method 
+          : paymentIntent.payment_method?.id;
+
+        // Save payment method and confirm hold on course
+        const courseUpdate: Record<string, unknown> = {
+          payment_status: "bank_imprint_captured",
+          bank_imprint_at: new Date().toISOString(),
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_payment_method_id: paymentMethodId || null,
+          card_hold_status: "confirmed",
+          card_hold_confirmed_at: new Date().toISOString(),
+          card_hold_amount: paymentIntent.amount / 100,
+          status: "accepted", // Course is now confirmed
+        };
+
+        await supabaseClient
+          .from("courses")
+          .update(courseUpdate)
+          .eq("id", metadata.course_id);
+
+        // Update devis to accepted
+        if (metadata.devis_id) {
+          await supabaseClient
+            .from("devis")
+            .update({ 
+              status: "accepted",
+              accepted_at: new Date().toISOString(),
+            })
+            .eq("id", metadata.devis_id);
+        }
+
+        // Record in payments table
+        await supabaseClient.from("payments").insert({
+          course_id: metadata.course_id,
+          driver_id: metadata.driver_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+          status: "requires_capture",
+          payment_type: "bank_imprint",
+          capture_method: "manual",
+          authorized_at: new Date().toISOString(),
+          metadata: metadata,
+        }).onConflict("stripe_payment_intent_id").ignore();
+
+        // Notify driver
+        if (metadata.driver_id) {
+          const { data: driverData } = await supabaseClient
+            .from("drivers")
+            .select("user_id")
+            .eq("id", metadata.driver_id)
+            .single();
+
+          if (driverData?.user_id) {
+            const amount = paymentIntent.amount / 100;
+            await supabaseClient.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "✅ Empreinte bancaire validée",
+              message: `Le client a confirmé son empreinte bancaire de ${amount.toFixed(2)}€. La course est maintenant confirmée.`,
+              type: "course_accepted",
+              priority: "high",
+              link: "/driver-dashboard?tab=courses",
+            });
+          }
+        }
+
+        logStep("✅ Course confirmed via bank hold", { courseId: metadata.course_id });
+      }
+
+      return new Response(JSON.stringify({ received: true, type: "payment_intent.amount_capturable_updated" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const metadata = paymentIntent.metadata || {};
@@ -1101,6 +1190,29 @@ serve(async (req) => {
           captured_at: new Date().toISOString(),
           metadata: metadata,
         });
+      }
+
+      // Course payment captured (manual capture flow completed)
+      if (metadata.course_id && metadata.type === "course_payment") {
+        logStep("Course payment captured", { courseId: metadata.course_id });
+
+        await supabaseClient
+          .from("courses")
+          .update({
+            payment_status: "paid",
+            payment_captured_at: new Date().toISOString(),
+            final_payment_status: "succeeded",
+          })
+          .eq("id", metadata.course_id);
+
+        // Generate invoice
+        try {
+          await supabaseClient.functions.invoke("create-facture-auto", {
+            body: { course_id: metadata.course_id }
+          });
+        } catch (e) {
+          logStep("Invoice generation error (non-blocking)", { error: String(e) });
+        }
       }
 
       // Card hold captured
