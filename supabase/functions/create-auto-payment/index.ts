@@ -38,6 +38,31 @@ serve(async (req) => {
 
     logStep("Auto-payment request", { course_id, amount, driver_id });
 
+    // ── ANTI-FRAUD: Check client risk score ──
+    if (client_user_id) {
+      const { data: clientRecord } = await supabaseClient
+        .from("clients")
+        .select("id")
+        .eq("user_id", client_user_id)
+        .single();
+
+      if (clientRecord) {
+        const { data: riskScore } = await supabaseClient
+          .from("client_risk_scores")
+          .select("score, is_blocked, blocked_reason")
+          .eq("client_id", clientRecord.id)
+          .single();
+
+        if (riskScore?.is_blocked) {
+          logStep("🚫 Client blocked by risk score", { 
+            score: riskScore.score, 
+            reason: riskScore.blocked_reason 
+          });
+          throw new Error("CLIENT_BLOCKED: Ce client est bloqué en raison d'un historique de paiements problématique.");
+        }
+      }
+    }
+
     // Get driver Stripe Connect info
     const { data: driver, error: driverError } = await supabaseClient
       .from("drivers")
