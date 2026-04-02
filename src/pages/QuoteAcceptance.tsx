@@ -328,8 +328,8 @@ const QuoteAcceptance = () => {
             </p>
           </Card>
         ) : paymentPending ? (
-          <Card className="p-6 bg-amber-500/10 border-amber-500/20 text-center space-y-3">
-            <CreditCard className="w-12 h-12 text-amber-500 mx-auto" />
+          <Card className="p-6 bg-accent/10 border-accent/20 text-center space-y-3">
+            <CreditCard className="w-12 h-12 text-accent mx-auto" />
             <h2 className="text-lg font-bold text-foreground">Paiement en attente</h2>
             <p className="text-sm text-muted-foreground">
               Une session de paiement est en cours. Si vous n'avez pas terminé, cliquez ci-dessous pour réessayer.
@@ -337,7 +337,7 @@ const QuoteAcceptance = () => {
             <Button
               onClick={handleAccept}
               disabled={accepting}
-              className="w-full h-12 font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90"
+              className="w-full h-12 font-semibold bg-gradient-to-r from-accent to-primary hover:opacity-90"
             >
               {accepting ? (
                 <span className="flex items-center gap-2">
@@ -352,11 +352,10 @@ const QuoteAcceptance = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {/* Payment method info for Stripe drivers */}
             {driverHasStripe && (
-              <Card className="p-4 bg-blue-500/5 border-blue-500/20">
+              <Card className="p-4 bg-primary/5 border-primary/20">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                  <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">Paiement sécurisé par carte</p>
                     <p className="text-xs text-muted-foreground">
