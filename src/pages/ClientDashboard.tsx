@@ -21,6 +21,7 @@ import {
   ShieldOff,
   Search,
   QrCode,
+  CreditCard,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -40,6 +41,7 @@ import { ClientHomeView } from "@/components/client/ClientHomeView";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
 import { NoDriversBanner } from "@/components/client/NoDriversBanner";
 import ClientQRScannerInApp from "@/components/client/ClientQRScannerInApp";
+import { ClientCardManager } from "@/components/client/ClientCardManager";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { cn } from "@/lib/utils";
 
@@ -264,6 +266,7 @@ const ClientDashboard = () => {
     { id: "courses", label: "Mes courses", icon: Clock },
     { id: "chauffeurs", label: clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+    { id: "paiement", label: "Paiement", icon: CreditCard },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "compte", label: "Mon compte", icon: User },
@@ -391,6 +394,8 @@ const ClientDashboard = () => {
             )}
           </div>
         );
+      case "paiement":
+        return <ClientCardManager />;
       case "compte":
         return <ClientProfile />;
       case "scan-qr":
