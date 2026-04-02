@@ -36,6 +36,7 @@ export function DriverResultCard({
   onToggleSelect,
   onViewProfile,
   rank,
+  clientPaymentMethod,
 }: DriverResultCardProps) {
   const displayName = driver.display_name || driver.company_name || 'Chauffeur VTC';
   const initials = displayName
