@@ -802,6 +802,35 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setActionLoading(courseId, true);
     
     try {
+      // 🔒 SÉCURITÉ: Vérifier l'empreinte bancaire avant de démarrer
+      const courseToStart = courses.find(c => c.id === courseId);
+      if (courseToStart) {
+        const courseData = courseToStart as any;
+        // Check if driver uses Stripe Connect
+        const { data: driverInfo } = await supabase
+          .from('drivers')
+          .select('stripe_connect_account_id, stripe_connect_charges_enabled')
+          .eq('id', courseData.driver_id)
+          .single();
+        
+        const driverHasStripe = !!driverInfo?.stripe_connect_account_id && driverInfo?.stripe_connect_charges_enabled === true;
+        
+        // If driver uses Stripe and payment method is card, ensure payment is secured
+        if (driverHasStripe && courseData.payment_method === 'card') {
+          const hasValidPayment = courseData.payment_status === 'bank_imprint_captured' || 
+            courseData.payment_status === 'paid' ||
+            courseData.card_hold_status === 'confirmed' ||
+            courseData.stripe_payment_intent_id ||
+            courseData.stripe_hold_payment_intent_id;
+          
+          if (!hasValidPayment) {
+            toast.error("⚠️ Impossible de démarrer : aucune empreinte bancaire validée pour cette course. Le client doit d'abord confirmer son paiement.");
+            setActionLoading(courseId, false);
+            return;
+          }
+        }
+      }
+
       // Mise à jour optimiste IMMÉDIATE
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "in_progress" as const } : c
@@ -825,7 +854,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     } finally {
       setActionLoading(courseId, false);
     }
-  }, [isActionLoading, setActionLoading]);
+  }, [isActionLoading, setActionLoading, courses]);
 
   const handleEndCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
