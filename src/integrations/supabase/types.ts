@@ -873,6 +873,140 @@ export type Database = {
           },
         ]
       }
+      client_fraud_flags: {
+        Row: {
+          client_id: string
+          created_at: string
+          details: Json | null
+          flag_type: string
+          id: string
+          is_resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          details?: Json | null
+          flag_type: string
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          details?: Json | null
+          flag_type?: string
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_fraud_flags_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_fraud_flags_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_fraud_flags_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_risk_scores: {
+        Row: {
+          abusive_cancellations: number
+          blocked_at: string | null
+          blocked_reason: string | null
+          client_id: string
+          created_at: string
+          failed_payments: number
+          id: string
+          is_blocked: boolean
+          last_incident_at: string | null
+          last_incident_type: string | null
+          no_shows: number
+          score: number
+          successful_payments: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          abusive_cancellations?: number
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          client_id: string
+          created_at?: string
+          failed_payments?: number
+          id?: string
+          is_blocked?: boolean
+          last_incident_at?: string | null
+          last_incident_type?: string | null
+          no_shows?: number
+          score?: number
+          successful_payments?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          abusive_cancellations?: number
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          client_id?: string
+          created_at?: string
+          failed_payments?: number
+          id?: string
+          is_blocked?: boolean
+          last_incident_at?: string | null
+          last_incident_type?: string | null
+          no_shows?: number
+          score?: number
+          successful_payments?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_risk_scores_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_risk_scores_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_risk_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -19795,6 +19929,10 @@ export type Database = {
         }[]
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_client_risk_score: {
+        Args: { p_client_id: string }
+        Returns: undefined
+      }
       update_devis_tva: { Args: never; Returns: undefined }
       updategeometrysrid: {
         Args: {
