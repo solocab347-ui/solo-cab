@@ -3,9 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Plus, Trash2, Star, Loader2, ShieldCheck } from "lucide-react";
+import { CreditCard, Plus, Star, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface SavedCard {
   id: string;
@@ -19,14 +27,112 @@ interface SavedCard {
 const BRAND_LABELS: Record<string, string> = {
   visa: "Visa",
   mastercard: "Mastercard",
-  amex: "American Express",
+  amex: "Amex",
   discover: "Discover",
 };
 
+// ========================
+// CARD FORM (inside Elements)
+// ========================
+function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      // 1. Get SetupIntent from backend
+      const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
+      if (fnError) throw fnError;
+      if (!data?.client_secret) throw new Error("Erreur de configuration");
+
+      // 2. Confirm with Stripe Elements
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error("Carte non chargée");
+
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
+        data.client_secret,
+        {
+          payment_method: {
+            card: cardElement,
+          },
+        }
+      );
+
+      if (stripeError) {
+        setError(stripeError.message || "Erreur lors de l'enregistrement");
+        return;
+      }
+
+      if (setupIntent?.status === "succeeded") {
+        toast.success("✅ Carte enregistrée ! Vos paiements seront automatiques.");
+        onSuccess();
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 rounded-lg border bg-background">
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: "16px",
+                color: "#1a1a1a",
+                "::placeholder": { color: "#9ca3af" },
+                fontFamily: "system-ui, sans-serif",
+              },
+              invalid: { color: "#ef4444" },
+            },
+            hidePostalCode: true,
+          }}
+        />
+      </div>
+
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        Votre carte sera utilisée automatiquement pour vos prochaines courses. Aucun montant ne sera débité maintenant.
+      </p>
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={saving || !stripe} className="flex-1">
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <ShieldCheck className="h-4 w-4 mr-2" />
+          )}
+          Enregistrer ma carte
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+          Annuler
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ========================
+// MAIN COMPONENT
+// ========================
 export function ClientCardManager() {
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const loadCards = useCallback(async () => {
     try {
@@ -45,51 +151,15 @@ export function ClientCardManager() {
     loadCards();
   }, [loadCards]);
 
-  const handleAddCard = async () => {
-    try {
-      setSaving(true);
-
-      // 1. Get SetupIntent from backend
-      const { data, error } = await supabase.functions.invoke("save-client-card");
-      if (error) throw error;
-      if (!data?.client_secret) throw new Error("Erreur de configuration");
-
-      // 2. Load Stripe
-      const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-      if (!stripePublicKey) {
-        toast.error("Configuration Stripe manquante");
-        return;
-      }
-
-      const stripe = await loadStripe(stripePublicKey);
-      if (!stripe) throw new Error("Stripe non chargé");
-
-      // 3. Redirect to Stripe for card setup (or use Elements)
-      // Using confirmCardSetup with redirect
-      const { error: stripeError } = await stripe.confirmCardSetup(data.client_secret, {
-        payment_method: {
-          card: { token: "" } as any, // Will be handled by redirect
-        },
-        return_url: `${window.location.origin}/client-dashboard?tab=paiement&card=saved`,
-      });
-
-      if (stripeError) {
-        // If redirect-based, this won't fire
-        toast.error(stripeError.message || "Erreur lors de l'enregistrement");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Erreur");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSetDefault = async (cardId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       await supabase
         .from("clients")
         .update({ default_payment_method_id: cardId })
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id!);
+        .eq("user_id", user.id);
 
       setCards((prev) =>
         prev.map((c) => ({ ...c, is_default: c.id === cardId }))
@@ -111,83 +181,120 @@ export function ClientCardManager() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <CreditCard className="h-5 w-5 text-primary" />
-          Mes cartes bancaires
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Enregistrez votre carte pour des paiements automatiques sans ressaisie.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {cards.length === 0 ? (
-          <div className="text-center py-6 space-y-3">
-            <ShieldCheck className="h-12 w-12 mx-auto text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
-              Aucune carte enregistrée. Ajoutez une carte pour des paiements automatiques.
-            </p>
-          </div>
-        ) : (
-          cards.map((card) => (
-            <div
-              key={card.id}
-              className="flex items-center justify-between p-3 rounded-lg border bg-card"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-14 rounded bg-muted flex items-center justify-center text-xs font-bold uppercase">
-                  {BRAND_LABELS[card.brand] || card.brand}
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CreditCard className="h-5 w-5 text-primary" />
+            Mes cartes bancaires
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Enregistrez votre carte pour des paiements automatiques sans ressaisie, comme Uber.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Saved Cards */}
+          {cards.length > 0 && (
+            <div className="space-y-2">
+              {cards.map((card) => (
+                <div
+                  key={card.id}
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-14 rounded bg-muted flex items-center justify-center text-xs font-bold uppercase tracking-wide">
+                      {BRAND_LABELS[card.brand] || card.brand}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        •••• •••• •••• {card.last4}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Exp. {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {card.is_default ? (
+                      <Badge variant="default" className="text-xs gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Par défaut
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetDefault(card.id)}
+                        className="text-xs"
+                      >
+                        Définir par défaut
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    •••• •••• •••• {card.last4}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Exp. {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {card.is_default ? (
-                  <Badge variant="default" className="text-xs">
-                    <Star className="h-3 w-3 mr-1" />
-                    Par défaut
-                  </Badge>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSetDefault(card.id)}
-                    className="text-xs"
-                  >
-                    Définir par défaut
-                  </Button>
-                )}
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {cards.length === 0 && !showForm && (
+            <div className="text-center py-6 space-y-3">
+              <ShieldCheck className="h-12 w-12 mx-auto text-muted-foreground/50" />
+              <div>
+                <p className="text-sm font-medium">Aucune carte enregistrée</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ajoutez une carte pour payer automatiquement vos courses sans aucune action.
+                </p>
               </div>
             </div>
-          ))
-        )}
-
-        <Button
-          onClick={handleAddCard}
-          disabled={saving}
-          className="w-full"
-          variant={cards.length === 0 ? "default" : "outline"}
-        >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
           )}
-          {cards.length === 0 ? "Ajouter ma carte bancaire" : "Ajouter une carte"}
-        </Button>
 
-        <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-          <ShieldCheck className="h-3 w-3" />
-          Vos données bancaires sont sécurisées par Stripe. SoloCab ne stocke jamais vos numéros de carte.
-        </p>
-      </CardContent>
-    </Card>
+          {/* Add Card Form */}
+          {showForm ? (
+            <Elements stripe={stripePromise}>
+              <CardForm
+                onSuccess={() => {
+                  setShowForm(false);
+                  // Delay to let webhook process
+                  setTimeout(loadCards, 2000);
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            </Elements>
+          ) : (
+            <Button
+              onClick={() => setShowForm(true)}
+              className="w-full"
+              variant={cards.length === 0 ? "default" : "outline"}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {cards.length === 0 ? "Ajouter ma carte bancaire" : "Ajouter une autre carte"}
+            </Button>
+          )}
+
+          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+            <ShieldCheck className="h-3 w-3" />
+            Données sécurisées par Stripe. SoloCab ne stocke jamais vos numéros.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Info Card */}
+      {cards.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Paiement automatique activé</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vos prochaines courses seront débitées automatiquement à la fin du trajet. Aucune action de votre part.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

@@ -1,21 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { 
   CreditCard, 
   Loader2, 
   CheckCircle, 
   Shield, 
-  Info,
   Lock,
   AlertTriangle,
-  ExternalLink
+  Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useClientSavedCard } from '@/hooks/useClientSavedCard';
 
 interface CardHoldFormProps {
   driverId: string;
@@ -27,12 +26,14 @@ interface CardHoldFormProps {
   className?: string;
 }
 
-type HoldStatus = 'idle' | 'creating' | 'redirecting' | 'confirmed' | 'error';
+type HoldStatus = 'idle' | 'checking' | 'creating' | 'auto_confirming' | 'redirecting' | 'confirmed' | 'error';
 
 /**
- * CardHoldForm — requests 10€ reservation hold via Stripe Checkout redirect.
- * Uses create-card-hold edge function which creates a PaymentIntent with manual capture.
- * The 10€ is authorized (held) but NOT captured until the course is completed or cancelled late.
+ * CardHoldForm — Handles bank hold (empreinte bancaire) for course reservation.
+ * 
+ * Flow:
+ * 1. If client has saved card → automatic off-session hold (no UI, instant)
+ * 2. If no saved card → redirect to Stripe Checkout for card input
  */
 export function CardHoldForm({
   driverId,
@@ -43,42 +44,106 @@ export function CardHoldForm({
   onSkip,
   className,
 }: CardHoldFormProps) {
-  const [status, setStatus] = useState<HoldStatus>('idle');
+  const [status, setStatus] = useState<HoldStatus>('checking');
   const [error, setError] = useState<string | null>(null);
+  const { hasCard, defaultCard, loading: cardLoading } = useClientSavedCard();
 
-  const initiateHold = useCallback(async () => {
-    setStatus('creating');
+  // Auto-initiate if saved card available
+  useEffect(() => {
+    if (cardLoading) return;
+    
+    if (hasCard && defaultCard) {
+      // Auto-confirm with saved card
+      autoHold();
+    } else {
+      setStatus('idle');
+    }
+  }, [cardLoading, hasCard]);
+
+  const autoHold = useCallback(async () => {
+    setStatus('auto_confirming');
     setError(null);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error: fnError } = await supabase.functions.invoke('create-card-hold', {
         body: {
           driver_id: driverId,
           course_id: courseId,
-          client_email: clientEmail,
+          client_email: clientEmail || user?.email,
           client_name: clientName,
+          client_user_id: user?.id,
         },
       });
 
       if (fnError) throw fnError;
 
-      if (!data.card_hold_required) {
+      if (!data.card_hold_required && !data.auto_confirmed) {
+        // Driver doesn't use Stripe, skip hold
         toast.info('Aucune avance requise pour ce chauffeur');
         onSkip?.();
         return;
       }
 
-      // The edge function returns a client_secret for the PaymentIntent.
-      // We'll use Stripe Checkout via create-course-payment to handle card input securely.
-      // For now, invoke create-course-payment with capture_method=manual and fixed amount of 10€
+      if (data.auto_confirmed) {
+        // 🎉 Automatic hold with saved card - no UI needed!
+        setStatus('confirmed');
+        toast.success('✅ Empreinte bancaire confirmée automatiquement');
+        onSuccess?.();
+        return;
+      }
+
+      // Fallback: needs card input
+      setStatus('idle');
+    } catch (err: any) {
+      console.error('Auto-hold error:', err);
+      // Fallback to manual
+      setStatus('idle');
+    }
+  }, [driverId, courseId, clientEmail, clientName, onSkip, onSuccess]);
+
+  const initiateManualHold = useCallback(async () => {
+    setStatus('creating');
+    setError(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data, error: fnError } = await supabase.functions.invoke('create-card-hold', {
+        body: {
+          driver_id: driverId,
+          course_id: courseId,
+          client_email: clientEmail || user?.email,
+          client_name: clientName,
+          client_user_id: user?.id,
+        },
+      });
+
+      if (fnError) throw fnError;
+
+      if (!data.card_hold_required && !data.auto_confirmed) {
+        toast.info('Aucune avance requise');
+        onSkip?.();
+        return;
+      }
+
+      if (data.auto_confirmed) {
+        setStatus('confirmed');
+        toast.success('✅ Empreinte bancaire confirmée');
+        onSuccess?.();
+        return;
+      }
+
+      // Need Stripe Checkout redirect
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-course-payment', {
         body: {
           course_id: courseId,
-          client_email: clientEmail,
+          client_email: clientEmail || user?.email,
           client_name: clientName,
+          client_user_id: user?.id,
           capture_method: 'manual',
-          override_amount_cents: 1000, // 10€
-          payment_type: 'reservation_hold',
+          save_card: true, // Save for future automatic payments
         },
       });
 
@@ -86,13 +151,8 @@ export function CardHoldForm({
 
       if (checkoutData?.checkout_url) {
         setStatus('redirecting');
-        // Redirect to Stripe Checkout
         window.open(checkoutData.checkout_url, '_blank');
-        
-        // After redirect, the user will come back and we poll for status
         toast.info('Complétez le paiement dans l\'onglet ouvert');
-        
-        // Poll for confirmation
         pollForConfirmation();
       } else {
         throw new Error('Pas de lien de paiement reçu');
@@ -102,11 +162,11 @@ export function CardHoldForm({
       setError(err.message || 'Erreur lors de la création de l\'avance');
       setStatus('error');
     }
-  }, [driverId, courseId, clientEmail, clientName, onSkip]);
+  }, [driverId, courseId, clientEmail, clientName, onSkip, onSuccess]);
 
   const pollForConfirmation = useCallback(() => {
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes (every 5 seconds)
+    const maxAttempts = 60;
 
     const interval = setInterval(async () => {
       attempts++;
@@ -125,57 +185,49 @@ export function CardHoldForm({
         if (course?.card_hold_status === 'confirmed') {
           clearInterval(interval);
           setStatus('confirmed');
-          toast.success('Empreinte bancaire confirmée — course réservée !');
+          toast.success('Empreinte bancaire confirmée !');
           onSuccess?.();
         }
-      } catch (e) {
+      } catch {
         // Ignore polling errors
       }
     }, 5000);
 
-    // Cleanup after 5 min
     setTimeout(() => clearInterval(interval), maxAttempts * 5000);
   }, [courseId, onSuccess]);
 
-  // Idle state
-  if (status === 'idle' || status === 'error') {
+  // Checking saved cards
+  if (status === 'checking' || status === 'auto_confirming') {
     return (
       <Card className={cn("border-primary/20", className)}>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-5 h-5 text-primary" />
-            </div>
+        <CardContent className="p-6 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {status === 'auto_confirming' 
+              ? 'Validation automatique en cours...' 
+              : 'Vérification de votre moyen de paiement...'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Confirmed
+  if (status === 'confirmed') {
+    return (
+      <Card className={cn("border-emerald-500/30 bg-emerald-500/5", className)}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-sm text-foreground">Empreinte bancaire requise</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
-                Votre carte ne sera <strong>pas débitée immédiatement</strong>.
+              <p className="font-semibold text-sm text-foreground">Empreinte bancaire validée</p>
+              <p className="text-xs text-muted-foreground">
+                {defaultCard 
+                  ? `Carte ${defaultCard.brand.toUpperCase()} ****${defaultCard.last4} utilisée automatiquement`
+                  : 'Votre course est réservée. Paiement à la fin du trajet.'}
               </p>
             </div>
           </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <Alert className="bg-muted/30 border-border">
-            <Shield className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              En validant, vous acceptez notre{' '}
-              <a href="/politique-annulation" target="_blank" className="underline font-medium text-primary hover:text-primary/80">
-                politique d'annulation
-              </a>.
-            </AlertDescription>
-          </Alert>
-
-          <Button onClick={initiateHold} className="w-full gap-2">
-            <Lock className="w-4 h-4" />
-            Valider l'empreinte bancaire
-          </Button>
         </CardContent>
       </Card>
     );
@@ -186,40 +238,62 @@ export function CardHoldForm({
     return (
       <Card className={cn("border-primary/20", className)}>
         <CardContent className="p-6 flex flex-col items-center justify-center gap-3">
-          {status === 'creating' ? (
-            <>
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Préparation du paiement sécurisé...</p>
-            </>
-          ) : (
-            <>
-              <ExternalLink className="w-8 h-8 text-primary" />
-              <p className="text-sm text-foreground font-medium">Complétez le paiement</p>
-              <p className="text-xs text-muted-foreground text-center">
-                Un onglet de paiement Stripe s'est ouvert. 
-                Revenez ici une fois le paiement effectué.
-              </p>
-              <Button variant="outline" size="sm" onClick={initiateHold} className="mt-2">
-                Réessayer
-              </Button>
-            </>
-          )}
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {status === 'creating' ? 'Préparation du paiement...' : 'En attente de confirmation Stripe...'}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Confirmed
+  // Idle / Error — need manual card input
   return (
-    <Card className={cn("border-emerald-500/30 bg-emerald-500/5", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+    <Card className={cn("border-primary/20", className)}>
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-5 h-5 text-primary" />
+          </div>
           <div>
-            <p className="font-semibold text-sm text-foreground">Empreinte bancaire validée</p>
-            <p className="text-xs text-muted-foreground">Votre course est réservée. Le paiement sera effectué à la fin de la course.</p>
+            <h3 className="font-semibold text-sm text-foreground">Empreinte bancaire requise</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
+              Votre carte ne sera <strong>pas débitée immédiatement</strong>.
+            </p>
           </div>
         </div>
+
+        {hasCard && defaultCard && (
+          <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-xs">
+              Paiement automatique avec {defaultCard.brand.toUpperCase()} ****{defaultCard.last4}
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <Alert className="bg-muted/30 border-border">
+          <Shield className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            En validant, vous acceptez notre{' '}
+            <a href="/politique-annulation" target="_blank" className="underline font-medium text-primary hover:text-primary/80">
+              politique d'annulation
+            </a>. Votre carte sera sauvegardée pour vos prochains paiements.
+          </AlertDescription>
+        </Alert>
+
+        <Button onClick={initiateManualHold} className="w-full gap-2">
+          <Lock className="w-4 h-4" />
+          {hasCard ? 'Confirmer automatiquement' : 'Valider l\'empreinte bancaire'}
+        </Button>
       </CardContent>
     </Card>
   );
