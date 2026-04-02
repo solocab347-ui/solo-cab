@@ -59,9 +59,23 @@ Deno.serve(async (req) => {
     
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
-      .select('*, clients(user_id, id), promo_code, discount_amount, is_guest_booking, guest_estimated_price')
+      .select('*, clients(user_id, id), promo_code, discount_amount, is_guest_booking, guest_estimated_price, payment_method')
       .eq('id', course_id)
       .single();
+
+    // Vérifier si le chauffeur utilise Stripe Connect
+    const { data: driverStripeInfo } = await supabaseClient
+      .from('drivers')
+      .select('stripe_connect_account_id, stripe_connect_charges_enabled')
+      .eq('id', driver_id)
+      .single();
+    
+    const driverUsesStripe = !!driverStripeInfo?.stripe_connect_account_id && 
+      driverStripeInfo?.stripe_connect_charges_enabled === true;
+    
+    // Déterminer si c'est un paiement Stripe (driver Stripe + client paie par carte)
+    const isStripePayment = driverUsesStripe && (course?.payment_method === 'card' || !course?.payment_method);
+    console.log('💳 Stripe payment:', { driverUsesStripe, paymentMethod: course?.payment_method, isStripePayment });
 
     if (courseError || !course) {
       console.error('❌ Course introuvable:', courseError);
