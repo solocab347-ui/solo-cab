@@ -1045,14 +1045,16 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         />
       )}
 
-      {/* Card Hold Dialog - Empreinte bancaire après acceptation de devis */}
+      {/* Card Hold Dialog - Paiement sécurisé */}
       <Dialog open={!!cardHoldData} onOpenChange={(open) => !open && setCardHoldData(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Empreinte bancaire requise</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              Paiement sécurisé
+            </DialogTitle>
             <DialogDescription>
-              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
-              Consultez notre <a href="/politique-annulation" target="_blank" className="underline text-primary">politique d'annulation</a>.
+              Enregistrez votre carte pour valider cette réservation. Les paiements suivants seront automatiques.
             </DialogDescription>
           </DialogHeader>
           {cardHoldData && (
@@ -1065,7 +1067,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               trackingToken=""
               onComplete={() => {
                 setCardHoldData(null);
-                toast.success("Empreinte bancaire validée ! Votre réservation est confirmée.");
+                toast.success("✅ Carte validée ! Paiement automatique à la fin de la course.");
                 fetchCourses();
               }}
             />
