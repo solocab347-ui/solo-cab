@@ -50,18 +50,20 @@ const QuoteAcceptance = () => {
 
       setDevis(devisData);
 
+      const status = devisData.status as string;
+      
       // Check if already accepted or paid
-      if (devisData.status === 'accepted' || devisData.status === 'deposit_paid' || devisData.status === 'bank_imprint') {
+      if (['accepted', 'deposit_paid', 'bank_imprint'].includes(status)) {
         setAccepted(true);
       }
 
       // Check if payment is pending (redirect to Stripe happened)
-      if (devisData.status === 'payment_pending') {
+      if (status === 'payment_pending') {
         setPaymentPending(true);
       }
 
       // Check expiry
-      if (new Date(devisData.valid_until) < new Date() && !['accepted', 'deposit_paid', 'bank_imprint'].includes(devisData.status)) {
+      if (new Date(devisData.valid_until) < new Date() && !['accepted', 'deposit_paid', 'bank_imprint'].includes(status)) {
         setError("Ce devis a expiré");
         setLoading(false);
         return;
