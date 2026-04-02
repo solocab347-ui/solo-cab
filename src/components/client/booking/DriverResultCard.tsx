@@ -82,6 +82,19 @@ export function DriverResultCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h4 className="font-semibold text-foreground text-sm truncate">{displayName}</h4>
+              {clientPaymentMethod === 'card' && (
+                driver.stripe_connect_charges_enabled ? (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-primary/30 text-primary bg-primary/5">
+                    <ShieldCheck className="h-2.5 w-2.5" />
+                    Paiement sécurisé
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-muted-foreground/30 text-muted-foreground">
+                    <CreditCard className="h-2.5 w-2.5" />
+                    TPE
+                  </Badge>
+                )
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-1.5">
