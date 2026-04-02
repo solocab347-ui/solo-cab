@@ -35,6 +35,7 @@ serve(async (req) => {
       course_id,
       client_email,
       client_name,
+      client_user_id,
     } = await req.json();
 
     if (!driver_id) throw new Error("driver_id required");
