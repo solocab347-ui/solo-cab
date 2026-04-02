@@ -764,6 +764,7 @@ export function UnifiedBookingPage() {
                   onToggleSelect={toggleDriverSelection}
                   onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
                   rank={index + 1}
+                  clientPaymentMethod={clientPaymentMethod}
                 />
               ))}
             </div>
