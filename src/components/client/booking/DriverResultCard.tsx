@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Eye, Check, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Eye, Check, Clock, ShieldCheck, CreditCard } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
 
 interface DriverResultCardProps {
@@ -11,6 +12,7 @@ interface DriverResultCardProps {
   onToggleSelect: (driverId: string) => void;
   onViewProfile: (driver: NearbyDriver) => void;
   rank: number;
+  clientPaymentMethod?: 'card' | 'cash' | null;
 }
 
 // Estimate approach time based on distance (avg 30km/h in urban, 60km/h highway)
@@ -34,6 +36,7 @@ export function DriverResultCard({
   onToggleSelect,
   onViewProfile,
   rank,
+  clientPaymentMethod,
 }: DriverResultCardProps) {
   const displayName = driver.display_name || driver.company_name || 'Chauffeur VTC';
   const initials = displayName
@@ -79,6 +82,19 @@ export function DriverResultCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h4 className="font-semibold text-foreground text-sm truncate">{displayName}</h4>
+              {clientPaymentMethod === 'card' && (
+                driver.stripe_connect_charges_enabled ? (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-primary/30 text-primary bg-primary/5">
+                    <ShieldCheck className="h-2.5 w-2.5" />
+                    Paiement sécurisé
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-muted-foreground/30 text-muted-foreground">
+                    <CreditCard className="h-2.5 w-2.5" />
+                    TPE
+                  </Badge>
+                )
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-1.5">

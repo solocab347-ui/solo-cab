@@ -14287,6 +14287,7 @@ export type Database = {
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
+          request_group_id: string | null
           ride_type: string | null
           scheduled_date: string | null
           search_radius_km: number | null
@@ -14313,6 +14314,7 @@ export type Database = {
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          request_group_id?: string | null
           ride_type?: string | null
           scheduled_date?: string | null
           search_radius_km?: number | null
@@ -14339,6 +14341,7 @@ export type Database = {
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          request_group_id?: string | null
           ride_type?: string | null
           scheduled_date?: string | null
           search_radius_km?: number | null
