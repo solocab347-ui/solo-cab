@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Eye, Check, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Eye, Check, Clock, ShieldCheck, CreditCard } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
 
 interface DriverResultCardProps {
@@ -11,6 +12,7 @@ interface DriverResultCardProps {
   onToggleSelect: (driverId: string) => void;
   onViewProfile: (driver: NearbyDriver) => void;
   rank: number;
+  clientPaymentMethod?: 'card' | 'cash' | null;
 }
 
 // Estimate approach time based on distance (avg 30km/h in urban, 60km/h highway)
