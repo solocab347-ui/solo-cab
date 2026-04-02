@@ -393,6 +393,8 @@ const ClientDashboard = () => {
             )}
           </div>
         );
+      case "paiement":
+        return <ClientCardManager />;
       case "compte":
         return <ClientProfile />;
       case "scan-qr":
