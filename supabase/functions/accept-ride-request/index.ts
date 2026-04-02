@@ -290,6 +290,7 @@ serve(async (req) => {
         tracking_token: course.tracking_token,
         payment_flow: clientWantsCard && driverHasStripe ? "stripe_online" : clientWantsCard ? "tpe" : "cash",
         driver_has_stripe: driverHasStripe,
+        auto_hold_result: autoHoldResult,
         message: "Course créée avec succès",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
