@@ -1,28 +1,41 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, MapPin, Calendar, Users, CheckCircle2, Clock, Euro, AlertTriangle, Loader2 } from "lucide-react";
+import { FileText, MapPin, Calendar, Users, CheckCircle2, Clock, Euro, AlertTriangle, Loader2, CreditCard, ShieldCheck } from "lucide-react";
 
 const QuoteAcceptance = () => {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [devis, setDevis] = useState<any>(null);
   const [course, setCourse] = useState<any>(null);
   const [driver, setDriver] = useState<any>(null);
+  const [driverHasStripe, setDriverHasStripe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [paymentPending, setPaymentPending] = useState(false);
 
   useEffect(() => {
     if (token) loadQuote();
   }, [token]);
 
+  // Handle return from Stripe Checkout
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus === "success") {
+      setAccepted(true);
+      toast.success("Paiement validé ! Votre course est confirmée.");
+    } else if (paymentStatus === "cancelled") {
+      toast.error("Paiement annulé. Vous pouvez réessayer.");
+    }
+  }, [searchParams]);
+
   const loadQuote = async () => {
     try {
-      // Fetch devis by token
       const { data: devisData, error: devisError } = await supabase
         .from('devis')
         .select('*')
@@ -37,13 +50,18 @@ const QuoteAcceptance = () => {
 
       setDevis(devisData);
 
-      // Check if already accepted
-      if (devisData.status === 'accepted') {
+      // Check if already accepted or paid
+      if (devisData.status === 'accepted' || devisData.status === 'deposit_paid' || devisData.status === 'bank_imprint') {
         setAccepted(true);
       }
 
+      // Check if payment is pending (redirect to Stripe happened)
+      if (devisData.status === 'payment_pending') {
+        setPaymentPending(true);
+      }
+
       // Check expiry
-      if (new Date(devisData.valid_until) < new Date() && devisData.status !== 'accepted') {
+      if (new Date(devisData.valid_until) < new Date() && !['accepted', 'deposit_paid', 'bank_imprint'].includes(devisData.status)) {
         setError("Ce devis a expiré");
         setLoading(false);
         return;
@@ -58,14 +76,17 @@ const QuoteAcceptance = () => {
 
       if (courseData) setCourse(courseData);
 
-      // Fetch driver info (public)
+      // Fetch driver info including Stripe Connect status
       const { data: driverData } = await supabase
         .from('drivers')
-        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color')
+        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color, stripe_connect_account_id, stripe_connect_charges_enabled')
         .eq('id', devisData.driver_id)
         .single();
 
       if (driverData) {
+        const hasStripe = !!driverData.stripe_connect_account_id && driverData.stripe_connect_charges_enabled === true;
+        setDriverHasStripe(hasStripe);
+
         // Get driver profile name
         const { data: profileData } = await supabase
           .from('profiles')
@@ -88,46 +109,70 @@ const QuoteAcceptance = () => {
     setAccepting(true);
 
     try {
-      // Update devis status
-      const { error: devisUpdateError } = await supabase
-        .from('devis')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', devis.id)
-        .eq('status', 'pending');
-
-      if (devisUpdateError) {
-        throw new Error("Erreur lors de l'acceptation du devis");
-      }
-
-      // Update course status to accepted (driver-initiated → directly accepted)
-      const { error: courseUpdateError } = await supabase
-        .from('courses')
-        .update({
-          status: 'accepted',
-        })
-        .eq('id', course.id);
-
-      if (courseUpdateError) {
-        console.error("Course update error:", courseUpdateError);
-      }
-
-      // Create notification for driver
-      try {
-        await supabase.from('notifications').insert({
-          user_id: (await supabase.from('drivers').select('user_id').eq('id', devis.driver_id).single()).data?.user_id,
-          title: '✅ Devis accepté !',
-          message: `${devis.guest_client_name || 'Un client'} a accepté votre devis ${devis.quote_number} (${devis.amount}€)`,
-          type: 'course_accepted',
+      if (driverHasStripe) {
+        // ============================================
+        // STRIPE CONNECT: Empreinte bancaire OBLIGATOIRE
+        // ============================================
+        // Create a Stripe Checkout session with manual capture (bank imprint)
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-course-payment', {
+          body: {
+            course_id: course.id,
+            devis_id: devis.id,
+            capture_method: 'manual', // Hold only, capture at course completion
+            client_email: course.guest_email || devis.guest_client_email,
+            client_name: course.guest_name || devis.guest_client_name,
+            client_user_id: course.client_id ? (await supabase.from('clients').select('user_id').eq('id', course.client_id).single()).data?.user_id : undefined,
+            save_card: true, // Save for future 1-click payments
+          },
         });
-      } catch (notifErr) {
-        console.warn("Notification error:", notifErr);
-      }
 
-      setAccepted(true);
-      toast.success("Devis accepté avec succès !");
+        if (paymentError || !paymentData?.checkout_url) {
+          throw new Error(paymentData?.error || paymentError?.message || "Impossible de créer la session de paiement");
+        }
+
+        // Redirect to Stripe Checkout for card imprint
+        toast.info("Redirection vers la page de paiement sécurisée...");
+        window.location.href = paymentData.checkout_url;
+        return; // Don't setAccepting(false) since we're redirecting
+
+      } else {
+        // ============================================
+        // CHAUFFEUR SANS STRIPE: Acceptation directe (paiement en main propre)
+        // ============================================
+        const { error: devisUpdateError } = await supabase
+          .from('devis')
+          .update({
+            status: 'accepted',
+            accepted_at: new Date().toISOString(),
+          })
+          .eq('id', devis.id)
+          .eq('status', 'pending');
+
+        if (devisUpdateError) {
+          throw new Error("Erreur lors de l'acceptation du devis");
+        }
+
+        // Update course status
+        await supabase
+          .from('courses')
+          .update({ status: 'accepted' })
+          .eq('id', course.id);
+
+        // Notify driver
+        try {
+          await supabase.from('notifications').insert({
+            user_id: (await supabase.from('drivers').select('user_id').eq('id', devis.driver_id).single()).data?.user_id,
+            title: '✅ Devis accepté !',
+            message: `${devis.guest_client_name || 'Un client'} a accepté votre devis ${devis.quote_number} (${devis.amount}€)`,
+            type: 'course_accepted',
+          });
+        } catch (notifErr) {
+          console.warn("Notification error:", notifErr);
+        }
+
+        setAccepted(true);
+        toast.success("Devis accepté avec succès !");
+      }
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de l'acceptation");
     } finally {
@@ -274,25 +319,78 @@ const QuoteAcceptance = () => {
             <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
             <h2 className="text-lg font-bold text-foreground">Devis accepté !</h2>
             <p className="text-sm text-muted-foreground">
-              Votre chauffeur a été notifié et prendra contact avec vous pour confirmer les détails de votre course.
+              {driverHasStripe 
+                ? "Votre empreinte bancaire a été validée. Votre chauffeur a été notifié et la course est confirmée."
+                : "Votre chauffeur a été notifié et prendra contact avec vous pour confirmer les détails de votre course."
+              }
             </p>
           </Card>
+        ) : paymentPending ? (
+          <Card className="p-6 bg-amber-500/10 border-amber-500/20 text-center space-y-3">
+            <CreditCard className="w-12 h-12 text-amber-500 mx-auto" />
+            <h2 className="text-lg font-bold text-foreground">Paiement en attente</h2>
+            <p className="text-sm text-muted-foreground">
+              Une session de paiement est en cours. Si vous n'avez pas terminé, cliquez ci-dessous pour réessayer.
+            </p>
+            <Button
+              onClick={handleAccept}
+              disabled={accepting}
+              className="w-full h-12 font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90"
+            >
+              {accepting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" /> Redirection...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" /> Reprendre le paiement
+                </span>
+              )}
+            </Button>
+          </Card>
         ) : (
-          <Button
-            onClick={handleAccept}
-            disabled={accepting}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90"
-          >
-            {accepting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" /> Acceptation en cours...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" /> Accepter le devis
-              </span>
+          <div className="space-y-3">
+            {/* Payment method info for Stripe drivers */}
+            {driverHasStripe && (
+              <Card className="p-4 bg-blue-500/5 border-blue-500/20">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Paiement sécurisé par carte</p>
+                    <p className="text-xs text-muted-foreground">
+                      Une empreinte bancaire sera prise pour sécuriser votre réservation. 
+                      Le montant ne sera débité qu'à la fin de la course.
+                    </p>
+                  </div>
+                </div>
+              </Card>
             )}
-          </Button>
+
+            <Button
+              onClick={handleAccept}
+              disabled={accepting}
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            >
+              {accepting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" /> 
+                  {driverHasStripe ? "Redirection vers le paiement..." : "Acceptation en cours..."}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  {driverHasStripe ? (
+                    <>
+                      <CreditCard className="w-5 h-5" /> Accepter et payer par carte
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" /> Accepter le devis
+                    </>
+                  )}
+                </span>
+              )}
+            </Button>
+          </div>
         )}
 
         {/* Footer */}
