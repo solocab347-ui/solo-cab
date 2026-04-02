@@ -74,13 +74,44 @@ serve(async (req) => {
 
     logStep("Driver has Stripe Connect, creating 10€ PaymentIntent with manual capture");
 
-    // Create a PaymentIntent with manual capture = "hold" the 10€
-    // The 10€ is NOT charged yet, just authorized on the card
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Check if client has a saved card for automatic hold
+    let savedPaymentMethodId: string | undefined;
+    let stripeCustomerId: string | undefined;
+
+    if (client_user_id) {
+      const { data: clientData } = await supabaseClient
+        .from("clients")
+        .select("id, stripe_customer_id, default_payment_method_id")
+        .eq("user_id", client_user_id)
+        .single();
+
+      if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
+        stripeCustomerId = clientData.stripe_customer_id;
+        savedPaymentMethodId = clientData.default_payment_method_id;
+        logStep("Client has saved card, will attempt automatic hold", {
+          customerId: stripeCustomerId,
+          pmId: savedPaymentMethodId,
+        });
+      } else if (clientData?.stripe_customer_id) {
+        // Check for any saved payment methods
+        stripeCustomerId = clientData.stripe_customer_id;
+        const pms = await stripe.paymentMethods.list({
+          customer: stripeCustomerId,
+          type: "card",
+          limit: 1,
+        });
+        if (pms.data.length > 0) {
+          savedPaymentMethodId = pms.data[0].id;
+          logStep("Found saved card on Stripe Customer", { pmId: savedPaymentMethodId });
+        }
+      }
+    }
+
+    // Build PaymentIntent params
+    const piParams: any = {
       amount: RESERVATION_HOLD_CENTS,
       currency: "eur",
-      capture_method: "manual", // Hold only, do not charge
-      payment_method_types: ["card"],
+      capture_method: "manual",
       metadata: {
         driver_id,
         course_id: course_id || "",
@@ -89,12 +120,31 @@ serve(async (req) => {
         type: "reservation_hold",
         hold_amount_cents: RESERVATION_HOLD_CENTS.toString(),
       },
-      // Transfer to driver's connected account if captured
       transfer_data: {
         destination: driver.stripe_connect_account_id,
       },
       description: `Avance de réservation 10€ - Course VTC${course_id ? ` #${course_id.slice(0, 8)}` : ''}`,
-    });
+    };
+
+    // If saved card: create, confirm off-session (no UI needed)
+    if (savedPaymentMethodId && stripeCustomerId) {
+      piParams.customer = stripeCustomerId;
+      piParams.payment_method = savedPaymentMethodId;
+      piParams.off_session = true;
+      piParams.confirm = true;
+      logStep("Creating automatic hold with saved card (off-session)");
+    } else {
+      piParams.payment_method_types = ["card"];
+      // Add setup_future_usage to save card for next time
+      piParams.setup_future_usage = "off_session";
+      if (stripeCustomerId) {
+        piParams.customer = stripeCustomerId;
+      }
+      logStep("Creating hold requiring client card input");
+    }
+
+    // Create a PaymentIntent with manual capture = "hold" the 10€
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     logStep("PaymentIntent created for hold", { 
       paymentIntentId: paymentIntent.id,
