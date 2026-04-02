@@ -79,6 +79,30 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     clientName?: string;
   } | null>(null);
 
+  // Auto-detect courses needing card hold
+  useEffect(() => {
+    if (courses.length > 0 && !cardHoldData) {
+      const needsHold = courses.find(
+        c => c.payment_status === 'bank_imprint_pending' && 
+          c.card_hold_status !== 'confirmed' &&
+          (c.status === 'accepted' || c.status === 'pending')
+      );
+      if (needsHold) {
+        const autoOpen = async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          setCardHoldData({
+            courseId: needsHold.id,
+            driverId: needsHold.driver_id,
+            amount: needsHold.guest_estimated_price || needsHold.final_payment_amount || 45,
+            clientEmail: user?.email || undefined,
+            clientName: user?.user_metadata?.full_name || undefined,
+          });
+        };
+        autoOpen();
+      }
+    }
+  }, [courses]);
+
   useEffect(() => {
     fetchCourses(0);
     fetchTotalCounts();
