@@ -186,14 +186,9 @@ export function GuestReservationWithCardHold({
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Empreinte bancaire sécurisée</p>
+              <p className="font-medium">Paiement sécurisé</p>
               <p className="text-sm text-muted-foreground">
-                Une empreinte bancaire est requise pour garantir votre réservation. 
-                Votre carte ne sera pas débitée immédiatement. Le paiement s'effectuera à la fin de la course.
-                En validant, vous acceptez notre{' '}
-                <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
-                  politique d'annulation
-                </a>.
+                Enregistrez votre carte une seule fois. Vos prochains paiements seront 100% automatiques.
               </p>
             </div>
           </div>
@@ -207,6 +202,17 @@ export function GuestReservationWithCardHold({
         clientName={clientName}
         onSuccess={handleCardHoldSuccess}
       />
+
+      {/* Account creation suggestion for guests */}
+      {!clientEmail && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3">
+            <p className="text-xs text-center text-muted-foreground">
+              💡 <a href="/register-client" className="underline font-medium text-primary hover:text-primary/80">Créez un compte gratuit</a> pour retrouver votre carte enregistrée et ne plus jamais la ressaisir.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
