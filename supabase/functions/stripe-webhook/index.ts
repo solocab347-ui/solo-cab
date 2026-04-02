@@ -1344,6 +1344,85 @@ serve(async (req) => {
       });
     }
 
+    // ========================================
+    // SETUP INTENT SUCCEEDED (Card saved for future use)
+    // ========================================
+    if (event.type === "setup_intent.succeeded") {
+      const setupIntent = event.data.object as Stripe.SetupIntent;
+      const metadata = setupIntent.metadata || {};
+      const customerId = typeof setupIntent.customer === 'string' ? setupIntent.customer : setupIntent.customer?.id;
+      const paymentMethodId = typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method?.id;
+
+      logStep("SetupIntent succeeded - card saved", {
+        setupIntentId: setupIntent.id,
+        customerId,
+        paymentMethodId,
+        clientId: metadata.client_id,
+      });
+
+      if (customerId && paymentMethodId) {
+        // Set as default payment method on customer
+        try {
+          await stripe.customers.update(customerId, {
+            invoice_settings: { default_payment_method: paymentMethodId },
+          });
+        } catch (e) {
+          logStep("⚠️ Failed to set default PM on customer", { error: String(e) });
+        }
+
+        // Update client record with saved card info
+        if (metadata.client_id) {
+          // Get card details for display
+          const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+          const cardInfo = {
+            id: paymentMethodId,
+            brand: pm.card?.brand || "unknown",
+            last4: pm.card?.last4 || "****",
+            exp_month: pm.card?.exp_month,
+            exp_year: pm.card?.exp_year,
+            saved_at: new Date().toISOString(),
+          };
+
+          // Get existing saved cards
+          const { data: clientData } = await supabaseClient
+            .from("clients")
+            .select("saved_cards, default_payment_method_id")
+            .eq("id", metadata.client_id)
+            .single();
+
+          const existingCards = (clientData?.saved_cards as any[]) || [];
+          // Avoid duplicates
+          const filteredCards = existingCards.filter((c: any) => c.id !== paymentMethodId);
+          filteredCards.push(cardInfo);
+
+          await supabaseClient
+            .from("clients")
+            .update({
+              saved_cards: filteredCards,
+              default_payment_method_id: clientData?.default_payment_method_id || paymentMethodId,
+            })
+            .eq("id", metadata.client_id);
+
+          logStep("✅ Client card saved", { clientId: metadata.client_id, brand: cardInfo.brand, last4: cardInfo.last4 });
+
+          // Notify client
+          if (metadata.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: metadata.user_id,
+              title: "💳 Carte enregistrée",
+              message: `Votre carte ${cardInfo.brand.toUpperCase()} ****${cardInfo.last4} a été enregistrée. Vos futurs paiements seront automatiques.`,
+              type: "info",
+            });
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ received: true, type: "setup_intent.succeeded" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     return new Response(JSON.stringify({ received: true }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
