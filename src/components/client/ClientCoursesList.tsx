@@ -21,7 +21,9 @@ import {
   Mail,
   Share2,
   Phone,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  Shield
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -76,6 +78,30 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     clientEmail?: string;
     clientName?: string;
   } | null>(null);
+
+  // Auto-detect courses needing card hold
+  useEffect(() => {
+    if (courses.length > 0 && !cardHoldData) {
+      const needsHold = courses.find(
+        c => c.payment_status === 'bank_imprint_pending' && 
+          c.card_hold_status !== 'confirmed' &&
+          (c.status === 'accepted' || c.status === 'pending')
+      );
+      if (needsHold) {
+        const autoOpen = async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          setCardHoldData({
+            courseId: needsHold.id,
+            driverId: needsHold.driver_id,
+            amount: needsHold.guest_estimated_price || needsHold.final_payment_amount || 45,
+            clientEmail: user?.email || undefined,
+            clientName: user?.user_metadata?.full_name || undefined,
+          });
+        };
+        autoOpen();
+      }
+    }
+  }, [courses]);
 
   useEffect(() => {
     fetchCourses(0);
@@ -664,6 +690,50 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
         {/* Affichage du partenaire si course partagée */}
         <SharedCoursePartnerInfo courseId={course.id} userId={currentUserId} />
+
+        {/* 🔒 BANNER: Empreinte bancaire requise (paiement invisible) */}
+        {(course.payment_status === 'bank_imprint_pending' && 
+          (course.status === 'accepted' || course.status === 'pending') &&
+          course.card_hold_status !== 'confirmed') && (
+          <div 
+            className="p-3 bg-primary/10 border border-primary/30 rounded-lg mb-4 cursor-pointer hover:bg-primary/15 transition-colors"
+            onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              setCardHoldData({
+                courseId: course.id,
+                driverId: course.driver_id,
+                amount: course.guest_estimated_price || course.final_payment_amount || 45,
+                clientEmail: user?.email || undefined,
+                clientName: user?.user_metadata?.full_name || undefined,
+              });
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-primary">💳 Empreinte bancaire requise</p>
+                <p className="text-xs text-muted-foreground">
+                  Appuyez ici pour valider votre carte et confirmer la réservation.
+                </p>
+              </div>
+              <Shield className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Empreinte confirmée */}
+        {course.card_hold_status === 'confirmed' && course.payment_method === 'stripe' && 
+          (course.status === 'accepted' || course.status === 'in_progress') && (
+          <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+              <p className="text-xs text-emerald-600 font-medium">
+                Carte validée • Paiement automatique à la fin de la course
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Afficher devis si disponible */}
         {devis && (
           <div className="p-3 bg-orange-500/10 rounded-lg mb-4">

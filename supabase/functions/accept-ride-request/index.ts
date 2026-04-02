@@ -169,6 +169,80 @@ serve(async (req) => {
       logStep("Warning: auto devis creation failed", { error: String(devisErr) });
     }
 
+    // ── AUTO CARD HOLD: If Stripe driver + card payment + client has saved card → invisible hold ──
+    let autoHoldResult: string | null = null;
+    if (clientWantsCard && driverHasStripe && claimed.client_id) {
+      try {
+        const { data: clientRecord } = await supabaseClient
+          .from("clients")
+          .select("user_id, stripe_customer_id, default_payment_method_id")
+          .eq("id", claimed.client_id)
+          .single();
+
+        if (clientRecord?.stripe_customer_id && clientRecord?.default_payment_method_id) {
+          logStep("Client has saved card → creating automatic invisible hold", {
+            clientId: claimed.client_id,
+            customerId: clientRecord.stripe_customer_id,
+          });
+
+          const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+          if (stripeKey) {
+            const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+            const piParams: Record<string, unknown> = {
+              amount: 1000, // 10€ hold
+              currency: "eur",
+              capture_method: "manual",
+              customer: clientRecord.stripe_customer_id,
+              payment_method: clientRecord.default_payment_method_id,
+              off_session: true,
+              confirm: true,
+              metadata: {
+                driver_id: driver.id,
+                course_id: course.id,
+                client_id: claimed.client_id,
+                type: "reservation_hold",
+                auto_created: "true",
+              },
+              transfer_data: {
+                destination: driver.stripe_connect_account_id,
+              },
+              description: `Avance de réservation 10€ - Course VTC #${course.id.slice(0, 8)}`,
+            };
+
+            const paymentIntent = await stripe.paymentIntents.create(piParams as any);
+
+            if (paymentIntent.status === "requires_capture") {
+              // Success! Update course silently
+              await supabaseClient
+                .from("courses")
+                .update({
+                  stripe_hold_payment_intent_id: paymentIntent.id,
+                  card_hold_status: "confirmed",
+                  card_hold_amount: 10.00,
+                  payment_status: "bank_imprint_confirmed",
+                  stripe_payment_method_id: clientRecord.default_payment_method_id,
+                  stripe_customer_id: clientRecord.stripe_customer_id,
+                })
+                .eq("id", course.id);
+
+              autoHoldResult = "auto_confirmed";
+              logStep("✅ Invisible auto-hold confirmed", { piId: paymentIntent.id });
+            } else {
+              autoHoldResult = "pending_confirmation";
+              logStep("Auto-hold needs further action", { status: paymentIntent.status });
+            }
+          }
+        } else {
+          autoHoldResult = "no_saved_card";
+          logStep("Client has no saved card → will need manual card input");
+        }
+      } catch (holdErr) {
+        logStep("Auto-hold failed (non-blocking)", { error: String(holdErr) });
+        autoHoldResult = "failed";
+      }
+    }
+
     // Notify the client
     if (claimed.client_id) {
       // Get client user_id for notification
@@ -179,17 +253,22 @@ serve(async (req) => {
         .single();
 
       if (clientData?.user_id) {
-        const paymentMessage = clientWantsCard && driverHasStripe
-          ? "Une empreinte bancaire sera nécessaire pour confirmer."
-          : clientWantsCard
-            ? "Le paiement se fera par carte directement avec le chauffeur."
-            : "Le paiement en espèces se fera à la fin de la course.";
+        let paymentMessage: string;
+        if (autoHoldResult === "auto_confirmed") {
+          paymentMessage = "✅ Votre carte a été validée automatiquement. Aucune action requise.";
+        } else if (clientWantsCard && driverHasStripe && autoHoldResult !== "auto_confirmed") {
+          paymentMessage = "💳 Veuillez confirmer votre empreinte bancaire dans vos courses.";
+        } else if (clientWantsCard) {
+          paymentMessage = "Le paiement se fera par carte directement avec le chauffeur.";
+        } else {
+          paymentMessage = "Le paiement en espèces se fera à la fin de la course.";
+        }
 
         await supabaseClient.from("notifications").insert({
           user_id: clientData.user_id,
           title: "🎉 Un chauffeur a accepté votre course !",
           message: `${driver.company_name || 'Votre chauffeur'} a accepté votre demande de course. ${paymentMessage}`,
-          type: "success",
+          type: autoHoldResult === "auto_confirmed" ? "success" : "info",
           link: `/reservation-tracking/${course.tracking_token}`,
         });
       }
@@ -211,6 +290,7 @@ serve(async (req) => {
         tracking_token: course.tracking_token,
         payment_flow: clientWantsCard && driverHasStripe ? "stripe_online" : clientWantsCard ? "tpe" : "cash",
         driver_has_stripe: driverHasStripe,
+        auto_hold_result: autoHoldResult,
         message: "Course créée avec succès",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
