@@ -884,10 +884,15 @@ export function UnifiedBookingPage() {
                     );
                   }
                   if (clientPaymentMethod === 'card' && hasStripeDriver) {
+                    const isMultiDriver = selectedDriversList.length > 1;
                     return (
                       <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
                         <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span>Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course.</span>
+                        <span>
+                          {isMultiDriver 
+                            ? "Le paiement sera sécurisé automatiquement dès qu'un chauffeur accepte votre demande. Aucun prélèvement ne sera fait avant." 
+                            : "Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course."}
+                        </span>
                       </div>
                     );
                   }
