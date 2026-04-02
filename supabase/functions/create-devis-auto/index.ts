@@ -352,6 +352,7 @@ Deno.serve(async (req) => {
             solocab_fee_amount: SOLOCAB_FEE,
             estimated_stripe_fee: estimatedStripeFee,
             estimated_net_to_driver: estimatedNetToDriver,
+            is_stripe_payment: isStripePayment,
           })
           .select()
           .single();
