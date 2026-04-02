@@ -1094,6 +1094,8 @@ serve(async (req) => {
           : paymentIntent.payment_method?.id;
 
         // Save payment method and confirm hold on course
+        // IMPORTANT: do not auto-accept the course here.
+        // A client card validation must never replace the explicit driver acceptance step.
         const courseUpdate: Record<string, unknown> = {
           payment_status: "bank_imprint_captured",
           bank_imprint_at: new Date().toISOString(),
@@ -1102,7 +1104,6 @@ serve(async (req) => {
           card_hold_status: "confirmed",
           card_hold_confirmed_at: new Date().toISOString(),
           card_hold_amount: paymentIntent.amount / 100,
-          status: "accepted", // Course is now confirmed
         };
 
         await supabaseClient
@@ -1147,7 +1148,7 @@ serve(async (req) => {
             await supabaseClient.from("notifications").insert({
               user_id: driverData.user_id,
               title: "✅ Empreinte bancaire validée",
-              message: `Le client a confirmé son empreinte bancaire de ${amount.toFixed(2)}€. La course est maintenant confirmée.`,
+              message: `Le client a confirmé son empreinte bancaire de ${amount.toFixed(2)}€. Vous pouvez maintenant confirmer la course si elle est encore en attente.`,
               type: "course_accepted",
               priority: "high",
               link: "/driver-dashboard?tab=courses",
@@ -1155,7 +1156,7 @@ serve(async (req) => {
           }
         }
 
-        logStep("✅ Course confirmed via bank hold", { courseId: metadata.course_id });
+        logStep("✅ Bank hold confirmed without auto-accepting course", { courseId: metadata.course_id });
       }
 
       return new Response(JSON.stringify({ received: true, type: "payment_intent.amount_capturable_updated" }), {

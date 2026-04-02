@@ -2032,6 +2032,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     const devis = course.devis?.[0];
     
     if (course.status === "pending") {
+      if (devis?.status === "accepted") {
+        return {
+          icon: Clock,
+          text: "Client validé - en attente de votre confirmation",
+          color: "text-warning"
+        };
+      }
+
       return {
         icon: Clock,
         text: "En attente d'acceptation du chauffeur",
@@ -2288,16 +2296,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     return sortedDevis[0];
   };
 
-  // Séparer les courses "pending" : celles avec devis accepté par le client → onglet Confirmée
+  // Une course reste dans "En attente" tant que le chauffeur ne l'a pas explicitement acceptée
   const allPendingCourses = applyAllFilters(courses.filter(c => c.status === "pending"));
-  const pendingWithDevisAccepted = allPendingCourses.filter(c => {
-    if (!c.devis || c.devis.length === 0) return false;
-    return c.devis.some((d: any) => d.status === "accepted");
-  });
-  const pendingCourses = sortByDate(allPendingCourses.filter(c => !pendingWithDevisAccepted.includes(c)));
+  const pendingCourses = sortByDate(allPendingCourses);
   const acceptedCourses = applyAllFilters(courses.filter(c => c.status === "accepted"));
   const inProgressCourses = applyAllFilters(courses.filter(c => c.status === "in_progress"));
-  const confirmedCoursesCombined = sortConfirmedWithInProgressFirst([...acceptedCourses, ...inProgressCourses, ...pendingWithDevisAccepted]);
+  const confirmedCoursesCombined = sortConfirmedWithInProgressFirst([...acceptedCourses, ...inProgressCourses]);
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
