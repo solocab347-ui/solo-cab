@@ -1,0 +1,1 @@
+ALTER TABLE public.ride_requests ADD COLUMN IF NOT EXISTS request_group_id uuid DEFAULT gen_random_uuid();
