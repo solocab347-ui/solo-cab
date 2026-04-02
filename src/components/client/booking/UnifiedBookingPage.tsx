@@ -355,7 +355,13 @@ export function UnifiedBookingPage() {
         clientId = clientData?.id || null;
       }
 
+      // Generate a unique group ID for all requests in this batch
+      // This ensures proper cancellation of siblings when one driver accepts
+      const requestGroupId = crypto.randomUUID();
+
       // Create ride requests for all selected drivers (first-come-first-served)
+      // IMPORTANT: NO PaymentIntent is created here — payment is only triggered
+      // when a driver accepts via the accept-ride-request edge function
       const { data, error: insertError } = await supabase
         .from('ride_requests')
         .insert(selectedDrivers.map(driver => ({
@@ -372,6 +378,7 @@ export function UnifiedBookingPage() {
           estimated_price: driver.estimated_price,
           timeout_at: new Date(Date.now() + timeoutMs).toISOString(),
           payment_method: clientPaymentMethod || 'card',
+          request_group_id: requestGroupId,
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime 
             ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() 
             : null,
@@ -380,8 +387,11 @@ export function UnifiedBookingPage() {
 
       if (insertError) throw insertError;
 
+      const isMulti = selectedDrivers.length > 1;
       toast.success(
-        `Demande envoyée à ${selectedDrivers.length} chauffeur${selectedDrivers.length > 1 ? 's' : ''} ! Le premier à répondre prendra la course.`
+        isMulti 
+          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le paiement sera sécurisé après acceptation.`
+          : 'Demande envoyée ! Vous serez notifié dès que le chauffeur accepte.'
       );
 
       // Navigate based on auth state

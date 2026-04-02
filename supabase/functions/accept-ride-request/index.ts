@@ -80,23 +80,39 @@ serve(async (req) => {
       driverHasStripe,
     });
 
-    // Cancel all other pending ride_requests for the same group
-    // (same client + same pickup + same destination + same scheduled_date created within 1 second)
-    const { error: cancelError } = await supabaseClient
-      .from("ride_requests")
-      .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .neq("id", ride_request_id)
-      .eq("status", "pending")
-      .eq("pickup_address", claimed.pickup_address)
-      .eq("destination_address", claimed.destination_address)
-      .or(
-        claimed.client_id 
-          ? `client_id.eq.${claimed.client_id}` 
-          : `guest_phone.eq.${claimed.guest_phone}`
-      );
+    // Cancel all other pending ride_requests in the same group
+    // Using request_group_id for precise sibling cancellation
+    if (claimed.request_group_id) {
+      const { error: cancelError } = await supabaseClient
+        .from("ride_requests")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .neq("id", ride_request_id)
+        .eq("status", "pending")
+        .eq("request_group_id", claimed.request_group_id);
 
-    if (cancelError) {
-      logStep("Warning: failed to cancel other requests", { cancelError });
+      if (cancelError) {
+        logStep("Warning: failed to cancel sibling requests", { cancelError });
+      } else {
+        logStep("Cancelled sibling requests in group", { groupId: claimed.request_group_id });
+      }
+    } else {
+      // Fallback: cancel by matching address + client (legacy requests without group_id)
+      const { error: cancelError } = await supabaseClient
+        .from("ride_requests")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .neq("id", ride_request_id)
+        .eq("status", "pending")
+        .eq("pickup_address", claimed.pickup_address)
+        .eq("destination_address", claimed.destination_address)
+        .or(
+          claimed.client_id 
+            ? `client_id.eq.${claimed.client_id}` 
+            : `guest_phone.eq.${claimed.guest_phone}`
+        );
+
+      if (cancelError) {
+        logStep("Warning: failed to cancel other requests (legacy)", { cancelError });
+      }
     }
 
     // Create the course
