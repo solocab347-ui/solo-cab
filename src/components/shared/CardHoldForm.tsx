@@ -248,6 +248,8 @@ export function CardHoldForm({
   }
 
   // Idle / Error — need manual card input
+  const isGuest = !hasCard;
+
   return (
     <Card className={cn("border-primary/20", className)}>
       <CardContent className="p-4 space-y-4">
@@ -256,22 +258,20 @@ export function CardHoldForm({
             <CreditCard className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm text-foreground">Empreinte bancaire requise</h3>
+            <h3 className="font-semibold text-sm text-foreground">Entrez votre carte bancaire</h3>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
-              Votre carte ne sera <strong>pas débitée immédiatement</strong>.
+              Votre carte sera <strong>enregistrée de manière sécurisée</strong> pour que vos prochains paiements soient 100% automatiques — aucune saisie requise.
             </p>
           </div>
         </div>
 
-        {hasCard && defaultCard && (
-          <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/10">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-xs">
-              Paiement automatique avec {defaultCard.brand.toUpperCase()} ****{defaultCard.last4}
-            </span>
-          </div>
-        )}
+        {/* Info: card saved for future */}
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10">
+          <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs text-foreground/80">
+            <strong>Une seule fois :</strong> après cet enregistrement, vos prochaines courses seront validées et payées automatiquement, sans aucune action de votre part.
+          </p>
+        </div>
 
         {error && (
           <Alert variant="destructive">
@@ -283,17 +283,24 @@ export function CardHoldForm({
         <Alert className="bg-muted/30 border-border">
           <Shield className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            En validant, vous acceptez notre{' '}
+            Paiement sécurisé par Stripe. Votre carte ne sera <strong>pas débitée maintenant</strong>. 
+            Le prélèvement s'effectue automatiquement à la fin de la course. En validant, vous acceptez notre{' '}
             <a href="/politique-annulation" target="_blank" className="underline font-medium text-primary hover:text-primary/80">
               politique d'annulation
-            </a>. Votre carte sera sauvegardée pour vos prochains paiements.
+            </a>.
           </AlertDescription>
         </Alert>
 
-        <Button onClick={initiateManualHold} className="w-full gap-2">
+        <Button onClick={initiateManualHold} className="w-full gap-2 h-12 text-base font-semibold">
           <Lock className="w-4 h-4" />
-          {hasCard ? 'Confirmer automatiquement' : 'Valider l\'empreinte bancaire'}
+          Enregistrer ma carte et valider
         </Button>
+
+        {onSkip && (
+          <p className="text-[10px] text-center text-muted-foreground">
+            En enregistrant votre carte, les paiements futurs seront instantanés.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

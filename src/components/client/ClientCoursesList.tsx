@@ -691,7 +691,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         {/* Affichage du partenaire si course partagée */}
         <SharedCoursePartnerInfo courseId={course.id} userId={currentUserId} />
 
-        {/* 🔒 BANNER: Empreinte bancaire requise (paiement invisible) */}
+        {/* 🔒 BANNER: Carte non enregistrée — action requise */}
         {(course.payment_status === 'bank_imprint_pending' && 
           (course.status === 'accepted' || course.status === 'pending') &&
           course.card_hold_status !== 'confirmed') && (
@@ -711,9 +711,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-primary" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-primary">💳 Empreinte bancaire requise</p>
+                <p className="text-sm font-semibold text-primary">Enregistrez votre carte</p>
                 <p className="text-xs text-muted-foreground">
-                  Appuyez ici pour valider votre carte et confirmer la réservation.
+                  Appuyez ici pour valider — une seule fois, puis tout sera automatique.
                 </p>
               </div>
               <Shield className="w-4 h-4 text-primary" />
@@ -721,14 +721,14 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           </div>
         )}
 
-        {/* ✅ Empreinte confirmée */}
+        {/* ✅ Carte validée — paiement automatique */}
         {course.card_hold_status === 'confirmed' && course.payment_method === 'stripe' && 
           (course.status === 'accepted' || course.status === 'in_progress') && (
           <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg mb-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-500" />
               <p className="text-xs text-emerald-600 font-medium">
-                Carte validée • Paiement automatique à la fin de la course
+                ✅ Carte validée • Le paiement se fera automatiquement à la fin de la course
               </p>
             </div>
           </div>
@@ -1045,14 +1045,16 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         />
       )}
 
-      {/* Card Hold Dialog - Empreinte bancaire après acceptation de devis */}
+      {/* Card Hold Dialog - Paiement sécurisé */}
       <Dialog open={!!cardHoldData} onOpenChange={(open) => !open && setCardHoldData(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Empreinte bancaire requise</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              Paiement sécurisé
+            </DialogTitle>
             <DialogDescription>
-              Pour confirmer votre réservation, une empreinte bancaire est nécessaire. 
-              Consultez notre <a href="/politique-annulation" target="_blank" className="underline text-primary">politique d'annulation</a>.
+              Enregistrez votre carte pour valider cette réservation. Les paiements suivants seront automatiques.
             </DialogDescription>
           </DialogHeader>
           {cardHoldData && (
@@ -1065,7 +1067,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               trackingToken=""
               onComplete={() => {
                 setCardHoldData(null);
-                toast.success("Empreinte bancaire validée ! Votre réservation est confirmée.");
+                toast.success("✅ Carte validée ! Paiement automatique à la fin de la course.");
                 fetchCourses();
               }}
             />
