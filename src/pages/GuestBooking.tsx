@@ -17,6 +17,7 @@ import { useSubmitProtection, generateSubmitKey } from "@/hooks/useSubmitProtect
 import { withRetry } from "@/lib/asyncUtils";
 import { handleError } from "@/lib/errorHandler";
 import { GuestReservationWithCardHold } from "@/components/payment/GuestReservationWithCardHold";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 
 interface DriverInfo {
   id: string;
