@@ -16,7 +16,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface SavedCard {
   id: string;
@@ -41,14 +41,15 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [useManualForm, setUseManualForm] = useState(false);
+  const [showManualFallback, setShowManualFallback] = useState(false);
   const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
 
   useEffect(() => {
     if (ready || useManualForm) return;
 
     const timeout = window.setTimeout(() => {
-      setUseManualForm(true);
-    }, 3500);
+      setShowManualFallback(true);
+    }, 7000);
 
     return () => window.clearTimeout(timeout);
   }, [ready, useManualForm]);
@@ -111,6 +112,12 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
           return;
         }
       } else {
+        const submitResult = await elements.submit();
+        if (submitResult.error) {
+          setError(submitResult.error.message || "Erreur lors de la validation de la carte");
+          return;
+        }
+
         const { error: stripeError, setupIntent } = await stripe.confirmSetup({
           elements,
           confirmParams: {
@@ -179,7 +186,7 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Saisie manuelle activée pour éviter tout blocage de chargement.
+            Saisie manuelle activée.
           </p>
         </div>
       ) : (
@@ -193,9 +200,19 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
           />
 
           {!ready && (
-            <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Chargement sécurisé...
+            <div className="space-y-3 py-4">
+              <div className="flex items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Chargement sécurisé...
+              </div>
+
+              {showManualFallback && (
+                <div className="flex justify-center">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setUseManualForm(true)}>
+                    Saisir ma carte manuellement
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </>
