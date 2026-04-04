@@ -13,7 +13,7 @@ const DEFAULT_CONFIG: DriverPaymentConfig = {
   acceptedMethods: ['cash', 'card'],
   billingType: 'own_equipment',
   showPublicly: true,
-  defaultMethod: 'not_specified',
+  defaultMethod: 'cash',
   stripeConnected: false
 };
 
