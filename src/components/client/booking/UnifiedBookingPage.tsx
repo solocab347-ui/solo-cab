@@ -343,10 +343,37 @@ export function UnifiedBookingPage() {
       return; 
     }
 
+    // ── CARD VERIFICATION: For card payments, ensure client has a saved card ──
+    const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+    const hasStripeDriver = selectedDrivers.some(d => d.stripe_connect_charges_enabled);
+    
+    if (clientPaymentMethod === 'card' && hasStripeDriver) {
+      if (user) {
+        // Registered client: check for saved card
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id, stripe_customer_id, default_payment_method_id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!clientData?.stripe_customer_id || !clientData?.default_payment_method_id) {
+          // No saved card → redirect to card management
+          toast.error('Vous devez enregistrer une carte bancaire avant de réserver par carte.');
+          navigate('/client-dashboard?tab=paiement');
+          return;
+        }
+      } else {
+        // Guest: must provide email for card registration
+        if (!guestEmail?.trim()) {
+          toast.error('L\'email est obligatoire pour un paiement par carte bancaire.');
+          return;
+        }
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const timeoutMs = 5 * 60 * 1000; // 5 minutes
-      const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
       
       // Get client ID if logged in
       let clientId: string | null = null;
@@ -356,7 +383,6 @@ export function UnifiedBookingPage() {
       }
 
       // Generate a unique group ID for all requests in this batch
-      // This ensures proper cancellation of siblings when one driver accepts
       const requestGroupId = crypto.randomUUID();
 
       // Create ride requests for all selected drivers (first-come-first-served)
@@ -390,7 +416,7 @@ export function UnifiedBookingPage() {
       const isMulti = selectedDrivers.length > 1;
       toast.success(
         isMulti 
-          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le paiement sera sécurisé après acceptation.`
+          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le montant sera bloqué sur votre carte après acceptation.`
           : 'Demande envoyée ! Vous serez notifié dès que le chauffeur accepte.'
       );
 
@@ -885,13 +911,14 @@ export function UnifiedBookingPage() {
                   }
                   if (clientPaymentMethod === 'card' && hasStripeDriver) {
                     const isMultiDriver = selectedDriversList.length > 1;
+                    const estimatedPrice = selectedDriversList.find(d => d.stripe_connect_charges_enabled)?.estimated_price;
                     return (
                       <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
                         <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <span>
                           {isMultiDriver 
-                            ? "Le paiement sera sécurisé automatiquement dès qu'un chauffeur accepte votre demande. Aucun prélèvement ne sera fait avant." 
-                            : "Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course."}
+                            ? "Le montant total TTC de la course sera bloqué sur votre carte dès qu'un chauffeur accepte. Aucun prélèvement ne sera fait avant la fin de la course." 
+                            : `Le montant total TTC${estimatedPrice ? ` (${estimatedPrice.toFixed(0)}€)` : ''} sera bloqué sur votre carte à la confirmation. Le prélèvement interviendra à la fin de la course.`}
                         </span>
                       </div>
                     );
@@ -957,7 +984,13 @@ export function UnifiedBookingPage() {
                   <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
                   <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
                   <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
-                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
+                  {clientPaymentMethod === 'card' && (
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
+                      <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span>Vous devrez saisir vos coordonnées bancaires après l'acceptation du chauffeur. Le montant total TTC sera bloqué sur votre carte.</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

@@ -231,9 +231,9 @@ serve(async (req) => {
             if (stripeKey) {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-              // Calculate hold amount from course price
-              const coursePrice = course.final_payment_amount || course.guest_estimated_price || 10;
-              const holdAmountCents = Math.max(Math.round(coursePrice * 100), 1000); // min 10€
+              // Hold amount = exact TTC course price (no artificial minimum)
+              const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
+              const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100); // min 1€ safety
               
               const SOLOCAB_FEE_CENTS = 50; // 0.50€
               const piParams: Record<string, unknown> = {
@@ -310,7 +310,7 @@ serve(async (req) => {
         if (autoHoldResult === "auto_confirmed") {
           paymentMessage = "✅ Votre carte a été validée automatiquement. Aucune action requise.";
         } else if (clientWantsCard && driverHasStripe && autoHoldResult !== "auto_confirmed") {
-          paymentMessage = "💳 Veuillez confirmer votre empreinte bancaire dans vos courses.";
+          paymentMessage = "💳 Veuillez enregistrer votre carte bancaire pour sécuriser le montant de la course.";
         } else if (clientWantsCard) {
           paymentMessage = "Le paiement se fera par carte directement avec le chauffeur.";
         } else {
