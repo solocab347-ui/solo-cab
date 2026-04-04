@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const CANCELLATION_FEE_CENTS = 1000; // 10€ cancellation fee (politique d'annulation)
+const MIN_HOLD_CENTS = 100; // 1€ safety minimum (hold = exact TTC price)
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
