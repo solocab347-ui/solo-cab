@@ -594,24 +594,40 @@ export function UnifiedBookingPage() {
 
             {/* Date/Time for reservations */}
             {mode === 'reservation' && (
-              <div className="flex gap-2 pt-1">
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="bg-muted/30 border-0 shadow-none h-10 text-sm"
-                  />
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Date et heure de prise en charge
+                </Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Date</span>
+                    <Input
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="bg-primary/10 border border-primary/30 h-12 text-sm font-medium text-foreground"
+                      placeholder="Choisir une date"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Heure</span>
+                    <Input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="bg-primary/10 border border-primary/30 h-12 text-sm font-medium text-foreground"
+                      placeholder="Choisir une heure"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <Input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    className="bg-muted/30 border-0 shadow-none h-10 text-sm"
-                  />
-                </div>
+                {(!scheduledDate || !scheduledTime) && (
+                  <p className="text-[11px] text-amber-500 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Veuillez sélectionner la date et l'heure pour continuer
+                  </p>
+                )}
               </div>
             )}
 
