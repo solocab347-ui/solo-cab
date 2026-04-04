@@ -93,37 +93,26 @@ serve(async (req) => {
 
     logStep("Stripe Customer ready", { customerId: stripeCustomerId });
 
-    const origin = req.headers.get("origin") ?? Deno.env.get("SITE_URL") ?? "http://localhost:3000";
-
-    // Use hosted Stripe Checkout in setup mode to avoid frontend/client-secret mismatches
-    const session = await stripe.checkout.sessions.create({
-      mode: "setup",
+    // Create SetupIntent with automatic_payment_methods for full support
+    // (manual card entry, Link, saved browser cards, Apple/Google Pay)
+    const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
-      payment_method_types: ["card"],
-      success_url: `${origin}/client-dashboard?tab=paiement&card=success`,
-      cancel_url: `${origin}/client-dashboard?tab=paiement&card=cancelled`,
-      setup_intent_data: {
-        metadata: {
-          client_id: client.id,
-          user_id: user.id,
-          platform: "solocab",
-        },
-      },
+      usage: "off_session",
+      automatic_payment_methods: { enabled: true },
       metadata: {
-        type: "client_card_setup",
         client_id: client.id,
         user_id: user.id,
         platform: "solocab",
       },
     });
 
-    logStep("Hosted card setup session created", { sessionId: session.id, customerId: stripeCustomerId });
+    logStep("SetupIntent created", { setupIntentId: setupIntent.id, customerId: stripeCustomerId });
 
     return new Response(
       JSON.stringify({
         success: true,
-        url: session.url,
-        checkout_session_id: session.id,
+        client_secret: setupIntent.client_secret,
+        setup_intent_id: setupIntent.id,
         customer_id: stripeCustomerId,
       }),
       {
