@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  PaymentElement,
   CardNumberElement,
   CardExpiryElement,
   CardCvcElement,
@@ -39,22 +38,9 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
   const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const [useManualForm, setUseManualForm] = useState(false);
-  const [showManualFallback, setShowManualFallback] = useState(false);
   const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
 
-  useEffect(() => {
-    if (ready || useManualForm) return;
-
-    const timeout = window.setTimeout(() => {
-      setShowManualFallback(true);
-    }, 7000);
-
-    return () => window.clearTimeout(timeout);
-  }, [ready, useManualForm]);
-
-  const isManualFormComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
+  const isFormComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
 
   const elementStyle = {
     base: {
@@ -80,59 +66,31 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
     setError(null);
 
     try {
-      if (useManualForm) {
-        const cardNumberElement = elements.getElement(CardNumberElement);
-        const cardExpiryElement = elements.getElement(CardExpiryElement);
-        const cardCvcElement = elements.getElement(CardCvcElement);
-
-        if (!cardNumberElement || !cardExpiryElement || !cardCvcElement) {
-          throw new Error("Le formulaire de carte n'est pas prêt.");
-        }
-
-        const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
-          payment_method: {
-            card: cardNumberElement,
-          },
-        });
-
-        if (stripeError) {
-          setError(stripeError.message || "Erreur lors de l'enregistrement");
-          return;
-        }
-
-        if (setupIntent?.status === "succeeded") {
-          toast.success("✅ Carte enregistrée avec succès !");
-          onSuccess();
-          return;
-        }
-      } else {
-        const submitResult = await elements.submit();
-        if (submitResult.error) {
-          setError(submitResult.error.message || "Erreur lors de la validation de la carte");
-          return;
-        }
-
-        const { error: stripeError, setupIntent } = await stripe.confirmSetup({
-          elements,
-          confirmParams: {
-            return_url: window.location.href,
-          },
-          redirect: "if_required",
-        });
-
-        if (stripeError) {
-          setError(stripeError.message || "Erreur lors de l'enregistrement");
-          return;
-        }
-
-        if (setupIntent?.status === "succeeded") {
-          toast.success("✅ Carte enregistrée avec succès !");
-          onSuccess();
-          return;
-        }
+      const cardNumberElement = elements.getElement(CardNumberElement);
+      if (!cardNumberElement) {
+        throw new Error("Le formulaire de carte n'est pas prêt.");
       }
 
-      toast.info("Vérification sécurisée en cours...");
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: cardNumberElement,
+        },
+      });
+
+      if (stripeError) {
+        setError(stripeError.message || "Erreur lors de l'enregistrement");
+        return;
+      }
+
+      if (setupIntent?.status === "succeeded") {
+        toast.success("✅ Carte enregistrée avec succès !");
+        onSuccess();
+        return;
+      }
+
+      if (setupIntent?.status === "requires_action") {
+        toast.info("Vérification 3D Secure en cours...");
+      }
     } catch (err: any) {
       setError(err.message || "Erreur");
     } finally {
@@ -142,75 +100,42 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {useManualForm ? (
-        <div className="space-y-3">
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Numéro de carte</label>
+          <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
+            <CardNumberElement
+              options={{ style: elementStyle, showIcon: true, placeholder: "1234 5678 9012 3456" }}
+              onChange={(event) => setCardComplete((prev) => ({ ...prev, number: event.complete }))}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Numéro de carte</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Expiration</label>
             <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-              <CardNumberElement
-                options={{ style: elementStyle, showIcon: true, placeholder: "1234 5678 9012 3456" }}
-                onChange={(event) => setCardComplete((prev) => ({ ...prev, number: event.complete }))}
+              <CardExpiryElement
+                options={{ style: elementStyle, placeholder: "MM / AA" }}
+                onChange={(event) => setCardComplete((prev) => ({ ...prev, expiry: event.complete }))}
                 className="w-full"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Expiration</label>
-              <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-                <CardExpiryElement
-                  options={{ style: elementStyle, placeholder: "MM / AA" }}
-                  onChange={(event) => setCardComplete((prev) => ({ ...prev, expiry: event.complete }))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Cryptogramme</label>
-              <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-                <CardCvcElement
-                  options={{ style: elementStyle, placeholder: "123" }}
-                  onChange={(event) => setCardComplete((prev) => ({ ...prev, cvc: event.complete }))}
-                  className="w-full"
-                />
-              </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Cryptogramme</label>
+            <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
+              <CardCvcElement
+                options={{ style: elementStyle, placeholder: "123" }}
+                onChange={(event) => setCardComplete((prev) => ({ ...prev, cvc: event.complete }))}
+                className="w-full"
+              />
             </div>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            Saisie manuelle activée.
-          </p>
         </div>
-      ) : (
-        <>
-          <PaymentElement
-            onReady={() => setReady(true)}
-            options={{
-              layout: { type: "tabs", defaultCollapsed: false },
-              paymentMethodOrder: ["link", "card"],
-            }}
-          />
-
-          {!ready && (
-            <div className="space-y-3 py-4">
-              <div className="flex items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Chargement sécurisé...
-              </div>
-
-              {showManualFallback && (
-                <div className="flex justify-center">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setUseManualForm(true)}>
-                    Saisir ma carte manuellement
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+      </div>
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -226,7 +151,7 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
       <div className="flex gap-2">
         <Button
           type="submit"
-          disabled={saving || !stripe || (!useManualForm && !ready) || (useManualForm && !isManualFormComplete)}
+          disabled={saving || !stripe || !isFormComplete}
           className="flex-1"
         >
           {saving ? (
@@ -378,11 +303,7 @@ export function ClientCardManager() {
                 key={clientSecret}
                 stripe={stripePromise}
                 options={{
-                  clientSecret,
                   locale: "fr",
-                  appearance: {
-                    theme: "stripe",
-                  },
                 }}
               >
                 <CardFormInner
