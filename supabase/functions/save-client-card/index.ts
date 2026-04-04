@@ -93,12 +93,11 @@ serve(async (req) => {
 
     logStep("Stripe Customer ready", { customerId: stripeCustomerId });
 
-    // Create SetupIntent with automatic_payment_methods for full support
-    // (manual card entry, Link, saved browser cards, Apple/Google Pay)
+    // Create SetupIntent with explicit methods for card save + Link support
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       usage: "off_session",
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card", "link"],
       metadata: {
         client_id: client.id,
         user_id: user.id,
