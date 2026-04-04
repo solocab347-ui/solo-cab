@@ -368,12 +368,6 @@ export function ClientCardManager() {
             </Button>
           )}
 
-          {!stripeReady && (
-            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <p>Configuration Stripe publique manquante ou invalide côté frontend.</p>
-            </div>
-          )}
 
           <p className="flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
             <ShieldCheck className="h-3 w-3" />
