@@ -91,14 +91,7 @@ export function CourseCompletionCommissionDialog({
 
       if (course) {
         // Vérifier si le chauffeur a Stripe Connect
-        const { data: driverData } = await supabase
-          .from('drivers')
-          .select('stripe_connect_account_id, stripe_connect_charges_enabled')
-          .eq('id', driverId)
-          .single();
-
-        const driverHasStripe = !!driverData?.stripe_connect_account_id && 
-          driverData?.stripe_connect_charges_enabled === true;
+        const driverHasStripe = await checkDriverStripeStatus(driverId);
 
         const isStripe = driverHasStripe && (
           course.payment_method === 'stripe' || 
