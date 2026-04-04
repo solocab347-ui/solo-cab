@@ -66,6 +66,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   useEffect(() => {
     loadData();
