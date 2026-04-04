@@ -111,8 +111,8 @@ export const CoursePaymentMethodSelector = ({
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs">
-                <strong>Paiement par carte sécurisé.</strong> Après création de la course, 
-                une empreinte bancaire sera requise pour confirmer la réservation. 
+                <strong>Paiement par carte sécurisé.</strong> Le montant total TTC de la course sera 
+                bloqué sur votre carte à la réservation. Vous ne serez débité qu'à la fin de la course. 
                 Consultez notre{' '}
                 <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
                   politique d'annulation
