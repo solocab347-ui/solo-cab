@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard, Banknote, Building2, Send, Loader2, CheckCircle, Wallet, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDriverStripeStatus } from '@/hooks/useDriverStripeStatus';
 
 interface CoursePaymentDialogContentProps {
   courseId: string;
