@@ -299,15 +299,7 @@ const GuestBooking = () => {
 
       // Check if driver requires card hold (uses Stripe Connect) AND client chose card
       if (paymentMethod === 'card') {
-        const { data: driverPayment } = await supabase
-          .from('drivers')
-          .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
-          .eq('id', driver.id)
-          .single();
-
-        const driverUsesStripe = 
-          !!driverPayment?.stripe_connect_account_id &&
-          driverPayment?.stripe_connect_charges_enabled === true;
+        const driverUsesStripe = await checkDriverStripeStatus(driver.id);
 
         if (driverUsesStripe) {
           setCreatedCourseId(data.id);
