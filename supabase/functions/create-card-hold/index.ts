@@ -70,9 +70,9 @@ serve(async (req) => {
       }
     }
 
-    // Minimum hold = cancellation fee (10€)
-    if (holdAmountCents < CANCELLATION_FEE_CENTS) {
-      holdAmountCents = CANCELLATION_FEE_CENTS;
+    // Minimum hold = 1€ safety (actual hold = exact TTC price)
+    if (holdAmountCents < MIN_HOLD_CENTS) {
+      holdAmountCents = MIN_HOLD_CENTS;
     }
 
     const holdAmountEuros = holdAmountCents / 100;
