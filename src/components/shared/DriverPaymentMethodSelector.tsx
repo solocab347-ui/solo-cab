@@ -39,7 +39,7 @@ export function DriverPaymentMethodSelector({
   value,
   onChange,
   label = "Moyen de paiement",
-  showNotSpecified = true,
+  showNotSpecified: _showNotSpecified = false,
   className = ""
 }: DriverPaymentMethodSelectorProps) {
   const { config, loading, isStripeEnabled } = useDriverPaymentMethods(driverId);
