@@ -101,8 +101,14 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           .eq("status", "succeeded")
           .order("created_at", { ascending: false })
           .limit(50),
+        supabase
+          .from("drivers")
+          .select("stripe_connect_charges_enabled")
+          .eq("id", driverId)
+          .single(),
       ]);
 
+      setStripeEnabled(!!driverResult.data?.stripe_connect_charges_enabled);
       const mapped = (balancesResult.data || []).map((b: any) => ({
         ...b,
         week_start: b.settlement?.week_start,
