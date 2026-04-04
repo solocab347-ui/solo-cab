@@ -93,7 +93,7 @@ serve(async (req) => {
 
     logStep("Stripe Customer ready", { customerId: stripeCustomerId });
 
-    // Create SetupIntent with explicit methods for card save + Link support
+    // Create SetupIntent with a fresh client secret for this specific request
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       usage: "off_session",
@@ -105,7 +105,11 @@ serve(async (req) => {
       },
     });
 
-    logStep("SetupIntent created", { setupIntentId: setupIntent.id, customerId: stripeCustomerId });
+    logStep("SetupIntent created", {
+      setupIntentId: setupIntent.id,
+      customerId: stripeCustomerId,
+      livemode: setupIntent.livemode,
+    });
 
     return new Response(
       JSON.stringify({
