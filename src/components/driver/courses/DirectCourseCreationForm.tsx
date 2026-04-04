@@ -75,7 +75,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCr
   const [passengersCount, setPassengersCount] = useState("1");
   const [notes, setNotes] = useState("");
   const [durationHours, setDurationHours] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("not_specified");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   
   // Calculated values
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
