@@ -12,9 +12,34 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CREATE-SETUP-INTENT] ${step}${detailsStr}`);
 };
 
+// Rate limit: max 5 setup intents per user per 10 minutes
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Only allow POST
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405,
+    });
   }
 
   const supabaseClient = createClient(
@@ -28,8 +53,15 @@ serve(async (req) => {
     const publishableKey = Deno.env.get("VITE_STRIPE_PUBLISHABLE_KEY");
     if (!publishableKey) throw new Error("VITE_STRIPE_PUBLISHABLE_KEY not configured");
 
+    // Validate key pair consistency (both test or both live)
+    const isSecretLive = stripeKey.startsWith("sk_live_");
+    const isPubLive = publishableKey.startsWith("pk_live_");
+    if (isSecretLive !== isPubLive) {
+      logStep("CRITICAL: Stripe key mode mismatch", { secretLive: isSecretLive, pubLive: isPubLive });
+      throw new Error("Configuration Stripe invalide: mismatch test/live");
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const stripeAccount = await stripe.accounts.retrieve();
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
@@ -39,7 +71,17 @@ serve(async (req) => {
     if (userError || !userData.user?.email) throw new Error("User not authenticated");
 
     const user = userData.user;
-    logStep("User authenticated", { userId: user.id, email: user.email });
+
+    // Rate limit check
+    if (!checkRateLimit(user.id)) {
+      logStep("Rate limited", { userId: user.id });
+      return new Response(
+        JSON.stringify({ error: "Trop de tentatives. Réessayez dans quelques minutes." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 },
+      );
+    }
+
+    logStep("User authenticated", { userId: user.id });
 
     const { data: client, error: clientError } = await supabaseClient
       .from("clients")
@@ -105,9 +147,9 @@ serve(async (req) => {
       setupIntentId: setupIntent.id,
       customerId: stripeCustomerId,
       livemode: setupIntent.livemode,
-      accountId: stripeAccount.id,
     });
 
+    // Never expose account_id or internal details to frontend
     return new Response(
       JSON.stringify({
         success: true,
@@ -115,7 +157,6 @@ serve(async (req) => {
         setup_intent_id: setupIntent.id,
         customer_id: stripeCustomerId,
         livemode: setupIntent.livemode,
-        account_id: stripeAccount.id,
         publishable_key: publishableKey,
       }),
       {

@@ -202,8 +202,7 @@ export function ClientCardManager() {
       throw new Error("Clé publique Stripe invalide");
     }
 
-    console.log("[ClientCardManager] received clientSecret", String(data.client_secret).slice(0, 28));
-    console.log("[ClientCardManager] backend Stripe account", data.account_id, "livemode", data.livemode);
+    // No sensitive details logged in production
     if (persistInState) {
       setClientSecret(data.client_secret);
       setSetupIntentId(data.setup_intent_id);
