@@ -1069,7 +1069,7 @@ export function UnifiedBookingPage() {
                   ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
                   : confirmationStep && !user && !authChoice
                     ? 'Choisissez une option ci-dessus'
-                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking
+                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
                       ? 'Vérifiez votre carte ci-dessus'
                       : `Envoyer la demande`
                 }

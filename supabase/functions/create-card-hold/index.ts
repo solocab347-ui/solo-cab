@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const CANCELLATION_FEE_CENTS = 1000; // 10€ cancellation fee (politique d'annulation)
+const MIN_HOLD_CENTS = 100; // 1€ safety minimum (hold = exact TTC price)
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -51,7 +51,7 @@ serve(async (req) => {
     if (course_id && typeof course_id !== "string") throw new Error("Invalid course_id");
     if (client_email && typeof client_email !== "string") throw new Error("Invalid client_email");
 
-    // Determine hold amount: use exact course price, minimum 10€ (cancellation fee)
+    // Determine hold amount: use exact course price TTC
     let holdAmountCents = hold_amount_cents ? Math.round(Number(hold_amount_cents)) : 0;
     
     // If no amount provided, try to get it from the course
@@ -70,9 +70,9 @@ serve(async (req) => {
       }
     }
 
-    // Minimum hold = cancellation fee (10€)
-    if (holdAmountCents < CANCELLATION_FEE_CENTS) {
-      holdAmountCents = CANCELLATION_FEE_CENTS;
+    // Minimum hold = 1€ safety (actual hold = exact TTC price)
+    if (holdAmountCents < MIN_HOLD_CENTS) {
+      holdAmountCents = MIN_HOLD_CENTS;
     }
 
     const holdAmountEuros = holdAmountCents / 100;
@@ -158,7 +158,7 @@ serve(async (req) => {
         client_name: client_name || "",
         type: "course_hold",
         hold_amount_cents: holdAmountCents.toString(),
-        cancellation_fee_cents: CANCELLATION_FEE_CENTS.toString(),
+        cancellation_fee_cents: "1000", // 10€ cancellation policy (separate from hold amount)
       },
       transfer_data: {
         destination: driver.stripe_connect_account_id,
