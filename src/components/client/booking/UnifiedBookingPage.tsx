@@ -793,7 +793,7 @@ export function UnifiedBookingPage() {
           </Alert>
         )}
 
-        {/* Drivers list - hidden when in confirmation step */}
+        {/* Drivers list - horizontal scrollable cards */}
         {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
@@ -807,18 +807,19 @@ export function UnifiedBookingPage() {
                 </Badge>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               {filteredDrivers.map((driver, index) => (
-                <DriverResultCard
-                  key={driver.driver_id}
-                  driver={driver}
-                  routeDistanceKm={routeDistanceKm || undefined}
-                  isSelected={selectedDriverIds.has(driver.driver_id)}
-                  onToggleSelect={toggleDriverSelection}
-                  onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
-                  rank={index + 1}
-                  clientPaymentMethod={clientPaymentMethod}
-                />
+                <div key={driver.driver_id} className="snap-start shrink-0 w-[260px]">
+                  <DriverResultCard
+                    driver={driver}
+                    routeDistanceKm={routeDistanceKm || undefined}
+                    isSelected={selectedDriverIds.has(driver.driver_id)}
+                    onToggleSelect={toggleDriverSelection}
+                    onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
+                    rank={index + 1}
+                    clientPaymentMethod={clientPaymentMethod}
+                  />
+                </div>
               ))}
             </div>
           </div>
