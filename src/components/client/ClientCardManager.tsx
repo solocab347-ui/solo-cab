@@ -34,7 +34,7 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent }: { onSuccess: () => void; onCancel: () => void; clientSecret: string; onRequireFreshIntent: () => Promise<string | null> }) {
+function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent }: { onSuccess: () => void; onCancel: () => void; clientSecret: string; onRequireFreshIntent: (persistInState?: boolean) => Promise<string | null> }) {
   const stripe = useStripe();
   const elements = useElements();
   const [saving, setSaving] = useState(false);
@@ -78,7 +78,7 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
         throw new Error("Client secret Stripe invalide.");
       }
 
-      const freshClientSecret = await onRequireFreshIntent();
+      const freshClientSecret = await onRequireFreshIntent(false);
       if (freshClientSecret) {
         currentClientSecret = freshClientSecret;
       }
@@ -193,7 +193,7 @@ export function ClientCardManager() {
 
   const stripeReady = useMemo(() => Boolean(stripePromise && stripePublishableKey.startsWith("pk_")), []);
 
-  const createFreshSetupIntent = useCallback(async () => {
+  const createFreshSetupIntent = useCallback(async (persistInState = true) => {
     const { data, error } = await supabase.functions.invoke("create-setup-intent");
     if (error) throw error;
     if (!data?.client_secret || !data?.setup_intent_id) {
@@ -201,8 +201,10 @@ export function ClientCardManager() {
     }
 
     console.log("[ClientCardManager] received clientSecret", String(data.client_secret).slice(0, 28));
-    setClientSecret(data.client_secret);
-    setSetupIntentId(data.setup_intent_id);
+    if (persistInState) {
+      setClientSecret(data.client_secret);
+      setSetupIntentId(data.setup_intent_id);
+    }
     return data.client_secret as string;
   }, []);
 
