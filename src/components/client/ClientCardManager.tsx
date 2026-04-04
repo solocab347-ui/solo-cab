@@ -16,7 +16,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
 
 interface SavedCard {
   id: string;
@@ -81,8 +81,17 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
     try {
       if (useManualForm) {
         const cardNumberElement = elements.getElement(CardNumberElement);
-        if (!cardNumberElement) {
+        const cardExpiryElement = elements.getElement(CardExpiryElement);
+        const cardCvcElement = elements.getElement(CardCvcElement);
+
+        if (!cardNumberElement || !cardExpiryElement || !cardCvcElement) {
           throw new Error("Le formulaire de carte n'est pas prêt.");
+        }
+
+        const submitResult = await elements.submit();
+        if (submitResult.error) {
+          setError(submitResult.error.message || "Erreur lors de la validation de la carte");
+          return;
         }
 
         const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
@@ -178,8 +187,8 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
           <PaymentElement
             onReady={() => setReady(true)}
             options={{
-              layout: "tabs",
-              paymentMethodOrder: ["card", "link"],
+              layout: { type: "tabs", defaultCollapsed: false },
+              paymentMethodOrder: ["link", "card"],
             }}
           />
 
