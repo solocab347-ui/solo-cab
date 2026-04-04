@@ -354,6 +354,7 @@ Deno.serve(async (req) => {
             peak_hours_surcharge_amount: pricing.peak_adjustment || 0,
             valid_until: validUntil.toISOString(),
             status: devisStatus,
+            accepted_at: autoAcceptDevis ? new Date().toISOString() : null,
             pricing_source: pricingType,
             city_pricing_name: cityPricingName,
             distance_km: course.distance_km || 0,
