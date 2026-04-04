@@ -75,7 +75,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
   const loadData = async () => {
     try {
       // Load all data in parallel
-      const [balancesResult, pendingResult, paymentsResult] = await Promise.all([
+      const [balancesResult, pendingResult, paymentsResult, driverResult] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
           .select(`
