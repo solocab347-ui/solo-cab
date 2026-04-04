@@ -143,11 +143,14 @@ serve(async (req) => {
       }
     }
 
+    const SOLOCAB_FEE_CENTS = 50; // 0.50€ commission SoloCab
+
     // Build PaymentIntent params with exact course amount
     const piParams: any = {
       amount: holdAmountCents,
       currency: "eur",
       capture_method: "manual",
+      application_fee_amount: SOLOCAB_FEE_CENTS,
       metadata: {
         driver_id,
         course_id: course_id || "",
