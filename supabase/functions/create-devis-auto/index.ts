@@ -73,9 +73,16 @@ Deno.serve(async (req) => {
     const driverUsesStripe = !!driverStripeInfo?.stripe_connect_account_id && 
       driverStripeInfo?.stripe_connect_charges_enabled === true;
     
-    // Déterminer si c'est un paiement Stripe (driver Stripe + client paie par carte)
-    const isStripePayment = driverUsesStripe && (course?.payment_method === 'card' || !course?.payment_method);
-    console.log('💳 Stripe payment:', { driverUsesStripe, paymentMethod: course?.payment_method, isStripePayment });
+    // Déterminer si c'est un paiement Stripe (driver Stripe + client paie en ligne par carte)
+    const isStripePayment = driverUsesStripe && (
+      course?.payment_method === 'stripe' || course?.payment_method_requested === 'card'
+    );
+    console.log('💳 Stripe payment:', {
+      driverUsesStripe,
+      paymentMethod: course?.payment_method,
+      paymentMethodRequested: course?.payment_method_requested,
+      isStripePayment,
+    });
 
     if (courseError || !course) {
       console.error('❌ Course introuvable:', courseError);

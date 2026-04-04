@@ -815,8 +815,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         const driverHasStripe = !!driverInfo?.stripe_connect_account_id && driverInfo?.stripe_connect_charges_enabled === true;
         
-        // If driver uses Stripe and payment method is card, ensure payment is secured
-        if (driverHasStripe && courseData.payment_method === 'card') {
+        // If driver uses Stripe and the client chose card, ensure payment is secured
+        const requiresCardAuthorization = driverHasStripe && (
+          courseData.payment_method === 'stripe' ||
+          courseData.payment_method_requested === 'card'
+        );
+
+        if (requiresCardAuthorization) {
           const hasValidPayment = courseData.payment_status === 'bank_imprint_captured' || 
             courseData.payment_status === 'paid' ||
             courseData.card_hold_status === 'confirmed' ||
@@ -824,7 +829,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             courseData.stripe_hold_payment_intent_id;
           
           if (!hasValidPayment) {
-            toast.error("⚠️ Impossible de démarrer : aucune empreinte bancaire validée pour cette course. Le client doit d'abord confirmer son paiement.");
+            toast.error("⚠️ Impossible de démarrer : aucun blocage carte valide n'existe pour cette course. Le client doit d'abord confirmer son paiement.");
             setActionLoading(courseId, false);
             return;
           }
