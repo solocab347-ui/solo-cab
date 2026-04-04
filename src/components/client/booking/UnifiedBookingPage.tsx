@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -594,24 +594,40 @@ export function UnifiedBookingPage() {
 
             {/* Date/Time for reservations */}
             {mode === 'reservation' && (
-              <div className="flex gap-2 pt-1">
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="bg-muted/30 border-0 shadow-none h-10 text-sm"
-                  />
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Date et heure de prise en charge
+                </Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Date</span>
+                    <Input
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="bg-primary/10 border border-primary/30 h-12 text-sm font-medium text-foreground"
+                      placeholder="Choisir une date"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Heure</span>
+                    <Input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="bg-primary/10 border border-primary/30 h-12 text-sm font-medium text-foreground"
+                      placeholder="Choisir une heure"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <Input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    className="bg-muted/30 border-0 shadow-none h-10 text-sm"
-                  />
-                </div>
+                {(!scheduledDate || !scheduledTime) && (
+                  <p className="text-[11px] text-amber-500 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Veuillez sélectionner la date et l'heure pour continuer
+                  </p>
+                )}
               </div>
             )}
 
@@ -777,7 +793,7 @@ export function UnifiedBookingPage() {
           </Alert>
         )}
 
-        {/* Drivers list - hidden when in confirmation step */}
+        {/* Drivers list - horizontal scrollable cards */}
         {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
@@ -791,18 +807,19 @@ export function UnifiedBookingPage() {
                 </Badge>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               {filteredDrivers.map((driver, index) => (
-                <DriverResultCard
-                  key={driver.driver_id}
-                  driver={driver}
-                  routeDistanceKm={routeDistanceKm || undefined}
-                  isSelected={selectedDriverIds.has(driver.driver_id)}
-                  onToggleSelect={toggleDriverSelection}
-                  onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
-                  rank={index + 1}
-                  clientPaymentMethod={clientPaymentMethod}
-                />
+                <div key={driver.driver_id} className="snap-start shrink-0 w-[260px]">
+                  <DriverResultCard
+                    driver={driver}
+                    routeDistanceKm={routeDistanceKm || undefined}
+                    isSelected={selectedDriverIds.has(driver.driver_id)}
+                    onToggleSelect={toggleDriverSelection}
+                    onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
+                    rank={index + 1}
+                    clientPaymentMethod={clientPaymentMethod}
+                  />
+                </div>
               ))}
             </div>
           </div>
