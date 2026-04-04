@@ -3,17 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Plus, Star, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CreditCard, Plus, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface SavedCard {
   id: string;
@@ -31,50 +22,24 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-// ========================
-// CARD FORM (inside Elements)
-// ========================
 function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
 
     setSaving(true);
     setError(null);
 
     try {
-      // 1. Get SetupIntent from backend
       const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
       if (fnError) throw fnError;
-      if (!data?.client_secret) throw new Error("Erreur de configuration");
+      if (!data?.url) throw new Error("Erreur de configuration");
 
-      // 2. Confirm with Stripe Elements
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error("Carte non chargée");
-
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
-        data.client_secret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
-
-      if (stripeError) {
-        setError(stripeError.message || "Erreur lors de l'enregistrement");
-        return;
-      }
-
-      if (setupIntent?.status === "succeeded") {
-        toast.success("✅ Carte enregistrée ! Vos paiements seront automatiques.");
-        onSuccess();
-      }
+      toast.success("Redirection sécurisée vers Stripe...");
+      onSuccess();
+      window.location.href = data.url;
     } catch (err: any) {
       setError(err.message || "Erreur");
     } finally {
@@ -84,21 +49,8 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: ()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 rounded-lg border bg-background">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "#1a1a1a",
-                "::placeholder": { color: "#9ca3af" },
-                fontFamily: "system-ui, sans-serif",
-              },
-              invalid: { color: "#ef4444" },
-            },
-            hidePostalCode: true,
-          }}
-        />
+      <div className="p-4 rounded-lg border bg-background text-sm text-muted-foreground">
+        Vous allez être redirigé vers une page Stripe sécurisée pour enregistrer votre carte, puis revenir automatiquement dans SoloCab.
       </div>
 
       {error && (
@@ -110,7 +62,7 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: ()
       </p>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={saving || !stripe} className="flex-1">
+        <Button type="submit" disabled={saving} className="flex-1">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
@@ -251,16 +203,12 @@ export function ClientCardManager() {
 
           {/* Add Card Form */}
           {showForm ? (
-            <Elements stripe={stripePromise}>
-              <CardForm
-                onSuccess={() => {
-                  setShowForm(false);
-                  // Delay to let webhook process
-                  setTimeout(loadCards, 2000);
-                }}
-                onCancel={() => setShowForm(false)}
-              />
-            </Elements>
+            <CardForm
+              onSuccess={() => {
+                setShowForm(false);
+              }}
+              onCancel={() => setShowForm(false)}
+            />
           ) : (
             <Button
               onClick={() => setShowForm(true)}

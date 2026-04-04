@@ -96,6 +96,15 @@ const ClientDashboard = () => {
         toast.error(t('clientDashboard.paymentCancelled'));
         setSearchParams({});
       }
+
+      const cardStatus = searchParams.get("card");
+      if (cardStatus === "success") {
+        toast.success("Carte enregistrée avec succès. Les prochains paiements pourront être automatiques.");
+        setSearchParams({});
+      } else if (cardStatus === "cancelled") {
+        toast.error("L'enregistrement de la carte a été annulé.");
+        setSearchParams({});
+      }
       
       const tabParam = searchParams.get("tab");
       const subtabParam = searchParams.get("subtab");
