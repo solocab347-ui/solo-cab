@@ -45,10 +45,7 @@ export function DriverPaymentMethodSelector({
   const { config, loading, isStripeEnabled } = useDriverPaymentMethods(driverId);
 
   // Build available methods from driver config
-  const availableMethods = [
-    ...(showNotSpecified ? ['not_specified'] : []),
-    ...config.acceptedMethods
-  ];
+  const availableMethods = [...config.acceptedMethods];
 
   // Set default value if current value is not available
   useEffect(() => {
