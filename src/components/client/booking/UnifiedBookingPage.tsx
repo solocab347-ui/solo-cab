@@ -76,7 +76,23 @@ export function UnifiedBookingPage() {
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
 
-  const {
+  // Auto-check if authenticated user already has a saved card
+  useEffect(() => {
+    if (!user || clientPaymentMethod !== 'card') return;
+    const checkSavedCard = async () => {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('stripe_customer_id, default_payment_method_id')
+        .eq('user_id', user.id)
+        .single();
+      if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
+        setCardVerifiedForBooking(true);
+        setSavedCardInfo({ customerId: clientData.stripe_customer_id });
+      }
+    };
+    checkSavedCard();
+  }, [user, clientPaymentMethod]);
+
     drivers,
     isLoading,
     error,
