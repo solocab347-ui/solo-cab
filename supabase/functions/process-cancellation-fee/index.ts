@@ -189,9 +189,19 @@ serve(async (req) => {
         // COURSE AVEC ACOMPTE
         // ─────────────────────────────────────────────────────────────
         if (hoursUntilPickup > freeCancellationHours) {
-          // AVANT T-4h → Remboursement de l'acompte
+          // AVANT T-4h → Remboursement de l'acompte + libération hold
           shouldRefundDeposit = true;
           message = `Annulation client plus de ${freeCancellationHours}h avant - acompte remboursé.`;
+          
+          // Release hold if exists
+          if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+            try {
+              await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+              logStep("Card hold released (deposit course, early cancellation)");
+            } catch (cancelErr: any) {
+              logStep("Hold cancel error", { error: cancelErr.message });
+            }
+          }
           
           if (course.deposit_stripe_payment_intent_id) {
             try {
