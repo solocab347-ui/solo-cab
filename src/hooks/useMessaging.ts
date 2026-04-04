@@ -83,7 +83,7 @@ export const useMessaging = () => {
           // Count unread messages
           const { count: unreadCount } = await supabase
             .from("messages")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("conversation_id", convo.id)
             .eq("is_read", false)
             .neq("sender_id", user.id);
