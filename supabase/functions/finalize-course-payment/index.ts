@@ -40,6 +40,7 @@ serve(async (req) => {
 
     const { course_id } = await req.json();
     if (!course_id) throw new Error("course_id required");
+    if (typeof course_id !== "string" || course_id.length < 10) throw new Error("Invalid course_id format");
 
     logStep("Finalize course payment request", { course_id });
 
@@ -96,6 +97,31 @@ serve(async (req) => {
           success: true,
           already_paid: true,
           message: "Course entièrement payée via l'acompte",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Idempotency: if already processing or succeeded, don't retry
+    if (course.final_payment_status === "succeeded") {
+      logStep("Course already finalized (idempotent return)", { course_id });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          already_paid: true,
+          message: "Paiement déjà finalisé",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (course.final_payment_status === "processing") {
+      logStep("Course payment already processing (idempotent return)", { course_id });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: "processing",
+          message: "Paiement en cours de traitement, veuillez patienter",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );

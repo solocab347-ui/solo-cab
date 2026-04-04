@@ -69,18 +69,13 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
         throw new Error("Le formulaire de carte n'est pas prêt.");
       }
 
-      let currentClientSecret = clientSecret;
+      // Always get a fresh SetupIntent for maximum reliability
+      const freshClientSecret = await onRequireFreshIntent(false);
+      const currentClientSecret = freshClientSecret || clientSecret;
 
       if (!currentClientSecret.startsWith("seti_") || !currentClientSecret.includes("_secret_")) {
         throw new Error("Client secret Stripe invalide.");
       }
-
-      const freshClientSecret = await onRequireFreshIntent(false);
-      if (freshClientSecret) {
-        currentClientSecret = freshClientSecret;
-      }
-
-      console.log("[ClientCardManager] confirmCardSetup clientSecret prefix", currentClientSecret.slice(0, 24));
 
       const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(currentClientSecret, {
         payment_method: {
@@ -207,8 +202,7 @@ export function ClientCardManager() {
       throw new Error("Clé publique Stripe invalide");
     }
 
-    console.log("[ClientCardManager] received clientSecret", String(data.client_secret).slice(0, 28));
-    console.log("[ClientCardManager] backend Stripe account", data.account_id, "livemode", data.livemode);
+    // No sensitive details logged in production
     if (persistInState) {
       setClientSecret(data.client_secret);
       setSetupIntentId(data.setup_intent_id);
@@ -374,12 +368,6 @@ export function ClientCardManager() {
             </Button>
           )}
 
-          {!stripeReady && (
-            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <p>Configuration Stripe publique manquante ou invalide côté frontend.</p>
-            </div>
-          )}
 
           <p className="flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
             <ShieldCheck className="h-3 w-3" />

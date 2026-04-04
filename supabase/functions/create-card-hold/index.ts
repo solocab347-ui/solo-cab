@@ -30,15 +30,18 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+    const body = await req.json();
     const { 
       driver_id,
       course_id,
       client_email,
       client_name,
       client_user_id,
-    } = await req.json();
+    } = body;
 
-    if (!driver_id) throw new Error("driver_id required");
+    if (!driver_id || typeof driver_id !== "string") throw new Error("driver_id required");
+    if (course_id && typeof course_id !== "string") throw new Error("Invalid course_id");
+    if (client_email && typeof client_email !== "string") throw new Error("Invalid client_email");
 
     logStep("Creating 10€ reservation hold", { driver_id, course_id, client_email });
 
