@@ -346,32 +346,13 @@ export function UnifiedBookingPage() {
       return; 
     }
 
-    // ── CARD VERIFICATION: For card payments, ensure client has a saved card ──
+    // ── CARD VERIFICATION: Block if card payment required but not verified ──
     const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
     const hasStripeDriver = selectedDrivers.some(d => d.stripe_connect_charges_enabled);
     
-    if (clientPaymentMethod === 'card' && hasStripeDriver) {
-      if (user) {
-        // Registered client: check for saved card
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('id, stripe_customer_id, default_payment_method_id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!clientData?.stripe_customer_id || !clientData?.default_payment_method_id) {
-          // No saved card → redirect to card management
-          toast.error('Vous devez enregistrer une carte bancaire avant de réserver par carte.');
-          navigate('/client-dashboard?tab=paiement');
-          return;
-        }
-      } else {
-        // Guest: must provide email for card registration
-        if (!guestEmail?.trim()) {
-          toast.error('L\'email est obligatoire pour un paiement par carte bancaire.');
-          return;
-        }
-      }
+    if (clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking) {
+      toast.error('Veuillez d\'abord vérifier votre carte bancaire.');
+      return;
     }
 
     setIsSubmitting(true);
