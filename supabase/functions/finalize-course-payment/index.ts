@@ -54,7 +54,7 @@ serve(async (req) => {
           stripe_connect_account_id, stripe_connect_charges_enabled
         ),
         client:clients!courses_client_id_fkey(id, user_id),
-        devis:devis(id, amount)
+        devis:devis(id, amount, status)
       `)
       .eq("id", course_id)
       .single();
@@ -73,44 +73,11 @@ serve(async (req) => {
       throw new Error("Stripe Connect non configuré pour ce chauffeur");
     }
 
-    // Calculer le montant total et le reste à payer
-    const totalAmount = course.final_payment_amount || course.guest_estimated_price || course.devis?.[0]?.amount || 0;
-    const depositPaid = course.deposit_status === 'paid' ? (course.deposit_amount || 0) : 0;
-    const remainingAmount = totalAmount - depositPaid;
-
-    if (remainingAmount <= 0) {
-      // Course déjà entièrement payée via l'acompte
-      logStep("Course already fully paid via deposit");
-      
-      await supabaseClient
-        .from("courses")
-        .update({
-          status: "completed",
-          payment_status: "paid",
-          final_payment_status: "succeeded",
-          course_finalized_by_driver_at: new Date().toISOString(),
-        })
-        .eq("id", course_id);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          already_paid: true,
-          message: "Course entièrement payée via l'acompte",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
     // Idempotency: if already processing or succeeded, don't retry
     if (course.final_payment_status === "succeeded") {
       logStep("Course already finalized (idempotent return)", { course_id });
       return new Response(
-        JSON.stringify({
-          success: true,
-          already_paid: true,
-          message: "Paiement déjà finalisé",
-        }),
+        JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà finalisé" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
@@ -118,13 +85,17 @@ serve(async (req) => {
     if (course.final_payment_status === "processing") {
       logStep("Course payment already processing (idempotent return)", { course_id });
       return new Response(
-        JSON.stringify({
-          success: false,
-          status: "processing",
-          message: "Paiement en cours de traitement, veuillez patienter",
-        }),
+        JSON.stringify({ success: false, status: "processing", message: "Paiement en cours de traitement" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
+    }
+
+    // Calculer le montant total
+    const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
+    const totalAmount = course.final_payment_amount || acceptedDevis?.amount || course.guest_estimated_price || 0;
+
+    if (totalAmount <= 0) {
+      throw new Error("Montant de la course invalide (0€)");
     }
 
     // Marquer comme en cours de traitement
@@ -136,59 +107,227 @@ serve(async (req) => {
       })
       .eq("id", course_id);
 
-    logStep("Processing final payment", { 
-      totalAmount, 
-      depositPaid, 
-      remainingAmount 
-    });
+    logStep("Processing final payment", { totalAmount });
 
-    // Vérifier si on a une empreinte bancaire pour débiter
-    if (!course.stripe_payment_method_id || course.card_hold_status !== 'confirmed') {
-      throw new Error("Aucune empreinte bancaire valide trouvée pour cette course");
+    // ═══════════════════════════════════════════════════════════════
+    // FLUX PRINCIPAL: CAPTURE de l'empreinte bancaire existante
+    // C'est le flux Uber-like: Authorize → Capture → Transfer
+    // ═══════════════════════════════════════════════════════════════
+    
+    if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+      logStep("Capturing existing hold (Authorize → Capture flow)", {
+        holdPiId: course.stripe_hold_payment_intent_id,
+      });
+
+      try {
+        // Retrieve the existing PaymentIntent to verify status
+        const existingPI = await stripe.paymentIntents.retrieve(course.stripe_hold_payment_intent_id);
+
+        if (existingPI.status === "requires_capture") {
+          // CAPTURE the full amount (or adjusted amount if different)
+          const captureAmountCents = Math.round(totalAmount * 100);
+          
+          const captured = await stripe.paymentIntents.capture(
+            course.stripe_hold_payment_intent_id,
+            {
+              amount_to_capture: Math.min(captureAmountCents, existingPI.amount),
+            }
+          );
+
+          logStep("✅ Hold captured successfully", {
+            piId: captured.id,
+            amountCaptured: captured.amount_received,
+            status: captured.status,
+          });
+
+          // Calculer les frais pour traçabilité
+          const STRIPE_PERCENTAGE = 0.015;
+          const STRIPE_FIXED_FEE = 0.25;
+          const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+          const solocabFee = SOLOCAB_FEE_CENTS / 100;
+          const totalFees = solocabFee + stripeFee;
+          const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+
+          // Update course
+          await supabaseClient
+            .from("courses")
+            .update({
+              status: "completed",
+              payment_status: "paid",
+              final_payment_status: "succeeded",
+              final_payment_intent_id: captured.id,
+              final_payment_amount: totalAmount,
+              final_payment_at: new Date().toISOString(),
+              payment_captured_at: new Date().toISOString(),
+              solocab_fee_amount: solocabFee,
+              stripe_fee_amount: stripeFee,
+              total_fees_amount: totalFees,
+              net_amount_to_driver: netToDriver,
+            })
+            .eq("id", course_id);
+
+          // Créer l'enregistrement de transaction Stripe
+          await supabaseClient
+            .from("stripe_transactions")
+            .insert({
+              course_id,
+              driver_id: course.driver_id,
+              stripe_payment_intent_id: captured.id,
+              transaction_type: "capture",
+              gross_amount: totalAmount,
+              stripe_fee_amount: stripeFee,
+              solocab_fee_amount: solocabFee,
+              net_amount: netToDriver,
+              status: "succeeded",
+              description: `Capture course - ${course.pickup_address} → ${course.destination_address}`,
+            });
+
+          // Record in unified payments table
+          await supabaseClient.from("payments").insert({
+            course_id,
+            driver_id: course.driver_id,
+            client_id: course.client_id,
+            stripe_payment_intent_id: captured.id,
+            stripe_charge_id: (captured.latest_charge as string) || null,
+            amount: totalAmount,
+            captured_amount: totalAmount,
+            application_fee_amount: solocabFee,
+            stripe_fee_amount: stripeFee,
+            net_to_driver: netToDriver,
+            status: "succeeded",
+            payment_type: "course_capture",
+            capture_method: "manual",
+            captured_at: new Date().toISOString(),
+            metadata: {
+              hold_payment_intent_id: course.stripe_hold_payment_intent_id,
+              total_amount: totalAmount,
+              flow: "authorize_then_capture",
+            },
+          });
+
+          // Créer la facture automatiquement
+          try {
+            await supabaseClient.functions.invoke("create-facture-auto", {
+              body: { course_id },
+            });
+          } catch (factureErr) {
+            logStep("Warning: facture creation failed", { error: String(factureErr) });
+          }
+
+          // Notifier le chauffeur
+          await supabaseClient.from("notifications").insert({
+            user_id: course.driver.user_id,
+            title: "💰 Paiement encaissé",
+            message: `${totalAmount.toFixed(2)}€ capturé. Net après frais: ${netToDriver.toFixed(2)}€`,
+            type: "info",
+            link: "/driver-dashboard?tab=courses",
+          });
+
+          // Notifier le client
+          if (course.client?.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: course.client.user_id,
+              title: "✅ Paiement confirmé",
+              message: `Votre paiement de ${totalAmount.toFixed(2)}€ a été effectué.`,
+              type: "info",
+            });
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: "succeeded",
+              flow: "capture",
+              payment_intent_id: captured.id,
+              amount_charged: totalAmount,
+              fees: {
+                stripe_fee: stripeFee,
+                solocab_fee: solocabFee,
+                total_fees: totalFees,
+                net_to_driver: netToDriver,
+              },
+              message: "Paiement capturé avec succès",
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+
+        } else if (existingPI.status === "succeeded") {
+          // Already captured somehow
+          logStep("Hold already captured", { status: existingPI.status });
+          
+          await supabaseClient
+            .from("courses")
+            .update({
+              status: "completed",
+              payment_status: "paid",
+              final_payment_status: "succeeded",
+              payment_captured_at: new Date().toISOString(),
+            })
+            .eq("id", course_id);
+
+          return new Response(
+            JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà capturé" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+
+        } else {
+          // Hold in unexpected state (cancelled, etc.)
+          logStep("Hold in unexpected state, falling through to new payment", { status: existingPI.status });
+          // Fall through to create new payment below
+        }
+      } catch (captureError: any) {
+        logStep("Capture failed, falling through to new payment", { error: captureError.message });
+        // Fall through to create new payment below
+      }
     }
 
-    // Calculer les frais SoloCab (proratisés)
-    // Si un acompte a déjà été payé, les frais ont été partiellement prélevés
-    const depositRatio = depositPaid / totalAmount;
-    const feeOnDeposit = Math.round(SOLOCAB_FEE_CENTS * depositRatio);
-    const remainingFee = SOLOCAB_FEE_CENTS - feeOnDeposit;
+    // ═══════════════════════════════════════════════════════════════
+    // FALLBACK: Pas d'empreinte ou capture échouée → nouveau PaymentIntent
+    // (cas rare: hold expiré, annulé, ou course sans empreinte)
+    // ═══════════════════════════════════════════════════════════════
 
-    const amountCents = Math.round(remainingAmount * 100);
+    if (!course.stripe_payment_method_id) {
+      await supabaseClient
+        .from("courses")
+        .update({ final_payment_status: "failed", last_payment_error: "Aucune carte enregistrée" })
+        .eq("id", course_id);
+      throw new Error("Aucune carte enregistrée pour cette course. Le client doit fournir une carte.");
+    }
 
-    // Créer le PaymentIntent pour le solde
-    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+    logStep("Fallback: creating new PaymentIntent (no valid hold)");
+
+    const amountCents = Math.round(totalAmount * 100);
+
+    const paymentIntentParams: any = {
       amount: amountCents,
       currency: "eur",
       payment_method: course.stripe_payment_method_id,
       confirm: true,
       off_session: true,
-      description: `Solde course VTC - ${course.pickup_address} → ${course.destination_address}`,
+      description: `Course VTC - ${course.pickup_address} → ${course.destination_address}`,
       metadata: {
         course_id,
         driver_id: course.driver_id,
         type: "course_final_payment",
-        total_amount: String(totalAmount),
-        deposit_paid: String(depositPaid),
-        remaining_amount: String(remainingAmount),
+        flow: "fallback_new_pi",
       },
       transfer_data: {
         destination: course.driver.stripe_connect_account_id,
       },
-      application_fee_amount: remainingFee,
+      application_fee_amount: SOLOCAB_FEE_CENTS,
     };
 
+    if (course.stripe_customer_id) {
+      paymentIntentParams.customer = course.stripe_customer_id;
+    }
+
     let paymentIntent: Stripe.PaymentIntent;
-    
+
     try {
       paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
-      logStep("PaymentIntent created", { 
-        paymentIntentId: paymentIntent.id, 
-        status: paymentIntent.status 
-      });
+      logStep("Fallback PaymentIntent created", { piId: paymentIntent.id, status: paymentIntent.status });
     } catch (stripeError: any) {
-      logStep("PaymentIntent creation failed", { error: stripeError.message });
-      
-      // Update course with failure
+      logStep("Fallback PaymentIntent creation failed", { error: stripeError.message });
       await supabaseClient
         .from("courses")
         .update({
@@ -197,20 +336,17 @@ serve(async (req) => {
           payment_retry_count: (course.payment_retry_count || 0) + 1,
         })
         .eq("id", course_id);
-
       throw new Error(`Échec du paiement: ${stripeError.message}`);
     }
 
-    // Calculer les frais pour traçabilité
+    // Calculer les frais
     const STRIPE_PERCENTAGE = 0.015;
     const STRIPE_FIXED_FEE = 0.25;
     const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
     const totalFees = SOLOCAB_FEE_CENTS / 100 + stripeFee;
     const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
 
-    // Traiter selon le statut du PaymentIntent
     if (paymentIntent.status === "succeeded") {
-      // Paiement réussi !
       await supabaseClient
         .from("courses")
         .update({
@@ -218,10 +354,9 @@ serve(async (req) => {
           payment_status: "paid",
           final_payment_status: "succeeded",
           final_payment_intent_id: paymentIntent.id,
-          final_payment_amount: remainingAmount,
+          final_payment_amount: totalAmount,
           final_payment_at: new Date().toISOString(),
           payment_captured_at: new Date().toISOString(),
-          // Traçabilité des frais
           solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
           stripe_fee_amount: stripeFee,
           total_fees_amount: totalFees,
@@ -229,107 +364,80 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      // Créer l'enregistrement de transaction Stripe
-      await supabaseClient
-        .from("stripe_transactions")
-        .insert({
-          course_id,
-          driver_id: course.driver_id,
-          stripe_payment_intent_id: paymentIntent.id,
-          transaction_type: depositPaid > 0 ? "final_payment" : "full_payment",
-          gross_amount: totalAmount,
-          stripe_fee_amount: stripeFee,
-          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
-          net_amount: netToDriver,
-          status: "succeeded",
-          description: `Course finalisée - ${course.pickup_address} → ${course.destination_address}`,
-        });
+      await supabaseClient.from("stripe_transactions").insert({
+        course_id,
+        driver_id: course.driver_id,
+        stripe_payment_intent_id: paymentIntent.id,
+        transaction_type: "full_payment",
+        gross_amount: totalAmount,
+        stripe_fee_amount: stripeFee,
+        solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+        net_amount: netToDriver,
+        status: "succeeded",
+        description: `Paiement course (fallback) - ${course.pickup_address} → ${course.destination_address}`,
+      });
 
-      // Record in unified payments table
       await supabaseClient.from("payments").insert({
         course_id,
         driver_id: course.driver_id,
         client_id: course.client_id,
         stripe_payment_intent_id: paymentIntent.id,
-        stripe_charge_id: paymentIntent.latest_charge as string || null,
-        amount: remainingAmount,
-        captured_amount: remainingAmount,
-        application_fee_amount: remainingFee / 100,
+        stripe_charge_id: (paymentIntent.latest_charge as string) || null,
+        amount: totalAmount,
+        captured_amount: totalAmount,
+        application_fee_amount: SOLOCAB_FEE_CENTS / 100,
         stripe_fee_amount: stripeFee,
         net_to_driver: netToDriver,
         status: "succeeded",
-        payment_type: depositPaid > 0 ? "final_payment" : "course_payment",
+        payment_type: "course_payment",
         capture_method: "automatic",
         captured_at: new Date().toISOString(),
-        metadata: {
-          total_amount: totalAmount,
-          deposit_paid: depositPaid,
-          remaining_amount: remainingAmount,
-        },
       });
 
-      // Créer la facture automatiquement
-      await supabaseClient.functions.invoke("create-facture-auto", {
-        body: { course_id }
-      });
+      try {
+        await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+      } catch (e) {
+        logStep("Facture creation failed (non-blocking)", { error: String(e) });
+      }
 
-      // Notifier le chauffeur avec détail des frais
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
         title: "💰 Paiement encaissé",
-        message: `Paiement de ${remainingAmount.toFixed(2)}€ encaissé. Net après frais: ${netToDriver.toFixed(2)}€`,
+        message: `${totalAmount.toFixed(2)}€ encaissé. Net: ${netToDriver.toFixed(2)}€`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
 
-      // Notifier le client
       if (course.client?.user_id) {
         await supabaseClient.from("notifications").insert({
           user_id: course.client.user_id,
           title: "✅ Paiement confirmé",
-          message: `Votre paiement de ${remainingAmount.toFixed(2)}€ a été effectué avec succès.`,
+          message: `Votre paiement de ${totalAmount.toFixed(2)}€ a été effectué.`,
           type: "info",
         });
       }
-
-      logStep("Payment succeeded", { 
-        amount: remainingAmount, 
-        stripeFee, 
-        solocabFee: SOLOCAB_FEE_CENTS / 100,
-        netToDriver 
-      });
 
       return new Response(
         JSON.stringify({
           success: true,
           status: "succeeded",
+          flow: "fallback",
           payment_intent_id: paymentIntent.id,
-          amount_charged: remainingAmount,
-          fees: {
-            stripe_fee: stripeFee,
-            solocab_fee: SOLOCAB_FEE_CENTS / 100,
-            total_fees: totalFees,
-            net_to_driver: netToDriver,
-          },
+          amount_charged: totalAmount,
+          fees: { stripe_fee: stripeFee, solocab_fee: SOLOCAB_FEE_CENTS / 100, total_fees: totalFees, net_to_driver: netToDriver },
           message: "Paiement encaissé avec succès",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
-
     } else if (paymentIntent.status === "requires_action") {
-      // Authentication 3D Secure requise
       await supabaseClient
         .from("courses")
         .update({
           final_payment_status: "requires_action",
           final_payment_intent_id: paymentIntent.id,
-          final_payment_amount: remainingAmount,
+          final_payment_amount: totalAmount,
         })
         .eq("id", course_id);
-
-      logStep("Payment requires authentication", { 
-        paymentIntentId: paymentIntent.id 
-      });
 
       return new Response(
         JSON.stringify({
@@ -337,23 +445,19 @@ serve(async (req) => {
           status: "requires_action",
           payment_intent_id: paymentIntent.id,
           client_secret: paymentIntent.client_secret,
-          message: "Authentification 3D Secure requise par le client",
+          message: "Authentification 3D Secure requise",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
-
     } else {
-      // Autre statut (processing, etc.)
       await supabaseClient
         .from("courses")
         .update({
           final_payment_status: paymentIntent.status,
           final_payment_intent_id: paymentIntent.id,
-          final_payment_amount: remainingAmount,
+          final_payment_amount: totalAmount,
         })
         .eq("id", course_id);
-
-      logStep("Payment in progress", { status: paymentIntent.status });
 
       return new Response(
         JSON.stringify({
