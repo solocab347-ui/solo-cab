@@ -195,63 +195,93 @@ serve(async (req) => {
           .eq("id", claimed.client_id)
           .single();
 
-        if (clientRecord?.stripe_customer_id && clientRecord?.default_payment_method_id) {
-          logStep("Client has saved card → creating automatic invisible hold", {
-            clientId: claimed.client_id,
-            customerId: clientRecord.stripe_customer_id,
-          });
+        if (clientRecord?.stripe_customer_id) {
+          let paymentMethodToUse = clientRecord.default_payment_method_id;
 
-          const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-          if (stripeKey) {
-            const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+          // If no default set, look up any saved card on the Stripe Customer
+          if (!paymentMethodToUse) {
+            const stripeKeyLookup = Deno.env.get("STRIPE_SECRET_KEY");
+            if (stripeKeyLookup) {
+              const stripeLookup = new Stripe(stripeKeyLookup, { apiVersion: "2025-08-27.basil" });
+              const pms = await stripeLookup.paymentMethods.list({
+                customer: clientRecord.stripe_customer_id,
+                type: "card",
+                limit: 1,
+              });
+              if (pms.data.length > 0) {
+                paymentMethodToUse = pms.data[0].id;
+                logStep("Found saved card via Stripe API (no default set)", { pmId: paymentMethodToUse });
 
-            const piParams: Record<string, unknown> = {
-              amount: 1000, // 10€ hold
-              currency: "eur",
-              capture_method: "manual",
-              customer: clientRecord.stripe_customer_id,
-              payment_method: clientRecord.default_payment_method_id,
-              off_session: true,
-              confirm: true,
-              metadata: {
-                driver_id: driver.id,
-                course_id: course.id,
-                client_id: claimed.client_id,
-                type: "reservation_hold",
-                auto_created: "true",
-              },
-              transfer_data: {
-                destination: driver.stripe_connect_account_id,
-              },
-              description: `Avance de réservation 10€ - Course VTC #${course.id.slice(0, 8)}`,
-            };
-
-            const paymentIntent = await stripe.paymentIntents.create(piParams as any);
-
-            if (paymentIntent.status === "requires_capture") {
-              // Success! Update course silently
-              await supabaseClient
-                .from("courses")
-                .update({
-                  stripe_hold_payment_intent_id: paymentIntent.id,
-                  card_hold_status: "confirmed",
-                  card_hold_amount: 10.00,
-                  payment_status: "bank_imprint_confirmed",
-                  stripe_payment_method_id: clientRecord.default_payment_method_id,
-                  stripe_customer_id: clientRecord.stripe_customer_id,
-                })
-                .eq("id", course.id);
-
-              autoHoldResult = "auto_confirmed";
-              logStep("✅ Invisible auto-hold confirmed", { piId: paymentIntent.id });
-            } else {
-              autoHoldResult = "pending_confirmation";
-              logStep("Auto-hold needs further action", { status: paymentIntent.status });
+                // Auto-set as default for future
+                await supabaseClient
+                  .from("clients")
+                  .update({ default_payment_method_id: paymentMethodToUse })
+                  .eq("id", claimed.client_id);
+              }
             }
           }
+
+          if (paymentMethodToUse) {
+            logStep("Client has saved card → creating automatic invisible hold", {
+              clientId: claimed.client_id,
+              customerId: clientRecord.stripe_customer_id,
+            });
+
+            const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+            if (stripeKey) {
+              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+              const piParams: Record<string, unknown> = {
+                amount: 1000, // 10€ hold
+                currency: "eur",
+                capture_method: "manual",
+                customer: clientRecord.stripe_customer_id,
+                payment_method: paymentMethodToUse,
+                off_session: true,
+                confirm: true,
+                metadata: {
+                  driver_id: driver.id,
+                  course_id: course.id,
+                  client_id: claimed.client_id,
+                  type: "reservation_hold",
+                  auto_created: "true",
+                },
+                transfer_data: {
+                  destination: driver.stripe_connect_account_id,
+                },
+                description: `Avance de réservation 10€ - Course VTC #${course.id.slice(0, 8)}`,
+              };
+
+              const paymentIntent = await stripe.paymentIntents.create(piParams as any);
+
+              if (paymentIntent.status === "requires_capture") {
+                // Success! Update course silently
+                await supabaseClient
+                  .from("courses")
+                  .update({
+                    stripe_hold_payment_intent_id: paymentIntent.id,
+                    card_hold_status: "confirmed",
+                    card_hold_amount: 10.00,
+                    payment_status: "bank_imprint_confirmed",
+                    stripe_payment_method_id: paymentMethodToUse,
+                    stripe_customer_id: clientRecord.stripe_customer_id,
+                  })
+                  .eq("id", course.id);
+
+                autoHoldResult = "auto_confirmed";
+                logStep("✅ Invisible auto-hold confirmed", { piId: paymentIntent.id });
+              } else {
+                autoHoldResult = "pending_confirmation";
+                logStep("Auto-hold needs further action", { status: paymentIntent.status });
+              }
+            }
+          } else {
+            autoHoldResult = "no_saved_card";
+            logStep("Client has no saved card → will need manual card input");
+          }
         } else {
-          autoHoldResult = "no_saved_card";
-          logStep("Client has no saved card → will need manual card input");
+          autoHoldResult = "no_stripe_customer";
+          logStep("Client has no Stripe customer → will need card registration");
         }
       } catch (holdErr) {
         logStep("Auto-hold failed (non-blocking)", { error: String(holdErr) });
