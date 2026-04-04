@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign, Zap } from "lucide-react";
+import { SpontaneousPayment } from "./SpontaneousPayment";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -65,6 +66,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -73,7 +75,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
   const loadData = async () => {
     try {
       // Load all data in parallel
-      const [balancesResult, pendingResult, paymentsResult] = await Promise.all([
+      const [balancesResult, pendingResult, paymentsResult, driverResult] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
           .select(`
@@ -99,8 +101,14 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           .eq("status", "succeeded")
           .order("created_at", { ascending: false })
           .limit(50),
+        supabase
+          .from("drivers")
+          .select("stripe_connect_charges_enabled")
+          .eq("id", driverId)
+          .single(),
       ]);
 
+      setStripeEnabled(!!driverResult.data?.stripe_connect_charges_enabled);
       const mapped = (balancesResult.data || []).map((b: any) => ({
         ...b,
         week_start: b.settlement?.week_start,
@@ -277,6 +285,10 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
             <Clock className="w-4 h-4" />
             En attente ({pendingPayments.length})
           </TabsTrigger>
+          <TabsTrigger value="spontaneous" className="flex-1 gap-1">
+            <Zap className="w-4 h-4" />
+            Encaisser
+          </TabsTrigger>
         </TabsList>
 
         {/* Wallet / Transaction History */}
@@ -415,6 +427,11 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
               );
             })
           )}
+        </TabsContent>
+
+        {/* Spontaneous Payment */}
+        <TabsContent value="spontaneous">
+          <SpontaneousPayment driverId={driverId} stripeEnabled={stripeEnabled} />
         </TabsContent>
       </Tabs>
     </div>
