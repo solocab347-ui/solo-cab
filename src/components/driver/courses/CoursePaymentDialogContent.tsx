@@ -51,6 +51,10 @@ export function CoursePaymentDialogContent({
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripePaymentSent, setStripePaymentSent] = useState(false);
 
+  const remainingAmount = courseAmount - depositPaid;
+  const hasDeposit = depositPaid > 0 && depositStatus === 'paid';
+  const displayName = clientName || guestName || 'Client';
+
   const handleSendStripePayment = async () => {
     setStripeLoading(true);
     try {
