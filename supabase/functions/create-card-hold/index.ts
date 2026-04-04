@@ -158,7 +158,7 @@ serve(async (req) => {
         client_name: client_name || "",
         type: "course_hold",
         hold_amount_cents: holdAmountCents.toString(),
-        cancellation_fee_cents: CANCELLATION_FEE_CENTS.toString(),
+        cancellation_fee_cents: "1000", // 10€ cancellation policy (separate from hold amount)
       },
       transfer_data: {
         destination: driver.stripe_connect_account_id,
