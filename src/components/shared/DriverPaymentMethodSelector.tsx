@@ -50,7 +50,7 @@ export function DriverPaymentMethodSelector({
   // Set default value if current value is not available
   useEffect(() => {
     if (!loading && value && !availableMethods.includes(value)) {
-      onChange(config.defaultMethod || 'not_specified');
+      onChange(config.defaultMethod || 'cash');
     }
   }, [loading, value, availableMethods, config.defaultMethod, onChange]);
 
