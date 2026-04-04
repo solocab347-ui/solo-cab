@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CardHoldForm } from './CardHoldForm';
-import { supabase } from '@/integrations/supabase/client';
+import { useDriverStripeStatus } from '@/hooks/useDriverStripeStatus';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_METHODS = [
