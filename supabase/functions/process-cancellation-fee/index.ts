@@ -229,9 +229,20 @@ serve(async (req) => {
         // COURSE SANS ACOMPTE
         // ─────────────────────────────────────────────────────────────
         if (hoursUntilPickup > freeCancellationHours) {
-          // AVANT T-2h → Aucun frais
+          // AVANT T-2h → Aucun frais, libérer le hold
           shouldChargeFee = false;
           message = `Annulation client plus de ${freeCancellationHours}h avant - aucun frais.`;
+          
+          // Release hold
+          if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+            try {
+              await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+              logStep("Card hold released (free cancellation)");
+              message += " Blocage carte annulé.";
+            } catch (cancelErr: any) {
+              logStep("Hold cancel error", { error: cancelErr.message });
+            }
+          }
         } else {
           // APRÈS T-2h → Frais de 10€
           shouldChargeFee = true;
