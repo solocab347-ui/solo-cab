@@ -69,18 +69,13 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
         throw new Error("Le formulaire de carte n'est pas prêt.");
       }
 
-      let currentClientSecret = clientSecret;
+      // Always get a fresh SetupIntent for maximum reliability
+      const freshClientSecret = await onRequireFreshIntent(false);
+      const currentClientSecret = freshClientSecret || clientSecret;
 
       if (!currentClientSecret.startsWith("seti_") || !currentClientSecret.includes("_secret_")) {
         throw new Error("Client secret Stripe invalide.");
       }
-
-      const freshClientSecret = await onRequireFreshIntent(false);
-      if (freshClientSecret) {
-        currentClientSecret = freshClientSecret;
-      }
-
-      console.log("[ClientCardManager] confirmCardSetup clientSecret prefix", currentClientSecret.slice(0, 24));
 
       const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(currentClientSecret, {
         payment_method: {
