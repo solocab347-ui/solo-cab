@@ -310,7 +310,7 @@ serve(async (req) => {
         if (autoHoldResult === "auto_confirmed") {
           paymentMessage = "✅ Votre carte a été validée automatiquement. Aucune action requise.";
         } else if (clientWantsCard && driverHasStripe && autoHoldResult !== "auto_confirmed") {
-          paymentMessage = "💳 Veuillez confirmer votre empreinte bancaire dans vos courses.";
+          paymentMessage = "💳 Veuillez enregistrer votre carte bancaire pour sécuriser le montant de la course.";
         } else if (clientWantsCard) {
           paymentMessage = "Le paiement se fera par carte directement avec le chauffeur.";
         } else {
