@@ -259,7 +259,9 @@ const GuestBooking = () => {
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim().toLowerCase(),
           guest_phone: guestPhone.trim(),
-          guest_estimated_price: estimatedPrice
+          guest_estimated_price: estimatedPrice,
+          payment_method: paymentMethod === 'card' ? 'stripe' : 'cash',
+          payment_method_requested: paymentMethod,
         })
         .select('id, guest_tracking_token')
         .single();
