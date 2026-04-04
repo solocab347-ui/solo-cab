@@ -15,9 +15,6 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
-
 interface SavedCard {
   id: string;
   brand: string;
@@ -189,21 +186,33 @@ export function ClientCardManager() {
   const [showForm, setShowForm] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [setupIntentId, setSetupIntentId] = useState<string | null>(null);
+  const [stripePublishableKey, setStripePublishableKey] = useState("");
   const [setupLoading, setSetupLoading] = useState(false);
 
-  const stripeReady = useMemo(() => Boolean(stripePromise && stripePublishableKey.startsWith("pk_")), []);
+  const stripePromise = useMemo(() => {
+    if (!stripePublishableKey.startsWith("pk_")) return null;
+    return loadStripe(stripePublishableKey);
+  }, [stripePublishableKey]);
+
+  const stripeReady = Boolean(stripePromise && stripePublishableKey.startsWith("pk_"));
 
   const createFreshSetupIntent = useCallback(async (persistInState = true) => {
     const { data, error } = await supabase.functions.invoke("create-setup-intent");
     if (error) throw error;
-    if (!data?.client_secret || !data?.setup_intent_id) {
+    if (!data?.client_secret || !data?.setup_intent_id || !data?.publishable_key) {
       throw new Error("SetupIntent Stripe introuvable");
     }
 
+    if (!String(data.publishable_key).startsWith("pk_")) {
+      throw new Error("Clé publique Stripe invalide");
+    }
+
     console.log("[ClientCardManager] received clientSecret", String(data.client_secret).slice(0, 28));
+    console.log("[ClientCardManager] backend Stripe account", data.account_id, "livemode", data.livemode);
     if (persistInState) {
       setClientSecret(data.client_secret);
       setSetupIntentId(data.setup_intent_id);
+      setStripePublishableKey(data.publishable_key);
     }
     return data.client_secret as string;
   }, []);
@@ -328,7 +337,7 @@ export function ClientCardManager() {
                 <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 Préparation du formulaire...
               </div>
-            ) : (
+            ) : stripePromise ? (
               <Elements
                 key={setupIntentId || clientSecret}
                 stripe={stripePromise}
@@ -352,6 +361,11 @@ export function ClientCardManager() {
                   }}
                 />
               </Elements>
+            ) : (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <p>Impossible d’initialiser Stripe avec la clé publique reçue.</p>
+              </div>
             )
           ) : (
             <Button onClick={handleShowForm} className="w-full" variant={cards.length === 0 ? "default" : "outline"}>

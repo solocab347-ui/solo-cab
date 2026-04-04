@@ -25,8 +25,11 @@ serve(async (req) => {
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+    const publishableKey = Deno.env.get("VITE_STRIPE_PUBLISHABLE_KEY");
+    if (!publishableKey) throw new Error("VITE_STRIPE_PUBLISHABLE_KEY not configured");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripeAccount = await stripe.accounts.retrieve();
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
@@ -102,6 +105,7 @@ serve(async (req) => {
       setupIntentId: setupIntent.id,
       customerId: stripeCustomerId,
       livemode: setupIntent.livemode,
+      accountId: stripeAccount.id,
     });
 
     return new Response(
@@ -111,6 +115,8 @@ serve(async (req) => {
         setup_intent_id: setupIntent.id,
         customer_id: stripeCustomerId,
         livemode: setupIntent.livemode,
+        account_id: stripeAccount.id,
+        publishable_key: publishableKey,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
