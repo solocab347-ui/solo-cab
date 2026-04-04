@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  PaymentElement,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -31,14 +33,25 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-// ========================
-// CARD FORM (inside Elements)
-// ========================
 function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
+
+  const isComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
+
+  const elementStyle = {
+    base: {
+      fontSize: "16px",
+      color: "#e2e8f0",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      "::placeholder": { color: "#64748b" },
+      iconColor: "#94a3b8",
+    },
+    invalid: { color: "#ef4444", iconColor: "#ef4444" },
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +61,17 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
     setError(null);
 
     try {
-      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/client-dashboard?tab=paiement&card=success`,
-        },
-        redirect: "if_required",
-      });
+      const cardNumberElement = elements.getElement(CardNumberElement);
+      if (!cardNumberElement) throw new Error("Formulaire non chargé");
+
+      const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
+      if (fnError) throw fnError;
+      if (!data?.client_secret) throw new Error("Erreur de configuration");
+
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
+        data.client_secret,
+        { payment_method: { card: cardNumberElement } }
+      );
 
       if (stripeError) {
         setError(stripeError.message || "Erreur lors de l'enregistrement");
@@ -62,11 +79,10 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
       }
 
       if (setupIntent?.status === "succeeded") {
-        toast.success("✅ Carte enregistrée ! Vos paiements seront automatiques.");
+        toast.success("✅ Carte enregistrée avec succès !");
         onSuccess();
       } else if (setupIntent?.status === "requires_action") {
-        // 3D Secure or other authentication - Stripe handles redirect automatically
-        toast.info("Vérification en cours...");
+        toast.info("Vérification 3D Secure en cours...");
       }
     } catch (err: any) {
       setError(err.message || "Erreur");
@@ -77,13 +93,39 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 rounded-lg border bg-background">
-        <PaymentElement
-          options={{
-            layout: "tabs",
-            paymentMethodOrder: ["card", "link"],
-          }}
-        />
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Numéro de carte</label>
+          <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
+            <CardNumberElement
+              options={{ style: elementStyle, showIcon: true, placeholder: "1234 5678 9012 3456" }}
+              onChange={(e) => setCardComplete(prev => ({ ...prev, number: e.complete }))}
+              className="w-full"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date d'expiration</label>
+            <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
+              <CardExpiryElement
+                options={{ style: elementStyle, placeholder: "MM / AA" }}
+                onChange={(e) => setCardComplete(prev => ({ ...prev, expiry: e.complete }))}
+                className="w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cryptogramme (CVV)</label>
+            <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
+              <CardCvcElement
+                options={{ style: elementStyle, placeholder: "123" }}
+                onChange={(e) => setCardComplete(prev => ({ ...prev, cvc: e.complete }))}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -94,11 +136,11 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
       )}
 
       <p className="text-xs text-muted-foreground">
-        Votre carte sera utilisée automatiquement pour vos prochaines courses. Aucun montant ne sera débité maintenant.
+        Aucun montant ne sera débité. Votre carte sera utilisée pour vos prochaines courses.
       </p>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={saving || !stripe} className="flex-1">
+        <Button type="submit" disabled={saving || !stripe || !isComplete} className="flex-1">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
@@ -114,74 +156,6 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
   );
 }
 
-// ========================
-// WRAPPER: fetches SetupIntent then renders Elements
-// ========================
-function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchSetupIntent = async () => {
-      try {
-        const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
-        if (fnError) throw fnError;
-        if (!data?.client_secret) throw new Error("Erreur de configuration du paiement");
-        setClientSecret(data.client_secret);
-      } catch (err: any) {
-        setError(err.message || "Erreur");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSetupIntent();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground">Chargement sécurisé...</span>
-      </div>
-    );
-  }
-
-  if (error || !clientSecret) {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-start gap-2 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p>{error || "Impossible de charger le formulaire"}</p>
-        </div>
-        <Button variant="outline" onClick={onCancel} className="w-full">Annuler</Button>
-      </div>
-    );
-  }
-
-  return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        clientSecret,
-        appearance: {
-          theme: "night",
-          variables: {
-            colorPrimary: "#3b82f6",
-            colorBackground: "#1a1a2e",
-            colorText: "#e2e8f0",
-            colorDanger: "#ef4444",
-            fontFamily: "system-ui, sans-serif",
-            borderRadius: "8px",
-          },
-        },
-        locale: "fr",
-      }}
-    >
-      <CardFormInner onSuccess={onSuccess} onCancel={onCancel} />
-    </Elements>
-  );
-}
 
 // ========================
 // MAIN COMPONENT
@@ -246,7 +220,7 @@ export function ClientCardManager() {
             Mes cartes bancaires
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Enregistrez votre carte pour des paiements automatiques sans ressaisie, comme Uber.
+            Enregistrez votre carte pour des paiements automatiques.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -308,13 +282,15 @@ export function ClientCardManager() {
 
           {/* Add Card Form */}
           {showForm ? (
-            <CardForm
-              onSuccess={() => {
-                setShowForm(false);
-                setTimeout(loadCards, 2000);
-              }}
-              onCancel={() => setShowForm(false)}
-            />
+            <Elements stripe={stripePromise} options={{ locale: "fr" }}>
+              <CardFormInner
+                onSuccess={() => {
+                  setShowForm(false);
+                  setTimeout(loadCards, 2000);
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            </Elements>
           ) : (
             <Button
               onClick={() => setShowForm(true)}
