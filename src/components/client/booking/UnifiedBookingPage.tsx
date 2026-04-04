@@ -16,6 +16,7 @@ import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { DriverResultCard } from './DriverResultCard';
 import { DriverMap } from './DriverMap';
+import { BookingCardStep } from './BookingCardStep';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,6 +65,8 @@ export function UnifiedBookingPage() {
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
+  const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
+  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -72,6 +75,23 @@ export function UnifiedBookingPage() {
   const [showDestSuggestions, setShowDestSuggestions] = useState(false);
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
+
+  // Auto-check if authenticated user already has a saved card
+  useEffect(() => {
+    if (!user || clientPaymentMethod !== 'card') return;
+    const checkSavedCard = async () => {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('stripe_customer_id, default_payment_method_id')
+        .eq('user_id', user.id)
+        .single();
+      if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
+        setCardVerifiedForBooking(true);
+        setSavedCardInfo({ customerId: clientData.stripe_customer_id });
+      }
+    };
+    checkSavedCard();
+  }, [user, clientPaymentMethod]);
 
   const {
     drivers,
@@ -343,32 +363,13 @@ export function UnifiedBookingPage() {
       return; 
     }
 
-    // ── CARD VERIFICATION: For card payments, ensure client has a saved card ──
+    // ── CARD VERIFICATION: Block if card payment required but not verified ──
     const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
     const hasStripeDriver = selectedDrivers.some(d => d.stripe_connect_charges_enabled);
     
-    if (clientPaymentMethod === 'card' && hasStripeDriver) {
-      if (user) {
-        // Registered client: check for saved card
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('id, stripe_customer_id, default_payment_method_id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!clientData?.stripe_customer_id || !clientData?.default_payment_method_id) {
-          // No saved card → redirect to card management
-          toast.error('Vous devez enregistrer une carte bancaire avant de réserver par carte.');
-          navigate('/client-dashboard?tab=paiement');
-          return;
-        }
-      } else {
-        // Guest: must provide email for card registration
-        if (!guestEmail?.trim()) {
-          toast.error('L\'email est obligatoire pour un paiement par carte bancaire.');
-          return;
-        }
-      }
+    if (clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking) {
+      toast.error('Veuillez d\'abord vérifier votre carte bancaire.');
+      return;
     }
 
     setIsSubmitting(true);
@@ -985,15 +986,49 @@ export function UnifiedBookingPage() {
                   <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
                   <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
                   <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
-                  {clientPaymentMethod === 'card' && (
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
-                      <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span>Vous devrez saisir vos coordonnées bancaires après l'acceptation du chauffeur. Le montant total TTC sera bloqué sur votre carte.</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
+
+            {/* Card step: show for card payments when card not yet verified */}
+            {(() => {
+              const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+              const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+              const needsCard = clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking;
+              const isGuest = !user && authChoice === 'guest';
+              const isRegistered = !!user;
+              const guestInfoReady = isGuest && guestName.trim() && guestPhone.trim() && guestEmail?.trim();
+              
+              if (!needsCard) return null;
+              
+              // For guests: only show card form once guest info is complete
+              if (isGuest && !guestInfoReady) {
+                return (
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
+                    <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <span>Remplissez vos coordonnées (nom, téléphone, email) pour enregistrer votre carte bancaire.</span>
+                  </div>
+                );
+              }
+              
+              if (isRegistered || guestInfoReady) {
+                return (
+                  <BookingCardStep
+                    isAuthenticated={isRegistered}
+                    guestName={guestName}
+                    guestEmail={guestEmail}
+                    guestPhone={guestPhone}
+                    estimatedPrice={selectedDriversList[0]?.estimated_price}
+                    onCardReady={(info) => {
+                      setCardVerifiedForBooking(true);
+                      setSavedCardInfo(info);
+                      toast.success('Carte vérifiée ! Vous pouvez envoyer votre demande.');
+                    }}
+                  />
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
       </main>
@@ -1012,7 +1047,17 @@ export function UnifiedBookingPage() {
                 if (!user && !authChoice) return;
                 handleSubmitRequest();
               }}
-              disabled={isSubmitting || (confirmationStep && !user && !authChoice)}
+              disabled={(() => {
+                if (isSubmitting) return true;
+                if (confirmationStep && !user && !authChoice) return true;
+                // Disable if card payment needed but not verified
+                if (confirmationStep && clientPaymentMethod === 'card') {
+                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+                  if (hasStripeDriver && !cardVerifiedForBooking) return true;
+                }
+                return false;
+              })()}
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1024,7 +1069,9 @@ export function UnifiedBookingPage() {
                   ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
                   : confirmationStep && !user && !authChoice
                     ? 'Choisissez une option ci-dessus'
-                    : `Envoyer la demande`
+                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking
+                      ? 'Vérifiez votre carte ci-dessus'
+                      : `Envoyer la demande`
                 }
               </span>
               {lowestPrice !== Infinity && (
