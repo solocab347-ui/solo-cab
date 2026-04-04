@@ -1030,7 +1030,17 @@ export function UnifiedBookingPage() {
                 if (!user && !authChoice) return;
                 handleSubmitRequest();
               }}
-              disabled={isSubmitting || (confirmationStep && !user && !authChoice)}
+              disabled={(() => {
+                if (isSubmitting) return true;
+                if (confirmationStep && !user && !authChoice) return true;
+                // Disable if card payment needed but not verified
+                if (confirmationStep && clientPaymentMethod === 'card') {
+                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+                  if (hasStripeDriver && !cardVerifiedForBooking) return true;
+                }
+                return false;
+              })()}
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1042,7 +1052,9 @@ export function UnifiedBookingPage() {
                   ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
                   : confirmationStep && !user && !authChoice
                     ? 'Choisissez une option ci-dessus'
-                    : `Envoyer la demande`
+                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking
+                      ? 'Vérifiez votre carte ci-dessus'
+                      : `Envoyer la demande`
                 }
               </span>
               {lowestPrice !== Infinity && (
