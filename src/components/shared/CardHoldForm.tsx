@@ -21,6 +21,7 @@ interface CardHoldFormProps {
   courseId: string;
   clientEmail?: string;
   clientName?: string;
+  holdAmountCents?: number;
   onSuccess?: () => void;
   onSkip?: () => void;
   className?: string;
