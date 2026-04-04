@@ -175,10 +175,10 @@ serve(async (req) => {
 
     logStep("Course created", { courseId: course.id });
 
-    // Create auto devis
+    // Create auto devis (must pass driver_id)
     try {
       await supabaseClient.functions.invoke("create-devis-auto", {
-        body: { course_id: course.id },
+        body: { course_id: course.id, driver_id: driver.id },
       });
       logStep("Auto devis created");
     } catch (devisErr) {
