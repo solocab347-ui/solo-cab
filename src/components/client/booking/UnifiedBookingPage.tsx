@@ -343,10 +343,37 @@ export function UnifiedBookingPage() {
       return; 
     }
 
+    // ── CARD VERIFICATION: For card payments, ensure client has a saved card ──
+    const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+    const hasStripeDriver = selectedDrivers.some(d => d.stripe_connect_charges_enabled);
+    
+    if (clientPaymentMethod === 'card' && hasStripeDriver) {
+      if (user) {
+        // Registered client: check for saved card
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id, stripe_customer_id, default_payment_method_id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!clientData?.stripe_customer_id || !clientData?.default_payment_method_id) {
+          // No saved card → redirect to card management
+          toast.error('Vous devez enregistrer une carte bancaire avant de réserver par carte.');
+          navigate('/client-dashboard?tab=paiement');
+          return;
+        }
+      } else {
+        // Guest: must provide email for card registration
+        if (!guestEmail?.trim()) {
+          toast.error('L\'email est obligatoire pour un paiement par carte bancaire.');
+          return;
+        }
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const timeoutMs = 5 * 60 * 1000; // 5 minutes
-      const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
       
       // Get client ID if logged in
       let clientId: string | null = null;
@@ -356,7 +383,6 @@ export function UnifiedBookingPage() {
       }
 
       // Generate a unique group ID for all requests in this batch
-      // This ensures proper cancellation of siblings when one driver accepts
       const requestGroupId = crypto.randomUUID();
 
       // Create ride requests for all selected drivers (first-come-first-served)
@@ -390,7 +416,7 @@ export function UnifiedBookingPage() {
       const isMulti = selectedDrivers.length > 1;
       toast.success(
         isMulti 
-          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le paiement sera sécurisé après acceptation.`
+          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le montant sera bloqué sur votre carte après acceptation.`
           : 'Demande envoyée ! Vous serez notifié dès que le chauffeur accepte.'
       );
 
