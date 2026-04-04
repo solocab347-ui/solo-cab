@@ -54,6 +54,7 @@ const GuestBooking = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState(1);
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("cash");
   
   // Handlers for address changes - clear coords when user types manually
   const handlePickupChange = (address: string, coords?: { latitude: number; longitude: number }) => {
