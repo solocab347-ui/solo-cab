@@ -8,7 +8,7 @@ import { DriverAvailabilityToggleBig } from "./planning/DriverAvailabilityToggle
 import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
