@@ -278,6 +278,10 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
             <Clock className="w-4 h-4" />
             En attente ({pendingPayments.length})
           </TabsTrigger>
+          <TabsTrigger value="spontaneous" className="flex-1 gap-1">
+            <Zap className="w-4 h-4" />
+            Encaisser
+          </TabsTrigger>
         </TabsList>
 
         {/* Wallet / Transaction History */}
