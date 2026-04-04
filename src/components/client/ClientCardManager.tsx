@@ -89,12 +89,6 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
           throw new Error("Le formulaire de carte n'est pas prêt.");
         }
 
-        const submitResult = await elements.submit();
-        if (submitResult.error) {
-          setError(submitResult.error.message || "Erreur lors de la validation de la carte");
-          return;
-        }
-
         const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
           payment_method: {
             card: cardNumberElement,
@@ -381,6 +375,7 @@ export function ClientCardManager() {
               </div>
             ) : (
               <Elements
+                key={clientSecret}
                 stripe={stripePromise}
                 options={{
                   clientSecret,
