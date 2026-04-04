@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro, CreditCard } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro, CreditCard, Banknote } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logo from "@/assets/logo-solocab.png";
