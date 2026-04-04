@@ -3,8 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Plus, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CreditCard, Plus, Loader2, ShieldCheck, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface SavedCard {
   id: string;
@@ -22,24 +31,43 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+// ========================
+// CARD FORM (inside Elements)
+// ========================
+function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!stripe || !elements) return;
 
     setSaving(true);
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
-      if (fnError) throw fnError;
-      if (!data?.url) throw new Error("Erreur de configuration");
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/client-dashboard?tab=paiement&card=success`,
+        },
+        redirect: "if_required",
+      });
 
-      toast.success("Redirection sécurisée vers Stripe...");
-      onSuccess();
-      window.location.href = data.url;
+      if (stripeError) {
+        setError(stripeError.message || "Erreur lors de l'enregistrement");
+        return;
+      }
+
+      if (setupIntent?.status === "succeeded") {
+        toast.success("✅ Carte enregistrée ! Vos paiements seront automatiques.");
+        onSuccess();
+      } else if (setupIntent?.status === "requires_action") {
+        // 3D Secure or other authentication - Stripe handles redirect automatically
+        toast.info("Vérification en cours...");
+      }
     } catch (err: any) {
       setError(err.message || "Erreur");
     } finally {
@@ -49,12 +77,20 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: ()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 rounded-lg border bg-background text-sm text-muted-foreground">
-        Vous allez être redirigé vers une page Stripe sécurisée pour enregistrer votre carte, puis revenir automatiquement dans SoloCab.
+      <div className="p-4 rounded-lg border bg-background">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+            paymentMethodOrder: ["card", "link"],
+          }}
+        />
       </div>
 
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <div className="flex items-start gap-2 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>{error}</p>
+        </div>
       )}
 
       <p className="text-xs text-muted-foreground">
@@ -62,7 +98,7 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: ()
       </p>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={saving} className="flex-1">
+        <Button type="submit" disabled={saving || !stripe} className="flex-1">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
@@ -75,6 +111,75 @@ function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: ()
         </Button>
       </div>
     </form>
+  );
+}
+
+// ========================
+// WRAPPER: fetches SetupIntent then renders Elements
+// ========================
+function CardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSetupIntent = async () => {
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
+        if (fnError) throw fnError;
+        if (!data?.client_secret) throw new Error("Erreur de configuration du paiement");
+        setClientSecret(data.client_secret);
+      } catch (err: any) {
+        setError(err.message || "Erreur");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSetupIntent();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-sm text-muted-foreground">Chargement sécurisé...</span>
+      </div>
+    );
+  }
+
+  if (error || !clientSecret) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>{error || "Impossible de charger le formulaire"}</p>
+        </div>
+        <Button variant="outline" onClick={onCancel} className="w-full">Annuler</Button>
+      </div>
+    );
+  }
+
+  return (
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        appearance: {
+          theme: "night",
+          variables: {
+            colorPrimary: "#3b82f6",
+            colorBackground: "#1a1a2e",
+            colorText: "#e2e8f0",
+            colorDanger: "#ef4444",
+            fontFamily: "system-ui, sans-serif",
+            borderRadius: "8px",
+          },
+        },
+        locale: "fr",
+      }}
+    >
+      <CardFormInner onSuccess={onSuccess} onCancel={onCancel} />
+    </Elements>
   );
 }
 
@@ -206,6 +311,7 @@ export function ClientCardManager() {
             <CardForm
               onSuccess={() => {
                 setShowForm(false);
+                setTimeout(loadCards, 2000);
               }}
               onCancel={() => setShowForm(false)}
             />
