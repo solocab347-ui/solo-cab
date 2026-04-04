@@ -74,7 +74,7 @@ export const useMessaging = () => {
           // Fetch last message
           const { data: lastMsg } = await supabase
             .from("messages")
-            .select("*")
+            .select("id, conversation_id, sender_id, content, created_at, is_read")
             .eq("conversation_id", convo.id)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -83,7 +83,7 @@ export const useMessaging = () => {
           // Count unread messages
           const { count: unreadCount } = await supabase
             .from("messages")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("conversation_id", convo.id)
             .eq("is_read", false)
             .neq("sender_id", user.id);
@@ -113,7 +113,7 @@ export const useMessaging = () => {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, content, is_read, created_at")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 

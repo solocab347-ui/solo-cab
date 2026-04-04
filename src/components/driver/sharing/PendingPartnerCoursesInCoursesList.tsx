@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/lib/subscriptionManager';
 import { toast } from 'sonner';
 import { 
   Handshake, MapPin, Calendar, Users, CheckCircle, 
@@ -143,26 +144,21 @@ export function PendingPartnerCoursesInCoursesList({
   useEffect(() => {
     fetchCourses();
     
-    // Realtime subscription
-    const channel = supabase
-      .channel(`pending_partner_courses_${driverId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shared_courses',
-          filter: `receiver_driver_id=eq.${driverId}`
-        },
-        () => {
-          fetchCourses();
-        }
-      )
-      .subscribe();
+    // Use centralized subscription manager
+    const cleanup = subscriptionManager.subscribe(
+      `pending_partner_courses_${driverId}`,
+      {
+        table: 'shared_courses',
+        event: '*',
+        filter: `receiver_driver_id=eq.${driverId}`,
+        debounceMs: 500,
+      },
+      () => {
+        fetchCourses();
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId, fetchCourses]);
 
   const handleAccept = async (course: PendingPartnerCourse) => {
