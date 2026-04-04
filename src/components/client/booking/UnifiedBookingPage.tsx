@@ -969,15 +969,49 @@ export function UnifiedBookingPage() {
                   <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
                   <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
                   <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
-                  {clientPaymentMethod === 'card' && (
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
-                      <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span>Vous devrez saisir vos coordonnées bancaires après l'acceptation du chauffeur. Le montant total TTC sera bloqué sur votre carte.</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
+
+            {/* Card step: show for card payments when card not yet verified */}
+            {(() => {
+              const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
+              const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
+              const needsCard = clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking;
+              const isGuest = !user && authChoice === 'guest';
+              const isRegistered = !!user;
+              const guestInfoReady = isGuest && guestName.trim() && guestPhone.trim() && guestEmail?.trim();
+              
+              if (!needsCard) return null;
+              
+              // For guests: only show card form once guest info is complete
+              if (isGuest && !guestInfoReady) {
+                return (
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
+                    <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <span>Remplissez vos coordonnées (nom, téléphone, email) pour enregistrer votre carte bancaire.</span>
+                  </div>
+                );
+              }
+              
+              if (isRegistered || guestInfoReady) {
+                return (
+                  <BookingCardStep
+                    isAuthenticated={isRegistered}
+                    guestName={guestName}
+                    guestEmail={guestEmail}
+                    guestPhone={guestPhone}
+                    estimatedPrice={selectedDriversList[0]?.estimated_price}
+                    onCardReady={(info) => {
+                      setCardVerifiedForBooking(true);
+                      setSavedCardInfo(info);
+                      toast.success('Carte vérifiée ! Vous pouvez envoyer votre demande.');
+                    }}
+                  />
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
       </main>
