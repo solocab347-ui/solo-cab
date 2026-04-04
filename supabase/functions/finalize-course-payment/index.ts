@@ -40,6 +40,7 @@ serve(async (req) => {
 
     const { course_id } = await req.json();
     if (!course_id) throw new Error("course_id required");
+    if (typeof course_id !== "string" || course_id.length < 10) throw new Error("Invalid course_id format");
 
     logStep("Finalize course payment request", { course_id });
 
