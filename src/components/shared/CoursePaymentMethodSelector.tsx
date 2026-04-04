@@ -152,7 +152,7 @@ export const CoursePaymentMethodSelector = ({
         </Alert>
       )}
 
-      {value && value !== 'card' && value !== 'not_specified' && (
+      {value && value !== 'card' && (
         <p className="text-xs text-muted-foreground">
           Le règlement s'effectuera directement avec votre chauffeur en fin de course.
         </p>

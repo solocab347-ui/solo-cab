@@ -20,10 +20,12 @@ export const addressSchema = z.object({
 // Schéma de validation pour la date de course
 export const scheduledDateSchema = z.string().refine(
   (date) => {
+    if (!date || date.trim() === '') return false;
     const scheduledDate = new Date(date);
+    if (isNaN(scheduledDate.getTime())) return false;
     const now = new Date();
-    // La date doit être dans le futur (avec marge de 5 minutes)
-    return scheduledDate.getTime() > now.getTime() - 5 * 60 * 1000;
+    // La date doit être dans le futur (avec marge de 30 minutes pour timezone/décalages)
+    return scheduledDate.getTime() > now.getTime() - 30 * 60 * 1000;
   },
   {
     message: "La date de la course doit être dans le futur",

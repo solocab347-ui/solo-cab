@@ -131,7 +131,12 @@ export function useCourseCreation() {
             promoCode: promoCode || undefined,
           });
         } catch (validationError: any) {
-          toast.error(validationError.message || "Données de course invalides");
+          if (validationError?.errors) {
+            const msg = validationError.errors[0]?.message || "Données de course invalides";
+            toast.error(msg);
+          } else {
+            toast.error(validationError?.message || "Données de course invalides");
+          }
           return null;
         }
       } else if (courseType === "hourly") {
