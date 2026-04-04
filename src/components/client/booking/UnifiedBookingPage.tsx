@@ -796,6 +796,15 @@ export function UnifiedBookingPage() {
         {/* Drivers list - horizontal scrollable cards */}
         {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
+            {/* Independent drivers banner */}
+            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <Car className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-foreground">Des professionnels indépendants, pas des algorithmes.</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Chaque chauffeur fixe librement ses tarifs et gère sa clientèle. Vous réservez en direct, sans intermédiaire.</p>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between px-1">
               <h3 className="font-semibold text-foreground text-sm">
                 {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
