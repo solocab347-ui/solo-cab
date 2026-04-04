@@ -74,7 +74,7 @@ export const useMessaging = () => {
           // Fetch last message
           const { data: lastMsg } = await supabase
             .from("messages")
-            .select("*")
+            .select("id, conversation_id, sender_id, content, created_at, is_read")
             .eq("conversation_id", convo.id)
             .order("created_at", { ascending: false })
             .limit(1)
