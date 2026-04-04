@@ -123,7 +123,7 @@ export const CoursePaymentMethodSelector = ({
             <Alert className="bg-emerald-500/5 border-emerald-500/20">
               <CheckCircle className="h-4 w-4 text-emerald-500" />
               <AlertDescription className="text-xs">
-                Empreinte bancaire validée. Votre réservation est sécurisée.
+                Montant bloqué sur votre carte. Votre réservation est sécurisée.
               </AlertDescription>
             </Alert>
           ) : (
