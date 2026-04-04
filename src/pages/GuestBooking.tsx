@@ -579,6 +579,44 @@ const GuestBooking = () => {
                 </div>
               </div>
 
+              {/* Payment Method */}
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Mode de paiement
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('card')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'card'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <CreditCard className={`w-6 h-6 ${paymentMethod === 'card' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`font-medium text-sm ${paymentMethod === 'card' ? 'text-primary' : 'text-foreground'}`}>
+                      Carte bancaire
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'cash'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <Banknote className={`w-6 h-6 ${paymentMethod === 'cash' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`font-medium text-sm ${paymentMethod === 'cash' ? 'text-primary' : 'text-foreground'}`}>
+                      Espèces
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               {/* Price Estimation */}
               {(estimatedPrice !== null || calculating) && (
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
