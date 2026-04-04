@@ -16,7 +16,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_METHODS = [
-  { value: "not_specified", label: "Non précisé", icon: HelpCircle, description: "Je déciderai plus tard", color: "bg-muted text-muted-foreground" },
   { value: "cash", label: "Espèces", icon: Banknote, description: "Paiement en liquide", color: "bg-green-500/10 text-green-600 border-green-500/30" },
   { value: "card", label: "Carte", icon: CreditCard, description: "CB, Visa, Mastercard", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
 ];
