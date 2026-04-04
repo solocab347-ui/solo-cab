@@ -200,6 +200,7 @@ export function GuestReservationWithCardHold({
         courseId={courseId}
         clientEmail={clientEmail}
         clientName={clientName}
+        holdAmountCents={Math.round(estimatedAmount * 100)}
         onSuccess={handleCardHoldSuccess}
       />
 

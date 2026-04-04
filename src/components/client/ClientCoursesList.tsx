@@ -562,20 +562,41 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           .eq("id", course.driver_id)
           .single();
 
-        const driverUsesStripe = 
+        const driverUsesStripe =
           !!driver?.stripe_connect_account_id &&
           driver?.stripe_connect_charges_enabled === true;
 
-        if (driverUsesStripe) {
-          // Déclencher le flux d'empreinte bancaire
+        if (driverUsesStripe && course.payment_method_requested === "card") {
+          const secureAmount = Number.parseFloat(
+            String(devis.amount ?? course.final_payment_amount ?? course.guest_estimated_price ?? 0)
+          );
+
+          if (!(secureAmount > 0)) {
+            throw new Error("Montant TTC introuvable pour verrouiller la réservation");
+          }
+
+          const { error: lockError } = await supabase
+            .from("courses")
+            .update({
+              payment_method: "stripe",
+              payment_status: "bank_imprint_pending",
+              card_hold_status: "pending",
+              final_payment_amount: secureAmount,
+            })
+            .eq("id", courseId);
+
+          if (lockError) {
+            throw new Error("Impossible de verrouiller le paiement avant la réservation");
+          }
+
           setCardHoldData({
             courseId,
             driverId: course.driver_id,
-            amount: parseFloat(devis.amount),
+            amount: secureAmount,
             clientEmail: user.email || undefined,
             clientName: user.user_metadata?.full_name || undefined,
           });
-          toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
+          toast.info("Validez votre carte pour bloquer exactement le montant TTC de la course");
           await fetchCourses();
           return;
         }
