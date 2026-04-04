@@ -94,9 +94,11 @@ Deno.serve(async (req) => {
 
     // LOGIQUE MÉTIER: Les guest bookings NE sont PAS auto-acceptés.
     // Le chauffeur doit explicitement accepter la course depuis l'onglet "En attente".
-    // Le client a vu le prix estimé mais le chauffeur doit valider la disponibilité.
+    // NOUVEAU FLUX: Le devis est TOUJOURS auto-accepté.
+    // Le client voit le prix → réserve → devis créé et accepté automatiquement
+    // → en attente d'acceptation par le chauffeur
     const isGuestBooking = course.is_guest_booking === true;
-    const autoAcceptDevis = false; // Toujours pending, le chauffeur décide
+    const autoAcceptDevis = true;
     
     if (isGuestBooking) {
       console.log('👤 Guest booking détecté - le devis restera en attente de validation chauffeur');
