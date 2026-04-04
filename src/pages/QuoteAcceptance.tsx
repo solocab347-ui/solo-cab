@@ -82,12 +82,12 @@ const QuoteAcceptance = () => {
       // Fetch driver info including Stripe Connect status
       const { data: driverData } = await supabase
         .from('drivers')
-        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color, stripe_connect_account_id, stripe_connect_charges_enabled')
+        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color')
         .eq('id', devisData.driver_id)
         .single();
 
       if (driverData) {
-        const hasStripe = !!driverData.stripe_connect_account_id && driverData.stripe_connect_charges_enabled === true;
+        const hasStripe = await checkDriverStripeStatus(devisData.driver_id);
         setDriverHasStripe(hasStripe);
 
         // Get driver profile name
