@@ -800,8 +800,8 @@ export function UnifiedBookingPage() {
             <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-lg p-3">
               <Car className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-semibold text-foreground">Des professionnels indépendants, pas des algorithmes.</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Chaque chauffeur fixe librement ses tarifs et gère sa clientèle. Vous réservez en direct, sans intermédiaire.</p>
+                <p className="text-xs font-semibold text-foreground">Réservez directement auprès de professionnels certifiés.</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Chaque chauffeur est un entrepreneur indépendant, engagé pour un service premium et personnalisé.</p>
               </div>
             </div>
 
