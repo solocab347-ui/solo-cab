@@ -8,9 +8,7 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  CardNumberElement,
-  CardExpiryElement,
-  CardCvcElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -33,25 +31,12 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+function CardFormInner({ clientSecret, onSuccess, onCancel }: { clientSecret: string; onSuccess: () => void; onCancel: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
-
-  const isComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
-
-  const elementStyle = {
-    base: {
-      fontSize: "16px",
-      color: "#e2e8f0",
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      "::placeholder": { color: "#64748b" },
-      iconColor: "#94a3b8",
-    },
-    invalid: { color: "#ef4444", iconColor: "#ef4444" },
-  };
+  const [ready, setReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,17 +46,13 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
     setError(null);
 
     try {
-      const cardNumberElement = elements.getElement(CardNumberElement);
-      if (!cardNumberElement) throw new Error("Formulaire non chargé");
-
-      const { data, error: fnError } = await supabase.functions.invoke("save-client-card");
-      if (fnError) throw fnError;
-      if (!data?.client_secret) throw new Error("Erreur de configuration");
-
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
-        data.client_secret,
-        { payment_method: { card: cardNumberElement } }
-      );
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: "if_required",
+      });
 
       if (stripeError) {
         setError(stripeError.message || "Erreur lors de l'enregistrement");
@@ -93,40 +74,20 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Numéro de carte</label>
-          <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
-            <CardNumberElement
-              options={{ style: elementStyle, showIcon: true, placeholder: "1234 5678 9012 3456" }}
-              onChange={(e) => setCardComplete(prev => ({ ...prev, number: e.complete }))}
-              className="w-full"
-            />
-          </div>
+      <PaymentElement
+        onReady={() => setReady(true)}
+        options={{
+          layout: "tabs",
+          paymentMethodOrder: ["card", "link"],
+        }}
+      />
+
+      {!ready && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Chargement...</span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date d'expiration</label>
-            <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
-              <CardExpiryElement
-                options={{ style: elementStyle, placeholder: "MM / AA" }}
-                onChange={(e) => setCardComplete(prev => ({ ...prev, expiry: e.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cryptogramme (CVV)</label>
-            <div className="p-3 rounded-lg border bg-background/50 h-11 flex items-center">
-              <CardCvcElement
-                options={{ style: elementStyle, placeholder: "123" }}
-                onChange={(e) => setCardComplete(prev => ({ ...prev, cvc: e.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -136,11 +97,11 @@ function CardFormInner({ onSuccess, onCancel }: { onSuccess: () => void; onCance
       )}
 
       <p className="text-xs text-muted-foreground">
-        Aucun montant ne sera débité. Votre carte sera utilisée pour vos prochaines courses.
+        Aucun montant ne sera débité. Votre carte sera enregistrée pour vos prochaines courses.
       </p>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={saving || !stripe || !isComplete} className="flex-1">
+        <Button type="submit" disabled={saving || !stripe || !ready} className="flex-1">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
@@ -164,6 +125,8 @@ export function ClientCardManager() {
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [setupLoading, setSetupLoading] = useState(false);
 
   const loadCards = useCallback(async () => {
     try {
@@ -181,6 +144,22 @@ export function ClientCardManager() {
   useEffect(() => {
     loadCards();
   }, [loadCards]);
+
+  const handleShowForm = async () => {
+    setSetupLoading(true);
+    setShowForm(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("save-client-card");
+      if (error) throw error;
+      if (!data?.client_secret) throw new Error("Erreur de configuration");
+      setClientSecret(data.client_secret);
+    } catch (err: any) {
+      toast.error(err.message || "Impossible de préparer le formulaire");
+      setShowForm(false);
+    } finally {
+      setSetupLoading(false);
+    }
+  };
 
   const handleSetDefault = async (cardId: string) => {
     try {
@@ -274,7 +253,7 @@ export function ClientCardManager() {
               <div>
                 <p className="text-sm font-medium">Aucune carte enregistrée</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ajoutez une carte pour payer automatiquement vos courses sans aucune action.
+                  Ajoutez une carte pour payer automatiquement vos courses.
                 </p>
               </div>
             </div>
@@ -282,18 +261,49 @@ export function ClientCardManager() {
 
           {/* Add Card Form */}
           {showForm ? (
-            <Elements stripe={stripePromise} options={{ locale: "fr" }}>
-              <CardFormInner
-                onSuccess={() => {
-                  setShowForm(false);
-                  setTimeout(loadCards, 2000);
-                }}
-                onCancel={() => setShowForm(false)}
-              />
-            </Elements>
+            <>
+              {setupLoading || !clientSecret ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Préparation...</span>
+                </div>
+              ) : (
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    locale: "fr",
+                    appearance: {
+                      theme: "night",
+                      variables: {
+                        colorPrimary: "#6366f1",
+                        colorBackground: "#1e1b2e",
+                        colorText: "#e2e8f0",
+                        colorDanger: "#ef4444",
+                        borderRadius: "8px",
+                        fontFamily: "system-ui, -apple-system, sans-serif",
+                      },
+                    },
+                  }}
+                >
+                  <CardFormInner
+                    clientSecret={clientSecret}
+                    onSuccess={() => {
+                      setShowForm(false);
+                      setClientSecret(null);
+                      setTimeout(loadCards, 2000);
+                    }}
+                    onCancel={() => {
+                      setShowForm(false);
+                      setClientSecret(null);
+                    }}
+                  />
+                </Elements>
+              )}
+            </>
           ) : (
             <Button
-              onClick={() => setShowForm(true)}
+              onClick={handleShowForm}
               className="w-full"
               variant={cards.length === 0 ? "default" : "outline"}
             >
@@ -304,7 +314,7 @@ export function ClientCardManager() {
 
           <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
             <ShieldCheck className="h-3 w-3" />
-            Données sécurisées par Stripe. SoloCab ne stocke jamais vos numéros.
+            Données sécurisées. SoloCab ne stocke jamais vos numéros.
           </p>
         </CardContent>
       </Card>
@@ -318,7 +328,7 @@ export function ClientCardManager() {
               <div>
                 <p className="text-sm font-medium">Paiement automatique activé</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Vos prochaines courses seront débitées automatiquement à la fin du trajet. Aucune action de votre part.
+                  Vos prochaines courses seront débitées automatiquement à la fin du trajet.
                 </p>
               </div>
             </div>
