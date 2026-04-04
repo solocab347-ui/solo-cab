@@ -168,6 +168,17 @@ serve(async (req) => {
         }
       }
       
+      // Release the card hold (cancel the uncaptured PaymentIntent)
+      if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+        try {
+          await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+          logStep("Card hold released (driver cancelled)");
+          message += " Blocage carte annulé.";
+        } catch (cancelErr: any) {
+          logStep("Hold cancel error (may already be cancelled)", { error: cancelErr.message });
+        }
+      }
+      
     } else if (cancelled_by === "client") {
       // ═══════════════════════════════════════════════════════════════
       // ANNULATION PAR LE CLIENT
