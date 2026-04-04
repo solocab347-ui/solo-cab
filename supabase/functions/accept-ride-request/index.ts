@@ -266,7 +266,7 @@ serve(async (req) => {
                   .update({
                     stripe_hold_payment_intent_id: paymentIntent.id,
                     card_hold_status: "confirmed",
-                    card_hold_amount: 10.00,
+                    card_hold_amount: holdAmountCents / 100,
                     payment_status: "bank_imprint_confirmed",
                     stripe_payment_method_id: paymentMethodToUse,
                     stripe_customer_id: clientRecord.stripe_customer_id,

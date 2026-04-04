@@ -68,7 +68,6 @@ serve(async (req) => {
         stripe_payment_method_id: paymentMethodId || null,
         card_hold_status: "confirmed",
         card_hold_confirmed_at: new Date().toISOString(),
-        card_hold_amount: 10.00,
       })
       .eq("id", course_id);
 
