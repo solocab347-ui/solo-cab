@@ -65,6 +65,8 @@ export function UnifiedBookingPage() {
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
+  const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
+  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
