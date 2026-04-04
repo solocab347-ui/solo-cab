@@ -102,6 +102,31 @@ serve(async (req) => {
       );
     }
 
+    // Idempotency: if already processing or succeeded, don't retry
+    if (course.final_payment_status === "succeeded") {
+      logStep("Course already finalized (idempotent return)", { course_id });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          already_paid: true,
+          message: "Paiement déjà finalisé",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (course.final_payment_status === "processing") {
+      logStep("Course payment already processing (idempotent return)", { course_id });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: "processing",
+          message: "Paiement en cours de traitement, veuillez patienter",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     // Marquer comme en cours de traitement
     await supabaseClient
       .from("courses")
