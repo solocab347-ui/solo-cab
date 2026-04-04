@@ -43,25 +43,8 @@ export const CoursePaymentMethodSelector = ({
   label = "Moyen de paiement",
   className = "",
 }: CoursePaymentMethodSelectorProps) => {
-  const [driverHasStripe, setDriverHasStripe] = useState<boolean | null>(null);
+  const { hasStripeConnect: driverHasStripe } = useDriverStripeStatus(driverId);
   const [cardHoldDone, setCardHoldDone] = useState(false);
-
-  useEffect(() => {
-    const checkDriver = async () => {
-      if (!driverId) return;
-      const { data } = await supabase
-        .from('drivers')
-        .select('billing_type, stripe_connect_charges_enabled, stripe_connect_account_id')
-        .eq('id', driverId)
-        .single();
-      
-      setDriverHasStripe(
-        !!data?.stripe_connect_account_id && 
-        data?.stripe_connect_charges_enabled === true
-      );
-    };
-    checkDriver();
-  }, [driverId]);
 
   const showCardHold = value === 'card' && driverHasStripe && courseId && !cardHoldDone;
 
