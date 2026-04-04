@@ -89,6 +89,14 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
       }
 
       if (setupIntent?.status === "succeeded") {
+        // Persist the card as default payment method
+        try {
+          await supabase.functions.invoke("persist-card-default", {
+            body: { setup_intent_id: setupIntent.id },
+          });
+        } catch (persistErr) {
+          console.error("Failed to persist card default:", persistErr);
+        }
         toast.success("✅ Carte enregistrée avec succès !");
         onSuccess();
         return;
