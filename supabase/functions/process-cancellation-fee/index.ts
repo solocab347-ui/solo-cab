@@ -168,6 +168,17 @@ serve(async (req) => {
         }
       }
       
+      // Release the card hold (cancel the uncaptured PaymentIntent)
+      if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+        try {
+          await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+          logStep("Card hold released (driver cancelled)");
+          message += " Blocage carte annulé.";
+        } catch (cancelErr: any) {
+          logStep("Hold cancel error (may already be cancelled)", { error: cancelErr.message });
+        }
+      }
+      
     } else if (cancelled_by === "client") {
       // ═══════════════════════════════════════════════════════════════
       // ANNULATION PAR LE CLIENT
@@ -178,9 +189,19 @@ serve(async (req) => {
         // COURSE AVEC ACOMPTE
         // ─────────────────────────────────────────────────────────────
         if (hoursUntilPickup > freeCancellationHours) {
-          // AVANT T-4h → Remboursement de l'acompte
+          // AVANT T-4h → Remboursement de l'acompte + libération hold
           shouldRefundDeposit = true;
           message = `Annulation client plus de ${freeCancellationHours}h avant - acompte remboursé.`;
+          
+          // Release hold if exists
+          if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+            try {
+              await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+              logStep("Card hold released (deposit course, early cancellation)");
+            } catch (cancelErr: any) {
+              logStep("Hold cancel error", { error: cancelErr.message });
+            }
+          }
           
           if (course.deposit_stripe_payment_intent_id) {
             try {
@@ -218,9 +239,20 @@ serve(async (req) => {
         // COURSE SANS ACOMPTE
         // ─────────────────────────────────────────────────────────────
         if (hoursUntilPickup > freeCancellationHours) {
-          // AVANT T-2h → Aucun frais
+          // AVANT T-2h → Aucun frais, libérer le hold
           shouldChargeFee = false;
           message = `Annulation client plus de ${freeCancellationHours}h avant - aucun frais.`;
+          
+          // Release hold
+          if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+            try {
+              await stripe.paymentIntents.cancel(course.stripe_hold_payment_intent_id);
+              logStep("Card hold released (free cancellation)");
+              message += " Blocage carte annulé.";
+            } catch (cancelErr: any) {
+              logStep("Hold cancel error", { error: cancelErr.message });
+            }
+          }
         } else {
           // APRÈS T-2h → Frais de 10€
           shouldChargeFee = true;
@@ -228,7 +260,61 @@ serve(async (req) => {
           message = `Annulation client moins de ${freeCancellationHours}h avant - frais de ${feeAmount}€ appliqués.`;
 
           // Débiter via l'empreinte bancaire
-          if (course.card_hold_status === "confirmed" && course.stripe_payment_method_id) {
+          // Capture partielle du hold existant (montant total bloqué → on capture seulement 10€)
+          if (course.card_hold_status === "confirmed" && course.stripe_hold_payment_intent_id) {
+            try {
+              // Capture partielle : ne prélever que les frais d'annulation
+              const capturedPI = await stripe.paymentIntents.capture(
+                course.stripe_hold_payment_intent_id,
+                { amount_to_capture: Math.round(feeAmount * 100) }
+              );
+
+              chargeResult = capturedPI;
+              logStep("Cancellation fee captured via partial capture", { 
+                paymentIntentId: capturedPI.id,
+                amount: feeAmount,
+                originalHold: course.card_hold_amount,
+              });
+            } catch (captureError: any) {
+              logStep("Partial capture failed, trying fallback with saved card", { error: captureError.message });
+              
+              // Fallback: créer un nouveau PI si la capture partielle échoue
+              if (course.stripe_payment_method_id) {
+                try {
+                  const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+                    amount: Math.round(feeAmount * 100),
+                    currency: "eur",
+                    payment_method: course.stripe_payment_method_id,
+                    confirm: true,
+                    off_session: true,
+                    description: `Frais d'annulation - Course VTC`,
+                    metadata: {
+                      course_id,
+                      type: "cancellation_fee",
+                      cancelled_by,
+                    },
+                  };
+
+                  if (course.driver?.stripe_connect_account_id) {
+                    paymentIntentParams.transfer_data = {
+                      destination: course.driver.stripe_connect_account_id,
+                    };
+                    paymentIntentParams.application_fee_amount = 25; // 0.25€ frais SoloCab sur annulation
+                  }
+
+                  const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+                  chargeResult = paymentIntent;
+                  logStep("Cancellation fee charged via fallback PI", { paymentIntentId: paymentIntent.id });
+                } catch (fallbackError: any) {
+                  logStep("Fallback charge also failed", { error: fallbackError.message });
+                  message += " (échec du prélèvement)";
+                }
+              } else {
+                message += " (échec de la capture partielle)";
+              }
+            }
+          } else if (course.stripe_payment_method_id) {
+            // Pas de hold actif mais carte enregistrée → nouveau PI
             try {
               const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
                 amount: Math.round(feeAmount * 100),
@@ -244,7 +330,6 @@ serve(async (req) => {
                 },
               };
 
-              // Transfer to driver if Stripe Connect is configured
               if (course.driver?.stripe_connect_account_id) {
                 paymentIntentParams.transfer_data = {
                   destination: course.driver.stripe_connect_account_id,
@@ -252,19 +337,15 @@ serve(async (req) => {
               }
 
               const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
-
               chargeResult = paymentIntent;
-              logStep("Cancellation fee charged", { 
-                paymentIntentId: paymentIntent.id,
-                amount: feeAmount 
-              });
+              logStep("Cancellation fee charged", { paymentIntentId: paymentIntent.id, amount: feeAmount });
             } catch (chargeError: any) {
               logStep("Cancellation fee charge failed", { error: chargeError.message });
               message += " (échec du prélèvement)";
             }
           } else {
-            logStep("No card hold available for charging fee");
-            message += " (pas d'empreinte bancaire)";
+            logStep("No card hold or saved card available for charging fee");
+            message += " (pas de moyen de paiement disponible)";
           }
         }
       }

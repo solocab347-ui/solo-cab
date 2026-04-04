@@ -235,10 +235,12 @@ serve(async (req) => {
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 10;
               const holdAmountCents = Math.max(Math.round(coursePrice * 100), 1000); // min 10€
               
+              const SOLOCAB_FEE_CENTS = 50; // 0.50€
               const piParams: Record<string, unknown> = {
                 amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
+                application_fee_amount: SOLOCAB_FEE_CENTS,
                 customer: clientRecord.stripe_customer_id,
                 payment_method: paymentMethodToUse,
                 off_session: true,
