@@ -20,12 +20,6 @@ const PAYMENT_METHOD_INFO: Record<string, { label: string; icon: any; descriptio
     description: "CB, Visa, Mastercard", 
     color: "bg-blue-500/10 text-blue-600 border-blue-500/30" 
   },
-  not_specified: { 
-    label: "Non précisé", 
-    icon: HelpCircle, 
-    description: "Je déciderai plus tard", 
-    color: "bg-muted text-muted-foreground" 
-  }
 };
 
 interface DriverPaymentMethodSelectorProps {
