@@ -89,7 +89,7 @@ export function CardHoldForm({
       if (data.auto_confirmed) {
         // 🎉 Automatic hold with saved card - no UI needed!
         setStatus('confirmed');
-        toast.success('✅ Empreinte bancaire confirmée automatiquement');
+        toast.success('✅ Montant bloqué automatiquement sur votre carte');
         onSuccess?.();
         return;
       }

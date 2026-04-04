@@ -20,12 +20,6 @@ const PAYMENT_METHOD_INFO: Record<string, { label: string; icon: any; descriptio
     description: "CB, Visa, Mastercard", 
     color: "bg-blue-500/10 text-blue-600 border-blue-500/30" 
   },
-  not_specified: { 
-    label: "Non précisé", 
-    icon: HelpCircle, 
-    description: "Je déciderai plus tard", 
-    color: "bg-muted text-muted-foreground" 
-  }
 };
 
 interface DriverPaymentMethodSelectorProps {
@@ -45,21 +39,18 @@ export function DriverPaymentMethodSelector({
   value,
   onChange,
   label = "Moyen de paiement",
-  showNotSpecified = true,
+  showNotSpecified: _showNotSpecified = false,
   className = ""
 }: DriverPaymentMethodSelectorProps) {
   const { config, loading, isStripeEnabled } = useDriverPaymentMethods(driverId);
 
   // Build available methods from driver config
-  const availableMethods = [
-    ...(showNotSpecified ? ['not_specified'] : []),
-    ...config.acceptedMethods
-  ];
+  const availableMethods = [...config.acceptedMethods];
 
   // Set default value if current value is not available
   useEffect(() => {
     if (!loading && value && !availableMethods.includes(value)) {
-      onChange(config.defaultMethod || 'not_specified');
+      onChange(config.defaultMethod || 'cash');
     }
   }, [loading, value, availableMethods, config.defaultMethod, onChange]);
 

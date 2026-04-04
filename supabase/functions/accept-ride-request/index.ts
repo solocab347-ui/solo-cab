@@ -231,8 +231,12 @@ serve(async (req) => {
             if (stripeKey) {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+              // Calculate hold amount from course price
+              const coursePrice = course.final_payment_amount || course.guest_estimated_price || 10;
+              const holdAmountCents = Math.max(Math.round(coursePrice * 100), 1000); // min 10€
+              
               const piParams: Record<string, unknown> = {
-                amount: 1000, // 10€ hold
+                amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
                 customer: clientRecord.stripe_customer_id,
@@ -243,13 +247,14 @@ serve(async (req) => {
                   driver_id: driver.id,
                   course_id: course.id,
                   client_id: claimed.client_id,
-                  type: "reservation_hold",
+                  type: "course_hold",
                   auto_created: "true",
+                  cancellation_fee_cents: "1000",
                 },
                 transfer_data: {
                   destination: driver.stripe_connect_account_id,
                 },
-                description: `Avance de réservation 10€ - Course VTC #${course.id.slice(0, 8)}`,
+                description: `Réservation VTC ${(holdAmountCents / 100).toFixed(2)}€ TTC - Course #${course.id.slice(0, 8)}`,
               };
 
               const paymentIntent = await stripe.paymentIntents.create(piParams as any);
@@ -261,7 +266,7 @@ serve(async (req) => {
                   .update({
                     stripe_hold_payment_intent_id: paymentIntent.id,
                     card_hold_status: "confirmed",
-                    card_hold_amount: 10.00,
+                    card_hold_amount: holdAmountCents / 100,
                     payment_status: "bank_imprint_confirmed",
                     stripe_payment_method_id: paymentMethodToUse,
                     stripe_customer_id: clientRecord.stripe_customer_id,

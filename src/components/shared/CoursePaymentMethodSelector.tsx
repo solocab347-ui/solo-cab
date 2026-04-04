@@ -16,7 +16,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_METHODS = [
-  { value: "not_specified", label: "Non précisé", icon: HelpCircle, description: "Je déciderai plus tard", color: "bg-muted text-muted-foreground" },
   { value: "cash", label: "Espèces", icon: Banknote, description: "Paiement en liquide", color: "bg-green-500/10 text-green-600 border-green-500/30" },
   { value: "card", label: "Carte", icon: CreditCard, description: "CB, Visa, Mastercard", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
 ];
@@ -76,7 +75,7 @@ export const CoursePaymentMethodSelector = ({
       <RadioGroup
         value={value}
         onValueChange={onChange}
-        className="grid grid-cols-3 gap-2"
+        className="grid grid-cols-2 gap-2"
       >
         {PAYMENT_METHODS.map((method) => {
           const IconComponent = method.icon;
@@ -112,8 +111,8 @@ export const CoursePaymentMethodSelector = ({
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs">
-                <strong>Paiement par carte sécurisé.</strong> Après création de la course, 
-                une empreinte bancaire sera requise pour confirmer la réservation. 
+                <strong>Paiement par carte sécurisé.</strong> Le montant total TTC de la course sera 
+                bloqué sur votre carte à la réservation. Vous ne serez débité qu'à la fin de la course. 
                 Consultez notre{' '}
                 <a href="/politique-annulation" target="_blank" className="underline text-primary hover:text-primary/80">
                   politique d'annulation
@@ -124,7 +123,7 @@ export const CoursePaymentMethodSelector = ({
             <Alert className="bg-emerald-500/5 border-emerald-500/20">
               <CheckCircle className="h-4 w-4 text-emerald-500" />
               <AlertDescription className="text-xs">
-                Empreinte bancaire validée. Votre réservation est sécurisée.
+                Montant bloqué sur votre carte. Votre réservation est sécurisée.
               </AlertDescription>
             </Alert>
           ) : (
@@ -153,7 +152,7 @@ export const CoursePaymentMethodSelector = ({
         </Alert>
       )}
 
-      {value && value !== 'card' && value !== 'not_specified' && (
+      {value && value !== 'card' && (
         <p className="text-xs text-muted-foreground">
           Le règlement s'effectuera directement avec votre chauffeur en fin de course.
         </p>

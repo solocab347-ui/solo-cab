@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RESERVATION_HOLD_CENTS = 1000; // 10€ fixed reservation hold
+const CANCELLATION_FEE_CENTS = 1000; // 10€ cancellation fee (politique d'annulation)
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -17,6 +17,13 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405,
+    });
   }
 
   const supabaseClient = createClient(
@@ -37,13 +44,43 @@ serve(async (req) => {
       client_email,
       client_name,
       client_user_id,
+      hold_amount_cents, // NEW: exact TTC amount in cents
     } = body;
 
     if (!driver_id || typeof driver_id !== "string") throw new Error("driver_id required");
     if (course_id && typeof course_id !== "string") throw new Error("Invalid course_id");
     if (client_email && typeof client_email !== "string") throw new Error("Invalid client_email");
 
-    logStep("Creating 10€ reservation hold", { driver_id, course_id, client_email });
+    // Determine hold amount: use exact course price, minimum 10€ (cancellation fee)
+    let holdAmountCents = hold_amount_cents ? Math.round(Number(hold_amount_cents)) : 0;
+    
+    // If no amount provided, try to get it from the course
+    if (!holdAmountCents && course_id) {
+      const { data: courseData } = await supabaseClient
+        .from("courses")
+        .select("final_payment_amount, guest_estimated_price")
+        .eq("id", course_id)
+        .single();
+      
+      if (courseData) {
+        const priceEuros = courseData.final_payment_amount || courseData.guest_estimated_price;
+        if (priceEuros && priceEuros > 0) {
+          holdAmountCents = Math.round(priceEuros * 100);
+        }
+      }
+    }
+
+    // Minimum hold = cancellation fee (10€)
+    if (holdAmountCents < CANCELLATION_FEE_CENTS) {
+      holdAmountCents = CANCELLATION_FEE_CENTS;
+    }
+
+    const holdAmountEuros = holdAmountCents / 100;
+
+    logStep("Creating hold for exact course amount", { 
+      driver_id, course_id, client_email, 
+      holdAmountCents, holdAmountEuros 
+    });
 
     // Get driver Stripe Connect info
     const { data: driver, error: driverError } = await supabaseClient
@@ -75,7 +112,7 @@ serve(async (req) => {
       );
     }
 
-    logStep("Driver has Stripe Connect, creating 10€ PaymentIntent with manual capture");
+    logStep(`Driver has Stripe Connect, creating ${holdAmountEuros}€ PaymentIntent with manual capture`);
 
     // Check if client has a saved card for automatic hold
     let savedPaymentMethodId: string | undefined;
@@ -91,12 +128,8 @@ serve(async (req) => {
       if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
         stripeCustomerId = clientData.stripe_customer_id;
         savedPaymentMethodId = clientData.default_payment_method_id;
-        logStep("Client has saved card, will attempt automatic hold", {
-          customerId: stripeCustomerId,
-          pmId: savedPaymentMethodId,
-        });
+        logStep("Client has saved card, will attempt automatic hold");
       } else if (clientData?.stripe_customer_id) {
-        // Check for any saved payment methods
         stripeCustomerId = clientData.stripe_customer_id;
         const pms = await stripe.paymentMethods.list({
           customer: stripeCustomerId,
@@ -105,14 +138,14 @@ serve(async (req) => {
         });
         if (pms.data.length > 0) {
           savedPaymentMethodId = pms.data[0].id;
-          logStep("Found saved card on Stripe Customer", { pmId: savedPaymentMethodId });
+          logStep("Found saved card on Stripe Customer");
         }
       }
     }
 
-    // Build PaymentIntent params
+    // Build PaymentIntent params with exact course amount
     const piParams: any = {
-      amount: RESERVATION_HOLD_CENTS,
+      amount: holdAmountCents,
       currency: "eur",
       capture_method: "manual",
       metadata: {
@@ -120,13 +153,14 @@ serve(async (req) => {
         course_id: course_id || "",
         client_email: client_email || "",
         client_name: client_name || "",
-        type: "reservation_hold",
-        hold_amount_cents: RESERVATION_HOLD_CENTS.toString(),
+        type: "course_hold",
+        hold_amount_cents: holdAmountCents.toString(),
+        cancellation_fee_cents: CANCELLATION_FEE_CENTS.toString(),
       },
       transfer_data: {
         destination: driver.stripe_connect_account_id,
       },
-      description: `Avance de réservation 10€ - Course VTC${course_id ? ` #${course_id.slice(0, 8)}` : ''}`,
+      description: `Réservation VTC ${holdAmountEuros}€ TTC${course_id ? ` - Course #${course_id.slice(0, 8)}` : ''}`,
     };
 
     // If saved card: create, confirm off-session (no UI needed)
@@ -138,7 +172,6 @@ serve(async (req) => {
       logStep("Creating automatic hold with saved card (off-session)");
     } else {
       piParams.payment_method_types = ["card"];
-      // Add setup_future_usage to save card for next time
       piParams.setup_future_usage = "off_session";
       if (stripeCustomerId) {
         piParams.customer = stripeCustomerId;
@@ -146,16 +179,15 @@ serve(async (req) => {
       logStep("Creating hold requiring client card input");
     }
 
-    // Create a PaymentIntent with manual capture = "hold" the 10€
     const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     logStep("PaymentIntent created for hold", { 
       paymentIntentId: paymentIntent.id,
       status: paymentIntent.status,
+      amount: holdAmountCents,
       autoConfirmed: paymentIntent.status === "requires_capture",
     });
 
-    // Determine hold status based on PI status
     const isAutoConfirmed = paymentIntent.status === "requires_capture";
     const holdStatus = isAutoConfirmed ? "confirmed" : "pending";
 
@@ -164,11 +196,10 @@ serve(async (req) => {
       const courseUpdate: Record<string, unknown> = {
         stripe_hold_payment_intent_id: paymentIntent.id,
         card_hold_status: holdStatus,
-        card_hold_amount: 10.00,
+        card_hold_amount: holdAmountEuros,
         payment_method: "card",
       };
 
-      // If auto-confirmed with saved card, also save payment method reference
       if (isAutoConfirmed && savedPaymentMethodId) {
         courseUpdate.stripe_payment_method_id = savedPaymentMethodId;
         courseUpdate.stripe_customer_id = stripeCustomerId;
@@ -184,13 +215,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        card_hold_required: !isAutoConfirmed, // false if auto-confirmed
+        card_hold_required: !isAutoConfirmed,
         auto_confirmed: isAutoConfirmed,
         payment_intent_id: paymentIntent.id,
         client_secret: isAutoConfirmed ? undefined : paymentIntent.client_secret,
-        stripe_account_id: driver.stripe_connect_account_id,
-        hold_amount: 10.00,
-        hold_amount_cents: RESERVATION_HOLD_CENTS,
+        hold_amount: holdAmountEuros,
+        hold_amount_cents: holdAmountCents,
         status: paymentIntent.status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }

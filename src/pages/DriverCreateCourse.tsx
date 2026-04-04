@@ -57,7 +57,7 @@ const DriverCreateCourse = () => {
   
   // Pour mise à disposition
   const [durationHours, setDurationHours] = useState("");
-  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("cash");
   
   // Calcul automatique
   const [distanceKm, setDistanceKm] = useState<number | null>(null);

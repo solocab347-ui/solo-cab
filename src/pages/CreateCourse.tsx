@@ -42,7 +42,7 @@ const CreateCourse = () => {
   const [useAddressPickup, setUseAddressPickup] = useState(false);
   const [useAddressDestination, setUseAddressDestination] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
-  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("cash");
   const [createdCourseInfo, setCreatedCourseInfo] = useState<{
     pickupAddress: string;
     destinationAddress: string;

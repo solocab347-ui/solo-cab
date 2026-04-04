@@ -309,12 +309,9 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
               onValueChange={setDefaultMethod}
               className="flex flex-wrap gap-2"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="not_specified" id="default-none" />
-                <Label htmlFor="default-none" className="text-sm cursor-pointer">
-                  Non précisé
-                </Label>
-              </div>
+              {acceptedMethods.length === 0 && (
+                <p className="text-sm text-muted-foreground">Veuillez d'abord sélectionner des méthodes de paiement acceptées.</p>
+              )}
               {acceptedMethods.map((method) => {
                 const methodInfo = PAYMENT_METHODS.find(m => m.value === method);
                 if (!methodInfo) return null;
