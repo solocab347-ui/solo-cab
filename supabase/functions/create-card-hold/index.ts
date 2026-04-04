@@ -51,7 +51,7 @@ serve(async (req) => {
     if (course_id && typeof course_id !== "string") throw new Error("Invalid course_id");
     if (client_email && typeof client_email !== "string") throw new Error("Invalid client_email");
 
-    // Determine hold amount: use exact course price, minimum 10€ (cancellation fee)
+    // Determine hold amount: use exact course price TTC
     let holdAmountCents = hold_amount_cents ? Math.round(Number(hold_amount_cents)) : 0;
     
     // If no amount provided, try to get it from the course
