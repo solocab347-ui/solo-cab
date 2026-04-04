@@ -274,15 +274,7 @@ export function ClientCardManager() {
                     clientSecret,
                     locale: "fr",
                     appearance: {
-                      theme: "night",
-                      variables: {
-                        colorPrimary: "#6366f1",
-                        colorBackground: "#1e1b2e",
-                        colorText: "#e2e8f0",
-                        colorDanger: "#ef4444",
-                        borderRadius: "8px",
-                        fontFamily: "system-ui, -apple-system, sans-serif",
-                      },
+                      theme: "stripe",
                     },
                   }}
                 >
