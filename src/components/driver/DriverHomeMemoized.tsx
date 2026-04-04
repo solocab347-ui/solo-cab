@@ -8,7 +8,7 @@ import { DriverAvailabilityToggleBig } from "./planning/DriverAvailabilityToggle
 import { DriverFinanceWidget } from "./finance/DriverFinanceWidget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -308,6 +308,41 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
                   {isFree ? "9,99€/mois" : "Réseau de partage"}
                 </p>
               </div>
+            </div>
+          </Card>
+
+          {/* Encaissement spontané */}
+          <Card
+            className={`relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl transition-all border border-border/50 shadow-lg group touch-manipulation ${
+              driverProfile?.driver?.stripe_connect_charges_enabled
+                ? 'hover:scale-[1.02] cursor-pointer active:scale-[0.98]'
+                : 'opacity-60 cursor-not-allowed'
+            }`}
+            {...(driverProfile?.driver?.stripe_connect_charges_enabled
+              ? getTapProps<HTMLDivElement>(() => onTabChange("finances"))
+              : {}
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-accent/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ${
+                driverProfile?.driver?.stripe_connect_charges_enabled
+                  ? 'bg-gradient-to-br from-primary to-accent'
+                  : 'bg-muted'
+              }`}>
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Encaisser</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  {driverProfile?.driver?.stripe_connect_charges_enabled
+                    ? 'Paiement instantané'
+                    : 'Connectez Stripe'}
+                </p>
+              </div>
+              {!driverProfile?.driver?.stripe_connect_charges_enabled && (
+                <p className="text-[10px] text-primary font-medium">Connecter votre compte Stripe</p>
+              )}
             </div>
           </Card>
         </div>
