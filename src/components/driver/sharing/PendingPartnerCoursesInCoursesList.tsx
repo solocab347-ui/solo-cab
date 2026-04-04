@@ -143,26 +143,21 @@ export function PendingPartnerCoursesInCoursesList({
   useEffect(() => {
     fetchCourses();
     
-    // Realtime subscription
-    const channel = supabase
-      .channel(`pending_partner_courses_${driverId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shared_courses',
-          filter: `receiver_driver_id=eq.${driverId}`
-        },
-        () => {
-          fetchCourses();
-        }
-      )
-      .subscribe();
+    // Use centralized subscription manager
+    const cleanup = subscriptionManager.subscribe(
+      `pending_partner_courses_${driverId}`,
+      {
+        table: 'shared_courses',
+        event: '*',
+        filter: `receiver_driver_id=eq.${driverId}`,
+        debounceMs: 500,
+      },
+      () => {
+        fetchCourses();
+      }
+    );
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return cleanup;
   }, [driverId, fetchCourses]);
 
   const handleAccept = async (course: PendingPartnerCourse) => {
