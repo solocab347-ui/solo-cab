@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CardHoldForm } from './CardHoldForm';
-import { supabase } from '@/integrations/supabase/client';
+import { useDriverStripeStatus } from '@/hooks/useDriverStripeStatus';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_METHODS = [
@@ -43,25 +43,8 @@ export const CoursePaymentMethodSelector = ({
   label = "Moyen de paiement",
   className = "",
 }: CoursePaymentMethodSelectorProps) => {
-  const [driverHasStripe, setDriverHasStripe] = useState<boolean | null>(null);
+  const { hasStripeConnect: driverHasStripe } = useDriverStripeStatus(driverId);
   const [cardHoldDone, setCardHoldDone] = useState(false);
-
-  useEffect(() => {
-    const checkDriver = async () => {
-      if (!driverId) return;
-      const { data } = await supabase
-        .from('drivers')
-        .select('billing_type, stripe_connect_charges_enabled, stripe_connect_account_id')
-        .eq('id', driverId)
-        .single();
-      
-      setDriverHasStripe(
-        !!data?.stripe_connect_account_id && 
-        data?.stripe_connect_charges_enabled === true
-      );
-    };
-    checkDriver();
-  }, [driverId]);
 
   const showCardHold = value === 'card' && driverHasStripe && courseId && !cardHoldDone;
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard, Banknote, Building2, Send, Loader2, CheckCircle, Wallet, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDriverStripeStatus } from '@/hooks/useDriverStripeStatus';
 
 interface CoursePaymentDialogContentProps {
   courseId: string;
@@ -46,37 +47,13 @@ export function CoursePaymentDialogContent({
   onCompanyPaymentStatusChange,
   onStripePaymentSent,
 }: CoursePaymentDialogContentProps) {
-  const [driverHasStripeConnect, setDriverHasStripeConnect] = useState(false);
+  const { hasStripeConnect: driverHasStripeConnect, isLoading: checkingStripe } = useDriverStripeStatus(driverId);
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripePaymentSent, setStripePaymentSent] = useState(false);
-  const [checkingStripe, setCheckingStripe] = useState(true);
 
   const remainingAmount = courseAmount - depositPaid;
   const hasDeposit = depositPaid > 0 && depositStatus === 'paid';
   const displayName = clientName || guestName || 'Client';
-
-  // Check if driver has Stripe Connect configured
-  useEffect(() => {
-    const checkStripeConnect = async () => {
-      try {
-        const { data } = await supabase
-          .from('drivers')
-          .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
-          .eq('id', driverId)
-          .single();
-
-        const hasStripe = !!data?.stripe_connect_account_id && 
-                          data?.stripe_connect_charges_enabled === true;
-        setDriverHasStripeConnect(hasStripe);
-      } catch (err) {
-        console.error('Error checking Stripe Connect:', err);
-      } finally {
-        setCheckingStripe(false);
-      }
-    };
-
-    checkStripeConnect();
-  }, [driverId]);
 
   const handleSendStripePayment = async () => {
     setStripeLoading(true);

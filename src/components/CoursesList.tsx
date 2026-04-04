@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -807,13 +808,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       if (courseToStart) {
         const courseData = courseToStart as any;
         // Check if driver uses Stripe Connect
-        const { data: driverInfo } = await supabase
-          .from('drivers')
-          .select('stripe_connect_account_id, stripe_connect_charges_enabled')
-          .eq('id', courseData.driver_id)
-          .single();
-        
-        const driverHasStripe = !!driverInfo?.stripe_connect_account_id && driverInfo?.stripe_connect_charges_enabled === true;
+        const driverHasStripe = await checkDriverStripeStatus(courseData.driver_id);
         
         // If driver uses Stripe and the client chose card, ensure payment is secured
         const requiresCardAuthorization = driverHasStripe && (

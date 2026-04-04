@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { 
@@ -556,15 +557,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
       const devis = course?.devis?.find((d: any) => d.id === devisId);
       
       if (course && devis) {
-        const { data: driver } = await supabase
-          .from("drivers")
-          .select("billing_type, stripe_connect_account_id, stripe_connect_charges_enabled")
-          .eq("id", course.driver_id)
-          .single();
-
-        const driverUsesStripe =
-          !!driver?.stripe_connect_account_id &&
-          driver?.stripe_connect_charges_enabled === true;
+        const driverUsesStripe = await checkDriverStripeStatus(course.driver_id);
 
         if (driverUsesStripe && course.payment_method_requested === "card") {
           const secureAmount = Number.parseFloat(

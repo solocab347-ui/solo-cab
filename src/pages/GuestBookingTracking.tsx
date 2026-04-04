@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,16 +111,7 @@ const GuestBookingTracking = () => {
 
       setPaymentStatus(courseData.payment_status);
 
-      const { data: driverData } = await supabase
-        .from('drivers')
-        .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
-        .eq('id', courseData.driver_id)
-        .single();
-
-      const usesStripe = 
-        !!driverData?.stripe_connect_account_id &&
-        driverData?.stripe_connect_charges_enabled === true;
-      
+      const usesStripe = await checkDriverStripeStatus(courseData.driver_id);
       setDriverUsesStripe(usesStripe);
 
       // Check facture payment status

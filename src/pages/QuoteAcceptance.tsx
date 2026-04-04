@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { toast } from "sonner";
 import { FileText, MapPin, Calendar, Users, CheckCircle2, Clock, Euro, AlertTriangle, Loader2, CreditCard, ShieldCheck } from "lucide-react";
 
@@ -81,12 +82,12 @@ const QuoteAcceptance = () => {
       // Fetch driver info including Stripe Connect status
       const { data: driverData } = await supabase
         .from('drivers')
-        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color, stripe_connect_account_id, stripe_connect_charges_enabled')
+        .select('id, license_number, max_passengers, vehicle_brand, vehicle_model, vehicle_color')
         .eq('id', devisData.driver_id)
         .single();
 
       if (driverData) {
-        const hasStripe = !!driverData.stripe_connect_account_id && driverData.stripe_connect_charges_enabled === true;
+        const hasStripe = await checkDriverStripeStatus(devisData.driver_id);
         setDriverHasStripe(hasStripe);
 
         // Get driver profile name
