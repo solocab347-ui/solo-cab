@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro, CreditCard } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlus, Euro, CreditCard, Banknote } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logo from "@/assets/logo-solocab.png";
@@ -54,6 +54,7 @@ const GuestBooking = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState(1);
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("cash");
   
   // Handlers for address changes - clear coords when user types manually
   const handlePickupChange = (address: string, coords?: { latitude: number; longitude: number }) => {
@@ -258,7 +259,9 @@ const GuestBooking = () => {
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim().toLowerCase(),
           guest_phone: guestPhone.trim(),
-          guest_estimated_price: estimatedPrice
+          guest_estimated_price: estimatedPrice,
+          payment_method: paymentMethod === 'card' ? 'stripe' : 'cash',
+          payment_method_requested: paymentMethod,
         })
         .select('id, guest_tracking_token')
         .single();
@@ -294,29 +297,31 @@ const GuestBooking = () => {
         console.error('⚠️ Erreur envoi email suivi (non bloquant):', emailError);
       });
 
-      // Check if driver requires card hold (uses Stripe Connect)
-      const { data: driverPayment } = await supabase
-        .from('drivers')
-        .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
-        .eq('id', driver.id)
-        .single();
+      // Check if driver requires card hold (uses Stripe Connect) AND client chose card
+      if (paymentMethod === 'card') {
+        const { data: driverPayment } = await supabase
+          .from('drivers')
+          .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
+          .eq('id', driver.id)
+          .single();
 
-      const driverUsesStripe = 
-        !!driverPayment?.stripe_connect_account_id &&
-        driverPayment?.stripe_connect_charges_enabled === true;
+        const driverUsesStripe = 
+          !!driverPayment?.stripe_connect_account_id &&
+          driverPayment?.stripe_connect_charges_enabled === true;
 
-      if (driverUsesStripe) {
-        // Show card hold flow
-        setCreatedCourseId(data.id);
-        setCreatedTrackingToken(data.guest_tracking_token);
-        setRequiresCardHold(true);
-        setShowCardHoldFlow(true);
-        toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
-      } else {
-        // No card hold required, go directly to tracking
-        toast.success("Demande de réservation envoyée !");
-        navigate(`/reservation-suivi/${data.guest_tracking_token}`);
+        if (driverUsesStripe) {
+          setCreatedCourseId(data.id);
+          setCreatedTrackingToken(data.guest_tracking_token);
+          setRequiresCardHold(true);
+          setShowCardHoldFlow(true);
+          toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
+          return data;
+        }
       }
+
+      // Cash or driver without Stripe → go directly to tracking
+      toast.success("Demande de réservation envoyée !");
+      navigate(`/reservation-suivi/${data.guest_tracking_token}`);
       
       return data;
     }).catch((error) => {
@@ -571,6 +576,44 @@ const GuestBooking = () => {
                     placeholder="Informations supplémentaires (bagages, enfants, etc.)"
                     rows={3}
                   />
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Mode de paiement
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('card')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'card'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <CreditCard className={`w-6 h-6 ${paymentMethod === 'card' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`font-medium text-sm ${paymentMethod === 'card' ? 'text-primary' : 'text-foreground'}`}>
+                      Carte bancaire
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'cash'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <Banknote className={`w-6 h-6 ${paymentMethod === 'cash' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`font-medium text-sm ${paymentMethod === 'cash' ? 'text-primary' : 'text-foreground'}`}>
+                      Espèces
+                    </span>
+                  </button>
                 </div>
               </div>
 
