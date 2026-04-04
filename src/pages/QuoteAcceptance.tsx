@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { toast } from "sonner";
 import { FileText, MapPin, Calendar, Users, CheckCircle2, Clock, Euro, AlertTriangle, Loader2, CreditCard, ShieldCheck } from "lucide-react";
 
