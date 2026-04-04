@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[SAVE-CLIENT-CARD] ${step}${detailsStr}`);
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
+  console.log(`[CREATE-SETUP-INTENT] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -19,7 +19,7 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
   try {
@@ -28,21 +28,19 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("User not authenticated");
+    if (userError || !userData.user?.email) throw new Error("User not authenticated");
 
     const user = userData.user;
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get client record
     const { data: client, error: clientError } = await supabaseClient
       .from("clients")
-      .select("id, stripe_customer_id, saved_cards")
+      .select("id, stripe_customer_id")
       .eq("user_id", user.id)
       .single();
 
@@ -50,20 +48,17 @@ serve(async (req) => {
       throw new Error("Client record not found");
     }
 
-    // Get or create Stripe Customer
     let stripeCustomerId = client.stripe_customer_id;
 
     if (!stripeCustomerId) {
-      // Check if customer exists by email
       const existingCustomers = await stripe.customers.list({
-        email: user.email!,
+        email: user.email,
         limit: 1,
       });
 
       if (existingCustomers.data.length > 0) {
         stripeCustomerId = existingCustomers.data[0].id;
       } else {
-        // Get profile for name
         const { data: profile } = await supabaseClient
           .from("profiles")
           .select("full_name, phone")
@@ -71,7 +66,7 @@ serve(async (req) => {
           .single();
 
         const newCustomer = await stripe.customers.create({
-          email: user.email!,
+          email: user.email,
           name: profile?.full_name || undefined,
           phone: profile?.phone || undefined,
           metadata: {
@@ -80,28 +75,26 @@ serve(async (req) => {
             user_id: user.id,
           },
         });
+
         stripeCustomerId = newCustomer.id;
         logStep("New Stripe Customer created", { customerId: stripeCustomerId });
       }
 
-      // Save customer ID
       await supabaseClient
         .from("clients")
         .update({ stripe_customer_id: stripeCustomerId })
         .eq("id", client.id);
     }
 
-    logStep("Stripe Customer ready", { customerId: stripeCustomerId });
-
-    // Create SetupIntent with a fresh client secret for this specific request
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       usage: "off_session",
       payment_method_types: ["card"],
       metadata: {
+        platform: "solocab",
         client_id: client.id,
         user_id: user.id,
-        platform: "solocab",
+        source: "client-dashboard",
       },
     });
 
@@ -117,11 +110,12 @@ serve(async (req) => {
         client_secret: setupIntent.client_secret,
         setup_intent_id: setupIntent.id,
         customer_id: stripeCustomerId,
+        livemode: setupIntent.livemode,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -132,7 +126,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-      }
+      },
     );
   }
 });

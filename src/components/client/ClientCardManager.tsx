@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,8 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 interface SavedCard {
   id: string;
@@ -33,7 +34,7 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () => void; onCancel: () => void; clientSecret: string }) {
+function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent }: { onSuccess: () => void; onCancel: () => void; clientSecret: string; onRequireFreshIntent: (persistInState?: boolean) => Promise<string | null> }) {
   const stripe = useStripe();
   const elements = useElements();
   const [saving, setSaving] = useState(false);
@@ -71,7 +72,20 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
         throw new Error("Le formulaire de carte n'est pas prêt.");
       }
 
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+      let currentClientSecret = clientSecret;
+
+      if (!currentClientSecret.startsWith("seti_") || !currentClientSecret.includes("_secret_")) {
+        throw new Error("Client secret Stripe invalide.");
+      }
+
+      const freshClientSecret = await onRequireFreshIntent(false);
+      if (freshClientSecret) {
+        currentClientSecret = freshClientSecret;
+      }
+
+      console.log("[ClientCardManager] confirmCardSetup clientSecret prefix", currentClientSecret.slice(0, 24));
+
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(currentClientSecret, {
         payment_method: {
           card: cardNumberElement,
         },
@@ -174,7 +188,25 @@ export function ClientCardManager() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [setupIntentId, setSetupIntentId] = useState<string | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
+
+  const stripeReady = useMemo(() => Boolean(stripePromise && stripePublishableKey.startsWith("pk_")), []);
+
+  const createFreshSetupIntent = useCallback(async (persistInState = true) => {
+    const { data, error } = await supabase.functions.invoke("create-setup-intent");
+    if (error) throw error;
+    if (!data?.client_secret || !data?.setup_intent_id) {
+      throw new Error("SetupIntent Stripe introuvable");
+    }
+
+    console.log("[ClientCardManager] received clientSecret", String(data.client_secret).slice(0, 28));
+    if (persistInState) {
+      setClientSecret(data.client_secret);
+      setSetupIntentId(data.setup_intent_id);
+    }
+    return data.client_secret as string;
+  }, []);
 
   const loadCards = useCallback(async () => {
     try {
@@ -197,12 +229,10 @@ export function ClientCardManager() {
     setSetupLoading(true);
     setShowForm(true);
     setClientSecret(null);
+    setSetupIntentId(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("save-client-card");
-      if (error) throw error;
-      if (!data?.client_secret) throw new Error("Erreur de configuration");
-      setClientSecret(data.client_secret);
+      await createFreshSetupIntent();
     } catch (err: any) {
       toast.error(err.message || "Impossible de préparer le formulaire");
       setShowForm(false);
@@ -300,7 +330,7 @@ export function ClientCardManager() {
               </div>
             ) : (
               <Elements
-                key={clientSecret}
+                key={setupIntentId || clientSecret}
                 stripe={stripePromise}
                 options={{
                   locale: "fr",
@@ -308,14 +338,17 @@ export function ClientCardManager() {
               >
                 <CardFormInner
                   clientSecret={clientSecret}
+                  onRequireFreshIntent={createFreshSetupIntent}
                   onSuccess={() => {
                     setShowForm(false);
                     setClientSecret(null);
+                    setSetupIntentId(null);
                     setTimeout(loadCards, 1200);
                   }}
                   onCancel={() => {
                     setShowForm(false);
                     setClientSecret(null);
+                    setSetupIntentId(null);
                   }}
                 />
               </Elements>
@@ -325,6 +358,13 @@ export function ClientCardManager() {
               <Plus className="mr-2 h-4 w-4" />
               {cards.length === 0 ? "Ajouter ma carte bancaire" : "Ajouter une autre carte"}
             </Button>
+          )}
+
+          {!stripeReady && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <p>Configuration Stripe publique manquante ou invalide côté frontend.</p>
+            </div>
           )}
 
           <p className="flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
