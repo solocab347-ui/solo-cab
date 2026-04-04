@@ -55,118 +55,108 @@ export function DriverResultCard({
 
   return (
     <Card
-      className={`transition-all duration-200 ${
+      className={`transition-all duration-200 h-full ${
         isSelected 
           ? 'ring-2 ring-primary border-primary bg-primary/5 shadow-md' 
           : 'hover:shadow-md hover:border-primary/30'
       }`}
+      onClick={() => onToggleSelect(driver.driver_id)}
     >
-      <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start gap-3">
-          {/* Rank + Avatar */}
-          <div className="relative">
-            <div className={`absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold z-10 ${
-              rank <= 3 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-            }`}>
-              {rank}
-            </div>
-            <Avatar className="h-12 w-12 border-2 border-background shadow">
-              <AvatarImage src={driver.profile_photo_url || undefined} alt={displayName} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+      <CardContent className="p-3 flex flex-col items-center text-center gap-2 h-full">
+        {/* Rank badge */}
+        <div className="relative w-full flex justify-center">
+          <div className={`absolute -top-1 left-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold z-10 ${
+            rank <= 3 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+          }`}>
+            {rank}
           </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h4 className="font-semibold text-foreground text-sm truncate">{displayName}</h4>
-              {clientPaymentMethod === 'card' && (
-                driver.stripe_connect_charges_enabled ? (
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-primary/30 text-primary bg-primary/5">
-                    <ShieldCheck className="h-2.5 w-2.5" />
-                    Paiement sécurisé
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-muted-foreground/30 text-muted-foreground">
-                    <CreditCard className="h-2.5 w-2.5" />
-                    TPE
-                  </Badge>
-                )
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-1.5">
-              <span className="flex items-center gap-0.5">
-                <MapPin className="h-3 w-3" />
-                À {formatDistance(driver.distance_meters)}
-              </span>
-              <span className="flex items-center gap-0.5 text-primary/80">
-                <Clock className="h-3 w-3" />
-                Approche {approachTime}
-              </span>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewProfile(driver);
-                }}
-              >
-                <Eye className="h-3 w-3" />
-                Profil
-              </Button>
-            </div>
-          </div>
-
-          {/* Price + Select */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            {driver.estimated_price !== undefined && driver.estimated_price > 0 && (
-              <div className="text-right">
-                <div className="text-xl font-bold text-primary">
-                  {driver.estimated_price.toFixed(0)}€
-                </div>
-                {routeDistanceKm !== undefined && (
-                  <div className="text-[10px] text-muted-foreground">
-                    {routeDistanceKm.toFixed(1)} km
-                  </div>
-                )}
-              </div>
-            )}
-            {driver.estimated_price !== undefined && driver.estimated_price === 0 && (
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground italic">
-                  Sur devis
-                </div>
-              </div>
-            )}
-
-            <Button
-              size="sm"
-              variant={isSelected ? 'default' : 'outline'}
-              className={`h-8 text-xs gap-1 min-w-[70px] max-w-[100px] ${isSelected ? 'bg-primary' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSelect(driver.driver_id);
-              }}
-            >
-              {isSelected ? (
-                <>
-                  <Check className="h-3 w-3 shrink-0" />
-                  <span className="truncate">Sélectionné</span>
-                </>
-              ) : (
-                'Choisir'
-              )}
-            </Button>
-          </div>
+          <Avatar className="h-14 w-14 border-2 border-background shadow">
+            <AvatarImage src={driver.profile_photo_url || undefined} alt={displayName} />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </div>
+
+        {/* Name */}
+        <h4 className="font-semibold text-foreground text-sm truncate w-full">{displayName}</h4>
+
+        {/* Payment badge */}
+        {clientPaymentMethod === 'card' && (
+          driver.stripe_connect_charges_enabled ? (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-primary/30 text-primary bg-primary/5">
+              <ShieldCheck className="h-2.5 w-2.5" />
+              Paiement sécurisé
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 border-muted-foreground/30 text-muted-foreground">
+              <CreditCard className="h-2.5 w-2.5" />
+              TPE
+            </Badge>
+          )
+        )}
+
+        {/* Distance & approach */}
+        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+          <span className="flex items-center gap-0.5 justify-center">
+            <MapPin className="h-3 w-3" />
+            À {formatDistance(driver.distance_meters)}
+          </span>
+          <span className="flex items-center gap-0.5 justify-center text-primary/80">
+            <Clock className="h-3 w-3" />
+            {approachTime}
+          </span>
+        </div>
+
+        {/* Price */}
+        <div className="mt-auto pt-2 border-t border-border/50 w-full">
+          {driver.estimated_price !== undefined && driver.estimated_price > 0 ? (
+            <div className="text-2xl font-bold text-primary">
+              {driver.estimated_price.toFixed(0)}€
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground italic">Sur devis</div>
+          )}
+          {routeDistanceKm !== undefined && (
+            <div className="text-[10px] text-muted-foreground">
+              {routeDistanceKm.toFixed(1)} km
+            </div>
+          )}
+        </div>
+
+        {/* Select button */}
+        <Button
+          size="sm"
+          variant={isSelected ? 'default' : 'outline'}
+          className={`w-full h-8 text-xs gap-1 ${isSelected ? 'bg-primary' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(driver.driver_id);
+          }}
+        >
+          {isSelected ? (
+            <>
+              <Check className="h-3 w-3 shrink-0" />
+              Sélectionné
+            </>
+          ) : (
+            'Choisir'
+          )}
+        </Button>
+
+        {/* Profile link */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-primary p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewProfile(driver);
+          }}
+        >
+          <Eye className="h-3 w-3" />
+          Voir profil
+        </Button>
       </CardContent>
     </Card>
   );
