@@ -297,29 +297,31 @@ const GuestBooking = () => {
         console.error('⚠️ Erreur envoi email suivi (non bloquant):', emailError);
       });
 
-      // Check if driver requires card hold (uses Stripe Connect)
-      const { data: driverPayment } = await supabase
-        .from('drivers')
-        .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
-        .eq('id', driver.id)
-        .single();
+      // Check if driver requires card hold (uses Stripe Connect) AND client chose card
+      if (paymentMethod === 'card') {
+        const { data: driverPayment } = await supabase
+          .from('drivers')
+          .select('billing_type, stripe_connect_account_id, stripe_connect_charges_enabled')
+          .eq('id', driver.id)
+          .single();
 
-      const driverUsesStripe = 
-        !!driverPayment?.stripe_connect_account_id &&
-        driverPayment?.stripe_connect_charges_enabled === true;
+        const driverUsesStripe = 
+          !!driverPayment?.stripe_connect_account_id &&
+          driverPayment?.stripe_connect_charges_enabled === true;
 
-      if (driverUsesStripe) {
-        // Show card hold flow
-        setCreatedCourseId(data.id);
-        setCreatedTrackingToken(data.guest_tracking_token);
-        setRequiresCardHold(true);
-        setShowCardHoldFlow(true);
-        toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
-      } else {
-        // No card hold required, go directly to tracking
-        toast.success("Demande de réservation envoyée !");
-        navigate(`/reservation-suivi/${data.guest_tracking_token}`);
+        if (driverUsesStripe) {
+          setCreatedCourseId(data.id);
+          setCreatedTrackingToken(data.guest_tracking_token);
+          setRequiresCardHold(true);
+          setShowCardHoldFlow(true);
+          toast.info("Veuillez valider votre empreinte bancaire pour confirmer la réservation");
+          return data;
+        }
       }
+
+      // Cash or driver without Stripe → go directly to tracking
+      toast.success("Demande de réservation envoyée !");
+      navigate(`/reservation-suivi/${data.guest_tracking_token}`);
       
       return data;
     }).catch((error) => {
