@@ -885,13 +885,14 @@ export function UnifiedBookingPage() {
                   }
                   if (clientPaymentMethod === 'card' && hasStripeDriver) {
                     const isMultiDriver = selectedDriversList.length > 1;
+                    const estimatedPrice = selectedDriversList.find(d => d.stripe_connect_charges_enabled)?.estimated_price;
                     return (
                       <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
                         <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <span>
                           {isMultiDriver 
-                            ? "Le paiement sera sécurisé automatiquement dès qu'un chauffeur accepte votre demande. Aucun prélèvement ne sera fait avant." 
-                            : "Une empreinte bancaire de 10€ sera sécurisée à la confirmation. Le montant final sera débité à la fin de la course."}
+                            ? "Le montant total TTC de la course sera bloqué sur votre carte dès qu'un chauffeur accepte. Aucun prélèvement ne sera fait avant la fin de la course." 
+                            : `Le montant total TTC${estimatedPrice ? ` (${estimatedPrice.toFixed(0)}€)` : ''} sera bloqué sur votre carte à la confirmation. Le prélèvement interviendra à la fin de la course.`}
                         </span>
                       </div>
                     );
