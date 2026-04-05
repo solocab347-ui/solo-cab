@@ -19,7 +19,7 @@ interface LocationState {
 export function useDriverLocationTracker({
   driverId,
   enabled,
-  updateIntervalMs = 30000, // 30 seconds
+  updateIntervalMs = 30000,
 }: LocationTrackerOptions) {
   const [locationState, setLocationState] = useState<LocationState>({
     latitude: null,
@@ -34,16 +34,14 @@ export function useDriverLocationTracker({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSentRef = useRef<{ lat: number; lon: number } | null>(null);
 
-  // Send location to database
+  // Send location to database — GPS only, never touch is_available_now
   const sendLocationToServer = useCallback(
     async (latitude: number, longitude: number) => {
       if (!driverId) return;
 
-      // Skip if position hasn't changed significantly (> 20 meters)
       if (lastSentRef.current) {
         const latDiff = Math.abs(latitude - lastSentRef.current.lat);
         const lonDiff = Math.abs(longitude - lastSentRef.current.lon);
-        // Approximately 20 meters (0.0002° ≈ 22m)
         if (latDiff < 0.0002 && lonDiff < 0.0002) {
           return;
         }
@@ -56,7 +54,8 @@ export function useDriverLocationTracker({
             current_latitude: latitude,
             current_longitude: longitude,
             last_location_update: new Date().toISOString(),
-            is_available_now: true,
+            // IMPORTANT: Do NOT set is_available_now here
+            // Availability is controlled exclusively by the toggle
           })
           .eq('id', driverId);
 
@@ -78,7 +77,6 @@ export function useDriverLocationTracker({
     [driverId]
   );
 
-  // Handle position update
   const handlePositionUpdate = useCallback(
     (position: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = position.coords;
@@ -97,7 +95,6 @@ export function useDriverLocationTracker({
     [sendLocationToServer]
   );
 
-  // Handle geolocation error
   const handleError = useCallback((error: GeolocationPositionError) => {
     let errorMessage = 'Erreur de géolocalisation';
 
@@ -122,7 +119,6 @@ export function useDriverLocationTracker({
     console.error('Geolocation error:', errorMessage);
   }, []);
 
-  // Start tracking
   const startTracking = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationState((prev) => ({
@@ -133,14 +129,12 @@ export function useDriverLocationTracker({
       return;
     }
 
-    // Get initial position
     navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
       enableHighAccuracy: true,
       timeout: 10000,
       maximumAge: 0,
     });
 
-    // Watch position changes
     watchIdRef.current = navigator.geolocation.watchPosition(
       handlePositionUpdate,
       handleError,
@@ -151,7 +145,6 @@ export function useDriverLocationTracker({
       }
     );
 
-    // Periodic forced update (in case watchPosition doesn't trigger)
     intervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
         enableHighAccuracy: true,
@@ -163,7 +156,6 @@ export function useDriverLocationTracker({
     setLocationState((prev) => ({ ...prev, isTracking: true }));
   }, [handlePositionUpdate, handleError, updateIntervalMs]);
 
-  // Stop tracking
   const stopTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -178,7 +170,6 @@ export function useDriverLocationTracker({
     setLocationState((prev) => ({ ...prev, isTracking: false }));
   }, []);
 
-  // Effect to start/stop tracking based on enabled prop
   useEffect(() => {
     if (enabled && driverId) {
       startTracking();

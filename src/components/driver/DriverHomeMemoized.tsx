@@ -163,7 +163,6 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         {driverProfile?.driver?.id && (
           <DriverAvailabilityToggleBig
             driverId={driverProfile.driver.id}
-            initialAvailable={true}
           />
         )}
       </div>
