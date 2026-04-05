@@ -235,7 +235,7 @@ serve(async (req) => {
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
               const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100); // min 1€ safety
               
-              const SOLOCAB_FEE_CENTS = 50; // 0.50€
+              const SOLOCAB_FEE_CENTS = 80; // 0.80€
               const piParams: Record<string, unknown> = {
                 amount: holdAmountCents,
                 currency: "eur",
