@@ -149,7 +149,8 @@ describe("1. Rendering & Initial State", () => {
 
   it("TEST 14: shows security text", () => {
     renderComponent();
-    expect(screen.getByText(/sécurisé/i)).toBeInTheDocument();
+    const elements = screen.getAllByText(/sécurisé/i);
+    expect(elements.length).toBeGreaterThanOrEqual(1);
   });
 
   it("TEST 15: shows € symbol", () => {
@@ -672,7 +673,7 @@ describe("5. Post-Generation Interactions", () => {
 
   it("TEST 80: success view shows description", async () => {
     await generateLink();
-    expect(screen.getByText(/Course VTC/)).toBeInTheDocument();
+    expect(screen.getByText(/20\.00€ — Course VTC/)).toBeInTheDocument();
   });
 
   it("TEST 81: success view shows amount formatted", async () => {
