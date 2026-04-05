@@ -4,7 +4,7 @@ import { subscriptionManager } from '@/lib/subscriptionManager';
 
 export interface IncomingCourse {
   id: string;
-  source: 'direct' | 'shared' | 'queue' | 'fleet';
+  source: 'direct' | 'shared' | 'queue' | 'fleet' | 'ride_request';
   sourceId: string;
   pickupAddress: string;
   destinationAddress: string;
@@ -16,6 +16,9 @@ export interface IncomingCourse {
   expiresAt: string | null;
   priority: number;
   receivedAt: number; // timestamp ms
+  requestType?: 'exclusive' | 'multi';
+  driverCount?: number;
+  distanceKm?: number;
 }
 
 interface UseIncomingCourseListenerOptions {
