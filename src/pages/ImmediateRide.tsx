@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ImmediateRideSearch } from '@/components/client/immediate-ride/ImmediateRideSearch';
+import { RideWaitingScreen } from '@/components/client/immediate-ride/RideWaitingScreen';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,8 +29,9 @@ const ImmediateRide = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [requestGroupId, setRequestGroupId] = useState<string | null>(null);
+  const [timeoutAt, setTimeoutAt] = useState<string>('');
 
-  // Handle driver selection from search
   const handleDriverSelected = (
     driver: NearbyDriver,
     pickupAddress: string,
@@ -41,11 +43,9 @@ const ImmediateRide = () => {
     setStep('confirm');
   };
 
-  // Submit ride request
   const handleSubmitRequest = async () => {
     if (!selectedDriver) return;
 
-    // Validate guest info if not logged in
     if (!user && (!guestInfo.name.trim() || !guestInfo.phone.trim())) {
       toast.error('Veuillez renseigner votre nom et téléphone');
       return;
@@ -54,7 +54,9 @@ const ImmediateRide = () => {
     setIsSubmitting(true);
 
     try {
-      // Create ride request
+      const groupId = crypto.randomUUID();
+      const timeout = new Date(Date.now() + 90 * 1000).toISOString();
+
       const { data, error } = await supabase
         .from('ride_requests')
         .insert({
@@ -69,9 +71,10 @@ const ImmediateRide = () => {
           status: 'pending',
           selected_driver_id: selectedDriver.driver_id,
           estimated_price: selectedDriver.estimated_price,
-          timeout_at: new Date(Date.now() + 90 * 1000).toISOString(), // 90 seconds timeout
+          timeout_at: timeout,
           request_type: 'exclusive',
           driver_count: 1,
+          request_group_id: groupId,
         })
         .select('id')
         .single();
@@ -79,55 +82,57 @@ const ImmediateRide = () => {
       if (error) throw error;
 
       setRequestId(data.id);
+      setRequestGroupId(groupId);
+      setTimeoutAt(timeout);
       setStep('pending');
 
       toast.success('Demande envoyée au chauffeur !');
-
-      // TODO: Subscribe to realtime updates for this request
     } catch (err) {
       console.error('Error submitting request:', err);
-      toast.error('Erreur lors de l\'envoi de la demande');
+      toast.error("Erreur lors de l'envoi de la demande");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleReset = () => {
+    setStep('search');
+    setSelectedDriver(null);
+    setRequestId(null);
+    setRequestGroupId(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container flex items-center gap-4 py-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
-              if (step === 'confirm') {
-                setStep('search');
-              } else {
-                navigate(-1);
-              }
+              if (step === 'confirm') setStep('search');
+              else if (step === 'pending') return; // Don't allow back during pending
+              else navigate(-1);
             }}
+            disabled={step === 'pending'}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">
             {step === 'search' && 'Course immédiate'}
             {step === 'confirm' && 'Confirmer la demande'}
-            {step === 'pending' && 'Demande en cours'}
+            {step === 'pending' && 'En attente…'}
           </h1>
         </div>
       </header>
 
       <main className="container py-6 max-w-lg mx-auto">
-        {/* Step: Search */}
         {step === 'search' && (
           <ImmediateRideSearch onDriverSelected={handleDriverSelected} />
         )}
 
-        {/* Step: Confirm */}
         {step === 'confirm' && selectedDriver && (
           <div className="space-y-4">
-            {/* Ride summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Récapitulatif</CardTitle>
@@ -156,7 +161,6 @@ const ImmediateRide = () => {
               </CardContent>
             </Card>
 
-            {/* Guest info if not logged in */}
             {!user && (
               <Card>
                 <CardHeader>
@@ -207,24 +211,21 @@ const ImmediateRide = () => {
           </div>
         )}
 
-        {/* Step: Pending */}
-        {step === 'pending' && (
-          <Card>
-            <CardContent className="py-8 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
-                <CheckCircle2 className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Demande envoyée !</h3>
-                <p className="text-muted-foreground">
-                  Le chauffeur a 2 minutes pour accepter votre demande.
-                </p>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Vous serez notifié dès qu'il aura répondu.
-              </p>
-            </CardContent>
-          </Card>
+        {step === 'pending' && requestId && (
+          <RideWaitingScreen
+            requestId={requestId}
+            requestGroupId={requestGroupId || undefined}
+            requestType="exclusive"
+            driverCount={1}
+            pickupAddress={rideDetails.pickupAddress}
+            destinationAddress={rideDetails.destinationAddress}
+            estimatedPrice={selectedDriver?.estimated_price || 0}
+            driverName={selectedDriver?.display_name || selectedDriver?.company_name}
+            timeoutAt={timeoutAt}
+            onCancel={handleReset}
+            onAccepted={(name) => toast.success(`${name} a accepté votre course !`)}
+            onExpired={() => toast.error('Délai expiré, aucun chauffeur disponible')}
+          />
         )}
       </main>
     </div>
