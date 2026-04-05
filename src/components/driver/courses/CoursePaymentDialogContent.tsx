@@ -136,29 +136,50 @@ export function CoursePaymentDialogContent({
                 </AlertDescription>
               </Alert>
             ) : (
-              <Button
-                onClick={handleSendStripePayment}
-                disabled={stripeLoading || remainingAmount <= 0}
-                className="w-full bg-gradient-to-r from-primary to-primary/80"
-                variant="default"
-                size="sm"
-              >
-                {stripeLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Création du lien...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Créer lien de paiement ({remainingAmount.toFixed(2)}€)
-                  </>
-                )}
-              </Button>
+              <>
+                {/* Fee estimation */}
+                {remainingAmount > 0 && (() => {
+                  const stripeFeeEstimate = remainingAmount * 0.014 + 0.25;
+                  const solocabFee = 0.80;
+                  const totalFees = stripeFeeEstimate + solocabFee;
+                  const netAmount = remainingAmount - totalFees;
+                  return (
+                    <div className="bg-muted/30 rounded-lg p-2.5 space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Frais estimés</span>
+                        <span>~{totalFees.toFixed(2)}€</span>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span className="text-muted-foreground">Vous recevrez</span>
+                        <span className="text-primary">~{netAmount.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <Button
+                  onClick={handleSendStripePayment}
+                  disabled={stripeLoading || remainingAmount <= 0}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80"
+                  variant="default"
+                  size="sm"
+                >
+                  {stripeLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Création du lien...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Créer lien de paiement ({remainingAmount.toFixed(2)}€)
+                    </>
+                  )}
+                </Button>
+              </>
             )}
 
             <p className="text-[10px] text-muted-foreground text-center">
-              Le lien sera copié. Envoyez-le par SMS, WhatsApp ou email au client.
+              Frais incluant traitement du paiement et services SoloCab
             </p>
           </div>
         </>
