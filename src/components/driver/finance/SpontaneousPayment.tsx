@@ -35,11 +35,31 @@ export function SpontaneousPayment({ driverId, stripeEnabled }: SpontaneousPayme
     setPaymentLink(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-spontaneous-payment", {
-        body: { amount: amountNum, description: description.trim(), date },
-      });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-      if (error) throw error;
+      if (!accessToken) {
+        throw new Error("Session expirée. Reconnectez-vous.");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-spontaneous-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ amount: amountNum, description: description.trim(), date }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Erreur lors de la génération");
+      }
       if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Lien non généré");
 
