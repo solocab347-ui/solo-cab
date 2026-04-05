@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, MapPin, Loader2 } from 'lucide-react';
+import { Wifi, WifiOff, MapPin, Loader2, Map as MapIcon } from 'lucide-react';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
