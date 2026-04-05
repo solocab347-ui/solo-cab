@@ -4,10 +4,11 @@ import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Navigation, Loader2 } from 'lucide-react';
+import { LayoutGrid, Navigation, Loader2, Euro, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import carTopView from '@/assets/car-top-view.png';
 
 interface DriverMapModeProps {
   driverId: string;
@@ -24,10 +25,12 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
   const animFrameRef = useRef<number | null>(null);
   const targetPos = useRef<{ lat: number; lng: number } | null>(null);
   const currentPos = useRef<{ lat: number; lng: number } | null>(null);
+  const lastHeading = useRef<number>(0);
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
+  const [coursesToday, setCoursesToday] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // GPS tracking — always active
+  // GPS tracking
   const { latitude, longitude, isTracking } = useDriverLocationTracker({
     driverId,
     enabled: true,
@@ -43,7 +46,9 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
           p_period: 'day',
         });
         if (data && Array.isArray(data) && data.length > 0) {
-          setTodayRevenue((data[0] as any)?.total_revenue_cents ? (data[0] as any).total_revenue_cents / 100 : 0);
+          const d = data[0] as any;
+          setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
+          setCoursesToday(d?.total_courses || 0);
         }
       } catch {
         // silent
@@ -58,7 +63,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const defaultCenter: [number, number] = [48.8566, 2.3522]; // Paris
+    const defaultCenter: [number, number] = [48.8566, 2.3522];
     const map = L.map(mapContainerRef.current, {
       center: defaultCenter,
       zoom: 15,
@@ -76,45 +81,57 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
     };
   }, []);
 
-  // Create / update car icon
-  const carIcon = useRef(
-    L.divIcon({
+  // Calculate heading from movement
+  const calcHeading = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const dLng = to.lng - from.lng;
+    const dLat = to.lat - from.lat;
+    if (Math.abs(dLat) < 0.000001 && Math.abs(dLng) < 0.000001) return lastHeading.current;
+    const angle = Math.atan2(dLng, dLat) * (180 / Math.PI);
+    lastHeading.current = angle;
+    return angle;
+  }, []);
+
+  // Create car icon with rotation
+  const createCarIcon = useCallback((rotation: number) => {
+    return L.divIcon({
       html: `<div style="
-        width: 48px; height: 48px;
-        background: hsl(var(--primary));
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px;
-        transition: transform 0.3s ease;
-      ">🚗</div>`,
-      iconSize: [48, 48],
-      iconAnchor: [24, 24],
+        width: 52px; height: 52px;
+        transform: rotate(${rotation}deg);
+        transition: transform 0.5s ease;
+        filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+      ">
+        <img src="${carTopView}" style="width:100%;height:100%;object-fit:contain;" />
+      </div>`,
+      iconSize: [52, 52],
+      iconAnchor: [26, 26],
       className: '',
-    })
-  );
+    });
+  }, []);
 
   // Smooth marker animation
   const animateMarker = useCallback(() => {
     if (!currentPos.current || !targetPos.current || !markerRef.current) return;
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const t = 0.08; // smoothness
+    const t = 0.08;
 
-    currentPos.current = {
+    const newPos = {
       lat: lerp(currentPos.current.lat, targetPos.current.lat, t),
       lng: lerp(currentPos.current.lng, targetPos.current.lng, t),
     };
 
-    markerRef.current.setLatLng([currentPos.current.lat, currentPos.current.lng]);
+    // Update heading based on movement
+    const heading = calcHeading(currentPos.current, newPos);
+    markerRef.current.setIcon(createCarIcon(heading));
 
-    // Continue animating if not close enough
-    const dist = Math.abs(currentPos.current.lat - targetPos.current.lat) + Math.abs(currentPos.current.lng - targetPos.current.lng);
+    currentPos.current = newPos;
+    markerRef.current.setLatLng([newPos.lat, newPos.lng]);
+
+    const dist = Math.abs(newPos.lat - targetPos.current.lat) + Math.abs(newPos.lng - targetPos.current.lng);
     if (dist > 0.000001) {
       animFrameRef.current = requestAnimationFrame(animateMarker);
     }
-  }, []);
+  }, [calcHeading, createCarIcon]);
 
   // Update marker position when GPS updates
   useEffect(() => {
@@ -124,16 +141,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
     targetPos.current = newPos;
 
     if (!markerRef.current) {
-      // First position — create marker and center map
       currentPos.current = newPos;
-      markerRef.current = L.marker([latitude, longitude], { icon: carIcon.current }).addTo(mapRef.current);
+      markerRef.current = L.marker([latitude, longitude], { icon: createCarIcon(0) }).addTo(mapRef.current);
       mapRef.current.setView([latitude, longitude], 16, { animate: true });
     } else {
-      // Animate to new position
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = requestAnimationFrame(animateMarker);
     }
-  }, [latitude, longitude, isMapReady, animateMarker]);
+  }, [latitude, longitude, isMapReady, animateMarker, createCarIcon]);
 
   // Cleanup animation
   useEffect(() => {
@@ -154,29 +169,42 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
       {/* Map container */}
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      {/* Top overlay — today's revenue */}
+      {/* Top overlay — revenue + stats */}
       <div className="absolute top-0 left-0 right-0 z-[41] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="flex justify-center pt-3 px-4">
+        <div className="flex justify-between items-start pt-3 px-4 gap-3">
+          {/* Revenue card */}
           <motion.div
             initial={{ y: -30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="flex-1"
           >
-            <Card className="pointer-events-auto bg-card/90 backdrop-blur-xl border-border/50 shadow-xl px-5 py-3">
+            <Card className="pointer-events-auto bg-card/90 backdrop-blur-xl border-border/50 shadow-xl px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-                <div className="text-center">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/15">
+                  <Euro className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Aujourd'hui</p>
-                  <p className="text-2xl font-bold text-foreground tracking-tight">
+                  <p className="text-xl font-bold text-foreground tracking-tight">
                     {todayRevenue.toFixed(2).replace('.', ',')} €
                   </p>
                 </div>
-                {isTracking && (
-                  <Badge variant="outline" className="text-[10px] border-success/30 text-success bg-success/10">
-                    GPS
-                  </Badge>
-                )}
+                <div className="ml-auto flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  {isTracking && (
+                    <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-500 bg-green-500/10 px-1.5">
+                      GPS
+                    </Badge>
+                  )}
+                </div>
               </div>
+              {coursesToday > 0 && (
+                <div className="flex items-center gap-1 mt-1.5 ml-13">
+                  <TrendingUp className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-[11px] text-muted-foreground">{coursesToday} course{coursesToday > 1 ? 's' : ''}</span>
+                </div>
+              )}
             </Card>
           </motion.div>
         </div>
