@@ -29,7 +29,7 @@ const BRAND_LABELS: Record<string, string> = {
   discover: "Discover",
 };
 
-function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent }: { onSuccess: () => void; onCancel: () => void; clientSecret: string; onRequireFreshIntent: (persistInState?: boolean) => Promise<string | null> }) {
+function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () => void; onCancel: () => void; clientSecret: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [saving, setSaving] = useState(false);
@@ -50,12 +50,9 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
         return;
       }
 
-      const freshClientSecret = await onRequireFreshIntent(false);
-      const currentClientSecret = freshClientSecret || clientSecret;
-
       const { error: stripeError, setupIntent } = await stripe.confirmSetup({
         elements,
-        clientSecret: currentClientSecret,
+        clientSecret,
         confirmParams: {
           return_url: window.location.href,
         },
@@ -291,7 +288,6 @@ export function ClientCardManager() {
               >
                 <CardFormInner
                   clientSecret={clientSecret}
-                  onRequireFreshIntent={createFreshSetupIntent}
                   onSuccess={() => {
                     setShowForm(false);
                     setClientSecret(null);

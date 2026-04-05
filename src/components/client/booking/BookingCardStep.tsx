@@ -52,12 +52,9 @@ function InlinePaymentForm({
         return;
       }
 
-      const freshSecret = await onRequireFresh();
-      const secret = freshSecret || clientSecret;
-
       const { error: stripeError, setupIntent } = await stripe.confirmSetup({
         elements,
-        clientSecret: secret,
+        clientSecret,
         confirmParams: {
           return_url: window.location.href,
         },
@@ -241,7 +238,6 @@ export function BookingCardStep({
               setCardVerified(true);
               onCardReady({ customerId: customerId || '' });
             }}
-            onRequireFresh={() => createSetupIntent(false)}
             estimatedPrice={estimatedPrice}
           />
         </Elements>
