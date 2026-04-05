@@ -28,6 +28,7 @@ const CreateCourse = () => {
   const { createCourse, loading } = useCourseCreation();
 
   const driverId = searchParams.get("driver_id");
+  const [driverName, setDriverName] = useState<string | null>(null);
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -130,30 +131,36 @@ const CreateCourse = () => {
 
   // Fetch driver's max_passengers and available promos on component mount
   useEffect(() => {
-    const fetchDriverMaxPassengers = async () => {
+    const fetchDriverInfo = async () => {
       if (!driverId) return;
       
       try {
         const { data: driverData, error } = await supabase
           .from("drivers")
-          .select("max_passengers")
+          .select("max_passengers, profiles:user_id(full_name)")
           .eq("id", driverId)
           .maybeSingle();
         
         if (error) {
-          console.error("❌ Error fetching driver max passengers:", error);
+          console.error("❌ Error fetching driver info:", error);
           return;
         }
         
-        if (driverData && driverData.max_passengers) {
-          setMaxPassengers(driverData.max_passengers);
+        if (driverData) {
+          if (driverData.max_passengers) {
+            setMaxPassengers(driverData.max_passengers);
+          }
+          const profile = driverData.profiles as any;
+          if (profile?.full_name) {
+            setDriverName(profile.full_name);
+          }
         }
       } catch (err) {
-        console.error("❌ Exception fetching driver max passengers:", err);
+        console.error("❌ Exception fetching driver info:", err);
       }
     };
     
-    fetchDriverMaxPassengers();
+    fetchDriverInfo();
   }, [driverId]);
 
   // Fetch available promotions for the client
@@ -310,8 +317,12 @@ const CreateCourse = () => {
               <Car className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Nouvelle Réservation</h1>
-              <p className="text-muted-foreground">Créez votre demande de course</p>
+              <h1 className="text-2xl font-bold">
+                {driverName ? `Réserver avec ${driverName}` : "Nouvelle Réservation"}
+              </h1>
+              <p className="text-muted-foreground">
+                {driverName ? "Votre chauffeur personnel" : "Créez votre demande de course"}
+              </p>
             </div>
           </div>
 
@@ -533,7 +544,7 @@ const CreateCourse = () => {
                 disabled={loading}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
-                {loading ? "Création..." : "Créer la réservation"}
+                {loading ? "Création..." : driverName ? `Réserver avec ${driverName}` : "Créer la réservation"}
               </Button>
             </div>
             
