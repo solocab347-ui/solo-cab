@@ -93,29 +93,37 @@ export function ClientHomeView({
                 <CalendarPlus className="w-7 h-7" />
               </div>
               <div className="flex-1 text-left">
-                <h2 className="text-xl font-bold mb-0.5">Réserver une course</h2>
-                <p className="text-white/80 text-sm">Votre chauffeur vous attend</p>
+                <h2 className="text-xl font-bold mb-0.5">
+                  {isExclusive && favoriteDriver
+                    ? `Réserver avec ${getDriverDisplayName(favoriteDriver)}`
+                    : "Réserver une course"}
+                </h2>
+                <p className="text-white/80 text-sm">
+                  {isExclusive ? "Votre chauffeur exclusif" : "Votre chauffeur vous attend"}
+                </p>
               </div>
               <ChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
 
-          {/* Storefront access for free clients */}
-          <button
-            onClick={() => navigate("/chauffeurs")}
-            className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/80 p-4 text-foreground shadow transition-all duration-300 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] border border-border/50"
-          >
-            <div className="relative flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Search className="w-6 h-6 text-primary" />
+          {/* Storefront access - HIDDEN for exclusive clients */}
+          {!isExclusive && (
+            <button
+              onClick={() => navigate("/chauffeurs")}
+              className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/80 p-4 text-foreground shadow transition-all duration-300 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] border border-border/50"
+            >
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Search className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="text-base font-semibold mb-0.5">Trouver un chauffeur</h3>
+                  <p className="text-muted-foreground text-xs">Explorez notre réseau VTC</p>
+                </div>
+                <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
               </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-base font-semibold mb-0.5">Trouver un chauffeur</h3>
-                <p className="text-muted-foreground text-xs">Explorez notre réseau VTC</p>
-              </div>
-              <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+            </button>
+          )}
         </>
       )}
 
