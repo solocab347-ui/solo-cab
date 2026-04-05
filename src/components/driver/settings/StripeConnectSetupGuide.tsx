@@ -117,7 +117,7 @@ const FAQ_ITEMS = [
   {
     question: "Combien coûte Stripe Connect ?",
     answer:
-      "SoloCab prélève 0,50€ par transaction pour l'hébergement du paiement. Stripe prend environ 1,5% + 0,25€ par transaction. Aucun abonnement mensuel. Vous ne payez que quand vous encaissez !",
+      "SoloCab prélève 0,80€ par transaction, incluant l'hébergement du paiement et les frais de traitement. Aucun abonnement mensuel. Vous ne payez que quand vous encaissez !",
   },
   {
     question: "Quand vais-je recevoir mes paiements ?",
@@ -302,15 +302,13 @@ export function StripeConnectSetupGuide({
                   <p className="text-sm font-medium text-blue-700">
                     Frais transparents
                   </p>
-                  <p className="text-xs text-blue-600 mt-0.5">
-                    <strong>0,50€</strong> par transaction (hébergement SoloCab)
-                    <br />+ <strong>~1,5% + 0,25€</strong> (frais Stripe
-                    standard)
-                    <br />
-                    <span className="text-blue-500">
-                      Aucun abonnement, vous payez uniquement quand vous encaissez
-                    </span>
-                  </p>
+                   <p className="text-xs text-blue-600 mt-0.5">
+                     Frais estimés : <strong>~1,10€</strong> par transaction de 15€
+                     <br />
+                     <span className="text-blue-500">
+                       Aucun abonnement, vous payez uniquement quand vous encaissez
+                     </span>
+                   </p>
                 </div>
               </div>
             </div>

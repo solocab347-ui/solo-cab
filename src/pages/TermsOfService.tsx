@@ -237,9 +237,8 @@ const TermsOfService = () => {
                 de la plateforme :
               </p>
               <ul className="list-disc pl-6 space-y-2">
-                <li><strong>Frais de gestion standard</strong> : 0,50€ par course réglée en ligne via la plateforme</li>
-                <li><strong>Frais de transaction partage</strong> : 0,25€ par course partagée entre chauffeurs</li>
-                <li><strong>Frais Stripe</strong> : environ 1,5% + 0,25€ (frais du prestataire de paiement, non fixés par SoloCab)</li>
+                 <li><strong>Frais de gestion standard</strong> : 0,80€ par course réglée en ligne via la plateforme (incluant le traitement du paiement sécurisé et les services SoloCab)</li>
+                 <li><strong>Frais de transaction partage</strong> : 0,25€ par course partagée entre chauffeurs</li>
               </ul>
               <p>
                 <strong>Règlement hebdomadaire</strong> : afin de minimiser les frais de transaction pour les chauffeurs,
