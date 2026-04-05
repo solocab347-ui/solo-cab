@@ -24,6 +24,8 @@ function createRideRequest(overrides: Record<string, any> = {}) {
   return {
     id: crypto.randomUUID(),
     client_id: crypto.randomUUID(),
+    selected_driver_id: crypto.randomUUID(),
+    accepted_by_driver_id: undefined as string | undefined,
     pickup_address: '10 Rue de Rivoli, Paris',
     destination_address: '25 Avenue des Champs-Élysées, Paris',
     distance_km: 5.2,
