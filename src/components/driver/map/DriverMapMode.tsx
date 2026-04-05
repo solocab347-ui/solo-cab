@@ -119,9 +119,16 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     setTimeout(() => map.invalidateSize(), 200);
     setIsMapReady(true);
     return () => {
-      markerRef.current = null;
-      radarLayerRef.current = null;
-      map.remove();
+      if (radarLayerRef.current) {
+        try { radarLayerRef.current.remove(); } catch {}
+        radarLayerRef.current = null;
+      }
+      if (markerRef.current) {
+        try { markerRef.current.remove(); } catch {}
+        markerRef.current = null;
+      }
+      setIsMapReady(false);
+      try { map.remove(); } catch {}
       mapRef.current = null;
     };
   }, []);
@@ -310,7 +317,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
               <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
             </button>
             <button
-              onClick={() => onNavigateTo?.('qr-code')}
+              onClick={() => onNavigateTo?.('qrcode')}
               className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
             >
               <QrCode className="w-5 h-5 text-blue-500" />
