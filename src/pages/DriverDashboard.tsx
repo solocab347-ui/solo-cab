@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +82,8 @@ import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificat
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
+import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
+import { Map as MapIcon } from "lucide-react";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -115,6 +117,7 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [viewMode, setViewMode] = useState<"dashboard" | "map">("dashboard");
 
   // Overlay permission system
   const { isEnabled: overlayEnabled, shouldPrompt: showOverlayPrompt, grant: grantOverlay, deny: denyOverlay } = useOverlayPermission(driverProfile?.driver?.id || null);
@@ -527,9 +530,27 @@ const DriverDashboard = () => {
     );
   }
 
+  // Map mode — fullscreen immersive
+  if (viewMode === "map" && driverProfile?.driver?.id) {
+    return (
+      <>
+        <DriverMapMode
+          driverId={driverProfile.driver.id}
+          onSwitchToDashboard={() => setViewMode("dashboard")}
+        />
+        {/* Incoming courses work in map mode too */}
+        <IncomingCourseOverlay
+          course={incomingCourse}
+          onDismiss={dismissIncoming}
+          onAccepted={clearIncoming}
+          driverId={driverProfile.driver.id}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
-      {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         {/* Availability toggle moved to DriverHome */}
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2">
@@ -1080,6 +1101,17 @@ const DriverDashboard = () => {
         </Tabs>
       </div>
       
+      {/* Floating Map button */}
+      {driverProfile?.driver?.id && (
+        <Button
+          onClick={() => setViewMode("map")}
+          className="fixed bottom-24 left-4 z-50 rounded-full shadow-xl bg-primary text-primary-foreground h-14 px-5 gap-2 hover:scale-105 transition-transform"
+        >
+          <MapIcon className="w-5 h-5" />
+          <span className="font-semibold text-sm">Carte</span>
+        </Button>
+      )}
+
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
