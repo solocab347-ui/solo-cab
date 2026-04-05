@@ -272,7 +272,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </Card>
       </div>
 
-      <Tabs defaultValue="wallet" className="space-y-4">
+      <Tabs defaultValue={initialTab === "spontaneous" ? "wallet" : "wallet"} className="space-y-4">
         <TabsList className="w-full">
           <TabsTrigger value="wallet" className="flex-1 gap-1">
             <CreditCard className="w-4 h-4" />
@@ -285,10 +285,6 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
             En attente ({pendingPayments.length})
-          </TabsTrigger>
-          <TabsTrigger value="spontaneous" className="flex-1 gap-1">
-            <Zap className="w-4 h-4" />
-            Encaisser
           </TabsTrigger>
         </TabsList>
 
