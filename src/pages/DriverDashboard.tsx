@@ -60,6 +60,7 @@ import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
 import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
+import { SpontaneousPayment } from "@/components/driver/finance/SpontaneousPayment";
 import { DriverSettingsSimplified } from "@/components/driver/settings/DriverSettingsSimplified";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -872,6 +873,16 @@ const DriverDashboard = () => {
           <TabsContent value="finances">
             {driverProfile?.driver?.id && (
               <DriverFinancePage driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
+          {/* Encaisser Tab */}
+          <TabsContent value="encaisser">
+            {driverProfile?.driver?.id && (
+              <SpontaneousPayment 
+                driverId={driverProfile.driver.id} 
+                stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled} 
+              />
             )}
           </TabsContent>
 

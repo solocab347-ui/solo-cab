@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign, Zap } from "lucide-react";
-import { SpontaneousPayment } from "./SpontaneousPayment";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -11,6 +10,7 @@ import { fr } from "date-fns/locale";
 
 interface DriverFinancePageProps {
   driverId: string;
+  initialTab?: string;
 }
 
 interface Settlement {
@@ -61,7 +61,7 @@ interface WalletStats {
   }>;
 }
 
-export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
+export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
@@ -271,7 +271,7 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="wallet" className="space-y-4">
+      <Tabs defaultValue={initialTab === "spontaneous" ? "wallet" : "wallet"} className="space-y-4">
         <TabsList className="w-full">
           <TabsTrigger value="wallet" className="flex-1 gap-1">
             <CreditCard className="w-4 h-4" />
@@ -284,10 +284,6 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
             En attente ({pendingPayments.length})
-          </TabsTrigger>
-          <TabsTrigger value="spontaneous" className="flex-1 gap-1">
-            <Zap className="w-4 h-4" />
-            Encaisser
           </TabsTrigger>
         </TabsList>
 
@@ -429,10 +425,6 @@ export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
           )}
         </TabsContent>
 
-        {/* Spontaneous Payment */}
-        <TabsContent value="spontaneous">
-          <SpontaneousPayment driverId={driverId} stripeEnabled={stripeEnabled} />
-        </TabsContent>
       </Tabs>
     </div>
   );
