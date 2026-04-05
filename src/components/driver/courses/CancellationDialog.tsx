@@ -143,15 +143,28 @@ export function CancellationDialog({
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("process-cancellation-fee", {
-        body: {
-          course_id: courseId,
-          cancelled_by: cancelledBy,
-          reason,
-        },
-      });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-cancellation-fee`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: accessToken ? `Bearer ${accessToken}` : "",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            course_id: courseId,
+            cancelled_by: cancelledBy,
+            reason,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Erreur lors de l'annulation");
 
       if (data.deposit_forfeited) {
         toast.warning(`Course annulée. L'acompte de ${depositAmount?.toFixed(2)}€ est conservé par le chauffeur.`);
