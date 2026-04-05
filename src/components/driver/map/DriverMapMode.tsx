@@ -197,6 +197,20 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
             </Card>
           </motion.div>
         </div>
+
+        {/* Waiting for course indicator */}
+        <div className="flex justify-center mt-2 px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="pointer-events-auto flex items-center gap-2 bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/40 rounded-full px-4 py-2 shadow-lg">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-medium text-emerald-400">En attente de course…</span>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Bottom controls */}

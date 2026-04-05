@@ -8,6 +8,7 @@ interface DriverAvailabilityToggleBigProps {
   driverId: string;
   initialAvailable?: boolean;
   onAvailabilityChange?: (isAvailable: boolean) => void;
+  onSwitchToMap?: () => void;
 }
 
 export function DriverAvailabilityToggleBig({
