@@ -2,9 +2,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Navigation, Loader2, Euro, TrendingUp, Wifi, WifiOff } from 'lucide-react';
+import { Navigation, Loader2, Wifi, WifiOff, Store, Receipt, Car, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
@@ -13,12 +11,12 @@ import carTopView from '@/assets/car-top-view.png';
 interface DriverMapModeProps {
   driverId: string;
   onSwitchToDashboard: () => void;
+  onNavigateTo?: (tab: string) => void;
 }
 
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
 
-// Stable car icon — created once, rotation updated via DOM
 const CAR_ICON = L.divIcon({
   html: `<div id="car-marker-inner" style="
     width: 52px; height: 52px;
@@ -34,25 +32,42 @@ const CAR_ICON = L.divIcon({
   className: 'car-marker-stable',
 });
 
-export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapModeProps) => {
+// CSS for radar pulse on the map
+const radarCSS = `
+.map-radar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--primary) / 0.4);
+  pointer-events: none;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: mapRadarPulse 2.5s ease-out infinite;
+}
+.map-radar-ring:nth-child(2) { animation-delay: 0.8s; }
+.map-radar-ring:nth-child(3) { animation-delay: 1.6s; }
+@keyframes mapRadarPulse {
+  0% { width: 20px; height: 20px; opacity: 0.6; }
+  100% { width: 120px; height: 120px; opacity: 0; }
+}
+`;
+
+export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo }: DriverMapModeProps) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const radarLayerRef = useRef<L.Marker | null>(null);
   const lastHeading = useRef<number>(0);
   const lastGps = useRef<{ lat: number; lng: number } | null>(null);
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
-  const [coursesToday, setCoursesToday] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
 
-  // GPS tracking
   const { latitude, longitude, isTracking, updateAvailability } = useDriverLocationTracker({
     driverId,
     enabled: true,
     updateIntervalMs: 5000,
   });
 
-  // Fetch initial availability
   useEffect(() => {
     supabase.from('drivers').select('is_available_now').eq('id', driverId).maybeSingle()
       .then(({ data }) => { if (data) setIsAvailable(data.is_available_now ?? false); });
@@ -64,7 +79,6 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
     await updateAvailability(next);
   }, [isAvailable, updateAvailability]);
 
-  // Fetch today's revenue
   useEffect(() => {
     const fetchRevenue = async () => {
       try {
@@ -75,54 +89,51 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
         if (data && Array.isArray(data) && data.length > 0) {
           const d = data[0] as any;
           setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
-          setCoursesToday(d?.total_courses || 0);
         }
-      } catch {
-        // silent
-      }
+      } catch { /* silent */ }
     };
     fetchRevenue();
     const interval = setInterval(fetchRevenue, 60000);
     return () => clearInterval(interval);
   }, [driverId]);
 
+  // Inject radar CSS
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = radarCSS;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   // Init map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-
     const map = L.map(mapContainerRef.current, {
       center: [48.8566, 2.3522],
       zoom: 15,
       zoomControl: false,
       attributionControl: false,
     });
-
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
-
-    // Force resize after mount to avoid grey tiles
     setTimeout(() => map.invalidateSize(), 200);
     setIsMapReady(true);
-
     return () => {
       markerRef.current = null;
+      radarLayerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // Update rotation via DOM (no icon recreation)
   const updateRotation = useCallback((heading: number) => {
     if (!markerRef.current) return;
     const el = markerRef.current.getElement();
     if (!el) return;
     const inner = el.querySelector('#car-marker-inner') as HTMLElement;
-    if (inner) {
-      inner.style.transform = `rotate(${heading}deg)`;
-    }
+    if (inner) inner.style.transform = `rotate(${heading}deg)`;
   }, []);
 
-  // Calculate heading from movement
   const calcHeading = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
     const dLng = to.lng - from.lng;
     const dLat = to.lat - from.lat;
@@ -132,35 +143,48 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
     return angle;
   }, []);
 
-  // Update marker position when GPS updates — simple & stable
+  // Update car + radar on map
   useEffect(() => {
     if (!latitude || !longitude || !mapRef.current || !isMapReady) return;
-
     const newPos: L.LatLngExpression = [latitude, longitude];
 
+    // Radar overlay around car
+    if (isAvailable) {
+      if (!radarLayerRef.current) {
+        const radarIcon = L.divIcon({
+          html: `<div style="position:relative;width:120px;height:120px;">
+            <div class="map-radar-ring"></div>
+            <div class="map-radar-ring"></div>
+            <div class="map-radar-ring"></div>
+          </div>`,
+          iconSize: [120, 120],
+          iconAnchor: [60, 60],
+          className: 'radar-overlay-icon',
+        });
+        radarLayerRef.current = L.marker(newPos, { icon: radarIcon, zIndexOffset: 999, interactive: false }).addTo(mapRef.current);
+      } else {
+        radarLayerRef.current.setLatLng(newPos);
+      }
+    } else if (radarLayerRef.current) {
+      radarLayerRef.current.remove();
+      radarLayerRef.current = null;
+    }
+
     if (!markerRef.current) {
-      // First position: create marker once
-      markerRef.current = L.marker(newPos, {
-        icon: CAR_ICON,
-        zIndexOffset: 1000,
-      }).addTo(mapRef.current);
+      markerRef.current = L.marker(newPos, { icon: CAR_ICON, zIndexOffset: 1000 }).addTo(mapRef.current);
       lastGps.current = { lat: latitude, lng: longitude };
       mapRef.current.setView(newPos, 16, { animate: true });
     } else {
-      // Subsequent: move smoothly with CSS transition on the Leaflet marker element
       const prev = lastGps.current;
       if (prev) {
         const heading = calcHeading(prev, { lat: latitude, lng: longitude });
         updateRotation(heading);
       }
       lastGps.current = { lat: latitude, lng: longitude };
-
-      // Use Leaflet's built-in smooth move
       markerRef.current.setLatLng(newPos);
     }
-  }, [latitude, longitude, isMapReady, calcHeading, updateRotation]);
+  }, [latitude, longitude, isMapReady, isAvailable, calcHeading, updateRotation]);
 
-  // Re-center on driver
   const recenter = useCallback(() => {
     if (mapRef.current && latitude && longitude) {
       mapRef.current.setView([latitude, longitude], 16, { animate: true });
@@ -169,165 +193,163 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
 
   return (
     <div className="fixed inset-0 z-40 bg-background">
-      {/* Map container */}
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      {/* Top overlay — revenue + stats */}
+      {/* === TOP BAR === */}
       <div className="absolute top-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}>
-        <div className="flex justify-between items-start pt-4 px-4 gap-3">
+        <div className="px-4 pt-3">
           <motion.div
-            initial={{ y: -30, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="flex-1"
+            className="pointer-events-auto bg-card/95 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl px-4 py-3"
           >
-            <Card className="pointer-events-auto bg-card/90 backdrop-blur-xl border-border/50 shadow-xl px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/15">
-                  <Euro className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Aujourd'hui</p>
-                  <p className="text-xl font-bold text-foreground tracking-tight">
-                    {todayRevenue.toFixed(2).replace('.', ',')} €
-                  </p>
-                </div>
-                <div className="ml-auto flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  {isTracking && (
-                    <Badge variant="outline" className="text-[9px] border-primary/30 text-primary bg-primary/10 px-1.5">
-                      GPS
-                    </Badge>
-                  )}
-                </div>
+            <div className="flex items-center justify-between">
+              {/* Revenue */}
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Aujourd'hui</span>
+                <span className="text-2xl font-black text-foreground tracking-tight leading-none mt-0.5">
+                  {todayRevenue.toFixed(2).replace('.', ',')} €
+                </span>
               </div>
-              {coursesToday > 0 && (
-                <div className="flex items-center gap-1 mt-1.5 ml-13">
-                  <TrendingUp className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-[11px] text-muted-foreground">{coursesToday} course{coursesToday > 1 ? 's' : ''}</span>
-                </div>
-              )}
-            </Card>
+
+              {/* Status pill */}
+              <button
+                onClick={handleToggleAvailability}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 shadow-md ${
+                  isAvailable
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                    : 'bg-destructive text-destructive-foreground shadow-destructive/30'
+                }`}
+              >
+                {isAvailable ? (
+                  <>
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                    </span>
+                    En ligne
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3.5 h-3.5" />
+                    Hors ligne
+                  </>
+                )}
+              </button>
+            </div>
           </motion.div>
         </div>
 
-        {/* Animated search radar indicator */}
+        {/* Search status indicator */}
         {isAvailable && (
-          <div className="flex justify-center mt-2 px-4">
+          <div className="flex justify-center mt-2">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.2 }}
+              className="pointer-events-none"
             >
-              <div className="pointer-events-auto flex items-center gap-3 bg-card/90 backdrop-blur-xl border border-primary/30 rounded-full px-5 py-2.5 shadow-lg">
-                {/* Radar animation */}
-                <div className="relative w-6 h-6 flex items-center justify-center">
+              <div className="flex items-center gap-2.5 bg-card/85 backdrop-blur-xl border border-primary/20 rounded-full px-4 py-1.5 shadow-lg">
+                <div className="relative w-5 h-5 flex items-center justify-center">
                   <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-primary/40"
-                    animate={{ scale: [1, 2.2], opacity: [0.7, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+                    className="absolute inset-0 rounded-full border-2 border-primary/50"
+                    animate={{ scale: [1, 2], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
                   />
                   <motion.div
                     className="absolute inset-0 rounded-full border-2 border-primary/30"
-                    animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 0.6 }}
+                    animate={{ scale: [1, 2], opacity: [0.4, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
                   />
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-primary/20"
-                    animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 1.2 }}
-                  />
-                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                  <div className="w-2 h-2 rounded-full bg-primary" />
                 </div>
-                <div>
-                  <motion.span
-                    className="text-xs font-semibold text-foreground block"
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    Recherche de courses…
-                  </motion.span>
-                  <span className="text-[10px] text-muted-foreground">Vous êtes visible des clients</span>
-                </div>
+                <motion.span
+                  className="text-[11px] font-semibold text-foreground"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                >
+                  Recherche active…
+                </motion.span>
               </div>
             </motion.div>
           </div>
         )}
 
-        {/* Disconnected indicator */}
         {!isAvailable && (
-          <div className="flex justify-center mt-2 px-4">
-            <div className="pointer-events-auto flex items-center gap-2 bg-card/90 backdrop-blur-xl border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-              <WifiOff className="w-3.5 h-3.5 text-destructive" />
-              <span className="text-xs font-medium text-destructive">Hors ligne · Réservations uniquement</span>
+          <div className="flex justify-center mt-2">
+            <div className="pointer-events-none flex items-center gap-2 bg-card/85 backdrop-blur-xl border border-destructive/30 rounded-full px-4 py-1.5 shadow-lg">
+              <WifiOff className="w-3 h-3 text-destructive" />
+              <span className="text-[11px] font-medium text-destructive">Réservations uniquement</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}>
-        <div className="flex justify-between items-end px-4 pb-8">
-          {/* Left: Dashboard button */}
-          <motion.div
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="pointer-events-auto"
-          >
-            <Button
-              onClick={onSwitchToDashboard}
-              size="lg"
-              className="rounded-full shadow-xl bg-card text-foreground hover:bg-accent border border-border/50 gap-2 h-14 px-6"
-            >
-              <LayoutGrid className="w-5 h-5" />
-              <span className="font-semibold">Dashboard</span>
-            </Button>
-          </motion.div>
-
-          {/* Center: Availability toggle */}
+      {/* === BOTTOM BAR === */}
+      <div className="absolute bottom-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
+        <div className="px-4 pb-6 space-y-3">
+          {/* Quick action buttons */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="pointer-events-auto"
+            transition={{ delay: 0.1 }}
+            className="pointer-events-auto grid grid-cols-4 gap-2"
           >
-            <Button
-              onClick={handleToggleAvailability}
-              size="lg"
-              className={`rounded-full shadow-xl h-14 px-5 gap-2 transition-all duration-300 ${
-                isAvailable
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-400'
-                  : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-              }`}
+            <button
+              onClick={onSwitchToDashboard}
+              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
             >
-              {isAvailable ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
-              <span className="font-semibold text-sm">{isAvailable ? 'En ligne' : 'Hors ligne'}</span>
-            </Button>
+              <LayoutGrid className="w-5 h-5 text-primary" />
+              <span className="text-[10px] font-semibold text-foreground">Dashboard</span>
+            </button>
+            <button
+              onClick={() => onNavigateTo?.('encaisser')}
+              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+            >
+              <Receipt className="w-5 h-5 text-emerald-500" />
+              <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
+            </button>
+            <button
+              onClick={() => onNavigateTo?.('vitrine')}
+              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+            >
+              <Store className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] font-semibold text-foreground">Vitrine</span>
+            </button>
+            <button
+              onClick={() => onNavigateTo?.('courses')}
+              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+            >
+              <Car className="w-5 h-5 text-amber-500" />
+              <span className="text-[10px] font-semibold text-foreground">Courses</span>
+            </button>
           </motion.div>
 
-          {/* Right: Recenter button */}
+          {/* Recenter button - floating */}
           <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="pointer-events-auto"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring' }}
+            className="pointer-events-auto absolute -top-16 right-4"
           >
             <Button
               onClick={recenter}
               size="icon"
-              className="rounded-full shadow-xl bg-primary text-primary-foreground h-14 w-14"
+              className="rounded-full shadow-xl bg-card text-primary border border-border/50 h-12 w-12 hover:bg-accent"
             >
-              <Navigation className="w-6 h-6" />
+              <Navigation className="w-5 h-5" />
             </Button>
           </motion.div>
         </div>
       </div>
 
-      {/* Loading state */}
+      {/* Loading */}
       {!isTracking && (
         <div className="absolute inset-0 z-[42] flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
-          <Card className="p-6 flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Localisation en cours...</span>
-          </Card>
+            <span className="text-sm text-muted-foreground">Localisation…</span>
+          </div>
         </div>
       )}
     </div>
