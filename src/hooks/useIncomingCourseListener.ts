@@ -15,7 +15,7 @@ export interface IncomingCourse {
   commissionPercentage: number | null;
   expiresAt: string | null;
   priority: number;
-  receivedAt: number; // timestamp ms
+  receivedAt: number;
   requestType?: 'exclusive' | 'multi';
   driverCount?: number;
   distanceKm?: number;
@@ -30,197 +30,222 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
   const [incomingCourse, setIncomingCourse] = useState<IncomingCourse | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const lastProcessedRef = useRef<string | null>(null);
+  const queueRef = useRef<IncomingCourse[]>([]);
+  const isShowingRef = useRef(false);
 
-  // Check for new courses in the queue
+  // Show next course from queue
+  const showNext = useCallback(() => {
+    if (queueRef.current.length === 0) {
+      isShowingRef.current = false;
+      return;
+    }
+    // Sort by priority descending
+    queueRef.current.sort((a, b) => b.priority - a.priority);
+    const next = queueRef.current.shift()!;
+    isShowingRef.current = true;
+    // Use requestAnimationFrame for instant UI update
+    requestAnimationFrame(() => {
+      setIncomingCourse(next);
+    });
+  }, []);
+
+  // Enqueue a course (deduplicates and shows immediately if nothing active)
+  const enqueue = useCallback((course: IncomingCourse) => {
+    if (dismissed.has(course.id)) return;
+    // Avoid duplicates in queue
+    if (queueRef.current.some(c => c.id === course.id)) return;
+    if (incomingCourse?.id === course.id) return;
+
+    queueRef.current.push(course);
+
+    if (!isShowingRef.current) {
+      showNext();
+    }
+  }, [dismissed, incomingCourse, showNext]);
+
+  // Check for new courses
   const checkForNewCourses = useCallback(async () => {
     if (!driverId || !enabled) return;
 
     try {
-      // 1. Check course_queue for pending items
-      const { data: queueItems } = await supabase
-        .from('course_queue')
-        .select(`
-          id, course_id, priority, expires_at, conflict_reason,
-          course:courses!course_queue_course_id_fkey(
-            pickup_address, destination_address, scheduled_date,
-            guest_name,
+      // Parallel fetch all sources
+      const [queueResult, sharedResult, rideResult, directResult] = await Promise.all([
+        // 1. Course queue
+        supabase
+          .from('course_queue')
+          .select(`
+            id, course_id, priority, expires_at,
+            course:courses!course_queue_course_id_fkey(
+              pickup_address, destination_address, scheduled_date,
+              guest_name,
+              clients(profiles:user_id(full_name)),
+              devis(amount)
+            )
+          `)
+          .eq('driver_id', driverId)
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
+          .order('priority', { ascending: false })
+          .limit(3),
+
+        // 2. Shared courses
+        supabase
+          .from('shared_courses')
+          .select(`
+            id, course_id, course_amount, commission_percentage, created_at,
+            course:courses!shared_courses_course_id_fkey(
+              pickup_address, destination_address, scheduled_date
+            ),
+            sender_driver:drivers!shared_courses_sender_driver_id_fkey(
+              profiles:user_id(full_name)
+            )
+          `)
+          .eq('receiver_driver_id', driverId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(3),
+
+        // 3. Ride requests
+        supabase
+          .from('ride_requests')
+          .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date')
+          .eq('selected_driver_id', driverId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(3),
+
+        // 4. Direct courses
+        supabase
+          .from('courses')
+          .select(`
+            id, pickup_address, destination_address, scheduled_date, 
+            guest_name, created_at,
             clients(profiles:user_id(full_name)),
             devis(amount)
-          )
-        `)
-        .eq('driver_id', driverId)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .order('priority', { ascending: false })
-        .limit(1);
+          `)
+          .eq('driver_id', driverId)
+          .eq('status', 'pending')
+          .gt('created_at', new Date(Date.now() - 60000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(3),
+      ]);
 
-      if (queueItems?.length) {
-        const item = queueItems[0];
+      // Process queue items
+      queueResult.data?.forEach(item => {
         const key = `queue-${item.id}`;
-        if (!dismissed.has(key) && lastProcessedRef.current !== key) {
-          lastProcessedRef.current = key;
-          const course = item.course as any;
-          const clientName = course?.clients?.profiles?.full_name || course?.guest_name || null;
-          setIncomingCourse({
-            id: key,
-            source: 'queue',
-            sourceId: item.id,
-            pickupAddress: course?.pickup_address || '',
-            destinationAddress: course?.destination_address || '',
-            scheduledDate: course?.scheduled_date || '',
-            amount: course?.devis?.[0]?.amount || null,
-            clientName,
-            senderDriverName: null,
-            commissionPercentage: null,
-            expiresAt: item.expires_at,
-            priority: item.priority || 1,
-            receivedAt: Date.now(),
-          });
-          return;
-        }
-      }
+        if (dismissed.has(key)) return;
+        const course = item.course as any;
+        enqueue({
+          id: key,
+          source: 'queue',
+          sourceId: item.id,
+          pickupAddress: course?.pickup_address || '',
+          destinationAddress: course?.destination_address || '',
+          scheduledDate: course?.scheduled_date || '',
+          amount: course?.devis?.[0]?.amount || null,
+          clientName: course?.clients?.profiles?.full_name || course?.guest_name || null,
+          senderDriverName: null,
+          commissionPercentage: null,
+          expiresAt: item.expires_at,
+          priority: item.priority || 1,
+          receivedAt: Date.now(),
+        });
+      });
 
-      // 2. Check shared_courses pending for this driver
-      const { data: sharedItems } = await supabase
-        .from('shared_courses')
-        .select(`
-          id, course_id, course_amount, commission_percentage, commission_amount, created_at,
-          course:courses!shared_courses_course_id_fkey(
-            pickup_address, destination_address, scheduled_date
-          ),
-          sender_driver:drivers!shared_courses_sender_driver_id_fkey(
-            profiles:user_id(full_name)
-          )
-        `)
-        .eq('receiver_driver_id', driverId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (sharedItems?.length) {
-        const item = sharedItems[0];
+      // Process shared items
+      sharedResult.data?.forEach(item => {
         const key = `shared-${item.id}`;
-        if (!dismissed.has(key) && lastProcessedRef.current !== key) {
-          lastProcessedRef.current = key;
-          const course = item.course as any;
-          const sender = item.sender_driver as any;
-          setIncomingCourse({
-            id: key,
-            source: 'shared',
-            sourceId: item.id,
-            pickupAddress: course?.pickup_address || '',
-            destinationAddress: course?.destination_address || '',
-            scheduledDate: course?.scheduled_date || '',
-            amount: item.course_amount,
-            clientName: null,
-            senderDriverName: sender?.profiles?.full_name || null,
-            commissionPercentage: item.commission_percentage,
-            expiresAt: null,
-            priority: 2,
-            receivedAt: Date.now(),
-          });
-          return;
-        }
-      }
+        if (dismissed.has(key)) return;
+        const course = item.course as any;
+        const sender = item.sender_driver as any;
+        enqueue({
+          id: key,
+          source: 'shared',
+          sourceId: item.id,
+          pickupAddress: course?.pickup_address || '',
+          destinationAddress: course?.destination_address || '',
+          scheduledDate: course?.scheduled_date || '',
+          amount: item.course_amount,
+          clientName: null,
+          senderDriverName: sender?.profiles?.full_name || null,
+          commissionPercentage: item.commission_percentage,
+          expiresAt: null,
+          priority: 2,
+          receivedAt: Date.now(),
+        });
+      });
 
-      // 3. Check ride_requests for this driver
-      const { data: rideRequests } = await supabase
-        .from('ride_requests')
-        .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date')
-        .eq('selected_driver_id', driverId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (rideRequests?.length) {
-        const item = rideRequests[0];
+      // Process ride requests
+      rideResult.data?.forEach(item => {
         const key = `ride_request-${item.id}`;
-        if (!dismissed.has(key) && lastProcessedRef.current !== key) {
-          lastProcessedRef.current = key;
-          setIncomingCourse({
-            id: key,
-            source: 'ride_request',
-            sourceId: item.id,
-            pickupAddress: item.pickup_address || '',
-            destinationAddress: item.destination_address || '',
-            scheduledDate: item.scheduled_date || '',
-            amount: item.estimated_price ? Number(item.estimated_price) : null,
-            clientName: item.guest_name || null,
-            senderDriverName: null,
-            commissionPercentage: null,
-            expiresAt: item.timeout_at,
-            priority: 5,
-            receivedAt: Date.now(),
-            requestType: (item as any).request_type || 'exclusive',
-            driverCount: (item as any).driver_count || 1,
-            distanceKm: item.distance_km ? Number(item.distance_km) : undefined,
-          });
-          return;
-        }
-      }
+        if (dismissed.has(key)) return;
+        enqueue({
+          id: key,
+          source: 'ride_request',
+          sourceId: item.id,
+          pickupAddress: item.pickup_address || '',
+          destinationAddress: item.destination_address || '',
+          scheduledDate: item.scheduled_date || '',
+          amount: item.estimated_price ? Number(item.estimated_price) : null,
+          clientName: item.guest_name || null,
+          senderDriverName: null,
+          commissionPercentage: null,
+          expiresAt: item.timeout_at,
+          priority: 5,
+          receivedAt: Date.now(),
+          requestType: (item as any).request_type || 'exclusive',
+          driverCount: (item as any).driver_count || 1,
+          distanceKm: item.distance_km ? Number(item.distance_km) : undefined,
+        });
+      });
 
-      // 4. Check new direct courses assigned
-      const { data: newCourses } = await supabase
-        .from('courses')
-        .select(`
-          id, pickup_address, destination_address, scheduled_date, 
-          guest_name, created_at,
-          clients(profiles:user_id(full_name)),
-          devis(amount)
-        `)
-        .eq('driver_id', driverId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (newCourses?.length) {
-        const item = newCourses[0];
+      // Process direct courses
+      directResult.data?.forEach(item => {
         const key = `direct-${item.id}`;
-        const createdAt = new Date(item.created_at).getTime();
-        const isNew = Date.now() - createdAt < 60000;
-        
-        if (isNew && !dismissed.has(key) && lastProcessedRef.current !== key) {
-          lastProcessedRef.current = key;
-          const clientName = (item.clients as any)?.profiles?.full_name || item.guest_name || null;
-          setIncomingCourse({
-            id: key,
-            source: 'direct',
-            sourceId: item.id,
-            pickupAddress: item.pickup_address || '',
-            destinationAddress: item.destination_address || '',
-            scheduledDate: item.scheduled_date || '',
-            amount: (item.devis as any)?.[0]?.amount || null,
-            clientName,
-            senderDriverName: null,
-            commissionPercentage: null,
-            expiresAt: null,
-            priority: 3,
-            receivedAt: Date.now(),
-          });
-        }
-      }
+        if (dismissed.has(key)) return;
+        const clientName = (item.clients as any)?.profiles?.full_name || item.guest_name || null;
+        enqueue({
+          id: key,
+          source: 'direct',
+          sourceId: item.id,
+          pickupAddress: item.pickup_address || '',
+          destinationAddress: item.destination_address || '',
+          scheduledDate: item.scheduled_date || '',
+          amount: (item.devis as any)?.[0]?.amount || null,
+          clientName,
+          senderDriverName: null,
+          commissionPercentage: null,
+          expiresAt: null,
+          priority: 3,
+          receivedAt: Date.now(),
+        });
+      });
     } catch (err) {
       console.error('[IncomingCourseListener] Error:', err);
     }
-  }, [driverId, enabled, dismissed]);
+  }, [driverId, enabled, dismissed, enqueue]);
 
-  // Dismiss the current overlay
+  // Dismiss current and show next
   const dismiss = useCallback(() => {
     if (incomingCourse) {
       setDismissed(prev => new Set(prev).add(incomingCourse.id));
       setIncomingCourse(null);
       lastProcessedRef.current = null;
+      isShowingRef.current = false;
+      // Show next in queue after short delay
+      setTimeout(() => showNext(), 300);
     }
-  }, [incomingCourse]);
+  }, [incomingCourse, showNext]);
 
-  // Clear after action taken
   const clearCurrent = useCallback(() => {
     if (incomingCourse) {
       setDismissed(prev => new Set(prev).add(incomingCourse.id));
       setIncomingCourse(null);
       lastProcessedRef.current = null;
+      isShowingRef.current = false;
+      setTimeout(() => showNext(), 300);
     }
-  }, [incomingCourse]);
+  }, [incomingCourse, showNext]);
 
   // Initial check
   useEffect(() => {
@@ -229,7 +254,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     }
   }, [driverId, enabled, checkForNewCourses]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions - targeted per driver
   useEffect(() => {
     if (!driverId || !enabled) return;
 
