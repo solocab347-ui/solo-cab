@@ -426,10 +426,6 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           )}
         </TabsContent>
 
-        {/* Spontaneous Payment */}
-        <TabsContent value="spontaneous">
-          <SpontaneousPayment driverId={driverId} stripeEnabled={stripeEnabled} />
-        </TabsContent>
       </Tabs>
     </div>
   );
