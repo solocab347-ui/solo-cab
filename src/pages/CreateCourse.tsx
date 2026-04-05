@@ -544,7 +544,7 @@ const CreateCourse = () => {
                 disabled={loading}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
-                {loading ? "Création..." : "Créer la réservation"}
+                {loading ? "Création..." : driverName ? `Réserver avec ${driverName}` : "Créer la réservation"}
               </Button>
             </div>
             
