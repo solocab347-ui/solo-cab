@@ -120,14 +120,7 @@ const DriverDashboard = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [viewMode, setViewMode] = useState<"dashboard" | "map">("dashboard");
 
-  // Overlay permission system
-  const { isEnabled: overlayEnabled, shouldPrompt: showOverlayPrompt, grant: grantOverlay, deny: denyOverlay } = useOverlayPermission(driverProfile?.driver?.id || null);
-
-  // Incoming course overlay (Uber/Bolt style) — only active if permission granted
-  const { incomingCourse, dismiss: dismissIncoming, clearCurrent: clearIncoming } = useIncomingCourseListener({
-    driverId: driverProfile?.driver?.id || null,
-    enabled: !!driverProfile?.driver?.id && overlayEnabled,
-  });
+  // Incoming course overlay is now handled globally in GlobalRideOverlay
 
   // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
   useEffect(() => {
@@ -544,12 +537,6 @@ const DriverDashboard = () => {
           }}
         />
         {/* Incoming courses work in map mode too */}
-        <IncomingCourseOverlay
-          course={incomingCourse}
-          onDismiss={dismissIncoming}
-          onAccepted={clearIncoming}
-          driverId={driverProfile.driver.id}
-        />
       </>
     );
   }
@@ -1140,23 +1127,7 @@ const DriverDashboard = () => {
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
-      {/* Incoming Course Overlay - Uber/Bolt style */}
-      {/* Incoming Course Overlay - only if permission granted */}
-      <IncomingCourseOverlay
-        course={incomingCourse}
-        onDismiss={dismissIncoming}
-        onAccepted={clearIncoming}
-        driverId={driverProfile?.driver?.id || null}
-      />
-
-      {/* Overlay Permission Prompt - shown if not yet granted */}
-      {driverProfile?.driver?.id && (
-        <OverlayPermissionPrompt
-          visible={showOverlayPrompt && !incomingCourse}
-          onGrant={grantOverlay}
-          onDeny={denyOverlay}
-        />
-      )}
+      {/* Incoming Course Overlay + Permission Prompt are now global (GlobalRideOverlay in App.tsx) */}
 
     </div>
   );
