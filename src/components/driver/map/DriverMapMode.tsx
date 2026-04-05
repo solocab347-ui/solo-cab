@@ -170,8 +170,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       {/* Top overlay — revenue + stats */}
-      <div className="absolute top-0 left-0 right-0 z-[41] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="flex justify-between items-start pt-3 px-4 gap-3">
+      <div className="absolute top-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}>
+        <div className="flex justify-between items-start pt-4 px-4 gap-3">
           {/* Revenue card */}
           <motion.div
             initial={{ y: -30, opacity: 0 }}
