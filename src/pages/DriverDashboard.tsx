@@ -875,6 +875,16 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
+          {/* Encaisser Tab */}
+          <TabsContent value="encaisser">
+            {driverProfile?.driver?.id && (
+              <SpontaneousPayment 
+                driverId={driverProfile.driver.id} 
+                stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled} 
+              />
+            )}
+          </TabsContent>
+
           {/* Subscription Tab */}
           <TabsContent value="subscription">
             <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
