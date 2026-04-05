@@ -298,11 +298,50 @@ export function useCourseCreation() {
       }
 
       logger.info("Course created successfully", { courseId: course.id });
+      toast.success("Course créée avec succès !");
+
+      // EMPREINTE BANCAIRE AUTOMATIQUE: Si paiement par carte, déclencher le hold zéro-clic
+      if (paymentMethodPreference === "card") {
+        (async () => {
+          try {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("full_name, email")
+              .eq("id", userId)
+              .maybeSingle();
+
+            logger.info("Triggering automatic card hold", { courseId: course.id, driverId });
+            
+            const { data: holdResult, error: holdError } = await supabase.functions.invoke(
+              "create-card-hold",
+              {
+                body: {
+                  driver_id: driverId,
+                  course_id: course.id,
+                  client_user_id: userId,
+                  client_email: profileData?.email || authUser?.email || "",
+                  client_name: profileData?.full_name || "",
+                },
+              }
+            );
+
+            if (holdError) {
+              logger.error("Card hold failed", { error: holdError, courseId: course.id });
+            } else if (holdResult?.auto_confirmed) {
+              logger.info("✅ Card hold auto-confirmed (zero-click)", { courseId: course.id });
+            } else if (holdResult?.card_hold_required) {
+              logger.info("Card hold requires manual confirmation", { courseId: course.id });
+            } else {
+              logger.info("Card hold not required (driver without Stripe)", { courseId: course.id });
+            }
+          } catch (err) {
+            logger.exception(err as Error, { context: "automatic-card-hold", courseId: course.id });
+          }
+        })();
+      }
 
       // GÉNÉRATION DEVIS: Non-bloquant pour l'UI - fire-and-forget avec retry en arrière-plan
-      toast.success("Course créée avec succès !");
-      
-      // Lancer la génération du devis en arrière-plan (ne bloque pas le retour)
       (async () => {
         const maxAttempts = 3;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
