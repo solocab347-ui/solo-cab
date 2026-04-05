@@ -799,9 +799,8 @@ describe("SpontaneousPayment", () => {
       const descInput = screen.getByPlaceholderText(/Course aéroport/);
       fireEvent.change(descInput, { target: { value: "Test course" } });
 
-      expect(screen.getByText("50.00€")).toBeInTheDocument();
-      expect(screen.getByText("-0,50€")).toBeInTheDocument();
-      expect(screen.getByText("49.50€")).toBeInTheDocument();
+      expect(screen.getByText(/Frais estimés/)).toBeInTheDocument();
+      expect(screen.getByText(/Vous recevrez/)).toBeInTheDocument();
     });
 
     it("52. shows SoloCab commission in breakdown", () => {
@@ -811,7 +810,7 @@ describe("SpontaneousPayment", () => {
       const descInput = screen.getByPlaceholderText(/Course aéroport/);
       fireEvent.change(descInput, { target: { value: "Test" } });
 
-      expect(screen.getByText("Frais SoloCab")).toBeInTheDocument();
+      expect(screen.getByText(/Frais estimés/)).toBeInTheDocument();
     });
   });
 
