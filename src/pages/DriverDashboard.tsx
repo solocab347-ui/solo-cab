@@ -1101,6 +1101,17 @@ const DriverDashboard = () => {
         </Tabs>
       </div>
       
+      {/* Floating Map button */}
+      {driverProfile?.driver?.id && (
+        <Button
+          onClick={() => setViewMode("map")}
+          className="fixed bottom-24 left-4 z-50 rounded-full shadow-xl bg-primary text-primary-foreground h-14 px-5 gap-2 hover:scale-105 transition-transform"
+        >
+          <MapIcon className="w-5 h-5" />
+          <span className="font-semibold text-sm">Carte</span>
+        </Button>
+      )}
+
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
