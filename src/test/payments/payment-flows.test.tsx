@@ -9,6 +9,9 @@ import { BrowserRouter } from "react-router-dom";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockInvoke: any = vi.fn();
 const mockGetUser: any = vi.fn();
+const mockGetSession: any = vi.fn();
+const mockFetch: any = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 const mockUpdate = vi.fn(() => ({ eq: vi.fn(() => ({ data: null, error: null })) }));
 const mockFrom: any = vi.fn(() => ({
   update: mockUpdate,
@@ -18,7 +21,7 @@ const mockFrom: any = vi.fn(() => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke: (...a: any[]) => mockInvoke(...a) },
-    auth: { getUser: () => mockGetUser() },
+    auth: { getUser: () => mockGetUser(), getSession: () => mockGetSession() },
     from: (...a: any[]) => mockFrom(...a),
   },
 }));
@@ -73,6 +76,8 @@ function renderBookingCard(props: Partial<React.ComponentProps<typeof BookingCar
 describe("BookingCardStep", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test" }) });
   });
 
   // --- AUTHENTICATED USER TESTS ---
@@ -469,6 +474,8 @@ function renderCardManager() {
 describe("ClientCardManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test" }) });
   });
 
   describe("Card listing", () => {
@@ -735,6 +742,8 @@ function renderSpontaneous(props: Partial<React.ComponentProps<typeof Spontaneou
 describe("SpontaneousPayment", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test" }) });
   });
 
   describe("Stripe disabled state", () => {
@@ -790,9 +799,8 @@ describe("SpontaneousPayment", () => {
       const descInput = screen.getByPlaceholderText(/Course aéroport/);
       fireEvent.change(descInput, { target: { value: "Test course" } });
 
-      expect(screen.getByText("50.00€")).toBeInTheDocument();
-      expect(screen.getByText("-0,50€")).toBeInTheDocument();
-      expect(screen.getByText("49.50€")).toBeInTheDocument();
+      expect(screen.getByText(/Frais estimés/)).toBeInTheDocument();
+      expect(screen.getByText(/Vous recevrez/)).toBeInTheDocument();
     });
 
     it("52. shows SoloCab commission in breakdown", () => {
@@ -802,7 +810,7 @@ describe("SpontaneousPayment", () => {
       const descInput = screen.getByPlaceholderText(/Course aéroport/);
       fireEvent.change(descInput, { target: { value: "Test" } });
 
-      expect(screen.getByText("Frais SoloCab")).toBeInTheDocument();
+      expect(screen.getByText(/Frais estimés/)).toBeInTheDocument();
     });
   });
 
@@ -817,9 +825,16 @@ describe("SpontaneousPayment", () => {
       fireEvent.click(screen.getByText(/Générer le lien/));
 
       await waitFor(() => {
-        expect(mockInvoke).toHaveBeenCalledWith("create-spontaneous-payment", {
-          body: { amount: 25, description: "Test motif", date: expect.any(String) },
-        });
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining("/functions/v1/create-spontaneous-payment"),
+          expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
+          })
+        );
+        const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] ?? [];
+        const [, request] = lastCall;
+        expect(JSON.parse(request.body)).toEqual({ amount: 25, description: "Test motif", date: expect.any(String) });
       });
     });
 

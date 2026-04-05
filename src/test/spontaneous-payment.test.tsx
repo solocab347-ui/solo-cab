@@ -21,10 +21,12 @@ import { BrowserRouter } from "react-router-dom";
 // MOCKS
 // ══════════════════════════════════════════════════════════════
 
-const mockInvoke = vi.fn();
+const mockGetSession = vi.fn();
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    functions: { invoke: (...args: any[]) => mockInvoke(...args) },
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -73,7 +75,14 @@ function calcFees(amount: number) {
 // ══════════════════════════════════════════════════════════════
 
 describe("1. Rendering & Initial State", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test", session_id: "cs_test" }),
+    });
+  });
 
   it("TEST 1: renders form when Stripe is enabled", () => {
     renderComponent();
@@ -164,7 +173,14 @@ describe("1. Rendering & Initial State", () => {
 // ══════════════════════════════════════════════════════════════
 
 describe("2. Validation Rules", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test", session_id: "cs_test" }),
+    });
+  });
 
   it("TEST 16: invalid with empty amount", () => {
     renderComponent();
@@ -443,32 +459,55 @@ describe("3. Fee Calculations", () => {
 // ══════════════════════════════════════════════════════════════
 
 describe("4. Generate Payment Link", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test", session_id: "cs_test" }),
+    });
+  });
 
   it("TEST 56: calls edge function on generate", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://checkout.stripe.com/test", session_id: "cs_test" } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test", session_id: "cs_test" }),
+    });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Course test" } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("create-spontaneous-payment", expect.any(Object)));
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/functions/v1/create-spontaneous-payment"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
+        })
+      );
+    });
   });
 
   it("TEST 57: passes correct body to edge function", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "25.50" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Supplément" } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("create-spontaneous-payment", {
-        body: { amount: 25.50, description: "Supplément", date: expect.any(String) },
+      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] ?? [];
+      const [url, request] = lastCall;
+      expect(url).toEqual(expect.any(String));
+      expect(JSON.parse(request.body)).toEqual({
+        amount: 25.5,
+        description: "Supplément",
+        date: expect.any(String),
       });
     });
   });
 
   it("TEST 58: shows success state after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://checkout.stripe.com/test" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "30" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Course" } });
@@ -477,7 +516,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 59: shows amount in success view", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "42" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Course" } });
@@ -487,7 +526,7 @@ describe("4. Generate Payment Link", () => {
 
   it("TEST 60: handles API error gracefully", async () => {
     const { toast } = await import("sonner");
-    mockInvoke.mockResolvedValue({ data: { error: "Stripe Connect non configuré" } });
+    mockFetch.mockResolvedValue({ ok: false, json: vi.fn().mockResolvedValue({ error: "Stripe Connect non configuré" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -497,7 +536,7 @@ describe("4. Generate Payment Link", () => {
 
   it("TEST 61: handles network error", async () => {
     const { toast } = await import("sonner");
-    mockInvoke.mockRejectedValue(new Error("Network error"));
+    mockFetch.mockRejectedValue(new Error("Network error"));
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -507,7 +546,7 @@ describe("4. Generate Payment Link", () => {
 
   it("TEST 62: handles missing URL in response", async () => {
     const { toast } = await import("sonner");
-    mockInvoke.mockResolvedValue({ data: { session_id: "cs_test" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ session_id: "cs_test" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -516,15 +555,15 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 63: trims description before sending", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "  Course test  " } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("create-spontaneous-payment", {
-        body: expect.objectContaining({ description: "Course test" }),
-      });
+      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] ?? [];
+      const [, request] = lastCall;
+      expect(JSON.parse(request.body)).toEqual(expect.objectContaining({ description: "Course test" }));
     });
   });
 
@@ -533,11 +572,11 @@ describe("4. Generate Payment Link", () => {
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "0.5" } });
     const btn = screen.getByText("Générer le lien de paiement").closest("button")!;
     fireEvent.click(btn);
-    expect(mockInvoke).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("TEST 65: shows Copier button after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -546,7 +585,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 66: shows Partager button after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -555,7 +594,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 67: shows QR Code button after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -564,7 +603,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 68: shows Ouvrir button after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -573,7 +612,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 69: shows Nouveau paiement button after generation", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -582,7 +621,7 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 70: shows fee info in success view", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://test.com" } });
+    mockFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ url: "https://test.com" }) });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Test" } });
@@ -601,7 +640,11 @@ describe("4. Generate Payment Link", () => {
 describe("5. Post-Generation Interactions", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockInvoke.mockResolvedValue({ data: { url: "https://checkout.stripe.com/c/pay_test123" } });
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/c/pay_test123" }),
+    });
   });
 
   async function generateLink() {
@@ -702,7 +745,7 @@ describe("5. Post-Generation Interactions", () => {
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Second" } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
     await waitFor(() => screen.getByText("Lien de paiement prêt"));
-    expect(mockInvoke).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it("TEST 85: fee info shows correct net in success view for 20€", async () => {
