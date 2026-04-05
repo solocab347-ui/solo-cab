@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,8 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Loader2,
-  MapPin,
-  Navigation,
   X,
   CheckCircle2,
   XCircle,
@@ -15,9 +13,15 @@ import {
   Crown,
   Users,
   Car,
+  Search,
+  MapPin,
+  RefreshCw,
+  CalendarClock,
 } from 'lucide-react';
 
-export type WaitingStatus = 'searching' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+export type WaitingStatus = 'searching' | 'transition' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
+
+type SearchPhase = 'selected' | 'nearby' | 'extended';
 
 interface RideWaitingScreenProps {
   requestId: string;
@@ -34,6 +38,30 @@ interface RideWaitingScreenProps {
   onExpired: () => void;
 }
 
+const PHASE_CONFIG = {
+  selected: { timeout: 60, nextRadius: 5, nextPhase: 'nearby' as SearchPhase },
+  nearby: { timeout: 60, nextRadius: 10, nextPhase: 'extended' as SearchPhase },
+  extended: { timeout: 60, nextRadius: 20, nextPhase: null },
+};
+
+const PHASE_MESSAGES: Record<SearchPhase, { title: string; subtitle: string; icon: React.ReactNode }> = {
+  selected: {
+    title: 'Recherche de votre chauffeur…',
+    subtitle: '',
+    icon: <Car className="h-10 w-10 text-primary" />,
+  },
+  nearby: {
+    title: 'Recherche élargie en cours…',
+    subtitle: 'Nous contactons des chauffeurs à proximité de votre point de départ.',
+    icon: <Search className="h-10 w-10 text-primary" />,
+  },
+  extended: {
+    title: 'Extension de la recherche…',
+    subtitle: 'Zone de recherche étendue pour maximiser vos chances.',
+    icon: <MapPin className="h-10 w-10 text-primary" />,
+  },
+};
+
 export function RideWaitingScreen({
   requestId,
   requestGroupId,
@@ -49,48 +77,145 @@ export function RideWaitingScreen({
   onExpired,
 }: RideWaitingScreenProps) {
   const [status, setStatus] = useState<WaitingStatus>('searching');
-  const [timeLeft, setTimeLeft] = useState(90);
+  const [phase, setPhase] = useState<SearchPhase>('selected');
+  const [timeLeft, setTimeLeft] = useState(60);
   const [acceptedDriverName, setAcceptedDriverName] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [extendedDriverCount, setExtendedDriverCount] = useState(0);
+  const [currentTimeoutAt, setCurrentTimeoutAt] = useState(timeoutAt);
+  const phaseRef = useRef(phase);
+  const isExtendingRef = useRef(false);
 
-  // Calculate time left from timeoutAt
+  phaseRef.current = phase;
+
+  // Update subtitle for selected phase based on request type
+  const getPhaseMessage = useCallback(() => {
+    const msg = { ...PHASE_MESSAGES[phase] };
+    if (phase === 'selected') {
+      msg.subtitle = requestType === 'exclusive'
+        ? `${driverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`
+        : `${driverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+    }
+    return msg;
+  }, [phase, requestType, driverName, driverCount]);
+
+  // Timer countdown
   useEffect(() => {
     const updateTimer = () => {
       const now = Date.now();
-      const timeout = new Date(timeoutAt).getTime();
+      const timeout = new Date(currentTimeoutAt).getTime();
       const remaining = Math.max(0, Math.ceil((timeout - now) / 1000));
       setTimeLeft(remaining);
-      if (remaining <= 0 && status === 'searching') {
-        setStatus('expired');
-        onExpired();
+
+      if (remaining <= 0 && (status === 'searching' || status === 'extended_searching')) {
+        handlePhaseTimeout();
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [timeoutAt, status, onExpired]);
+  }, [currentTimeoutAt, status]);
 
-  // Subscribe to realtime updates on ride_requests
+  // Phase timeout handler - triggers next phase or final expiry
+  const handlePhaseTimeout = useCallback(async () => {
+    if (isExtendingRef.current) return;
+    isExtendingRef.current = true;
+
+    const currentPhase = phaseRef.current;
+    const config = PHASE_CONFIG[currentPhase];
+
+    if (config.nextPhase) {
+      // Transition to next phase
+      setStatus('transition');
+
+      // Wait 2 seconds showing transition message
+      setTimeout(async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('extended-driver-search', {
+            body: {
+              request_group_id: requestGroupId || requestId,
+              radius_km: config.nextRadius,
+              search_phase: config.nextPhase,
+            },
+          });
+
+          if (error) throw error;
+
+          if (data?.already_accepted) {
+            return; // Will be handled by realtime
+          }
+
+          if (data?.no_drivers || data?.new_requests === 0) {
+            // No drivers found at this radius, try next phase immediately
+            const nextConfig = PHASE_CONFIG[config.nextPhase!];
+            if (nextConfig.nextPhase) {
+              setPhase(config.nextPhase!);
+              // Try wider radius
+              const { data: data2 } = await supabase.functions.invoke('extended-driver-search', {
+                body: {
+                  request_group_id: requestGroupId || requestId,
+                  radius_km: nextConfig.nextRadius,
+                  search_phase: nextConfig.nextPhase,
+                },
+              });
+
+              if (data2?.no_drivers || data2?.new_requests === 0) {
+                setStatus('no_drivers');
+                onExpired();
+                isExtendingRef.current = false;
+                return;
+              }
+
+              setPhase(nextConfig.nextPhase!);
+              setExtendedDriverCount(data2?.drivers_found || 0);
+              setCurrentTimeoutAt(data2?.timeout_at || new Date(Date.now() + 60000).toISOString());
+              setStatus('extended_searching');
+            } else {
+              setStatus('no_drivers');
+              onExpired();
+            }
+            isExtendingRef.current = false;
+            return;
+          }
+
+          setPhase(config.nextPhase!);
+          setExtendedDriverCount(data?.drivers_found || 0);
+          setCurrentTimeoutAt(data?.timeout_at || new Date(Date.now() + 60000).toISOString());
+          setStatus('extended_searching');
+        } catch (err) {
+          console.error('Extended search error:', err);
+          setStatus('no_drivers');
+          onExpired();
+        }
+        isExtendingRef.current = false;
+      }, 2000);
+    } else {
+      // Final phase expired
+      setStatus('no_drivers');
+      onExpired();
+      isExtendingRef.current = false;
+    }
+  }, [requestGroupId, requestId, onExpired]);
+
+  // Realtime subscription - listens for ANY accepted request in the group
   useEffect(() => {
-    const filterField = requestGroupId ? 'request_group_id' : 'id';
-    const filterValue = requestGroupId || requestId;
+    const groupId = requestGroupId || requestId;
 
     const channel = supabase
-      .channel(`waiting-${requestId}`)
+      .channel(`waiting-${groupId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'ride_requests',
-          filter: `${filterField}=eq.${filterValue}`,
+          filter: `request_group_id=eq.${groupId}`,
         },
         async (payload) => {
           const newStatus = payload.new?.status;
           if (newStatus === 'accepted') {
-            // Fetch driver info
-            const driverId = payload.new?.selected_driver_id;
+            const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
             if (driverId) {
               const { data: driver } = await supabase
                 .from('drivers')
@@ -102,11 +227,6 @@ export function RideWaitingScreen({
               onAccepted(name);
             }
             setStatus('accepted');
-          } else if (newStatus === 'rejected') {
-            setStatus('rejected');
-          } else if (newStatus === 'expired') {
-            setStatus('expired');
-            onExpired();
           }
         }
       )
@@ -115,16 +235,18 @@ export function RideWaitingScreen({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [requestId, requestGroupId, onAccepted, onExpired]);
+  }, [requestId, requestGroupId, onAccepted]);
 
-  // Cancel ride request
+  // Cancel all requests in the group
   const handleCancel = useCallback(async () => {
     setIsCancelling(true);
     try {
+      const groupId = requestGroupId || requestId;
       await supabase
         .from('ride_requests')
         .update({ status: 'cancelled' })
-        .eq('id', requestId);
+        .eq('request_group_id', groupId)
+        .in('status', ['pending']);
       setStatus('cancelled');
       onCancel();
     } catch (err) {
@@ -132,26 +254,22 @@ export function RideWaitingScreen({
     } finally {
       setIsCancelling(false);
     }
-  }, [requestId, onCancel]);
+  }, [requestId, requestGroupId, onCancel]);
 
-  const progressPercent = (timeLeft / 90) * 100;
-  const timerColor = timeLeft > 60 ? 'text-green-500' : timeLeft > 30 ? 'text-amber-500' : 'text-destructive';
+  const totalTime = PHASE_CONFIG[phase].timeout;
+  const progressPercent = (timeLeft / totalTime) * 100;
+  const timerColor = timeLeft > 40 ? 'text-green-500' : timeLeft > 20 ? 'text-amber-500' : 'text-destructive';
+  const barColor = timeLeft > 40 ? 'bg-green-500' : timeLeft > 20 ? 'bg-amber-500' : 'bg-destructive';
+  const phaseMessage = getPhaseMessage();
 
   return (
     <div className="space-y-6">
-      {/* Status Card */}
       <Card className="overflow-hidden border-0 shadow-xl">
         {/* Progress bar */}
-        {status === 'searching' && (
+        {(status === 'searching' || status === 'extended_searching') && (
           <div className="h-1.5 bg-muted">
             <motion.div
-              className={`h-full ${
-                timeLeft > 60
-                  ? 'bg-green-500'
-                  : timeLeft > 30
-                  ? 'bg-amber-500'
-                  : 'bg-destructive'
-              }`}
+              className={`h-full ${barColor}`}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 1, ease: 'linear' }}
             />
@@ -159,17 +277,16 @@ export function RideWaitingScreen({
         )}
 
         <CardContent className="pt-8 pb-8 text-center space-y-5">
-          {/* Status icon */}
           <AnimatePresence mode="wait">
-            {status === 'searching' && (
+            {/* SEARCHING */}
+            {(status === 'searching' || status === 'extended_searching') && (
               <motion.div
-                key="searching"
+                key={`searching-${phase}`}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 className="relative mx-auto w-20 h-20"
               >
-                {/* Pulsating rings */}
                 <motion.div
                   className="absolute inset-0 rounded-full bg-primary/20"
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
@@ -185,11 +302,26 @@ export function RideWaitingScreen({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                   >
-                    <Car className="h-10 w-10 text-primary" />
+                    {phaseMessage.icon}
                   </motion.div>
                 </div>
               </motion.div>
             )}
+
+            {/* TRANSITION */}
+            {status === 'transition' && (
+              <motion.div
+                key="transition"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="w-20 h-20 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto"
+              >
+                <RefreshCw className="h-10 w-10 text-amber-500 animate-spin" />
+              </motion.div>
+            )}
+
+            {/* ACCEPTED */}
             {status === 'accepted' && (
               <motion.div
                 key="accepted"
@@ -200,9 +332,11 @@ export function RideWaitingScreen({
                 <CheckCircle2 className="h-10 w-10 text-green-500" />
               </motion.div>
             )}
-            {(status === 'expired' || status === 'rejected') && (
+
+            {/* NO DRIVERS / EXPIRED */}
+            {(status === 'no_drivers' || status === 'expired' || status === 'rejected') && (
               <motion.div
-                key="expired"
+                key="failed"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="w-20 h-20 rounded-full bg-destructive/15 flex items-center justify-center mx-auto"
@@ -213,76 +347,136 @@ export function RideWaitingScreen({
           </AnimatePresence>
 
           {/* Status text */}
-          {status === 'searching' && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold">Recherche de chauffeur en cours…</h3>
-              {requestType === 'exclusive' ? (
+          <AnimatePresence mode="wait">
+            {(status === 'searching' || status === 'extended_searching') && (
+              <motion.div
+                key={`text-${phase}`}
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -10, opacity: 0 }}
+                className="space-y-2"
+              >
+                <h3 className="text-lg font-bold">{phaseMessage.title}</h3>
+                <p className="text-sm text-muted-foreground">{phaseMessage.subtitle}</p>
+                {phase !== 'selected' && extendedDriverCount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {extendedDriverCount} chauffeur{extendedDriverCount > 1 ? 's' : ''} contacté{extendedDriverCount > 1 ? 's' : ''} à proximité
+                  </p>
+                )}
+              </motion.div>
+            )}
+
+            {status === 'transition' && (
+              <motion.div
+                key="text-transition"
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -10, opacity: 0 }}
+                className="space-y-2"
+              >
+                <h3 className="text-lg font-bold">
+                  {phase === 'selected'
+                    ? 'Vos chauffeurs sélectionnés ne sont pas disponibles'
+                    : 'Recherche de nouveaux chauffeurs…'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  {driverName ? `${driverName} a` : 'Le chauffeur a'} été contacté. 
-                  Il a jusqu'à 90 secondes pour répondre.
+                  Nous élargissons la recherche pour trouver un chauffeur disponible.
                 </p>
-              ) : (
+              </motion.div>
+            )}
+
+            {status === 'accepted' && (
+              <motion.div
+                key="text-accepted"
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="space-y-2"
+              >
+                <h3 className="text-lg font-bold text-green-600 dark:text-green-400">
+                  Chauffeur trouvé ! 🎉
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  {driverCount} chauffeurs sont contactés.
-                  Le premier à accepter prendra votre course.
+                  {acceptedDriverName || 'Votre chauffeur'} a accepté votre course.
                 </p>
-              )}
-            </div>
-          )}
+              </motion.div>
+            )}
 
-          {status === 'accepted' && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold text-green-600 dark:text-green-400">
-                Chauffeur trouvé ! 🎉
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {acceptedDriverName || 'Votre chauffeur'} a accepté votre course.
-              </p>
-            </div>
-          )}
+            {status === 'no_drivers' && (
+              <motion.div
+                key="text-nodriver"
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="space-y-2"
+              >
+                <h3 className="text-lg font-bold">Aucun chauffeur disponible pour le moment</h3>
+                <p className="text-sm text-muted-foreground">
+                  Nous avons contacté tous les chauffeurs à proximité mais aucun n'est disponible actuellement.
+                </p>
+              </motion.div>
+            )}
 
-          {status === 'expired' && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold">Aucun chauffeur disponible</h3>
-              <p className="text-sm text-muted-foreground">
-                Le délai de réponse est écoulé. Vous pouvez relancer une recherche.
-              </p>
-            </div>
-          )}
-
-          {status === 'rejected' && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold">Demande déclinée</h3>
-              <p className="text-sm text-muted-foreground">
-                Le chauffeur n'est pas disponible. Essayez un autre chauffeur.
-              </p>
-            </div>
-          )}
+            {(status === 'expired' || status === 'rejected') && (
+              <motion.div
+                key="text-expired"
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="space-y-2"
+              >
+                <h3 className="text-lg font-bold">Délai expiré</h3>
+                <p className="text-sm text-muted-foreground">
+                  Le temps de réponse est écoulé. Vous pouvez relancer une recherche.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Timer */}
-          {status === 'searching' && (
+          {(status === 'searching' || status === 'extended_searching') && (
             <div className="flex items-center justify-center gap-2">
               <Clock className={`h-4 w-4 ${timerColor}`} />
               <span className={`text-sm font-mono font-bold ${timerColor}`}>
-                Temps restant : {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
               </span>
             </div>
           )}
 
-          {/* Request type badge */}
-          <div className="flex justify-center">
-            {requestType === 'exclusive' ? (
-              <Badge className="gap-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                <Crown className="h-3.5 w-3.5" />
-                Demande exclusive
+          {/* Phase indicator */}
+          <div className="flex justify-center gap-2">
+            {phase === 'selected' && (
+              requestType === 'exclusive' ? (
+                <Badge className="gap-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                  <Crown className="h-3.5 w-3.5" />
+                  Demande exclusive
+                </Badge>
+              ) : (
+                <Badge className="gap-1.5 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                  <Users className="h-3.5 w-3.5" />
+                  {driverCount} chauffeurs contactés
+                </Badge>
+              )
+            )}
+            {phase === 'nearby' && (
+              <Badge className="gap-1.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30">
+                <Search className="h-3.5 w-3.5" />
+                Recherche élargie (5 km)
               </Badge>
-            ) : (
-              <Badge className="gap-1.5 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30">
-                <Users className="h-3.5 w-3.5" />
-                {driverCount} chauffeurs contactés
+            )}
+            {phase === 'extended' && (
+              <Badge className="gap-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30">
+                <MapPin className="h-3.5 w-3.5" />
+                Zone étendue (10+ km)
               </Badge>
             )}
           </div>
+
+          {/* Phase progress dots */}
+          {(status === 'searching' || status === 'extended_searching' || status === 'transition') && (
+            <div className="flex justify-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${phase === 'selected' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+              <div className={`w-2 h-2 rounded-full ${phase === 'nearby' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+              <div className={`w-2 h-2 rounded-full ${phase === 'extended' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -306,7 +500,6 @@ export function RideWaitingScreen({
               </div>
             </div>
           </div>
-
           <div className="flex justify-between items-center pt-4 mt-4 border-t">
             <span className="text-sm text-muted-foreground">Prix estimé</span>
             <span className="text-lg font-bold text-primary">{estimatedPrice.toFixed(2)}€</span>
@@ -315,7 +508,7 @@ export function RideWaitingScreen({
       </Card>
 
       {/* Cancel button */}
-      {status === 'searching' && (
+      {(status === 'searching' || status === 'extended_searching' || status === 'transition') && (
         <Button
           variant="outline"
           className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
@@ -332,11 +525,16 @@ export function RideWaitingScreen({
         </Button>
       )}
 
-      {/* Retry / Go back buttons */}
-      {(status === 'expired' || status === 'rejected') && (
+      {/* Failure actions */}
+      {(status === 'no_drivers' || status === 'expired' || status === 'rejected') && (
         <div className="space-y-3">
           <Button className="w-full" size="lg" onClick={onCancel}>
+            <RefreshCw className="h-4 w-4 mr-2" />
             Relancer une recherche
+          </Button>
+          <Button variant="outline" className="w-full" size="lg" onClick={() => window.history.back()}>
+            <CalendarClock className="h-4 w-4 mr-2" />
+            Changer l'horaire
           </Button>
         </div>
       )}
