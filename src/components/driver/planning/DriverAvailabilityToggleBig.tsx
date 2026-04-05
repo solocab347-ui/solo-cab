@@ -15,6 +15,7 @@ export function DriverAvailabilityToggleBig({
   driverId,
   initialAvailable,
   onAvailabilityChange,
+  onSwitchToMap,
 }: DriverAvailabilityToggleBigProps) {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +57,10 @@ export function DriverAvailabilityToggleBig({
     setIsAvailable(next);
     await updateAvailability(next);
     onAvailabilityChange?.(next);
+    // Auto-switch to map when connecting
+    if (next && onSwitchToMap) {
+      onSwitchToMap();
+    }
   };
 
   const available = isAvailable ?? false;
