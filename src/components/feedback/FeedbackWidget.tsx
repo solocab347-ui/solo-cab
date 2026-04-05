@@ -233,18 +233,32 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
     }
   };
 
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquare className="w-5 h-5 text-primary" />
-          Bugs & Améliorations
-        </CardTitle>
-        <CardDescription>
-          Aidez-nous à améliorer SoloCab en signalant des bugs ou suggérant des améliorations
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <>
+      {/* Bouton flottant discret */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="fixed bottom-20 right-4 z-50 rounded-full shadow-lg bg-background/95 backdrop-blur-sm border-muted-foreground/20 hover:bg-accent gap-2 px-3 py-2 text-xs"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Signaler
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              Bugs & Améliorations
+            </DialogTitle>
+            <DialogDescription>
+              Aidez-nous à améliorer SoloCab
+            </DialogDescription>
+          </DialogHeader>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "submit" | "history")}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="submit" className="flex items-center gap-2">
