@@ -119,10 +119,24 @@ export function SpontaneousPayment({ driverId, stripeEnabled }: SpontaneousPayme
               <span className="text-muted-foreground">Motif</span>
               <span className="font-medium truncate max-w-[60%] text-right">{description}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Commission SoloCab</span>
-              <span className="text-xs">0,50€</span>
-            </div>
+            {(() => {
+              const stripeFeeEstimate = amountNum * 0.014 + 0.25;
+              const solocabFee = 0.80;
+              const totalFees = stripeFeeEstimate + solocabFee;
+              const netAmount = amountNum - totalFees;
+              return (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Frais estimés</span>
+                    <span className="text-xs">~{totalFees.toFixed(2)}€</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
+                    <span className="text-muted-foreground">Vous recevrez</span>
+                    <span className="font-bold text-primary">~{netAmount.toFixed(2)}€</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* QR Code */}
@@ -242,22 +256,31 @@ export function SpontaneousPayment({ driverId, stripeEnabled }: SpontaneousPayme
         </div>
 
         {/* Fee info */}
-        {isValid && (
-          <div className="bg-muted/30 rounded-lg p-3 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Montant client</span>
-              <span className="font-bold">{amountNum.toFixed(2)}€</span>
+        {isValid && (() => {
+          const stripeFeeEstimate = amountNum * 0.014 + 0.25;
+          const solocabFee = 0.80;
+          const totalFees = stripeFeeEstimate + solocabFee;
+          const netAmount = amountNum - totalFees;
+          return (
+            <div className="bg-muted/30 rounded-lg p-3 space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Montant client</span>
+                <span className="font-bold">{amountNum.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Frais estimés</span>
+                <span>~{totalFees.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between border-t pt-1.5">
+                <span className="text-muted-foreground">Vous recevrez</span>
+                <span className="font-bold text-primary">~{netAmount.toFixed(2)}€</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 pt-0.5">
+                Frais incluant traitement du paiement et services SoloCab
+              </p>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Frais SoloCab</span>
-              <span>-0,50€</span>
-            </div>
-            <div className="flex justify-between border-t pt-1">
-              <span className="text-muted-foreground">Vous recevez</span>
-              <span className="font-bold text-primary">{(amountNum - 0.50).toFixed(2)}€</span>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         <Button
           onClick={handleGenerate}
