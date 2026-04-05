@@ -39,10 +39,11 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     
-    const { data: { user: authUser }, error: userError } = await userClient.auth.getUser();
-    if (userError || !authUser) throw new Error("User not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("User not authenticated");
 
-    const userId = authUser.id;
+    const userId = claimsData.claims.sub;
 
     // Get driver record
     const { data: driver, error: driverError } = await supabaseClient
