@@ -538,6 +538,10 @@ const DriverDashboard = () => {
         <DriverMapMode
           driverId={driverProfile.driver.id}
           onSwitchToDashboard={() => setViewMode("dashboard")}
+          onNavigateTo={(tab: string) => {
+            setViewMode("dashboard");
+            setActiveTab(tab);
+          }}
         />
         {/* Incoming courses work in map mode too */}
         <IncomingCourseOverlay
