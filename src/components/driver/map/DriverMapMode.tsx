@@ -211,8 +211,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-[41] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <div className="flex justify-between items-end px-4 pb-6">
+      <div className="absolute bottom-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}>
+        <div className="flex justify-between items-end px-4 pb-8">
           {/* Switch to dashboard */}
           <motion.div
             initial={{ x: -30, opacity: 0 }}
