@@ -304,12 +304,11 @@ export function StripeConnectSetupGuide({
                   </p>
                    <p className="text-xs text-blue-600 mt-0.5">
                      Frais estimés : <strong>~1,10€</strong> par transaction de 15€
+                     <br />
+                     <span className="text-blue-500">
+                       Aucun abonnement, vous payez uniquement quand vous encaissez
+                     </span>
                    </p>
-                    <br />
-                    <span className="text-blue-500">
-                      Aucun abonnement, vous payez uniquement quand vous encaissez
-                    </span>
-                  </p>
                 </div>
               </div>
             </div>
