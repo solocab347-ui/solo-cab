@@ -69,7 +69,9 @@ const ImmediateRide = () => {
           status: 'pending',
           selected_driver_id: selectedDriver.driver_id,
           estimated_price: selectedDriver.estimated_price,
-          timeout_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(), // 2 minutes timeout
+          timeout_at: new Date(Date.now() + 90 * 1000).toISOString(), // 90 seconds timeout
+          request_type: 'exclusive',
+          driver_count: 1,
         })
         .select('id')
         .single();

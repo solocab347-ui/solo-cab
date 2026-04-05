@@ -23,7 +23,6 @@ serve(async (req) => {
   );
 
   try {
-    // Authenticate the driver
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
@@ -47,75 +46,41 @@ serve(async (req) => {
 
     const driverHasStripe = !!driver.stripe_connect_account_id && driver.stripe_connect_charges_enabled === true;
 
-    // Atomically claim the ride request (first-come-first-served)
-    // Use update with status='pending' check to prevent race conditions
-    const { data: claimed, error: claimError } = await supabaseClient
-      .from("ride_requests")
-      .update({
-        status: "accepted",
-        accepted_by_driver_id: driver.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", ride_request_id)
-      .eq("selected_driver_id", driver.id)
-      .eq("status", "pending")
-      .select()
-      .single();
+    // Use atomic RPC for race-condition-safe acceptance
+    const { data: claimResult, error: rpcError } = await supabaseClient
+      .rpc("atomic_accept_ride_request", {
+        p_ride_request_id: ride_request_id,
+        p_driver_id: driver.id,
+      });
 
-    if (claimError || !claimed) {
-      logStep("Ride request already taken or not found", { claimError });
+    if (rpcError) {
+      logStep("RPC error", { rpcError });
+      throw new Error("Erreur serveur lors de l'acceptation");
+    }
+
+    if (!claimResult?.success) {
+      logStep("Ride request not available", { result: claimResult });
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Cette demande a déjà été prise par un autre chauffeur ou n'est plus disponible.",
-          already_taken: true,
+        JSON.stringify({
+          success: false,
+          error: claimResult?.error || "Demande non disponible",
+          already_taken: claimResult?.already_taken || false,
+          expired: claimResult?.expired || false,
         }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Ride request claimed successfully", { 
-      driverId: driver.id, 
+    const claimed = claimResult;
+    logStep("Ride request claimed atomically", {
+      driverId: driver.id,
+      requestType: claimed.request_type,
       paymentMethod: claimed.payment_method,
-      driverHasStripe,
     });
 
-    // Cancel all other pending ride_requests in the same group
-    // Using request_group_id for precise sibling cancellation
-    if (claimed.request_group_id) {
-      const { error: cancelError } = await supabaseClient
-        .from("ride_requests")
-        .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .neq("id", ride_request_id)
-        .eq("status", "pending")
-        .eq("request_group_id", claimed.request_group_id);
-
-      if (cancelError) {
-        logStep("Warning: failed to cancel sibling requests", { cancelError });
-      } else {
-        logStep("Cancelled sibling requests in group", { groupId: claimed.request_group_id });
-      }
-    } else {
-      // Fallback: cancel by matching address + client (legacy requests without group_id)
-      const { error: cancelError } = await supabaseClient
-        .from("ride_requests")
-        .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .neq("id", ride_request_id)
-        .eq("status", "pending")
-        .eq("pickup_address", claimed.pickup_address)
-        .eq("destination_address", claimed.destination_address)
-        .or(
-          claimed.client_id 
-            ? `client_id.eq.${claimed.client_id}` 
-            : `guest_phone.eq.${claimed.guest_phone}`
-        );
-
-      if (cancelError) {
-        logStep("Warning: failed to cancel other requests (legacy)", { cancelError });
-      }
-    }
-
     // Create the course
+    const clientWantsCard = claimed.payment_method === "card";
+
     const courseData: Record<string, unknown> = {
       driver_id: driver.id,
       client_id: claimed.client_id || null,
@@ -136,24 +101,15 @@ serve(async (req) => {
       payment_method: claimed.payment_method || "cash",
     };
 
-    // Determine payment flow based on driver Stripe status and payment method
-    const clientWantsCard = claimed.payment_method === "card";
-
     if (clientWantsCard && driverHasStripe) {
-      // Stripe driver + card payment → online payment flow
       courseData.payment_method = "stripe";
       courseData.payment_status = "bank_imprint_pending";
-      logStep("Online card payment flow: bank hold will be required");
     } else if (clientWantsCard && !driverHasStripe) {
-      // Non-Stripe driver + card payment → TPE (physical terminal)
       courseData.payment_method = "card";
       courseData.payment_status = "pending";
-      logStep("TPE card payment flow: driver will collect via terminal");
     } else {
-      // Cash or other
       courseData.payment_method = claimed.payment_method || "cash";
       courseData.payment_status = "pending";
-      logStep("Cash/other payment flow");
     }
 
     const { data: course, error: courseError } = await supabaseClient
@@ -167,7 +123,7 @@ serve(async (req) => {
       throw new Error("Erreur lors de la création de la course");
     }
 
-    // Link the course to the ride request
+    // Link course to ride request
     await supabaseClient
       .from("ride_requests")
       .update({ final_course_id: course.id })
@@ -175,17 +131,16 @@ serve(async (req) => {
 
     logStep("Course created", { courseId: course.id });
 
-    // Create auto devis (must pass driver_id)
+    // Auto devis
     try {
       await supabaseClient.functions.invoke("create-devis-auto", {
         body: { course_id: course.id, driver_id: driver.id },
       });
-      logStep("Auto devis created");
     } catch (devisErr) {
-      logStep("Warning: auto devis creation failed", { error: String(devisErr) });
+      logStep("Warning: auto devis failed", { error: String(devisErr) });
     }
 
-    // ── AUTO CARD HOLD: If Stripe driver + card payment + client has saved card → invisible hold ──
+    // Auto card hold for Stripe drivers with saved cards
     let autoHoldResult: string | null = null;
     if (clientWantsCard && driverHasStripe && claimed.client_id) {
       try {
@@ -198,21 +153,17 @@ serve(async (req) => {
         if (clientRecord?.stripe_customer_id) {
           let paymentMethodToUse = clientRecord.default_payment_method_id;
 
-          // If no default set, look up any saved card on the Stripe Customer
           if (!paymentMethodToUse) {
-            const stripeKeyLookup = Deno.env.get("STRIPE_SECRET_KEY");
-            if (stripeKeyLookup) {
-              const stripeLookup = new Stripe(stripeKeyLookup, { apiVersion: "2025-08-27.basil" });
-              const pms = await stripeLookup.paymentMethods.list({
+            const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+            if (stripeKey) {
+              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+              const pms = await stripe.paymentMethods.list({
                 customer: clientRecord.stripe_customer_id,
                 type: "card",
                 limit: 1,
               });
               if (pms.data.length > 0) {
                 paymentMethodToUse = pms.data[0].id;
-                logStep("Found saved card via Stripe API (no default set)", { pmId: paymentMethodToUse });
-
-                // Auto-set as default for future
                 await supabaseClient
                   .from("clients")
                   .update({ default_payment_method_id: paymentMethodToUse })
@@ -222,21 +173,14 @@ serve(async (req) => {
           }
 
           if (paymentMethodToUse) {
-            logStep("Client has saved card → creating automatic invisible hold", {
-              clientId: claimed.client_id,
-              customerId: clientRecord.stripe_customer_id,
-            });
-
             const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
             if (stripeKey) {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-              // Hold amount = exact TTC course price (no artificial minimum)
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
-              const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100); // min 1€ safety
-              
-              const SOLOCAB_FEE_CENTS = 80; // 0.80€
-              const piParams: Record<string, unknown> = {
+              const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100);
+              const SOLOCAB_FEE_CENTS = 80;
+
+              const paymentIntent = await stripe.paymentIntents.create({
                 amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
@@ -251,18 +195,14 @@ serve(async (req) => {
                   client_id: claimed.client_id,
                   type: "course_hold",
                   auto_created: "true",
-                  cancellation_fee_cents: "1000",
                 },
                 transfer_data: {
-                  destination: driver.stripe_connect_account_id,
+                  destination: driver.stripe_connect_account_id!,
                 },
-                description: `Réservation VTC ${(holdAmountCents / 100).toFixed(2)}€ TTC - Course #${course.id.slice(0, 8)}`,
-              };
-
-              const paymentIntent = await stripe.paymentIntents.create(piParams as any);
+                description: `Réservation VTC ${(holdAmountCents / 100).toFixed(2)}€ TTC`,
+              } as any);
 
               if (paymentIntent.status === "requires_capture") {
-                // Success! Update course silently
                 await supabaseClient
                   .from("courses")
                   .update({
@@ -274,21 +214,16 @@ serve(async (req) => {
                     stripe_customer_id: clientRecord.stripe_customer_id,
                   })
                   .eq("id", course.id);
-
                 autoHoldResult = "auto_confirmed";
-                logStep("✅ Invisible auto-hold confirmed", { piId: paymentIntent.id });
               } else {
                 autoHoldResult = "pending_confirmation";
-                logStep("Auto-hold needs further action", { status: paymentIntent.status });
               }
             }
           } else {
             autoHoldResult = "no_saved_card";
-            logStep("Client has no saved card → will need manual card input");
           }
         } else {
           autoHoldResult = "no_stripe_customer";
-          logStep("Client has no Stripe customer → will need card registration");
         }
       } catch (holdErr) {
         logStep("Auto-hold failed (non-blocking)", { error: String(holdErr) });
@@ -296,9 +231,8 @@ serve(async (req) => {
       }
     }
 
-    // Notify the client
+    // Notifications
     if (claimed.client_id) {
-      // Get client user_id for notification
       const { data: clientData } = await supabaseClient
         .from("clients")
         .select("user_id")
@@ -308,11 +242,11 @@ serve(async (req) => {
       if (clientData?.user_id) {
         let paymentMessage: string;
         if (autoHoldResult === "auto_confirmed") {
-          paymentMessage = "✅ Votre carte a été validée automatiquement. Aucune action requise.";
-        } else if (clientWantsCard && driverHasStripe && autoHoldResult !== "auto_confirmed") {
-          paymentMessage = "💳 Veuillez enregistrer votre carte bancaire pour sécuriser le montant de la course.";
+          paymentMessage = "✅ Votre carte a été validée automatiquement.";
+        } else if (clientWantsCard && driverHasStripe) {
+          paymentMessage = "💳 Veuillez enregistrer votre carte bancaire.";
         } else if (clientWantsCard) {
-          paymentMessage = "Le paiement se fera par carte directement avec le chauffeur.";
+          paymentMessage = "Le paiement se fera par carte avec le chauffeur.";
         } else {
           paymentMessage = "Le paiement en espèces se fera à la fin de la course.";
         }
@@ -320,14 +254,13 @@ serve(async (req) => {
         await supabaseClient.from("notifications").insert({
           user_id: clientData.user_id,
           title: "🎉 Un chauffeur a accepté votre course !",
-          message: `${driver.company_name || 'Votre chauffeur'} a accepté votre demande de course. ${paymentMessage}`,
+          message: `${driver.company_name || 'Votre chauffeur'} a accepté votre demande. ${paymentMessage}`,
           type: autoHoldResult === "auto_confirmed" ? "success" : "info",
           link: `/reservation-tracking/${course.tracking_token}`,
         });
       }
     }
 
-    // Notify the driver  
     await supabaseClient.from("notifications").insert({
       user_id: driver.user_id,
       title: "✅ Course acceptée",
@@ -341,6 +274,7 @@ serve(async (req) => {
         success: true,
         course_id: course.id,
         tracking_token: course.tracking_token,
+        request_type: claimed.request_type,
         payment_flow: clientWantsCard && driverHasStripe ? "stripe_online" : clientWantsCard ? "tpe" : "cash",
         driver_has_stripe: driverHasStripe,
         auto_hold_result: autoHoldResult,
@@ -348,11 +282,9 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }

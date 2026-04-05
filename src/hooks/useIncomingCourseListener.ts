@@ -4,7 +4,7 @@ import { subscriptionManager } from '@/lib/subscriptionManager';
 
 export interface IncomingCourse {
   id: string;
-  source: 'direct' | 'shared' | 'queue' | 'fleet';
+  source: 'direct' | 'shared' | 'queue' | 'fleet' | 'ride_request';
   sourceId: string;
   pickupAddress: string;
   destinationAddress: string;
@@ -16,6 +16,9 @@ export interface IncomingCourse {
   expiresAt: string | null;
   priority: number;
   receivedAt: number; // timestamp ms
+  requestType?: 'exclusive' | 'multi';
+  driverCount?: number;
+  distanceKm?: number;
 }
 
 interface UseIncomingCourseListenerOptions {
@@ -120,7 +123,43 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         }
       }
 
-      // 3. Check new direct courses assigned
+      // 3. Check ride_requests for this driver
+      const { data: rideRequests } = await supabase
+        .from('ride_requests')
+        .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date')
+        .eq('selected_driver_id', driverId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (rideRequests?.length) {
+        const item = rideRequests[0];
+        const key = `ride_request-${item.id}`;
+        if (!dismissed.has(key) && lastProcessedRef.current !== key) {
+          lastProcessedRef.current = key;
+          setIncomingCourse({
+            id: key,
+            source: 'ride_request',
+            sourceId: item.id,
+            pickupAddress: item.pickup_address || '',
+            destinationAddress: item.destination_address || '',
+            scheduledDate: item.scheduled_date || '',
+            amount: item.estimated_price ? Number(item.estimated_price) : null,
+            clientName: item.guest_name || null,
+            senderDriverName: null,
+            commissionPercentage: null,
+            expiresAt: item.timeout_at,
+            priority: 5,
+            receivedAt: Date.now(),
+            requestType: (item as any).request_type || 'exclusive',
+            driverCount: (item as any).driver_count || 1,
+            distanceKm: item.distance_km ? Number(item.distance_km) : undefined,
+          });
+          return;
+        }
+      }
+
+      // 4. Check new direct courses assigned
       const { data: newCourses } = await supabase
         .from('courses')
         .select(`
@@ -137,7 +176,6 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       if (newCourses?.length) {
         const item = newCourses[0];
         const key = `direct-${item.id}`;
-        // Only show if created in last 60 seconds (new course)
         const createdAt = new Date(item.created_at).getTime();
         const isNew = Date.now() - createdAt < 60000;
         
@@ -213,10 +251,17 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       () => checkForNewCourses()
     );
 
+    const cleanupRideRequests = subscriptionManager.subscribe(
+      `incoming-ride-requests-${driverId}`,
+      { table: 'ride_requests', event: 'INSERT', filter: `selected_driver_id=eq.${driverId}`, debounceMs: 300 },
+      () => checkForNewCourses()
+    );
+
     return () => {
       cleanupQueue();
       cleanupShared();
       cleanupCourses();
+      cleanupRideRequests();
     };
   }, [driverId, enabled, checkForNewCourses]);
 

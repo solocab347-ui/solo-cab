@@ -14872,6 +14872,7 @@ export type Database = {
           destination_latitude: number | null
           destination_longitude: number | null
           distance_km: number | null
+          driver_count: number | null
           estimated_price: number | null
           final_course_id: string | null
           guest_email: string | null
@@ -14883,6 +14884,7 @@ export type Database = {
           pickup_latitude: number | null
           pickup_longitude: number | null
           request_group_id: string | null
+          request_type: string
           ride_type: string | null
           scheduled_date: string | null
           search_radius_km: number | null
@@ -14899,6 +14901,7 @@ export type Database = {
           destination_latitude?: number | null
           destination_longitude?: number | null
           distance_km?: number | null
+          driver_count?: number | null
           estimated_price?: number | null
           final_course_id?: string | null
           guest_email?: string | null
@@ -14910,6 +14913,7 @@ export type Database = {
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           request_group_id?: string | null
+          request_type?: string
           ride_type?: string | null
           scheduled_date?: string | null
           search_radius_km?: number | null
@@ -14926,6 +14930,7 @@ export type Database = {
           destination_latitude?: number | null
           destination_longitude?: number | null
           distance_km?: number | null
+          driver_count?: number | null
           estimated_price?: number | null
           final_course_id?: string | null
           guest_email?: string | null
@@ -14937,6 +14942,7 @@ export type Database = {
           pickup_latitude?: number | null
           pickup_longitude?: number | null
           request_group_id?: string | null
+          request_type?: string
           ride_type?: string | null
           scheduled_date?: string | null
           search_radius_km?: number | null
@@ -18494,6 +18500,10 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_accept_ride_request: {
+        Args: { p_driver_id: string; p_ride_request_id: string }
+        Returns: Json
+      }
       auto_assign_fleet_driver: {
         Args: {
           p_duration_minutes?: number
@@ -18911,6 +18921,7 @@ export type Database = {
         }[]
       }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      expire_timed_out_ride_requests: { Args: never; Returns: number }
       find_available_fleet_driver:
         | {
             Args: {
