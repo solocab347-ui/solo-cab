@@ -2,6 +2,13 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+/**
+ * AutoDriverAvailabilitySync
+ * 
+ * ONLY updates last_seen_at for heartbeat detection.
+ * Does NOT touch is_available_now — that is controlled exclusively
+ * by the driver's manual toggle (DriverAvailabilityToggleBig).
+ */
 export function AutoDriverAvailabilitySync() {
   const { user, userRole } = useAuth();
   const intervalRef = useRef<number | null>(null);
@@ -17,7 +24,7 @@ export function AutoDriverAvailabilitySync() {
 
     let isCancelled = false;
 
-    const syncDriverAvailability = async () => {
+    const syncHeartbeat = async () => {
       const { data: driver } = await supabase
         .from('drivers')
         .select('id')
@@ -26,27 +33,27 @@ export function AutoDriverAvailabilitySync() {
 
       if (!driver?.id || isCancelled) return;
 
+      // Only update last_seen_at — never override is_available_now
       await supabase
         .from('drivers')
         .update({
-          is_available_now: true,
           last_seen_at: new Date().toISOString(),
         })
         .eq('id', driver.id);
     };
 
-    void syncDriverAvailability();
+    void syncHeartbeat();
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        void syncDriverAvailability();
+        void syncHeartbeat();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     intervalRef.current = window.setInterval(() => {
-      void syncDriverAvailability();
-    }, 120000); // 120s au lieu de 60s pour réduire la charge DB
+      void syncHeartbeat();
+    }, 120000);
 
     return () => {
       isCancelled = true;
