@@ -14,26 +14,22 @@ serve(async (req) => {
   }
 
   try {
-    // Auth via getClaims
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) throw new Error("Non authentifié");
-    const token = authHeader.replace("Bearer ", "");
 
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token || token === "undefined" || token === "null") {
+      throw new Error("Non authentifié");
+    }
 
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) throw new Error("Non authentifié");
-    const userId = claimsData.claims.sub;
-
-    // Admin client for DB queries
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    const { data: userData, error: userError } = await adminClient.auth.getUser(token);
+    if (userError || !userData?.user?.id) throw new Error("Non authentifié");
+    const userId = userData.user.id;
 
     // Get driver
     const { data: driver, error: driverError } = await adminClient
