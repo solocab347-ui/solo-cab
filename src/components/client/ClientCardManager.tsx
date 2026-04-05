@@ -91,7 +91,10 @@ function CardFormInner({ onSuccess, onCancel, clientSecret }: { onSuccess: () =>
     <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement 
         onReady={() => setReady(true)}
-        options={{ layout: 'tabs' }}
+        options={{ 
+          layout: 'tabs',
+          wallets: { applePay: 'auto', googlePay: 'auto' },
+        }}
       />
 
       {error && (
