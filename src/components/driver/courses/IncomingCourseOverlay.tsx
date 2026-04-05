@@ -17,6 +17,8 @@ import {
   ArrowRight,
   Navigation,
   Handshake,
+  Users,
+  Crown,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,7 +31,7 @@ interface IncomingCourseOverlayProps {
   driverId: string | null;
 }
 
-const TIMEOUT_SECONDS = 30;
+const TIMEOUT_SECONDS = 90;
 
 export function IncomingCourseOverlay({
   course,
@@ -75,7 +77,6 @@ export function IncomingCourseOverlay({
 
     try {
       if (course.source === 'queue') {
-        // Force accept from queue
         await supabase
           .from('course_queue')
           .update({
@@ -87,7 +88,6 @@ export function IncomingCourseOverlay({
           .eq('id', course.sourceId);
         toast.success('Course acceptée !');
       } else if (course.source === 'shared') {
-        // Accept shared course
         await supabase
           .from('shared_courses')
           .update({
@@ -97,7 +97,6 @@ export function IncomingCourseOverlay({
           .eq('id', course.sourceId);
         toast.success('Course partagée acceptée !');
       } else if (course.source === 'direct') {
-        // Accept direct course
         await supabase
           .from('courses')
           .update({
@@ -105,6 +104,25 @@ export function IncomingCourseOverlay({
             updated_at: new Date().toISOString(),
           })
           .eq('id', course.sourceId);
+        toast.success('Course acceptée !');
+      } else if (course.source === 'ride_request') {
+        // Use the atomic accept Edge Function
+        const { data, error } = await supabase.functions.invoke('accept-ride-request', {
+          body: { ride_request_id: course.sourceId },
+        });
+
+        if (error) throw error;
+        if (!data?.success) {
+          if (data?.already_taken) {
+            toast.error('Cette course a déjà été prise par un autre chauffeur');
+          } else if (data?.expired) {
+            toast.error('Cette demande a expiré');
+          } else {
+            toast.error(data?.error || "Erreur lors de l'acceptation");
+          }
+          onDismiss();
+          return;
+        }
         toast.success('Course acceptée !');
       }
 
@@ -115,23 +133,37 @@ export function IncomingCourseOverlay({
     } finally {
       setAccepting(false);
     }
-  }, [course, driverId, accepting, onAccepted]);
+  }, [course, driverId, accepting, onAccepted, onDismiss]);
 
   const progressPercent = (timeLeft / TIMEOUT_SECONDS) * 100;
 
-  const sourceLabel = {
+  // Determine if exclusive or multi request
+  const isExclusive = course?.requestType === 'exclusive';
+  const isMulti = course?.requestType === 'multi';
+
+  const sourceLabel: Record<string, string> = {
     direct: 'Nouvelle course',
     shared: 'Course partagée',
     queue: "File d'attente",
     fleet: 'Course flotte',
+    ride_request: isExclusive ? 'Demande exclusive' : isMulti ? 'Demande multiple' : 'Demande de course',
   };
 
-  const sourceIcon = {
+  const sourceIcon: Record<string, JSX.Element> = {
     direct: <Zap className="h-4 w-4" />,
     shared: <Handshake className="h-4 w-4" />,
     queue: <Clock className="h-4 w-4" />,
     fleet: <Navigation className="h-4 w-4" />,
+    ride_request: isExclusive ? <Crown className="h-4 w-4" /> : <Users className="h-4 w-4" />,
   };
+
+  // Timer color based on urgency
+  const timerColor = timeLeft > 60 ? 'text-green-500' : timeLeft > 30 ? 'text-amber-500' : 'text-red-500';
+  const progressColor = timeLeft > 60
+    ? 'from-green-500 to-emerald-500'
+    : timeLeft > 30
+    ? 'from-amber-400 to-orange-500'
+    : 'from-red-500 to-rose-600';
 
   return (
     <AnimatePresence>
@@ -160,9 +192,9 @@ export function IncomingCourseOverlay({
             exit={{ y: 100 }}
           >
             {/* Progress bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-muted rounded-t-3xl overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-muted rounded-t-3xl overflow-hidden">
               <motion.div
-                className="h-full bg-gradient-to-r from-primary to-green-500"
+                className={`h-full bg-gradient-to-r ${progressColor}`}
                 initial={{ width: '100%' }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 1, ease: 'linear' }}
@@ -178,13 +210,21 @@ export function IncomingCourseOverlay({
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-primary/20 text-primary border-primary/30 gap-1">
+                  <Badge
+                    className={`gap-1 ${
+                      isExclusive
+                        ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+                        : isMulti
+                        ? 'bg-blue-500/20 text-blue-500 border-blue-500/30'
+                        : 'bg-primary/20 text-primary border-primary/30'
+                    }`}
+                  >
                     {sourceIcon[course.source]}
-                    {sourceLabel[course.source]}
+                    {sourceLabel[course.source] || 'Course'}
                   </Badge>
-                  <Badge variant="outline" className="text-xs gap-1">
+                  <Badge variant="outline" className={`text-xs gap-1 ${timerColor}`}>
                     <Clock className="h-3 w-3" />
-                    {timeLeft}s
+                    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
                   </Badge>
                 </div>
                 <Button
@@ -196,6 +236,24 @@ export function IncomingCourseOverlay({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* Exclusive/Multi context message */}
+              {isExclusive && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <Crown className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Le client vous a choisi exclusivement
+                  </p>
+                </div>
+              )}
+              {isMulti && course.driverCount && course.driverCount > 1 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Envoyée à {course.driverCount} chauffeurs · Premier qui accepte
+                  </p>
+                </div>
+              )}
 
               {/* Route */}
               <div className="space-y-2">
@@ -240,6 +298,13 @@ export function IncomingCourseOverlay({
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Handshake className="h-3.5 w-3.5" />
                     <span>de {course.senderDriverName}</span>
+                  </div>
+                )}
+
+                {course.distanceKm && (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Navigation className="h-3.5 w-3.5" />
+                    <span>{course.distanceKm.toFixed(1)} km</span>
                   </div>
                 )}
               </div>
