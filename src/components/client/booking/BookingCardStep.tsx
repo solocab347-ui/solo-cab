@@ -24,12 +24,10 @@ interface BookingCardStepProps {
 function InlinePaymentForm({ 
   clientSecret, 
   onSuccess, 
-  onRequireFresh,
   estimatedPrice,
 }: { 
   clientSecret: string; 
   onSuccess: () => void;
-  onRequireFresh: () => Promise<string | null>;
   estimatedPrice?: number;
 }) {
   const stripe = useStripe();
