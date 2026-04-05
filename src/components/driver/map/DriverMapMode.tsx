@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
-import { Navigation, Loader2, Wifi, WifiOff, Store, Receipt, Car, LayoutGrid } from 'lucide-react';
+import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
