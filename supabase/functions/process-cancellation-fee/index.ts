@@ -85,13 +85,14 @@ serve(async (req) => {
       .maybeSingle();
 
     // Appliquer les règles selon le type de course
+    const configFreeHours = config?.free_cancellation_hours ?? null;
     const freeCancellationHours = hasDeposit 
-      ? (config?.free_cancellation_hours_with_deposit || DEFAULT_FREE_CANCELLATION_HOURS_WITH_DEPOSIT)
-      : (config?.free_cancellation_hours_no_deposit || DEFAULT_FREE_CANCELLATION_HOURS_NO_DEPOSIT);
+      ? (configFreeHours ?? DEFAULT_FREE_CANCELLATION_HOURS_WITH_DEPOSIT)
+      : (configFreeHours ?? DEFAULT_FREE_CANCELLATION_HOURS_NO_DEPOSIT);
     
     const cancellationFee = hasDeposit 
       ? 0 // Avec acompte, l'acompte EST la pénalité
-      : (config?.cancellation_fee_no_deposit || DEFAULT_CANCELLATION_FEE_NO_DEPOSIT);
+      : (config?.cancellation_fee_amount ?? DEFAULT_CANCELLATION_FEE_NO_DEPOSIT);
 
     // Calculate hours until pickup
     const scheduledDate = new Date(course.scheduled_date);
