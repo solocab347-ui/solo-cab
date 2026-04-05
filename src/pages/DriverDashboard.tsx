@@ -853,14 +853,20 @@ const DriverDashboard = () => {
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
             <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <QrCode className="w-5 h-5 text-primary" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <QrCode className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Mon QR Code Personnel</h2>
+                    <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Mon QR Code Personnel</h2>
-                  <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
-                </div>
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
+                  <MapIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Carte</span>
+                </Button>
               </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
@@ -882,6 +888,13 @@ const DriverDashboard = () => {
 
           {/* Encaisser Tab */}
           <TabsContent value="encaisser">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
+              <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
+                <MapIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Carte</span>
+              </Button>
+            </div>
             {driverProfile?.driver?.id && (
               <SpontaneousPayment 
                 driverId={driverProfile.driver.id} 
@@ -963,14 +976,20 @@ const DriverDashboard = () => {
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
             <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-primary" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Demandes de Réservation</h2>
+                    <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Demandes de Réservation</h2>
-                  <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
-                </div>
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
+                  <MapIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Carte</span>
+                </Button>
               </div>
 
               {driverProfile?.driver?.id && (
