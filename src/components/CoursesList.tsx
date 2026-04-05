@@ -45,6 +45,8 @@ import { CompanyPaymentStatusSelector } from "@/components/driver/company/Compan
 import { CoursePaymentDialogContent } from "@/components/driver/courses/CoursePaymentDialogContent";
 import { CancellationDialog } from "@/components/driver/courses/CancellationDialog";
 import { buildDriverFilter } from "@/lib/driverQueryUtils";
+import { CoursesFilters, type CoursesFiltersState } from "@/components/driver/courses/CoursesFilters";
+import { applyAllFilters as applyFilters, sortByDate, sortConfirmedWithInProgressFirst, getClientDisplayName as getClientName, getClientPhone as getClientPhoneUtil, getLatestDevis as getLatestDevisUtil } from "@/lib/coursesFilterUtils";
 
 interface CoursesListProps {
   driverId: string;
