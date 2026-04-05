@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { playSoloCabSound, SOLOCAB_VIBRATION_PATTERN } from '@/lib/solocabNotificationSound';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,11 +65,15 @@ export function IncomingCourseOverlay({
     return () => clearInterval(interval);
   }, [course?.id, onDismiss]);
 
-  // Vibrate on new course
+  // Vibrate + sound on new course
   useEffect(() => {
-    if (course && navigator.vibrate) {
-      navigator.vibrate([200, 100, 200, 100, 300]);
+    if (!course) return;
+    // Vibration pattern SoloCab signature
+    if (navigator.vibrate) {
+      navigator.vibrate(SOLOCAB_VIBRATION_PATTERN);
     }
+    // Play SoloCab notification sound
+    playSoloCabSound(0.8).catch(() => {});
   }, [course?.id]);
 
   const handleAccept = useCallback(async () => {
