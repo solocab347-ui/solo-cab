@@ -109,7 +109,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
           {/* Transparence */}
           <div className="mt-4 pt-4 border-t border-success/20">
             <p className="text-xs text-muted-foreground text-center">
-              <strong>Frais par transaction :</strong> 0,50€ SoloCab + ~1,5% + 0,25€ Stripe
+              <strong>Frais par transaction :</strong> 0,80€ SoloCab + frais de paiement sécurisé
             </p>
           </div>
         </CardContent>

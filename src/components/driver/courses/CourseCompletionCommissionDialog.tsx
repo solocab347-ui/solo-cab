@@ -482,7 +482,7 @@ export function CourseCompletionCommissionDialog({
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle className="w-4 h-4 text-green-500" />
               <AlertDescription className="text-xs text-green-700">
-                Le paiement sera automatiquement crédité sur votre compte Stripe Connect (frais de gestion de 0,50€ déduits).
+                Le paiement sera automatiquement crédité sur votre compte (frais de transaction déduits).
               </AlertDescription>
             </Alert>
           )}
