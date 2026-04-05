@@ -559,8 +559,9 @@ describe("4. Generate Payment Link", () => {
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "  Course test  " } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
     await waitFor(() => {
-      const [, request] = mockFetch.mock.calls.at(-1) ?? [];
-        expect(JSON.parse(request.body)).toEqual(expect.objectContaining({ description: "Course test" }));
+      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] ?? [];
+      const [, request] = lastCall;
+      expect(JSON.parse(request.body)).toEqual(expect.objectContaining({ description: "Course test" }));
     });
   });
 
