@@ -134,7 +134,7 @@ serve(async (req) => {
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       usage: "off_session",
-      payment_method_types: ["card"],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         platform: "solocab",
         client_id: client.id,

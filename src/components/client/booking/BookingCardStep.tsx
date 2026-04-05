@@ -7,28 +7,21 @@ import { toast } from 'sonner';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
-  CardNumberElement,
-  CardExpiryElement,
-  CardCvcElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
 
 interface BookingCardStepProps {
-  /** If user is authenticated */
   isAuthenticated: boolean;
-  /** Guest info (required if !isAuthenticated) */
   guestName?: string;
   guestEmail?: string;
   guestPhone?: string;
-  /** Called when card is successfully registered */
   onCardReady: (info: { customerId: string; paymentMethodId?: string }) => void;
-  /** Estimated price for display */
   estimatedPrice?: number;
 }
 
-// ─── Inner card form (must be inside Elements provider) ───
-function InlineCardForm({ 
+function InlinePaymentForm({ 
   clientSecret, 
   onSuccess, 
   onRequireFresh,
@@ -43,19 +36,7 @@ function InlineCardForm({
   const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
-
-  const isFormComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
-
-  const elementStyle = {
-    base: {
-      fontSize: '16px',
-      color: 'hsl(var(--foreground))',
-      fontFamily: 'system-ui, sans-serif',
-      '::placeholder': { color: 'hsl(var(--muted-foreground))' },
-    },
-    invalid: { color: 'hsl(var(--destructive))' },
-  };
+  const [ready, setReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +46,22 @@ function InlineCardForm({
     setError(null);
 
     try {
-      const cardNumberElement = elements.getElement(CardNumberElement);
-      if (!cardNumberElement) throw new Error("Formulaire de carte non prêt");
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message || "Erreur de validation");
+        return;
+      }
 
-      // Get fresh intent for max reliability
       const freshSecret = await onRequireFresh();
       const secret = freshSecret || clientSecret;
 
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(secret, {
-        payment_method: { card: cardNumberElement },
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        clientSecret: secret,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required',
       });
 
       if (stripeError) {
@@ -82,18 +70,17 @@ function InlineCardForm({
       }
 
       if (setupIntent?.status === 'succeeded') {
-        // Persist card for registered users
         try {
           await supabase.functions.invoke('persist-card-default', {
             body: { setup_intent_id: setupIntent.id },
           });
         } catch {
-          // Non-blocking for guest
+          // Non-blocking
         }
-        toast.success('✅ Carte vérifiée avec succès !');
+        toast.success('✅ Moyen de paiement vérifié avec succès !');
         onSuccess();
       } else if (setupIntent?.status === 'requires_action') {
-        toast.info('Vérification 3D Secure en cours...');
+        toast.info('Vérification en cours...');
       }
     } catch (err: any) {
       setError(err.message || 'Erreur');
@@ -104,40 +91,12 @@ function InlineCardForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="space-y-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Numéro de carte</label>
-          <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-            <CardNumberElement
-              options={{ style: elementStyle, showIcon: true, placeholder: '1234 5678 9012 3456' }}
-              onChange={(e) => setCardComplete(prev => ({ ...prev, number: e.complete }))}
-              className="w-full"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Expiration</label>
-            <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-              <CardExpiryElement
-                options={{ style: elementStyle, placeholder: 'MM / AA' }}
-                onChange={(e) => setCardComplete(prev => ({ ...prev, expiry: e.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">CVC</label>
-            <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-              <CardCvcElement
-                options={{ style: elementStyle, placeholder: '123' }}
-                onChange={(e) => setCardComplete(prev => ({ ...prev, cvc: e.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <PaymentElement 
+        onReady={() => setReady(true)}
+        options={{
+          layout: 'tabs',
+        }}
+      />
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -153,19 +112,18 @@ function InlineCardForm({
           : 'Le montant TTC sera bloqué sur votre carte après acceptation du chauffeur.'}
       </p>
 
-      <Button type="submit" disabled={saving || !stripe || !isFormComplete} className="w-full h-11">
+      <Button type="submit" disabled={saving || !stripe || !ready} className="w-full h-11">
         {saving ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <ShieldCheck className="mr-2 h-4 w-4" />
         )}
-        Valider ma carte bancaire
+        Valider mon moyen de paiement
       </Button>
     </form>
   );
 }
 
-// ─── Main exported component ───
 export function BookingCardStep({ 
   isAuthenticated, 
   guestName, 
@@ -223,7 +181,6 @@ export function BookingCardStep({
   }, [createSetupIntent]);
 
   useEffect(() => {
-    // Auto-initialize for card payment
     if (!clientSecret && !loading && !cardVerified) {
       initializeForm();
     }
@@ -235,9 +192,9 @@ export function BookingCardStep({
         <CardContent className="p-4 flex items-center gap-3">
           <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-foreground">Carte vérifiée ✓</p>
+            <p className="text-sm font-semibold text-foreground">Paiement vérifié ✓</p>
             <p className="text-xs text-muted-foreground">
-              Le montant TTC sera bloqué sur votre carte après acceptation du chauffeur.
+              Le montant TTC sera bloqué après acceptation du chauffeur.
             </p>
           </div>
         </CardContent>
@@ -261,10 +218,24 @@ export function BookingCardStep({
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
-          <h4 className="font-semibold text-foreground text-sm">Vérification carte bancaire</h4>
+          <h4 className="font-semibold text-foreground text-sm">Vérification du moyen de paiement</h4>
         </div>
-        <Elements stripe={stripePromise} key={clientSecret} options={{ clientSecret }}>
-          <InlineCardForm
+        <Elements 
+          stripe={stripePromise} 
+          key={clientSecret} 
+          options={{ 
+            clientSecret,
+            locale: 'fr',
+            appearance: {
+              theme: 'stripe',
+              variables: {
+                colorPrimary: 'hsl(var(--primary))',
+                borderRadius: '8px',
+              },
+            },
+          }}
+        >
+          <InlinePaymentForm
             clientSecret={clientSecret}
             onSuccess={() => {
               setCardVerified(true);
