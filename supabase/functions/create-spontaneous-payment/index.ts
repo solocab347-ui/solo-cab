@@ -13,24 +13,33 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
-    // Auth
+    // Auth via getClaims
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Non authentifié");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Non authentifié");
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError || !user) throw new Error("Non authentifié");
+
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("Non authentifié");
+    const userId = claimsData.claims.sub;
+
+    // Admin client for DB queries
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
     // Get driver
-    const { data: driver, error: driverError } = await supabaseClient
+    const { data: driver, error: driverError } = await adminClient
       .from("drivers")
       .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, company_name, display_name")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (driverError || !driver) throw new Error("Profil chauffeur introuvable");
