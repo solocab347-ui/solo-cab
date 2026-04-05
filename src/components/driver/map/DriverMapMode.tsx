@@ -310,11 +310,11 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
               <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
             </button>
             <button
-              onClick={() => onNavigateTo?.('vitrine')}
+              onClick={() => onNavigateTo?.('qr-code')}
               className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
             >
-              <Store className="w-5 h-5 text-blue-500" />
-              <span className="text-[10px] font-semibold text-foreground">Vitrine</span>
+              <QrCode className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] font-semibold text-foreground">QR Code</span>
             </button>
             <button
               onClick={() => onNavigateTo?.('courses')}
