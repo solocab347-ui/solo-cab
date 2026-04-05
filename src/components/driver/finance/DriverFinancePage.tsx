@@ -11,6 +11,7 @@ import { fr } from "date-fns/locale";
 
 interface DriverFinancePageProps {
   driverId: string;
+  initialTab?: string;
 }
 
 interface Settlement {
@@ -61,7 +62,7 @@ interface WalletStats {
   }>;
 }
 
-export function DriverFinancePage({ driverId }: DriverFinancePageProps) {
+export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);

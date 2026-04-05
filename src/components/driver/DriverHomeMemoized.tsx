@@ -337,7 +337,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
                 : 'opacity-60 cursor-not-allowed'
             }`}
             {...(driverProfile?.driver?.stripe_connect_charges_enabled
-              ? getTapProps<HTMLDivElement>(() => onTabChange("finances"))
+              ? getTapProps<HTMLDivElement>(() => onTabChange("encaisser"))
               : {}
             )}
           >
