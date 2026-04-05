@@ -249,25 +249,15 @@ export function DriverInvoiceDetailView({ facture, onDownload }: DriverInvoiceDe
                 <TrendingDown className="h-4 w-4" />
                 Frais prélevés
               </h4>
-              <div className="space-y-1 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
-                {facture.solocab_fee_amount !== undefined && facture.solocab_fee_amount > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Frais de gestion SoloCab</span>
-                    <span>-{formatCurrency(facture.solocab_fee_amount)}</span>
-                  </div>
-                )}
-                {facture.stripe_fee_amount !== undefined && facture.stripe_fee_amount > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Frais de transaction Stripe (~1.5% + 0.25€)</span>
-                    <span>-{formatCurrency(facture.stripe_fee_amount)}</span>
-                  </div>
-                )}
-                <Separator className="my-2 bg-red-200 dark:bg-red-800" />
-                <div className="flex justify-between font-semibold text-red-700 dark:text-red-400">
-                  <span>Total des frais</span>
-                  <span>-{formatCurrency(facture.total_fees_amount)}</span>
-                </div>
-              </div>
+               <div className="space-y-1 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
+                 <div className="flex justify-between font-semibold text-red-700 dark:text-red-400">
+                   <span>Frais totaux</span>
+                   <span>-{formatCurrency(facture.total_fees_amount)}</span>
+                 </div>
+                 <p className="text-[10px] text-red-500/70 mt-1">
+                   Frais incluant traitement du paiement sécurisé et services SoloCab
+                 </p>
+               </div>
             </div>
           </>
         )}
@@ -285,7 +275,7 @@ export function DriverInvoiceDetailView({ facture, onDownload }: DriverInvoiceDe
           </div>
           {isStripe && (
             <p className="text-xs text-muted-foreground mt-2">
-              Ce montant a été viré sur votre compte Stripe Connect
+              Ce montant a été viré sur votre compte bancaire
             </p>
           )}
         </div>
