@@ -6,19 +6,20 @@ import { BrowserRouter } from "react-router-dom";
 // MOCKS
 // ============================================================
 
-const mockInvoke = vi.fn();
-const mockGetUser = vi.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockInvoke: any = vi.fn();
+const mockGetUser: any = vi.fn();
 const mockUpdate = vi.fn(() => ({ eq: vi.fn(() => ({ data: null, error: null })) }));
-const mockFrom = vi.fn(() => ({
+const mockFrom: any = vi.fn(() => ({
   update: mockUpdate,
   select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    functions: { invoke: vi.fn((..._args: any[]) => mockInvoke(_args[0], _args[1])) },
+    functions: { invoke: (...a: any[]) => mockInvoke(...a) },
     auth: { getUser: () => mockGetUser() },
-    from: vi.fn((..._args: any[]) => mockFrom(_args[0])),
+    from: (...a: any[]) => mockFrom(...a),
   },
 }));
 
