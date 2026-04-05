@@ -833,7 +833,8 @@ describe("SpontaneousPayment", () => {
             headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
           })
         );
-        const [, request] = mockFetch.mock.calls.at(-1) ?? [];
+        const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] ?? [];
+        const [, request] = lastCall;
         expect(JSON.parse(request.body)).toEqual({ amount: 25, description: "Test motif", date: expect.any(String) });
       });
     });
