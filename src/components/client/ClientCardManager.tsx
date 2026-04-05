@@ -8,9 +8,7 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  CardNumberElement,
-  CardExpiryElement,
-  CardCvcElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -36,25 +34,7 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
   const elements = useElements();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
-
-  const isFormComplete = cardComplete.number && cardComplete.expiry && cardComplete.cvc;
-
-  const elementStyle = {
-    base: {
-      fontSize: "16px",
-      color: "hsl(var(--foreground))",
-      fontFamily: "system-ui, sans-serif",
-      "::placeholder": {
-        color: "hsl(var(--muted-foreground))",
-      },
-      iconColor: "hsl(var(--muted-foreground))",
-    },
-    invalid: {
-      color: "hsl(var(--destructive))",
-      iconColor: "hsl(var(--destructive))",
-    },
-  };
+  const [ready, setReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,23 +44,22 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
     setError(null);
 
     try {
-      const cardNumberElement = elements.getElement(CardNumberElement);
-      if (!cardNumberElement) {
-        throw new Error("Le formulaire de carte n'est pas prêt.");
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message || "Erreur de validation");
+        return;
       }
 
-      // Always get a fresh SetupIntent for maximum reliability
       const freshClientSecret = await onRequireFreshIntent(false);
       const currentClientSecret = freshClientSecret || clientSecret;
 
-      if (!currentClientSecret.startsWith("seti_") || !currentClientSecret.includes("_secret_")) {
-        throw new Error("Client secret Stripe invalide.");
-      }
-
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(currentClientSecret, {
-        payment_method: {
-          card: cardNumberElement,
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        clientSecret: currentClientSecret,
+        confirmParams: {
+          return_url: window.location.href,
         },
+        redirect: 'if_required',
       });
 
       if (stripeError) {
@@ -89,7 +68,6 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
       }
 
       if (setupIntent?.status === "succeeded") {
-        // Persist the card as default payment method
         try {
           await supabase.functions.invoke("persist-card-default", {
             body: { setup_intent_id: setupIntent.id },
@@ -97,13 +75,13 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
         } catch (persistErr) {
           console.error("Failed to persist card default:", persistErr);
         }
-        toast.success("✅ Carte enregistrée avec succès !");
+        toast.success("✅ Moyen de paiement enregistré !");
         onSuccess();
         return;
       }
 
       if (setupIntent?.status === "requires_action") {
-        toast.info("Vérification 3D Secure en cours...");
+        toast.info("Vérification en cours...");
       }
     } catch (err: any) {
       setError(err.message || "Erreur");
@@ -114,42 +92,10 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Numéro de carte</label>
-          <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-            <CardNumberElement
-              options={{ style: elementStyle, showIcon: true, placeholder: "1234 5678 9012 3456" }}
-              onChange={(event) => setCardComplete((prev) => ({ ...prev, number: event.complete }))}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Expiration</label>
-            <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-              <CardExpiryElement
-                options={{ style: elementStyle, placeholder: "MM / AA" }}
-                onChange={(event) => setCardComplete((prev) => ({ ...prev, expiry: event.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Cryptogramme</label>
-            <div className="flex h-11 items-center rounded-lg border bg-background/50 px-3">
-              <CardCvcElement
-                options={{ style: elementStyle, placeholder: "123" }}
-                onChange={(event) => setCardComplete((prev) => ({ ...prev, cvc: event.complete }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <PaymentElement 
+        onReady={() => setReady(true)}
+        options={{ layout: 'tabs' }}
+      />
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -159,21 +105,17 @@ function CardFormInner({ onSuccess, onCancel, clientSecret, onRequireFreshIntent
       )}
 
       <p className="text-xs text-muted-foreground">
-        Aucun montant ne sera débité. Votre carte sera enregistrée pour vos prochaines courses.
+        Aucun montant ne sera débité. Votre moyen de paiement sera enregistré pour vos prochaines courses.
       </p>
 
       <div className="flex gap-2">
-        <Button
-          type="submit"
-          disabled={saving || !stripe || !isFormComplete}
-          className="flex-1"
-        >
+        <Button type="submit" disabled={saving || !stripe || !ready} className="flex-1">
           {saving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <ShieldCheck className="mr-2 h-4 w-4" />
           )}
-          Enregistrer ma carte
+          Enregistrer
         </Button>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuler
@@ -197,8 +139,6 @@ export function ClientCardManager() {
     return loadStripe(stripePublishableKey);
   }, [stripePublishableKey]);
 
-  const stripeReady = Boolean(stripePromise && stripePublishableKey.startsWith("pk_"));
-
   const createFreshSetupIntent = useCallback(async (persistInState = true) => {
     const { data, error } = await supabase.functions.invoke("create-setup-intent");
     if (error) throw error;
@@ -210,7 +150,6 @@ export function ClientCardManager() {
       throw new Error("Clé publique Stripe invalide");
     }
 
-    // No sensitive details logged in production
     if (persistInState) {
       setClientSecret(data.client_secret);
       setSetupIntentId(data.setup_intent_id);
@@ -254,13 +193,9 @@ export function ClientCardManager() {
 
   const handleSetDefault = async (cardId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       await supabase.from("clients").update({ default_payment_method_id: cardId }).eq("user_id", user.id);
-
       setCards((prev) => prev.map((card) => ({ ...card, is_default: card.id === cardId })));
       toast.success("Carte par défaut mise à jour");
     } catch {
@@ -284,9 +219,9 @@ export function ClientCardManager() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <CreditCard className="h-5 w-5 text-primary" />
-            Mes cartes bancaires
+            Mes moyens de paiement
           </CardTitle>
-          <p className="text-sm text-muted-foreground">Enregistrez votre carte pour des paiements automatiques.</p>
+          <p className="text-sm text-muted-foreground">Carte bancaire, Apple Pay, Google Pay — enregistrez votre moyen de paiement préféré.</p>
         </CardHeader>
 
         <CardContent className="space-y-3">
@@ -305,7 +240,6 @@ export function ClientCardManager() {
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     {card.is_default ? (
                       <Badge variant="default" className="gap-1 text-xs">
@@ -327,8 +261,8 @@ export function ClientCardManager() {
             <div className="space-y-3 py-6 text-center">
               <ShieldCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <div>
-                <p className="text-sm font-medium">Aucune carte enregistrée</p>
-                <p className="mt-1 text-xs text-muted-foreground">Ajoutez une carte pour payer automatiquement vos courses.</p>
+                <p className="text-sm font-medium">Aucun moyen de paiement enregistré</p>
+                <p className="mt-1 text-xs text-muted-foreground">Ajoutez un moyen de paiement pour des courses automatiques.</p>
               </div>
             </div>
           )}
@@ -344,7 +278,15 @@ export function ClientCardManager() {
                 key={setupIntentId || clientSecret}
                 stripe={stripePromise}
                 options={{
-                  locale: "fr",
+                  clientSecret,
+                  locale: 'fr',
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: 'hsl(var(--primary))',
+                      borderRadius: '8px',
+                    },
+                  },
                 }}
               >
                 <CardFormInner
@@ -366,16 +308,15 @@ export function ClientCardManager() {
             ) : (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <p>Impossible d’initialiser Stripe avec la clé publique reçue.</p>
+                <p>Impossible d'initialiser Stripe.</p>
               </div>
             )
           ) : (
             <Button onClick={handleShowForm} className="w-full" variant={cards.length === 0 ? "default" : "outline"}>
               <Plus className="mr-2 h-4 w-4" />
-              {cards.length === 0 ? "Ajouter ma carte bancaire" : "Ajouter une autre carte"}
+              {cards.length === 0 ? "Ajouter un moyen de paiement" : "Ajouter un autre moyen de paiement"}
             </Button>
           )}
-
 
           <p className="flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
             <ShieldCheck className="h-3 w-3" />
