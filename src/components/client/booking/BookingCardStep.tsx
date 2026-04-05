@@ -90,6 +90,7 @@ function InlinePaymentForm({
         onReady={() => setReady(true)}
         options={{
           layout: 'tabs',
+          wallets: { applePay: 'auto', googlePay: 'auto' },
         }}
       />
 
