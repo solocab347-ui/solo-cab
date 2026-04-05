@@ -251,10 +251,17 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       () => checkForNewCourses()
     );
 
+    const cleanupRideRequests = subscriptionManager.subscribe(
+      `incoming-ride-requests-${driverId}`,
+      { table: 'ride_requests', event: 'INSERT', filter: `selected_driver_id=eq.${driverId}`, debounceMs: 300 },
+      () => checkForNewCourses()
+    );
+
     return () => {
       cleanupQueue();
       cleanupShared();
       cleanupCourses();
+      cleanupRideRequests();
     };
   }, [driverId, enabled, checkForNewCourses]);
 
