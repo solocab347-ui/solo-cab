@@ -20,6 +20,7 @@ import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { AutoDriverAvailabilitySync } from "@/components/driver/AutoDriverAvailabilitySync";
+import { GlobalRideOverlay } from "@/components/GlobalRideOverlay";
 
 // Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
@@ -95,6 +96,7 @@ const App = () => (
                 <ConnectionIndicator />
                 
                 <AutoDriverAvailabilitySync />
+                <GlobalRideOverlay />
                 <MaintenanceGuard>
                 <ErrorBoundary>
                 <Routes>
