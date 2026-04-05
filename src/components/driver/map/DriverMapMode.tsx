@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LayoutGrid, Navigation, Loader2, Euro, TrendingUp } from 'lucide-react';
+import { LayoutGrid, Navigation, Loader2, Euro, TrendingUp, Wifi, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
@@ -43,13 +43,26 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard }: DriverMapM
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
   const [coursesToday, setCoursesToday] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isAvailable, setIsAvailable] = useState<boolean>(true);
 
   // GPS tracking
-  const { latitude, longitude, isTracking } = useDriverLocationTracker({
+  const { latitude, longitude, isTracking, updateAvailability } = useDriverLocationTracker({
     driverId,
     enabled: true,
     updateIntervalMs: 5000,
   });
+
+  // Fetch initial availability
+  useEffect(() => {
+    supabase.from('drivers').select('is_available_now').eq('id', driverId).maybeSingle()
+      .then(({ data }) => { if (data) setIsAvailable(data.is_available_now ?? false); });
+  }, [driverId]);
+
+  const handleToggleAvailability = useCallback(async () => {
+    const next = !isAvailable;
+    setIsAvailable(next);
+    await updateAvailability(next);
+  }, [isAvailable, updateAvailability]);
 
   // Fetch today's revenue
   useEffect(() => {
