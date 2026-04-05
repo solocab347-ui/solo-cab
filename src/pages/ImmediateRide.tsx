@@ -223,8 +223,12 @@ const ImmediateRide = () => {
             driverName={selectedDriver?.display_name || selectedDriver?.company_name}
             timeoutAt={timeoutAt}
             onCancel={handleReset}
-            onAccepted={(name) => toast.success(`${name} a accepté votre course !`)}
-            onExpired={() => toast.error('Délai expiré, aucun chauffeur disponible')}
+            onAccepted={(name) => {
+              toast.success(`${name} a accepté votre course !`);
+            }}
+            onExpired={() => {
+              toast.error('Aucun chauffeur disponible');
+            }}
           />
         )}
       </main>
