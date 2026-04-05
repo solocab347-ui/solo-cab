@@ -2119,102 +2119,26 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   };
 
-  // Fonction pour filtrer les courses par date
-  const filterCoursesByDate = (coursesList: any[]) => {
-    if (dateFilter === "all") return coursesList;
-
-    const now = new Date();
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-
-    switch (dateFilter) {
-      case "today":
-        startDate = startOfDay(now);
-        endDate = endOfDay(now);
-        break;
-      case "week":
-        startDate = startOfWeek(now, { locale: fr });
-        endDate = endOfWeek(now, { locale: fr });
-        break;
-      case "month":
-        startDate = startOfMonth(now);
-        endDate = endOfMonth(now);
-        break;
-      case "last-month":
-        const lastMonth = subMonths(now, 1);
-        startDate = startOfMonth(lastMonth);
-        endDate = endOfMonth(lastMonth);
-        break;
-      case "custom":
-        if (customStartDate) startDate = startOfDay(new Date(customStartDate));
-        if (customEndDate) endDate = endOfDay(new Date(customEndDate));
-        break;
-    }
-
-    if (!startDate && !endDate) return coursesList;
-
-    return coursesList.filter(course => {
-      const courseDate = new Date(course.scheduled_date);
-      if (startDate && endDate) {
-        return courseDate >= startDate && courseDate <= endDate;
-      } else if (startDate) {
-        return courseDate >= startDate;
-      } else if (endDate) {
-        return courseDate <= endDate;
-      }
-      return true;
-    });
+  // Use extracted filter/sort/helper utilities
+  const getClientDisplayName = (course: any): string => {
+    return getClientName(course, getCompanyCourseInfo(course.id));
   };
 
-  // Fonction pour appliquer tous les filtres (recherche, date, montant, statut paiement)
-  const applyAllFilters = (coursesList: any[]) => {
-    let filtered = [...coursesList];
-
-    // Filtre par date
-    filtered = filterCoursesByDate(filtered);
-
-    // Filtre par recherche (nom du client - enregistré ou invité)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(course => {
-        const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name
-          ? (course.guest_name || "")
-          : course.clients.profiles.full_name;
-        return clientName.toLowerCase().includes(query);
-      });
-    }
-
-    // Filtre par montant (devis ou facture)
-    if (minAmount || maxAmount) {
-      filtered = filtered.filter(course => {
-        const amount = course.factures?.[0]?.amount || course.devis?.[0]?.amount;
-        if (!amount) return false;
-        
-        const min = minAmount ? parseFloat(minAmount) : 0;
-        const max = maxAmount ? parseFloat(maxAmount) : Infinity;
-        
-        return amount >= min && amount <= max;
-      });
-    }
-
-    // Filtre par statut de paiement (pour courses terminées avec factures)
-    if (paymentStatusFilter !== "all") {
-      filtered = filtered.filter(course => {
-        if (!course.factures?.[0]) return false;
-        return course.factures[0].payment_status === paymentStatusFilter;
-      });
-    }
-
-    // Filtre par type de course (personnel, partenaire, entreprise, flotte)
-    if (courseTypeFilter !== "all") {
-      filtered = filtered.filter(course => {
-        const typeInfo = getCourseTypeInfo(course);
-        return typeInfo.type === courseTypeFilter;
-      });
-    }
-
-    return filtered;
+  const getClientPhone = (course: any): string | null => {
+    return getClientPhoneUtil(course, getCompanyCourseInfo(course.id));
   };
+
+  const getLatestDevis = (course: any): any | null => {
+    return getLatestDevisUtil(course);
+  };
+
+  const filterParams = {
+    dateFilter, customStartDate, customEndDate,
+    searchQuery, minAmount, maxAmount,
+    paymentStatusFilter, courseTypeFilter,
+  };
+
+  const applyAllFilters = (coursesList: any[]) => applyFilters(coursesList, filterParams, getCourseTypeInfo);
 
   const resetAllFilters = () => {
     setDateFilter("all");
@@ -2229,73 +2153,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setConfirmedPage(1);
     setCompletedPage(1);
     setCancelledPage(1);
-  };
-
-  // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN - plus proche de maintenant en premier)
-  const sortByDate = (coursesList: any[]) => 
-    [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
-
-  // SYSTÈME DE FIGEMENT: Les courses "en cours" (in_progress) sont TOUJOURS épinglées en premier
-  // Ensuite les courses les plus récentes (proches de maintenant) en premier
-  const sortConfirmedWithInProgressFirst = (coursesList: any[]) => {
-    return [...coursesList].sort((a, b) => {
-      // Les courses in_progress sont TOUJOURS en premier et restent figées
-      if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-      if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-      
-      // Entre courses in_progress, la plus récente d'abord
-      if (a.status === 'in_progress' && b.status === 'in_progress') {
-        return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
-      }
-      
-      // Pour les courses acceptées, trier par date (plus récent d'abord)
-      return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
-    });
-  };
-
-  // Helper pour obtenir le nom du client (enregistré, invité ou employé entreprise)
-  const getClientDisplayName = (course: any): string => {
-    // Vérifier si c'est une course entreprise - utiliser le nom de l'employé
-    const companyCourseInfo = getCompanyCourseInfo(course.id);
-    if (companyCourseInfo?.employeeName) {
-      return companyCourseInfo.employeeName;
-    }
-    
-    // Fallback pour client classique
-    if (course.is_guest_booking || !course.clients?.profiles?.full_name) {
-      return course.guest_name || "Client invité";
-    }
-    return course.clients.profiles.full_name;
-  };
-
-  // Helper pour obtenir le téléphone du client (enregistré, invité ou employé entreprise)
-  const getClientPhone = (course: any): string | null => {
-    // Vérifier si c'est une course entreprise - utiliser le téléphone de l'employé
-    const companyCourseInfo = getCompanyCourseInfo(course.id);
-    if (companyCourseInfo?.employeePhone) {
-      return companyCourseInfo.employeePhone;
-    }
-    
-    // Fallback pour client classique
-    if (course.is_guest_booking || !course.clients?.profiles?.phone) {
-      return course.guest_phone || null;
-    }
-    return course.clients.profiles.phone;
-  };
-
-  // Helper pour obtenir le devis le plus récent (accepté en priorité, sinon le plus récent par date)
-  const getLatestDevis = (course: any): any | null => {
-    if (!course.devis || course.devis.length === 0) return null;
-    
-    // D'abord chercher un devis accepté
-    const acceptedDevis = course.devis.find((d: any) => d.status === 'accepted');
-    if (acceptedDevis) return acceptedDevis;
-    
-    // Sinon, trier par date de création et prendre le plus récent
-    const sortedDevis = [...course.devis].sort((a: any, b: any) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    return sortedDevis[0];
   };
 
   // Une course reste dans "En attente" tant que le chauffeur ne l'a pas explicitement acceptée
@@ -2314,6 +2171,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const paginatedCancelled = cancelledCourses.slice(0, cancelledPage * COURSES_PER_PAGE);
 
   const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all" || courseTypeFilter !== "all";
+
+  const filtersState: CoursesFiltersState = {
+    searchQuery, dateFilter, customStartDate, customEndDate,
+    minAmount, maxAmount, paymentStatusFilter, courseTypeFilter,
+  };
 
   const LoadMoreButton = ({ total, loaded, onLoadMore }: { total: number; loaded: number; onLoadMore: () => void }) => {
     if (loaded >= total) return null;
