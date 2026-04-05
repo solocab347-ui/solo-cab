@@ -2207,6 +2207,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         onReset={resetAllFilters}
         hasActiveFilters={hasActiveFilters}
       />
+
+      <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 mb-6 h-auto bg-transparent p-0">
           <TabsTrigger 
             value="pending" 
