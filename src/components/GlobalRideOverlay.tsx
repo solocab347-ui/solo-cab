@@ -34,7 +34,7 @@ export function GlobalRideOverlay() {
     return () => { cancelled = true; };
   }, [user?.id, userRole]);
 
-  const { overlayEnabled, showOverlayPrompt, grantOverlay, denyOverlay } = useOverlayPermission();
+  const { isEnabled: overlayEnabled, shouldPrompt: showOverlayPrompt, grant: grantOverlay, deny: denyOverlay } = useOverlayPermission(driverId);
 
   const {
     incomingCourse,
