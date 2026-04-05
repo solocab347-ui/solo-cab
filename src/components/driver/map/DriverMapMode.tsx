@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
-import { Navigation, Loader2, Wifi, WifiOff, Store, Receipt, Car, LayoutGrid } from 'lucide-react';
+import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
@@ -310,11 +310,11 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
               <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
             </button>
             <button
-              onClick={() => onNavigateTo?.('vitrine')}
+              onClick={() => onNavigateTo?.('qr-code')}
               className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
             >
-              <Store className="w-5 h-5 text-blue-500" />
-              <span className="text-[10px] font-semibold text-foreground">Vitrine</span>
+              <QrCode className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] font-semibold text-foreground">QR Code</span>
             </button>
             <button
               onClick={() => onNavigateTo?.('courses')}
