@@ -82,6 +82,8 @@ import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificat
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
+import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
+import { Map as MapIcon } from "lucide-react";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
