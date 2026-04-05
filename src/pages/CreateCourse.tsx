@@ -28,6 +28,7 @@ const CreateCourse = () => {
   const { createCourse, loading } = useCourseCreation();
 
   const driverId = searchParams.get("driver_id");
+  const [driverName, setDriverName] = useState<string | null>(null);
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationAddress, setDestinationAddress] = useState("");

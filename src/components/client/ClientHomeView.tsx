@@ -203,12 +203,14 @@ export function ClientHomeView({
             variant="muted"
             onClick={() => onNavigate("courses", "completed")}
           />
-          <QuickActionButton
-            icon={Globe}
-            label="Vitrine"
-            variant="accent"
-            onClick={() => navigate("/chauffeurs")}
-          />
+          {!isExclusive && (
+            <QuickActionButton
+              icon={Globe}
+              label="Vitrine"
+              variant="accent"
+              onClick={() => navigate("/chauffeurs")}
+            />
+          )}
         </div>
       </div>
 
