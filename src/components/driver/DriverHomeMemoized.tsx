@@ -25,6 +25,7 @@ import { Crown, Lock } from "lucide-react";
 interface DriverHomeProps {
   driverProfile: any;
   onTabChange: (tab: string) => void;
+  onSwitchToMap?: () => void;
 }
 
 interface Stats {
@@ -39,7 +40,7 @@ interface Stats {
   availablePartnerCourses: number;
 }
 
-const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) => {
+const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: DriverHomeProps) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({
     todayCourses: 0,
@@ -163,6 +164,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         {driverProfile?.driver?.id && (
           <DriverAvailabilityToggleBig
             driverId={driverProfile.driver.id}
+            onSwitchToMap={onSwitchToMap}
           />
         )}
       </div>
