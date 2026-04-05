@@ -566,7 +566,6 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
             )}
           </TabsContent>
         </Tabs>
-        </Tabs>
         </DialogContent>
       </Dialog>
     </>
