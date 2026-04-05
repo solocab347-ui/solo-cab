@@ -39,12 +39,12 @@ export function useDriverLocationTracker({
     async (latitude: number, longitude: number) => {
       if (!driverId) return;
 
-      // Skip if position hasn't changed significantly (> 10 meters)
+      // Skip if position hasn't changed significantly (> 20 meters)
       if (lastSentRef.current) {
         const latDiff = Math.abs(latitude - lastSentRef.current.lat);
         const lonDiff = Math.abs(longitude - lastSentRef.current.lon);
-        // Approximately 10 meters
-        if (latDiff < 0.0001 && lonDiff < 0.0001) {
+        // Approximately 20 meters (0.0002° ≈ 22m)
+        if (latDiff < 0.0002 && lonDiff < 0.0002) {
           return;
         }
       }
