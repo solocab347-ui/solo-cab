@@ -45,6 +45,8 @@ import { CompanyPaymentStatusSelector } from "@/components/driver/company/Compan
 import { CoursePaymentDialogContent } from "@/components/driver/courses/CoursePaymentDialogContent";
 import { CancellationDialog } from "@/components/driver/courses/CancellationDialog";
 import { buildDriverFilter } from "@/lib/driverQueryUtils";
+import { CoursesFilters, type CoursesFiltersState } from "@/components/driver/courses/CoursesFilters";
+import { applyAllFilters as applyFilters, sortByDate, sortConfirmedWithInProgressFirst, getClientDisplayName as getClientName, getClientPhone as getClientPhoneUtil, getLatestDevis as getLatestDevisUtil } from "@/lib/coursesFilterUtils";
 
 interface CoursesListProps {
   driverId: string;
@@ -2117,102 +2119,26 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   };
 
-  // Fonction pour filtrer les courses par date
-  const filterCoursesByDate = (coursesList: any[]) => {
-    if (dateFilter === "all") return coursesList;
-
-    const now = new Date();
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-
-    switch (dateFilter) {
-      case "today":
-        startDate = startOfDay(now);
-        endDate = endOfDay(now);
-        break;
-      case "week":
-        startDate = startOfWeek(now, { locale: fr });
-        endDate = endOfWeek(now, { locale: fr });
-        break;
-      case "month":
-        startDate = startOfMonth(now);
-        endDate = endOfMonth(now);
-        break;
-      case "last-month":
-        const lastMonth = subMonths(now, 1);
-        startDate = startOfMonth(lastMonth);
-        endDate = endOfMonth(lastMonth);
-        break;
-      case "custom":
-        if (customStartDate) startDate = startOfDay(new Date(customStartDate));
-        if (customEndDate) endDate = endOfDay(new Date(customEndDate));
-        break;
-    }
-
-    if (!startDate && !endDate) return coursesList;
-
-    return coursesList.filter(course => {
-      const courseDate = new Date(course.scheduled_date);
-      if (startDate && endDate) {
-        return courseDate >= startDate && courseDate <= endDate;
-      } else if (startDate) {
-        return courseDate >= startDate;
-      } else if (endDate) {
-        return courseDate <= endDate;
-      }
-      return true;
-    });
+  // Use extracted filter/sort/helper utilities
+  const getClientDisplayName = (course: any): string => {
+    return getClientName(course, getCompanyCourseInfo(course.id));
   };
 
-  // Fonction pour appliquer tous les filtres (recherche, date, montant, statut paiement)
-  const applyAllFilters = (coursesList: any[]) => {
-    let filtered = [...coursesList];
-
-    // Filtre par date
-    filtered = filterCoursesByDate(filtered);
-
-    // Filtre par recherche (nom du client - enregistré ou invité)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(course => {
-        const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name
-          ? (course.guest_name || "")
-          : course.clients.profiles.full_name;
-        return clientName.toLowerCase().includes(query);
-      });
-    }
-
-    // Filtre par montant (devis ou facture)
-    if (minAmount || maxAmount) {
-      filtered = filtered.filter(course => {
-        const amount = course.factures?.[0]?.amount || course.devis?.[0]?.amount;
-        if (!amount) return false;
-        
-        const min = minAmount ? parseFloat(minAmount) : 0;
-        const max = maxAmount ? parseFloat(maxAmount) : Infinity;
-        
-        return amount >= min && amount <= max;
-      });
-    }
-
-    // Filtre par statut de paiement (pour courses terminées avec factures)
-    if (paymentStatusFilter !== "all") {
-      filtered = filtered.filter(course => {
-        if (!course.factures?.[0]) return false;
-        return course.factures[0].payment_status === paymentStatusFilter;
-      });
-    }
-
-    // Filtre par type de course (personnel, partenaire, entreprise, flotte)
-    if (courseTypeFilter !== "all") {
-      filtered = filtered.filter(course => {
-        const typeInfo = getCourseTypeInfo(course);
-        return typeInfo.type === courseTypeFilter;
-      });
-    }
-
-    return filtered;
+  const getClientPhone = (course: any): string | null => {
+    return getClientPhoneUtil(course, getCompanyCourseInfo(course.id));
   };
+
+  const getLatestDevis = (course: any): any | null => {
+    return getLatestDevisUtil(course);
+  };
+
+  const filterParams = {
+    dateFilter, customStartDate, customEndDate,
+    searchQuery, minAmount, maxAmount,
+    paymentStatusFilter, courseTypeFilter,
+  };
+
+  const applyAllFilters = (coursesList: any[]) => applyFilters(coursesList, filterParams, getCourseTypeInfo);
 
   const resetAllFilters = () => {
     setDateFilter("all");
@@ -2227,73 +2153,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setConfirmedPage(1);
     setCompletedPage(1);
     setCancelledPage(1);
-  };
-
-  // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN - plus proche de maintenant en premier)
-  const sortByDate = (coursesList: any[]) => 
-    [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
-
-  // SYSTÈME DE FIGEMENT: Les courses "en cours" (in_progress) sont TOUJOURS épinglées en premier
-  // Ensuite les courses les plus récentes (proches de maintenant) en premier
-  const sortConfirmedWithInProgressFirst = (coursesList: any[]) => {
-    return [...coursesList].sort((a, b) => {
-      // Les courses in_progress sont TOUJOURS en premier et restent figées
-      if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-      if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-      
-      // Entre courses in_progress, la plus récente d'abord
-      if (a.status === 'in_progress' && b.status === 'in_progress') {
-        return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
-      }
-      
-      // Pour les courses acceptées, trier par date (plus récent d'abord)
-      return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
-    });
-  };
-
-  // Helper pour obtenir le nom du client (enregistré, invité ou employé entreprise)
-  const getClientDisplayName = (course: any): string => {
-    // Vérifier si c'est une course entreprise - utiliser le nom de l'employé
-    const companyCourseInfo = getCompanyCourseInfo(course.id);
-    if (companyCourseInfo?.employeeName) {
-      return companyCourseInfo.employeeName;
-    }
-    
-    // Fallback pour client classique
-    if (course.is_guest_booking || !course.clients?.profiles?.full_name) {
-      return course.guest_name || "Client invité";
-    }
-    return course.clients.profiles.full_name;
-  };
-
-  // Helper pour obtenir le téléphone du client (enregistré, invité ou employé entreprise)
-  const getClientPhone = (course: any): string | null => {
-    // Vérifier si c'est une course entreprise - utiliser le téléphone de l'employé
-    const companyCourseInfo = getCompanyCourseInfo(course.id);
-    if (companyCourseInfo?.employeePhone) {
-      return companyCourseInfo.employeePhone;
-    }
-    
-    // Fallback pour client classique
-    if (course.is_guest_booking || !course.clients?.profiles?.phone) {
-      return course.guest_phone || null;
-    }
-    return course.clients.profiles.phone;
-  };
-
-  // Helper pour obtenir le devis le plus récent (accepté en priorité, sinon le plus récent par date)
-  const getLatestDevis = (course: any): any | null => {
-    if (!course.devis || course.devis.length === 0) return null;
-    
-    // D'abord chercher un devis accepté
-    const acceptedDevis = course.devis.find((d: any) => d.status === 'accepted');
-    if (acceptedDevis) return acceptedDevis;
-    
-    // Sinon, trier par date de création et prendre le plus récent
-    const sortedDevis = [...course.devis].sort((a: any, b: any) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    return sortedDevis[0];
   };
 
   // Une course reste dans "En attente" tant que le chauffeur ne l'a pas explicitement acceptée
@@ -2313,6 +2172,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all" || courseTypeFilter !== "all";
 
+  const filtersState: CoursesFiltersState = {
+    searchQuery, dateFilter, customStartDate, customEndDate,
+    minAmount, maxAmount, paymentStatusFilter, courseTypeFilter,
+  };
+
   const LoadMoreButton = ({ total, loaded, onLoadMore }: { total: number; loaded: number; onLoadMore: () => void }) => {
     if (loaded >= total) return null;
     return (
@@ -2328,260 +2192,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      {/* BARRE DE RECHERCHE SIMPLE */}
-      <Card className="p-4 bg-card/50 backdrop-blur border border-primary/20">
-        <div className="space-y-3">
-          <Label htmlFor="search" className="text-sm font-semibold">Recherche rapide</Label>
-          <Input
-            id="search"
-            type="text"
-            placeholder="Rechercher par nom de client..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </div>
-      </Card>
-
-      {/* FILTRES AVANCÉS */}
-      <Card className="p-4 bg-card/50 backdrop-blur border border-primary/20">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filtres avancés
-            </h3>
-            <div className="flex items-center gap-2">
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetAllFilters}
-                  className="text-xs"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Tout réinitialiser
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="text-xs"
-              >
-                {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres
-              </Button>
-            </div>
-          </div>
-
-          {showAdvancedFilters && (
-            <div className="space-y-4 pt-2 border-t border-border">
-              {/* FILTRES PAR DATE */}
-              <div className="space-y-3">
-                <Label className="text-xs font-medium">Filtrer par date</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                  <Button
-                    variant={dateFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter("all")}
-                    className="w-full text-xs"
-                  >
-                    Tout
-                  </Button>
-                  <Button
-                    variant={dateFilter === "today" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter("today")}
-                    className="w-full text-xs"
-                  >
-                    Aujourd'hui
-                  </Button>
-                  <Button
-                    variant={dateFilter === "week" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter("week")}
-                    className="w-full text-xs"
-                  >
-                    Cette semaine
-                  </Button>
-                  <Button
-                    variant={dateFilter === "month" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter("month")}
-                    className="w-full text-xs"
-                  >
-                    Ce mois
-                  </Button>
-                  <Button
-                    variant={dateFilter === "last-month" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter("last-month")}
-                    className="w-full text-xs"
-                  >
-                    Mois dernier
-                  </Button>
-                  <Button
-                    variant={dateFilter === "custom" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setDateFilter("custom");
-                      setShowDateFilters(!showDateFilters);
-                    }}
-                    className="w-full text-xs"
-                  >
-                    Personnalisé
-                  </Button>
-                </div>
-
-                {dateFilter === "custom" && showDateFilters && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="start-date" className="text-xs">Date de début</Label>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
-                        className="w-full text-xs"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date" className="text-xs">Date de fin</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
-                        className="w-full text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* FILTRES PAR MONTANT */}
-              <div className="space-y-3">
-                <Label className="text-xs font-medium">Filtrer par montant (€)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="min-amount" className="text-xs">Montant minimum</Label>
-                    <Input
-                      id="min-amount"
-                      type="number"
-                      placeholder="Ex: 50"
-                      value={minAmount}
-                      onChange={(e) => setMinAmount(e.target.value)}
-                      className="w-full text-xs"
-                      min="0"
-                      step="10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-amount" className="text-xs">Montant maximum</Label>
-                    <Input
-                      id="max-amount"
-                      type="number"
-                      placeholder="Ex: 200"
-                      value={maxAmount}
-                      onChange={(e) => setMaxAmount(e.target.value)}
-                      className="w-full text-xs"
-                      min="0"
-                      step="10"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* FILTRES PAR STATUT DE PAIEMENT */}
-              <div className="space-y-3">
-                <Label className="text-xs font-medium">Filtrer par statut de paiement</Label>
-                <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-                  <SelectTrigger className="w-full text-xs">
-                    <SelectValue placeholder="Tous les statuts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="paid">Payé</SelectItem>
-                    <SelectItem value="pending">En attente</SelectItem>
-                    <SelectItem value="failed">Échoué</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* FILTRES PAR TYPE DE COURSE */}
-              <div className="space-y-3">
-                <Label className="text-xs font-medium">Filtrer par type de course</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {getCourseTypeFilters().map(filter => {
-                    const isActive = courseTypeFilter === filter.value;
-                    const config = filter.value !== 'all' ? COURSE_TYPE_CONFIG[filter.value as CourseType] : null;
-                    
-                    return (
-                      <Button
-                        key={filter.value}
-                        variant={isActive ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCourseTypeFilter(filter.value as CourseType | "all")}
-                        className={cn(
-                          "text-xs flex items-center gap-1",
-                          isActive && config && config.bgColor,
-                          isActive && config && config.color
-                        )}
-                      >
-                        {filter.value === 'all' && <Filter className="w-3 h-3" />}
-                        {filter.value === 'personal' && <User className="w-3 h-3" />}
-                        {filter.value === 'partner' && <Handshake className="w-3 h-3" />}
-                        {filter.value === 'company' && <Building2 className="w-3 h-3" />}
-                        {filter.value === 'fleet' && <Truck className="w-3 h-3" />}
-                        <span className="hidden sm:inline">{filter.label.replace('Courses ', '')}</span>
-                        <span className="sm:hidden">{filter.value === 'all' ? 'Toutes' : filter.label.replace('Courses ', '').substring(0, 6)}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* RÉSUMÉ DES FILTRES ACTIFS */}
-          {hasActiveFilters && (
-            <div className="pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground flex flex-wrap gap-1 items-center">
-                <span className="font-medium">Filtres actifs:</span>
-                {searchQuery && <Badge variant="secondary" className="text-xs">Recherche: {searchQuery}</Badge>}
-                {dateFilter !== "all" && dateFilter !== "custom" && (
-                  <Badge variant="secondary" className="text-xs">
-                    {dateFilter === "today" && "Aujourd'hui"}
-                    {dateFilter === "week" && "Cette semaine"}
-                    {dateFilter === "month" && "Ce mois"}
-                    {dateFilter === "last-month" && "Mois dernier"}
-                  </Badge>
-                )}
-                {dateFilter === "custom" && customStartDate && customEndDate && (
-                  <Badge variant="secondary" className="text-xs">
-                    {format(new Date(customStartDate), "dd/MM/yy", { locale: fr })} - {format(new Date(customEndDate), "dd/MM/yy", { locale: fr })}
-                  </Badge>
-                )}
-                {(minAmount || maxAmount) && (
-                  <Badge variant="secondary" className="text-xs">
-                    Montant: {minAmount || "0"}€ - {maxAmount || "∞"}€
-                  </Badge>
-                )}
-                {paymentStatusFilter !== "all" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Paiement: {paymentStatusFilter === "paid" ? "Payé" : paymentStatusFilter === "pending" ? "En attente" : "Échoué"}
-                  </Badge>
-                )}
-                {courseTypeFilter !== "all" && (
-                  <Badge variant="secondary" className={cn("text-xs", COURSE_TYPE_CONFIG[courseTypeFilter].bgColor, COURSE_TYPE_CONFIG[courseTypeFilter].color)}>
-                    {COURSE_TYPE_CONFIG[courseTypeFilter].label}
-                  </Badge>
-                )}
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
+      <CoursesFilters
+        filters={filtersState}
+        onFiltersChange={(partial) => {
+          if (partial.searchQuery !== undefined) setSearchQuery(partial.searchQuery);
+          if (partial.dateFilter !== undefined) setDateFilter(partial.dateFilter);
+          if (partial.customStartDate !== undefined) setCustomStartDate(partial.customStartDate);
+          if (partial.customEndDate !== undefined) setCustomEndDate(partial.customEndDate);
+          if (partial.minAmount !== undefined) setMinAmount(partial.minAmount);
+          if (partial.maxAmount !== undefined) setMaxAmount(partial.maxAmount);
+          if (partial.paymentStatusFilter !== undefined) setPaymentStatusFilter(partial.paymentStatusFilter);
+          if (partial.courseTypeFilter !== undefined) setCourseTypeFilter(partial.courseTypeFilter);
+        }}
+        onReset={resetAllFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 mb-6 h-auto bg-transparent p-0">
