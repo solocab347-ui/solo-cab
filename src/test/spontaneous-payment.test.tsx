@@ -469,12 +469,23 @@ describe("4. Generate Payment Link", () => {
   });
 
   it("TEST 56: calls edge function on generate", async () => {
-    mockInvoke.mockResolvedValue({ data: { url: "https://checkout.stripe.com/test", session_id: "cs_test" } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/test", session_id: "cs_test" }),
+    });
     renderComponent();
     fireEvent.change(screen.getByLabelText(/Montant TTC/), { target: { value: "15" } });
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Course test" } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("create-spontaneous-payment", expect.any(Object)));
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/functions/v1/create-spontaneous-payment"),
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({ Authorization: "Bearer token-123" }),
+        })
+      );
+    });
   });
 
   it("TEST 57: passes correct body to edge function", async () => {
@@ -626,7 +637,11 @@ describe("4. Generate Payment Link", () => {
 describe("5. Post-Generation Interactions", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockInvoke.mockResolvedValue({ data: { url: "https://checkout.stripe.com/c/pay_test123" } });
+    mockGetSession.mockResolvedValue({ data: { session: { access_token: "token-123" } } });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/c/pay_test123" }),
+    });
   });
 
   async function generateLink() {
@@ -727,7 +742,7 @@ describe("5. Post-Generation Interactions", () => {
     fireEvent.change(screen.getByLabelText(/Motif/), { target: { value: "Second" } });
     fireEvent.click(screen.getByText("Générer le lien de paiement"));
     await waitFor(() => screen.getByText("Lien de paiement prêt"));
-    expect(mockInvoke).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it("TEST 85: fee info shows correct net in success view for 20€", async () => {
