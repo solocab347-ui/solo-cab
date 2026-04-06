@@ -116,7 +116,9 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [viewMode, setViewMode] = useState<"dashboard" | "map">(() => {
-    return searchParams.get("view") === "map" ? "map" : "dashboard";
+    const viewParam = searchParams.get("view");
+    if (viewParam === "dashboard") return "dashboard";
+    return "map";
   });
 
   // React to ?view=map changes (e.g. after accepting a course from overlay)
