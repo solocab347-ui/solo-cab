@@ -50,7 +50,7 @@ serve(async (req) => {
     const { course_id, amount_to_capture } = await req.json();
     if (!course_id) throw new Error("course_id required");
 
-    logStep("Capture request", { course_id, amount_to_capture });
+    logStep("Capture request", { course_id, amount_to_capture, userId: user.id });
 
     // Get course with payment intent
     const { data: course, error: courseError } = await supabaseClient
@@ -71,7 +71,7 @@ serve(async (req) => {
     }
 
     // Verify caller is the driver
-    if (course.driver.user_id !== userData.user.id) {
+    if (course.driver.user_id !== user.id) {
       throw new Error("Unauthorized: only the course driver can capture payment");
     }
 
