@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-solocab.png";
 import { toast } from "sonner";
+import { RideChatPanel } from "@/components/chat/RideChatPanel";
 
 interface SharedDriver {
   id: string;
@@ -49,6 +50,8 @@ const GuestBookingTracking = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [driverUsesStripe, setDriverUsesStripe] = useState(false);
+  const [rideRequestId, setRideRequestId] = useState<string | null>(null);
+  const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
 
   const fetchBooking = async () => {
     if (!token) return;
@@ -84,6 +87,14 @@ const GuestBookingTracking = () => {
           quote_number: rawBooking.quote_number
         };
         setBooking(parsedBooking);
+
+        // Look up ride_request for chat
+        const { data: rideReq } = await supabase
+          .from('ride_requests')
+          .select('id')
+          .eq('final_course_id', parsedBooking.id)
+          .limit(1);
+        if (rideReq?.[0]) setRideRequestId(rideReq[0].id);
 
         // Check if driver uses Stripe and check payment status
         await checkDriverPaymentAndStatus(parsedBooking);
@@ -524,6 +535,19 @@ const GuestBookingTracking = () => {
                 )}
               </div>
             </div>
+
+            {/* Chat button for active rides */}
+            {rideRequestId && ['accepted', 'in_progress', 'driver_arrived'].includes(booking.status) && (
+              <div className="mt-3">
+                <RideChatPanel
+                  rideId={rideRequestId}
+                  senderType="guest"
+                  senderId={guestId}
+                  otherName={driverDisplayName.split(' ')[0]}
+                  triggerLabel="💬 Contacter le chauffeur"
+                />
+              </div>
+            )}
 
             {booking.is_shared_course && booking.shared_drivers && booking.shared_drivers.length > 0 && (
               <div className="mt-4 pt-4 border-t">
