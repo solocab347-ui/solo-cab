@@ -445,16 +445,19 @@ serve(async (req) => {
       logStep("No card and no hold — completing as manual payment", { course_id, totalAmount });
 
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
+      const isCash = paymentMethod === "cash" || paymentMethod === "Espèces";
 
-      const solocabFee = SOLOCAB_FEE_CENTS / 100;
+      // Commission SoloCab: 0.50€ for cash courses (no Stripe fees)
+      const CASH_FEE_CENTS = 50;
+      const solocabFee = CASH_FEE_CENTS / 100;
       const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 
       await supabaseClient
         .from("courses")
         .update({
           status: "completed",
-          payment_status: paymentMethod === "cash" ? "paid" : "pending_manual",
-          final_payment_status: paymentMethod === "cash" ? "succeeded" : "pending_manual",
+          payment_status: isCash ? "paid" : "pending_manual",
+          final_payment_status: isCash ? "succeeded" : "pending_manual",
           final_payment_amount: totalAmount,
           course_finalized_by_driver_at: new Date().toISOString(),
           solocab_fee_amount: solocabFee,
@@ -473,7 +476,7 @@ serve(async (req) => {
         stripe_fee_amount: 0,
         solocab_fee_amount: solocabFee,
         net_amount: netToDriver,
-        status: paymentMethod === "cash" ? "succeeded" : "pending",
+        status: isCash ? "succeeded" : "pending",
         description: `Course (${paymentMethod}) - ${course.pickup_address} → ${course.destination_address}`,
       });
 
@@ -483,12 +486,44 @@ serve(async (req) => {
         driver_id: course.driver_id,
         client_id: course.client_id,
         amount: totalAmount,
-        captured_amount: paymentMethod === "cash" ? totalAmount : 0,
+        captured_amount: isCash ? totalAmount : 0,
         application_fee_amount: solocabFee,
         net_to_driver: netToDriver,
-        status: paymentMethod === "cash" ? "succeeded" : "pending",
+        status: isCash ? "succeeded" : "pending",
         payment_method: paymentMethod,
       });
+
+      // 💰 Record fee in driver_fees_ledger for cash course
+      // Fee is NOT taken via Stripe application_fee, so must be collected separately
+      try {
+        await supabaseClient.from("driver_fees_ledger").insert({
+          driver_id: course.driver_id,
+          course_id,
+          fee_type: "cash_commission",
+          amount_cents: CASH_FEE_CENTS,
+          status: "pending",
+          description: `Commission espèces - ${course.pickup_address} → ${course.destination_address}`,
+        });
+
+        // Increment driver's fee balance (debt)
+        await supabaseClient.rpc("increment_driver_fees_balance", {
+          p_driver_id: course.driver_id,
+          p_amount: CASH_FEE_CENTS,
+        });
+
+        logStep("Cash fee recorded in ledger", { driverId: course.driver_id, feeCents: CASH_FEE_CENTS });
+
+        // Try to collect immediately via Stripe
+        try {
+          await supabaseClient.functions.invoke("collect-driver-fees", {
+            body: { action: "collect_pending", driver_id: course.driver_id },
+          });
+        } catch (e) {
+          logStep("Immediate collection attempt failed (non-blocking)", { error: String(e) });
+        }
+      } catch (feeErr: any) {
+        logStep("Fee ledger recording failed (non-blocking)", { error: feeErr.message });
+      }
 
       // Create facture
       try {
@@ -501,8 +536,8 @@ serve(async (req) => {
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
         title: "✅ Course terminée",
-        message: paymentMethod === "cash"
-          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Net: ${netToDriver.toFixed(2)}€`
+        message: isCash
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Commission: ${solocabFee.toFixed(2)}€`
           : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissement manuel requis.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
@@ -515,7 +550,8 @@ serve(async (req) => {
           flow: "manual",
           amount: totalAmount,
           payment_method: paymentMethod,
-          message: paymentMethod === "cash"
+          fees: { solocab_fee: solocabFee, collection: "deferred" },
+          message: isCash
             ? "Course terminée — paiement espèces"
             : "Course terminée — encaissement manuel requis",
         }),
