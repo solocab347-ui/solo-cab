@@ -68,6 +68,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const newCourse = data as unknown as ActiveCourse | null;
     const prev = course;
     setCourse(newCourse);
+    onCourseActive?.(!!newCourse);
 
     if (newCourse) {
       if (newCourse.status === 'in_progress') {
