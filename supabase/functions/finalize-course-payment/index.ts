@@ -185,7 +185,7 @@ serve(async (req) => {
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
           const solocabFee = SOLOCAB_FEE_CENTS / 100;
           const totalFees = solocabFee + stripeFee;
-          const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+          const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
           // Update course
           await supabaseClient
@@ -347,7 +347,7 @@ serve(async (req) => {
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
           const solocabFee = SOLOCAB_FEE_CENTS / 100;
           const totalFees = solocabFee + stripeFee;
-          const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+          const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
           // Fix the course record
           await supabaseClient.from("courses").update({
@@ -447,7 +447,7 @@ serve(async (req) => {
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
 
       const solocabFee = SOLOCAB_FEE_CENTS / 100;
-      const netToDriver = Math.round((totalAmount - solocabFee) * 100) / 100;
+      const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 
       await supabaseClient
         .from("courses")
@@ -543,7 +543,7 @@ serve(async (req) => {
       transfer_data: {
         destination: course.driver.stripe_connect_account_id,
       },
-      application_fee_amount: SOLOCAB_FEE_CENTS,
+      application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
     };
 
     if (course.stripe_customer_id) {
@@ -573,7 +573,7 @@ serve(async (req) => {
     const STRIPE_FIXED_FEE = 0.25;
     const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
     const totalFees = SOLOCAB_FEE_CENTS / 100 + stripeFee;
-    const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+    const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
     if (paymentIntent.status === "succeeded") {
       await supabaseClient

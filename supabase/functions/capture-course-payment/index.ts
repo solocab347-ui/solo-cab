@@ -185,7 +185,8 @@ serve(async (req) => {
     const stripeFee = Math.round((capturedAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
     const solocabFee = SOLOCAB_FEE_CENTS / 100;
     const totalFees = stripeFee + solocabFee;
-    const netToDriver = Math.round((capturedAmount - totalFees) * 100) / 100;
+    // CRITICAL: Ensure driver never receives negative amount
+    const netToDriver = Math.max(0, Math.round((capturedAmount - totalFees) * 100) / 100);
 
     logStep("Payment captured", { 
       status: paymentIntent.status,

@@ -144,13 +144,15 @@ serve(async (req) => {
     }
 
     const SOLOCAB_FEE_CENTS = 80; // 0.80€ commission SoloCab
+    // CRITICAL: application_fee_amount cannot exceed the payment amount
+    const effectiveFee = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents);
 
     // Build PaymentIntent params with exact course amount
     const piParams: any = {
       amount: holdAmountCents,
       currency: "eur",
       capture_method: "manual",
-      application_fee_amount: SOLOCAB_FEE_CENTS,
+      application_fee_amount: effectiveFee,
       metadata: {
         driver_id,
         course_id: course_id || "",
