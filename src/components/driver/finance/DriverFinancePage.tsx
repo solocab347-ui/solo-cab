@@ -167,11 +167,14 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
-      case "course_payment": return "Course complète";
+      case "full_payment": return "Course complète";
+      case "capture": return "Capture paiement";
       case "final_payment": return "Solde final";
-      case "auto_bank_hold": return "Empreinte auto";
-      case "bank_imprint": return "Empreinte";
-      case "card_hold": return "Empreinte";
+      case "deposit_payment": return "Acompte";
+      case "cancellation_fee": return "Frais d'annulation";
+      case "spontaneous_payment": return "Encaissement libre";
+      case "refund": return "Remboursement";
+      case "partner_transfer": return "Transfert partenaire";
       default: return type;
     }
   };
