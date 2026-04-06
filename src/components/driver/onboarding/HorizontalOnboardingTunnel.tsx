@@ -135,8 +135,7 @@ export function HorizontalOnboardingTunnel({
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
     },
     billing: {
-      // Ne pas pré-sélectionner - laisser null si non défini en base
-      billingType: (driverProfile?.driver?.billing_type as 'own_equipment' | 'buy_equipment' | 'solocab_stripe') || null,
+      billingType: 'solocab_stripe' as const,
     },
     nfc: {
       hasNfcPlate,
@@ -346,22 +345,11 @@ export function HorizontalOnboardingTunnel({
   const saveBilling = async () => {
     setSaving(true);
     try {
-      const { billing } = stepData;
-      // Map UI billing type to DB billing type
-      // 'buy_equipment' is stored as 'own_equipment' with wants_tpe_affiliate = true
-      const dbBillingType = billing.billingType === 'buy_equipment' ? 'own_equipment' : billing.billingType;
-      
-      // Build update object with only columns that exist
       const updateData: Record<string, any> = {
-        billing_type: dbBillingType,
+        billing_type: 'solocab_stripe',
         onboarding_step: 'trial_start',
         onboarding_billing_completed: true,
       };
-      
-      // wants_tpe_affiliate might not exist - handle gracefully
-      if (billing.billingType === 'buy_equipment') {
-        updateData.wants_tpe_affiliate = true;
-      }
       
       const { error } = await supabase
         .from('drivers')
@@ -369,12 +357,11 @@ export function HorizontalOnboardingTunnel({
         .eq('id', driverId);
         
       if (error) {
-        // If error is about unknown column, try without it
-        if (error.message?.includes('wants_tpe_affiliate') || error.message?.includes('onboarding_billing_completed')) {
+        if (error.message?.includes('onboarding_billing_completed')) {
           const { error: retryError } = await supabase
             .from('drivers')
             .update({
-              billing_type: dbBillingType,
+              billing_type: 'solocab_stripe',
               onboarding_step: 'trial_start',
             })
             .eq('id', driverId);
