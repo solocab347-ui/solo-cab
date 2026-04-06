@@ -354,6 +354,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } catch {
       await supabase
@@ -365,11 +366,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       if (course) dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } finally {
       setLoading(false);
     }
-  }, [course, driverId, onCourseChange]);
+  }, [course, driverId, onCourseChange, restoreAvailability]);
 
   const acceptedDevis = course ? getAcceptedDevis(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
