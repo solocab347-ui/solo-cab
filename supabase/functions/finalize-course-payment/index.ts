@@ -543,7 +543,7 @@ serve(async (req) => {
       transfer_data: {
         destination: course.driver.stripe_connect_account_id,
       },
-      application_fee_amount: SOLOCAB_FEE_CENTS,
+      application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
     };
 
     if (course.stripe_customer_id) {
