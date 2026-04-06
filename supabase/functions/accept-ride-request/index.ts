@@ -115,7 +115,7 @@ serve(async (req) => {
     const { data: course, error: courseError } = await supabaseClient
       .from("courses")
       .insert(courseData)
-      .select("id, tracking_token, final_payment_amount, guest_estimated_price")
+      .select("id, final_payment_amount, guest_estimated_price")
       .single();
 
     if (courseError || !course) {
