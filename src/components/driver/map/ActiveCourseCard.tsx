@@ -132,6 +132,26 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const [loading, setLoading] = useState(false);
   const [showStopReasons, setShowStopReasons] = useState(false);
   const [estimatedArrival, setEstimatedArrival] = useState<string | null>(null);
+  const [dismissedCourseIds, setDismissedCourseIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('solocab_dismissed_courses');
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  });
+
+  const dismissCourse = useCallback((courseId: string) => {
+    setDismissedCourseIds(prev => {
+      const next = new Set(prev);
+      next.add(courseId);
+      // Keep only 20 most recent
+      const arr = [...next];
+      const trimmed = arr.slice(-20);
+      const result = new Set(trimmed);
+      try { localStorage.setItem('solocab_dismissed_courses', JSON.stringify(trimmed)); } catch {}
+      return result;
+    });
+  }, []);
 
   const fetchActive = useCallback(async () => {
     if (!driverId) return;
@@ -160,7 +180,9 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
 
     const candidates = (data ?? []) as unknown as ActiveCourse[];
-    const newCourse = pickRelevantCourse(candidates);
+    // Filter out locally dismissed courses
+    const nonDismissed = candidates.filter(c => !dismissedCourseIds.has(c.id));
+    const newCourse = pickRelevantCourse(nonDismissed);
 
     // Double-check driver_id matches to prevent cross-driver leaks
     if (newCourse && newCourse.driver_id !== driverId) {
@@ -267,19 +289,20 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       const { error } = await supabase.functions.invoke('finalize-course-payment', {
         body: { course_id: course.id },
       });
-      if (error) {
-        await supabase
-          .from('courses')
-          .update({ status: 'completed', updated_at: new Date().toISOString() })
-          .eq('id', course.id)
-          .eq('driver_id', driverId);
-      }
       toast.success('Course terminée !');
+      dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
     } catch {
-      toast.error("Erreur lors de la finalisation");
+      // Even on error, dismiss the course from UI to prevent loop
+      toast.info('Course terminée');
+      if (course) {
+        dismissCourse(course.id);
+        clearPersistedPhase(course.id);
+      }
+      setCourse(null);
+      onCourseChange?.();
     } finally {
       setLoading(false);
     }
@@ -300,6 +323,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('id', course.id)
         .eq('driver_id', driverId);
       toast.success(`Course arrêtée: ${reason}`);
+      dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
@@ -310,6 +334,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('id', course.id)
         .eq('driver_id', driverId);
       toast.info('Course arrêtée');
+      if (course) dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
