@@ -81,6 +81,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
+import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -846,11 +847,8 @@ const DriverDashboard = () => {
                     <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                  <MapIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Carte</span>
-                </Button>
               </div>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
           </TabsContent>
@@ -873,10 +871,7 @@ const DriverDashboard = () => {
           <TabsContent value="encaisser">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
-              <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                <MapIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Carte</span>
-              </Button>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
             </div>
             {driverProfile?.driver?.id && (
               <SpontaneousPayment 
@@ -969,11 +964,8 @@ const DriverDashboard = () => {
                     <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                  <MapIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Carte</span>
-                </Button>
               </div>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
 
               {driverProfile?.driver?.id && (
                 <CoursesList driverId={driverProfile.driver.id} />
