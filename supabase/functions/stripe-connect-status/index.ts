@@ -17,9 +17,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return new Response(
+      JSON.stringify({ error: "Backend configuration error" }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
+
   const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    supabaseUrl,
+    serviceRoleKey
   );
 
   try {
@@ -35,25 +48,26 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "").trim();
     if (!token) throw new Error("User not authenticated");
 
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
+    let userId: string | null = null;
 
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      logStep("JWT claims validation failed", {
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (!claimsError && claimsData?.claims?.sub) {
+      userId = claimsData.claims.sub;
+    } else {
+      logStep("JWT claims validation failed, trying auth fallback", {
         error: claimsError?.message ?? null,
       });
-      throw new Error("User not authenticated");
-    }
 
-    const userId = claimsData.claims.sub;
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError || !userData?.user?.id) {
+        logStep("JWT auth fallback failed", {
+          error: userError?.message ?? null,
+        });
+        throw new Error("User not authenticated");
+      }
+
+      userId = userData.user.id;
+    }
 
     // Get driver record
     const { data: driver, error: driverError } = await supabaseClient
