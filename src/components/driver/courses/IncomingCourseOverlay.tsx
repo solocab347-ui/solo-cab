@@ -169,6 +169,11 @@ export function IncomingCourseOverlay({
           } else {
             toast.error(data?.error || "Erreur lors de l'acceptation");
           }
+          // Restore to available since accept failed
+          await supabase.from('drivers').update({ 
+            driver_status: 'online_available',
+            is_available_now: true,
+          }).eq('id', driverId);
           onDismiss();
           return;
         }
@@ -185,6 +190,13 @@ export function IncomingCourseOverlay({
     } catch (err: any) {
       console.error('Error accepting course:', err);
       toast.error(err.message || "Erreur lors de l'acceptation");
+      // Restore to available on error
+      if (driverId) {
+        await supabase.from('drivers').update({ 
+          driver_status: 'online_available',
+          is_available_now: true,
+        }).eq('id', driverId);
+      }
     } finally {
       setAccepting(false);
     }
