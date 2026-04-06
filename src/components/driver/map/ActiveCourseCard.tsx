@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route, MessageCircle } from 'lucide-react';
+import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route, MessageCircle, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavigationSelector } from '@/components/NavigationSelector';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ActiveCourse {
   id: string;
@@ -142,6 +144,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const [loading, setLoading] = useState(false);
   const [showStopReasons, setShowStopReasons] = useState(false);
   const [estimatedArrival, setEstimatedArrival] = useState<string | null>(null);
+  const [upcomingReservations, setUpcomingReservations] = useState<ActiveCourse[]>([]);
+  const wasAvailableBeforeCourseRef = useRef<boolean | null>(null);
   const [dismissedCourseIds, setDismissedCourseIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('solocab_dismissed_courses');
@@ -154,7 +158,6 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setDismissedCourseIds(prev => {
       const next = new Set(prev);
       next.add(courseId);
-      // Keep only 20 most recent
       const arr = [...next];
       const trimmed = arr.slice(-20);
       const result = new Set(trimmed);
@@ -165,6 +168,11 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
   const fetchActive = useCallback(async () => {
     if (!driverId) return;
+
+    // Get today's date boundaries for DB-level filtering
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const { data, error } = await supabase
       .from('courses')
@@ -180,9 +188,10 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       `)
       .eq('driver_id', driverId)
       .in('status', ['pending', 'accepted', 'in_progress'])
+      .or(`scheduled_date.is.null,scheduled_date.gte.${todayStart.toISOString()},status.eq.in_progress`)
       .order('updated_at', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(10);
 
     if (error) {
       console.error('[ActiveCourseCard] fetch error:', error);
@@ -190,16 +199,21 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
 
     const candidates = (data ?? []) as unknown as ActiveCourse[];
-    // Filter out locally dismissed courses
     const nonDismissed = candidates.filter(c => !dismissedCourseIds.has(c.id));
-    const newCourse = pickRelevantCourse(nonDismissed);
+    
+    // Strict today/immediate filter on client side as well
+    const todayOnly = nonDismissed.filter(isCourseTodayOrImmediate);
+    const newCourse = pickRelevantCourse(todayOnly);
 
-    // Double-check driver_id matches to prevent cross-driver leaks
+    // Upcoming reservations for today (not the active one)
+    const upcoming = todayOnly
+      .filter(c => c.id !== newCourse?.id && c.scheduled_date)
+      .sort((a, b) => new Date(a.scheduled_date!).getTime() - new Date(b.scheduled_date!).getTime());
+    setUpcomingReservations(upcoming);
+
+    // Double-check driver_id matches
     if (newCourse && newCourse.driver_id !== driverId) {
-      console.warn('[ActiveCourseCard] driver_id mismatch, ignoring course', {
-        expected: driverId,
-        got: newCourse.driver_id,
-      });
+      console.warn('[ActiveCourseCard] driver_id mismatch, ignoring');
       setCourse(null);
       onCourseActive?.(false);
       return;
@@ -209,33 +223,35 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
 
-    // Auto-set driver unavailable when course is active
+    // Auto-set driver unavailable — save previous state
     if (newCourse && !prev) {
-      // Driver just got an active course → set unavailable for immediate rides
-      supabase.from('drivers').update({ is_available_now: false }).eq('id', driverId).then(() => {
-        console.log('[ActiveCourseCard] Driver set unavailable (course active)');
-      });
+      // Save current availability before overriding
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('is_available_now')
+        .eq('id', driverId)
+        .maybeSingle();
+      wasAvailableBeforeCourseRef.current = driverData?.is_available_now ?? false;
+      
+      await supabase.from('drivers').update({ is_available_now: false }).eq('id', driverId);
+      console.log('[ActiveCourseCard] Driver set unavailable (course active)');
     } else if (!newCourse && prev) {
-      // Course just ended → restore availability
-      supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
-        console.log('[ActiveCourseCard] Driver set available again (course ended)');
-      });
+      // Restore previous availability state
+      const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
+      await supabase.from('drivers').update({ is_available_now: restoreTo }).eq('id', driverId);
+      wasAvailableBeforeCourseRef.current = null;
+      console.log('[ActiveCourseCard] Driver availability restored to:', restoreTo);
       onCourseChange?.();
     }
 
     if (newCourse) {
-      // Determine the DB-driven phase
       let dbPhase: CoursePhase = 'approaching';
       if (newCourse.status === 'in_progress') dbPhase = 'in_progress';
 
-      // Load persisted phase for this specific course
       const persisted = loadPersistedPhase(newCourse.id);
-
-      // Start from persisted or current phase, then only advance forward
       const baseline = persisted && PHASE_ORDER[persisted] > PHASE_ORDER[phase]
         ? persisted
         : phase;
-
       const nextPhase = advancePhase(baseline, dbPhase);
 
       if (nextPhase !== phase) {
@@ -302,10 +318,11 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course, driverId]);
 
-  const restoreAvailability = useCallback(() => {
-    supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
-      console.log('[ActiveCourseCard] Driver availability restored');
-    });
+  const restoreAvailability = useCallback(async () => {
+    const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
+    wasAvailableBeforeCourseRef.current = null;
+    await supabase.from('drivers').update({ is_available_now: restoreTo }).eq('id', driverId);
+    console.log('[ActiveCourseCard] Driver availability restored to:', restoreTo);
   }, [driverId]);
 
   const handleComplete = useCallback(async () => {
@@ -382,7 +399,37 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const paymentLabel = paymentMethod === 'stripe' || paymentMethod === 'card'
     ? '💳 Paiement carte' : '💵 Paiement espèces';
 
-  if (!course) return null;
+  // If no active course, show upcoming reservations banner only
+  if (!course) {
+    if (upcomingReservations.length === 0) return null;
+    return (
+      <div className="fixed bottom-20 inset-x-0 z-[100] px-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-primary">
+            <CalendarClock className="w-4 h-4" />
+            Réservations du jour
+          </div>
+          {upcomingReservations.slice(0, 3).map(res => {
+            const resDevis = getAcceptedDevis(res);
+            const resTime = res.scheduled_date ? format(new Date(res.scheduled_date), 'HH:mm', { locale: fr }) : '—';
+            const resClient = res.clients?.profiles?.full_name || res.guest_name || 'Client';
+            return (
+              <div key={res.id} className="flex items-center gap-3 bg-muted/50 rounded-xl px-3 py-2">
+                <div className="text-lg font-black text-primary min-w-[50px]">{resTime}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{res.destination_address}</p>
+                  <p className="text-xs text-muted-foreground">{resClient} • {resDevis?.amount ? `${resDevis.amount}€` : '—'}</p>
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground text-center">
+            Pensez à ne pas prendre de course immédiate avant vos réservations
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const phaseLabel = phase === 'approaching' ? 'En approche' : phase === 'arrived' ? 'Client à récupérer' : phase === 'in_progress' ? 'Course en cours' : 'Finalisation';
   const phaseColor = phase === 'in_progress' ? 'bg-emerald-500' : phase === 'arrived' ? 'bg-blue-500' : 'bg-amber-500';
