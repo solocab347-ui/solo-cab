@@ -83,23 +83,24 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     await playAvailabilitySound(next);
   }, [isAvailable, updateAvailability]);
 
+  const fetchRevenue = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_driver_dashboard_stats', {
+        p_driver_id: driverId,
+        p_period: 'day',
+      });
+      if (data && Array.isArray(data) && data.length > 0) {
+        const d = data[0] as any;
+        setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
+      }
+    } catch { /* silent */ }
+  }, [driverId]);
+
   useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        const { data } = await supabase.rpc('get_driver_dashboard_stats', {
-          p_driver_id: driverId,
-          p_period: 'day',
-        });
-        if (data && Array.isArray(data) && data.length > 0) {
-          const d = data[0] as any;
-          setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
-        }
-      } catch { /* silent */ }
-    };
     fetchRevenue();
     const interval = setInterval(fetchRevenue, 60000);
     return () => clearInterval(interval);
-  }, [driverId]);
+  }, [fetchRevenue]);
 
   // Inject radar CSS
   useEffect(() => {
