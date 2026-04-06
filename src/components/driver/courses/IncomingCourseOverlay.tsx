@@ -235,9 +235,14 @@ export function IncomingCourseOverlay({
               transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 20 }}
             >
               <div className="text-4xl mb-2">🚨</div>
-              <h1 className="text-2xl font-black tracking-tight">
+             <h1 className="text-2xl font-black tracking-tight">
                 Nouvelle course
               </h1>
+              {course.rideId && (
+                <p className="text-[10px] text-white/30 font-mono mt-1">
+                  ID: {course.rideId.slice(0, 8)}
+                </p>
+              )}
 
               {isExclusive ? (
                 <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/40 rounded-full">
