@@ -6,6 +6,7 @@ import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } 
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
+import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
 
 interface DriverMapModeProps {
