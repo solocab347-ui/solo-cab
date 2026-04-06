@@ -95,8 +95,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
           .order("created_at", { ascending: false }),
         supabase
-          .from("payments")
-          .select("id, course_id, amount, net_to_driver, stripe_fee_amount, application_fee_amount, status, payment_type, created_at")
+          .from("stripe_transactions")
+          .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, created_at, description")
           .eq("driver_id", driverId)
           .eq("status", "succeeded")
           .order("created_at", { ascending: false })
@@ -117,29 +117,29 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       setSettlements(mapped);
       setPendingPayments(pendingResult.data || []);
 
-      // Calculate wallet stats from payments
-      const payments = paymentsResult.data || [];
-      const totalEarned = payments.reduce((s, p) => s + (p.amount || 0), 0);
-      const totalStripeFees = payments.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
-      const totalSolocabFees = payments.reduce((s, p) => s + (p.application_fee_amount || 0), 0);
+      // Calculate wallet stats from stripe_transactions
+      const txns = paymentsResult.data || [];
+      const totalEarned = txns.reduce((s, p) => s + (p.gross_amount || 0), 0);
+      const totalStripeFees = txns.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
+      const totalSolocabFees = txns.reduce((s, p) => s + (p.solocab_fee_amount || 0), 0);
       const totalFees = totalStripeFees + totalSolocabFees;
-      const totalNet = payments.reduce((s, p) => s + (p.net_to_driver || p.amount - totalFees / payments.length), 0);
+      const totalNet = txns.reduce((s, p) => s + (p.net_amount || 0), 0);
 
       setWalletStats({
         totalEarned,
         totalFees,
         totalNet,
-        totalCourses: payments.length,
-        avgPerCourse: payments.length > 0 ? totalEarned / payments.length : 0,
-        recentTransactions: payments.slice(0, 20).map(p => ({
+        totalCourses: txns.length,
+        avgPerCourse: txns.length > 0 ? totalEarned / txns.length : 0,
+        recentTransactions: txns.slice(0, 20).map(p => ({
           id: p.id,
-          course_id: p.course_id,
-          amount: p.amount,
-          net_to_driver: p.net_to_driver || 0,
+          course_id: p.course_id || '',
+          amount: p.gross_amount || 0,
+          net_to_driver: p.net_amount || 0,
           stripe_fee_amount: p.stripe_fee_amount || 0,
-          solocab_fee_amount: p.application_fee_amount || 0,
+          solocab_fee_amount: p.solocab_fee_amount || 0,
           status: p.status,
-          payment_type: p.payment_type || "course_payment",
+          payment_type: p.transaction_type || "full_payment",
           created_at: p.created_at,
         })),
       });
@@ -167,11 +167,14 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
-      case "course_payment": return "Course complète";
+      case "full_payment": return "Course complète";
+      case "capture": return "Capture paiement";
       case "final_payment": return "Solde final";
-      case "auto_bank_hold": return "Empreinte auto";
-      case "bank_imprint": return "Empreinte";
-      case "card_hold": return "Empreinte";
+      case "deposit_payment": return "Acompte";
+      case "cancellation_fee": return "Frais d'annulation";
+      case "spontaneous_payment": return "Encaissement libre";
+      case "refund": return "Remboursement";
+      case "partner_transfer": return "Transfert partenaire";
       default: return type;
     }
   };
