@@ -496,12 +496,12 @@ export function IncomingCourseOverlay({
                 </div>
               )}
 
-              {/* Client */}
+              {/* Client — prénom uniquement pour la confidentialité */}
               {course.clientName && (
                 <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-center">
                   <User className="h-4 w-4 text-white/60 mx-auto mb-1" />
                   <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Client</p>
-                  <p className="text-sm font-bold truncate">{course.clientName}</p>
+                  <p className="text-sm font-bold truncate">{course.clientName.split(' ')[0]}</p>
                 </div>
               )}
             </motion.div>
