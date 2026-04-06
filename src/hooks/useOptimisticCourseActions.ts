@@ -118,7 +118,7 @@ export const useOptimisticCourseActions = (
     try {
       const { error } = await supabase
         .from('courses')
-        .update({ status: 'in_progress' })
+        .update({ status: 'in_progress', course_started_at: new Date().toISOString() })
         .eq('id', courseId);
 
       if (error) throw error;
