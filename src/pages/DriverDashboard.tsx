@@ -848,7 +848,6 @@ const DriverDashboard = () => {
                 </div>
               </div>
               <FloatingMapButton onClick={() => setViewMode("map")} />
-              </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
           </TabsContent>
@@ -966,7 +965,6 @@ const DriverDashboard = () => {
                 </div>
               </div>
               <FloatingMapButton onClick={() => setViewMode("map")} />
-              </div>
 
               {driverProfile?.driver?.id && (
                 <CoursesList driverId={driverProfile.driver.id} />
