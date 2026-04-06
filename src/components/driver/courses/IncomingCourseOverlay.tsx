@@ -176,11 +176,24 @@ export function IncomingCourseOverlay({
     }
   }, [course, driverId, accepting, onAccepted, onDismiss]);
 
-  const handleDismiss = useCallback(() => {
+  const handleDismiss = useCallback(async () => {
     if (audioRef.current) clearInterval(audioRef.current);
     if (navigator.vibrate) navigator.vibrate(0);
+
+    // Marquer la ride_request comme refusée pour tracking
+    if (course?.source === 'ride_request' && course.sourceId) {
+      try {
+        await supabase
+          .from('ride_requests')
+          .update({ status: 'rejected' })
+          .eq('id', course.sourceId);
+      } catch (err) {
+        console.error('Error rejecting ride request:', err);
+      }
+    }
+
     onDismiss();
-  }, [onDismiss]);
+  }, [course, onDismiss]);
 
   const progressPercent = (timeLeft / TIMEOUT_SECONDS) * 100;
   const isExclusive = course?.requestType === 'exclusive';
