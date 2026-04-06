@@ -223,24 +223,30 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
 
-    // Auto-set driver unavailable — save previous state
+    // Auto-set driver status based on course state
     if (newCourse && !prev) {
-      // Save current availability before overriding
+      // Save current status before overriding
       const { data: driverData } = await supabase
         .from('drivers')
-        .select('is_available_now')
+        .select('is_available_now, driver_status')
         .eq('id', driverId)
         .maybeSingle();
       wasAvailableBeforeCourseRef.current = driverData?.is_available_now ?? false;
       
-      await supabase.from('drivers').update({ is_available_now: false }).eq('id', driverId);
-      console.log('[ActiveCourseCard] Driver set unavailable (course active)');
+      await supabase.from('drivers').update({ 
+        is_available_now: false, 
+        driver_status: 'on_trip' 
+      }).eq('id', driverId);
+      console.log('[ActiveCourseCard] Driver set to on_trip');
     } else if (!newCourse && prev) {
       // Restore previous availability state
       const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
-      await supabase.from('drivers').update({ is_available_now: restoreTo }).eq('id', driverId);
+      await supabase.from('drivers').update({ 
+        is_available_now: restoreTo,
+        driver_status: restoreTo ? 'online_available' : 'offline',
+      }).eq('id', driverId);
       wasAvailableBeforeCourseRef.current = null;
-      console.log('[ActiveCourseCard] Driver availability restored to:', restoreTo);
+      console.log('[ActiveCourseCard] Driver status restored');
       onCourseChange?.();
     }
 
@@ -321,8 +327,11 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const restoreAvailability = useCallback(async () => {
     const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
     wasAvailableBeforeCourseRef.current = null;
-    await supabase.from('drivers').update({ is_available_now: restoreTo }).eq('id', driverId);
-    console.log('[ActiveCourseCard] Driver availability restored to:', restoreTo);
+    await supabase.from('drivers').update({ 
+      is_available_now: restoreTo,
+      driver_status: restoreTo ? 'online_available' : 'offline',
+    }).eq('id', driverId);
+    console.log('[ActiveCourseCard] Driver status restored');
   }, [driverId]);
 
   const handleComplete = useCallback(async () => {
