@@ -150,7 +150,7 @@ serve(async (req) => {
     // Check BOTH stripe_hold_payment_intent_id AND stripe_payment_intent_id
     // ═══════════════════════════════════════════════════════════════
     
-    const holdPiId = holdPiId || 
+    const holdPiId = course.stripe_hold_payment_intent_id || 
       (course.card_hold_status === "confirmed" ? course.stripe_payment_intent_id : null);
 
     if (holdPiId && course.card_hold_status === "confirmed") {
