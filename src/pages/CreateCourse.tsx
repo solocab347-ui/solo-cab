@@ -283,17 +283,18 @@ const CreateCourse = () => {
         paymentMethodPreference: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : undefined,
       });
 
-      if (course) {
+      if (course && 'id' in course) {
         // Pour les clients exclusifs: auto-accepter le devis et confirmer directement
         if (clientData.is_exclusive) {
-          // Auto-accepter le devis en arrière-plan
-          (async () => {
+          // Auto-accepter le devis en arrière-plan (avec délai pour laisser le devis se créer)
+          setTimeout(async () => {
             try {
+              // Attendre un peu que le devis soit généré
+              await new Promise(r => setTimeout(r, 2000));
               const { data: devisData } = await supabase
                 .from("devis")
                 .select("id")
-                .eq("course_id", course.id)
-                .eq("status", "sent")
+                .eq("course_id", (course as any).id)
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -307,7 +308,7 @@ const CreateCourse = () => {
             } catch (err) {
               console.error("Auto-accept devis failed:", err);
             }
-          })();
+          }, 500);
 
           toast.success("Demande envoyée à votre chauffeur !", {
             description: "Vous serez notifié dès qu'il accepte votre course.",
