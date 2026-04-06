@@ -40,7 +40,7 @@ export function ActiveCourseCard({ driverId }: ActiveCourseCardProps) {
           clients(profiles:user_id(full_name, phone))
         `)
         .eq('driver_id', driverId)
-        .in('status', ['accepted', 'confirmed', 'in_progress'])
+        .in('status', ['accepted', 'in_progress'])
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
