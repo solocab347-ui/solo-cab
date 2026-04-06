@@ -1,14 +1,16 @@
 /**
  * SoloCab Ride Request Notification Sound
  * Uses the custom MP3 ringtone for all ride request alerts.
- * Falls back to Web Audio API synthesized sound if MP3 fails.
+ * Prevents double-play by tracking active playback.
  */
 import { getSharedAudioContext, ensureAudioUnlocked } from './audioEngine';
 
 const RIDE_SOUND_URL = '/sounds/ride-request.mp3';
 
 let cachedAudioBuffer: AudioBuffer | null = null;
-let audioElement: HTMLAudioElement | null = null;
+let activeSource: AudioBufferSourceNode | null = null;
+let activeGain: GainNode | null = null;
+let activeAudioElement: HTMLAudioElement | null = null;
 
 /**
  * Pre-load the MP3 into an AudioBuffer for low-latency playback via Web Audio API
@@ -29,11 +31,37 @@ async function loadSoundBuffer(): Promise<AudioBuffer | null> {
 }
 
 /**
+ * Stop any currently playing sound to prevent overlap
+ */
+function stopCurrentPlayback() {
+  try {
+    if (activeSource) {
+      activeSource.stop();
+      activeSource.disconnect();
+      activeSource = null;
+    }
+    if (activeGain) {
+      activeGain.disconnect();
+      activeGain = null;
+    }
+    if (activeAudioElement) {
+      activeAudioElement.pause();
+      activeAudioElement.currentTime = 0;
+    }
+  } catch {
+    // Ignore errors from already-stopped sources
+  }
+}
+
+/**
  * Play the SoloCab notification sound (ride request ringtone)
- * Strategy: Web Audio API first (lower latency), HTMLAudioElement fallback
+ * Stops any previous playback first to prevent double/overlapping sound.
  */
 export async function playSoloCabSound(volume: number = 1.0): Promise<void> {
   try {
+    // Stop any currently playing instance FIRST
+    stopCurrentPlayback();
+
     await ensureAudioUnlocked();
 
     // Try Web Audio API first (best for in-app, low latency)
@@ -48,22 +76,30 @@ export async function playSoloCabSound(volume: number = 1.0): Promise<void> {
 
       source.connect(gainNode);
       gainNode.connect(ctx.destination);
+      
+      activeSource = source;
+      activeGain = gainNode;
+      
       source.start(0);
 
       source.onended = () => {
         source.disconnect();
         gainNode.disconnect();
+        if (activeSource === source) {
+          activeSource = null;
+          activeGain = null;
+        }
       };
       return;
     }
 
     // Fallback: HTMLAudioElement (works when Web Audio fails)
-    if (!audioElement) {
-      audioElement = new Audio(RIDE_SOUND_URL);
+    if (!activeAudioElement) {
+      activeAudioElement = new Audio(RIDE_SOUND_URL);
     }
-    audioElement.volume = Math.max(0, Math.min(1, volume));
-    audioElement.currentTime = 0;
-    await audioElement.play();
+    activeAudioElement.volume = Math.max(0, Math.min(1, volume));
+    activeAudioElement.currentTime = 0;
+    await activeAudioElement.play();
   } catch (error) {
     console.warn('[SoloCab Sound] Playback failed:', error);
   }
