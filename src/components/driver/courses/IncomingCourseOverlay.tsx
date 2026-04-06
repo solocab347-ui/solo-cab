@@ -385,24 +385,32 @@ export function IncomingCourseOverlay({
               </div>
             </motion.div>
 
-            {/* APPROACH INFO — driver to pickup */}
-            {approachInfo && (
+            {/* APPROACH + DURÉE COURSE côte à côte */}
+            {(approachInfo || tripMinutes != null) && (
               <motion.div
                 className="w-full flex gap-2 mb-3"
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.18 }}
               >
-                <div className="flex-1 bg-cyan-500/15 border border-cyan-500/30 rounded-xl p-2.5 text-center">
-                  <Car className="h-4 w-4 text-cyan-400 mx-auto mb-1" />
-                  <p className="text-[9px] text-cyan-300/70 uppercase tracking-wider font-medium">Approche</p>
-                  <p className="text-lg font-black text-cyan-400">{approachInfo.distanceKm} km</p>
-                </div>
-                <div className="flex-1 bg-cyan-500/15 border border-cyan-500/30 rounded-xl p-2.5 text-center">
-                  <Timer className="h-4 w-4 text-cyan-400 mx-auto mb-1" />
-                  <p className="text-[9px] text-cyan-300/70 uppercase tracking-wider font-medium">Temps approche</p>
-                  <p className="text-lg font-black text-cyan-400">~{approachInfo.minutes} min</p>
-                </div>
+                {approachInfo && (
+                  <div className="flex-1 bg-cyan-500/15 border border-cyan-500/30 rounded-xl p-2.5 text-center">
+                    <Car className="h-4 w-4 text-cyan-400 mx-auto mb-1" />
+                    <p className="text-[9px] text-cyan-300/70 uppercase tracking-wider font-medium">Approche</p>
+                    <p className="text-base font-black text-cyan-400">{approachInfo.distanceKm} km</p>
+                    <p className="text-xs font-bold text-cyan-300/60">~{approachInfo.minutes} min</p>
+                  </div>
+                )}
+                {tripMinutes != null && (
+                  <div className="flex-1 bg-amber-500/15 border border-amber-500/30 rounded-xl p-2.5 text-center">
+                    <Clock className="h-4 w-4 text-amber-400 mx-auto mb-1" />
+                    <p className="text-[9px] text-amber-300/70 uppercase tracking-wider font-medium">Durée course</p>
+                    <p className="text-base font-black text-amber-400">~{tripMinutes} min</p>
+                    {course.distanceKm != null && (
+                      <p className="text-xs font-bold text-amber-300/60">{course.distanceKm.toFixed(1)} km</p>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
