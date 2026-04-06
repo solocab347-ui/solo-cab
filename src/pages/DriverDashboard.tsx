@@ -846,10 +846,8 @@ const DriverDashboard = () => {
                     <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                  <MapIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Carte</span>
-                </Button>
+              </div>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
               </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
@@ -873,10 +871,7 @@ const DriverDashboard = () => {
           <TabsContent value="encaisser">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
-              <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                <MapIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Carte</span>
-              </Button>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
             </div>
             {driverProfile?.driver?.id && (
               <SpontaneousPayment 
@@ -969,10 +964,8 @@ const DriverDashboard = () => {
                     <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => setViewMode("map")}>
-                  <MapIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Carte</span>
-                </Button>
+              </div>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
               </div>
 
               {driverProfile?.driver?.id && (
