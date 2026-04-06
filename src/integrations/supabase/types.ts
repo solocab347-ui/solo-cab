@@ -3939,7 +3939,9 @@ export type Database = {
           client_payment_confirmation_token: string | null
           client_rating: number | null
           company_payment_status: string | null
+          course_finalized_by_driver_at: string | null
           course_number: string | null
+          course_started_at: string | null
           created_at: string
           created_by_user_id: string | null
           deposit_amount: number | null
@@ -3962,6 +3964,8 @@ export type Database = {
           duration_minutes: number | null
           employee_declared_paid_at: string | null
           final_payment_amount: number | null
+          final_payment_at: string | null
+          final_payment_intent_id: string | null
           final_payment_status: string | null
           final_payment_stripe_id: string | null
           fleet_manager_id: string | null
@@ -3977,6 +3981,7 @@ export type Database = {
           is_guest_booking: boolean | null
           is_out_of_schedule: boolean | null
           last_dispatched_at: string | null
+          last_payment_error: string | null
           net_amount_to_driver: number | null
           notes: string | null
           origin_type: string
@@ -3988,6 +3993,7 @@ export type Database = {
           payment_method: string | null
           payment_method_requested: string | null
           payment_method_used: string | null
+          payment_retry_count: number | null
           payment_status: string | null
           pickup_address: string
           pickup_latitude: number | null
@@ -3997,6 +4003,7 @@ export type Database = {
           solocab_fee_amount: number | null
           status: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
           stripe_fee_amount: number | null
           stripe_hold_payment_intent_id: string | null
           stripe_payment_intent_id: string | null
@@ -4025,7 +4032,9 @@ export type Database = {
           client_payment_confirmation_token?: string | null
           client_rating?: number | null
           company_payment_status?: string | null
+          course_finalized_by_driver_at?: string | null
           course_number?: string | null
+          course_started_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           deposit_amount?: number | null
@@ -4048,6 +4057,8 @@ export type Database = {
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
           final_payment_amount?: number | null
+          final_payment_at?: string | null
+          final_payment_intent_id?: string | null
           final_payment_status?: string | null
           final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
@@ -4063,6 +4074,7 @@ export type Database = {
           is_guest_booking?: boolean | null
           is_out_of_schedule?: boolean | null
           last_dispatched_at?: string | null
+          last_payment_error?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
           origin_type?: string
@@ -4074,6 +4086,7 @@ export type Database = {
           payment_method?: string | null
           payment_method_requested?: string | null
           payment_method_used?: string | null
+          payment_retry_count?: number | null
           payment_status?: string | null
           pickup_address: string
           pickup_latitude?: number | null
@@ -4083,6 +4096,7 @@ export type Database = {
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
           stripe_fee_amount?: number | null
           stripe_hold_payment_intent_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -4111,7 +4125,9 @@ export type Database = {
           client_payment_confirmation_token?: string | null
           client_rating?: number | null
           company_payment_status?: string | null
+          course_finalized_by_driver_at?: string | null
           course_number?: string | null
+          course_started_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           deposit_amount?: number | null
@@ -4134,6 +4150,8 @@ export type Database = {
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
           final_payment_amount?: number | null
+          final_payment_at?: string | null
+          final_payment_intent_id?: string | null
           final_payment_status?: string | null
           final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
@@ -4149,6 +4167,7 @@ export type Database = {
           is_guest_booking?: boolean | null
           is_out_of_schedule?: boolean | null
           last_dispatched_at?: string | null
+          last_payment_error?: string | null
           net_amount_to_driver?: number | null
           notes?: string | null
           origin_type?: string
@@ -4160,6 +4179,7 @@ export type Database = {
           payment_method?: string | null
           payment_method_requested?: string | null
           payment_method_used?: string | null
+          payment_retry_count?: number | null
           payment_status?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
@@ -4169,6 +4189,7 @@ export type Database = {
           solocab_fee_amount?: number | null
           status?: Database["public"]["Enums"]["course_status"]
           stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
           stripe_fee_amount?: number | null
           stripe_hold_payment_intent_id?: string | null
           stripe_payment_intent_id?: string | null
