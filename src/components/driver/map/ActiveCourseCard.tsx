@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, User, Navigation, MapPin, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag } from 'lucide-react';
+import { Phone, User, Navigation, MapPin, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavigationSelector } from '@/components/NavigationSelector';
@@ -102,7 +102,6 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     };
   }, [driverId]);
 
-  // Estimate arrival time based on distance
   useEffect(() => {
     if (!course) return;
     const dist = course.distance_km;
@@ -130,7 +129,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('id', course.id);
       setPhase('in_progress');
       toast.success('Course démarrée !');
-    } catch (err) {
+    } catch {
       toast.error("Erreur au démarrage");
     } finally {
       setLoading(false);
@@ -141,24 +140,19 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     if (!course) return;
     setLoading(true);
     try {
-      // Finalize payment via edge function
-      const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
+      const { error } = await supabase.functions.invoke('finalize-course-payment', {
         body: { course_id: course.id },
       });
-
       if (error) {
-        console.error('Finalize error:', error);
-        // Fallback: just complete the course status
         await supabase
           .from('courses')
           .update({ status: 'completed', updated_at: new Date().toISOString() })
           .eq('id', course.id);
       }
-
       toast.success('Course terminée !');
       setCourse(null);
       onCourseChange?.();
-    } catch (err) {
+    } catch {
       toast.error("Erreur lors de la finalisation");
     } finally {
       setLoading(false);
@@ -170,43 +164,21 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setLoading(true);
     setShowStopReasons(false);
     try {
-      // Recalculate price based on partial distance
-      // We estimate 50% of original distance as the actual traveled portion
-      // In production this would use real GPS tracking
       const originalPrice = course.final_payment_amount || course.guest_estimated_price || 0;
-      const originalDistance = course.distance_km || 1;
-
-      // For now, use a proportional reduction - the edge function will handle actual capture
-      const { data, error } = await supabase.functions.invoke('capture-course-payment', {
-        body: {
-          course_id: course.id,
-          amount_to_capture: originalPrice, // Capture what's fair - can be adjusted
-        },
+      await supabase.functions.invoke('capture-course-payment', {
+        body: { course_id: course.id, amount_to_capture: originalPrice },
       });
-
-      // Update course with stop info
       await supabase
         .from('courses')
-        .update({
-          status: 'completed',
-          notes: `Course arrêtée: ${reason}`,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: 'completed', notes: `Course arrêtée: ${reason}`, updated_at: new Date().toISOString() })
         .eq('id', course.id);
-
       toast.success(`Course arrêtée: ${reason}`);
       setCourse(null);
       onCourseChange?.();
-    } catch (err: any) {
-      console.error('Stop course error:', err);
-      // Fallback
+    } catch {
       await supabase
         .from('courses')
-        .update({
-          status: 'completed',
-          notes: `Course arrêtée: ${reason}`,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: 'completed', notes: `Course arrêtée: ${reason}`, updated_at: new Date().toISOString() })
         .eq('id', course.id);
       toast.info('Course arrêtée');
       setCourse(null);
@@ -222,186 +194,207 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
   if (!course) return null;
 
+  const phaseLabel = phase === 'approaching' ? 'En approche' : phase === 'arrived' ? 'Client à récupérer' : phase === 'in_progress' ? 'Course en cours' : 'Finalisation';
+  const phaseColor = phase === 'in_progress' ? 'bg-emerald-500' : phase === 'arrived' ? 'bg-blue-500' : 'bg-amber-500';
+
   return (
     <AnimatePresence>
       <motion.div
         key={course.id}
-        initial={{ y: 300, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 300, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="absolute bottom-0 left-0 right-0 z-[9998]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        className="fixed inset-x-0 bottom-0 z-[9998] flex flex-col overflow-y-auto"
+        style={{
+          top: '80px',
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          background: 'linear-gradient(to bottom, hsl(240 20% 8%), hsl(240 15% 12%))',
+        }}
       >
-        <div className="bg-card/98 backdrop-blur-2xl border-t border-border/60 rounded-t-3xl shadow-2xl">
-          {/* Phase indicator bar */}
-          <div className="flex justify-center pt-2 pb-1">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-          </div>
-
-          <div className="px-5 pb-5 space-y-4">
-            {/* Status + Price header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full animate-pulse ${
-                  phase === 'in_progress' ? 'bg-green-500' :
-                  phase === 'arrived' ? 'bg-blue-500' : 'bg-amber-500'
-                }`} />
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {phase === 'approaching' && 'En approche'}
-                  {phase === 'arrived' && 'Arrivé — Client à récupérer'}
-                  {phase === 'in_progress' && 'Course en cours'}
-                  {phase === 'completing' && 'Finalisation'}
-                </span>
-              </div>
-              {price != null && (
-                <div className="bg-primary/10 rounded-full px-3 py-1">
-                  <span className="text-sm font-black text-primary">{price.toFixed(2)}€</span>
-                </div>
-              )}
+        {/* Phase status header */}
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-3 h-3 rounded-full animate-pulse ${phaseColor} shadow-lg`} style={{ boxShadow: `0 0 12px currentColor` }} />
+              <span className="text-sm font-bold uppercase tracking-wider text-white/70">{phaseLabel}</span>
             </div>
-
-            {/* Client info */}
-            <div className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{clientName}</p>
-                {course.payment_method_requested && (
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    Paiement: {course.payment_method_requested === 'card' ? '💳 Carte' : '💵 Espèces'}
-                  </p>
-                )}
-              </div>
-              {clientPhone && (
-                <a href={`tel:${clientPhone}`}>
-                  <Button size="sm" variant="outline" className="h-9 w-9 rounded-full p-0">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                </a>
-              )}
-            </div>
-
-            {/* Route */}
-            <div className="space-y-2">
-              {(phase === 'approaching' || phase === 'arrived') && (
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/40 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Prise en charge</p>
-                    <p className="text-sm font-medium leading-tight">{course.pickup_address}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-start gap-3">
-                <div className="mt-1 w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/40 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Destination</p>
-                  <p className="text-sm font-medium leading-tight">{course.destination_address}</p>
-                </div>
-              </div>
-              {/* Distance & ETA */}
-              <div className="flex items-center gap-4 pl-6">
-                {course.distance_km != null && (
-                  <span className="text-xs text-muted-foreground">📏 {course.distance_km.toFixed(1)} km</span>
-                )}
-                {estimatedArrival && (
-                  <span className="text-xs text-muted-foreground">🕒 {estimatedArrival}</span>
-                )}
-              </div>
-            </div>
-
-            {/* === PHASE-SPECIFIC ACTIONS === */}
-
-            {/* Phase: Approaching pickup */}
-            {phase === 'approaching' && (
-              <div className="space-y-2">
-                <NavigationSelector
-                  destination={{
-                    address: course.pickup_address,
-                    latitude: course.pickup_latitude ?? undefined,
-                    longitude: course.pickup_longitude ?? undefined,
-                  }}
-                  label="Naviguer vers le client"
-                  variant="default"
-                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 rounded-xl"
-                />
-                <Button
-                  onClick={handleArrived}
-                  variant="outline"
-                  className="w-full h-11 rounded-xl font-semibold border-primary/30"
-                >
-                  <Flag className="w-4 h-4 mr-2" />
-                  Je suis arrivé
-                </Button>
+            {price != null && (
+              <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5">
+                <Euro className="w-4 h-4 text-emerald-400" />
+                <span className="text-lg font-black text-emerald-400">{price.toFixed(2)}€</span>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Phase: Arrived at pickup, waiting for client */}
-            {phase === 'arrived' && (
-              <div className="space-y-2">
+        {/* Client card */}
+        <div className="mx-5 mb-4 bg-white/[0.06] border border-white/10 rounded-2xl p-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+              <User className="w-7 h-7 text-white/80" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold text-white truncate">{clientName}</p>
+              {course.payment_method_requested && (
+                <p className="text-xs text-white/50 mt-0.5">
+                  {course.payment_method_requested === 'card' ? '💳 Paiement carte' : '💵 Paiement espèces'}
+                </p>
+              )}
+            </div>
+            {clientPhone && (
+              <a href={`tel:${clientPhone}`}>
+                <Button size="icon" className="h-12 w-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30">
+                  <Phone className="w-5 h-5" />
+                </Button>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Route details */}
+        <div className="mx-5 mb-4 bg-white/[0.06] border border-white/10 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-center mt-1.5">
+              <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+              {phase !== 'in_progress' && (
+                <>
+                  <div className="w-0.5 h-10 bg-gradient-to-b from-emerald-500 to-blue-500 my-1" />
+                  <div className="w-4 h-4 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
+                </>
+              )}
+              {phase === 'in_progress' && (
+                <>
+                  <div className="w-0.5 h-10 bg-gradient-to-b from-emerald-500 to-blue-500 my-1" />
+                  <div className="w-4 h-4 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
+                </>
+              )}
+            </div>
+            <div className="flex-1 space-y-4 min-w-0">
+              {(phase === 'approaching' || phase === 'arrived') && (
+                <div>
+                  <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Prise en charge</p>
+                  <p className="text-[15px] font-semibold text-white leading-snug">{course.pickup_address}</p>
+                </div>
+              )}
+              {phase === 'in_progress' && (
+                <div>
+                  <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Départ</p>
+                  <p className="text-[15px] font-semibold text-white/60 leading-snug">{course.pickup_address}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-1">Destination</p>
+                <p className="text-[15px] font-semibold text-white leading-snug">{course.destination_address}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Distance & ETA */}
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/10">
+            {course.distance_km != null && (
+              <div className="flex items-center gap-1.5">
+                <Route className="w-4 h-4 text-white/40" />
+                <span className="text-sm font-bold text-white/70">{course.distance_km.toFixed(1)} km</span>
+              </div>
+            )}
+            {estimatedArrival && (
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-white/40" />
+                <span className="text-sm font-bold text-white/70">{estimatedArrival}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1 min-h-4" />
+
+        {/* === PHASE ACTIONS === */}
+        <div className="px-5 pb-5 space-y-3">
+          {phase === 'approaching' && (
+            <>
+              <NavigationSelector
+                destination={{
+                  address: course.pickup_address,
+                  latitude: course.pickup_latitude ?? undefined,
+                  longitude: course.pickup_longitude ?? undefined,
+                }}
+                label="Naviguer vers le client"
+                variant="default"
+                className="w-full h-14 text-base font-black rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-xl shadow-blue-500/30"
+              />
+              <Button
+                onClick={handleArrived}
+                variant="outline"
+                className="w-full h-13 rounded-2xl font-bold text-base border-white/20 text-white bg-white/5 hover:bg-white/10"
+              >
+                <Flag className="w-5 h-5 mr-2 text-amber-400" />
+                Je suis arrivé
+              </Button>
+            </>
+          )}
+
+          {phase === 'arrived' && (
+            <>
+              <Button
+                onClick={handleStartTrip}
+                disabled={loading}
+                className="w-full h-16 text-xl font-black rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-2xl shadow-emerald-500/40 active:scale-[0.97] transition-transform"
+              >
+                {loading ? (
+                  <div className="h-6 w-6 mr-3 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                ) : (
+                  <Play className="w-6 h-6 mr-3" />
+                )}
+                DÉMARRER LA COURSE
+              </Button>
+              <Button
+                onClick={() => setShowStopReasons(true)}
+                variant="ghost"
+                className="w-full h-12 text-sm text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-2xl"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Annuler (client absent, etc.)
+              </Button>
+            </>
+          )}
+
+          {phase === 'in_progress' && (
+            <>
+              <NavigationSelector
+                destination={{
+                  address: course.destination_address,
+                  latitude: course.destination_latitude ?? undefined,
+                  longitude: course.destination_longitude ?? undefined,
+                }}
+                label="Naviguer vers la destination"
+                variant="default"
+                className="w-full h-14 text-base font-black rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-xl shadow-emerald-500/30"
+              />
+              <div className="grid grid-cols-2 gap-3">
                 <Button
-                  onClick={handleStartTrip}
+                  onClick={handleComplete}
                   disabled={loading}
-                  className="w-full h-14 text-lg font-black rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30"
+                  className="h-14 text-base font-black rounded-2xl bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
                 >
                   {loading ? (
                     <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   ) : (
-                    <Play className="w-5 h-5 mr-2" />
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
                   )}
-                  DÉMARRER LA COURSE
+                  Terminer
                 </Button>
                 <Button
                   onClick={() => setShowStopReasons(true)}
-                  variant="ghost"
-                  className="w-full h-10 text-sm text-destructive hover:bg-destructive/10 rounded-xl"
+                  className="h-14 text-base font-bold rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30"
                 >
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Annuler (client absent, etc.)
+                  <Square className="w-5 h-5 mr-2" />
+                  Arrêter
                 </Button>
               </div>
-            )}
-
-            {/* Phase: In progress — driving to destination */}
-            {phase === 'in_progress' && (
-              <div className="space-y-2">
-                <NavigationSelector
-                  destination={{
-                    address: course.destination_address,
-                    latitude: course.destination_latitude ?? undefined,
-                    longitude: course.destination_longitude ?? undefined,
-                  }}
-                  label="Naviguer vers la destination"
-                  variant="default"
-                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={handleComplete}
-                    disabled={loading}
-                    className="h-12 font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    {loading ? (
-                      <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                    )}
-                    Terminer
-                  </Button>
-                  <Button
-                    onClick={() => setShowStopReasons(true)}
-                    variant="outline"
-                    className="h-12 font-bold rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
-                  >
-                    <Square className="w-4 h-4 mr-2" />
-                    Arrêter
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
         {/* Stop reasons modal */}
@@ -411,21 +404,22 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[99999] bg-black/60 flex items-end justify-center"
+              className="fixed inset-0 z-[99999] bg-black/70 flex items-end justify-center"
               onClick={() => setShowStopReasons(false)}
             >
               <motion.div
                 initial={{ y: 300 }}
                 animate={{ y: 0 }}
                 exit={{ y: 300 }}
-                className="bg-card rounded-t-3xl w-full max-w-lg p-5 space-y-3"
+                className="w-full max-w-lg rounded-t-3xl p-5 space-y-3"
+                style={{ background: 'hsl(240 15% 12%)' }}
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex justify-center">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                  <div className="w-10 h-1 rounded-full bg-white/20" />
                 </div>
-                <h3 className="text-lg font-bold text-center">Motif d'arrêt</h3>
-                <p className="text-sm text-muted-foreground text-center">
+                <h3 className="text-lg font-bold text-center text-white">Motif d'arrêt</h3>
+                <p className="text-sm text-white/50 text-center">
                   Le prix sera recalculé selon la distance parcourue
                 </p>
                 <div className="space-y-2">
@@ -433,11 +427,10 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                     <Button
                       key={reason}
                       onClick={() => handleStopCourse(reason)}
-                      variant="outline"
                       disabled={loading}
-                      className="w-full h-12 justify-start text-left font-medium rounded-xl"
+                      className="w-full h-12 justify-start text-left font-medium rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
                     >
-                      <AlertTriangle className="w-4 h-4 mr-3 text-amber-500" />
+                      <AlertTriangle className="w-4 h-4 mr-3 text-amber-400" />
                       {reason}
                     </Button>
                   ))}
@@ -445,7 +438,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                 <Button
                   onClick={() => setShowStopReasons(false)}
                   variant="ghost"
-                  className="w-full mt-2 rounded-xl"
+                  className="w-full mt-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5"
                 >
                   Annuler
                 </Button>

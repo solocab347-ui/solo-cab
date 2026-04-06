@@ -258,27 +258,28 @@ export function IncomingCourseOverlay({
 
             {/* TIMER */}
             <motion.div
-              className="mb-5"
+              className="mb-6"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 20 }}
             >
-              <div className="relative w-28 h-28">
+              <div className="relative w-36 h-36">
                 <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                  <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
                   <motion.circle
                     cx="60" cy="60" r="54"
                     fill="none"
                     stroke={timerStroke}
-                    strokeWidth="7"
+                    strokeWidth="8"
                     strokeLinecap="round"
                     strokeDasharray={circumference}
                     animate={{ strokeDashoffset }}
                     transition={{ duration: 1, ease: 'linear' }}
+                    style={{ filter: `drop-shadow(0 0 8px ${timerStroke})` }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-black tabular-nums" style={{ color: timerStroke }}>
+                  <span className="text-4xl font-black tabular-nums" style={{ color: timerStroke }}>
                     {timeLeft}
                   </span>
                 </div>
@@ -319,9 +320,9 @@ export function IncomingCourseOverlay({
               transition={{ delay: 0.25 }}
             >
               {course.amount != null && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
+                <div className="bg-green-500/15 border border-green-500/30 rounded-xl p-3 text-center shadow-lg shadow-green-500/10">
                   <p className="text-[10px] text-green-300/70 uppercase tracking-wider font-medium mb-1">Prix</p>
-                  <p className="text-2xl font-black text-green-400">{course.amount.toFixed(2)}€</p>
+                  <p className="text-3xl font-black text-green-400">{course.amount.toFixed(2)}€</p>
                 </div>
               )}
               {course.distanceKm != null && (
@@ -363,18 +364,24 @@ export function IncomingCourseOverlay({
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <Button
-                className="w-full h-16 text-xl font-black rounded-2xl bg-green-500 hover:bg-green-600 text-white shadow-2xl shadow-green-500/40 active:scale-[0.97] transition-transform"
-                onClick={handleAccept}
-                disabled={accepting}
+              <motion.div
+                animate={{ boxShadow: ['0 0 20px rgba(34,197,94,0.4)', '0 0 40px rgba(34,197,94,0.6)', '0 0 20px rgba(34,197,94,0.4)'] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="rounded-2xl"
               >
-                {accepting ? (
-                  <div className="h-6 w-6 mr-3 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                ) : (
-                  <Check className="h-7 w-7 mr-3" />
-                )}
-                ACCEPTER
-              </Button>
+                <Button
+                  className="w-full h-16 text-xl font-black rounded-2xl bg-green-500 hover:bg-green-600 text-white shadow-2xl active:scale-[0.97] transition-transform"
+                  onClick={handleAccept}
+                  disabled={accepting}
+                >
+                  {accepting ? (
+                    <div className="h-6 w-6 mr-3 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                  ) : (
+                    <Check className="h-7 w-7 mr-3" />
+                  )}
+                  ACCEPTER
+                </Button>
+              </motion.div>
 
               <Button
                 variant="ghost"
