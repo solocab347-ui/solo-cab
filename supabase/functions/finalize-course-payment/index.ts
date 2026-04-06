@@ -321,6 +321,121 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // SAFETY NET: Search Stripe for any uncaptured PI linked to this course
+    // (handles case where webhook didn't save the PI ID to the course record)
+    // ═══════════════════════════════════════════════════════════════
+    if (!course.stripe_payment_intent_id && !course.stripe_hold_payment_intent_id) {
+      logStep("No PI on course record — searching Stripe for orphaned PI", { course_id });
+      try {
+        const searchResults = await stripe.paymentIntents.search({
+          query: `metadata["course_id"]:"${course_id}" status:"requires_capture"`,
+          limit: 1,
+        });
+
+        if (searchResults.data.length > 0) {
+          const orphanedPI = searchResults.data[0];
+          logStep("Found orphaned PI in Stripe!", { piId: orphanedPI.id, amount: orphanedPI.amount });
+
+          // Capture it
+          const captureAmountCents = Math.round(totalAmount * 100);
+          const captured = await stripe.paymentIntents.capture(orphanedPI.id, {
+            amount_to_capture: Math.min(captureAmountCents, orphanedPI.amount),
+          });
+
+          const STRIPE_PERCENTAGE = 0.015;
+          const STRIPE_FIXED_FEE = 0.25;
+          const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+          const solocabFee = SOLOCAB_FEE_CENTS / 100;
+          const totalFees = solocabFee + stripeFee;
+          const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+
+          // Fix the course record
+          await supabaseClient.from("courses").update({
+            status: "completed",
+            payment_status: "paid",
+            final_payment_status: "succeeded",
+            stripe_payment_intent_id: captured.id,
+            stripe_hold_payment_intent_id: captured.id,
+            card_hold_status: "captured",
+            final_payment_intent_id: captured.id,
+            final_payment_amount: totalAmount,
+            final_payment_at: new Date().toISOString(),
+            payment_captured_at: new Date().toISOString(),
+            solocab_fee_amount: solocabFee,
+            stripe_fee_amount: stripeFee,
+            total_fees_amount: totalFees,
+            net_amount_to_driver: netToDriver,
+          }).eq("id", course_id);
+
+          await supabaseClient.from("stripe_transactions").insert({
+            course_id,
+            driver_id: course.driver_id,
+            stripe_payment_intent_id: captured.id,
+            transaction_type: "capture",
+            gross_amount: totalAmount,
+            stripe_fee_amount: stripeFee,
+            solocab_fee_amount: solocabFee,
+            net_amount: netToDriver,
+            status: "succeeded",
+            description: `Capture (réconciliation) - ${course.pickup_address} → ${course.destination_address}`,
+          });
+
+          await supabaseClient.from("payments").insert({
+            course_id,
+            driver_id: course.driver_id,
+            client_id: course.client_id,
+            stripe_payment_intent_id: captured.id,
+            stripe_charge_id: (captured.latest_charge as string) || null,
+            amount: totalAmount,
+            captured_amount: totalAmount,
+            application_fee_amount: solocabFee,
+            stripe_fee_amount: stripeFee,
+            net_to_driver: netToDriver,
+            status: "succeeded",
+            payment_type: "course_capture",
+            capture_method: "manual",
+            captured_at: new Date().toISOString(),
+            metadata: { flow: "orphaned_pi_recovery" },
+          });
+
+          try {
+            await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+          } catch (e) {
+            logStep("Facture creation failed (non-blocking)", { error: String(e) });
+          }
+
+          await supabaseClient.from("notifications").insert({
+            user_id: course.driver.user_id,
+            title: "💰 Paiement encaissé",
+            message: `${totalAmount.toFixed(2)}€ capturé. Net: ${netToDriver.toFixed(2)}€`,
+            type: "info",
+            link: "/driver-dashboard?tab=courses",
+          });
+
+          if (course.client?.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: course.client.user_id,
+              title: "✅ Paiement confirmé",
+              message: `Votre paiement de ${totalAmount.toFixed(2)}€ a été effectué.`,
+              type: "info",
+            });
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true, status: "succeeded", flow: "orphaned_pi_recovery",
+              payment_intent_id: captured.id, amount_charged: totalAmount,
+              fees: { stripe_fee: stripeFee, solocab_fee: solocabFee, total_fees: totalFees, net_to_driver: netToDriver },
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+      } catch (searchError: any) {
+        logStep("Stripe PI search failed (non-blocking)", { error: searchError.message });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // FALLBACK: Pas d'empreinte ou capture échouée → nouveau PaymentIntent
     // (cas rare: hold expiré, annulé, ou course sans empreinte)
     // ═══════════════════════════════════════════════════════════════

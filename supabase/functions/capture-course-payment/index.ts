@@ -81,8 +81,37 @@ serve(async (req) => {
     }
 
     if (!course.stripe_payment_intent_id && !course.stripe_hold_payment_intent_id) {
-      // No payment intent → complete as manual/cash payment
-      logStep("No payment intent — completing as manual payment", { course_id });
+      // Search Stripe for any uncaptured PI linked to this course
+      logStep("No PI on course record — searching Stripe for orphaned PI", { course_id });
+      try {
+        const searchResults = await stripe.paymentIntents.search({
+          query: `metadata["course_id"]:"${course_id}" status:"requires_capture"`,
+          limit: 1,
+        });
+
+        if (searchResults.data.length > 0) {
+          const orphanedPI = searchResults.data[0];
+          logStep("Found orphaned PI, will capture it", { piId: orphanedPI.id });
+          
+          // Update course record with the found PI
+          await supabaseClient.from("courses").update({
+            stripe_payment_intent_id: orphanedPI.id,
+            stripe_hold_payment_intent_id: orphanedPI.id,
+            card_hold_status: "confirmed",
+          }).eq("id", course_id);
+          
+          // Continue to capture below with this PI
+          course.stripe_payment_intent_id = orphanedPI.id;
+          course.stripe_hold_payment_intent_id = orphanedPI.id;
+        }
+      } catch (searchError: any) {
+        logStep("Stripe PI search failed", { error: searchError.message });
+      }
+    }
+
+    if (!course.stripe_payment_intent_id && !course.stripe_hold_payment_intent_id) {
+      // No payment intent found anywhere → complete as manual/cash payment
+      logStep("No payment intent found anywhere — completing as manual payment", { course_id });
 
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
       const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
