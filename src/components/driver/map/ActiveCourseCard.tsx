@@ -85,12 +85,25 @@ const STOP_REASONS = [
   'Autre',
 ];
 
-const ACTIVE_COURSE_FRESHNESS_WINDOW_MS = 48 * 60 * 60 * 1000;
-
-const getCourseTimestamp = (course: ActiveCourse) => {
-  const candidate = course.updated_at || course.scheduled_date || course.created_at;
-  const parsed = candidate ? new Date(candidate).getTime() : 0;
-  return Number.isNaN(parsed) ? 0 : parsed;
+// Only show courses that are relevant RIGHT NOW
+const isCourseTodayOrImmediate = (course: ActiveCourse) => {
+  // in_progress courses always show
+  if (course.status === 'in_progress') return true;
+  
+  // For accepted/pending: only show if scheduled today or earlier (not future)
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  
+  const scheduledDate = course.scheduled_date ? new Date(course.scheduled_date) : null;
+  
+  // If scheduled in the past (before today start) and not in_progress → expired, don't show
+  if (scheduledDate && scheduledDate < todayStart && course.status !== 'in_progress') return false;
+  
+  // If scheduled today or no date (immediate) → show
+  if (!scheduledDate || scheduledDate < todayEnd) return true;
+  
+  return false;
 };
 
 const getAcceptedDevis = (course: ActiveCourse) => {
@@ -110,19 +123,16 @@ const getCoursePriority = (course: ActiveCourse) => {
 };
 
 const pickRelevantCourse = (courses: ActiveCourse[]) => {
-  const freshnessCutoff = Date.now() - ACTIVE_COURSE_FRESHNESS_WINDOW_MS;
-
-  const freshCourses = courses.filter((candidate) => {
-    if (candidate.status === 'in_progress') return true;
-    return getCourseTimestamp(candidate) >= freshnessCutoff;
-  });
-
-  const source = freshCourses.length > 0 ? freshCourses : courses;
-
-  return [...source].sort((a, b) => {
+  // Only keep today's / immediate courses
+  const relevant = courses.filter(isCourseTodayOrImmediate);
+  
+  // Prefer in_progress > accepted > pending, then most recent
+  return [...relevant].sort((a, b) => {
     const priorityDiff = getCoursePriority(b) - getCoursePriority(a);
     if (priorityDiff !== 0) return priorityDiff;
-    return getCourseTimestamp(b) - getCourseTimestamp(a);
+    const aTime = new Date(a.updated_at || a.created_at).getTime();
+    const bTime = new Date(b.updated_at || b.created_at).getTime();
+    return bTime - aTime;
   })[0] ?? null;
 };
 
@@ -199,6 +209,20 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
 
+    // Auto-set driver unavailable when course is active
+    if (newCourse && !prev) {
+      // Driver just got an active course → set unavailable for immediate rides
+      supabase.from('drivers').update({ is_available_now: false }).eq('id', driverId).then(() => {
+        console.log('[ActiveCourseCard] Driver set unavailable (course active)');
+      });
+    } else if (!newCourse && prev) {
+      // Course just ended → restore availability
+      supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
+        console.log('[ActiveCourseCard] Driver set available again (course ended)');
+      });
+      onCourseChange?.();
+    }
+
     if (newCourse) {
       // Determine the DB-driven phase
       let dbPhase: CoursePhase = 'approaching';
@@ -218,10 +242,6 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         setPhase(nextPhase);
         persistPhase(newCourse.id, nextPhase);
       }
-    }
-
-    if (prev && !newCourse) {
-      onCourseChange?.();
     }
   }, [driverId, onCourseChange, course, phase]);
 
@@ -282,6 +302,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course, driverId]);
 
+  const restoreAvailability = useCallback(() => {
+    supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
+      console.log('[ActiveCourseCard] Driver availability restored');
+    });
+  }, [driverId]);
+
   const handleComplete = useCallback(async () => {
     if (!course) return;
     setLoading(true);
@@ -293,6 +319,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } catch {
       // Even on error, dismiss the course from UI to prevent loop
@@ -302,11 +329,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         clearPersistedPhase(course.id);
       }
       setCourse(null);
+      restoreAvailability();
       onCourseChange?.();
     } finally {
       setLoading(false);
     }
-  }, [course, driverId, onCourseChange]);
+  }, [course, driverId, onCourseChange, restoreAvailability]);
 
   const handleStopCourse = useCallback(async (reason: string) => {
     if (!course) return;
@@ -326,6 +354,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } catch {
       await supabase
@@ -337,11 +366,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       if (course) dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } finally {
       setLoading(false);
     }
-  }, [course, driverId, onCourseChange]);
+  }, [course, driverId, onCourseChange, restoreAvailability]);
 
   const acceptedDevis = course ? getAcceptedDevis(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
