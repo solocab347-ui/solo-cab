@@ -287,11 +287,54 @@ serve(async (req) => {
     // ═══════════════════════════════════════════════════════════════
 
     if (!course.stripe_payment_method_id) {
+      // No card on file and no hold → complete as manual/cash payment
+      logStep("No card and no hold — completing as manual payment", { course_id, totalAmount });
+
+      const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
+
       await supabaseClient
         .from("courses")
-        .update({ final_payment_status: "failed", last_payment_error: "Aucune carte enregistrée" })
+        .update({
+          status: "completed",
+          payment_status: paymentMethod === "cash" ? "paid" : "pending_manual",
+          final_payment_status: paymentMethod === "cash" ? "succeeded" : "pending_manual",
+          final_payment_amount: totalAmount,
+          course_finalized_by_driver_at: new Date().toISOString(),
+          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+        })
         .eq("id", course_id);
-      throw new Error("Aucune carte enregistrée pour cette course. Le client doit fournir une carte.");
+
+      // Create facture
+      try {
+        await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+      } catch (e) {
+        logStep("Facture creation failed (non-blocking)", { error: String(e) });
+      }
+
+      // Notify driver
+      await supabaseClient.from("notifications").insert({
+        user_id: course.driver.user_id,
+        title: "✅ Course terminée",
+        message: paymentMethod === "cash"
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces.`
+          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissez le paiement manuellement.`,
+        type: "info",
+        link: "/driver-dashboard?tab=courses",
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: "completed",
+          flow: "manual",
+          amount: totalAmount,
+          payment_method: paymentMethod,
+          message: paymentMethod === "cash"
+            ? "Course terminée — paiement espèces"
+            : "Course terminée — encaissement manuel requis",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
     logStep("Fallback: creating new PaymentIntent (no valid hold)");
