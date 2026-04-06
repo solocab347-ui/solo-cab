@@ -40,13 +40,21 @@ export function IncomingCourseOverlay({
   const [accepting, setAccepting] = useState(false);
   const audioRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Countdown timer
+  // Set driver to 'accepting' status when popup appears
   useEffect(() => {
-    if (!course) {
+    if (!course || !driverId) {
       setTimeLeft(TIMEOUT_SECONDS);
       return;
     }
     setTimeLeft(TIMEOUT_SECONDS);
+
+    // Immediately set driver_status to 'accepting' — hides from vitrine
+    supabase.from('drivers').update({ 
+      driver_status: 'accepting',
+      is_available_now: false,
+    }).eq('id', driverId).then(() => {
+      console.log('[IncomingCourseOverlay] Driver set to accepting');
+    });
 
     const interval = setInterval(() => {
       setTimeLeft(prev => {
@@ -161,16 +169,34 @@ export function IncomingCourseOverlay({
           } else {
             toast.error(data?.error || "Erreur lors de l'acceptation");
           }
+          // Restore to available since accept failed
+          await supabase.from('drivers').update({ 
+            driver_status: 'online_available',
+            is_available_now: true,
+          }).eq('id', driverId);
           onDismiss();
           return;
         }
         toast.success('Course acceptée !');
       }
 
+      // Set driver to on_trip after successful acceptance
+      await supabase.from('drivers').update({ 
+        driver_status: 'on_trip',
+        is_available_now: false,
+      }).eq('id', driverId);
+
       onAccepted();
     } catch (err: any) {
       console.error('Error accepting course:', err);
       toast.error(err.message || "Erreur lors de l'acceptation");
+      // Restore to available on error
+      if (driverId) {
+        await supabase.from('drivers').update({ 
+          driver_status: 'online_available',
+          is_available_now: true,
+        }).eq('id', driverId);
+      }
     } finally {
       setAccepting(false);
     }
@@ -179,6 +205,15 @@ export function IncomingCourseOverlay({
   const handleDismiss = useCallback(async () => {
     if (audioRef.current) clearInterval(audioRef.current);
     if (navigator.vibrate) navigator.vibrate(0);
+
+    // Restore driver to online_available (they rejected/timed out)
+    if (driverId) {
+      await supabase.from('drivers').update({ 
+        driver_status: 'online_available',
+        is_available_now: true,
+      }).eq('id', driverId);
+      console.log('[IncomingCourseOverlay] Driver restored to online_available');
+    }
 
     // Marquer la ride_request comme refusée pour tracking
     if (course?.source === 'ride_request' && course.sourceId) {
@@ -193,7 +228,7 @@ export function IncomingCourseOverlay({
     }
 
     onDismiss();
-  }, [course, onDismiss]);
+  }, [course, driverId, onDismiss]);
 
   const progressPercent = (timeLeft / TIMEOUT_SECONDS) * 100;
   const isExclusive = course?.requestType === 'exclusive';

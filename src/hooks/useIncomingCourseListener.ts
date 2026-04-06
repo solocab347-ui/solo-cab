@@ -81,8 +81,22 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
   }, [showNext]);
 
   // Fetch pending courses — ALL filtered by driver_id server-side
+  // Only check if driver is in a state that can receive courses
   const checkForNewCourses = useCallback(async () => {
     if (!driverId || !enabled) return;
+
+    // Check driver_status first — only online_available drivers should receive courses
+    const { data: driverData } = await supabase
+      .from('drivers')
+      .select('driver_status')
+      .eq('id', driverId)
+      .maybeSingle();
+    
+    const status = driverData?.driver_status;
+    if (status && status !== 'online_available') {
+      // Driver is accepting, on_trip, reserved, or offline — don't show new courses
+      return;
+    }
 
     try {
       const [queueResult, sharedResult, rideResult, directResult] = await Promise.all([

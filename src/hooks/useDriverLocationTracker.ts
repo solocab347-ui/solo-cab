@@ -182,7 +182,7 @@ export function useDriverLocationTracker({
     };
   }, [enabled, driverId, startTracking, stopTracking]);
 
-  // Update availability status in database
+  // Update availability status in database — syncs both is_available_now and driver_status
   const updateAvailability = useCallback(
     async (isAvailable: boolean) => {
       if (!driverId) return;
@@ -190,7 +190,10 @@ export function useDriverLocationTracker({
       try {
         await supabase
           .from('drivers')
-          .update({ is_available_now: isAvailable })
+          .update({ 
+            is_available_now: isAvailable,
+            driver_status: isAvailable ? 'online_available' : 'offline',
+          })
           .eq('id', driverId);
       } catch (err) {
         console.error('Failed to update availability:', err);

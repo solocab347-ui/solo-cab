@@ -26,12 +26,12 @@ export function DriverAvailabilityToggleBig({
     const fetchAvailability = async () => {
       const { data } = await supabase
         .from('drivers')
-        .select('is_available_now')
+        .select('is_available_now, driver_status')
         .eq('id', driverId)
         .maybeSingle();
 
       if (data) {
-        const val = data.is_available_now ?? false;
+        const val = data.driver_status === 'online_available' || (data.is_available_now ?? false);
         setIsAvailable(val);
         onAvailabilityChange?.(val);
       } else {
