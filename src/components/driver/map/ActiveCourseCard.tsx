@@ -329,11 +329,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         clearPersistedPhase(course.id);
       }
       setCourse(null);
+      restoreAvailability();
       onCourseChange?.();
     } finally {
       setLoading(false);
     }
-  }, [course, driverId, onCourseChange]);
+  }, [course, driverId, onCourseChange, restoreAvailability]);
 
   const handleStopCourse = useCallback(async (reason: string) => {
     if (!course) return;
