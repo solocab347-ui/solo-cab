@@ -37,13 +37,20 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("User not authenticated");
+    
+    // Use a user-context client to validate the token
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) throw new Error("User not authenticated");
 
     const { course_id, amount_to_capture } = await req.json();
     if (!course_id) throw new Error("course_id required");
 
-    logStep("Capture request", { course_id, amount_to_capture });
+    logStep("Capture request", { course_id, amount_to_capture, userId: user.id });
 
     // Get course with payment intent
     const { data: course, error: courseError } = await supabaseClient
@@ -64,7 +71,7 @@ serve(async (req) => {
     }
 
     // Verify caller is the driver
-    if (course.driver.user_id !== userData.user.id) {
+    if (course.driver.user_id !== user.id) {
       throw new Error("Unauthorized: only the course driver can capture payment");
     }
 
