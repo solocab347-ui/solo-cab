@@ -331,6 +331,9 @@ serve(async (req) => {
 
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
 
+      const solocabFee = SOLOCAB_FEE_CENTS / 100;
+      const netToDriver = Math.round((totalAmount - solocabFee) * 100) / 100;
+
       await supabaseClient
         .from("courses")
         .update({
@@ -339,9 +342,38 @@ serve(async (req) => {
           final_payment_status: paymentMethod === "cash" ? "succeeded" : "pending_manual",
           final_payment_amount: totalAmount,
           course_finalized_by_driver_at: new Date().toISOString(),
-          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+          solocab_fee_amount: solocabFee,
+          stripe_fee_amount: 0,
+          total_fees_amount: solocabFee,
+          net_amount_to_driver: netToDriver,
         })
         .eq("id", course_id);
+
+      // Record in stripe_transactions ledger (even for cash/manual — tracks SoloCab fee)
+      await supabaseClient.from("stripe_transactions").insert({
+        course_id,
+        driver_id: course.driver_id,
+        transaction_type: "full_payment",
+        gross_amount: totalAmount,
+        stripe_fee_amount: 0,
+        solocab_fee_amount: solocabFee,
+        net_amount: netToDriver,
+        status: paymentMethod === "cash" ? "succeeded" : "pending",
+        description: `Course (${paymentMethod}) - ${course.pickup_address} → ${course.destination_address}`,
+      });
+
+      // Record in payments table
+      await supabaseClient.from("payments").insert({
+        course_id,
+        driver_id: course.driver_id,
+        client_id: course.client_id,
+        amount: totalAmount,
+        captured_amount: paymentMethod === "cash" ? totalAmount : 0,
+        application_fee_amount: solocabFee,
+        net_to_driver: netToDriver,
+        status: paymentMethod === "cash" ? "succeeded" : "pending",
+        payment_method: paymentMethod,
+      });
 
       // Create facture
       try {
@@ -355,8 +387,8 @@ serve(async (req) => {
         user_id: course.driver.user_id,
         title: "✅ Course terminée",
         message: paymentMethod === "cash"
-          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces.`
-          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissez le paiement manuellement.`,
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Net: ${netToDriver.toFixed(2)}€`
+          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissement manuel requis.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
