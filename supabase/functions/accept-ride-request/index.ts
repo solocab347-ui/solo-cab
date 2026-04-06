@@ -179,12 +179,14 @@ serve(async (req) => {
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
               const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100);
               const SOLOCAB_FEE_CENTS = 80;
+              // CRITICAL: application_fee cannot exceed payment amount
+              const effectiveFee = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents);
 
               const paymentIntent = await stripe.paymentIntents.create({
                 amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
-                application_fee_amount: SOLOCAB_FEE_CENTS,
+                application_fee_amount: effectiveFee,
                 customer: clientRecord.stripe_customer_id,
                 payment_method: paymentMethodToUse,
                 off_session: true,
