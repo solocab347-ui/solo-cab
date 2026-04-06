@@ -1,156 +1,42 @@
 
 
-# Passer SoloCab en Application Native — Guide complet A à Z
+## Plan: Amélioration affichage ActiveCourseCard + IncomingCourseOverlay
 
-## Résumé
-
-SoloCab est déjà configuré en PWA. Pour publier sur l'App Store et Google Play, il faut encapsuler l'app avec **Capacitor** (déjà pré-configuré dans le projet). Voici tout ce qu'il faut, étape par étape.
-
----
-
-## Ce qui est déjà prêt
-
-- PWA fonctionnelle (installable depuis le navigateur)
-- `capacitor.config.ts` déjà présent dans le projet
-- Dépendances Capacitor déjà installées (`@capacitor/core`, `@capacitor/cli`)
+### Problèmes identifiés
+1. **ActiveCourseCard** : fond semi-transparent (`bg-card/98 backdrop-blur`) → sur la carte, le texte est illisible (screenshot)
+2. **ActiveCourseCard** : trop petit, ne remplit pas l'espace entre la barre supérieure et le bas de l'écran
+3. **IncomingCourseOverlay** : layout correct mais peut être amélioré visuellement
 
 ---
 
-## Ce qu'il vous faut
+### Modifications prévues
 
-### Matériel & Logiciels
+#### 1. ActiveCourseCard — Fond opaque + pleine hauteur
 
-| Besoin | Pour iOS | Pour Android |
-|--------|----------|--------------|
-| Ordinateur | **Mac obligatoire** (MacBook, iMac, Mac mini) | Windows, Mac ou Linux |
-| IDE | Xcode (gratuit, ~15 Go) | Android Studio (gratuit, ~10 Go) |
-| Téléphone de test | iPhone (ou simulateur Xcode) | Android (ou émulateur) |
+- Remplacer `bg-card/98 backdrop-blur-2xl` par un **fond totalement opaque** (`bg-[#1a1a2e]` ou `bg-zinc-900`) avec du texte blanc
+- Faire en sorte que le panneau **remplisse tout l'espace disponible** sous la barre du haut (CA + En ligne) — utiliser `calc(100vh - 80px)` ou `flex-1` depuis le parent
+- Passer de `absolute bottom-0` à un positionnement qui couvre la zone carte entière
+- Ajouter un design type dark card avec sections bien délimitées : client, trajet, actions
+- Grossir les boutons de navigation et d'action
+- Ajouter des icônes et couleurs plus contrastées pour chaque phase
 
-### Comptes développeur
+#### 2. IncomingCourseOverlay — Améliorations visuelles
 
-| Compte | Coût | Récurrence |
-|--------|------|------------|
-| **Apple Developer Program** | **99 €/an** | Annuel |
-| **Google Play Console** | **25 $** (≈23 €) | Une seule fois |
+- Augmenter la taille du timer circulaire (de `w-28 h-28` à `w-32 h-32`)
+- Rendre le prix plus gros et central avec un fond lumineux
+- Améliorer l'espacement et le contraste des cartes d'info (route, détails)
+- Ajouter un effet de pulsation/glow sur le bouton ACCEPTER pour attirer l'attention
+- Grossir légèrement les textes d'adresse pour meilleure lisibilité
 
----
+#### 3. DriverMapMode — Intégration
 
-## Coûts totaux
-
-### Année 1
-
-| Poste | Montant |
-|-------|---------|
-| Apple Developer | 99 € |
-| Google Play | 25 $ (~23 €) |
-| Mac (si vous n'en avez pas) | 800-1500 € |
-| **Total (avec Mac)** | **~920 - 1620 €** |
-| **Total (Mac existant)** | **~122 €** |
-
-### Années suivantes
-
-| Poste | Montant |
-|-------|---------|
-| Renouvellement Apple | 99 €/an |
-| Google Play | 0 € (déjà payé) |
-| **Total/an** | **99 €/an** |
-
-### Commissions sur les paiements in-app
-
-- Apple : **15-30%** sur les achats in-app
-- Google : **15-30%** sur les achats in-app
-- **Avec Stripe via le web (PWA) : 0% de commission store**
-
-> **Note** : Les paiements de courses VTC passant par Stripe Connect ne sont pas soumis aux commissions Apple/Google tant qu'ils ne passent pas par le système d'achat in-app natif.
+- Quand `hasActiveCourse` est true, masquer la carte et afficher `ActiveCourseCard` en plein écran sous la barre du haut
+- Conserver la barre supérieure (CA + statut) toujours visible
 
 ---
 
-## Étapes de A à Z
-
-### 1. Préparer (10 min)
-- Créer un compte Apple Developer (99 €/an) sur developer.apple.com
-- Créer un compte Google Play Console (25 $) sur play.google.com/console
-
-### 2. Exporter le code (2 min)
-- Dans Lovable : cliquer **GitHub → Export to GitHub**
-- Cloner le dépôt sur votre ordinateur
-
-### 3. Configurer l'environnement (30 min)
-```text
-git clone https://github.com/votre-compte/solo-cab-to-lovable.git
-cd solo-cab-to-lovable
-npm install
-npx cap add ios        (sur Mac uniquement)
-npx cap add android
-```
-
-### 4. Build & Sync (5 min à chaque mise à jour)
-```text
-npm run build
-npx cap sync
-```
-
-### 5. Tester sur appareil (15 min)
-```text
-npx cap run ios        (simulateur ou iPhone connecté)
-npx cap run android    (émulateur ou téléphone connecté)
-```
-
-### 6. Publier sur les stores
-
-**iOS** :
-```text
-npx cap open ios
-→ Xcode → Product → Archive → Distribute to App Store
-```
-
-**Android** :
-```text
-npx cap open android
-→ Android Studio → Build → Generate Signed Bundle → Upload sur Play Console
-```
-
-### 7. Review des stores
-- Apple : 24-48h (première soumission : jusqu'à 7 jours)
-- Google : quelques heures à 3 jours
-
----
-
-## Workflow de mise à jour
-
-```text
-Modification dans Lovable
-       ↓
-  git pull origin main
-  npm run build
-  npx cap sync
-       ↓
-  Xcode / Android Studio
-  → Incrémenter version
-  → Build → Soumettre
-       ↓
-  Review (24h-7j)
-```
-
----
-
-## Fonctionnalités natives débloquées
-
-Passer en natif permettrait d'activer :
-- **Superposition sur les autres apps** (System Overlay) — la demande de course qui s'affiche par-dessus tout
-- **Notifications push natives** complètes (iOS + Android)
-- **GPS en arrière-plan** permanent
-- **Vibrations avancées**
-- **Accès au système de fichiers**
-
----
-
-## Recommandation
-
-La PWA est déjà fonctionnelle et suffisante pour le lancement. Le passage en natif est recommandé quand :
-- Vous avez validé le produit avec vos premiers clients
-- Vous avez besoin de la superposition (overlay) pour les chauffeurs
-- Vous voulez la visibilité App Store / Play Store
-
-**Coût minimal pour démarrer : ~122 € (si vous avez déjà un Mac)**
+### Fichiers modifiés
+- `src/components/driver/map/ActiveCourseCard.tsx` — refonte visuelle complète
+- `src/components/driver/courses/IncomingCourseOverlay.tsx` — améliorations design
+- `src/components/driver/map/DriverMapMode.tsx` — layout adaptatif quand course active
 
