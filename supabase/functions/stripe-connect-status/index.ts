@@ -32,11 +32,28 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) throw new Error("User not authenticated");
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) throw new Error("User not authenticated");
 
-    const userId = user.id;
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      logStep("JWT claims validation failed", {
+        error: claimsError?.message ?? null,
+      });
+      throw new Error("User not authenticated");
+    }
+
+    const userId = claimsData.claims.sub;
 
     // Get driver record
     const { data: driver, error: driverError } = await supabaseClient
@@ -113,12 +130,15 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    const status = errorMessage === "User not authenticated" || errorMessage === "No authorization header"
+      ? 401
+      : 500;
 
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status,
       }
     );
   }

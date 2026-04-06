@@ -256,6 +256,32 @@ export async function instantGetSession(): Promise<AuthResult> {
       isEmployee: false,
     };
   }
+
+  const userValidation = await withTimeout(
+    supabase.auth.getUser(),
+    3000,
+    { data: { user: null }, error: { message: 'validation_timeout' } as any }
+  );
+
+  if (userValidation.error || !userValidation.data.user) {
+    logger.warn('Invalid local auth session detected, clearing local session', {
+      error: userValidation.error?.message,
+    });
+    clearAuthCache();
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // ignore local cleanup errors
+    }
+    return {
+      success: true,
+      user: null,
+      session: null,
+      role: null,
+      roles: [],
+      isEmployee: false,
+    };
+  }
   
   const user = session.user;
   const userId = user.id;
