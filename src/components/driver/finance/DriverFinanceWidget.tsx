@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wallet, ArrowUpRight, ArrowDownRight, Clock, ChevronRight, TrendingUp } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Clock, ChevronRight, TrendingUp, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,11 +12,14 @@ interface DriverFinanceWidgetProps {
 }
 
 interface BalanceSummary {
+  totalRevenue: number;
+  solocabFees: number;
+  stripeFees: number;
+  netEarnings: number;
+  totalCourses: number;
+  pendingBalance: number;
+  // Partnership data
   pendingCommissions: number;
-  pendingFees: number;
-  lastSettlementAmount: number;
-  lastSettlementDate: string | null;
-  currentWeekCourses: number;
   currentWeekShared: number;
 }
 
@@ -30,42 +33,27 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
 
   const loadSummary = async () => {
     try {
-      // Get last completed settlement
-      const { data: lastSettlement } = await supabase
-        .from("driver_weekly_balances")
-        .select("net_amount, transfer_executed_at, settlement_id")
+      setLoading(true);
+
+      // 1. Get actual course revenue from driver_wallets view
+      const { data: wallet } = await supabase
+        .from("driver_wallets")
+        .select("*")
         .eq("driver_id", driverId)
-        .eq("transfer_status", "completed")
-        .order("transfer_executed_at", { ascending: false })
-        .limit(1)
         .maybeSingle();
 
-      // Get pending commissions (completed shared payments not yet settled)
+      // 2. Get pending partnership commissions
       const { data: pendingPayments } = await supabase
         .from("shared_course_payments")
-        .select("sender_commission_amount, sender_driver_id, receiver_driver_id, platform_fee")
+        .select("sender_commission_amount, sender_driver_id")
         .eq("status", "completed")
+        .eq("sender_driver_id", driverId)
         .is("settlement_id", null);
 
       let pendingCommissions = 0;
-      let pendingFees = 0;
-
       for (const p of (pendingPayments || [])) {
-        if (p.sender_driver_id === driverId) {
-          pendingCommissions += p.sender_commission_amount;
-        }
-        if (p.receiver_driver_id === driverId) {
-          pendingFees += (p.platform_fee || 0.10);
-        }
+        pendingCommissions += p.sender_commission_amount || 0;
       }
-
-      // Count current week courses
-      // Weekly course count from unified dashboard RPC (same source as driver stats widgets)
-
-      const { data: dashboardStats } = await supabase
-        .rpc("get_driver_dashboard_stats", { p_driver_id: driverId });
-
-      const courseCount = Number((dashboardStats as any)?.week_courses || 0);
 
       const { count: sharedCount } = await supabase
         .from("shared_course_payments")
@@ -75,11 +63,13 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
         .is("settlement_id", null);
 
       setSummary({
+        totalRevenue: Number(wallet?.total_revenue || 0),
+        solocabFees: Number(wallet?.total_solocab_fees || 0),
+        stripeFees: Number(wallet?.total_stripe_fees || 0),
+        netEarnings: Number(wallet?.net_earnings || 0),
+        totalCourses: Number(wallet?.total_courses || 0),
+        pendingBalance: Number(wallet?.pending_balance || 0),
         pendingCommissions,
-        pendingFees,
-        lastSettlementAmount: lastSettlement?.net_amount || 0,
-        lastSettlementDate: lastSettlement?.transfer_executed_at || null,
-        currentWeekCourses: courseCount || 0,
         currentWeekShared: sharedCount || 0,
       });
     } catch (err) {
@@ -101,7 +91,7 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
 
   if (!summary) return null;
 
-  const netPending = summary.pendingCommissions - summary.pendingFees;
+  const totalFees = summary.solocabFees + summary.stripeFees;
 
   return (
     <Card className="p-4 bg-gradient-to-br from-card to-muted/30 border-border shadow-sm">
@@ -112,48 +102,58 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
           </div>
           <h3 className="font-semibold text-foreground">Solde financier</h3>
         </div>
-        <Badge variant="outline" className="text-xs gap-1 border-warning/30 text-warning">
-          <Clock className="w-3 h-3" />
-          Prochain lundi
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={loadSummary}>
+            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+          </Button>
+          <Badge variant="outline" className="text-xs gap-1 border-warning/30 text-warning">
+            <Clock className="w-3 h-3" />
+            Prochain lundi
+          </Badge>
+        </div>
       </div>
 
+      {/* Course revenue */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="p-3 rounded-lg bg-success/10 border border-success/20">
           <div className="flex items-center gap-1 text-xs text-success mb-1">
             <ArrowUpRight className="w-3 h-3" />
-            Commissions en attente
+            Revenus bruts
           </div>
           <p className="text-lg font-bold text-success">
-            +{summary.pendingCommissions.toFixed(2)}€
+            +{summary.totalRevenue.toFixed(2)}€
           </p>
         </div>
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
           <div className="flex items-center gap-1 text-xs text-destructive mb-1">
             <ArrowDownRight className="w-3 h-3" />
-            Frais de gestion
+            Frais totaux
           </div>
           <p className="text-lg font-bold text-destructive">
-            -{summary.pendingFees.toFixed(2)}€
+            -{totalFees.toFixed(2)}€
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            SoloCab: {summary.solocabFees.toFixed(2)}€ • Stripe: {summary.stripeFees.toFixed(2)}€
           </p>
         </div>
       </div>
 
+      {/* Net earnings */}
       <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mb-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Versement net estimé</span>
-          <span className={`text-xl font-bold ${netPending >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {netPending >= 0 ? '+' : ''}{netPending.toFixed(2)}€
+          <span className={`text-xl font-bold ${summary.netEarnings >= 0 ? 'text-success' : 'text-destructive'}`}>
+            +{summary.netEarnings.toFixed(2)}€
           </span>
         </div>
       </div>
 
       <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-        <span>Cette semaine : {summary.currentWeekCourses} courses • {summary.currentWeekShared} partages</span>
-        {summary.lastSettlementDate && (
-          <span className="flex items-center gap-1">
+        <span>{summary.totalCourses} courses encaissées • {summary.currentWeekShared} partages</span>
+        {summary.pendingCommissions > 0 && (
+          <span className="flex items-center gap-1 text-success">
             <TrendingUp className="w-3 h-3" />
-            Dernier : {summary.lastSettlementAmount.toFixed(2)}€
+            +{summary.pendingCommissions.toFixed(2)}€ commissions
           </span>
         )}
       </div>
