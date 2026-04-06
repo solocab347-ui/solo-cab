@@ -57,9 +57,7 @@ export function StripeConnectInfo({ driverId, billingType, onStatusChange }: Str
     toast.success("Statut mis à jour");
   };
 
-  if (billingType !== "solocab_stripe") {
-    return null;
-  }
+  // Stripe is now mandatory for all drivers - no billing type check needed
 
   return (
     <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">

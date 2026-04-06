@@ -83,20 +83,10 @@ export function TrialStartBanner({
     return null;
   }
 
-  const isStripeChoice = billingType === 'solocab_stripe' || billingType === 'stripe_connect';
-  const isEquipmentPurchase = billingType === 'buy_equipment';
-  const isOwnEquipment = billingType === 'own_equipment' && !isEquipmentPurchase;
   const isStripeReady = stripeAccountStatus === 'active';
 
-  // Déterminer si le bouton peut être activé
-  const canStartTrial = (() => {
-    if (isStripeChoice) {
-      // Pour Stripe, doit être actif
-      return isStripeReady;
-    }
-    // Pour matériel propre ou acheté, toujours activable (confirmation dans le dialog)
-    return true;
-  })();
+  // Stripe is mandatory - trial can start only when Stripe is ready
+  const canStartTrial = isStripeReady;
 
   const handleStartTrial = async () => {
     if (!confirmed) {
