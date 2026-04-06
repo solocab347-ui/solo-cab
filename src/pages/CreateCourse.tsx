@@ -284,10 +284,39 @@ const CreateCourse = () => {
       });
 
       if (course) {
-        // Les notifications sont gérées par les triggers de base de données
-        // Ne pas envoyer de notifications en double ici
+        // Pour les clients exclusifs: auto-accepter le devis et confirmer directement
+        if (clientData.is_exclusive) {
+          // Auto-accepter le devis en arrière-plan
+          (async () => {
+            try {
+              const { data: devisData } = await supabase
+                .from("devis")
+                .select("id")
+                .eq("course_id", course.id)
+                .eq("status", "sent")
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
-        // Afficher le dialog d'information au lieu de naviguer immédiatement
+              if (devisData?.id) {
+                await supabase.rpc("accept_devis_safely", {
+                  _client_user_id: user.id,
+                  _devis_id: devisData.id,
+                });
+              }
+            } catch (err) {
+              console.error("Auto-accept devis failed:", err);
+            }
+          })();
+
+          toast.success("Demande envoyée à votre chauffeur !", {
+            description: "Vous serez notifié dès qu'il accepte votre course.",
+          });
+          navigate("/client-dashboard");
+          return;
+        }
+
+        // Pour les autres clients: afficher le dialog d'information
         setCreatedCourseInfo({
           pickupAddress: sanitizedPickup,
           destinationAddress: sanitizedDestination,

@@ -300,45 +300,10 @@ export function useCourseCreation() {
       logger.info("Course created successfully", { courseId: course.id });
       toast.success("Course créée avec succès !");
 
-      // EMPREINTE BANCAIRE AUTOMATIQUE: Si paiement par carte, déclencher le hold zéro-clic
+      // EMPREINTE BANCAIRE: Le hold sera créé UNIQUEMENT après acceptation par le chauffeur
+      // (dans accept-ride-request ou dans IncomingCourseOverlay pour les courses directes)
       if (paymentMethodPreference === "card") {
-        (async () => {
-          try {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("full_name, email")
-              .eq("id", userId)
-              .maybeSingle();
-
-            logger.info("Triggering automatic card hold", { courseId: course.id, driverId });
-            
-            const { data: holdResult, error: holdError } = await supabase.functions.invoke(
-              "create-card-hold",
-              {
-                body: {
-                  driver_id: driverId,
-                  course_id: course.id,
-                  client_user_id: userId,
-                  client_email: profileData?.email || authUser?.email || "",
-                  client_name: profileData?.full_name || "",
-                },
-              }
-            );
-
-            if (holdError) {
-              logger.error("Card hold failed", { error: holdError, courseId: course.id });
-            } else if (holdResult?.auto_confirmed) {
-              logger.info("✅ Card hold auto-confirmed (zero-click)", { courseId: course.id });
-            } else if (holdResult?.card_hold_required) {
-              logger.info("Card hold requires manual confirmation", { courseId: course.id });
-            } else {
-              logger.info("Card hold not required (driver without Stripe)", { courseId: course.id });
-            }
-          } catch (err) {
-            logger.exception(err as Error, { context: "automatic-card-hold", courseId: course.id });
-          }
-        })();
+        logger.info("Card payment requested — hold will be created after driver accepts", { courseId: course.id, driverId });
       }
 
       // GÉNÉRATION DEVIS: Non-bloquant pour l'UI - fire-and-forget avec retry en arrière-plan

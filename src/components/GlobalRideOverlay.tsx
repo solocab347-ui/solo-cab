@@ -3,7 +3,8 @@ import { useIncomingCourseListener } from '@/hooks/useIncomingCourseListener';
 import { useOverlayPermission } from '@/hooks/useOverlayPermission';
 import { IncomingCourseOverlay } from '@/components/driver/courses/IncomingCourseOverlay';
 import { OverlayPermissionPrompt } from '@/components/driver/courses/OverlayPermissionPrompt';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export function GlobalRideOverlay() {
   const { user, userRole } = useAuth();
+  const navigate = useNavigate();
   const [driverId, setDriverId] = useState<string | null>(null);
 
   // Resolve driver ID from user
@@ -45,6 +47,18 @@ export function GlobalRideOverlay() {
     enabled: !!driverId && overlayEnabled,
   });
 
+  // After accepting → navigate to map mode to see active course
+  const handleAccepted = useCallback(() => {
+    clearCurrent();
+    navigate('/driver-dashboard?view=map');
+  }, [clearCurrent, navigate]);
+
+  // After refusing → navigate back to map
+  const handleDismiss = useCallback(() => {
+    dismiss();
+    navigate('/driver-dashboard?view=map');
+  }, [dismiss, navigate]);
+
   // Don't render anything if not a driver
   if (!driverId) return null;
 
@@ -52,8 +66,8 @@ export function GlobalRideOverlay() {
     <>
       <IncomingCourseOverlay
         course={incomingCourse}
-        onDismiss={dismiss}
-        onAccepted={clearCurrent}
+        onDismiss={handleDismiss}
+        onAccepted={handleAccepted}
         driverId={driverId}
       />
       <OverlayPermissionPrompt
