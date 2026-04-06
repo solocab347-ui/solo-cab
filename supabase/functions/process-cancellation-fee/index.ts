@@ -54,6 +54,7 @@ function calculateCancellationFee(
   course: any,
   cancelledBy: string,
   config: any,
+  driverPricing: any | null = null,
 ): CancellationResult {
   const hasDeposit = course.deposit_status === "paid" && course.deposit_amount > 0;
   const courseStatus = course.status;
@@ -80,7 +81,7 @@ function calculateCancellationFee(
 
   // CAS 1: Course déjà démarrée (status = in_progress) → prix réel km/temps
   if (courseStatus === "in_progress") {
-    const realPrice = calculateRealPrice(course);
+    const realPrice = calculateRealPrice(course, driverPricing);
     if (realPrice > 0) {
       return { 
         feeAmount: realPrice, 
@@ -136,16 +137,21 @@ function calculateCancellationFee(
 /**
  * Calcule le prix réel basé sur la distance et le temps effectués.
  * Utilisé quand la course est déjà démarrée.
+ * Utilise les tarifs RÉELS du chauffeur (depuis city_pricing ou devis).
  */
-function calculateRealPrice(course: any): number {
+function calculateRealPrice(course: any, driverPricing: any | null): number {
   const distanceKm = course.distance_km || 0;
   const durationMinutes = course.duration_minutes || 0;
   
   if (distanceKm <= 0 && durationMinutes <= 0) return 0;
 
-  // Utiliser le tarif au km du devis ou le tarif par défaut
-  const perKmRate = course.per_km_rate || 2.0; // €/km par défaut
-  const baseFare = course.base_fare || 5.0; // Prise en charge
+  // Priorité : tarif du devis > tarif ville chauffeur > fallback
+  const perKmRate = course.per_km_rate 
+    || driverPricing?.per_km_rate 
+    || 2.0;
+  const baseFare = course.base_fare 
+    || driverPricing?.base_fare 
+    || 5.0;
   
   const distancePrice = distanceKm * perKmRate;
   const price = baseFare + distancePrice;
@@ -210,6 +216,16 @@ serve(async (req) => {
       .eq("driver_id", course.driver_id)
       .maybeSingle();
 
+    // Récupérer les tarifs réels du chauffeur pour le calcul du prix réel
+    const { data: driverPricing } = await supabaseClient
+      .from("city_pricing")
+      .select("per_km_rate, base_fare")
+      .eq("driver_id", course.driver_id)
+      .eq("is_active", true)
+      .order("priority", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     logStep("Course found", { 
       status: course.status,
       cardHoldStatus: course.card_hold_status,
@@ -220,7 +236,7 @@ serve(async (req) => {
     });
 
     // ═══ 2. CALCULER LES FRAIS (POLITIQUE SOLOCAB) ═══
-    const result = calculateCancellationFee(course, cancelled_by, config);
+    const result = calculateCancellationFee(course, cancelled_by, config, driverPricing);
     
     logStep("Cancellation fee calculated", { 
       feeAmount: result.feeAmount, 
