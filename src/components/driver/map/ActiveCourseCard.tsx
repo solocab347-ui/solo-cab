@@ -209,6 +209,20 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
 
+    // Auto-set driver unavailable when course is active
+    if (newCourse && !prev) {
+      // Driver just got an active course → set unavailable for immediate rides
+      supabase.from('drivers').update({ is_available_now: false }).eq('id', driverId).then(() => {
+        console.log('[ActiveCourseCard] Driver set unavailable (course active)');
+      });
+    } else if (!newCourse && prev) {
+      // Course just ended → restore availability
+      supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
+        console.log('[ActiveCourseCard] Driver set available again (course ended)');
+      });
+      onCourseChange?.();
+    }
+
     if (newCourse) {
       // Determine the DB-driven phase
       let dbPhase: CoursePhase = 'approaching';
@@ -228,10 +242,6 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         setPhase(nextPhase);
         persistPhase(newCourse.id, nextPhase);
       }
-    }
-
-    if (prev && !newCourse) {
-      onCourseChange?.();
     }
   }, [driverId, onCourseChange, course, phase]);
 
