@@ -70,16 +70,16 @@ export function IncomingCourseOverlay({
     if (navigator.vibrate) {
       navigator.vibrate([300, 100, 300, 100, 300]);
     }
-    // Initial sound
+    // Initial sound — MAX volume
     playSoloCabSound(1.0).catch(() => {});
 
-    // Repeat sound every 3 seconds
+    // Repeat sound every 2.5 seconds for more urgency
     const soundInterval = setInterval(() => {
-      playSoloCabSound(0.7).catch(() => {});
+      playSoloCabSound(1.0).catch(() => {});
       if (navigator.vibrate) {
         navigator.vibrate([200, 80, 200]);
       }
-    }, 3000);
+    }, 2500);
     audioRef.current = soundInterval;
 
     return () => {
