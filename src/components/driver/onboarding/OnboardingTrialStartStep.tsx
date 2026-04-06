@@ -38,7 +38,7 @@ export function OnboardingTrialStartStep({
   loading 
 }: OnboardingTrialStartStepProps) {
   const [activating, setActivating] = useState(false);
-  const [confirmReady, setConfirmReady] = useState(false);
+  
   const [documentsStatus, setDocumentsStatus] = useState(initialDocumentsStatus);
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
