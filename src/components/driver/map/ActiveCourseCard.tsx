@@ -29,6 +29,7 @@ type CoursePhase = 'approaching' | 'arrived' | 'in_progress' | 'completing';
 interface ActiveCourseCardProps {
   driverId: string;
   onCourseChange?: () => void;
+  onCourseActive?: (active: boolean) => void;
 }
 
 const STOP_REASONS = [
@@ -40,7 +41,7 @@ const STOP_REASONS = [
   'Autre',
 ];
 
-export function ActiveCourseCard({ driverId, onCourseChange }: ActiveCourseCardProps) {
+export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: ActiveCourseCardProps) {
   const [course, setCourse] = useState<ActiveCourse | null>(null);
   const [phase, setPhase] = useState<CoursePhase>('approaching');
   const [loading, setLoading] = useState(false);
