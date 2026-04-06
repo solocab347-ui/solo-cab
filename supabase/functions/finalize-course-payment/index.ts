@@ -150,7 +150,7 @@ serve(async (req) => {
     // Check BOTH stripe_hold_payment_intent_id AND stripe_payment_intent_id
     // ═══════════════════════════════════════════════════════════════
     
-    const holdPiId = course.stripe_hold_payment_intent_id || 
+    const holdPiId = holdPiId || 
       (course.card_hold_status === "confirmed" ? course.stripe_payment_intent_id : null);
 
     if (holdPiId && course.card_hold_status === "confirmed") {
@@ -160,14 +160,14 @@ serve(async (req) => {
 
       try {
         // Retrieve the existing PaymentIntent to verify status
-        const existingPI = await stripe.paymentIntents.retrieve(course.stripe_hold_payment_intent_id);
+        const existingPI = await stripe.paymentIntents.retrieve(holdPiId);
 
         if (existingPI.status === "requires_capture") {
           // CAPTURE the full amount (or adjusted amount if different)
           const captureAmountCents = Math.round(totalAmount * 100);
           
           const captured = await stripe.paymentIntents.capture(
-            course.stripe_hold_payment_intent_id,
+            holdPiId,
             {
               amount_to_capture: Math.min(captureAmountCents, existingPI.amount),
             }
@@ -238,7 +238,7 @@ serve(async (req) => {
             capture_method: "manual",
             captured_at: new Date().toISOString(),
             metadata: {
-              hold_payment_intent_id: course.stripe_hold_payment_intent_id,
+              hold_payment_intent_id: holdPiId,
               total_amount: totalAmount,
               flow: "authorize_then_capture",
             },
