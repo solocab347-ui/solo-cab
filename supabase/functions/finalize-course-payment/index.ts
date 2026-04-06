@@ -185,7 +185,7 @@ serve(async (req) => {
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
           const solocabFee = SOLOCAB_FEE_CENTS / 100;
           const totalFees = solocabFee + stripeFee;
-          const netToDriver = Math.round((totalAmount - totalFees) * 100) / 100;
+          const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
           // Update course
           await supabaseClient

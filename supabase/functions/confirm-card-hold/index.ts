@@ -54,10 +54,12 @@ serve(async (req) => {
     }
 
     const paymentMethodId = paymentIntent.payment_method as string;
+    const holdAmountEuros = paymentIntent.amount / 100;
 
     logStep("PaymentIntent confirmed (hold active)", { 
       status: paymentIntent.status,
-      paymentMethodId 
+      paymentMethodId,
+      holdAmount: holdAmountEuros,
     });
 
     // Update course with card hold confirmation
@@ -68,6 +70,7 @@ serve(async (req) => {
         stripe_payment_method_id: paymentMethodId || null,
         card_hold_status: "confirmed",
         card_hold_confirmed_at: new Date().toISOString(),
+        card_hold_amount: holdAmountEuros,
       })
       .eq("id", course_id);
 
@@ -89,8 +92,8 @@ serve(async (req) => {
     if (course?.driver?.user_id) {
       await supabaseClient.from("notifications").insert({
         user_id: course.driver.user_id,
-        title: "💳 Avance de 10€ validée",
-        message: `${course.guest_name || "Un client"} a confirmé son avance de 10€ pour réserver la course.`,
+        title: "💳 Empreinte bancaire validée",
+        message: `${course.guest_name || "Un client"} a confirmé son empreinte de ${holdAmountEuros.toFixed(2)}€ pour réserver la course.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
@@ -101,9 +104,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Avance de 10€ confirmée - la course est réservée",
+        message: `Empreinte bancaire de ${holdAmountEuros.toFixed(2)}€ confirmée - la course est réservée`,
         payment_method_id: paymentMethodId,
-        hold_amount: 10.00,
+        hold_amount: holdAmountEuros,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );

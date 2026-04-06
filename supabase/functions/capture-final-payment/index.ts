@@ -171,8 +171,8 @@ serve(async (req) => {
           type: "final_payment",
         },
       },
-      success_url: `${origin}/reservation-tracking/${course.tracking_token}?final_payment=success`,
-      cancel_url: `${origin}/reservation-tracking/${course.tracking_token}?final_payment=cancelled`,
+      success_url: `${origin}/reservation-tracking/${course_id}?final_payment=success`,
+      cancel_url: `${origin}/reservation-tracking/${course_id}?final_payment=cancelled`,
     });
 
     logStep("Final payment checkout session created", { sessionId: session.id });
