@@ -83,20 +83,10 @@ export function TrialStartBanner({
     return null;
   }
 
-  const isStripeChoice = billingType === 'solocab_stripe' || billingType === 'stripe_connect';
-  const isEquipmentPurchase = billingType === 'buy_equipment';
-  const isOwnEquipment = billingType === 'own_equipment' && !isEquipmentPurchase;
   const isStripeReady = stripeAccountStatus === 'active';
 
-  // Déterminer si le bouton peut être activé
-  const canStartTrial = (() => {
-    if (isStripeChoice) {
-      // Pour Stripe, doit être actif
-      return isStripeReady;
-    }
-    // Pour matériel propre ou acheté, toujours activable (confirmation dans le dialog)
-    return true;
-  })();
+  // Stripe is mandatory - trial can start only when Stripe is ready
+  const canStartTrial = isStripeReady;
 
   const handleStartTrial = async () => {
     if (!confirmed) {
@@ -126,25 +116,13 @@ export function TrialStartBanner({
   };
 
   const getSubtitle = () => {
-    if (isStripeChoice) {
-      return isStripeReady 
-        ? 'Votre compte Stripe est validé !' 
-        : 'En attente de la validation Stripe';
-    }
-    if (isEquipmentPurchase) {
-      return 'Confirmez la réception de votre matériel de paiement';
-    }
-    return 'Activez votre compte gratuit dès maintenant';
+    return isStripeReady 
+      ? 'Votre compte est validé !' 
+      : 'En attente de la validation de vos paiements';
   };
 
   const getConfirmationText = () => {
-    if (isEquipmentPurchase) {
-      return 'Je confirme avoir reçu mon terminal de paiement et être prêt à encaisser mes clients.';
-    }
-    if (isStripeChoice) {
-      return 'Je confirme que mon compte Stripe est configuré et prêt à recevoir des paiements.';
-    }
-    return 'Je confirme que mon matériel d\'encaissement est prêt et fonctionnel.';
+    return 'Je confirme que mon compte de paiement est configuré et prêt à recevoir des paiements.';
   };
 
   return (
@@ -176,11 +154,11 @@ export function TrialStartBanner({
           </div>
           
           {/* Info sur l'attente Stripe */}
-          {isStripeChoice && !isStripeReady && (
+          {!isStripeReady && (
             <div className="mt-3 p-2 bg-warning/10 rounded-lg flex items-center gap-2">
               <Clock className="w-4 h-4 text-warning" />
               <span className="text-xs text-muted-foreground">
-                Votre compte Stripe est en cours de validation. Vous serez notifié dès qu'il sera prêt.
+                Votre compte de paiement est en cours de validation.
               </span>
             </div>
           )}

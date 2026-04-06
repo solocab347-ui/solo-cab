@@ -38,7 +38,7 @@ export function OnboardingTrialStartStep({
   loading 
 }: OnboardingTrialStartStepProps) {
   const [activating, setActivating] = useState(false);
-  const [confirmReady, setConfirmReady] = useState(false);
+  
   const [documentsStatus, setDocumentsStatus] = useState(initialDocumentsStatus);
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,12 +125,9 @@ export function OnboardingTrialStartStep({
     }
   };
 
-  const isStripeChoice = billingType === 'solocab_stripe';
-  const isEquipmentPurchase = billingType === 'buy_equipment';
-  const isOwnEquipment = billingType === 'own_equipment' || !billingType;
-
-  const isStripeReady = isStripeChoice && stripeAccountStatus === 'active';
-  const isStripeNotReady = isStripeChoice && stripeAccountStatus !== 'active';
+  // Stripe is now always mandatory
+  const isStripeReady = stripeAccountStatus === 'active';
+  const isStripeNotReady = stripeAccountStatus !== 'active';
   
   // Documents status check
   // - 'validated' = admin has approved
@@ -140,18 +137,10 @@ export function OnboardingTrialStartStep({
   const areDocumentsPending = documentsStatus === 'submitted'; // All docs uploaded, waiting admin
   const areDocumentsMissing = !areDocumentsValidated && !areDocumentsPending;
 
-  // L'activation peut se faire dès que les documents sont validés par l'admin
+  // Activation requires validated documents + Stripe ready
   const canActivate = () => {
-    // Documents must be validated by admin first
     if (!areDocumentsValidated) return false;
-    
-    // Pour Stripe Connect, attendre que le compte soit activé
-    if (isStripeChoice && !isStripeReady) return false;
-    
-    // Pour équipement propre ou acheté, confirmer la disponibilité
-    if (isOwnEquipment || isEquipmentPurchase) return confirmReady;
-    
-    // Si Stripe ready, on peut démarrer
+    if (!isStripeReady) return false;
     return true;
   };
 
@@ -296,40 +285,8 @@ export function OnboardingTrialStartStep({
           </div>
         </div>
 
-        {/* Own equipment confirmation */}
-        {(isOwnEquipment || isEquipmentPurchase) && (
-          <button
-            type="button"
-            onClick={() => setConfirmReady(!confirmReady)}
-            className={cn(
-              "w-full p-4 rounded-2xl border transition-all text-left",
-              confirmReady 
-                ? "border-emerald-500/40 bg-emerald-500/5" 
-                : "border-border bg-muted/5 hover:border-muted-foreground/30"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                confirmReady ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"
-              )}>
-                {confirmReady && <CheckCircle2 className="w-4 h-4 text-white" />}
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">
-                  {isEquipmentPurchase ? "J'ai reçu mon terminal" : "Mon matériel est prêt"}
-                </h3>
-                <p className="text-muted-foreground text-xs mt-0.5">
-                  Mon équipement de paiement est configuré
-                </p>
-              </div>
-            </div>
-          </button>
-        )}
-
-        {/* Stripe Connect */}
-        {isStripeChoice && (
-          <div className={cn(
+        {/* Stripe Connect status - always shown */}
+        <div className={cn(
             "w-full p-4 rounded-2xl border",
             isStripeReady 
               ? "border-emerald-500/40 bg-emerald-500/5" 
@@ -358,7 +315,6 @@ export function OnboardingTrialStartStep({
               </div>
             </div>
           </div>
-        )}
       </motion.div>
 
       {/* Info - minimal */}
@@ -433,7 +389,7 @@ export function OnboardingTrialStartStep({
                 className="w-full h-12"
               >
                 <Clock className="w-4 h-4 mr-2" />
-                {isStripeNotReady ? 'Attendre Stripe' : 'Attendre mon matériel'}
+                Attendre la validation
               </Button>
             )}
           </>
