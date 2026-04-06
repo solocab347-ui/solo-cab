@@ -20059,6 +20059,10 @@ export type Database = {
         Args: { role_name: string; user_uuid: string }
         Returns: boolean
       }
+      increment_driver_fees_balance: {
+        Args: { p_amount: number; p_driver_id: string }
+        Returns: undefined
+      }
       is_airport_address: { Args: { address: string }; Returns: boolean }
       is_company_admin: {
         Args: { _company_id: string; _user_id: string }
