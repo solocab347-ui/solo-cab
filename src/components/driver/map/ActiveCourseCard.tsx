@@ -38,6 +38,38 @@ interface ActiveCourse {
 
 type CoursePhase = 'approaching' | 'arrived' | 'in_progress' | 'completing';
 
+const PHASE_ORDER: Record<CoursePhase, number> = {
+  approaching: 0,
+  arrived: 1,
+  in_progress: 2,
+  completing: 3,
+};
+
+function loadPersistedPhase(courseId: string): CoursePhase | null {
+  try {
+    const raw = localStorage.getItem(`solocab_phase_${courseId}`);
+    if (raw && raw in PHASE_ORDER) return raw as CoursePhase;
+  } catch {}
+  return null;
+}
+
+function persistPhase(courseId: string, phase: CoursePhase) {
+  try {
+    localStorage.setItem(`solocab_phase_${courseId}`, phase);
+  } catch {}
+}
+
+function clearPersistedPhase(courseId: string) {
+  try {
+    localStorage.removeItem(`solocab_phase_${courseId}`);
+  } catch {}
+}
+
+/** Only advance phase forward, never regress */
+function advancePhase(current: CoursePhase, candidate: CoursePhase): CoursePhase {
+  return PHASE_ORDER[candidate] > PHASE_ORDER[current] ? candidate : current;
+}
+
 interface ActiveCourseCardProps {
   driverId: string;
   onCourseChange?: () => void;
@@ -146,10 +178,23 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     onCourseActive?.(!!newCourse);
 
     if (newCourse) {
-      if (newCourse.status === 'in_progress') {
-        setPhase('in_progress');
-      } else if ((newCourse.status === 'accepted' || getAcceptedDevis(newCourse)) && phase !== 'arrived') {
-        setPhase('approaching');
+      // Determine the DB-driven phase
+      let dbPhase: CoursePhase = 'approaching';
+      if (newCourse.status === 'in_progress') dbPhase = 'in_progress';
+
+      // Load persisted phase for this specific course
+      const persisted = loadPersistedPhase(newCourse.id);
+
+      // Start from persisted or current phase, then only advance forward
+      const baseline = persisted && PHASE_ORDER[persisted] > PHASE_ORDER[phase]
+        ? persisted
+        : phase;
+
+      const nextPhase = advancePhase(baseline, dbPhase);
+
+      if (nextPhase !== phase) {
+        setPhase(nextPhase);
+        persistPhase(newCourse.id, nextPhase);
       }
     }
 
@@ -190,9 +235,11 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   }, [course?.distance_km]);
 
   const handleArrived = useCallback(async () => {
-    setPhase('arrived');
+    const next: CoursePhase = 'arrived';
+    setPhase(next);
+    if (course) persistPhase(course.id, next);
     toast.success('Vous êtes arrivé au point de prise en charge');
-  }, []);
+  }, [course]);
 
   const handleStartTrip = useCallback(async () => {
     if (!course) return;
@@ -204,6 +251,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('id', course.id)
         .eq('driver_id', driverId); // Extra safety
       setPhase('in_progress');
+      if (course) persistPhase(course.id, 'in_progress');
       toast.success('Course démarrée !');
     } catch {
       toast.error("Erreur au démarrage");
@@ -228,6 +276,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       }
       toast.success('Course terminée !');
       setCourse(null);
+      if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
     } catch {
       toast.error("Erreur lors de la finalisation");
@@ -252,6 +301,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('driver_id', driverId);
       toast.success(`Course arrêtée: ${reason}`);
       setCourse(null);
+      if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
     } catch {
       await supabase
@@ -261,6 +311,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .eq('driver_id', driverId);
       toast.info('Course arrêtée');
       setCourse(null);
+      if (course) clearPersistedPhase(course.id);
       onCourseChange?.();
     } finally {
       setLoading(false);
