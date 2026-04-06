@@ -50,6 +50,8 @@ const GuestBookingTracking = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [driverUsesStripe, setDriverUsesStripe] = useState(false);
+  const [rideRequestId, setRideRequestId] = useState<string | null>(null);
+  const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
 
   const fetchBooking = async () => {
     if (!token) return;
