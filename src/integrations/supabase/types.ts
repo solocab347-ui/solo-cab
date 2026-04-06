@@ -14887,6 +14887,44 @@ export type Database = {
           },
         ]
       }
+      ride_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          ride_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          ride_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          ride_id?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_messages_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_requests: {
         Row: {
           accepted_by_driver_id: string | null
@@ -18698,6 +18736,7 @@ export type Database = {
         }[]
       }
       calculate_stripe_fee: { Args: { amount_eur: number }; Returns: number }
+      can_access_ride_chat: { Args: { p_ride_id: string }; Returns: boolean }
       can_add_free_driver: {
         Args: { _fleet_manager_id: string }
         Returns: boolean
