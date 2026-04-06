@@ -117,29 +117,29 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       setSettlements(mapped);
       setPendingPayments(pendingResult.data || []);
 
-      // Calculate wallet stats from payments
-      const payments = paymentsResult.data || [];
-      const totalEarned = payments.reduce((s, p) => s + (p.amount || 0), 0);
-      const totalStripeFees = payments.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
-      const totalSolocabFees = payments.reduce((s, p) => s + (p.application_fee_amount || 0), 0);
+      // Calculate wallet stats from stripe_transactions
+      const txns = paymentsResult.data || [];
+      const totalEarned = txns.reduce((s, p) => s + (p.gross_amount || 0), 0);
+      const totalStripeFees = txns.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
+      const totalSolocabFees = txns.reduce((s, p) => s + (p.solocab_fee_amount || 0), 0);
       const totalFees = totalStripeFees + totalSolocabFees;
-      const totalNet = payments.reduce((s, p) => s + (p.net_to_driver || p.amount - totalFees / payments.length), 0);
+      const totalNet = txns.reduce((s, p) => s + (p.net_amount || 0), 0);
 
       setWalletStats({
         totalEarned,
         totalFees,
         totalNet,
-        totalCourses: payments.length,
-        avgPerCourse: payments.length > 0 ? totalEarned / payments.length : 0,
-        recentTransactions: payments.slice(0, 20).map(p => ({
+        totalCourses: txns.length,
+        avgPerCourse: txns.length > 0 ? totalEarned / txns.length : 0,
+        recentTransactions: txns.slice(0, 20).map(p => ({
           id: p.id,
-          course_id: p.course_id,
-          amount: p.amount,
-          net_to_driver: p.net_to_driver || 0,
+          course_id: p.course_id || '',
+          amount: p.gross_amount || 0,
+          net_to_driver: p.net_amount || 0,
           stripe_fee_amount: p.stripe_fee_amount || 0,
-          solocab_fee_amount: p.application_fee_amount || 0,
+          solocab_fee_amount: p.solocab_fee_amount || 0,
           status: p.status,
-          payment_type: p.payment_type || "course_payment",
+          payment_type: p.transaction_type || "full_payment",
           created_at: p.created_at,
         })),
       });
