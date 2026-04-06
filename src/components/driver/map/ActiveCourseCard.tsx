@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route } from 'lucide-react';
+import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavigationSelector } from '@/components/NavigationSelector';
@@ -9,6 +9,10 @@ import { toast } from 'sonner';
 interface ActiveCourse {
   id: string;
   status: string;
+   created_at: string;
+   updated_at: string | null;
+   scheduled_date: string | null;
+   course_number: string | null;
   pickup_address: string;
   destination_address: string;
   pickup_latitude: number | null;
@@ -21,8 +25,15 @@ interface ActiveCourse {
   final_payment_amount: number | null;
   distance_km: number | null;
   payment_method: string | null;
+   payment_method_requested: string | null;
   driver_id: string;
   clients: { profiles: { full_name: string; phone: string | null } | null } | null;
+   devis: Array<{
+    amount: number | null;
+    status: string | null;
+    accepted_at: string | null;
+    created_at: string;
+  }> | null;
 }
 
 type CoursePhase = 'approaching' | 'arrived' | 'in_progress' | 'completing';
@@ -42,6 +53,47 @@ const STOP_REASONS = [
   'Autre',
 ];
 
+const ACTIVE_COURSE_FRESHNESS_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+const getCourseTimestamp = (course: ActiveCourse) => {
+  const candidate = course.updated_at || course.scheduled_date || course.created_at;
+  const parsed = candidate ? new Date(candidate).getTime() : 0;
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const getAcceptedDevis = (course: ActiveCourse) => {
+  return [...(course.devis ?? [])]
+    .filter((quote) => quote.status === 'accepted')
+    .sort((a, b) => {
+      const aTime = new Date(a.accepted_at || a.created_at).getTime();
+      const bTime = new Date(b.accepted_at || b.created_at).getTime();
+      return bTime - aTime;
+    })[0] ?? null;
+};
+
+const getCoursePriority = (course: ActiveCourse) => {
+  if (course.status === 'in_progress') return 3;
+  if (course.status === 'accepted' || getAcceptedDevis(course)) return 2;
+  return 1;
+};
+
+const pickRelevantCourse = (courses: ActiveCourse[]) => {
+  const freshnessCutoff = Date.now() - ACTIVE_COURSE_FRESHNESS_WINDOW_MS;
+
+  const freshCourses = courses.filter((candidate) => {
+    if (candidate.status === 'in_progress') return true;
+    return getCourseTimestamp(candidate) >= freshnessCutoff;
+  });
+
+  const source = freshCourses.length > 0 ? freshCourses : courses;
+
+  return [...source].sort((a, b) => {
+    const priorityDiff = getCoursePriority(b) - getCoursePriority(a);
+    if (priorityDiff !== 0) return priorityDiff;
+    return getCourseTimestamp(b) - getCourseTimestamp(a);
+  })[0] ?? null;
+};
+
 export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: ActiveCourseCardProps) {
   const [course, setCourse] = useState<ActiveCourse | null>(null);
   const [phase, setPhase] = useState<CoursePhase>('approaching');
@@ -55,25 +107,28 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const { data, error } = await supabase
       .from('courses')
       .select(`
-        id, status, pickup_address, destination_address,
+        id, status, created_at, updated_at, scheduled_date, course_number,
+        pickup_address, destination_address,
         pickup_latitude, pickup_longitude,
         destination_latitude, destination_longitude,
         guest_name, guest_phone, guest_estimated_price, final_payment_amount,
-        distance_km, payment_method, driver_id,
-        clients(profiles:user_id(full_name, phone))
+        distance_km, payment_method, payment_method_requested, driver_id,
+        clients(profiles:user_id(full_name, phone)),
+        devis(amount, status, accepted_at, created_at)
       `)
       .eq('driver_id', driverId)
-      .in('status', ['accepted', 'in_progress'])
+      .in('status', ['pending', 'accepted', 'in_progress'])
+      .order('updated_at', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(20);
 
     if (error) {
       console.error('[ActiveCourseCard] fetch error:', error);
       return;
     }
 
-    const newCourse = data as unknown as ActiveCourse | null;
+    const candidates = (data ?? []) as unknown as ActiveCourse[];
+    const newCourse = pickRelevantCourse(candidates);
 
     // Double-check driver_id matches to prevent cross-driver leaks
     if (newCourse && newCourse.driver_id !== driverId) {
@@ -93,7 +148,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     if (newCourse) {
       if (newCourse.status === 'in_progress') {
         setPhase('in_progress');
-      } else if (newCourse.status === 'accepted' && phase !== 'arrived') {
+      } else if ((newCourse.status === 'accepted' || getAcceptedDevis(newCourse)) && phase !== 'arrived') {
         setPhase('approaching');
       }
     }
@@ -212,10 +267,13 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course, driverId, onCourseChange]);
 
+  const acceptedDevis = course ? getAcceptedDevis(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
   const clientPhone = course?.clients?.profiles?.phone || course?.guest_phone;
-  const price = course?.final_payment_amount || course?.guest_estimated_price;
-  const paymentLabel = course?.payment_method === 'stripe' || course?.payment_method === 'card'
+  const clientPhoneHref = clientPhone?.replace(/\s+/g, '');
+  const price = course?.final_payment_amount ?? course?.guest_estimated_price ?? acceptedDevis?.amount ?? null;
+  const paymentMethod = course?.payment_method || course?.payment_method_requested;
+  const paymentLabel = paymentMethod === 'stripe' || paymentMethod === 'card'
     ? '💳 Paiement carte' : '💵 Paiement espèces';
 
   if (!course) return null;
@@ -267,14 +325,30 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                 <p className="text-lg font-bold text-foreground truncate">{clientName}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{paymentLabel}</p>
               </div>
-              {clientPhone && (
-                <a href={`tel:${clientPhone}`}>
-                  <Button size="icon" className="h-12 w-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30">
+              {clientPhoneHref && (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`sms:${clientPhoneHref}`}
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+                    aria-label="Écrire au client"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                  </a>
+                  <a
+                    href={`tel:${clientPhoneHref}`}
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+                    aria-label="Appeler le client"
+                  >
                     <Phone className="w-5 h-5" />
-                  </Button>
-                </a>
+                  </a>
+                </div>
               )}
             </div>
+            {course?.course_number && (
+              <div className="mt-3 rounded-xl bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground">
+                Course {course.course_number}
+              </div>
+            )}
           </div>
 
           {/* Route details */}
