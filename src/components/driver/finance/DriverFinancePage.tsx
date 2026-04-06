@@ -95,8 +95,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
           .order("created_at", { ascending: false }),
         supabase
-          .from("payments")
-          .select("id, course_id, amount, net_to_driver, stripe_fee_amount, application_fee_amount, status, payment_type, created_at")
+          .from("stripe_transactions")
+          .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, created_at, description")
           .eq("driver_id", driverId)
           .eq("status", "succeeded")
           .order("created_at", { ascending: false })
