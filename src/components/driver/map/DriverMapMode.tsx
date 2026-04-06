@@ -64,6 +64,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [isMapReady, setIsMapReady] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
   const [revenueHidden, setRevenueHidden] = useState(false);
+  const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
   const { latitude, longitude, isTracking, updateAvailability } = useDriverLocationTracker({
     driverId,
@@ -208,7 +209,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       {/* Active course card */}
-      <ActiveCourseCard driverId={driverId} onCourseChange={fetchRevenue} />
+      <ActiveCourseCard driverId={driverId} onCourseChange={() => { fetchRevenue(); setHasActiveCourse(false); }} onCourseActive={(active) => setHasActiveCourse(active)} />
       <div className="absolute top-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}>
         <div className="px-4 pt-3">
           <motion.div
@@ -311,63 +312,65 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
         )}
       </div>
 
-      {/* === BOTTOM BAR === */}
-      <div className="absolute bottom-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
-        <div className="px-4 pb-6 space-y-3">
-          {/* Quick action buttons */}
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="pointer-events-auto grid grid-cols-4 gap-2"
-          >
-            <button
-              onClick={onSwitchToDashboard}
-              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+      {/* === BOTTOM BAR — hidden when course is active === */}
+      {!hasActiveCourse && (
+        <div className="absolute bottom-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
+          <div className="px-4 pb-6 space-y-3">
+            {/* Quick action buttons */}
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="pointer-events-auto grid grid-cols-4 gap-2"
             >
-              <LayoutGrid className="w-5 h-5 text-primary" />
-              <span className="text-[10px] font-semibold text-foreground">Dashboard</span>
-            </button>
-            <button
-              onClick={() => onNavigateTo?.('encaisser')}
-              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
-            >
-              <Receipt className="w-5 h-5 text-emerald-500" />
-              <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
-            </button>
-            <button
-              onClick={() => onNavigateTo?.('qrcode')}
-              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
-            >
-              <QrCode className="w-5 h-5 text-blue-500" />
-              <span className="text-[10px] font-semibold text-foreground">QR Code</span>
-            </button>
-            <button
-              onClick={() => onNavigateTo?.('courses')}
-              className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
-            >
-              <Car className="w-5 h-5 text-amber-500" />
-              <span className="text-[10px] font-semibold text-foreground">Courses</span>
-            </button>
-          </motion.div>
+              <button
+                onClick={onSwitchToDashboard}
+                className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+              >
+                <LayoutGrid className="w-5 h-5 text-primary" />
+                <span className="text-[10px] font-semibold text-foreground">Dashboard</span>
+              </button>
+              <button
+                onClick={() => onNavigateTo?.('encaisser')}
+                className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+              >
+                <Receipt className="w-5 h-5 text-emerald-500" />
+                <span className="text-[10px] font-semibold text-foreground">Encaisser</span>
+              </button>
+              <button
+                onClick={() => onNavigateTo?.('qrcode')}
+                className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+              >
+                <QrCode className="w-5 h-5 text-blue-500" />
+                <span className="text-[10px] font-semibold text-foreground">QR Code</span>
+              </button>
+              <button
+                onClick={() => onNavigateTo?.('courses')}
+                className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
+              >
+                <Car className="w-5 h-5 text-amber-500" />
+                <span className="text-[10px] font-semibold text-foreground">Courses</span>
+              </button>
+            </motion.div>
 
-          {/* Recenter button - floating */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: 'spring' }}
-            className="pointer-events-auto absolute -top-16 right-4"
-          >
-            <Button
-              onClick={recenter}
-              size="icon"
-              className="rounded-full shadow-xl bg-card text-primary border border-border/50 h-12 w-12 hover:bg-accent"
+            {/* Recenter button - floating */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: 'spring' }}
+              className="pointer-events-auto absolute -top-16 right-4"
             >
-              <Navigation className="w-5 h-5" />
-            </Button>
-          </motion.div>
+              <Button
+                onClick={recenter}
+                size="icon"
+                className="rounded-full shadow-xl bg-card text-primary border border-border/50 h-12 w-12 hover:bg-accent"
+              >
+                <Navigation className="w-5 h-5" />
+              </Button>
+            </motion.div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading */}
       {!isTracking && (
