@@ -399,7 +399,37 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const paymentLabel = paymentMethod === 'stripe' || paymentMethod === 'card'
     ? '💳 Paiement carte' : '💵 Paiement espèces';
 
-  if (!course) return null;
+  // If no active course, show upcoming reservations banner only
+  if (!course) {
+    if (upcomingReservations.length === 0) return null;
+    return (
+      <div className="fixed bottom-20 inset-x-0 z-[100] px-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-primary">
+            <CalendarClock className="w-4 h-4" />
+            Réservations du jour
+          </div>
+          {upcomingReservations.slice(0, 3).map(res => {
+            const resDevis = getAcceptedDevis(res);
+            const resTime = res.scheduled_date ? format(new Date(res.scheduled_date), 'HH:mm', { locale: fr }) : '—';
+            const resClient = res.clients?.profiles?.full_name || res.guest_name || 'Client';
+            return (
+              <div key={res.id} className="flex items-center gap-3 bg-muted/50 rounded-xl px-3 py-2">
+                <div className="text-lg font-black text-primary min-w-[50px]">{resTime}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{res.destination_address}</p>
+                  <p className="text-xs text-muted-foreground">{resClient} • {resDevis?.amount ? `${resDevis.amount}€` : '—'}</p>
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground text-center">
+            Pensez à ne pas prendre de course immédiate avant vos réservations
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const phaseLabel = phase === 'approaching' ? 'En approche' : phase === 'arrived' ? 'Client à récupérer' : phase === 'in_progress' ? 'Course en cours' : 'Finalisation';
   const phaseColor = phase === 'in_progress' ? 'bg-emerald-500' : phase === 'arrived' ? 'bg-blue-500' : 'bg-amber-500';
