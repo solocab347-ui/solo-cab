@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Navigation, Phone, User, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,34 +23,43 @@ interface ActiveCourse {
 
 interface ActiveCourseCardProps {
   driverId: string;
+  onCourseChange?: () => void;
 }
 
-export function ActiveCourseCard({ driverId }: ActiveCourseCardProps) {
+export function ActiveCourseCard({ driverId, onCourseChange }: ActiveCourseCardProps) {
   const [course, setCourse] = useState<ActiveCourse | null>(null);
 
+  const fetchActive = useCallback(async () => {
+    const { data } = await supabase
+      .from('courses')
+      .select(`
+        id, status, pickup_address, destination_address,
+        pickup_latitude, pickup_longitude,
+        destination_latitude, destination_longitude,
+        guest_name, guest_phone, guest_estimated_price, final_payment_amount,
+        clients(profiles:user_id(full_name, phone))
+      `)
+      .eq('driver_id', driverId)
+      .in('status', ['accepted', 'in_progress'])
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const prev = course;
+    setCourse(data as unknown as ActiveCourse | null);
+
+    // If course just completed or changed, notify parent to refresh revenue
+    if (prev && !data) {
+      onCourseChange?.();
+    }
+  }, [driverId, course, onCourseChange]);
+
   useEffect(() => {
-    const fetchActive = async () => {
-      const { data } = await supabase
-        .from('courses')
-        .select(`
-          id, status, pickup_address, destination_address,
-          pickup_latitude, pickup_longitude,
-          destination_latitude, destination_longitude,
-          guest_name, guest_phone, guest_estimated_price, final_payment_amount,
-          clients(profiles:user_id(full_name, phone))
-        `)
-        .eq('driver_id', driverId)
-        .in('status', ['accepted', 'in_progress'])
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setCourse(data as unknown as ActiveCourse | null);
-    };
-
     fetchActive();
 
-    // Listen for course status changes
+    // Poll every 5s as backup for realtime
+    const pollInterval = setInterval(fetchActive, 5000);
+
     const channel = supabase
       .channel(`active-course-${driverId}`)
       .on('postgres_changes', {
@@ -61,7 +70,10 @@ export function ActiveCourseCard({ driverId }: ActiveCourseCardProps) {
       }, () => fetchActive())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
+    };
   }, [driverId]);
 
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
@@ -89,7 +101,7 @@ export function ActiveCourseCard({ driverId }: ActiveCourseCardProps) {
                   {course.status === 'in_progress' ? 'En course' : 'Course acceptée'}
                 </span>
               </div>
-              {price && (
+              {price != null && (
                 <span className="text-sm font-bold text-primary">{price.toFixed(2)}€</span>
               )}
             </div>
