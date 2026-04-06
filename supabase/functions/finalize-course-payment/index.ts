@@ -82,6 +82,42 @@ serve(async (req) => {
       );
     }
 
+    // Also check if payment_status is already "paid" (e.g. webhook captured it)
+    if (course.payment_status === "paid" && course.payment_captured_at) {
+      logStep("Payment already captured (via webhook or other flow)", { course_id });
+      
+      // Just complete the course
+      await supabaseClient
+        .from("courses")
+        .update({
+          status: "completed",
+          final_payment_status: "succeeded",
+          course_finalized_by_driver_at: new Date().toISOString(),
+        })
+        .eq("id", course_id);
+
+      // Create invoice
+      try {
+        await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+      } catch (e) {
+        logStep("Facture creation failed (non-blocking)", { error: String(e) });
+      }
+
+      // Notify driver - payment already done
+      await supabaseClient.from("notifications").insert({
+        user_id: course.driver.user_id,
+        title: "✅ Course terminée",
+        message: `Course terminée. Le paiement de ${(course.final_payment_amount || 0).toFixed(2)}€ a déjà été encaissé.`,
+        type: "info",
+        link: "/driver-dashboard?tab=courses",
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà encaissé" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     if (course.final_payment_status === "processing") {
       logStep("Course payment already processing (idempotent return)", { course_id });
       return new Response(
@@ -111,24 +147,27 @@ serve(async (req) => {
 
     // ═══════════════════════════════════════════════════════════════
     // FLUX PRINCIPAL: CAPTURE de l'empreinte bancaire existante
-    // C'est le flux Uber-like: Authorize → Capture → Transfer
+    // Check BOTH stripe_hold_payment_intent_id AND stripe_payment_intent_id
     // ═══════════════════════════════════════════════════════════════
     
-    if (course.stripe_hold_payment_intent_id && course.card_hold_status === "confirmed") {
+    const holdPiId = course.stripe_hold_payment_intent_id || 
+      (course.card_hold_status === "confirmed" ? course.stripe_payment_intent_id : null);
+
+    if (holdPiId && course.card_hold_status === "confirmed") {
       logStep("Capturing existing hold (Authorize → Capture flow)", {
-        holdPiId: course.stripe_hold_payment_intent_id,
+        holdPiId,
       });
 
       try {
         // Retrieve the existing PaymentIntent to verify status
-        const existingPI = await stripe.paymentIntents.retrieve(course.stripe_hold_payment_intent_id);
+        const existingPI = await stripe.paymentIntents.retrieve(holdPiId);
 
         if (existingPI.status === "requires_capture") {
           // CAPTURE the full amount (or adjusted amount if different)
           const captureAmountCents = Math.round(totalAmount * 100);
           
           const captured = await stripe.paymentIntents.capture(
-            course.stripe_hold_payment_intent_id,
+            holdPiId,
             {
               amount_to_capture: Math.min(captureAmountCents, existingPI.amount),
             }
@@ -199,7 +238,7 @@ serve(async (req) => {
             capture_method: "manual",
             captured_at: new Date().toISOString(),
             metadata: {
-              hold_payment_intent_id: course.stripe_hold_payment_intent_id,
+              hold_payment_intent_id: holdPiId,
               total_amount: totalAmount,
               flow: "authorize_then_capture",
             },
