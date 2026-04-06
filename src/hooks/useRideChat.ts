@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { playSoloCabSound } from '@/lib/solocabNotificationSound';
+import { playInfoChime } from '@/lib/notificationSounds';
 
 export interface RideMessage {
   id: string;
@@ -133,7 +133,7 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
 
           // Play sound for incoming messages from others
           if (newMsg.sender_type !== senderType && !isFirstLoad.current) {
-            playSoloCabSound();
+            playInfoChime(0.5);
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             setUnreadCount(prev => prev + 1);
           }

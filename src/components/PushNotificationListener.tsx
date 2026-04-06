@@ -6,17 +6,8 @@ import { logger } from '@/lib/productionLogger';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Son signature SoloCab — Swoosh + Ding
-import { playSoloCabSound } from '@/lib/solocabNotificationSound';
-
-const playNotificationSound = async () => {
-  try {
-    await playSoloCabSound(0.7);
-    logger.info('Son SoloCab joué', {});
-  } catch (error) {
-    logger.warn('Impossible de jouer le son SoloCab:', { error });
-  }
-};
+// Système de sons contextuels
+import { playNotificationSoundByType } from '@/lib/notificationSounds';
 
 export const PushNotificationListener = () => {
   const { user } = useAuth();
@@ -24,9 +15,9 @@ export const PushNotificationListener = () => {
   const lastNotificationRef = useRef<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
-  const showBrowserNotification = useCallback(async (title: string, body: string, link?: string, notificationId?: string) => {
-    // Jouer le son d'alerte
-    await playNotificationSound();
+  const showBrowserNotification = useCallback(async (title: string, body: string, link?: string, notificationId?: string, notificationType?: string) => {
+    // Jouer le son adapté au type de notification
+    await playNotificationSoundByType(notificationType, title);
 
     // Vérifier la permission
     if (!('Notification' in window)) {
@@ -175,7 +166,8 @@ export const PushNotificationListener = () => {
           notification.title,
           notification.message,
           notification.link,
-          `solocab-${notification.id}`
+          `solocab-${notification.id}`,
+          notification.type
         );
       }
     );
