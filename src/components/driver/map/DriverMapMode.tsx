@@ -61,6 +61,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
+  const [revenueHidden, setRevenueHidden] = useState(false);
 
   const { latitude, longitude, isTracking, updateAvailability } = useDriverLocationTracker({
     driverId,
