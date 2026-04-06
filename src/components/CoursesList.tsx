@@ -2345,7 +2345,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.passengers_count} passager(s)
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} driverId={driverId} />
                   </div>
 
                   {(() => {
@@ -2741,7 +2741,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.passengers_count} passager(s)
                     </div>
                     {/* Contact du client/passager */}
-                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} driverId={driverId} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -3085,7 +3085,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       </div>
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} driverId={driverId} />
                   </div>
 
                   {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
@@ -3266,7 +3266,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       </div>
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} driverId={driverId} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
