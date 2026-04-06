@@ -83,23 +83,24 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     await playAvailabilitySound(next);
   }, [isAvailable, updateAvailability]);
 
+  const fetchRevenue = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_driver_dashboard_stats', {
+        p_driver_id: driverId,
+        p_period: 'day',
+      });
+      if (data && Array.isArray(data) && data.length > 0) {
+        const d = data[0] as any;
+        setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
+      }
+    } catch { /* silent */ }
+  }, [driverId]);
+
   useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        const { data } = await supabase.rpc('get_driver_dashboard_stats', {
-          p_driver_id: driverId,
-          p_period: 'day',
-        });
-        if (data && Array.isArray(data) && data.length > 0) {
-          const d = data[0] as any;
-          setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
-        }
-      } catch { /* silent */ }
-    };
     fetchRevenue();
     const interval = setInterval(fetchRevenue, 60000);
     return () => clearInterval(interval);
-  }, [driverId]);
+  }, [fetchRevenue]);
 
   // Inject radar CSS
   useEffect(() => {
@@ -207,7 +208,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       {/* Active course card */}
-      <ActiveCourseCard driverId={driverId} />
+      <ActiveCourseCard driverId={driverId} onCourseChange={fetchRevenue} />
       <div className="absolute top-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}>
         <div className="px-4 pt-3">
           <motion.div
