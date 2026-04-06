@@ -81,7 +81,46 @@ serve(async (req) => {
     }
 
     if (!course.stripe_payment_intent_id && !course.stripe_hold_payment_intent_id) {
-      throw new Error("No payment intent found for this course");
+      // No payment intent → complete as manual/cash payment
+      logStep("No payment intent — completing as manual payment", { course_id });
+
+      const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
+      const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
+
+      await supabaseClient
+        .from("courses")
+        .update({
+          status: "completed",
+          payment_status: paymentMethod === "Espèces" || paymentMethod === "cash" ? "paid" : "pending_manual",
+          final_payment_status: paymentMethod === "Espèces" || paymentMethod === "cash" ? "succeeded" : "pending_manual",
+          final_payment_amount: totalAmount,
+          course_finalized_by_driver_at: new Date().toISOString(),
+          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+        })
+        .eq("id", course_id);
+
+      // Create invoice
+      try {
+        await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+      } catch (e) {
+        logStep("Facture creation failed (non-blocking)", { error: String(e) });
+      }
+
+      const isCash = paymentMethod === "Espèces" || paymentMethod === "cash";
+      await supabaseClient.from("notifications").insert({
+        user_id: course.driver.user_id,
+        title: "✅ Course terminée",
+        message: isCash
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement espèces.`
+          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissez via TPE.`,
+        type: "info",
+        link: "/driver-dashboard?tab=courses",
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, status: "completed", flow: "manual", amount: totalAmount }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
     const paymentIntentId = course.stripe_payment_intent_id || course.stripe_hold_payment_intent_id;
