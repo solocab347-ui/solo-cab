@@ -302,6 +302,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course, driverId]);
 
+  const restoreAvailability = useCallback(() => {
+    supabase.from('drivers').update({ is_available_now: true }).eq('id', driverId).then(() => {
+      console.log('[ActiveCourseCard] Driver availability restored');
+    });
+  }, [driverId]);
+
   const handleComplete = useCallback(async () => {
     if (!course) return;
     setLoading(true);
@@ -313,6 +319,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       dismissCourse(course.id);
       setCourse(null);
       if (course) clearPersistedPhase(course.id);
+      restoreAvailability();
       onCourseChange?.();
     } catch {
       // Even on error, dismiss the course from UI to prevent loop
