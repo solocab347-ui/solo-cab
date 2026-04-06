@@ -115,7 +115,7 @@ serve(async (req) => {
     const { data: course, error: courseError } = await supabaseClient
       .from("courses")
       .insert(courseData)
-      .select("id, tracking_token, final_payment_amount, guest_estimated_price")
+      .select("id, final_payment_amount, guest_estimated_price")
       .single();
 
     if (courseError || !course) {
@@ -256,7 +256,7 @@ serve(async (req) => {
           title: "🎉 Un chauffeur a accepté votre course !",
           message: `${driver.company_name || 'Votre chauffeur'} a accepté votre demande. ${paymentMessage}`,
           type: autoHoldResult === "auto_confirmed" ? "success" : "info",
-          link: `/reservation-tracking/${course.tracking_token}`,
+          link: `/reservation-tracking/${course.id}`,
         });
       }
     }
@@ -273,7 +273,6 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         course_id: course.id,
-        tracking_token: course.tracking_token,
         request_type: claimed.request_type,
         payment_flow: clientWantsCard && driverHasStripe ? "stripe_online" : clientWantsCard ? "tpe" : "cash",
         driver_has_stripe: driverHasStripe,
