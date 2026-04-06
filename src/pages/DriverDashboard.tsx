@@ -115,7 +115,16 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [viewMode, setViewMode] = useState<"dashboard" | "map">("dashboard");
+  const [viewMode, setViewMode] = useState<"dashboard" | "map">(() => {
+    return searchParams.get("view") === "map" ? "map" : "dashboard";
+  });
+
+  // React to ?view=map changes (e.g. after accepting a course from overlay)
+  useEffect(() => {
+    if (searchParams.get("view") === "map") {
+      setViewMode("map");
+    }
+  }, [searchParams]);
 
   // Incoming course overlay is now handled globally in GlobalRideOverlay
 
