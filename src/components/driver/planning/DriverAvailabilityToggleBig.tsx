@@ -3,6 +3,7 @@ import { Wifi, WifiOff, MapPin, Loader2, Map as MapIcon } from 'lucide-react';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { playAvailabilitySound } from '@/lib/availabilitySound';
 
 interface DriverAvailabilityToggleBigProps {
   driverId: string;
@@ -57,6 +58,7 @@ export function DriverAvailabilityToggleBig({
     setIsAvailable(next);
     await updateAvailability(next);
     onAvailabilityChange?.(next);
+    playAvailabilitySound(next);
     // Auto-switch to map when connecting
     if (next && onSwitchToMap) {
       onSwitchToMap();

@@ -6,6 +6,7 @@ import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } 
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
+import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
 
 interface DriverMapModeProps {
@@ -78,35 +79,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     const next = !isAvailable;
     setIsAvailable(next);
     await updateAvailability(next);
-    // Play distinct sounds for online/offline
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.value = 0.3;
-      if (next) {
-        // Online: rising chime
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.3);
-      } else {
-        // Offline: descending tone
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.25);
-      }
-      if (navigator.vibrate) navigator.vibrate(next ? [100] : [50, 30, 50]);
-    } catch { /* silent */ }
+    playAvailabilitySound(next);
   }, [isAvailable, updateAvailability]);
 
   useEffect(() => {
