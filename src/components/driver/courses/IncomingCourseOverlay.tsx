@@ -175,6 +175,12 @@ export function IncomingCourseOverlay({
         toast.success('Course acceptée !');
       }
 
+      // Set driver to on_trip after successful acceptance
+      await supabase.from('drivers').update({ 
+        driver_status: 'on_trip',
+        is_available_now: false,
+      }).eq('id', driverId);
+
       onAccepted();
     } catch (err: any) {
       console.error('Error accepting course:', err);
