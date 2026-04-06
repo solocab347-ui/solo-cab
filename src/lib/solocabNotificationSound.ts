@@ -103,39 +103,51 @@ export async function playSoloCabSound(volume: number = 1.0): Promise<void> {
  */
 export function generateSoloCabWavBlob(): Blob {
   const sampleRate = 44100;
-  const duration = 0.85;
+  const duration = 1.2;
   const numSamples = Math.ceil(sampleRate * duration);
   const numChannels = 1;
   const bitsPerSample = 16;
 
   const audioData = new Float32Array(numSamples);
 
-  for (let i = 0; i < Math.min(numSamples, Math.ceil(sampleRate * 0.35)); i++) {
+  // SWOOSH
+  for (let i = 0; i < Math.min(numSamples, Math.ceil(sampleRate * 0.3)); i++) {
     const t = i / sampleRate;
-    const progress = t / 0.35;
-    const swooshEnv = Math.sin(progress * Math.PI) * Math.pow(1 - progress, 0.5);
-    const noise = (Math.random() * 2 - 1) * 0.15;
-    const sweepFreq = 200 + progress * 2000;
-    const swooshTone = Math.sin(2 * Math.PI * sweepFreq * t) * 0.08;
-    audioData[i] = (noise + swooshTone) * swooshEnv * 0.6;
+    const progress = t / 0.3;
+    const swooshEnv = Math.sin(progress * Math.PI) * Math.pow(1 - progress, 0.4);
+    const noise = (Math.random() * 2 - 1) * 0.25;
+    const sweepFreq = 300 + progress * 2500;
+    const swooshTone = Math.sin(2 * Math.PI * sweepFreq * t) * 0.15;
+    audioData[i] = (noise + swooshTone) * swooshEnv * 0.9;
   }
 
-  const dingStart = Math.floor(sampleRate * 0.3);
-  for (let i = dingStart; i < numSamples; i++) {
-    const t = (i - dingStart) / sampleRate;
-    const dingEnv = Math.exp(-t * 5) * (1 - Math.exp(-t * 80));
-    const fundamental = Math.sin(2 * Math.PI * 784 * t);
-    const harmonic2 = Math.sin(2 * Math.PI * 1318 * t) * 0.4;
-    const harmonic3 = Math.sin(2 * Math.PI * 1976 * t) * 0.15;
-    const detune = Math.sin(2 * Math.PI * 787 * t) * 0.1;
-    const ding = (fundamental + harmonic2 + harmonic3 + detune) * dingEnv * 0.35;
+  // DING 1
+  const ding1Start = Math.floor(sampleRate * 0.25);
+  for (let i = ding1Start; i < Math.min(numSamples, Math.ceil(sampleRate * 0.7)); i++) {
+    const t = (i - ding1Start) / sampleRate;
+    const dingEnv = Math.exp(-t * 4) * (1 - Math.exp(-t * 120));
+    const fundamental = Math.sin(2 * Math.PI * 880 * t);
+    const harmonic2 = Math.sin(2 * Math.PI * 1760 * t) * 0.5;
+    const harmonic3 = Math.sin(2 * Math.PI * 2640 * t) * 0.25;
+    const ding = (fundamental + harmonic2 + harmonic3) * dingEnv * 0.7;
+    audioData[i] = (audioData[i] || 0) + ding;
+  }
+
+  // DING 2
+  const ding2Start = Math.floor(sampleRate * 0.55);
+  for (let i = ding2Start; i < numSamples; i++) {
+    const t = (i - ding2Start) / sampleRate;
+    const dingEnv = Math.exp(-t * 3.5) * (1 - Math.exp(-t * 100));
+    const fundamental = Math.sin(2 * Math.PI * 1047 * t);
+    const harmonic2 = Math.sin(2 * Math.PI * 2094 * t) * 0.45;
+    const ding = (fundamental + harmonic2) * dingEnv * 0.6;
     audioData[i] = (audioData[i] || 0) + ding;
   }
 
   let maxAmp = 0;
   for (let i = 0; i < numSamples; i++) maxAmp = Math.max(maxAmp, Math.abs(audioData[i]));
-  if (maxAmp > 0.95) {
-    const scale = 0.9 / maxAmp;
+  if (maxAmp > 0) {
+    const scale = 0.98 / maxAmp;
     for (let i = 0; i < numSamples; i++) audioData[i] *= scale;
   }
 
