@@ -3,13 +3,15 @@
  * Online: energetic rising double-chime
  * Offline: firm descending tone
  */
-export function playAvailabilitySound(goingOnline: boolean) {
+import { getSharedAudioContext, ensureAudioUnlocked } from './audioEngine';
+
+export async function playAvailabilitySound(goingOnline: boolean) {
   try {
-    const ctx = new AudioContext();
+    await ensureAudioUnlocked();
+    const ctx = getSharedAudioContext();
     const now = ctx.currentTime;
 
     if (goingOnline) {
-      // Two-note rising chime — punchy & satisfying
       const notes = [
         { freq: 880, start: 0, dur: 0.12 },
         { freq: 1320, start: 0.13, dur: 0.18 },
@@ -28,7 +30,6 @@ export function playAvailabilitySound(goingOnline: boolean) {
       });
       if (navigator.vibrate) navigator.vibrate([60, 40, 100]);
     } else {
-      // Single descending tone — clear "off" signal
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';

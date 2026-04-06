@@ -79,7 +79,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     const next = !isAvailable;
     setIsAvailable(next);
     await updateAvailability(next);
-    playAvailabilitySound(next);
+    await playAvailabilitySound(next);
   }, [isAvailable, updateAvailability]);
 
   useEffect(() => {
