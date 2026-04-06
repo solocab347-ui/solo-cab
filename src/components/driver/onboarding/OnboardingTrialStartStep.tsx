@@ -315,7 +315,6 @@ export function OnboardingTrialStartStep({
               </div>
             </div>
           </div>
-        )}
       </motion.div>
 
       {/* Info - minimal */}
