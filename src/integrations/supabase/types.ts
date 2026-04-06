@@ -5684,6 +5684,129 @@ export type Database = {
           },
         ]
       }
+      driver_fees_ledger: {
+        Row: {
+          amount_cents: number
+          collected_at: string | null
+          collection_method: string | null
+          course_id: string | null
+          created_at: string
+          description: string | null
+          driver_id: string
+          fee_type: string
+          id: string
+          status: string
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          collected_at?: string | null
+          collection_method?: string | null
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id: string
+          fee_type?: string
+          id?: string
+          status?: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          collected_at?: string | null
+          collection_method?: string | null
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id?: string
+          fee_type?: string
+          id?: string
+          status?: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_fees_ledger_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fees_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_objectives: {
         Row: {
           courses_target: number | null
@@ -7048,6 +7171,7 @@ export type Database = {
           driver_status: string
           equipment_received_at: string | null
           evening_surcharge: number | null
+          fees_balance_cents: number
           fleet_documents_deadline: string | null
           fleet_documents_status: string | null
           fleet_documents_submitted_at: string | null
@@ -7228,6 +7352,7 @@ export type Database = {
           driver_status?: string
           equipment_received_at?: string | null
           evening_surcharge?: number | null
+          fees_balance_cents?: number
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
           fleet_documents_submitted_at?: string | null
@@ -7408,6 +7533,7 @@ export type Database = {
           driver_status?: string
           equipment_received_at?: string | null
           evening_surcharge?: number | null
+          fees_balance_cents?: number
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
           fleet_documents_submitted_at?: string | null
