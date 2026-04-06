@@ -6,7 +6,7 @@ export interface IncomingCourse {
   id: string;
   source: 'direct' | 'shared' | 'queue' | 'fleet' | 'ride_request';
   sourceId: string;
-  rideId: string; // Always the real DB row id for traceability
+  rideId: string;
   pickupAddress: string;
   destinationAddress: string;
   scheduledDate: string;
@@ -20,6 +20,11 @@ export interface IncomingCourse {
   requestType?: 'exclusive' | 'multi';
   driverCount?: number;
   distanceKm?: number;
+  paymentMethod?: string;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
 }
 
 interface UseIncomingCourseListenerOptions {
@@ -27,22 +32,12 @@ interface UseIncomingCourseListenerOptions {
   enabled?: boolean;
 }
 
-/**
- * Listener for incoming courses — fully isolated per driver.
- * 
- * ISOLATION RULES:
- * 1. ALL queries filter by driver_id on the backend
- * 2. Realtime subscriptions filter by driver_id
- * 3. UPDATE events (accepted/expired) auto-dismiss popups
- * 4. Each overlay carries the ride_id for traceability
- */
 export function useIncomingCourseListener({ driverId, enabled = true }: UseIncomingCourseListenerOptions) {
   const [incomingCourse, setIncomingCourse] = useState<IncomingCourse | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const queueRef = useRef<IncomingCourse[]>([]);
   const isShowingRef = useRef(false);
 
-  // Show next course from queue
   const showNext = useCallback(() => {
     if (queueRef.current.length === 0) {
       isShowingRef.current = false;
@@ -54,7 +49,6 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     requestAnimationFrame(() => setIncomingCourse(next));
   }, []);
 
-  // Enqueue a course (deduplicates)
   const enqueue = useCallback((course: IncomingCourse) => {
     if (dismissed.has(course.id)) return;
     if (queueRef.current.some(c => c.id === course.id)) return;
@@ -64,12 +58,9 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     if (!isShowingRef.current) showNext();
   }, [dismissed, incomingCourse, showNext]);
 
-  // Remove a ride from queue + dismiss if currently showing
   const removeRide = useCallback((rideId: string) => {
-    // Remove from queue
     queueRef.current = queueRef.current.filter(c => c.rideId !== rideId);
     
-    // If currently showing this ride, dismiss it
     setIncomingCourse(prev => {
       if (prev && prev.rideId === rideId) {
         isShowingRef.current = false;
@@ -80,12 +71,9 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     });
   }, [showNext]);
 
-  // Fetch pending courses — ALL filtered by driver_id server-side
-  // Only check if driver is in a state that can receive courses
   const checkForNewCourses = useCallback(async () => {
     if (!driverId || !enabled) return;
 
-    // Check driver_status first — only online_available drivers should receive courses
     const { data: driverData } = await supabase
       .from('drivers')
       .select('driver_status')
@@ -93,10 +81,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       .maybeSingle();
     
     const status = driverData?.driver_status;
-    if (status && status !== 'online_available') {
-      // Driver is accepting, on_trip, reserved, or offline — don't show new courses
-      return;
-    }
+    if (status && status !== 'online_available') return;
 
     try {
       const [queueResult, sharedResult, rideResult, directResult] = await Promise.all([
@@ -106,7 +91,8 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
             id, course_id, priority, expires_at,
             course:courses!course_queue_course_id_fkey(
               pickup_address, destination_address, scheduled_date,
-              guest_name,
+              guest_name, distance_km, payment_method_requested,
+              pickup_latitude, pickup_longitude, destination_latitude, destination_longitude,
               clients(profiles:user_id(full_name)),
               devis(amount)
             )
@@ -122,7 +108,9 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           .select(`
             id, course_id, course_amount, commission_percentage, created_at,
             course:courses!shared_courses_course_id_fkey(
-              pickup_address, destination_address, scheduled_date
+              pickup_address, destination_address, scheduled_date,
+              distance_km, payment_method_requested,
+              pickup_latitude, pickup_longitude, destination_latitude, destination_longitude
             ),
             sender_driver:drivers!shared_courses_sender_driver_id_fkey(
               profiles:user_id(full_name)
@@ -135,7 +123,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
 
         supabase
           .from('ride_requests')
-          .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date')
+          .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date, payment_method, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude')
           .eq('selected_driver_id', driverId)
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
@@ -145,7 +133,8 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           .from('courses')
           .select(`
             id, pickup_address, destination_address, scheduled_date, 
-            guest_name, created_at,
+            guest_name, created_at, distance_km, payment_method_requested,
+            pickup_latitude, pickup_longitude, destination_latitude, destination_longitude,
             clients(profiles:user_id(full_name)),
             devis(amount)
           `)
@@ -176,6 +165,12 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           expiresAt: item.expires_at,
           priority: item.priority || 1,
           receivedAt: Date.now(),
+          distanceKm: course?.distance_km ? Number(course.distance_km) : undefined,
+          paymentMethod: course?.payment_method_requested || undefined,
+          pickupLatitude: course?.pickup_latitude ? Number(course.pickup_latitude) : undefined,
+          pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
+          destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
+          destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
         });
       });
 
@@ -200,10 +195,16 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           expiresAt: null,
           priority: 2,
           receivedAt: Date.now(),
+          distanceKm: course?.distance_km ? Number(course.distance_km) : undefined,
+          paymentMethod: course?.payment_method_requested || undefined,
+          pickupLatitude: course?.pickup_latitude ? Number(course.pickup_latitude) : undefined,
+          pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
+          destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
+          destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
         });
       });
 
-      // Process ride requests — STRICTLY filtered by selected_driver_id
+      // Process ride requests
       rideResult.data?.forEach(item => {
         const key = `ride_request-${item.id}`;
         if (dismissed.has(key)) return;
@@ -225,6 +226,11 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           requestType: (item as any).request_type || 'exclusive',
           driverCount: (item as any).driver_count || 1,
           distanceKm: item.distance_km ? Number(item.distance_km) : undefined,
+          paymentMethod: item.payment_method || undefined,
+          pickupLatitude: item.pickup_latitude ? Number(item.pickup_latitude) : undefined,
+          pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
+          destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
+          destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
         });
       });
 
@@ -248,6 +254,12 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           expiresAt: null,
           priority: 3,
           receivedAt: Date.now(),
+          distanceKm: item.distance_km ? Number(item.distance_km) : undefined,
+          paymentMethod: item.payment_method_requested || undefined,
+          pickupLatitude: item.pickup_latitude ? Number(item.pickup_latitude) : undefined,
+          pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
+          destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
+          destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
         });
       });
     } catch (err) {
@@ -255,7 +267,6 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     }
   }, [driverId, enabled, dismissed, enqueue]);
 
-  // Dismiss current and show next
   const dismiss = useCallback(() => {
     if (incomingCourse) {
       setDismissed(prev => new Set(prev).add(incomingCourse.id));
@@ -279,11 +290,10 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     if (driverId && enabled) checkForNewCourses();
   }, [driverId, enabled, checkForNewCourses]);
 
-  // Realtime subscriptions — ALL filtered by driver_id (backend isolation)
+  // Realtime subscriptions
   useEffect(() => {
     if (!driverId || !enabled) return;
 
-    // INSERT listeners — new courses targeting this driver only
     const cleanupQueue = subscriptionManager.subscribe(
       `incoming-queue-${driverId}`,
       { table: 'course_queue', event: 'INSERT', filter: `driver_id=eq.${driverId}`, debounceMs: 300 },
@@ -308,7 +318,6 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       () => checkForNewCourses()
     );
 
-    // UPDATE listener — auto-dismiss when ride_request changes status (accepted by another, expired)
     const cleanupRideUpdate = subscriptionManager.subscribe(
       `ride-status-update-${driverId}`,
       { table: 'ride_requests', event: 'UPDATE', filter: `selected_driver_id=eq.${driverId}`, debounceMs: 100 },
@@ -316,7 +325,6 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         const newStatus = payload?.new?.status;
         const rideId = payload?.new?.id;
         if (rideId && newStatus && newStatus !== 'pending') {
-          // This ride is no longer available — remove from queue/overlay immediately
           removeRide(rideId);
         }
       }
