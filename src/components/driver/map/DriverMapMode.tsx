@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } from 'lucide-react';
+import { ActiveCourseCard } from './ActiveCourseCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
@@ -205,7 +206,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     <div className="fixed inset-0 z-40 bg-background">
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      {/* === TOP BAR === */}
+      {/* Active course card */}
+      <ActiveCourseCard driverId={driverId} />
       <div className="absolute top-0 left-0 right-0 z-[9990] pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}>
         <div className="px-4 pt-3">
           <motion.div

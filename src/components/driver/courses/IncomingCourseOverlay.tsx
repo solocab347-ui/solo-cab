@@ -124,6 +124,28 @@ export function IncomingCourseOverlay({
             updated_at: new Date().toISOString(),
           })
           .eq('id', course.sourceId);
+
+        // Déclencher l'empreinte bancaire si paiement par carte
+        try {
+          const { data: courseData } = await supabase
+            .from('courses')
+            .select('payment_method_requested, client_id')
+            .eq('id', course.sourceId)
+            .maybeSingle();
+
+          if (courseData?.payment_method_requested === 'card' && courseData?.client_id) {
+            supabase.functions.invoke('create-card-hold', {
+              body: {
+                driver_id: driverId,
+                course_id: course.sourceId,
+                client_id: courseData.client_id,
+              },
+            }).catch(err => console.error('Auto card hold failed:', err));
+          }
+        } catch (holdErr) {
+          console.error('Card hold check failed:', holdErr);
+        }
+
         toast.success('Course acceptée !');
       } else if (course.source === 'ride_request') {
         const { data, error } = await supabase.functions.invoke('accept-ride-request', {
