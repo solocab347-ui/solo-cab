@@ -154,6 +154,23 @@ serve(async (req) => {
 
     const paymentIntentId = course.stripe_payment_intent_id || course.stripe_hold_payment_intent_id;
 
+    // ═══ IDEMPOTENCY GUARD: Vérifier si déjà capturé ═══
+    if (course.payment_status === "paid" && course.payment_captured_at) {
+      logStep("⚠️ Payment already captured — skipping duplicate capture", { 
+        course_id, 
+        paymentIntentId,
+        capturedAt: course.payment_captured_at 
+      });
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          already_captured: true,
+          message: "Paiement déjà capturé",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     logStep("Capturing payment intent", { paymentIntentId });
 
     // Capture the payment

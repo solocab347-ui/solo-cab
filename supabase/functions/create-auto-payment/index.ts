@@ -136,7 +136,7 @@ serve(async (req) => {
         driver_id,
         client_id: client.id,
         type: "auto_bank_hold",
-        solocab_fee: "0.50",
+        solocab_fee: "0.80",
       },
       description: `Empreinte bancaire automatique - Course VTC`,
     });
