@@ -42,21 +42,58 @@ Les partenariats bilatéraux ne sont plus requis : tout chauffeur avec Stripe Co
 Les chauffeurs peuvent demander entre **10% et 30%** du prix de la course à la réservation.
 
 ### Flux
-1. Empreinte bancaire (0€) prise à la réservation
+1. Empreinte bancaire (montant TTC) prise à la réservation (`capture_method = manual`)
 2. Acompte capturé selon le % configuré
 3. Solde capturé à la complétion de la course
-4. Frais SoloCab (0,50€) proratisés entre acompte et paiement final
+4. Frais SoloCab (0,80€) proratisés entre acompte et paiement final
 
 ### Demande manuelle
 Un chauffeur peut déclencher une demande d'acompte pour n'importe quelle course via un bouton de partage (WhatsApp/SMS/Email) générant un lien Stripe Checkout.
 
 ---
 
+## Flux de paiement principal (Hold → Capture)
+
+### Principe fondamental
+- **La politique = business** (calcul des montants)
+- **Stripe = exécution** (capture/annulation)
+
+### 1. Réservation
+- `PaymentIntent` créé avec `capture_method = manual`
+- Empreinte bancaire du montant TTC total (minimum 1€)
+- Aucun débit effectué
+
+### 2. Course terminée normalement
+- Chauffeur clique "Terminer la course"
+- `stripe.paymentIntents.capture(holdPI, { amount_to_capture })` avec le montant final
+- Répartition automatique via Stripe Connect
+
+### 3. Annulation → Politique SoloCab appliquée
+```
+Annulation → calculateCancellationFee(course) → montant
+  Si montant = 0 → stripe.paymentIntents.cancel(holdPI)
+  Si montant > 0 → stripe.paymentIntents.capture(holdPI, montant)
+```
+
+---
+
 ## Politique d'annulation
+
+### Fonction centralisée : `calculateCancellationFee()`
+
+| Situation | Frais | Action Stripe |
+|-----------|-------|---------------|
+| Annulation chauffeur | 0€ | Cancel PI + rembourser acompte |
+| Annulation système | 0€ | Cancel PI + rembourser acompte |
+| Client annule avant T-1h (sans acompte) | 0€ | Cancel PI |
+| Client annule après T-1h (sans acompte) | 10€ (fixe) | Capture partielle 10€ |
+| Client annule avant T-4h (avec acompte) | 0€ | Cancel PI + rembourser acompte |
+| Client annule après T-4h (avec acompte) | Acompte conservé | Pas d'action (déjà capturé) |
+| Course en cours annulée | Prix réel (km×tarif) | Capture partielle prix réel |
 
 ### Course sans acompte
 - **Fenêtre gratuite** : 1h avant la course (T-1h)
-- **Après** : Client débité de 10€ de frais (reversés au chauffeur)
+- **Après** : Client débité de 10€ de frais (capture partielle sur empreinte)
 
 ### Course avec acompte
 - **Fenêtre gratuite** : 4h avant la course (T-4h)
@@ -67,14 +104,18 @@ Un chauffeur peut déclencher une demande d'acompte pour n'importe quelle course
 - Aucun frais appliqué
 - Distinction stricte via `cancelled_by`
 
+### Course démarrée puis annulée
+- Ignore la politique d'annulation standard
+- Calcule le prix réel basé sur : distance (km) × tarif/km + prise en charge
+- Capture ce montant réel sur l'empreinte bancaire
+
 ---
 
 ## Clôture de course
 
 1. Chauffeur clique "Terminer la course"
-2. PaymentIntent généré pour le solde restant (Total - Acompte)
-3. Course passe en état **"Paiement en attente"** (jaune)
-4. Confirmation Stripe → **vert** / Échec → **rouge**
+2. Capture du PaymentIntent existant pour le montant final
+3. Course passe en état **"completed"** avec payment_status **"paid"**
 
 ### En cas d'échec
 Le chauffeur peut générer un **lien de paiement manuel** (Stripe Checkout) envoyé par SMS ou WhatsApp pour régularisation.
