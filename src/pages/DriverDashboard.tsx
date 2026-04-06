@@ -81,6 +81,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
+import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
