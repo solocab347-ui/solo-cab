@@ -456,24 +456,6 @@ export function IncomingCourseOverlay({
                 </div>
               )}
 
-              {/* Distance course */}
-              {course.distanceKm != null && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-center">
-                  <Route className="h-4 w-4 text-white/60 mx-auto mb-1" />
-                  <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Distance</p>
-                  <p className="text-xl font-black">{course.distanceKm.toFixed(1)} km</p>
-                </div>
-              )}
-
-              {/* Durée estimée */}
-              {tripMinutes != null && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-center">
-                  <Clock className="h-4 w-4 text-white/60 mx-auto mb-1" />
-                  <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Durée estimée</p>
-                  <p className="text-xl font-black">~{tripMinutes} min</p>
-                </div>
-              )}
-
               {/* Mode de paiement */}
               {paymentInfo && course.paymentMethod && (
                 <div className={`rounded-xl p-2.5 text-center border ${
@@ -504,12 +486,20 @@ export function IncomingCourseOverlay({
                 </div>
               )}
 
-              {/* Client — prénom uniquement pour la confidentialité */}
+              {/* Client — Prénom + initiale nom pour la confidentialité */}
               {course.clientName && (
                 <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-center">
                   <User className="h-4 w-4 text-white/60 mx-auto mb-1" />
                   <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Client</p>
-                  <p className="text-sm font-bold truncate">{course.clientName.split(' ')[0]}</p>
+                  <p className="text-sm font-bold truncate">
+                    {(() => {
+                      const parts = course.clientName!.trim().split(/\s+/);
+                      if (parts.length > 1) {
+                        return `${parts[0]} ${parts[1][0].toUpperCase()}.`;
+                      }
+                      return parts[0];
+                    })()}
+                  </p>
                 </div>
               )}
             </motion.div>
