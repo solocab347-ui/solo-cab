@@ -118,6 +118,8 @@ serve(async (req) => {
       const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
 
       const CASH_FEE_CENTS = 50;
+      const solocabFee = CASH_FEE_CENTS / 100;
+      const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 
       await supabaseClient
         .from("courses")
@@ -127,35 +129,38 @@ serve(async (req) => {
           final_payment_status: isCash ? "succeeded" : "pending_manual",
           final_payment_amount: totalAmount,
           course_finalized_by_driver_at: new Date().toISOString(),
-          solocab_fee_amount: CASH_FEE_CENTS / 100,
+          solocab_fee_amount: solocabFee,
+          stripe_fee_amount: 0,
+          total_fees_amount: solocabFee,
+          net_amount_to_driver: netToDriver,
         })
         .eq("id", course_id);
 
-      // 📒 WEEKLY SETTLEMENT: Record in admin & driver ledgers for cash course
-      try {
-        await supabaseClient.from("solo_admin_ledger").insert({
-          course_id, driver_id: course.driver_id,
-          fee_amount: CASH_FEE_CENTS / 100, fee_type: "cash_commission", status: "pending",
-          description: `Commission espèces - ${course.pickup_address} → ${course.destination_address}`,
-        });
-        await supabaseClient.from("driver_balance_pending").insert({
-          driver_id: course.driver_id, course_id,
-          gross_amount: totalAmount, solocab_fee: CASH_FEE_CENTS / 100,
-          stripe_fee: 0, net_amount: totalAmount - CASH_FEE_CENTS / 100,
-          payment_type: "cash", status: "pending",
-        });
-
-        // Also record in legacy driver_fees_ledger
-        await supabaseClient.from("driver_fees_ledger").insert({
-          driver_id: course.driver_id, course_id,
-          fee_type: "cash_commission", amount_cents: CASH_FEE_CENTS, status: "pending",
-          description: `Commission espèces - ${course.pickup_address} → ${course.destination_address}`,
-        });
-        await supabaseClient.rpc("increment_driver_fees_balance", {
-          p_driver_id: course.driver_id, p_amount: CASH_FEE_CENTS,
-        });
-      } catch (feeErr: any) {
-        logStep("Fee ledger recording failed (non-blocking)", { error: feeErr.message });
+      // Unified source of truth: finance ledgers are populated only from payments
+      if (isCash) {
+        try {
+          await supabaseClient.from("payments").insert({
+            course_id,
+            driver_id: course.driver_id,
+            client_id: course.client_id,
+            amount: totalAmount,
+            captured_amount: totalAmount,
+            application_fee_amount: solocabFee,
+            stripe_fee_amount: 0,
+            net_to_driver: netToDriver,
+            status: "succeeded",
+            payment_type: "course_payment",
+            capture_method: "manual",
+            payment_method: "cash",
+            captured_at: new Date().toISOString(),
+            metadata: {
+              flow: "manual_cash_completion",
+              course_id,
+            },
+          });
+        } catch (paymentErr: any) {
+          logStep("Unified payment record creation failed", { error: paymentErr.message });
+        }
       }
 
       // Create invoice
@@ -169,7 +174,7 @@ serve(async (req) => {
         user_id: course.driver.user_id,
         title: "✅ Course terminée",
         message: isCash
-          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement espèces. Commission: 0,50€`
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement espèces. Commission: ${solocabFee.toFixed(2)}€`
           : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissez via TPE.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
