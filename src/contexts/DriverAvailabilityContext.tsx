@@ -62,19 +62,89 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
   useEffect(() => {
     mountedRef.current = true;
+
     const fetchStatus = async () => {
-      const { data } = await supabase
+      const { data: driverData } = await supabase
         .from('drivers')
         .select('driver_status')
         .eq('id', driverId)
         .maybeSingle();
 
-      if (!mountedRef.current) return;
-      if (data) {
-        setDriverStatus(data.driver_status || 'offline');
+      let nextStatus = driverData?.driver_status || 'offline';
+
+      if (nextStatus === 'accepting') {
+        const nowIso = new Date().toISOString();
+        const recentCourseIso = new Date(Date.now() - 60_000).toISOString();
+
+        const [rideRequests, queueItems, sharedItems, directCourses] = await Promise.all([
+          supabase
+            .from('ride_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('selected_driver_id', driverId)
+            .eq('status', 'pending'),
+          supabase
+            .from('course_queue')
+            .select('id', { count: 'exact', head: true })
+            .eq('driver_id', driverId)
+            .eq('status', 'pending')
+            .gt('expires_at', nowIso),
+          supabase
+            .from('shared_courses')
+            .select('id', { count: 'exact', head: true })
+            .eq('receiver_driver_id', driverId)
+            .eq('status', 'pending'),
+          supabase
+            .from('courses')
+            .select('id', { count: 'exact', head: true })
+            .eq('driver_id', driverId)
+            .eq('status', 'pending')
+            .gt('created_at', recentCourseIso),
+        ]);
+
+        const hasPendingIncoming = [rideRequests, queueItems, sharedItems, directCourses].some(
+          (result) => Number(result.count || 0) > 0
+        );
+
+        if (!hasPendingIncoming) {
+          nextStatus = 'online_available';
+          await supabase
+            .from('drivers')
+            .update({ driver_status: nextStatus, is_available_now: true })
+            .eq('id', driverId);
+        }
+      } else if (nextStatus === 'on_trip' || nextStatus === 'reserved') {
+        const { data: activeCourses } = await supabase
+          .from('courses')
+          .select('id, status, devis(status)')
+          .eq('driver_id', driverId)
+          .in('status', ['accepted', 'in_progress'])
+          .order('updated_at', { ascending: false })
+          .limit(5);
+
+        const courses = (activeCourses ?? []) as any[];
+        const hasInProgress = courses.some((course) => course.status === 'in_progress');
+        const hasReserved = courses.some(
+          (course) => course.status === 'accepted' || (course.devis ?? []).some((quote: any) => quote.status === 'accepted')
+        );
+        const reconciledStatus = hasInProgress ? 'on_trip' : hasReserved ? 'reserved' : 'online_available';
+
+        if (reconciledStatus !== nextStatus) {
+          nextStatus = reconciledStatus;
+          await supabase
+            .from('drivers')
+            .update({
+              driver_status: nextStatus,
+              is_available_now: nextStatus === 'online_available',
+            })
+            .eq('id', driverId);
+        }
       }
+
+      if (!mountedRef.current) return;
+      setDriverStatus(nextStatus);
       setIsLoading(false);
     };
+
     fetchStatus();
 
     const channel = supabase
@@ -91,7 +161,11 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           if (!mountedRef.current) return;
           const newData = payload.new as any;
           if (newData?.driver_status) {
-            setDriverStatus(newData.driver_status);
+            if (['accepting', 'reserved', 'on_trip'].includes(newData.driver_status)) {
+              fetchStatus();
+            } else {
+              setDriverStatus(newData.driver_status);
+            }
           }
         }
       )
