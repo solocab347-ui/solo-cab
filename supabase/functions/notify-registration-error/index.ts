@@ -154,18 +154,18 @@ const handler = async (req: Request): Promise<Response> => {
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Téléphone:</td>
                   <td style="padding: 8px 0; color: #1e293b;">
-                    <a href="tel:${phone}" style="color: #059669; text-decoration: none;">${phone}</a>
+                    <a href="tel:${escapeHtml(phone)}" style="color: #059669; text-decoration: none;">${escapeHtml(phone)}</a>
                   </td>
                 </tr>` : ""}
                 ${userId ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">User ID:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${userId}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${escapeHtml(userId)}</td>
                 </tr>` : ""}
                 ${driverId ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Driver ID:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${driverId}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${escapeHtml(driverId)}</td>
                 </tr>` : ""}
               </table>
 
@@ -181,7 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
                 ${url ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">URL:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-size: 12px; word-break: break-all;">${url}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-size: 12px; word-break: break-all;">${escapeHtml(url)}</td>
                 </tr>` : ""}
                 ${userAgent ? `
                 <tr>
