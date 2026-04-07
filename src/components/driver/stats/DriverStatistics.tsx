@@ -87,8 +87,8 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
       // Déterminer la période de filtrage
       switch (periodFilter) {
         case "today":
-          filterStart = startOfWeek(today).toISOString();
-          filterEnd = endOfWeek(today).toISOString();
+          filterStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+          filterEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
           break;
         case "week":
           filterStart = startOfWeek(today).toISOString();
@@ -144,8 +144,9 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
       const cancelledCount = allCourses?.filter(c => c.status === 'cancelled').length || 0;
       const pendingCount = allCourses?.filter(c => c.status === 'pending').length || 0;
 
-      const totalDistance = allCourses?.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0) || 0;
-      const totalDuration = allCourses?.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0) || 0;
+      const completedCourses = allCourses?.filter(c => c.status === 'completed') || [];
+      const totalDistance = completedCourses.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0);
+      const totalDuration = completedCourses.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0);
 
       // Revenue stats - avec filtre de période si applicable
       let facturesQuery = supabase

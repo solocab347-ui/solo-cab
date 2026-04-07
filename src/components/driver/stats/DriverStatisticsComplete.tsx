@@ -212,23 +212,24 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       fleetCourseIds = new Set(fleetCommissions?.map(fc => fc.course_id) || []);
     }
 
-    // Calculate stats
+    // Calculate stats - only count completed courses for meaningful metrics
+    const completedCourses = courses?.filter(c => c.status === 'completed') || [];
     const stats: CourseStats = {
-      total: courses?.length || 0,
-      completed: courses?.filter(c => c.status === 'completed').length || 0,
+      total: completedCourses.length,
+      completed: completedCourses.length,
       cancelled: courses?.filter(c => c.status === 'cancelled').length || 0,
       pending: courses?.filter(c => c.status === 'pending').length || 0,
       partner: sharedCourseIds.size,
       company: companyCourseIds.size,
       fleet: fleetCourseIds.size,
-      personal: (courses?.length || 0) - sharedCourseIds.size - companyCourseIds.size - fleetCourseIds.size
+      personal: completedCourses.length - sharedCourseIds.size - companyCourseIds.size - fleetCourseIds.size
     };
 
     setCourseStats(stats);
 
-    // Distance and duration
-    const totalDistance = courses?.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0) || 0;
-    const totalDuration = courses?.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0) || 0;
+    // Distance and duration - only from completed courses
+    const totalDistance = completedCourses.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0);
+    const totalDuration = completedCourses.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0);
     setDistanceStats({ total: totalDistance, duration: totalDuration });
   };
 
