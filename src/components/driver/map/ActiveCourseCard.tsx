@@ -367,15 +367,16 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     setLoading(true);
     setShowStopReasons(false);
     try {
-      const originalPrice = course.final_payment_amount || course.guest_estimated_price || 0;
-      await supabase.functions.invoke('capture-course-payment', {
-        body: { course_id: course.id, amount_to_capture: originalPrice },
+      const { error } = await supabase.functions.invoke('process-cancellation-fee', {
+        body: {
+          course_id: course.id,
+          cancelled_by: 'driver',
+          reason,
+        },
       });
-      await supabase
-        .from('courses')
-        .update({ status: 'completed', notes: `Course arrêtée: ${reason}`, updated_at: new Date().toISOString() })
-        .eq('id', course.id)
-        .eq('driver_id', driverId);
+
+      if (error) throw error;
+
       toast.success(`Course arrêtée: ${reason}`);
       dismissCourse(course.id);
       setCourse(null);
@@ -383,17 +384,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       restoreAvailability();
       onCourseChange?.();
     } catch {
-      await supabase
-        .from('courses')
-        .update({ status: 'completed', notes: `Course arrêtée: ${reason}`, updated_at: new Date().toISOString() })
-        .eq('id', course.id)
-        .eq('driver_id', driverId);
-      toast.info('Course arrêtée');
-      if (course) dismissCourse(course.id);
-      setCourse(null);
-      if (course) clearPersistedPhase(course.id);
-      restoreAvailability();
-      onCourseChange?.();
+      toast.error("Impossible d'arrêter correctement la course");
     } finally {
       setLoading(false);
     }
