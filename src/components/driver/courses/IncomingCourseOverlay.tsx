@@ -176,10 +176,14 @@ export function IncomingCourseOverlay({
           if (audioRef.current) clearInterval(audioRef.current);
           if (navigator.vibrate) navigator.vibrate(0);
           
-          // Show message for 4 seconds then dismiss
-          setTimeout(() => {
+          // Show message for 4 seconds then restore status
+          setTimeout(async () => {
             if (driverId) {
-              supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+              // Only restore if still in 'accepting' — don't override on_trip
+              const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
+              if (!d?.driver_status || d.driver_status === 'accepting') {
+                await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+              }
             }
             onDismiss();
           }, 4000);
@@ -226,7 +230,18 @@ export function IncomingCourseOverlay({
       console.log('[IncomingCourseOverlay] Driver set to accepting');
     });
     const interval = setInterval(() => {
-      setTimeLeft(prev => { if (prev <= 1) { clearInterval(interval); onDismiss(); return 0; } return prev - 1; });
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // Timeout: restore to online_available (not offline!)
+          if (driverId) {
+            supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+          }
+          onDismiss();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [course?.id, onDismiss]);
@@ -292,7 +307,15 @@ export function IncomingCourseOverlay({
   const handleDismiss = useCallback(async () => {
     if (audioRef.current) clearInterval(audioRef.current);
     if (navigator.vibrate) navigator.vibrate(0);
-    if (driverId) await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+    if (driverId) {
+      // Only restore to online_available if driver is currently in 'accepting' state
+      // Don't override on_trip or other active states
+      const { data: currentDriver } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
+      const currentStatus = currentDriver?.driver_status;
+      if (!currentStatus || currentStatus === 'accepting') {
+        await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+      }
+    }
     if (course?.source === 'ride_request' && course.sourceId) {
       try { await supabase.from('ride_requests').update({ status: 'rejected' }).eq('id', course.sourceId); } catch (err) { console.error('Error rejecting ride request:', err); }
     }

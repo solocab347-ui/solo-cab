@@ -104,8 +104,12 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
   }, [driverId]);
 
   const toggleOnline = useCallback(async () => {
-    // Only toggle between offline ↔ online_available
-    // Never toggle away from on_trip/accepting/reserved
+    // GUARD: Never toggle away from on_trip/accepting/reserved — only user can toggle offline ↔ online_available
+    const busyStatuses = ['on_trip', 'accepting', 'reserved'];
+    if (busyStatuses.includes(driverStatus)) {
+      console.warn('[DriverAvailability] Cannot toggle while in status:', driverStatus);
+      return;
+    }
     const newOnline = !isOnline;
     const newStatus = newOnline ? 'online_available' : 'offline';
     setDriverStatus(newStatus);
@@ -117,7 +121,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       })
       .eq('id', driverId);
     playAvailabilitySound(newOnline);
-  }, [isOnline, driverId]);
+  }, [isOnline, driverStatus, driverId]);
 
   // Legacy compat
   const setAvailabilityDirect = useCallback(async (val: boolean) => {
