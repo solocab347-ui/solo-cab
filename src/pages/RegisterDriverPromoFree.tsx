@@ -145,7 +145,7 @@ const RegisterDriverPromoFree = () => {
         .single();
       if (driverError) throw driverError;
 
-      await supabase.from("user_roles").insert({ user_id: newUserId, role: "driver" });
+      // Driver role is now auto-assigned via database trigger
 
       try {
         await supabase.functions.invoke("send-email", {
