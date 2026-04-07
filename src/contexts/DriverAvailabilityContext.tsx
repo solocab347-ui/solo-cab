@@ -2,16 +2,41 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, Re
 import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 
+/**
+ * Driver status state machine:
+ * - 'offline'           → truly disconnected, toggle shows "Hors ligne"
+ * - 'online_available'  → connected and available for courses, toggle shows "En ligne"
+ * - 'accepting'         → receiving a course request (60s window) — still connected
+ * - 'on_trip'           → currently on a course — still connected
+ * - 'reserved'          → reserved for a specific task — still connected
+ * 
+ * "isOnline" = driver chose to go online (any status except 'offline')
+ * "isAvailableForCourses" = online_available specifically
+ */
+
 interface DriverAvailabilityContextType {
-  isAvailable: boolean;
+  /** True if driver is connected (not offline) — controls the toggle display */
+  isOnline: boolean;
+  /** True if driver is available for new courses (online_available) */
+  isAvailableForCourses: boolean;
+  /** Current driver_status */
+  driverStatus: string;
   isLoading: boolean;
+  /** Toggle between offline ↔ online_available (user action) */
+  toggleOnline: () => Promise<void>;
+  /** Legacy compat */
+  isAvailable: boolean;
   toggleAvailability: () => Promise<void>;
   setAvailabilityDirect: (val: boolean) => Promise<void>;
 }
 
 const DriverAvailabilityContext = createContext<DriverAvailabilityContextType>({
-  isAvailable: false,
+  isOnline: false,
+  isAvailableForCourses: false,
+  driverStatus: 'offline',
   isLoading: true,
+  toggleOnline: async () => {},
+  isAvailable: false,
   toggleAvailability: async () => {},
   setAvailabilityDirect: async () => {},
 });
@@ -25,31 +50,33 @@ interface Props {
   children: ReactNode;
 }
 
+const CONNECTED_STATUSES = ['online_available', 'accepting', 'on_trip', 'reserved'];
+
 export function DriverAvailabilityProvider({ driverId, children }: Props) {
-  const [isAvailable, setIsAvailable] = useState(false);
+  const [driverStatus, setDriverStatus] = useState<string>('offline');
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  // Fetch real state from DB once on mount
+  const isOnline = CONNECTED_STATUSES.includes(driverStatus);
+  const isAvailableForCourses = driverStatus === 'online_available';
+
   useEffect(() => {
     mountedRef.current = true;
-    const fetch = async () => {
+    const fetchStatus = async () => {
       const { data } = await supabase
         .from('drivers')
-        .select('is_available_now, driver_status')
+        .select('driver_status')
         .eq('id', driverId)
         .maybeSingle();
 
       if (!mountedRef.current) return;
       if (data) {
-        const val = data.driver_status === 'online_available' || (data.is_available_now ?? false);
-        setIsAvailable(val);
+        setDriverStatus(data.driver_status || 'offline');
       }
       setIsLoading(false);
     };
-    fetch();
+    fetchStatus();
 
-    // Subscribe to realtime changes on this driver's row
     const channel = supabase
       .channel(`driver-availability-${driverId}`)
       .on(
@@ -63,9 +90,8 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         (payload) => {
           if (!mountedRef.current) return;
           const newData = payload.new as any;
-          if (newData) {
-            const val = newData.driver_status === 'online_available' || (newData.is_available_now ?? false);
-            setIsAvailable(val);
+          if (newData?.driver_status) {
+            setDriverStatus(newData.driver_status);
           }
         }
       )
@@ -77,32 +103,47 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
     };
   }, [driverId]);
 
+  const toggleOnline = useCallback(async () => {
+    // Only toggle between offline ↔ online_available
+    // Never toggle away from on_trip/accepting/reserved
+    const newOnline = !isOnline;
+    const newStatus = newOnline ? 'online_available' : 'offline';
+    setDriverStatus(newStatus);
+    await supabase
+      .from('drivers')
+      .update({
+        is_available_now: newOnline,
+        driver_status: newStatus,
+      })
+      .eq('id', driverId);
+    playAvailabilitySound(newOnline);
+  }, [isOnline, driverId]);
+
+  // Legacy compat
   const setAvailabilityDirect = useCallback(async (val: boolean) => {
-    setIsAvailable(val);
+    const newStatus = val ? 'online_available' : 'offline';
+    setDriverStatus(newStatus);
     await supabase
       .from('drivers')
       .update({
         is_available_now: val,
-        driver_status: val ? 'online_available' : 'offline',
+        driver_status: newStatus,
       })
       .eq('id', driverId);
   }, [driverId]);
 
-  const toggleAvailability = useCallback(async () => {
-    const next = !isAvailable;
-    setIsAvailable(next);
-    await supabase
-      .from('drivers')
-      .update({
-        is_available_now: next,
-        driver_status: next ? 'online_available' : 'offline',
-      })
-      .eq('id', driverId);
-    playAvailabilitySound(next);
-  }, [isAvailable, driverId]);
-
   return (
-    <DriverAvailabilityContext.Provider value={{ isAvailable, isLoading, toggleAvailability, setAvailabilityDirect }}>
+    <DriverAvailabilityContext.Provider value={{
+      isOnline,
+      isAvailableForCourses,
+      driverStatus,
+      isLoading,
+      toggleOnline,
+      // Legacy compat
+      isAvailable: isOnline,
+      toggleAvailability: toggleOnline,
+      setAvailabilityDirect,
+    }}>
       {children}
     </DriverAvailabilityContext.Provider>
   );
