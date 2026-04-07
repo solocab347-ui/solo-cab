@@ -66,7 +66,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
-  const { isAvailable, toggleAvailability } = useDriverAvailability();
+  const { isAvailable, isOnline, driverStatus, toggleAvailability } = useDriverAvailability();
+  const isBusy = driverStatus === 'on_trip' || driverStatus === 'accepting' || driverStatus === 'reserved';
 
   const { latitude, longitude, isTracking, isStale } = useDriverLocationTracker({
     driverId,
