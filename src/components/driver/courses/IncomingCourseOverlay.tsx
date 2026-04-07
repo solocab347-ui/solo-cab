@@ -153,8 +153,52 @@ export function IncomingCourseOverlay({
 }: IncomingCourseOverlayProps) {
   const [timeLeft, setTimeLeft] = useState(TIMEOUT_SECONDS);
   const [accepting, setAccepting] = useState(false);
+  const [takenByOther, setTakenByOther] = useState(false);
   const audioRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [approachInfo, setApproachInfo] = useState<{ distanceKm: number; minutes: number } | null>(null);
+
+  // Poll ride_request status to auto-dismiss if taken by another driver
+  useEffect(() => {
+    if (!course || course.source !== 'ride_request') return;
+    const rideRequestId = course.sourceId;
+    
+    const checkStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from('ride_requests')
+          .select('status')
+          .eq('id', rideRequestId)
+          .maybeSingle();
+        
+        if (data && data.status !== 'pending') {
+          console.log('[IncomingCourseOverlay] Ride request no longer pending:', data.status);
+          setTakenByOther(true);
+          if (audioRef.current) clearInterval(audioRef.current);
+          if (navigator.vibrate) navigator.vibrate(0);
+          
+          // Show message briefly then dismiss
+          setTimeout(() => {
+            if (driverId) {
+              supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+            }
+            onDismiss();
+          }, 2500);
+        }
+      } catch (err) {
+        console.error('[IncomingCourseOverlay] Status poll error:', err);
+      }
+    };
+
+    // Check every 2 seconds
+    const pollInterval = setInterval(checkStatus, 2000);
+    // Also check immediately after 1s
+    const initialCheck = setTimeout(checkStatus, 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(initialCheck);
+    };
+  }, [course?.id, course?.source, course?.sourceId, driverId, onDismiss]);
 
   useEffect(() => {
     if (!course || !driverId || !course.pickupLatitude || !course.pickupLongitude) {
@@ -177,6 +221,7 @@ export function IncomingCourseOverlay({
   useEffect(() => {
     if (!course || !driverId) { setTimeLeft(TIMEOUT_SECONDS); return; }
     setTimeLeft(TIMEOUT_SECONDS);
+    setTakenByOther(false);
     supabase.from('drivers').update({ driver_status: 'accepting', is_available_now: false }).eq('id', driverId).then(() => {
       console.log('[IncomingCourseOverlay] Driver set to accepting');
     });
