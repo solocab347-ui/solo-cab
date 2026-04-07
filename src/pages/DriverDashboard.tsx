@@ -79,6 +79,7 @@ import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificat
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
+import { DriverAvailabilityProvider } from "@/contexts/DriverAvailabilityContext";
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
 import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
@@ -532,24 +533,27 @@ const DriverDashboard = () => {
     );
   }
 
+  // Wrap both map and dashboard modes in availability provider for stable state
+  const driverIdForProvider = driverProfile?.driver?.id;
+
   // Map mode — fullscreen immersive
-  if (viewMode === "map" && driverProfile?.driver?.id) {
+  if (viewMode === "map" && driverIdForProvider) {
     return (
-      <>
+      <DriverAvailabilityProvider driverId={driverIdForProvider}>
         <DriverMapMode
-          driverId={driverProfile.driver.id}
+          driverId={driverIdForProvider}
           onSwitchToDashboard={() => setViewMode("dashboard")}
           onNavigateTo={(tab: string) => {
             setViewMode("dashboard");
             setActiveTab(tab);
           }}
         />
-        {/* Incoming courses work in map mode too */}
-      </>
+      </DriverAvailabilityProvider>
     );
   }
 
   return (
+    <DriverAvailabilityProvider driverId={driverIdForProvider || ''}>
     <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         {/* Availability toggle moved to DriverHome */}
@@ -1129,6 +1133,7 @@ const DriverDashboard = () => {
       {/* Incoming Course Overlay + Permission Prompt are now global (GlobalRideOverlay in App.tsx) */}
 
     </div>
+    </DriverAvailabilityProvider>
   );
 };
 

@@ -9,6 +9,7 @@ import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
+import { useDriverAvailability } from '@/contexts/DriverAvailabilityContext';
 
 interface DriverMapModeProps {
   driverId: string;
@@ -62,29 +63,20 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const lastGps = useRef<{ lat: number; lng: number } | null>(null);
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [isAvailable, setIsAvailable] = useState<boolean>(true);
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
-  const { latitude, longitude, isTracking, isStale, updateAvailability } = useDriverLocationTracker({
+  const { isAvailable, toggleAvailability } = useDriverAvailability();
+
+  const { latitude, longitude, isTracking, isStale } = useDriverLocationTracker({
     driverId,
     enabled: true,
     updateIntervalMs: 8000,
   });
 
-  useEffect(() => {
-    supabase.from('drivers').select('is_available_now, driver_status').eq('id', driverId).maybeSingle()
-      .then(({ data }) => { 
-        if (data) setIsAvailable(data.driver_status === 'online_available' || data.is_available_now === true); 
-      });
-  }, [driverId]);
-
   const handleToggleAvailability = useCallback(async () => {
-    const next = !isAvailable;
-    setIsAvailable(next);
-    await updateAvailability(next);
-    await playAvailabilitySound(next);
-  }, [isAvailable, updateAvailability]);
+    await toggleAvailability();
+  }, [toggleAvailability]);
 
   const fetchRevenue = useCallback(async () => {
     try {
