@@ -71,7 +71,7 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
           registration_step: "stripe_connect",
           free_access_granted: true,
           free_access_type: "permanent_free",
-        });
+        } as any);
 
       if (driverError && !driverError.message.includes("duplicate")) throw driverError;
 
@@ -120,8 +120,8 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
         <div className="text-center">
           <img src={logo} alt="SoloCab" className="w-12 h-12 mx-auto mb-4" />
           <div className="flex items-center justify-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <span className="text-sm text-green-600 font-medium">Compte créé</span>
+            <CheckCircle className="w-5 h-5 text-primary" />
+            <span className="text-sm text-primary font-medium">Compte créé</span>
           </div>
           <h1 className="text-xl font-bold">Inscription Chauffeur</h1>
 
