@@ -455,6 +455,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cancellation_fees_config_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: true
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       city_pricing: {
@@ -644,6 +651,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -911,6 +925,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1236,6 +1257,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1897,6 +1925,13 @@ export type Database = {
             columns: ["target_fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_target_fleet_manager_id_fkey"
+            columns: ["target_fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2687,6 +2722,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "company_fleet_agreements_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       company_fleet_payments: {
@@ -2779,6 +2821,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fleet_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3597,6 +3646,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "course_escalations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       course_invitations: {
@@ -4281,6 +4337,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -7825,6 +7888,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "drivers_nfc_plate_order_id_fkey"
             columns: ["nfc_plate_order_id"]
             isOneToOne: false
@@ -8975,6 +9045,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_client_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_course_escalations: {
@@ -9141,6 +9218,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -9444,6 +9528,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_dispatch_queue_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_dispatch_responses: {
@@ -9646,6 +9737,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_driver_blocks_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_driver_declined_courses: {
@@ -9768,6 +9866,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -9952,6 +10057,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_driver_document_validations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_driver_documents_archive: {
@@ -10066,6 +10178,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10233,6 +10352,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_driver_invitations: {
@@ -10293,6 +10419,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -10582,6 +10715,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_driver_partnerships_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_indirect_payment_contracts: {
@@ -10732,6 +10872,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_indirect_payment_contracts_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fleet_indirect_payment_contracts_partnership_id_fkey"
             columns: ["partnership_id"]
             isOneToOne: false
@@ -10782,6 +10929,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_clients_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10929,6 +11083,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_course_requests_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -11089,6 +11250,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_manager_drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_manager_invitations: {
@@ -11131,6 +11299,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -11235,6 +11410,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: true
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_qr_codes_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: true
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -11773,6 +11955,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_partner_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fleet_partner_courses_partnership_id_fkey"
             columns: ["partnership_id"]
             isOneToOne: false
@@ -11920,6 +12109,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_partnership_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fleet_partnership_payments_partnership_id_fkey"
             columns: ["partnership_id"]
             isOneToOne: false
@@ -11985,6 +12181,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fleet_promotions_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fleet_required_documents: {
@@ -12027,6 +12230,13 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_required_documents_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -16895,6 +17105,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "unassigned_fleet_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "unassigned_fleet_courses_resolved_by_fkey"
             columns: ["resolved_by"]
             isOneToOne: false
@@ -17639,6 +17856,13 @@ export type Database = {
             referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "company_course_requests_target_fleet_manager_id_fkey"
+            columns: ["target_fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       driver_data_isolation: {
@@ -18376,6 +18600,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clients_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clients_preferred_fleet_driver_id_fkey"
             columns: ["preferred_fleet_driver_id"]
             isOneToOne: false
@@ -18589,6 +18820,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_partner_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "public_fleet_manager_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fleet_partner_courses_partnership_id_fkey"
             columns: ["partnership_id"]
             isOneToOne: false
@@ -18774,6 +19012,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_fleet_manager_profiles: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          description: string | null
+          id: string | null
+          logo_url: string | null
+          status: string | null
+          visible_to_drivers: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          status?: string | null
+          visible_to_drivers?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          description?: string | null
+          id?: string | null
+          logo_url?: string | null
+          status?: string | null
+          visible_to_drivers?: boolean | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -18983,6 +19251,13 @@ export type Database = {
           p_original_amount?: number
         }
         Returns: Json
+      }
+      assign_user_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: undefined
       }
       atomic_accept_ride_request: {
         Args: { p_driver_id: string; p_ride_request_id: string }

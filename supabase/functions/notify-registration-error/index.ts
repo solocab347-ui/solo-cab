@@ -25,15 +25,40 @@ interface RegistrationErrorPayload {
   url?: string;
 }
 
+// HTML escape to prevent injection
+const escapeHtml = (s: string | undefined | null): string => {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5; // max 5 calls per minute per IP
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting by IP
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const now = Date.now();
+  const entry = rateLimitMap.get(clientIP);
+  if (entry && entry.resetAt > now) {
+    if (entry.count >= RATE_LIMIT) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    entry.count++;
+  } else {
+    rateLimitMap.set(clientIP, { count: 1, resetAt: now + 60000 });
+  }
+
   try {
     const payload: RegistrationErrorPayload = await req.json();
 
-    console.log("[notify-registration-error] Received error notification:", payload);
+    console.log("[notify-registration-error] Received error notification for step:", payload.step);
 
     const {
       step,
@@ -93,9 +118,9 @@ const handler = async (req: Request): Promise<Response> => {
                       Message d'erreur:
                     </p>
                     <p style="margin: 8px 0 0; color: #7f1d1d; font-family: monospace; font-size: 14px; word-break: break-word;">
-                      ${errorMessage}
+                      ${escapeHtml(errorMessage)}
                     </p>
-                    ${errorCode ? `<p style="margin: 8px 0 0; color: #991b1b; font-size: 12px;">Code: ${errorCode}</p>` : ""}
+                    ${errorCode ? `<p style="margin: 8px 0 0; color: #991b1b; font-size: 12px;">Code: ${escapeHtml(errorCode)}</p>` : ""}
                   </td>
                 </tr>
               </table>
@@ -109,38 +134,38 @@ const handler = async (req: Request): Promise<Response> => {
                   <td style="padding: 8px 0; color: #64748b; width: 120px;">Étape:</td>
                   <td style="padding: 8px 0; color: #1e293b; font-weight: bold;">
                     <span style="background-color: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 13px;">
-                      ${step}
+                      ${escapeHtml(step)}
                     </span>
                   </td>
                 </tr>
                 ${fullName ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Nom:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${fullName}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${escapeHtml(fullName)}</td>
                 </tr>` : ""}
                 ${email ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Email:</td>
                   <td style="padding: 8px 0; color: #1e293b;">
-                    <a href="mailto:${email}" style="color: #059669; text-decoration: none;">${email}</a>
+                    <a href="mailto:${escapeHtml(email)}" style="color: #059669; text-decoration: none;">${escapeHtml(email)}</a>
                   </td>
                 </tr>` : ""}
                 ${phone ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Téléphone:</td>
                   <td style="padding: 8px 0; color: #1e293b;">
-                    <a href="tel:${phone}" style="color: #059669; text-decoration: none;">${phone}</a>
+                    <a href="tel:${escapeHtml(phone)}" style="color: #059669; text-decoration: none;">${escapeHtml(phone)}</a>
                   </td>
                 </tr>` : ""}
                 ${userId ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">User ID:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${userId}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${escapeHtml(userId)}</td>
                 </tr>` : ""}
                 ${driverId ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Driver ID:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${driverId}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-family: monospace; font-size: 12px;">${escapeHtml(driverId)}</td>
                 </tr>` : ""}
               </table>
 
@@ -156,12 +181,12 @@ const handler = async (req: Request): Promise<Response> => {
                 ${url ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">URL:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-size: 12px; word-break: break-all;">${url}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-size: 12px; word-break: break-all;">${escapeHtml(url)}</td>
                 </tr>` : ""}
                 ${userAgent ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Navigateur:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-size: 11px; word-break: break-all;">${userAgent}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-size: 11px; word-break: break-all;">${escapeHtml(userAgent)}</td>
                 </tr>` : ""}
               </table>
 
