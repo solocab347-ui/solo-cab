@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}'],
         globIgnores: ['**/vehicles/**'], // Exclure les images volumineuses de véhicules
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB

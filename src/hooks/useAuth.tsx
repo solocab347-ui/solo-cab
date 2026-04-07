@@ -201,7 +201,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (session?.user) {
             setTimeout(() => {
-              fetchUserRole(session.user.id).catch(err => {
+              fetchUserRole(session.user.id).then((role) => {
+                // If no role found and on oauth-onboarding, don't redirect
+                if (!role && window.location.pathname === "/oauth-onboarding") {
+                  return;
+                }
+              }).catch(err => {
                 logger.error("Role fetch failed", { err });
               });
             }, 0);

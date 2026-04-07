@@ -37,6 +37,8 @@ const RegisterClientDriver = lazy(() => import("./pages/RegisterClientDriver"));
 const RegisterDriver = lazy(() => import("./pages/RegisterDriver"));
 const RegisterDriverPromoFree = lazy(() => import("./pages/RegisterDriverPromoFree"));
 const RegistrationSuccess = lazy(() => import("./pages/RegistrationSuccess"));
+const SignupChoice = lazy(() => import("./pages/SignupChoice"));
+const OAuthOnboarding = lazy(() => import("./pages/OAuthOnboarding"));
 
 const GuestBooking = lazy(() => import("./pages/GuestBooking"));
 const GuestBookingTracking = lazy(() => import("./pages/GuestBookingTracking"));
@@ -102,6 +104,8 @@ const App = () => (
                 <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><Login /></Suspense>} />
+              <Route path="/signup" element={<Suspense fallback={<LoadingFallback />}><SignupChoice /></Suspense>} />
+              <Route path="/oauth-onboarding" element={<Suspense fallback={<LoadingFallback />}><OAuthOnboarding /></Suspense>} />
               <Route path="/chauffeurs" element={<Suspense fallback={<LoadingFallback />}><Chauffeurs /></Suspense>} />
               <Route path="/devenir-chauffeur" element={<Suspense fallback={<LoadingFallback />}><ChauffeurLanding /></Suspense>} />
               <Route path="/chauffeur/:id" element={<Suspense fallback={<LoadingFallback />}><ChauffeurProfile /></Suspense>} />
