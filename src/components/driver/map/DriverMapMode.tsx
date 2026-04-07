@@ -90,11 +90,10 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     try {
       const { data } = await supabase.rpc('get_driver_dashboard_stats', {
         p_driver_id: driverId,
-        p_period: 'day',
       });
-      if (data && Array.isArray(data) && data.length > 0) {
-        const d = data[0] as any;
-        setTodayRevenue(d?.total_revenue_cents ? d.total_revenue_cents / 100 : 0);
+      const d = data as any;
+      if (d) {
+        setTodayRevenue(Number(d?.today_revenue || 0));
       }
     } catch { /* silent */ }
   }, [driverId]);
