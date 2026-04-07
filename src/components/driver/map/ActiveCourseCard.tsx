@@ -118,6 +118,17 @@ const getAcceptedDevis = (course: ActiveCourse) => {
     })[0] ?? null;
 };
 
+const isOperationalCourse = (course: ActiveCourse) => {
+  if (course.status === 'in_progress' || course.status === 'accepted') return true;
+  return Boolean(getAcceptedDevis(course));
+};
+
+const getDriverStatusFromCourse = (course: ActiveCourse): 'reserved' | 'on_trip' | null => {
+  if (course.status === 'in_progress') return 'on_trip';
+  if (isOperationalCourse(course)) return 'reserved';
+  return null;
+};
+
 const getCoursePriority = (course: ActiveCourse) => {
   if (course.status === 'in_progress') return 3;
   if (course.status === 'accepted' || getAcceptedDevis(course)) return 2;
@@ -125,10 +136,8 @@ const getCoursePriority = (course: ActiveCourse) => {
 };
 
 const pickRelevantCourse = (courses: ActiveCourse[]) => {
-  // Only keep today's / immediate courses
-  const relevant = courses.filter(isCourseTodayOrImmediate);
-  
-  // Prefer in_progress > accepted > pending, then most recent
+  const relevant = courses.filter((course) => isCourseTodayOrImmediate(course) && isOperationalCourse(course));
+
   return [...relevant].sort((a, b) => {
     const priorityDiff = getCoursePriority(b) - getCoursePriority(a);
     if (priorityDiff !== 0) return priorityDiff;
@@ -169,10 +178,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const fetchActive = useCallback(async () => {
     if (!driverId) return;
 
-    // Get today's date boundaries for DB-level filtering
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const { data, error } = await supabase
       .from('courses')
@@ -200,18 +207,14 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
     const candidates = (data ?? []) as unknown as ActiveCourse[];
     const nonDismissed = candidates.filter(c => !dismissedCourseIds.has(c.id));
-    
-    // Strict today/immediate filter on client side as well
     const todayOnly = nonDismissed.filter(isCourseTodayOrImmediate);
     const newCourse = pickRelevantCourse(todayOnly);
 
-    // Upcoming reservations for today (not the active one)
     const upcoming = todayOnly
       .filter(c => c.id !== newCourse?.id && c.scheduled_date)
       .sort((a, b) => new Date(a.scheduled_date!).getTime() - new Date(b.scheduled_date!).getTime());
     setUpcomingReservations(upcoming);
 
-    // Double-check driver_id matches
     if (newCourse && newCourse.driver_id !== driverId) {
       console.warn('[ActiveCourseCard] driver_id mismatch, ignoring');
       setCourse(null);
@@ -220,28 +223,37 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
 
     const prev = course;
+    const prevBusyStatus = prev ? getDriverStatusFromCourse(prev) : null;
+    const nextBusyStatus = newCourse ? getDriverStatusFromCourse(newCourse) : null;
+
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
 
-    // Auto-set driver status based on course state
-    if (newCourse && !prev) {
-      // Save current status before overriding
-      const { data: driverData } = await supabase
-        .from('drivers')
-        .select('is_available_now, driver_status')
-        .eq('id', driverId)
-        .maybeSingle();
-      wasAvailableBeforeCourseRef.current = driverData?.is_available_now ?? false;
-      
-      await supabase.from('drivers').update({ 
-        is_available_now: false, 
-        driver_status: 'on_trip' 
-      }).eq('id', driverId);
-      console.log('[ActiveCourseCard] Driver set to on_trip');
+    if (newCourse && nextBusyStatus) {
+      const isNewAssignment = prev?.id !== newCourse.id;
+      const busyStatusChanged = prevBusyStatus !== nextBusyStatus;
+
+      if (isNewAssignment || busyStatusChanged) {
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('is_available_now, driver_status')
+          .eq('id', driverId)
+          .maybeSingle();
+
+        if (isNewAssignment && wasAvailableBeforeCourseRef.current === null) {
+          wasAvailableBeforeCourseRef.current = driverData?.is_available_now ?? false;
+        }
+
+        if (driverData?.driver_status !== nextBusyStatus || driverData?.is_available_now !== false) {
+          await supabase.from('drivers').update({
+            is_available_now: false,
+            driver_status: nextBusyStatus,
+          }).eq('id', driverId);
+          console.log('[ActiveCourseCard] Driver status synced from course:', nextBusyStatus);
+        }
+      }
     } else if (!newCourse && prev) {
-      // Course ended — always restore to online_available (connected but available)
-      // A driver who was on a trip should come back online, not go offline
-      await supabase.from('drivers').update({ 
+      await supabase.from('drivers').update({
         is_available_now: true,
         driver_status: 'online_available',
       }).eq('id', driverId);
@@ -265,7 +277,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         persistPhase(newCourse.id, nextPhase);
       }
     }
-  }, [driverId, onCourseChange, course, phase]);
+  }, [driverId, onCourseChange, onCourseActive, course, phase, dismissedCourseIds]);
 
   useEffect(() => {
     fetchActive();
@@ -284,7 +296,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [driverId]);
+  }, [driverId, fetchActive]);
 
   useEffect(() => {
     if (!course) return;

@@ -67,7 +67,16 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
   const { isAvailable, isOnline, driverStatus, toggleAvailability } = useDriverAvailability();
-  const isBusy = driverStatus === 'on_trip' || driverStatus === 'accepting' || driverStatus === 'reserved';
+  const isAccepting = driverStatus === 'accepting';
+  const isOnTrip = driverStatus === 'on_trip';
+  const isReserved = driverStatus === 'reserved';
+  const isBusy = isOnTrip || isAccepting || isReserved;
+  const busyTitle = isOnTrip ? 'En course' : isReserved ? 'Mission réservée' : 'Demande en attente';
+  const busySubtitle = isOnTrip
+    ? 'Course en cours — indisponible'
+    : isReserved
+      ? 'Mission attribuée — indisponible'
+      : 'Réponse en attente — indisponible';
 
   const { latitude, longitude, isTracking, isStale } = useDriverLocationTracker({
     driverId,
@@ -250,7 +259,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
                       <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
                     </span>
-                    En course
+                    {busyTitle}
                   </>
                 ) : isOnline ? (
                   <>
@@ -313,7 +322,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
                 <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
               </span>
-              <span className="text-[11px] font-medium text-amber-400">Course en cours — indisponible</span>
+              <span className="text-[11px] font-medium text-amber-400">{busySubtitle}</span>
             </div>
           </div>
         )}

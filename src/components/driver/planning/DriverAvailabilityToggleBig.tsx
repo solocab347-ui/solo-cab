@@ -17,7 +17,10 @@ export function DriverAvailabilityToggleBig({
   onSwitchToMap,
 }: DriverAvailabilityToggleBigProps) {
   const { isOnline, isAvailableForCourses, driverStatus, isLoading, toggleAvailability } = useDriverAvailability();
-  const isBusy = driverStatus === 'on_trip' || driverStatus === 'accepting' || driverStatus === 'reserved';
+  const isAccepting = driverStatus === 'accepting';
+  const isOnTrip = driverStatus === 'on_trip';
+  const isReserved = driverStatus === 'reserved';
+  const isBusy = isOnTrip || isAccepting || isReserved;
 
   const { isTracking, error } = useDriverLocationTracker({
     driverId,
@@ -25,13 +28,33 @@ export function DriverAvailabilityToggleBig({
   });
 
   const handleToggle = async () => {
-    if (isBusy) return; // Don't allow toggle during a course
+    if (isBusy) return;
     await toggleAvailability();
     onAvailabilityChange?.(!isOnline);
     if (!isOnline && onSwitchToMap) {
       onSwitchToMap();
     }
   };
+
+  const statusTitle = isOnTrip
+    ? 'En course'
+    : isReserved
+      ? 'Mission réservée'
+      : isAccepting
+        ? 'Demande en attente'
+        : isOnline
+          ? 'Connecté'
+          : 'Déconnecté';
+
+  const statusSubtitle = isOnTrip
+    ? 'Course en cours — indisponible'
+    : isReserved
+      ? 'Mission attribuée — indisponible'
+      : isAccepting
+        ? 'Réponse en attente — indisponible'
+        : isOnline
+          ? 'Vous recevez les courses immédiates'
+          : 'Réservations uniquement';
 
   if (isLoading) {
     return (
@@ -86,15 +109,9 @@ export function DriverAvailabilityToggleBig({
                 isBusy ? 'text-amber-400' : isOnline ? 'text-emerald-400' : 'text-red-400'
               )}
             >
-              {isBusy ? 'En course' : isOnline ? 'Connecté' : 'Déconnecté'}
+              {statusTitle}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {isBusy
-                ? 'Course en cours — indisponible'
-                : isOnline
-                  ? 'Vous recevez les courses immédiates'
-                  : 'Réservations uniquement'}
-            </p>
+            <p className="text-xs text-muted-foreground">{statusSubtitle}</p>
           </div>
         </div>
 
