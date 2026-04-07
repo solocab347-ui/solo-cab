@@ -7,8 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, MapPin } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 
 interface Props {
   user: any;
@@ -16,10 +19,12 @@ interface Props {
 
 export const OAuthClientOnboarding = ({ user }: Props) => {
   const navigate = useNavigate();
+  const { locale, t } = useLocale();
   const [fullName, setFullName] = useState(
     user.user_metadata?.full_name || user.user_metadata?.name || ""
   );
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [acceptCGU, setAcceptCGU] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +42,7 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
 
     setLoading(true);
     try {
-      // Update profile
+      // Update profile with all collected info
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
@@ -45,6 +50,8 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
           full_name: fullName.trim(),
           phone: phone.trim(),
           email: user.email,
+          address: address.trim() || null,
+          preferred_language: locale,
           onboarding_completed: true,
         });
 
@@ -56,6 +63,9 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
         .insert({
           user_id: user.id,
           is_exclusive: false,
+          driver_ids: [],
+          driver_id: null,
+          favorite_driver_id: null,
         });
 
       if (clientError && !clientError.message.includes("duplicate")) throw clientError;
@@ -101,6 +111,16 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
 
         <Card className="p-5">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Langue */}
+            <div className="space-y-2">
+              <Label>Langue de l'application</Label>
+              <LanguageSelector />
+              <p className="text-xs text-muted-foreground">
+                L'application s'affichera dans cette langue
+              </p>
+            </div>
+
+            {/* Nom */}
             <div className="space-y-2">
               <Label htmlFor="fullName">Prénom et nom *</Label>
               <Input
@@ -112,6 +132,7 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
               />
             </div>
 
+            {/* Téléphone */}
             <div className="space-y-2">
               <Label htmlFor="phone">Téléphone *</Label>
               <Input
@@ -127,6 +148,23 @@ export const OAuthClientOnboarding = ({ user }: Props) => {
               </p>
             </div>
 
+            {/* Adresse */}
+            <div className="space-y-2">
+              <Label htmlFor="address">
+                <MapPin className="w-3.5 h-3.5 inline mr-1" />
+                Adresse de mon domicile
+              </Label>
+              <AddressAutocomplete
+                value={address}
+                onChange={setAddress}
+                placeholder="Commencez à taper votre adresse..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Cette adresse facilitera la réservation de vos courses
+              </p>
+            </div>
+
+            {/* CGU */}
             <div className="flex items-start gap-2">
               <Checkbox
                 id="cgu"
