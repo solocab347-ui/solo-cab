@@ -576,10 +576,7 @@ serve(async (req) => {
         type: "course_final_payment",
         flow: "fallback_new_pi",
       },
-      transfer_data: {
-        destination: course.driver.stripe_connect_account_id,
-      },
-      application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
+      // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
     };
 
     if (course.stripe_customer_id) {
