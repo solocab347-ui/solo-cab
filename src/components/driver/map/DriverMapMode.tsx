@@ -66,10 +66,10 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
-  const { latitude, longitude, isTracking, updateAvailability } = useDriverLocationTracker({
+  const { latitude, longitude, isTracking, isStale, updateAvailability } = useDriverLocationTracker({
     driverId,
     enabled: true,
-    updateIntervalMs: 5000,
+    updateIntervalMs: 8000,
   });
 
   useEffect(() => {
@@ -379,6 +379,13 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
           <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">Localisation…</span>
+          </div>
+        </div>
+      )}
+      {isStale && isTracking && (
+        <div className="absolute top-[140px] left-0 right-0 z-[9991] flex justify-center pointer-events-none">
+          <div className="bg-amber-500/90 backdrop-blur-sm text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
+            ⚠️ Position GPS obsolète — gardez l'app au premier plan
           </div>
         </div>
       )}
