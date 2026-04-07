@@ -153,8 +153,52 @@ export function IncomingCourseOverlay({
 }: IncomingCourseOverlayProps) {
   const [timeLeft, setTimeLeft] = useState(TIMEOUT_SECONDS);
   const [accepting, setAccepting] = useState(false);
+  const [takenByOther, setTakenByOther] = useState(false);
   const audioRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [approachInfo, setApproachInfo] = useState<{ distanceKm: number; minutes: number } | null>(null);
+
+  // Poll ride_request status to auto-dismiss if taken by another driver
+  useEffect(() => {
+    if (!course || course.source !== 'ride_request') return;
+    const rideRequestId = course.sourceId;
+    
+    const checkStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from('ride_requests')
+          .select('status')
+          .eq('id', rideRequestId)
+          .maybeSingle();
+        
+        if (data && data.status !== 'pending') {
+          console.log('[IncomingCourseOverlay] Ride request no longer pending:', data.status);
+          setTakenByOther(true);
+          if (audioRef.current) clearInterval(audioRef.current);
+          if (navigator.vibrate) navigator.vibrate(0);
+          
+          // Show message briefly then dismiss
+          setTimeout(() => {
+            if (driverId) {
+              supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+            }
+            onDismiss();
+          }, 2500);
+        }
+      } catch (err) {
+        console.error('[IncomingCourseOverlay] Status poll error:', err);
+      }
+    };
+
+    // Check every 2 seconds
+    const pollInterval = setInterval(checkStatus, 2000);
+    // Also check immediately after 1s
+    const initialCheck = setTimeout(checkStatus, 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(initialCheck);
+    };
+  }, [course?.id, course?.source, course?.sourceId, driverId, onDismiss]);
 
   useEffect(() => {
     if (!course || !driverId || !course.pickupLatitude || !course.pickupLongitude) {
@@ -177,6 +221,7 @@ export function IncomingCourseOverlay({
   useEffect(() => {
     if (!course || !driverId) { setTimeLeft(TIMEOUT_SECONDS); return; }
     setTimeLeft(TIMEOUT_SECONDS);
+    setTakenByOther(false);
     supabase.from('drivers').update({ driver_status: 'accepting', is_available_now: false }).eq('id', driverId).then(() => {
       console.log('[IncomingCourseOverlay] Driver set to accepting');
     });
@@ -499,41 +544,56 @@ export function IncomingCourseOverlay({
 
             <div className="flex-1 min-h-2" />
 
-            {/* ACTION BUTTONS */}
-            <motion.div
-              className="w-full space-y-2"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
+            {/* TAKEN BY OTHER DRIVER MESSAGE */}
+            {takenByOther && (
               <motion.div
-                animate={{ boxShadow: [`0 0 20px ${theme.acceptGlow}`, `0 0 40px ${theme.acceptGlow}`, `0 0 20px ${theme.acceptGlow}`] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="rounded-2xl"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full mb-4 p-4 rounded-2xl bg-red-500/20 border border-red-500/40 text-center"
               >
-                <Button
-                  className={`w-full h-14 text-lg font-black rounded-2xl text-white shadow-2xl active:scale-[0.97] transition-transform ${theme.acceptBg}`}
-                  onClick={handleAccept}
-                  disabled={accepting}
+                <X className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                <p className="text-lg font-black text-red-300">Course déjà prise</p>
+                <p className="text-sm text-red-300/70 mt-1">Un autre chauffeur a accepté cette course</p>
+              </motion.div>
+            )}
+
+            {/* ACTION BUTTONS */}
+            {!takenByOther && (
+              <motion.div
+                className="w-full space-y-2"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <motion.div
+                  animate={{ boxShadow: [`0 0 20px ${theme.acceptGlow}`, `0 0 40px ${theme.acceptGlow}`, `0 0 20px ${theme.acceptGlow}`] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="rounded-2xl"
                 >
-                  {accepting ? (
-                    <div className="h-5 w-5 mr-2 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                  ) : (
-                    <Check className="h-6 w-6 mr-2" />
-                  )}
-                  ACCEPTER
+                  <Button
+                    className={`w-full h-14 text-lg font-black rounded-2xl text-white shadow-2xl active:scale-[0.97] transition-transform ${theme.acceptBg}`}
+                    onClick={handleAccept}
+                    disabled={accepting}
+                  >
+                    {accepting ? (
+                      <div className="h-5 w-5 mr-2 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                    ) : (
+                      <Check className="h-6 w-6 mr-2" />
+                    )}
+                    ACCEPTER
+                  </Button>
+                </motion.div>
+
+                <Button
+                  variant="ghost"
+                  className="w-full h-11 text-sm font-bold rounded-2xl text-white/40 hover:text-white/60 hover:bg-white/5 border border-white/10 active:scale-[0.97] transition-transform"
+                  onClick={handleDismiss}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  REFUSER
                 </Button>
               </motion.div>
-
-              <Button
-                variant="ghost"
-                className="w-full h-11 text-sm font-bold rounded-2xl text-white/40 hover:text-white/60 hover:bg-white/5 border border-white/10 active:scale-[0.97] transition-transform"
-                onClick={handleDismiss}
-              >
-                <X className="h-4 w-4 mr-2" />
-                REFUSER
-              </Button>
-            </motion.div>
+            )}
           </div>
         </motion.div>
       )}
