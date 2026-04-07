@@ -11,12 +11,12 @@ import {
   Activity, 
   Mail, 
   LogOut, 
-  
   HeadphonesIcon,
   Wrench,
   Settings,
   ArrowLeft,
-  FolderOpen
+  FolderOpen,
+  Wallet
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
@@ -29,6 +29,7 @@ import AdminTechHub from "@/components/admin/hubs/AdminTechHub";
 import AdminCommunicationsHub from "@/components/admin/hubs/AdminCommunicationsHub";
 import AdminSettingsHub from "@/components/admin/hubs/AdminSettingsHub";
 import AdminDocumentsHub from "@/components/admin/hubs/AdminDocumentsHub";
+import AdminFinancesHub from "@/components/admin/hubs/AdminFinancesHub";
 
 
 const AdminDashboard = () => {
@@ -119,6 +120,7 @@ const AdminDashboard = () => {
     { id: "home", label: "Accueil", icon: Home, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
     { id: "users", label: "Utilisateurs", icon: Users, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
     { id: "documents", label: "Documents", icon: FolderOpen, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+    { id: "finances", label: "Finances", icon: Wallet, color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
     { id: "subscriptions", label: "Abonnements", icon: Activity, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
     { id: "support", label: "Support", icon: HeadphonesIcon, color: "bg-red-500/10 text-red-600 dark:text-red-400" },
     { id: "tech", label: "Technique", icon: Wrench, color: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
@@ -134,6 +136,8 @@ const AdminDashboard = () => {
         return <AdminUsersHub />;
       case "documents":
         return <AdminDocumentsHub />;
+      case "finances":
+        return <AdminFinancesHub />;
       case "subscriptions":
         return <AdminSubscriptionsHub />;
       case "support":
