@@ -176,10 +176,14 @@ export function IncomingCourseOverlay({
           if (audioRef.current) clearInterval(audioRef.current);
           if (navigator.vibrate) navigator.vibrate(0);
           
-          // Show message for 4 seconds then dismiss
-          setTimeout(() => {
+          // Show message for 4 seconds then restore status
+          setTimeout(async () => {
             if (driverId) {
-              supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+              // Only restore if still in 'accepting' — don't override on_trip
+              const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
+              if (!d?.driver_status || d.driver_status === 'accepting') {
+                await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+              }
             }
             onDismiss();
           }, 4000);
