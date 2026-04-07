@@ -81,13 +81,11 @@ serve(async (req) => {
         },
       ],
       payment_intent_data: {
-        application_fee_amount: platformFeeCents,
-        transfer_data: {
-          destination: driver.stripe_connect_account_id,
-        },
+        // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
         metadata: {
           driver_id: driver.id,
           type: "spontaneous_payment",
+          solocab_fee: "0.80",
           description: description.trim().slice(0, 200),
           date: date || new Date().toISOString(),
         },

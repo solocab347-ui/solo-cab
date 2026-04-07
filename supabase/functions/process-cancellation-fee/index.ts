@@ -320,13 +320,7 @@ serve(async (req) => {
                 },
               };
 
-              if (course.driver?.stripe_connect_account_id) {
-                paymentIntentParams.transfer_data = {
-                  destination: course.driver.stripe_connect_account_id,
-                };
-                paymentIntentParams.application_fee_amount = Math.min(SOLOCAB_FEE_CENTS, feeAmountCents);
-              }
-
+              // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
               const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
               chargeResult = paymentIntent;
               logStep("Cancellation fee charged via fallback PI", { piId: paymentIntent.id });
@@ -353,11 +347,7 @@ serve(async (req) => {
             },
           };
 
-          if (course.driver?.stripe_connect_account_id) {
-            paymentIntentParams.transfer_data = {
-              destination: course.driver.stripe_connect_account_id,
-            };
-          }
+          // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
 
           const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
           chargeResult = paymentIntent;

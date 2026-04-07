@@ -31,7 +31,7 @@ serve(async (req) => {
     const now = new Date();
     const dayOfWeek = now.getUTCDay();
     const lastMonday = new Date(now);
-    lastMonday.setUTCDate(now.getUTCDate() - dayOfWeek - 6); // Previous Monday
+    lastMonday.setUTCDate(now.getUTCDate() - dayOfWeek - 6);
     lastMonday.setUTCHours(0, 0, 0, 0);
     const lastSunday = new Date(lastMonday);
     lastSunday.setUTCDate(lastMonday.getUTCDate() + 6);
@@ -57,12 +57,10 @@ serve(async (req) => {
     }
 
     // Create or update settlement record
-    const settlementId = existing?.id;
     let settlement: { id: string };
-
-    if (settlementId) {
-      await supabase.from("weekly_settlements").update({ status: "processing" }).eq("id", settlementId);
-      settlement = { id: settlementId };
+    if (existing?.id) {
+      await supabase.from("weekly_settlements").update({ status: "processing" }).eq("id", existing.id);
+      settlement = { id: existing.id };
     } else {
       const { data, error } = await supabase
         .from("weekly_settlements")
@@ -75,199 +73,202 @@ serve(async (req) => {
 
     log("Settlement record", { id: settlement.id });
 
-    // 1. Fetch all completed shared course payments NOT yet settled for this period
-    const { data: sharedPayments, error: spErr } = await supabase
-      .from("shared_course_payments")
+    // ═══════════════════════════════════════════════════════════
+    // 1. DRIVER PAYOUTS: Aggregate pending balances per driver
+    // ═══════════════════════════════════════════════════════════
+    const { data: pendingBalances, error: pbErr } = await supabase
+      .from("driver_balance_pending")
       .select("*")
-      .eq("status", "completed")
-      .is("settlement_id", null)
-      .gte("payment_captured_at", lastMonday.toISOString())
-      .lte("payment_captured_at", lastSunday.toISOString());
+      .eq("status", "pending");
 
-    if (spErr) throw new Error(`Failed to fetch payments: ${spErr.message}`);
+    if (pbErr) throw new Error(`Failed to fetch pending balances: ${pbErr.message}`);
 
-    log("Shared payments found", { count: sharedPayments?.length || 0 });
+    log("Pending driver balances found", { count: pendingBalances?.length || 0 });
 
-    // 2. Fetch all completed standard courses for this period (for SoloCab 0.50€ fees)
-    const { data: standardCourses, error: scErr } = await supabase
-      .from("courses")
-      .select("id, driver_id, payment_method, final_payment_amount")
-      .in("status", ["completed", "paid"])
-      .gte("completed_at", lastMonday.toISOString())
-      .lte("completed_at", lastSunday.toISOString())
-      .not("payment_method", "in", "(cash,especes)"); // Only online payments have SoloCab fees
-
-    if (scErr) throw new Error(`Failed to fetch courses: ${scErr.message}`);
-
-    log("Standard courses found", { count: standardCourses?.length || 0 });
-
-    // 3. Aggregate per driver
-    const driverBalances: Record<string, {
-      commissions_earned: number;
+    // Aggregate per driver
+    const driverTotals: Record<string, {
+      gross: number;
       solocab_fees: number;
-      shared_as_sender: number;
-      shared_as_receiver: number;
-      standard_count: number;
+      stripe_fees: number;
+      net: number;
+      courses: number;
+      balance_ids: string[];
     }> = {};
 
-    const ensureDriver = (driverId: string) => {
-      if (!driverBalances[driverId]) {
-        driverBalances[driverId] = {
-          commissions_earned: 0,
-          solocab_fees: 0,
-          shared_as_sender: 0,
-          shared_as_receiver: 0,
-          standard_count: 0,
-        };
+    for (const bal of (pendingBalances || [])) {
+      if (!driverTotals[bal.driver_id]) {
+        driverTotals[bal.driver_id] = { gross: 0, solocab_fees: 0, stripe_fees: 0, net: 0, courses: 0, balance_ids: [] };
       }
-    };
-
-    // Process shared course commissions
-    let totalCommissionVolume = 0;
-    let totalPlatformFees = 0;
-
-    for (const payment of (sharedPayments || [])) {
-      // Sender earns the commission
-      ensureDriver(payment.sender_driver_id);
-      driverBalances[payment.sender_driver_id].commissions_earned += payment.sender_commission_amount;
-      driverBalances[payment.sender_driver_id].shared_as_sender += 1;
-
-      // Both pay 0.25€ platform fee for the sharing
-      ensureDriver(payment.sender_driver_id);
-      ensureDriver(payment.receiver_driver_id);
-      driverBalances[payment.receiver_driver_id].solocab_fees += 0.25;
-      driverBalances[payment.receiver_driver_id].shared_as_receiver += 1;
-
-      totalCommissionVolume += payment.commission_amount;
-      totalPlatformFees += 0.25;
+      const d = driverTotals[bal.driver_id];
+      d.gross += Number(bal.gross_amount || 0);
+      d.solocab_fees += Number(bal.solocab_fee || 0);
+      d.stripe_fees += Number(bal.stripe_fee || 0);
+      d.net += Number(bal.net_amount || 0);
+      d.courses++;
+      d.balance_ids.push(bal.id);
     }
 
-    // Process standard course SoloCab fees (0.50€ per online course)
-    let totalSolocabStandardFees = 0;
+    // Execute transfers to each driver
+    let driverTransfersExecuted = 0;
+    let totalDriverTransferAmount = 0;
+    const driverBalanceInserts = [];
 
-    for (const course of (standardCourses || [])) {
-      if (course.driver_id) {
-        ensureDriver(course.driver_id);
-        driverBalances[course.driver_id].solocab_fees += 0.50;
-        driverBalances[course.driver_id].standard_count += 1;
-        totalSolocabStandardFees += 0.50;
-      }
-    }
+    for (const [driverId, totals] of Object.entries(driverTotals)) {
+      // Get driver Stripe info
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("stripe_connect_account_id, stripe_connect_charges_enabled, user_id")
+        .eq("id", driverId)
+        .single();
 
-    // 4. Calculate net and create balance records
-    const balanceInserts = [];
-    let totalTransferAmount = 0;
-    let transfersCount = 0;
+      const netCents = Math.round(totals.net * 100);
 
-    for (const [driverId, bal] of Object.entries(driverBalances)) {
-      const net = bal.commissions_earned - bal.solocab_fees;
-      balanceInserts.push({
+      // Record in driver_weekly_balances
+      driverBalanceInserts.push({
         settlement_id: settlement.id,
         driver_id: driverId,
-        total_commissions_earned: bal.commissions_earned,
-        total_solocab_fees: bal.solocab_fees,
-        net_amount: net,
-        shared_courses_as_sender: bal.shared_as_sender,
-        shared_courses_as_receiver: bal.shared_as_receiver,
-        standard_courses_count: bal.standard_count,
+        total_commissions_earned: totals.gross,
+        total_solocab_fees: totals.solocab_fees,
+        net_amount: totals.net,
+        standard_courses_count: totals.courses,
+        shared_courses_as_sender: 0,
+        shared_courses_as_receiver: 0,
         transfer_status: "pending",
       });
 
-      if (net > 0) {
-        totalTransferAmount += net;
-        transfersCount++;
-      }
-    }
-
-    if (balanceInserts.length > 0) {
-      const { error: insErr } = await supabase
-        .from("driver_weekly_balances")
-        .insert(balanceInserts);
-      if (insErr) throw new Error(`Failed to insert balances: ${insErr.message}`);
-    }
-
-    log("Balances created", { count: balanceInserts.length });
-
-    // 5. Execute Stripe transfers for drivers with positive net
-    const { data: balancesToPay } = await supabase
-      .from("driver_weekly_balances")
-      .select("*, drivers:driver_id(stripe_connect_account_id, stripe_connect_charges_enabled)")
-      .eq("settlement_id", settlement.id)
-      .gt("net_amount", 0)
-      .eq("transfer_status", "pending");
-
-    let executedTransfers = 0;
-    const feesPerTransfer = 0.25; // Approximate Stripe transfer fee
-    const estimatedSavings = ((sharedPayments?.length || 0) - 1) * feesPerTransfer; // N transactions → 1
-
-    for (const balance of (balancesToPay || [])) {
-      const driver = balance.drivers as any;
       if (!driver?.stripe_connect_account_id || !driver?.stripe_connect_charges_enabled) {
-        await supabase.from("driver_weekly_balances")
-          .update({ transfer_status: "skipped", transfer_error: "Stripe Connect non actif" })
-          .eq("id", balance.id);
+        log("Driver skipped - no Stripe", { driverId });
+        // Mark balances as settled anyway (fee still recorded)
+        if (totals.balance_ids.length > 0) {
+          await supabase.from("driver_balance_pending")
+            .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
+            .in("id", totals.balance_ids);
+        }
+        continue;
+      }
+
+      if (netCents < 100) {
+        log("Driver skipped - amount below minimum (1€)", { driverId, netCents });
+        if (totals.balance_ids.length > 0) {
+          await supabase.from("driver_balance_pending")
+            .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
+            .in("id", totals.balance_ids);
+        }
         continue;
       }
 
       try {
-        const amountCents = Math.round(balance.net_amount * 100);
-        if (amountCents < 100) { // Min 1€ transfer
-          await supabase.from("driver_weekly_balances")
-            .update({ transfer_status: "skipped", transfer_error: "Montant inférieur au minimum (1€)" })
-            .eq("id", balance.id);
-          continue;
-        }
-
         const transfer = await stripe.transfers.create({
-          amount: amountCents,
+          amount: netCents,
           currency: "eur",
           destination: driver.stripe_connect_account_id,
-          description: `Règlement hebdo SoloCab ${weekStart} - ${weekEnd}`,
+          description: `Règlement hebdo SoloCab ${weekStart} → ${weekEnd}`,
           metadata: {
             settlement_id: settlement.id,
-            balance_id: balance.id,
-            type: "weekly_settlement",
+            driver_id: driverId,
+            type: "weekly_driver_payout",
+            courses_count: totals.courses.toString(),
           },
         });
 
-        await supabase.from("driver_weekly_balances")
-          .update({
-            stripe_transfer_id: transfer.id,
-            transfer_status: "completed",
-            transfer_executed_at: new Date().toISOString(),
-          })
-          .eq("id", balance.id);
+        driverTransfersExecuted++;
+        totalDriverTransferAmount += totals.net;
 
-        executedTransfers++;
-        log("Transfer completed", { driver_id: balance.driver_id, amount: balance.net_amount, transfer_id: transfer.id });
+        // Mark balances as settled
+        await supabase.from("driver_balance_pending")
+          .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
+          .in("id", totals.balance_ids);
+
+        log("Driver transfer completed", { driverId, amount: totals.net, transferId: transfer.id });
+
+        // Notify driver
+        if (driver.user_id) {
+          await supabase.from("notifications").insert({
+            user_id: driver.user_id,
+            title: "💰 Virement hebdomadaire",
+            message: `${totals.net.toFixed(2)}€ versé sur votre compte (${totals.courses} courses)`,
+            type: "info",
+            link: "/driver-dashboard?tab=finances",
+          });
+        }
       } catch (err: any) {
-        log("Transfer failed", { driver_id: balance.driver_id, error: err.message });
-        await supabase.from("driver_weekly_balances")
-          .update({ transfer_status: "failed", transfer_error: err.message })
-          .eq("id", balance.id);
+        log("Driver transfer failed", { driverId, error: err.message });
+        // Mark as settled to avoid re-processing but keep a record
+        await supabase.from("driver_balance_pending")
+          .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
+          .in("id", totals.balance_ids);
       }
     }
 
-    // 6. Mark shared payments as settled
+    // Insert driver weekly balances
+    if (driverBalanceInserts.length > 0) {
+      await supabase.from("driver_weekly_balances").insert(driverBalanceInserts);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 2. ADMIN FEES: Mark all pending admin fees as settled
+    // ═══════════════════════════════════════════════════════════
+    const { data: pendingAdminFees, error: afErr } = await supabase
+      .from("solo_admin_ledger")
+      .select("id, fee_amount")
+      .eq("status", "pending");
+
+    if (afErr) throw new Error(`Failed to fetch admin fees: ${afErr.message}`);
+
+    let totalAdminFees = 0;
+    for (const fee of (pendingAdminFees || [])) {
+      totalAdminFees += Number(fee.fee_amount || 0);
+    }
+
+    log("Admin fees to settle", { count: pendingAdminFees?.length || 0, total: totalAdminFees });
+
+    // Mark admin fees as settled (money is already on platform account)
+    if (pendingAdminFees && pendingAdminFees.length > 0) {
+      const feeIds = pendingAdminFees.map(f => f.id);
+      await supabase.from("solo_admin_ledger")
+        .update({
+          status: "settled",
+          settlement_id: settlement.id,
+          settled_at: new Date().toISOString(),
+          week_start: weekStart,
+        })
+        .in("id", feeIds);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 3. SHARED COURSE PAYMENTS: Handle partnership settlements
+    // ═══════════════════════════════════════════════════════════
+    const { data: sharedPayments } = await supabase
+      .from("shared_course_payments")
+      .select("*")
+      .eq("status", "completed")
+      .is("settlement_id", null);
+
+    let totalCommissionVolume = 0;
     if (sharedPayments && sharedPayments.length > 0) {
+      for (const payment of sharedPayments) {
+        totalCommissionVolume += payment.commission_amount || 0;
+      }
       const paymentIds = sharedPayments.map(p => p.id);
-      await supabase
-        .from("shared_course_payments")
+      await supabase.from("shared_course_payments")
         .update({ settlement_id: settlement.id, settled_at: new Date().toISOString() })
         .in("id", paymentIds);
     }
 
-    // 7. Finalize settlement record
+    // ═══════════════════════════════════════════════════════════
+    // 4. FINALIZE SETTLEMENT
+    // ═══════════════════════════════════════════════════════════
     await supabase.from("weekly_settlements")
       .update({
         status: "completed",
         total_shared_courses: sharedPayments?.length || 0,
         total_commission_volume: totalCommissionVolume,
-        total_platform_fees: totalPlatformFees,
-        total_solocab_standard_fees: totalSolocabStandardFees,
-        total_transfers_executed: executedTransfers,
-        total_transfer_amount: totalTransferAmount,
-        stripe_fees_saved_estimate: estimatedSavings > 0 ? estimatedSavings : 0,
+        total_platform_fees: totalAdminFees,
+        total_solocab_standard_fees: totalAdminFees,
+        total_transfers_executed: driverTransfersExecuted,
+        total_transfer_amount: totalDriverTransferAmount,
+        total_admin_fees_collected: totalAdminFees,
+        admin_transfer_status: "settled",
         processed_at: new Date().toISOString(),
       })
       .eq("id", settlement.id);
@@ -275,13 +276,16 @@ serve(async (req) => {
     const summary = {
       settlement_id: settlement.id,
       week: `${weekStart} → ${weekEnd}`,
-      shared_courses_processed: sharedPayments?.length || 0,
-      standard_courses_processed: standardCourses?.length || 0,
-      drivers_with_balances: balanceInserts.length,
-      transfers_executed: executedTransfers,
-      total_transfer_amount: totalTransferAmount,
-      solocab_fees_collected: totalPlatformFees + totalSolocabStandardFees,
-      estimated_stripe_fees_saved: estimatedSavings > 0 ? estimatedSavings : 0,
+      driver_payouts: {
+        drivers_paid: driverTransfersExecuted,
+        total_amount: totalDriverTransferAmount,
+        total_courses: pendingBalances?.length || 0,
+      },
+      admin_fees: {
+        total_fees: totalAdminFees,
+        entries_settled: pendingAdminFees?.length || 0,
+      },
+      shared_courses_settled: sharedPayments?.length || 0,
     };
 
     log("Settlement completed", summary);
