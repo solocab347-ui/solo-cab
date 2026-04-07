@@ -178,15 +178,11 @@ serve(async (req) => {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
               const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100);
-              const SOLOCAB_FEE_CENTS = 80;
-              // CRITICAL: application_fee cannot exceed payment amount
-              const effectiveFee = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents);
-
+              // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
               const paymentIntent = await stripe.paymentIntents.create({
                 amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
-                application_fee_amount: effectiveFee,
                 customer: clientRecord.stripe_customer_id,
                 payment_method: paymentMethodToUse,
                 off_session: true,
@@ -197,9 +193,6 @@ serve(async (req) => {
                   client_id: claimed.client_id,
                   type: "course_hold",
                   auto_created: "true",
-                },
-                transfer_data: {
-                  destination: driver.stripe_connect_account_id!,
                 },
                 description: `Réservation VTC ${(holdAmountCents / 100).toFixed(2)}€ TTC`,
               } as any);

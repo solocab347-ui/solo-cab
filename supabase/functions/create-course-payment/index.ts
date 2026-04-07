@@ -174,18 +174,14 @@ serve(async (req) => {
       cancel_url: `${origin}/reservation-tracking/${course.tracking_token}?payment=cancelled`,
     };
 
-    // Payment intent data with Connect transfer
+    // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform for weekly payout
     const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData = {
       capture_method: capture_method === "manual" ? "manual" : "automatic",
-      transfer_data: {
-        destination: course.driver.stripe_connect_account_id,
-      },
-      application_fee_amount: SOLOCAB_FEE_CENTS,
       metadata: {
         course_id,
         driver_id: course.driver_id,
         type: "course_payment",
-        solocab_fee: "0.50",
+        solocab_fee: "0.80",
       },
     };
 

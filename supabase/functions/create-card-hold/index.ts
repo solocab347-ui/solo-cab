@@ -143,16 +143,12 @@ serve(async (req) => {
       }
     }
 
-    const SOLOCAB_FEE_CENTS = 80; // 0.80€ commission SoloCab
-    // CRITICAL: application_fee_amount cannot exceed the payment amount
-    const effectiveFee = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents);
-
-    // Build PaymentIntent params with exact course amount
+    // WEEKLY SETTLEMENT: No transfer_data/application_fee — funds stay on platform
+    // Fees and driver payouts are handled weekly via process-weekly-settlement
     const piParams: any = {
       amount: holdAmountCents,
       currency: "eur",
       capture_method: "manual",
-      application_fee_amount: effectiveFee,
       metadata: {
         driver_id,
         course_id: course_id || "",
@@ -161,9 +157,6 @@ serve(async (req) => {
         type: "course_hold",
         hold_amount_cents: holdAmountCents.toString(),
         cancellation_fee_cents: "1000", // 10€ cancellation policy (separate from hold amount)
-      },
-      transfer_data: {
-        destination: driver.stripe_connect_account_id,
       },
       description: `Réservation VTC ${holdAmountEuros}€ TTC${course_id ? ` - Course #${course_id.slice(0, 8)}` : ''}`,
     };
