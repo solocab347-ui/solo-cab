@@ -325,7 +325,9 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         const newStatus = payload?.new?.status;
         const rideId = payload?.new?.id;
         if (rideId && newStatus && newStatus !== 'pending') {
-          removeRide(rideId);
+          // Only remove from queue, NOT from the currently displayed overlay
+          // The overlay's own polling will detect the status change and show "Course déjà prise"
+          queueRef.current = queueRef.current.filter(c => c.rideId !== rideId);
         }
       }
     );
