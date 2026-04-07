@@ -5071,6 +5071,136 @@ export type Database = {
           },
         ]
       }
+      driver_balance_pending: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          driver_id: string
+          gross_amount: number
+          id: string
+          net_amount: number
+          payment_type: string
+          settled_at: string | null
+          settlement_id: string | null
+          solocab_fee: number
+          status: string
+          stripe_fee: number
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          driver_id: string
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          payment_type?: string
+          settled_at?: string | null
+          settlement_id?: string | null
+          solocab_fee?: number
+          status?: string
+          stripe_fee?: number
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          driver_id?: string
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          payment_type?: string
+          settled_at?: string | null
+          settlement_id?: string | null
+          solocab_fee?: number
+          status?: string
+          stripe_fee?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_balance_pending_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_coaching_messages: {
         Row: {
           content: string
@@ -16144,6 +16274,133 @@ export type Database = {
         }
         Relationships: []
       }
+      solo_admin_ledger: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          driver_id: string
+          fee_amount: number
+          fee_type: string
+          id: string
+          settled_at: string | null
+          settlement_id: string | null
+          status: string
+          week_start: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          driver_id: string
+          fee_amount: number
+          fee_type?: string
+          id?: string
+          settled_at?: string | null
+          settlement_id?: string | null
+          status?: string
+          week_start?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          driver_id?: string
+          fee_amount?: number
+          fee_type?: string
+          id?: string
+          settled_at?: string | null
+          settlement_id?: string | null
+          status?: string
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solo_admin_ledger_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solo_admin_ledger_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -16978,12 +17235,15 @@ export type Database = {
       }
       weekly_settlements: {
         Row: {
+          admin_stripe_transfer_id: string | null
+          admin_transfer_status: string | null
           created_at: string
           error_message: string | null
           id: string
           processed_at: string | null
           status: string
           stripe_fees_saved_estimate: number | null
+          total_admin_fees_collected: number | null
           total_commission_volume: number | null
           total_platform_fees: number | null
           total_shared_courses: number | null
@@ -16995,12 +17255,15 @@ export type Database = {
           week_start: string
         }
         Insert: {
+          admin_stripe_transfer_id?: string | null
+          admin_transfer_status?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           processed_at?: string | null
           status?: string
           stripe_fees_saved_estimate?: number | null
+          total_admin_fees_collected?: number | null
           total_commission_volume?: number | null
           total_platform_fees?: number | null
           total_shared_courses?: number | null
@@ -17012,12 +17275,15 @@ export type Database = {
           week_start: string
         }
         Update: {
+          admin_stripe_transfer_id?: string | null
+          admin_transfer_status?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           processed_at?: string | null
           status?: string
           stripe_fees_saved_estimate?: number | null
+          total_admin_fees_collected?: number | null
           total_commission_volume?: number | null
           total_platform_fees?: number | null
           total_shared_courses?: number | null
