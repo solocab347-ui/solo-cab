@@ -10,7 +10,6 @@ import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
 import { useDriverAvailability } from '@/contexts/DriverAvailabilityContext';
-import carTopView from '@/assets/car-top-view.png';
 
 interface DriverMapModeProps {
   driverId: string;
