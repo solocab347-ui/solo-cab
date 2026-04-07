@@ -19676,39 +19676,22 @@ export type Database = {
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       get_admin_company_id: { Args: { _user_id: string }; Returns: string }
-      get_admin_drivers_finance:
-        | {
-            Args: { p_week_start?: string }
-            Returns: {
-              company_name: string
-              courses_count: number
-              driver_id: string
-              driver_name: string
-              gross_total: number
-              net_total: number
-              payment_status: string
-              pending_balance: number
-              solocab_fees: number
-              stripe_account_id: string
-              stripe_active: boolean
-            }[]
-          }
-        | {
-            Args: { p_period_end?: string; p_week_start?: string }
-            Returns: {
-              company_name: string
-              courses_count: number
-              driver_id: string
-              driver_name: string
-              gross_total: number
-              net_total: number
-              payment_status: string
-              pending_balance: number
-              solocab_fees: number
-              stripe_account_id: string
-              stripe_active: boolean
-            }[]
-          }
+      get_admin_drivers_finance: {
+        Args: { p_period_end?: string; p_week_start?: string }
+        Returns: {
+          company_name: string
+          courses_count: number
+          driver_id: string
+          driver_name: string
+          gross_total: number
+          net_total: number
+          payment_status: string
+          pending_balance: number
+          solocab_fees: number
+          stripe_account_id: string
+          stripe_active: boolean
+        }[]
+      }
       get_admin_drivers_progression: {
         Args: never
         Returns: {
@@ -19795,9 +19778,10 @@ export type Database = {
           vehicle_plate: string
         }[]
       }
-      get_admin_finance_stats:
-        | { Args: never; Returns: Json }
-        | { Args: { p_end?: string; p_start?: string }; Returns: Json }
+      get_admin_finance_stats: {
+        Args: { p_end?: string; p_start?: string }
+        Returns: Json
+      }
       get_admin_payment_audit: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
