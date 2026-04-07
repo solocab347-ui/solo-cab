@@ -339,7 +339,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       cleanupRideInsert();
       cleanupRideUpdate();
     };
-  }, [driverId, enabled, checkForNewCourses, removeRide]);
+  }, [driverId, enabled, checkForNewCourses]);
 
   return {
     incomingCourse,
