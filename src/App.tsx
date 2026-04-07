@@ -37,6 +37,8 @@ const RegisterClientDriver = lazy(() => import("./pages/RegisterClientDriver"));
 const RegisterDriver = lazy(() => import("./pages/RegisterDriver"));
 const RegisterDriverPromoFree = lazy(() => import("./pages/RegisterDriverPromoFree"));
 const RegistrationSuccess = lazy(() => import("./pages/RegistrationSuccess"));
+const SignupChoice = lazy(() => import("./pages/SignupChoice"));
+const OAuthOnboarding = lazy(() => import("./pages/OAuthOnboarding"));
 
 const GuestBooking = lazy(() => import("./pages/GuestBooking"));
 const GuestBookingTracking = lazy(() => import("./pages/GuestBookingTracking"));
