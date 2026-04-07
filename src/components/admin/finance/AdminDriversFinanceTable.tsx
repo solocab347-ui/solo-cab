@@ -21,18 +21,27 @@ interface DriverFinance {
   pending_balance: number;
 }
 
-const AdminDriversFinanceTable = () => {
+interface Props {
+  periodStart: string;
+  periodEnd: string;
+}
+
+const AdminDriversFinanceTable = ({ periodStart, periodEnd }: Props) => {
   const [drivers, setDrivers] = useState<DriverFinance[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDrivers();
-  }, []);
+  }, [periodStart, periodEnd]);
 
   const fetchDrivers = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("get_admin_drivers_finance");
+      const { data, error } = await supabase.rpc("get_admin_drivers_finance", {
+        p_week_start: periodStart,
+        p_period_end: periodEnd,
+      });
       if (error) throw error;
       setDrivers((data as any[]) || []);
     } catch (err) {
@@ -56,8 +65,11 @@ const AdminDriversFinanceTable = () => {
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="w-4 h-4 text-primary" />
-          Finances par chauffeur — Semaine en cours
+          Finances par chauffeur
         </CardTitle>
+        <p className="text-[10px] text-muted-foreground">
+          {new Date(periodStart).toLocaleDateString("fr-FR")} → {new Date(periodEnd).toLocaleDateString("fr-FR")}
+        </p>
       </CardHeader>
       <CardContent className="p-0 overflow-x-auto">
         {loading ? (
@@ -78,7 +90,7 @@ const AdminDriversFinanceTable = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {drivers.map((d) => (
+              {drivers.filter(d => Number(d.courses_count) > 0 || Number(d.pending_balance) > 0).map((d) => (
                 <TableRow key={d.driver_id}>
                   <TableCell>
                     <div>
