@@ -757,10 +757,9 @@ serve(async (req) => {
           courseUpdate.payment_captured_at = new Date().toISOString();
           courseUpdate.status = "accepted";
 
-          // Calculate SoloCab fee if applicable
-          if (paymentIntent.application_fee_amount) {
-            courseUpdate.solocab_fee_amount = paymentIntent.application_fee_amount / 100;
-          }
+          // WEEKLY SETTLEMENT: Calculate SoloCab fee (always 0.80€ for CB courses)
+          const SOLOCAB_FEE = 0.80;
+          courseUpdate.solocab_fee_amount = SOLOCAB_FEE;
 
           logStep("Payment captured automatically", { 
             amount: (paymentIntent.amount_received || 0) / 100 
