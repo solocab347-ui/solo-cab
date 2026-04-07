@@ -272,7 +272,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
         </div>
 
         {/* Search status indicator */}
-        {isAvailable && (
+        {isAvailable && !isBusy && (
           <div className="flex justify-center mt-2">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -306,7 +306,19 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
           </div>
         )}
 
-        {!isAvailable && (
+        {isBusy && (
+          <div className="flex justify-center mt-2">
+            <div className="pointer-events-none flex items-center gap-2 bg-card/85 backdrop-blur-xl border border-amber-500/30 rounded-full px-4 py-1.5 shadow-lg">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+              <span className="text-[11px] font-medium text-amber-400">Course en cours — indisponible</span>
+            </div>
+          </div>
+        )}
+
+        {!isOnline && !isBusy && (
           <div className="flex justify-center mt-2">
             <div className="pointer-events-none flex items-center gap-2 bg-card/85 backdrop-blur-xl border border-destructive/30 rounded-full px-4 py-1.5 shadow-lg">
               <WifiOff className="w-3 h-3 text-destructive" />
