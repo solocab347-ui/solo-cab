@@ -544,41 +544,56 @@ export function IncomingCourseOverlay({
 
             <div className="flex-1 min-h-2" />
 
-            {/* ACTION BUTTONS */}
-            <motion.div
-              className="w-full space-y-2"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
+            {/* TAKEN BY OTHER DRIVER MESSAGE */}
+            {takenByOther && (
               <motion.div
-                animate={{ boxShadow: [`0 0 20px ${theme.acceptGlow}`, `0 0 40px ${theme.acceptGlow}`, `0 0 20px ${theme.acceptGlow}`] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="rounded-2xl"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full mb-4 p-4 rounded-2xl bg-red-500/20 border border-red-500/40 text-center"
               >
-                <Button
-                  className={`w-full h-14 text-lg font-black rounded-2xl text-white shadow-2xl active:scale-[0.97] transition-transform ${theme.acceptBg}`}
-                  onClick={handleAccept}
-                  disabled={accepting}
+                <X className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                <p className="text-lg font-black text-red-300">Course déjà prise</p>
+                <p className="text-sm text-red-300/70 mt-1">Un autre chauffeur a accepté cette course</p>
+              </motion.div>
+            )}
+
+            {/* ACTION BUTTONS */}
+            {!takenByOther && (
+              <motion.div
+                className="w-full space-y-2"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <motion.div
+                  animate={{ boxShadow: [`0 0 20px ${theme.acceptGlow}`, `0 0 40px ${theme.acceptGlow}`, `0 0 20px ${theme.acceptGlow}`] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="rounded-2xl"
                 >
-                  {accepting ? (
-                    <div className="h-5 w-5 mr-2 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                  ) : (
-                    <Check className="h-6 w-6 mr-2" />
-                  )}
-                  ACCEPTER
+                  <Button
+                    className={`w-full h-14 text-lg font-black rounded-2xl text-white shadow-2xl active:scale-[0.97] transition-transform ${theme.acceptBg}`}
+                    onClick={handleAccept}
+                    disabled={accepting}
+                  >
+                    {accepting ? (
+                      <div className="h-5 w-5 mr-2 animate-spin rounded-full border-3 border-white border-t-transparent" />
+                    ) : (
+                      <Check className="h-6 w-6 mr-2" />
+                    )}
+                    ACCEPTER
+                  </Button>
+                </motion.div>
+
+                <Button
+                  variant="ghost"
+                  className="w-full h-11 text-sm font-bold rounded-2xl text-white/40 hover:text-white/60 hover:bg-white/5 border border-white/10 active:scale-[0.97] transition-transform"
+                  onClick={handleDismiss}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  REFUSER
                 </Button>
               </motion.div>
-
-              <Button
-                variant="ghost"
-                className="w-full h-11 text-sm font-bold rounded-2xl text-white/40 hover:text-white/60 hover:bg-white/5 border border-white/10 active:scale-[0.97] transition-transform"
-                onClick={handleDismiss}
-              >
-                <X className="h-4 w-4 mr-2" />
-                REFUSER
-              </Button>
-            </motion.div>
+            )}
           </div>
         </motion.div>
       )}
