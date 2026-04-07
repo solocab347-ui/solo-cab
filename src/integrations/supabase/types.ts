@@ -19795,9 +19795,10 @@ export type Database = {
           vehicle_plate: string
         }[]
       }
-      get_admin_finance_stats:
-        | { Args: never; Returns: Json }
-        | { Args: { p_end?: string; p_start?: string }; Returns: Json }
+      get_admin_finance_stats: {
+        Args: { p_end?: string; p_start?: string }
+        Returns: Json
+      }
       get_admin_payment_audit: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
