@@ -30,14 +30,22 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
   });
 
   const watcherIdRef = useRef<string | null>(null);
+  const onLocationRef = useRef(onLocation);
+  onLocationRef.current = onLocation;
 
   const start = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-      const { BackgroundGeolocation } = await import(
-        '@capacitor-community/background-geolocation'
-      );
+      // This plugin uses registerPlugin pattern — import the addWatcher/removeWatcher directly
+      const { registerPlugin } = await import('@capacitor/core');
+      const BackgroundGeolocation = registerPlugin<{
+        addWatcher: (
+          options: Record<string, unknown>,
+          callback: (location: any, error: any) => void
+        ) => Promise<string>;
+        removeWatcher: (options: { id: string }) => Promise<void>;
+      }>('BackgroundGeolocation');
 
       const id = await BackgroundGeolocation.addWatcher(
         {
@@ -45,9 +53,9 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
           backgroundMessage: 'Suivi de position en cours',
           requestPermissions: true,
           stale: false,
-          distanceFilter: 10, // meters
+          distanceFilter: 10,
         },
-        (location, error) => {
+        (location: any, error: any) => {
           if (error) {
             console.error('[NativeGeo] Error:', error);
             return;
@@ -61,7 +69,7 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
               speed: location.speed ?? null,
               bearing: location.bearing ?? null,
             }));
-            onLocation?.(location.latitude, location.longitude, location.accuracy);
+            onLocationRef.current?.(location.latitude, location.longitude, location.accuracy);
           }
         }
       );
@@ -70,14 +78,15 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
     } catch (err) {
       console.warn('[NativeGeo] Plugin not available:', err);
     }
-  }, [onLocation]);
+  }, []);
 
   const stop = useCallback(async () => {
     if (!watcherIdRef.current) return;
     try {
-      const { BackgroundGeolocation } = await import(
-        '@capacitor-community/background-geolocation'
-      );
+      const { registerPlugin } = await import('@capacitor/core');
+      const BackgroundGeolocation = registerPlugin<{
+        removeWatcher: (options: { id: string }) => Promise<void>;
+      }>('BackgroundGeolocation');
       await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
       watcherIdRef.current = null;
     } catch {}
