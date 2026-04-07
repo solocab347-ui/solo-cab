@@ -118,9 +118,9 @@ const handler = async (req: Request): Promise<Response> => {
                       Message d'erreur:
                     </p>
                     <p style="margin: 8px 0 0; color: #7f1d1d; font-family: monospace; font-size: 14px; word-break: break-word;">
-                      ${errorMessage}
+                      ${escapeHtml(errorMessage)}
                     </p>
-                    ${errorCode ? `<p style="margin: 8px 0 0; color: #991b1b; font-size: 12px;">Code: ${errorCode}</p>` : ""}
+                    ${errorCode ? `<p style="margin: 8px 0 0; color: #991b1b; font-size: 12px;">Code: ${escapeHtml(errorCode)}</p>` : ""}
                   </td>
                 </tr>
               </table>
@@ -134,20 +134,20 @@ const handler = async (req: Request): Promise<Response> => {
                   <td style="padding: 8px 0; color: #64748b; width: 120px;">Étape:</td>
                   <td style="padding: 8px 0; color: #1e293b; font-weight: bold;">
                     <span style="background-color: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 13px;">
-                      ${step}
+                      ${escapeHtml(step)}
                     </span>
                   </td>
                 </tr>
                 ${fullName ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Nom:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${fullName}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${escapeHtml(fullName)}</td>
                 </tr>` : ""}
                 ${email ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Email:</td>
                   <td style="padding: 8px 0; color: #1e293b;">
-                    <a href="mailto:${email}" style="color: #059669; text-decoration: none;">${email}</a>
+                    <a href="mailto:${escapeHtml(email)}" style="color: #059669; text-decoration: none;">${escapeHtml(email)}</a>
                   </td>
                 </tr>` : ""}
                 ${phone ? `
