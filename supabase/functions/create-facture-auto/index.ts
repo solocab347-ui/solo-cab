@@ -474,33 +474,6 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    // ===== CRÉER L'ENREGISTREMENT STRIPE_TRANSACTIONS =====
-    if (isStripePayment) {
-      const transactionData = {
-        course_id,
-        facture_id: facture.id,
-        driver_id: course.driver_id,
-        stripe_payment_intent_id: course.stripe_payment_intent_id || course.final_payment_intent_id,
-        transaction_type: depositAmount > 0 ? "final_payment" : "full_payment",
-        gross_amount: grossAmount,
-        stripe_fee_amount: stripeFee,
-        solocab_fee_amount: solocabFee,
-        net_amount: netToDriver,
-        status: "succeeded",
-        description: `Course ${invoiceNumber} - ${course.pickup_address} → ${course.destination_address}`,
-      };
-
-      const { error: txError } = await supabase
-        .from("stripe_transactions")
-        .insert(transactionData);
-
-      if (txError) {
-        console.log("[CREATE-FACTURE-AUTO] ⚠️ Transaction record error:", txError.message);
-      } else {
-        console.log("[CREATE-FACTURE-AUTO] ✅ Transaction recorded");
-      }
-    }
-
     // Update course with fee info
     await supabase
       .from("courses")

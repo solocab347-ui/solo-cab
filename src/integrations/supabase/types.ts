@@ -5083,6 +5083,7 @@ export type Database = {
           settled_at: string | null
           settlement_id: string | null
           solocab_fee: number
+          source_payment_id: string | null
           status: string
           stripe_fee: number
         }
@@ -5097,6 +5098,7 @@ export type Database = {
           settled_at?: string | null
           settlement_id?: string | null
           solocab_fee?: number
+          source_payment_id?: string | null
           status?: string
           stripe_fee?: number
         }
@@ -5111,6 +5113,7 @@ export type Database = {
           settled_at?: string | null
           settlement_id?: string | null
           solocab_fee?: number
+          source_payment_id?: string | null
           status?: string
           stripe_fee?: number
         }
@@ -5197,6 +5200,13 @@ export type Database = {
             columns: ["settlement_id"]
             isOneToOne: false
             referencedRelation: "weekly_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_balance_pending_source_payment_id_fkey"
+            columns: ["source_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -16285,6 +16295,7 @@ export type Database = {
           id: string
           settled_at: string | null
           settlement_id: string | null
+          source_payment_id: string | null
           status: string
           week_start: string | null
         }
@@ -16298,6 +16309,7 @@ export type Database = {
           id?: string
           settled_at?: string | null
           settlement_id?: string | null
+          source_payment_id?: string | null
           status?: string
           week_start?: string | null
         }
@@ -16311,6 +16323,7 @@ export type Database = {
           id?: string
           settled_at?: string | null
           settlement_id?: string | null
+          source_payment_id?: string | null
           status?: string
           week_start?: string | null
         }
@@ -16399,6 +16412,13 @@ export type Database = {
             referencedRelation: "weekly_settlements"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "solo_admin_ledger_source_payment_id_fkey"
+            columns: ["source_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
         ]
       }
       spatial_ref_sys: {
@@ -16436,6 +16456,7 @@ export type Database = {
           id: string
           net_amount: number
           solocab_fee_amount: number | null
+          source_payment_id: string | null
           status: string
           stripe_charge_id: string | null
           stripe_fee_amount: number | null
@@ -16455,6 +16476,7 @@ export type Database = {
           id?: string
           net_amount: number
           solocab_fee_amount?: number | null
+          source_payment_id?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_fee_amount?: number | null
@@ -16474,6 +16496,7 @@ export type Database = {
           id?: string
           net_amount?: number
           solocab_fee_amount?: number | null
+          source_payment_id?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_fee_amount?: number | null
@@ -16566,6 +16589,13 @@ export type Database = {
             columns: ["facture_id"]
             isOneToOne: false
             referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transactions_source_payment_id_fkey"
+            columns: ["source_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]

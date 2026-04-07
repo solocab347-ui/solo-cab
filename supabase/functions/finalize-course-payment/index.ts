@@ -205,22 +205,6 @@ serve(async (req) => {
             })
             .eq("id", course_id);
 
-          // Créer l'enregistrement de transaction Stripe
-          await supabaseClient
-            .from("stripe_transactions")
-            .insert({
-              course_id,
-              driver_id: course.driver_id,
-              stripe_payment_intent_id: captured.id,
-              transaction_type: "capture",
-              gross_amount: totalAmount,
-              stripe_fee_amount: stripeFee,
-              solocab_fee_amount: solocabFee,
-              net_amount: netToDriver,
-              status: "succeeded",
-              description: `Capture course - ${course.pickup_address} → ${course.destination_address}`,
-            });
-
           // Record in unified payments table
           await supabaseClient.from("payments").insert({
             course_id,
@@ -236,6 +220,7 @@ serve(async (req) => {
             status: "succeeded",
             payment_type: "course_capture",
             capture_method: "manual",
+            payment_method: "card",
             captured_at: new Date().toISOString(),
             metadata: {
               hold_payment_intent_id: holdPiId,
@@ -243,23 +228,6 @@ serve(async (req) => {
               flow: "authorize_then_capture",
             },
           });
-
-          // 📒 WEEKLY SETTLEMENT: Record in admin & driver ledgers
-          try {
-            await supabaseClient.from("solo_admin_ledger").insert({
-              course_id, driver_id: course.driver_id,
-              fee_amount: solocabFee, fee_type: "solo", status: "pending",
-              description: `Commission course CB - ${course.pickup_address} → ${course.destination_address}`,
-            });
-            await supabaseClient.from("driver_balance_pending").insert({
-              driver_id: course.driver_id, course_id,
-              gross_amount: totalAmount, solocab_fee: solocabFee,
-              stripe_fee: stripeFee, net_amount: netToDriver,
-              payment_type: "course", status: "pending",
-            });
-          } catch (ledgerErr: any) {
-            logStep("Ledger recording failed (non-blocking)", { error: String(ledgerErr) });
-          }
 
           // Créer la facture automatiquement
           try {
@@ -384,19 +352,6 @@ serve(async (req) => {
             net_amount_to_driver: netToDriver,
           }).eq("id", course_id);
 
-          await supabaseClient.from("stripe_transactions").insert({
-            course_id,
-            driver_id: course.driver_id,
-            stripe_payment_intent_id: captured.id,
-            transaction_type: "capture",
-            gross_amount: totalAmount,
-            stripe_fee_amount: stripeFee,
-            solocab_fee_amount: solocabFee,
-            net_amount: netToDriver,
-            status: "succeeded",
-            description: `Capture (réconciliation) - ${course.pickup_address} → ${course.destination_address}`,
-          });
-
           await supabaseClient.from("payments").insert({
             course_id,
             driver_id: course.driver_id,
@@ -411,6 +366,7 @@ serve(async (req) => {
             status: "succeeded",
             payment_type: "course_capture",
             capture_method: "manual",
+            payment_method: "card",
             captured_at: new Date().toISOString(),
             metadata: { flow: "orphaned_pi_recovery" },
           });
@@ -484,19 +440,6 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      // Record in stripe_transactions ledger (even for cash/manual — tracks SoloCab fee)
-      await supabaseClient.from("stripe_transactions").insert({
-        course_id,
-        driver_id: course.driver_id,
-        transaction_type: "full_payment",
-        gross_amount: totalAmount,
-        stripe_fee_amount: 0,
-        solocab_fee_amount: solocabFee,
-        net_amount: netToDriver,
-        status: isCash ? "succeeded" : "pending",
-        description: `Course (${paymentMethod}) - ${course.pickup_address} → ${course.destination_address}`,
-      });
-
       // Record in payments table
       await supabaseClient.from("payments").insert({
         course_id,
@@ -509,34 +452,6 @@ serve(async (req) => {
         status: isCash ? "succeeded" : "pending",
         payment_method: paymentMethod,
       });
-
-      // 📒 WEEKLY SETTLEMENT: Record in admin & driver ledgers for cash course
-      try {
-        await supabaseClient.from("solo_admin_ledger").insert({
-          course_id, driver_id: course.driver_id,
-          fee_amount: solocabFee, fee_type: "cash_commission", status: "pending",
-          description: `Commission espèces - ${course.pickup_address} → ${course.destination_address}`,
-        });
-        await supabaseClient.from("driver_balance_pending").insert({
-          driver_id: course.driver_id, course_id,
-          gross_amount: totalAmount, solocab_fee: solocabFee,
-          stripe_fee: 0, net_amount: netToDriver,
-          payment_type: "cash", status: "pending",
-        });
-
-        // Also record in legacy driver_fees_ledger for backward compat
-        await supabaseClient.from("driver_fees_ledger").insert({
-          driver_id: course.driver_id, course_id,
-          fee_type: "cash_commission", amount_cents: CASH_FEE_CENTS, status: "pending",
-          description: `Commission espèces - ${course.pickup_address} → ${course.destination_address}`,
-        });
-        await supabaseClient.rpc("increment_driver_fees_balance", {
-          p_driver_id: course.driver_id, p_amount: CASH_FEE_CENTS,
-        });
-        logStep("Cash fee recorded in both ledgers", { driverId: course.driver_id, feeCents: CASH_FEE_CENTS });
-      } catch (feeErr: any) {
-        logStep("Fee ledger recording failed (non-blocking)", { error: feeErr.message });
-      }
 
       // Create facture
       try {
@@ -639,19 +554,6 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      await supabaseClient.from("stripe_transactions").insert({
-        course_id,
-        driver_id: course.driver_id,
-        stripe_payment_intent_id: paymentIntent.id,
-        transaction_type: "full_payment",
-        gross_amount: totalAmount,
-        stripe_fee_amount: stripeFee,
-        solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
-        net_amount: netToDriver,
-        status: "succeeded",
-        description: `Paiement course (fallback) - ${course.pickup_address} → ${course.destination_address}`,
-      });
-
       await supabaseClient.from("payments").insert({
         course_id,
         driver_id: course.driver_id,
@@ -666,25 +568,9 @@ serve(async (req) => {
         status: "succeeded",
         payment_type: "course_payment",
         capture_method: "automatic",
+        payment_method: "card",
         captured_at: new Date().toISOString(),
       });
-
-      // 📒 WEEKLY SETTLEMENT: Record in admin & driver ledgers
-      try {
-        await supabaseClient.from("solo_admin_ledger").insert({
-          course_id, driver_id: course.driver_id,
-          fee_amount: SOLOCAB_FEE_CENTS / 100, fee_type: "solo", status: "pending",
-          description: `Commission course (fallback) - ${course.pickup_address}`,
-        });
-        await supabaseClient.from("driver_balance_pending").insert({
-          driver_id: course.driver_id, course_id,
-          gross_amount: totalAmount, solocab_fee: SOLOCAB_FEE_CENTS / 100,
-          stripe_fee: stripeFee, net_amount: netToDriver,
-          payment_type: "course", status: "pending",
-        });
-      } catch (ledgerErr: any) {
-        logStep("Ledger recording failed (non-blocking)", { error: String(ledgerErr) });
-      }
 
       try {
         await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
