@@ -234,15 +234,25 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
               </div>
 
               {/* Status pill */}
-              <button
-                onClick={handleToggleAvailability}
+               <button
+                onClick={isBusy ? undefined : handleToggleAvailability}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 shadow-md ${
-                  isAvailable
-                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                    : 'bg-destructive text-destructive-foreground shadow-destructive/30'
+                  isBusy
+                    ? 'bg-amber-500 text-white shadow-amber-500/30 cursor-default'
+                    : isOnline
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                      : 'bg-destructive text-destructive-foreground shadow-destructive/30'
                 }`}
               >
-                {isAvailable ? (
+                {isBusy ? (
+                  <>
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                    </span>
+                    En course
+                  </>
+                ) : isOnline ? (
                   <>
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
