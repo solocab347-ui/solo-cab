@@ -12,6 +12,48 @@ const log = (step: string, details?: Record<string, unknown>) => {
   console.log(`[WEEKLY-SETTLEMENT] ${step}${d}`);
 };
 
+// ─── Helpers ────────────────────────────────────────────────────
+function getLastWeekRange(): { weekStart: string; weekEnd: string } {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=Sun … 6=Sat
+  // Go back to the most recent Monday (if today is Mon, go back 7 days)
+  const daysToLastMonday = day === 0 ? 6 : day - 1;
+  const lastMonday = new Date(now);
+  lastMonday.setUTCDate(now.getUTCDate() - daysToLastMonday - 7);
+  lastMonday.setUTCHours(0, 0, 0, 0);
+
+  const lastSunday = new Date(lastMonday);
+  lastSunday.setUTCDate(lastMonday.getUTCDate() + 6);
+  lastSunday.setUTCHours(23, 59, 59, 999);
+
+  return {
+    weekStart: lastMonday.toISOString().split('T')[0],
+    weekEnd: lastSunday.toISOString().split('T')[0],
+  };
+}
+
+/** Fetch ALL rows matching a filter, paging through the 1000-row limit */
+async function fetchAllRows(
+  supabase: any, table: string, column: string, value: string
+) {
+  const rows: any[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("*")
+      .eq(column, value)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Failed to fetch ${table}: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return rows;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,22 +69,10 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Calculate week range (previous Monday to Sunday)
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay();
-    const lastMonday = new Date(now);
-    lastMonday.setUTCDate(now.getUTCDate() - dayOfWeek - 6);
-    lastMonday.setUTCHours(0, 0, 0, 0);
-    const lastSunday = new Date(lastMonday);
-    lastSunday.setUTCDate(lastMonday.getUTCDate() + 6);
-    lastSunday.setUTCHours(23, 59, 59, 999);
-
-    const weekStart = lastMonday.toISOString().split('T')[0];
-    const weekEnd = lastSunday.toISOString().split('T')[0];
-
+    const { weekStart, weekEnd } = getLastWeekRange();
     log("Processing settlement", { weekStart, weekEnd });
 
-    // Check if already processed
+    // ═══ IDEMPOTENCY: Check if already completed ═══
     const { data: existing } = await supabase
       .from("weekly_settlements")
       .select("id, status")
@@ -56,11 +86,11 @@ serve(async (req) => {
       });
     }
 
-    // Create or update settlement record
-    let settlement: { id: string };
+    // Create or resume settlement record
+    let settlementId: string;
     if (existing?.id) {
       await supabase.from("weekly_settlements").update({ status: "processing" }).eq("id", existing.id);
-      settlement = { id: existing.id };
+      settlementId = existing.id;
     } else {
       const { data, error } = await supabase
         .from("weekly_settlements")
@@ -68,34 +98,24 @@ serve(async (req) => {
         .select("id")
         .single();
       if (error) throw new Error(`Failed to create settlement: ${error.message}`);
-      settlement = data;
+      settlementId = data.id;
     }
 
-    log("Settlement record", { id: settlement.id });
+    log("Settlement record", { id: settlementId });
 
     // ═══════════════════════════════════════════════════════════
-    // 1. DRIVER PAYOUTS: Aggregate pending balances per driver
+    // 1. DRIVER PAYOUTS
     // ═══════════════════════════════════════════════════════════
-    const { data: pendingBalances, error: pbErr } = await supabase
-      .from("driver_balance_pending")
-      .select("*")
-      .eq("status", "pending");
-
-    if (pbErr) throw new Error(`Failed to fetch pending balances: ${pbErr.message}`);
-
-    log("Pending driver balances found", { count: pendingBalances?.length || 0 });
+    const pendingBalances = await fetchAllRows(supabase, "driver_balance_pending", "status", "pending");
+    log("Pending driver balances found", { count: pendingBalances.length });
 
     // Aggregate per driver
     const driverTotals: Record<string, {
-      gross: number;
-      solocab_fees: number;
-      stripe_fees: number;
-      net: number;
-      courses: number;
-      balance_ids: string[];
+      gross: number; solocab_fees: number; stripe_fees: number;
+      net: number; courses: number; balance_ids: string[];
     }> = {};
 
-    for (const bal of (pendingBalances || [])) {
+    for (const bal of pendingBalances) {
       if (!driverTotals[bal.driver_id]) {
         driverTotals[bal.driver_id] = { gross: 0, solocab_fees: 0, stripe_fees: 0, net: 0, courses: 0, balance_ids: [] };
       }
@@ -108,13 +128,12 @@ serve(async (req) => {
       d.balance_ids.push(bal.id);
     }
 
-    // Execute transfers to each driver
     let driverTransfersExecuted = 0;
+    let driverTransfersFailed = 0;
     let totalDriverTransferAmount = 0;
-    const driverBalanceInserts = [];
+    const driverBalanceInserts: any[] = [];
 
     for (const [driverId, totals] of Object.entries(driverTotals)) {
-      // Get driver Stripe info
       const { data: driver } = await supabase
         .from("drivers")
         .select("stripe_connect_account_id, stripe_connect_charges_enabled, user_id")
@@ -123,39 +142,34 @@ serve(async (req) => {
 
       const netCents = Math.round(totals.net * 100);
 
-      // Record in driver_weekly_balances
-      driverBalanceInserts.push({
-        settlement_id: settlement.id,
-        driver_id: driverId,
-        total_commissions_earned: totals.gross,
-        total_solocab_fees: totals.solocab_fees,
-        net_amount: totals.net,
-        standard_courses_count: totals.courses,
-        shared_courses_as_sender: 0,
-        shared_courses_as_receiver: 0,
-        transfer_status: "pending",
-      });
-
+      // ── Driver without Stripe → keep pending (DON'T mark settled) ──
       if (!driver?.stripe_connect_account_id || !driver?.stripe_connect_charges_enabled) {
-        log("Driver skipped - no Stripe", { driverId });
-        // Mark balances as settled anyway (fee still recorded)
-        if (totals.balance_ids.length > 0) {
-          await supabase.from("driver_balance_pending")
-            .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
-            .in("id", totals.balance_ids);
-        }
+        log("Driver skipped - no Stripe (balances stay pending)", { driverId });
+        driverBalanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
+          net_amount: totals.net, standard_courses_count: totals.courses,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "skipped_no_stripe",
+        });
         continue;
       }
 
+      // ── Below minimum (1€) → keep pending for next week ──
       if (netCents < 100) {
-        log("Driver skipped - amount below minimum (1€)", { driverId, netCents });
-        if (totals.balance_ids.length > 0) {
-          await supabase.from("driver_balance_pending")
-            .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
-            .in("id", totals.balance_ids);
-        }
+        log("Driver skipped - below minimum, kept pending", { driverId, netCents });
+        driverBalanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
+          net_amount: totals.net, standard_courses_count: totals.courses,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "below_minimum",
+        });
         continue;
       }
+
+      // ── Execute Stripe Transfer with idempotency key ──
+      const idempotencyKey = `settlement_${settlementId}_driver_${driverId}`;
 
       try {
         const transfer = await stripe.transfers.create({
@@ -164,20 +178,31 @@ serve(async (req) => {
           destination: driver.stripe_connect_account_id,
           description: `Règlement hebdo SoloCab ${weekStart} → ${weekEnd}`,
           metadata: {
-            settlement_id: settlement.id,
+            settlement_id: settlementId,
             driver_id: driverId,
             type: "weekly_driver_payout",
             courses_count: totals.courses.toString(),
           },
+        }, {
+          idempotencyKey, // Prevents double transfer on retry
         });
 
         driverTransfersExecuted++;
         totalDriverTransferAmount += totals.net;
 
-        // Mark balances as settled
+        // Mark balances as settled ONLY on success
         await supabase.from("driver_balance_pending")
-          .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
+          .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
           .in("id", totals.balance_ids);
+
+        driverBalanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
+          net_amount: totals.net, standard_courses_count: totals.courses,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "completed",
+          stripe_transfer_id: transfer.id,
+        });
 
         log("Driver transfer completed", { driverId, amount: totals.net, transferId: transfer.id });
 
@@ -192,11 +217,29 @@ serve(async (req) => {
           });
         }
       } catch (err: any) {
-        log("Driver transfer failed", { driverId, error: err.message });
-        // Mark as settled to avoid re-processing but keep a record
-        await supabase.from("driver_balance_pending")
-          .update({ status: "settled", settlement_id: settlement.id, settled_at: new Date().toISOString() })
-          .in("id", totals.balance_ids);
+        driverTransfersFailed++;
+        log("Driver transfer FAILED — balances stay pending", { driverId, error: err.message });
+
+        // DO NOT mark as settled → will be retried next week
+        driverBalanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
+          net_amount: totals.net, standard_courses_count: totals.courses,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "failed",
+          transfer_error: err.message?.substring(0, 500),
+        });
+
+        // Notify admin
+        if (driver.user_id) {
+          await supabase.from("notifications").insert({
+            user_id: driver.user_id,
+            title: "⚠️ Échec virement",
+            message: `Le virement de ${totals.net.toFixed(2)}€ a échoué. Nouvelle tentative lundi prochain.`,
+            type: "warning",
+            link: "/driver-dashboard?tab=finances",
+          });
+        }
       }
     }
 
@@ -206,61 +249,62 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 2. ADMIN FEES: Mark all pending admin fees as settled
+    // 2. ADMIN FEES: Mark settled (money already on platform)
     // ═══════════════════════════════════════════════════════════
-    const { data: pendingAdminFees, error: afErr } = await supabase
-      .from("solo_admin_ledger")
-      .select("id, fee_amount")
-      .eq("status", "pending");
-
-    if (afErr) throw new Error(`Failed to fetch admin fees: ${afErr.message}`);
+    const pendingAdminFees = await fetchAllRows(supabase, "solo_admin_ledger", "status", "pending");
 
     let totalAdminFees = 0;
-    for (const fee of (pendingAdminFees || [])) {
+    for (const fee of pendingAdminFees) {
       totalAdminFees += Number(fee.fee_amount || 0);
     }
 
-    log("Admin fees to settle", { count: pendingAdminFees?.length || 0, total: totalAdminFees });
+    log("Admin fees to settle", { count: pendingAdminFees.length, total: totalAdminFees });
 
-    // Mark admin fees as settled (money is already on platform account)
-    if (pendingAdminFees && pendingAdminFees.length > 0) {
-      const feeIds = pendingAdminFees.map(f => f.id);
-      await supabase.from("solo_admin_ledger")
-        .update({
-          status: "settled",
-          settlement_id: settlement.id,
-          settled_at: new Date().toISOString(),
-          week_start: weekStart,
-        })
-        .in("id", feeIds);
+    if (pendingAdminFees.length > 0) {
+      // Batch update in chunks of 500 to avoid query limits
+      const feeIds = pendingAdminFees.map((f: any) => f.id);
+      for (let i = 0; i < feeIds.length; i += 500) {
+        const chunk = feeIds.slice(i, i + 500);
+        await supabase.from("solo_admin_ledger")
+          .update({
+            status: "settled",
+            settlement_id: settlementId,
+            settled_at: new Date().toISOString(),
+            week_start: weekStart,
+          })
+          .in("id", chunk);
+      }
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 3. SHARED COURSE PAYMENTS: Handle partnership settlements
+    // 3. SHARED COURSE PAYMENTS
     // ═══════════════════════════════════════════════════════════
     const { data: sharedPayments } = await supabase
       .from("shared_course_payments")
       .select("*")
       .eq("status", "completed")
-      .is("settlement_id", null);
+      .is("settlement_id", null)
+      .limit(1000);
 
     let totalCommissionVolume = 0;
     if (sharedPayments && sharedPayments.length > 0) {
       for (const payment of sharedPayments) {
         totalCommissionVolume += payment.commission_amount || 0;
       }
-      const paymentIds = sharedPayments.map(p => p.id);
+      const paymentIds = sharedPayments.map((p: any) => p.id);
       await supabase.from("shared_course_payments")
-        .update({ settlement_id: settlement.id, settled_at: new Date().toISOString() })
+        .update({ settlement_id: settlementId, settled_at: new Date().toISOString() })
         .in("id", paymentIds);
     }
 
     // ═══════════════════════════════════════════════════════════
     // 4. FINALIZE SETTLEMENT
     // ═══════════════════════════════════════════════════════════
+    const finalStatus = driverTransfersFailed > 0 ? "completed_with_errors" : "completed";
+
     await supabase.from("weekly_settlements")
       .update({
-        status: "completed",
+        status: finalStatus,
         total_shared_courses: sharedPayments?.length || 0,
         total_commission_volume: totalCommissionVolume,
         total_platform_fees: totalAdminFees,
@@ -271,19 +315,21 @@ serve(async (req) => {
         admin_transfer_status: "settled",
         processed_at: new Date().toISOString(),
       })
-      .eq("id", settlement.id);
+      .eq("id", settlementId);
 
     const summary = {
-      settlement_id: settlement.id,
+      settlement_id: settlementId,
+      status: finalStatus,
       week: `${weekStart} → ${weekEnd}`,
       driver_payouts: {
         drivers_paid: driverTransfersExecuted,
+        drivers_failed: driverTransfersFailed,
         total_amount: totalDriverTransferAmount,
-        total_courses: pendingBalances?.length || 0,
+        total_courses: pendingBalances.length,
       },
       admin_fees: {
         total_fees: totalAdminFees,
-        entries_settled: pendingAdminFees?.length || 0,
+        entries_settled: pendingAdminFees.length,
       },
       shared_courses_settled: sharedPayments?.length || 0,
     };
