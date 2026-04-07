@@ -11,12 +11,12 @@ import {
   Activity, 
   Mail, 
   LogOut, 
-  
   HeadphonesIcon,
   Wrench,
   Settings,
   ArrowLeft,
-  FolderOpen
+  FolderOpen,
+  Wallet
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
@@ -29,6 +29,7 @@ import AdminTechHub from "@/components/admin/hubs/AdminTechHub";
 import AdminCommunicationsHub from "@/components/admin/hubs/AdminCommunicationsHub";
 import AdminSettingsHub from "@/components/admin/hubs/AdminSettingsHub";
 import AdminDocumentsHub from "@/components/admin/hubs/AdminDocumentsHub";
+import AdminFinancesHub from "@/components/admin/hubs/AdminFinancesHub";
 
 
 const AdminDashboard = () => {
