@@ -79,6 +79,7 @@ import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificat
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { geocodeAddress } from "@/lib/geocoding";
 import { DriverAvailabilityToggle } from "@/components/driver/planning/DriverAvailabilityToggle";
+import { DriverAvailabilityProvider } from "@/contexts/DriverAvailabilityContext";
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
 import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
