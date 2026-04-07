@@ -239,14 +239,14 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       }).eq('id', driverId);
       console.log('[ActiveCourseCard] Driver set to on_trip');
     } else if (!newCourse && prev) {
-      // Restore previous availability state
-      const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
+      // Course ended — always restore to online_available (connected but available)
+      // A driver who was on a trip should come back online, not go offline
       await supabase.from('drivers').update({ 
-        is_available_now: restoreTo,
-        driver_status: restoreTo ? 'online_available' : 'offline',
+        is_available_now: true,
+        driver_status: 'online_available',
       }).eq('id', driverId);
       wasAvailableBeforeCourseRef.current = null;
-      console.log('[ActiveCourseCard] Driver status restored');
+      console.log('[ActiveCourseCard] Driver restored to online_available');
       onCourseChange?.();
     }
 
@@ -325,13 +325,13 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   }, [course, driverId]);
 
   const restoreAvailability = useCallback(async () => {
-    const restoreTo = wasAvailableBeforeCourseRef.current ?? false;
     wasAvailableBeforeCourseRef.current = null;
+    // Always restore to online_available — driver should stay connected after a course
     await supabase.from('drivers').update({ 
-      is_available_now: restoreTo,
-      driver_status: restoreTo ? 'online_available' : 'offline',
+      is_available_now: true,
+      driver_status: 'online_available',
     }).eq('id', driverId);
-    console.log('[ActiveCourseCard] Driver status restored');
+    console.log('[ActiveCourseCard] Driver restored to online_available');
   }, [driverId]);
 
   const handleComplete = useCallback(async () => {
