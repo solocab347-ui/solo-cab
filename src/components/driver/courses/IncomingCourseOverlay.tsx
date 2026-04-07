@@ -176,13 +176,13 @@ export function IncomingCourseOverlay({
           if (audioRef.current) clearInterval(audioRef.current);
           if (navigator.vibrate) navigator.vibrate(0);
           
-          // Show message briefly then dismiss
+          // Show message for 4 seconds then dismiss
           setTimeout(() => {
             if (driverId) {
               supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
             }
             onDismiss();
-          }, 2500);
+          }, 4000);
         }
       } catch (err) {
         console.error('[IncomingCourseOverlay] Status poll error:', err);
