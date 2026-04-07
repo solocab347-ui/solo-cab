@@ -269,6 +269,30 @@ serve(async (req) => {
       description: `Capture course - ${course.pickup_address} → ${course.destination_address}`,
     });
 
+    // 📒 WEEKLY SETTLEMENT: Record in admin & driver ledgers
+    try {
+      await supabaseClient.from("solo_admin_ledger").insert({
+        course_id,
+        driver_id: course.driver_id,
+        fee_amount: solocabFee,
+        fee_type: "solo",
+        status: "pending",
+        description: `Commission course CB - ${course.pickup_address} → ${course.destination_address}`,
+      });
+      await supabaseClient.from("driver_balance_pending").insert({
+        driver_id: course.driver_id,
+        course_id,
+        gross_amount: capturedAmount,
+        solocab_fee: solocabFee,
+        stripe_fee: stripeFee,
+        net_amount: netToDriver,
+        payment_type: "course",
+        status: "pending",
+      });
+    } catch (ledgerErr: any) {
+      logStep("Ledger recording failed (non-blocking)", { error: ledgerErr.message });
+    }
+
     // Create or update facture
     const { data: existingFacture } = await supabaseClient
       .from("factures")
