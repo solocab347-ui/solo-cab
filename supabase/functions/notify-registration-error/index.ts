@@ -186,7 +186,7 @@ const handler = async (req: Request): Promise<Response> => {
                 ${userAgent ? `
                 <tr>
                   <td style="padding: 8px 0; color: #64748b;">Navigateur:</td>
-                  <td style="padding: 8px 0; color: #1e293b; font-size: 11px; word-break: break-all;">${userAgent}</td>
+                  <td style="padding: 8px 0; color: #1e293b; font-size: 11px; word-break: break-all;">${escapeHtml(userAgent)}</td>
                 </tr>` : ""}
               </table>
 
