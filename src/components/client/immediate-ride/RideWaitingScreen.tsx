@@ -469,7 +469,7 @@ export function RideWaitingScreen({
           </AnimatePresence>
 
           {/* Timer */}
-          {(status === 'searching' || status === 'extended_searching') && (
+          {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
             <div className="flex items-center justify-center gap-2">
               <Clock className={`h-4 w-4 ${timerColor}`} />
               <span className={`text-sm font-mono font-bold ${timerColor}`}>
@@ -493,6 +493,12 @@ export function RideWaitingScreen({
                 </Badge>
               )
             )}
+            {phase === 'relaunch' && (
+              <Badge className="gap-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Relance ({extendedDriverCount} chauffeur{extendedDriverCount > 1 ? 's' : ''})
+              </Badge>
+            )}
             {phase === 'nearby' && (
               <Badge className="gap-1.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30">
                 <Search className="h-3.5 w-3.5" />
@@ -508,9 +514,10 @@ export function RideWaitingScreen({
           </div>
 
           {/* Phase progress dots */}
-          {(status === 'searching' || status === 'extended_searching' || status === 'transition') && (
+          {(status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
             <div className="flex justify-center gap-2">
               <div className={`w-2 h-2 rounded-full ${phase === 'selected' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+              <div className={`w-2 h-2 rounded-full ${phase === 'relaunch' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
               <div className={`w-2 h-2 rounded-full ${phase === 'nearby' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
               <div className={`w-2 h-2 rounded-full ${phase === 'extended' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
             </div>
