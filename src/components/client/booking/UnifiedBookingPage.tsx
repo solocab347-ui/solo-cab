@@ -996,11 +996,25 @@ export function UnifiedBookingPage() {
                 setShowAuthStep(false);
                 setAuthChoice(null);
                 setShowGuestForm(false);
+                if (searchMode === 'auto') {
+                  setSearchMode('manual'); // Switch to manual so they can see cards
+                }
               }}
             >
               <ArrowLeft className="h-4 w-4" />
-              Modifier la sélection
+              {searchMode === 'auto' ? 'Choisir mes chauffeurs' : 'Modifier la sélection'}
             </Button>
+
+            {/* Auto mode info banner */}
+            {searchMode === 'auto' && (
+              <Alert className="border-primary/20 bg-primary/5">
+                <Zap className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-xs">
+                  <strong>Recherche automatique :</strong> Nous avons sélectionné les {selectedCount} chauffeur{selectedCount > 1 ? 's' : ''} les plus proches. 
+                  Le premier à accepter sera votre chauffeur.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Selected drivers summary */}
             <Card className="border-border/50">
