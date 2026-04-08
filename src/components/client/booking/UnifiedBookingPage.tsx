@@ -1001,16 +1001,57 @@ export function UnifiedBookingPage() {
               )}
             </Button>
 
-            {/* Guest info for cash payment */}
+            {/* Registration incentive + Guest info for cash */}
             {!user && clientPaymentMethod === 'cash' && (
-              <div className="space-y-2 pt-1 border-t border-border/30">
-                <Label className="text-sm text-foreground flex items-center gap-2">
-                  <UserPlus className="h-3.5 w-3.5 text-primary" />
-                  Vos coordonnées
-                </Label>
-                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
-                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
-                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+              <div className="space-y-3 pt-2 border-t border-border/30">
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    Créez un compte gratuit en 10 secondes
+                  </p>
+                  <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-5 list-disc">
+                    <li>Suivi en temps réel de vos courses</li>
+                    <li>Historique, factures, chauffeurs favoris</li>
+                    <li>Réservez en 1 clic la prochaine fois</li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 gap-2 text-sm font-medium border-primary/30 hover:border-primary/60"
+                    onClick={async () => {
+                      try {
+                        localStorage.setItem("solocab_oauth_signup_type", "client");
+                        const { lovable } = await import("@/integrations/lovable/index");
+                        const result = await lovable.auth.signInWithOAuth("google", {
+                          redirect_uri: window.location.origin + "/oauth-onboarding",
+                        });
+                        if (result.error) toast.error(result.error.message);
+                      } catch (e: any) { toast.error(e.message); }
+                    }}
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    S'inscrire avec Google
+                  </Button>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50" /></div>
+                    <div className="relative flex justify-center text-[10px] uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">ou continuer sans compte</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-foreground flex items-center gap-2">
+                    <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                    Continuer en tant qu'invité
+                  </Label>
+                  <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                  <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (pour le suivi de course)" type="email" className="h-10" />
+                </div>
               </div>
             )}
           </CardContent>
