@@ -44,6 +44,11 @@ interface NearbyDriverRpcRow {
   latitude?: number | null;
   longitude?: number | null;
   is_live_location?: boolean | null;
+  vehicle_brand?: string | null;
+  vehicle_model?: string | null;
+  vehicle_color?: string | null;
+  stripe_connect_charges_enabled?: boolean;
+  accepted_payment_methods?: string[] | null;
 }
 
 interface UseNearbyDriversResult {
@@ -181,23 +186,6 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         const priceResults = await Promise.all(pricePromises);
         const priceMap = new Map(priceResults.map(r => [r.driver_id, r]));
 
-        // Fetch payment methods for all found drivers
-        const driverIds = data.map((d: NearbyDriverRpcRow) => d.driver_id);
-        const { data: paymentData } = await supabase
-          .from('drivers')
-          .select('id, accepted_payment_methods, stripe_connect_charges_enabled, vehicle_brand, vehicle_model, vehicle_color')
-          .in('id', driverIds);
-        
-        const paymentMap = new Map(
-          (paymentData || []).map((d: any) => [d.id, {
-            accepted_payment_methods: d.accepted_payment_methods,
-            stripe_connect_charges_enabled: d.stripe_connect_charges_enabled,
-            vehicle_brand: d.vehicle_brand,
-            vehicle_model: d.vehicle_model,
-            vehicle_color: d.vehicle_color,
-          }])
-        );
-
         const driversWithPrices = data.map((driver: NearbyDriverRpcRow) => {
           const distanceKm = driver.distance_meters / 1000;
           let estimatedPrice = driver.base_fare;
@@ -218,8 +206,6 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             estimatedPrice = Math.max(estimatedPrice, driver.minimum_price);
           }
 
-          const payment = paymentMap.get(driver.driver_id);
-
           return {
             ...driver,
             evening_surcharge: null,
@@ -227,11 +213,11 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             distance_km: distanceKm,
             estimated_price: Math.round(estimatedPrice * 100) / 100,
             has_surcharge: hasSurcharge,
-            accepted_payment_methods: payment?.accepted_payment_methods || ['cash', 'card'],
-            stripe_connect_charges_enabled: payment?.stripe_connect_charges_enabled || false,
-            vehicle_brand: payment?.vehicle_brand || null,
-            vehicle_model: payment?.vehicle_model || null,
-            vehicle_color: payment?.vehicle_color || null,
+            accepted_payment_methods: driver.accepted_payment_methods || ['cash', 'card'],
+            stripe_connect_charges_enabled: driver.stripe_connect_charges_enabled || false,
+            vehicle_brand: driver.vehicle_brand || null,
+            vehicle_model: driver.vehicle_model || null,
+            vehicle_color: driver.vehicle_color || null,
           };
         });
 
