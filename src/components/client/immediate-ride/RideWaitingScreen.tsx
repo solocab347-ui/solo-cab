@@ -78,6 +78,9 @@ export function RideWaitingScreen({
   onCancel,
   onAccepted,
   onExpired,
+  contactedDriversData,
+  routeDistanceKm,
+  clientPaymentMethod,
 }: RideWaitingScreenProps) {
   const [status, setStatus] = useState<WaitingStatus>('searching');
   const [phase, setPhase] = useState<SearchPhase>('selected');
@@ -88,6 +91,8 @@ export function RideWaitingScreen({
   const [currentTimeoutAt, setCurrentTimeoutAt] = useState(timeoutAt);
   const phaseRef = useRef(phase);
   const isExtendingRef = useRef(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [autoScrollIndex, setAutoScrollIndex] = useState(0);
 
   // Contacted drivers list for UI
   interface ContactedDriver {
