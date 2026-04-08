@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SOLOCAB_FEE_CENTS = 80; // 0.80€ per course
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -181,7 +181,7 @@ serve(async (req) => {
         course_id,
         driver_id: course.driver_id,
         type: "course_payment",
-        solocab_fee: "0.80",
+        solocab_fee: "0.50",
       },
     };
 

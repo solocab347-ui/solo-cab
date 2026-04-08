@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SOLOCAB_FEE_CENTS = 80; // 0.80€ par course
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 const STRIPE_PERCENTAGE = 0.015;
 const STRIPE_FIXED_FEE = 0.25;
 
@@ -117,8 +117,8 @@ serve(async (req) => {
       const isCash = paymentMethod === "Espèces" || paymentMethod === "cash";
       const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
 
-      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
-      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      // Commission SoloCab: 0.50€ par course (cash ou carte)
+      const solocabFeeCents = SOLOCAB_FEE_CENTS;
       const solocabFee = solocabFeeCents / 100;
       const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 

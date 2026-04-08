@@ -11,7 +11,7 @@ const corsHeaders = {
 const DEFAULT_CANCELLATION_FEE_NO_DEPOSIT = 10.00; // 10€ sans acompte
 const DEFAULT_FREE_CANCELLATION_HOURS_NO_DEPOSIT = 1; // T-1h sans acompte
 const DEFAULT_FREE_CANCELLATION_HOURS_WITH_DEPOSIT = 4; // T-4h avec acompte
-const SOLOCAB_FEE_CENTS = 80; // 0.80€
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';

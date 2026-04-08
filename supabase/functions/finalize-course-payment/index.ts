@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SOLOCAB_FEE_CENTS = 80; // 0.80€ par course
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -420,8 +420,8 @@ serve(async (req) => {
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
       const isCash = paymentMethod === "cash" || paymentMethod === "Espèces";
 
-      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
-      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      // Commission SoloCab: 0.50€ par course (cash ou carte)
+      const solocabFeeCents = SOLOCAB_FEE_CENTS;
       const solocabFee = solocabFeeCents / 100;
       const stripeFee = 0; // No Stripe fees for manual payments
       const totalFees = solocabFee;

@@ -757,8 +757,8 @@ serve(async (req) => {
           courseUpdate.payment_captured_at = new Date().toISOString();
           courseUpdate.status = "accepted";
 
-          // WEEKLY SETTLEMENT: Calculate SoloCab fee (always 0.80€ for CB courses)
-          const SOLOCAB_FEE = 0.80;
+          // WEEKLY SETTLEMENT: Calculate SoloCab fee (always 0.50€ per course)
+          const SOLOCAB_FEE = 0.50;
           courseUpdate.solocab_fee_amount = SOLOCAB_FEE;
 
           logStep("Payment captured automatically", { 

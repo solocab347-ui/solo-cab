@@ -117,7 +117,7 @@ const FAQ_ITEMS = [
   {
     question: "Combien coûte Stripe Connect ?",
     answer:
-      "SoloCab prélève 0,80€ par transaction, incluant l'hébergement du paiement et les frais de traitement. Aucun abonnement mensuel. Vous ne payez que quand vous encaissez !",
+      "SoloCab prélève 0,50€ par course (espèces ou carte). Pour les encaissements spontanés : 0,80€. Aucun abonnement mensuel. Vous ne payez que quand vous encaissez !",
   },
   {
     question: "Quand vais-je recevoir mes paiements ?",
