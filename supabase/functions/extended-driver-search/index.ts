@@ -28,10 +28,10 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Not authenticated");
 
-    const { request_group_id, radius_km = 5, search_phase = "nearby" } = await req.json();
+    const { request_group_id, radius_km = 5, search_phase = "nearby", relaunch_non_responders = false } = await req.json();
     if (!request_group_id) throw new Error("request_group_id required");
 
-    logStep("Starting extended search", { request_group_id, radius_km, search_phase });
+    logStep("Starting extended search", { request_group_id, radius_km, search_phase, relaunch_non_responders });
 
     // Get original request(s) for this group
     const { data: originalRequests, error: origErr } = await supabase
@@ -39,7 +39,7 @@ serve(async (req) => {
       .select("*")
       .eq("request_group_id", request_group_id)
       .order("created_at", { ascending: true })
-      .limit(50);
+      .limit(100);
 
     if (origErr || !originalRequests?.length) {
       throw new Error("Original request not found");
@@ -57,7 +57,128 @@ serve(async (req) => {
 
     const firstReq = originalRequests[0];
 
-    // Collect already-contacted driver IDs
+    // ── SMART RELAUNCH: distinguish refused vs non-response ──
+    if (relaunch_non_responders) {
+      // Find drivers who didn't respond (still pending after timeout) — NOT rejected
+      const nonResponders = originalRequests.filter(r => 
+        r.status === "pending" || r.status === "expired"
+      );
+      const rejectedDriverIds = originalRequests
+        .filter(r => r.status === "rejected")
+        .map(r => r.selected_driver_id)
+        .filter(Boolean) as string[];
+
+      logStep("Smart relaunch analysis", { 
+        nonResponders: nonResponders.length, 
+        rejected: rejectedDriverIds.length,
+        total: originalRequests.length 
+      });
+
+      if (nonResponders.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, new_requests: 0, no_relaunchable: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create relaunch requests for non-responders only (NOT rejected ones)
+      const timeout = new Date(Date.now() + 30 * 1000).toISOString(); // 30s for relaunches
+      const maxAttempt = Math.max(...originalRequests.map(r => r.search_attempt || 1));
+
+      const relaunchRequests = nonResponders
+        .filter(r => r.selected_driver_id && !rejectedDriverIds.includes(r.selected_driver_id))
+        .map((r) => ({
+          client_id: firstReq.client_id,
+          guest_name: firstReq.guest_name,
+          guest_phone: firstReq.guest_phone,
+          guest_email: firstReq.guest_email,
+          pickup_address: firstReq.pickup_address,
+          pickup_latitude: firstReq.pickup_latitude,
+          pickup_longitude: firstReq.pickup_longitude,
+          destination_address: firstReq.destination_address,
+          destination_latitude: firstReq.destination_latitude,
+          destination_longitude: firstReq.destination_longitude,
+          distance_km: firstReq.distance_km,
+          ride_type: firstReq.ride_type || "immediate",
+          status: "pending",
+          selected_driver_id: r.selected_driver_id,
+          estimated_price: firstReq.estimated_price,
+          timeout_at: timeout,
+          request_type: "relaunch",
+          driver_count: nonResponders.length,
+          request_group_id: request_group_id,
+          search_phase: "relaunch",
+          parent_request_id: r.id,
+          search_attempt: maxAttempt + 1,
+          payment_method: firstReq.payment_method,
+          search_radius_km: r.search_radius_km,
+        }));
+
+      if (relaunchRequests.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, new_requests: 0, all_rejected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Expire old pending requests for these drivers
+      const relaunchDriverIds = relaunchRequests.map(r => r.selected_driver_id);
+      await supabase
+        .from("ride_requests")
+        .update({ status: "expired" })
+        .eq("request_group_id", request_group_id)
+        .in("selected_driver_id", relaunchDriverIds)
+        .in("status", ["pending"]);
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("ride_requests")
+        .insert(relaunchRequests)
+        .select("id, selected_driver_id");
+
+      if (insertErr) {
+        logStep("Error inserting relaunch requests", { error: insertErr.message });
+        throw new Error("Erreur relance");
+      }
+
+      logStep("Relaunch requests created", { count: inserted?.length });
+
+      // Notify relaunched drivers
+      for (const r of relaunchRequests) {
+        const driverReq = originalRequests.find(o => o.selected_driver_id === r.selected_driver_id);
+        if (driverReq) {
+          // Get user_id for notification
+          const { data: driverData } = await supabase
+            .from("drivers")
+            .select("user_id")
+            .eq("id", r.selected_driver_id!)
+            .single();
+
+          if (driverData?.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "🔄 Nouvelle demande disponible",
+              message: `Client toujours en attente • ${firstReq.pickup_address} → ${firstReq.destination_address}`,
+              type: "info",
+              link: "/driver-dashboard?tab=courses",
+            });
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          new_requests: inserted?.length || 0,
+          drivers_relaunched: relaunchRequests.length,
+          drivers_rejected: rejectedDriverIds.length,
+          timeout_at: timeout,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── STANDARD EXTENDED SEARCH: find new drivers at wider radius ──
+    // Collect ALL already-contacted driver IDs (including rejected ones — they never get relaunched)
     const excludeDriverIds = originalRequests
       .map(r => r.selected_driver_id)
       .filter(Boolean) as string[];
