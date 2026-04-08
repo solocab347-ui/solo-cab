@@ -5,19 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Loader2,
-  X,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Crown,
-  Users,
-  Car,
-  Search,
-  MapPin,
-  RefreshCw,
-  CalendarClock,
+  Loader2, X, CheckCircle2, XCircle, Clock, Crown, Users, Car, Search,
+  MapPin, RefreshCw, CalendarClock, User, Phone,
 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
