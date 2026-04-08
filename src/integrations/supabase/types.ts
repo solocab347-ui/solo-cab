@@ -234,6 +234,51 @@ export type Database = {
         }
         Relationships: []
       }
+      call_sessions: {
+        Row: {
+          caller_id: string
+          caller_type: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          receiver_id: string
+          receiver_type: string
+          ride_id: string
+          room_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          caller_id: string
+          caller_type: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          receiver_id: string
+          receiver_type: string
+          ride_id: string
+          room_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          caller_id?: string
+          caller_type?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          receiver_id?: string
+          receiver_type?: string
+          ride_id?: string
+          room_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           created_at: string

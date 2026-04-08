@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, Lock, X } from 'lucide-react';
+import { MessageCircle, Send, Lock, X, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -14,10 +14,11 @@ interface RideChatPanelProps {
   rideId: string;
   senderType: 'client' | 'driver' | 'guest';
   senderId: string;
-  otherName: string; // Prénom seulement
+  otherName: string;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   triggerLabel?: string;
+  onCallPress?: () => void;
 }
 
 const QUICK_MESSAGES_DRIVER = [
@@ -42,6 +43,7 @@ export function RideChatPanel({
   isOpen,
   onOpenChange,
   triggerLabel = "Contacter",
+  onCallPress,
 }: RideChatPanelProps) {
   const {
     messages,
@@ -125,13 +127,26 @@ export function RideChatPanel({
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSheetOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onCallPress && !chatClosed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCallPress}
+                className="text-green-600 hover:bg-green-500/10"
+                title="Appeler"
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSheetOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
