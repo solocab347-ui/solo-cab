@@ -547,6 +547,50 @@ export function RideWaitingScreen({
         </CardContent>
       </Card>
 
+      {/* Contacted drivers list */}
+      {contactedDrivers.length > 0 && (status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
+        <Card className="border-border/50">
+          <CardContent className="p-3 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Chauffeurs contactés ({contactedDrivers.length})
+            </h4>
+            <div className="space-y-1.5">
+              {contactedDrivers.map((d) => (
+                <div key={d.driver_id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30">
+                  <Avatar className="h-8 w-8 border border-border">
+                    <AvatarImage src={d.photo_url || undefined} />
+                    <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
+                      {d.driver_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 text-sm font-medium truncate">{d.driver_name}</span>
+                  {d.status === 'pending' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/30 text-amber-600">
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" /> En attente
+                    </Badge>
+                  )}
+                  {d.status === 'accepted' && (
+                    <Badge className="text-[10px] gap-1 bg-green-500/15 text-green-600 border-green-500/30">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Accepté
+                    </Badge>
+                  )}
+                  {d.status === 'rejected' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
+                      <XCircle className="h-2.5 w-2.5" /> Refusé
+                    </Badge>
+                  )}
+                  {d.status === 'expired' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/30 text-muted-foreground">
+                      <Clock className="h-2.5 w-2.5" /> Pas de réponse
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Route Summary */}
       <Card>
         <CardContent className="pt-5 pb-5">
