@@ -151,10 +151,10 @@ export function useCallSession({ userId, userType, rideId, enabled = true }: Use
           if (call.ride_id === rideId && call.status === 'ringing') {
             setIncomingCall(call);
             // Play ringtone
-            playNotificationSound('ride', 0.8);
+            playNotificationSoundByType('ride');
             if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
             ringtoneRef.current = setInterval(() => {
-              playNotificationSound('ride', 0.8);
+              playNotificationSoundByType('ride');
               if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
             }, 3000);
           }
