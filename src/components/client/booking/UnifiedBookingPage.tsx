@@ -955,10 +955,13 @@ export function UnifiedBookingPage() {
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="font-semibold text-foreground text-sm">
-                  Voici les chauffeurs les plus proches sélectionnés pour vous
+                  {searchMode === 'auto' 
+                    ? 'Recherche automatique en cours...'
+                    : 'Voici les chauffeurs les plus proches sélectionnés pour vous'}
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
+                  {searchMode === 'auto' && ' • sélection automatique'}
                 </p>
               </div>
               {selectedCount > 0 && (
@@ -969,29 +972,31 @@ export function UnifiedBookingPage() {
               )}
             </div>
 
-            {/* Quick action buttons: Send to all / Deselect all */}
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
-                className="flex-1 h-8 text-xs gap-1"
-                onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
-              >
-                <Users className="h-3 w-3" />
-                Tous ({filteredDrivers.length})
-              </Button>
-              {selectedCount > 0 && (
+            {/* Quick action buttons - only in manual mode */}
+            {searchMode === 'manual' && (
+              <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-8 text-xs gap-1 text-muted-foreground"
-                  onClick={() => setSelectedDriverIds(new Set())}
+                  variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
+                  className="flex-1 h-8 text-xs gap-1"
+                  onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
                 >
-                  <UserX className="h-3 w-3" />
-                  Aucun
+                  <Users className="h-3 w-3" />
+                  Tous ({filteredDrivers.length})
                 </Button>
-              )}
-            </div>
+                {selectedCount > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs gap-1 text-muted-foreground"
+                    onClick={() => setSelectedDriverIds(new Set())}
+                  >
+                    <UserX className="h-3 w-3" />
+                    Aucun
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Navigation arrows + scrollable container */}
             <div className="relative">
