@@ -153,15 +153,22 @@ export function UnifiedBookingPage() {
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
-  // ── Handle ?select=driverId from profile page (after drivers are loaded) ──
+  // ── Auto-select top 10 drivers after search, or handle ?select=driverId ──
   useEffect(() => {
+    if (drivers.length === 0) return;
+    
     const selectId = searchParams.get('select');
-    if (selectId && drivers.length > 0) {
+    if (selectId) {
+      // From profile page — add this specific driver
       setSelectedDriverIds(prev => {
         const next = new Set(prev);
         next.add(selectId);
         return next;
       });
+    } else if (selectedDriverIds.size === 0) {
+      // Auto-select up to 10 closest drivers
+      const top10 = drivers.slice(0, 10).map(d => d.driver_id);
+      setSelectedDriverIds(new Set(top10));
     }
   }, [searchParams, drivers]);
 
@@ -874,14 +881,43 @@ export function UnifiedBookingPage() {
             </div>
 
             <div className="flex items-center justify-between px-1">
-              <h3 className="font-semibold text-foreground text-sm">
-                {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
-              </h3>
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">
+                  Voici les chauffeurs les plus proches sélectionnés pour vous
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
+                </p>
+              </div>
               {selectedCount > 0 && (
-                <Badge className="bg-primary text-primary-foreground gap-1">
+                <Badge className="bg-primary text-primary-foreground gap-1 shrink-0">
                   <Users className="h-3 w-3" />
-                  {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
+                  {selectedCount}
                 </Badge>
+              )}
+            </div>
+
+            {/* Quick action buttons: Send to all / Deselect all */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
+                className="flex-1 h-8 text-xs gap-1"
+                onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
+              >
+                <Users className="h-3 w-3" />
+                Tous ({filteredDrivers.length})
+              </Button>
+              {selectedCount > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs gap-1 text-muted-foreground"
+                  onClick={() => setSelectedDriverIds(new Set())}
+                >
+                  <UserX className="h-3 w-3" />
+                  Aucun
+                </Button>
               )}
             </div>
 
