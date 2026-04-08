@@ -1296,24 +1296,17 @@ export function UnifiedBookingPage() {
       </main>
       )}
 
-      {/* Fixed bottom CTA - only for confirmation step (auth/card needed) */}
+      {/* Fixed bottom CTA - only for confirmation step when guest info still needed */}
       {!showWaitingScreen && confirmationStep && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
               className="w-full h-12 text-sm font-bold gap-2"
-              onClick={() => {
-                if (!user && !authChoice) return;
-                handleSubmitRequest();
-              }}
+              onClick={handleSubmitRequest}
               disabled={(() => {
                 if (isSubmitting) return true;
-                if (!user && !authChoice) return true;
-                if (clientPaymentMethod === 'card') {
-                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
-                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
-                  if (hasStripeDriver && !cardVerifiedForBooking) return true;
-                }
+                if (!user && (!guestName.trim() || !guestPhone.trim())) return true;
+                if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return true;
                 return false;
               })()}
             >
@@ -1323,11 +1316,9 @@ export function UnifiedBookingPage() {
                 <Send className="h-4 w-4" />
               )}
               <span className="truncate">
-                {!user && !authChoice
-                  ? 'Choisissez une option ci-dessus'
-                  : clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
-                    ? 'Vérifiez votre carte ci-dessus'
-                    : 'Lancer la recherche'}
+                {!user && (!guestName.trim() || !guestPhone.trim())
+                  ? 'Remplissez vos coordonnées'
+                  : 'Lancer la recherche'}
               </span>
               {lowestPrice !== Infinity && (
                 <span className="shrink-0">
