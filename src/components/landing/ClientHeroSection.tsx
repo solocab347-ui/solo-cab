@@ -66,9 +66,9 @@ export const ClientHeroSection = () => {
       gradient: "from-amber-500 to-orange-600",
     },
     {
-      icon: CreditCard,
-      title: t('landing.client.securePayment'),
-      description: t('landing.client.securePaymentDesc'),
+      icon: Shield,
+      title: "Service 100% gratuit",
+      description: "Inscription gratuite, sans engagement et sans frais cachés",
       gradient: "from-purple-500 to-pink-600",
     },
   ];
@@ -77,7 +77,7 @@ export const ClientHeroSection = () => {
     "Accès gratuit et sans engagement",
     "Aucune commission sur vos trajets",
     "Chauffeurs professionnels vérifiés",
-    "Paiement sécurisé en ligne",
+    "Réservation simple et rapide",
   ];
 
   return (

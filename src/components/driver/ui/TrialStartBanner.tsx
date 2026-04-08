@@ -118,11 +118,11 @@ export function TrialStartBanner({
   const getSubtitle = () => {
     return isStripeReady 
       ? 'Votre compte est validé !' 
-      : 'En attente de la validation de vos paiements';
+      : 'En attente de la validation de votre profil';
   };
 
   const getConfirmationText = () => {
-    return 'Je confirme que mon compte de paiement est configuré et prêt à recevoir des paiements.';
+    return 'Je confirme que mon profil est complet et prêt à recevoir des clients.';
   };
 
   return (
@@ -158,7 +158,7 @@ export function TrialStartBanner({
             <div className="mt-3 p-2 bg-warning/10 rounded-lg flex items-center gap-2">
               <Clock className="w-4 h-4 text-warning" />
               <span className="text-xs text-muted-foreground">
-                Votre compte de paiement est en cours de validation.
+                Votre profil est en cours de validation.
               </span>
             </div>
           )}

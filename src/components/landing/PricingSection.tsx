@@ -13,15 +13,15 @@ const PricingSection = () => {
             💰 Modèle transparent
           </Badge>
           <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-foreground">
-            Gratuit,
+            100% gratuit,
             <br />
             <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              zéro commission
+              sans engagement
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Contrairement aux plateformes classiques qui prélèvent 20-25% sur chaque course,
-            SoloCab est <span className="text-success font-semibold">gratuit. Vos revenus restent les vôtres.</span>
+            Inscrivez-vous gratuitement et accédez à tous les outils de base.
+            <span className="text-success font-semibold"> Aucun frais caché, aucune surprise.</span>
           </p>
         </div>
 
