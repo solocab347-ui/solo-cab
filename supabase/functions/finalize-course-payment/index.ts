@@ -420,8 +420,8 @@ serve(async (req) => {
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
       const isCash = paymentMethod === "cash" || paymentMethod === "Espèces";
 
-      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
-      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      // Commission SoloCab: 0.50€ par course (cash ou carte)
+      const solocabFeeCents = SOLOCAB_FEE_CENTS;
       const solocabFee = solocabFeeCents / 100;
       const stripeFee = 0; // No Stripe fees for manual payments
       const totalFees = solocabFee;

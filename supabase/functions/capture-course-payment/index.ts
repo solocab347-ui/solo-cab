@@ -117,8 +117,8 @@ serve(async (req) => {
       const isCash = paymentMethod === "Espèces" || paymentMethod === "cash";
       const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
 
-      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
-      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      // Commission SoloCab: 0.50€ par course (cash ou carte)
+      const solocabFeeCents = SOLOCAB_FEE_CENTS;
       const solocabFee = solocabFeeCents / 100;
       const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 
