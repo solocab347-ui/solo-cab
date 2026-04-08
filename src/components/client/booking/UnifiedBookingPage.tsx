@@ -182,11 +182,14 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found and auto-selected, go straight to confirmation ──
+  // ── Auto mode: when drivers are found and auto-selected, show carousel then auto-confirm after delay ──
+  const autoConfirmTriggered = useRef(false);
   useEffect(() => {
-    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched) {
-      // Skip manual selection, jump to confirmation
-      setConfirmationStep(true);
+    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
+      autoConfirmTriggered.current = true;
+      // Show carousel for 2s then auto-switch to confirmation
+      const timer = setTimeout(() => setConfirmationStep(true), 2000);
+      return () => clearTimeout(timer);
     }
   }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
@@ -550,6 +553,17 @@ export function UnifiedBookingPage() {
     return drivers;
   })();
 
+  // Auto-scroll carousel in auto mode
+  useEffect(() => {
+    if (searchMode !== 'auto' || confirmationStep || filteredDrivers.length <= 1) return;
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % filteredDrivers.length;
+      driverScrollRef.current?.scrollTo({ left: idx * 180, behavior: 'smooth' });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [searchMode, confirmationStep, filteredDrivers.length]);
+
   const selectedCount = selectedDriverIds.size;
   const lowestPrice = filteredDrivers
     .filter(d => selectedDriverIds.has(d.driver_id))
@@ -821,7 +835,7 @@ export function UnifiedBookingPage() {
             <div className="space-y-2">
               <Button
                 className="w-full h-12 text-base font-semibold gap-2"
-                onClick={() => { setSearchMode('auto'); handleSearch(); }}
+                onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
                 disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
               >
                 {isGeocoding || isLoading ? (
@@ -938,7 +952,7 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
-        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && searchMode === 'manual' && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (searchMode === 'manual' || searchMode === 'auto') && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
             <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
@@ -952,10 +966,13 @@ export function UnifiedBookingPage() {
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="font-semibold text-foreground text-sm">
-                  Voici les chauffeurs les plus proches sélectionnés pour vous
+                  {searchMode === 'auto' 
+                    ? 'Recherche automatique en cours...'
+                    : 'Voici les chauffeurs les plus proches sélectionnés pour vous'}
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
+                  {searchMode === 'auto' && ' • sélection automatique'}
                 </p>
               </div>
               {selectedCount > 0 && (
@@ -966,29 +983,31 @@ export function UnifiedBookingPage() {
               )}
             </div>
 
-            {/* Quick action buttons: Send to all / Deselect all */}
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
-                className="flex-1 h-8 text-xs gap-1"
-                onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
-              >
-                <Users className="h-3 w-3" />
-                Tous ({filteredDrivers.length})
-              </Button>
-              {selectedCount > 0 && (
+            {/* Quick action buttons - only in manual mode */}
+            {searchMode === 'manual' && (
+              <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-8 text-xs gap-1 text-muted-foreground"
-                  onClick={() => setSelectedDriverIds(new Set())}
+                  variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
+                  className="flex-1 h-8 text-xs gap-1"
+                  onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
                 >
-                  <UserX className="h-3 w-3" />
-                  Aucun
+                  <Users className="h-3 w-3" />
+                  Tous ({filteredDrivers.length})
                 </Button>
-              )}
-            </div>
+                {selectedCount > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs gap-1 text-muted-foreground"
+                    onClick={() => setSelectedDriverIds(new Set())}
+                  >
+                    <UserX className="h-3 w-3" />
+                    Aucun
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Navigation arrows + scrollable container */}
             <div className="relative">
