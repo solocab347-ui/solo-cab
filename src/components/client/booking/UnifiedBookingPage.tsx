@@ -161,18 +161,25 @@ export function UnifiedBookingPage() {
     
     const selectId = searchParams.get('select');
     if (selectId) {
-      // From profile page — add this specific driver
       setSelectedDriverIds(prev => {
         const next = new Set(prev);
         next.add(selectId);
         return next;
       });
-    } else if (selectedDriverIds.size === 0) {
+    } else if (selectedDriverIds.size === 0 || searchMode === 'auto') {
       // Auto-select up to 10 closest drivers
       const top10 = drivers.slice(0, 10).map(d => d.driver_id);
       setSelectedDriverIds(new Set(top10));
     }
   }, [searchParams, drivers]);
+
+  // ── Auto mode: when drivers are found and auto-selected, go straight to confirmation ──
+  useEffect(() => {
+    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched) {
+      // Skip manual selection, jump to confirmation
+      setConfirmationStep(true);
+    }
+  }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
   // Strategic places for quick search (airports, stations, monuments)
   const STRATEGIC_PLACES = [
