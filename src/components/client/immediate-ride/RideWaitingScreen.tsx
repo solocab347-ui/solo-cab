@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Loader2, X, CheckCircle2, XCircle, Clock, Crown, Users, Car, Search,
-  MapPin, RefreshCw, CalendarClock, User, Phone,
+  MapPin, RefreshCw, CalendarClock, User, Phone, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { NearbyDriver } from '@/hooks/useNearbyDrivers';
+import { DriverResultCard } from '@/components/client/booking/DriverResultCard';
 
 export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
@@ -27,6 +29,10 @@ interface RideWaitingScreenProps {
   onCancel: () => void;
   onAccepted: (driverName: string) => void;
   onExpired: () => void;
+  /** Driver data for animated card carousel during wait */
+  contactedDriversData?: NearbyDriver[];
+  routeDistanceKm?: number;
+  clientPaymentMethod?: 'card' | 'cash' | null;
 }
 
 const PHASE_CONFIG: Record<SearchPhase, { timeout: number; nextRadius: number; nextPhase: SearchPhase | null; relaunchFirst?: boolean }> = {
