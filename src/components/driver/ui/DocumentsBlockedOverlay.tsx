@@ -5,17 +5,15 @@
  * 1. Documents non soumis → L'utilisateur doit uploader ses documents
  * 2. Documents soumis → En attente de validation admin
  * 
- * L'utilisateur ne peut accéder qu'aux documents et à la gestion de l'abonnement
+ * L'utilisateur ne peut accéder qu'aux documents
  */
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { XCircle, FileText, CreditCard, AlertTriangle, Clock, CheckCircle, Loader2, ShieldCheck } from "lucide-react";
+import { XCircle, FileText, AlertTriangle, Clock, CheckCircle, Loader2, ShieldCheck } from "lucide-react";
 import { DriverDocuments } from "../DriverDocuments";
-import SubscriptionManager from "../payments/SubscriptionManager";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DocumentsBlockedOverlayProps {
   driverId: string;
@@ -205,40 +203,20 @@ export const DocumentsBlockedOverlay = ({
           </Card>
         )}
 
-        {/* Onglets Documents / Abonnement */}
-        <Tabs defaultValue="documents" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-white/5">
-            <TabsTrigger value="documents" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <FileText className="w-4 h-4" />
-              Mes Documents
-              {isPending && (
-                <Badge variant="destructive" className="ml-2 h-5 text-[10px]">Requis</Badge>
-              )}
-              {isSubmitted && (
-                <Badge className="ml-2 h-5 text-[10px] bg-amber-500">En attente</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="subscription" className="gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-              <CreditCard className="w-4 h-4" />
-              Mon Abonnement
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="documents">
-            <Card className="p-6">
-              <DriverDocuments driverId={driverId} userId={userId} />
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="subscription">
-            <Card className="p-6">
-              <SubscriptionManager 
-                driverProfile={driverProfile} 
-                onSubscriptionUpdate={onSubscriptionUpdate} 
-              />
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Documents */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-5 h-5 text-primary" />
+            <h3 className="font-bold text-lg">Mes Documents</h3>
+            {isPending && (
+              <Badge variant="destructive" className="ml-2 h-5 text-[10px]">Requis</Badge>
+            )}
+            {isSubmitted && (
+              <Badge className="ml-2 h-5 text-[10px] bg-amber-500">En attente</Badge>
+            )}
+          </div>
+          <DriverDocuments driverId={driverId} userId={userId} />
+        </Card>
 
         {/* Footer informatif */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
