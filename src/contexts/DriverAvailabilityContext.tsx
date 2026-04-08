@@ -3,27 +3,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 
 /**
- * Driver status state machine:
- * - 'offline'           → truly disconnected, toggle shows "Hors ligne"
- * - 'online_available'  → connected and available for courses, toggle shows "En ligne"
- * - 'accepting'         → receiving a course request (60s window) — still connected
- * - 'on_trip'           → currently on a course — still connected
- * - 'reserved'          → reserved for a specific task — still connected
+ * Driver status state machine (SoloCab intelligent):
+ * - 'offline'   → Hors ligne: pas de courses immédiates, reçoit réservations >2h
+ * - 'online'    → En ligne: courses immédiates + réservations futures
+ * - 'assigned'  → Course assignée: pas de nouvelles courses immédiates, réservations futures OK
+ * - 'in_ride'   → En course: pas visible immédiat, réservations lointaines uniquement
+ * - 'break'     → En pause: rien du tout
  * 
- * "isOnline" = driver chose to go online (any status except 'offline')
- * "isAvailableForCourses" = online_available specifically
+ * "isOnline" = driver chose to go online (online, assigned, in_ride)
+ * "isAvailableForCourses" = 'online' specifically (immediate rides)
  */
 
 interface DriverAvailabilityContextType {
-  /** True if driver is connected (not offline) — controls the toggle display */
+  /** True if driver is connected (not offline/break) */
   isOnline: boolean;
-  /** True if driver is available for new courses (online_available) */
+  /** True if driver is available for new immediate courses (online) */
   isAvailableForCourses: boolean;
   /** Current driver_status */
   driverStatus: string;
   isLoading: boolean;
-  /** Toggle between offline ↔ online_available (user action) */
+  /** Toggle between offline ↔ online (user action) */
   toggleOnline: () => Promise<void>;
+  /** Set break mode */
+  toggleBreak: () => Promise<void>;
   /** Legacy compat */
   isAvailable: boolean;
   toggleAvailability: () => Promise<void>;
@@ -36,6 +38,7 @@ const DriverAvailabilityContext = createContext<DriverAvailabilityContextType>({
   driverStatus: 'offline',
   isLoading: true,
   toggleOnline: async () => {},
+  toggleBreak: async () => {},
   isAvailable: false,
   toggleAvailability: async () => {},
   setAvailabilityDirect: async () => {},
@@ -50,7 +53,8 @@ interface Props {
   children: ReactNode;
 }
 
-const CONNECTED_STATUSES = ['online_available', 'accepting', 'on_trip', 'reserved'];
+const CONNECTED_STATUSES = ['online', 'assigned', 'in_ride'];
+const BUSY_STATUSES = ['in_ride', 'assigned'];
 
 export function DriverAvailabilityProvider({ driverId, children }: Props) {
   const [driverStatus, setDriverStatus] = useState<string>('offline');
@@ -58,7 +62,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
   const mountedRef = useRef(true);
 
   const isOnline = CONNECTED_STATUSES.includes(driverStatus);
-  const isAvailableForCourses = driverStatus === 'online_available';
+  const isAvailableForCourses = driverStatus === 'online';
 
   useEffect(() => {
     mountedRef.current = true;
@@ -72,7 +76,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
       let nextStatus = driverData?.driver_status || 'offline';
 
-      if (nextStatus === 'accepting') {
+      if (nextStatus === 'assigned') {
         const nowIso = new Date().toISOString();
         const recentCourseIso = new Date(Date.now() - 60_000).toISOString();
 
@@ -97,7 +101,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
             .from('courses')
             .select('id', { count: 'exact', head: true })
             .eq('driver_id', driverId)
-            .eq('status', 'pending')
+            .in('status', ['pending', 'accepted'])
             .gt('created_at', recentCourseIso),
         ]);
 
@@ -105,14 +109,21 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           (result) => Number(result.count || 0) > 0
         );
 
-        if (!hasPendingIncoming) {
-          nextStatus = 'online_available';
+        // Also check for accepted courses (assigned state should persist)
+        const { count: acceptedCount } = await supabase
+          .from('courses')
+          .select('id', { count: 'exact', head: true })
+          .eq('driver_id', driverId)
+          .eq('status', 'accepted');
+
+        if (!hasPendingIncoming && !acceptedCount) {
+          nextStatus = 'online';
           await supabase
             .from('drivers')
             .update({ driver_status: nextStatus, is_available_now: true })
             .eq('id', driverId);
         }
-      } else if (nextStatus === 'on_trip' || nextStatus === 'reserved') {
+      } else if (nextStatus === 'in_ride') {
         const { data: activeCourses } = await supabase
           .from('courses')
           .select('id, status, devis(status)')
@@ -123,10 +134,10 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
         const courses = (activeCourses ?? []) as any[];
         const hasInProgress = courses.some((course) => course.status === 'in_progress');
-        const hasReserved = courses.some(
+        const hasAccepted = courses.some(
           (course) => course.status === 'accepted' || (course.devis ?? []).some((quote: any) => quote.status === 'accepted')
         );
-        const reconciledStatus = hasInProgress ? 'on_trip' : hasReserved ? 'reserved' : 'online_available';
+        const reconciledStatus = hasInProgress ? 'in_ride' : hasAccepted ? 'assigned' : 'online';
 
         if (reconciledStatus !== nextStatus) {
           nextStatus = reconciledStatus;
@@ -134,7 +145,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
             .from('drivers')
             .update({
               driver_status: nextStatus,
-              is_available_now: nextStatus === 'online_available',
+              is_available_now: nextStatus === 'online',
             })
             .eq('id', driverId);
         }
@@ -161,7 +172,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           if (!mountedRef.current) return;
           const newData = payload.new as any;
           if (newData?.driver_status) {
-            if (['accepting', 'reserved', 'on_trip'].includes(newData.driver_status)) {
+            if (['assigned', 'in_ride'].includes(newData.driver_status)) {
               fetchStatus();
             } else {
               setDriverStatus(newData.driver_status);
@@ -178,14 +189,14 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
   }, [driverId]);
 
   const toggleOnline = useCallback(async () => {
-    // GUARD: Never toggle away from on_trip/accepting/reserved — only user can toggle offline ↔ online_available
-    const busyStatuses = ['on_trip', 'accepting', 'reserved'];
-    if (busyStatuses.includes(driverStatus)) {
+    // GUARD: Never toggle away from in_ride/assigned — only user can toggle offline ↔ online
+    if (BUSY_STATUSES.includes(driverStatus)) {
       console.warn('[DriverAvailability] Cannot toggle while in status:', driverStatus);
       return;
     }
-    const newOnline = !isOnline;
-    const newStatus = newOnline ? 'online_available' : 'offline';
+    // If on break, go back to online
+    const newOnline = driverStatus === 'break' ? true : !isOnline;
+    const newStatus = newOnline ? 'online' : 'offline';
     setDriverStatus(newStatus);
     await supabase
       .from('drivers')
@@ -197,9 +208,26 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
     playAvailabilitySound(newOnline);
   }, [isOnline, driverStatus, driverId]);
 
+  const toggleBreak = useCallback(async () => {
+    if (BUSY_STATUSES.includes(driverStatus)) {
+      console.warn('[DriverAvailability] Cannot take break while busy:', driverStatus);
+      return;
+    }
+    const isBreak = driverStatus === 'break';
+    const newStatus = isBreak ? 'online' : 'break';
+    setDriverStatus(newStatus);
+    await supabase
+      .from('drivers')
+      .update({
+        is_available_now: newStatus === 'online',
+        driver_status: newStatus,
+      })
+      .eq('id', driverId);
+  }, [driverStatus, driverId]);
+
   // Legacy compat
   const setAvailabilityDirect = useCallback(async (val: boolean) => {
-    const newStatus = val ? 'online_available' : 'offline';
+    const newStatus = val ? 'online' : 'offline';
     setDriverStatus(newStatus);
     await supabase
       .from('drivers')
@@ -217,6 +245,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       driverStatus,
       isLoading,
       toggleOnline,
+      toggleBreak,
       // Legacy compat
       isAvailable: isOnline,
       toggleAvailability: toggleOnline,

@@ -241,7 +241,7 @@ export function useDriverLocationTracker({
           .from('drivers')
           .update({
             is_available_now: isAvailable,
-            driver_status: isAvailable ? 'online_available' : 'offline',
+            driver_status: isAvailable ? 'online' : 'offline',
           })
           .eq('id', driverId);
       } catch (err) {
