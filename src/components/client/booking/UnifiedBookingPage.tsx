@@ -277,7 +277,7 @@ export function UnifiedBookingPage() {
     setDestSuggestions([]);
   };
 
-  // Geolocation - fast with fallback
+  // Geolocation - robust with cached position fallback
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error('La géolocalisation n\'est pas disponible sur cet appareil');
@@ -286,47 +286,53 @@ export function UnifiedBookingPage() {
     setIsGettingLocation(true);
     
     let resolved = false;
-    const resolve = async (lat: number, lng: number) => {
+    const resolve = async (lat: number, lng: number, accuracy?: number) => {
       if (resolved) return;
       resolved = true;
       setPickupCoords({ lat, lng });
       try {
         if (!mapboxToken) { setIsGettingLocation(false); return; }
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr`);
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr&limit=1`);
+        if (!res.ok) throw new Error('Geocode failed');
         const data = await res.json();
         if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
       } catch {
-        toast.error('Impossible de récupérer votre adresse actuelle');
+        setPickupAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
       }
       setIsGettingLocation(false);
     };
 
-    // Fast attempt (low accuracy, 3s)
+    // 1) Try cached position first (instant)
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
       () => {},
-      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 }
     );
 
-    // High accuracy in parallel (5s)
+    // 2) Fresh position in parallel (high accuracy, 8s timeout)
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
-      () => {
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+      (err) => {
         if (!resolved) {
-          toast.error('Autorisez la localisation pour utiliser votre position');
+          console.warn('Geolocation error:', err.code, err.message);
+          if (err.code === 1) {
+            toast.error('Autorisez la localisation dans les paramètres de votre navigateur');
+          } else {
+            toast.error('Position GPS indisponible. Saisissez votre adresse manuellement.');
+          }
           setIsGettingLocation(false);
         }
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
 
     // Safety timeout
     setTimeout(() => {
       if (!resolved) {
         setIsGettingLocation(false);
-        toast.error('Détection GPS trop lente. Saisissez votre adresse manuellement.');
+        toast.error('Détection GPS trop lente. Saisissez votre adresse.');
       }
-    }, 6000);
+    }, 10000);
   }, [mapboxToken]);
 
   // Search
