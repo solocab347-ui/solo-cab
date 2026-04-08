@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -23,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-solocab.png';
+import { saveStorefrontState, loadStorefrontState, type StorefrontState } from '@/lib/storefrontState';
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
