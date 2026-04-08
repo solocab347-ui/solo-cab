@@ -242,7 +242,9 @@ const ChauffeurProfile = () => {
                   <img
                     src={driver.profile_photo_url}
                     alt={driver.full_name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-[center_15%]"
+                    loading="eager"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
