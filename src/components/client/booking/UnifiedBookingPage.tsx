@@ -1271,9 +1271,10 @@ export function UnifiedBookingPage() {
           </div>
         )}
       </main>
+      )}
 
-      {/* Fixed bottom CTA */}
-      {selectedCount > 0 && (
+      {/* Fixed bottom CTA - hidden when waiting screen is shown */}
+      {!showWaitingScreen && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
