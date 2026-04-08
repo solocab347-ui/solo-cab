@@ -10,8 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock,
-  ChevronLeft, ChevronRight
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -29,7 +28,6 @@ import { saveStorefrontState, loadStorefrontState, type StorefrontState } from '
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
-type SearchMode = 'auto' | 'manual' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
@@ -73,7 +71,7 @@ export function UnifiedBookingPage() {
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchMode, setSearchMode] = useState<SearchMode>(null);
+  const [searchMode, setSearchMode] = useState<'auto' | null>(null);
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
@@ -182,14 +180,18 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found and auto-selected, show carousel then auto-confirm after delay ──
+  // ── Auto mode: when drivers are found, auto-select and go to confirmation ──
   const autoConfirmTriggered = useRef(false);
   useEffect(() => {
     if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
       autoConfirmTriggered.current = true;
-      // Show carousel for 2s then auto-switch to confirmation
-      const timer = setTimeout(() => setConfirmationStep(true), 2000);
-      return () => clearTimeout(timer);
+      // If user is logged in and paying cash (or card already verified), auto-dispatch immediately
+      if (user && (clientPaymentMethod === 'cash' || cardVerifiedForBooking)) {
+        handleSubmitRequest();
+      } else {
+        // Show confirmation step for auth/card verification
+        setConfirmationStep(true);
+      }
     }
   }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
@@ -441,14 +443,6 @@ export function UnifiedBookingPage() {
     }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
 
-  const toggleDriverSelection = (driverId: string) => {
-    setSelectedDriverIds(prev => {
-      const next = new Set(prev);
-      if (next.has(driverId)) next.delete(driverId);
-      else next.add(driverId);
-      return next;
-    });
-  };
 
   // Submit ride request
   const handleSubmitRequest = async () => {
@@ -831,29 +825,18 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            {/* Dual search buttons */}
-            <div className="space-y-2">
-              <Button
-                className="w-full h-12 text-base font-semibold gap-2"
-                onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
-                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
-              >
-                {isGeocoding || isLoading ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
-                ) : (
-                  <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-10 text-sm font-medium gap-2 border-primary/30 text-primary hover:bg-primary/5"
-                onClick={() => { setSearchMode('manual'); handleSearch(); }}
-                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
-              >
-                <Users className="h-4 w-4" />
-                Choisir mes chauffeurs
-              </Button>
-            </div>
+            {/* Search button - single automatic dispatch */}
+            <Button
+              className="w-full h-12 text-base font-semibold gap-2"
+              onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
+              disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+            >
+              {isGeocoding || isLoading ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
+              ) : (
+                <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
@@ -906,7 +889,7 @@ export function UnifiedBookingPage() {
             destinationPosition={destCoords}
             drivers={filteredDrivers}
             selectedDriverIds={selectedDriverIds}
-            onDriverClick={toggleDriverSelection}
+            onDriverClick={() => {}}
             searchRadius={searchRadius}
             mapboxToken={mapboxToken}
             tokenLoading={isTokenLoading}
@@ -952,7 +935,7 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
-        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (searchMode === 'manual' || searchMode === 'auto') && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && searchMode === 'auto' && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
             <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
@@ -963,72 +946,25 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-3 px-1">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                </div>
+              </div>
               <div>
                 <h3 className="font-semibold text-foreground text-sm">
-                  {searchMode === 'auto' 
-                    ? 'Recherche automatique en cours...'
-                    : 'Voici les chauffeurs les plus proches sélectionnés pour vous'}
+                  Recherche du meilleur chauffeur...
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} disponible{filteredDrivers.length > 1 ? 's' : ''}
-                  {searchMode === 'auto' && ' • sélection automatique'}
+                  {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} contacté{filteredDrivers.length > 1 ? 's' : ''}
                 </p>
               </div>
-              {selectedCount > 0 && (
-                <Badge className="bg-primary text-primary-foreground gap-1 shrink-0">
-                  <Users className="h-3 w-3" />
-                  {selectedCount}
-                </Badge>
-              )}
             </div>
 
-            {/* Quick action buttons - only in manual mode */}
-            {searchMode === 'manual' && (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={selectedCount === filteredDrivers.length ? 'default' : 'outline'}
-                  className="flex-1 h-8 text-xs gap-1"
-                  onClick={() => setSelectedDriverIds(new Set(filteredDrivers.map(d => d.driver_id)))}
-                >
-                  <Users className="h-3 w-3" />
-                  Tous ({filteredDrivers.length})
-                </Button>
-                {selectedCount > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 text-xs gap-1 text-muted-foreground"
-                    onClick={() => setSelectedDriverIds(new Set())}
-                  >
-                    <UserX className="h-3 w-3" />
-                    Aucun
-                  </Button>
-                )}
-              </div>
-            )}
 
-            {/* Navigation arrows + scrollable container */}
-            <div className="relative">
-              {filteredDrivers.length >= 2 && (
-                <>
-                  <button
-                    onClick={() => driverScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
-                    aria-label="Précédent"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => driverScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
-                    aria-label="Suivant"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+            {/* Auto-scrolling carousel */}
+            <div className="relative overflow-hidden">
               <div
                 ref={driverScrollRef}
                 className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
@@ -1039,8 +975,8 @@ export function UnifiedBookingPage() {
                     <DriverResultCard
                       driver={driver}
                       routeDistanceKm={routeDistanceKm || undefined}
-                      isSelected={selectedDriverIds.has(driver.driver_id)}
-                      onToggleSelect={toggleDriverSelection}
+                      isSelected={true}
+                      onToggleSelect={() => {}}
                       onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
                       rank={index + 1}
                       clientPaymentMethod={clientPaymentMethod}
@@ -1064,13 +1000,10 @@ export function UnifiedBookingPage() {
                 setShowAuthStep(false);
                 setAuthChoice(null);
                 setShowGuestForm(false);
-                if (searchMode === 'auto') {
-                  setSearchMode('manual'); // Switch to manual so they can see cards
-                }
               }}
             >
               <ArrowLeft className="h-4 w-4" />
-              {searchMode === 'auto' ? 'Choisir mes chauffeurs' : 'Modifier la sélection'}
+              Modifier la recherche
             </Button>
 
             {/* Auto mode info banner */}
@@ -1292,25 +1225,20 @@ export function UnifiedBookingPage() {
       </main>
       )}
 
-      {/* Fixed bottom CTA - hidden when waiting screen is shown */}
-      {!showWaitingScreen && selectedCount > 0 && (
+      {/* Fixed bottom CTA - only for confirmation step (auth/card needed) */}
+      {!showWaitingScreen && confirmationStep && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
               className="w-full h-12 text-sm font-bold gap-2"
               onClick={() => {
-                if (!confirmationStep) {
-                  setConfirmationStep(true);
-                  return;
-                }
                 if (!user && !authChoice) return;
                 handleSubmitRequest();
               }}
               disabled={(() => {
                 if (isSubmitting) return true;
-                if (confirmationStep && !user && !authChoice) return true;
-                // Disable if card payment needed but not verified
-                if (confirmationStep && clientPaymentMethod === 'card') {
+                if (!user && !authChoice) return true;
+                if (clientPaymentMethod === 'card') {
                   const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
                   const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
                   if (hasStripeDriver && !cardVerifiedForBooking) return true;
@@ -1324,18 +1252,15 @@ export function UnifiedBookingPage() {
                 <Send className="h-4 w-4" />
               )}
               <span className="truncate">
-                {!confirmationStep
-                  ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
-                  : confirmationStep && !user && !authChoice
-                    ? 'Choisissez une option ci-dessus'
-                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
-                      ? 'Vérifiez votre carte ci-dessus'
-                      : `Envoyer la demande`
-                }
+                {!user && !authChoice
+                  ? 'Choisissez une option ci-dessus'
+                  : clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
+                    ? 'Vérifiez votre carte ci-dessus'
+                    : 'Lancer la recherche'}
               </span>
               {lowestPrice !== Infinity && (
                 <span className="shrink-0">
-                  {selectedCount === 1 ? `${lowestPrice.toFixed(0)}€` : `dès ${lowestPrice.toFixed(0)}€`}
+                  dès {lowestPrice.toFixed(0)}€
                 </span>
               )}
             </Button>
