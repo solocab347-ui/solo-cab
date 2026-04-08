@@ -28,6 +28,7 @@ import { saveStorefrontState, loadStorefrontState, type StorefrontState } from '
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
+type SearchMode = 'auto' | 'manual' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
