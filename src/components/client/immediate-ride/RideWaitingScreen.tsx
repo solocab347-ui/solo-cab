@@ -138,26 +138,58 @@ export function RideWaitingScreen({
       // Wait 2 seconds showing transition message
       setTimeout(async () => {
         try {
+          // RELAUNCH PHASE: relaunch non-responders only (not rejected)
+          if (config.relaunchFirst) {
+            const { data: relaunchData, error: relaunchErr } = await supabase.functions.invoke('extended-driver-search', {
+              body: {
+                request_group_id: requestGroupId || requestId,
+                relaunch_non_responders: true,
+              },
+            });
+
+            if (relaunchErr) throw relaunchErr;
+
+            if (relaunchData?.already_accepted) {
+              isExtendingRef.current = false;
+              return;
+            }
+
+            if (relaunchData?.new_requests > 0) {
+              // Some non-responders were relaunched → go to relaunch phase
+              setPhase('relaunch');
+              setExtendedDriverCount(relaunchData.drivers_relaunched || 0);
+              setCurrentTimeoutAt(relaunchData.timeout_at || new Date(Date.now() + 30000).toISOString());
+              setStatus('relaunching');
+              isExtendingRef.current = false;
+              return;
+            }
+
+            // No one to relaunch (all rejected) → skip to nearby search
+          }
+
+          // STANDARD EXTENDED SEARCH: find new drivers at wider radius
           const { data, error } = await supabase.functions.invoke('extended-driver-search', {
             body: {
               request_group_id: requestGroupId || requestId,
               radius_km: config.nextRadius,
-              search_phase: config.nextPhase,
+              search_phase: config.nextPhase === 'relaunch' ? 'nearby' : config.nextPhase,
             },
           });
 
           if (error) throw error;
 
           if (data?.already_accepted) {
-            return; // Will be handled by realtime
+            isExtendingRef.current = false;
+            return;
           }
 
+          const targetPhase = config.nextPhase === 'relaunch' ? 'nearby' : config.nextPhase;
+
           if (data?.no_drivers || data?.new_requests === 0) {
-            // No drivers found at this radius, try next phase immediately
-            const nextConfig = PHASE_CONFIG[config.nextPhase!];
-            if (nextConfig.nextPhase) {
-              setPhase(config.nextPhase!);
-              // Try wider radius
+            // No drivers found at this radius, try next phase
+            const nextConfig = PHASE_CONFIG[targetPhase!];
+            if (nextConfig?.nextPhase) {
+              setPhase(targetPhase!);
               const { data: data2 } = await supabase.functions.invoke('extended-driver-search', {
                 body: {
                   request_group_id: requestGroupId || requestId,
@@ -185,7 +217,7 @@ export function RideWaitingScreen({
             return;
           }
 
-          setPhase(config.nextPhase!);
+          setPhase(targetPhase!);
           setExtendedDriverCount(data?.drivers_found || 0);
           setCurrentTimeoutAt(data?.timeout_at || new Date(Date.now() + 60000).toISOString());
           setStatus('extended_searching');
