@@ -76,6 +76,11 @@ export function UnifiedBookingPage() {
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
+  // Pre-search price range (fetched silently when addresses are ready)
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null);
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
+  const priceRangeFetched = useRef<string>('');
+
   // Waiting screen state
   const [showWaitingScreen, setShowWaitingScreen] = useState(false);
   const [waitingRequestId, setWaitingRequestId] = useState<string>('');
@@ -180,16 +185,18 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found, auto-select and go to confirmation ──
+  // ── Auto mode: when drivers are found after search button click, auto-dispatch ──
   const autoConfirmTriggered = useRef(false);
   useEffect(() => {
     if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
       autoConfirmTriggered.current = true;
-      // If user is logged in and paying cash (or card already verified), auto-dispatch immediately
-      if (user && (clientPaymentMethod === 'cash' || cardVerifiedForBooking)) {
+      // Card is already verified or paying cash + guest info collected in form
+      const guestReady = !user && guestName.trim() && guestPhone.trim();
+      const canDispatch = (user || guestReady) && (clientPaymentMethod === 'cash' || cardVerifiedForBooking);
+      if (canDispatch) {
         handleSubmitRequest();
       } else {
-        // Show confirmation step for auth/card verification
+        // Show confirmation step only if something is still missing
         setConfirmationStep(true);
       }
     }
@@ -442,6 +449,57 @@ export function UnifiedBookingPage() {
       setIsGeocoding(false);
     }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
+
+  // ── Auto-fetch price range when both addresses are set (silent pre-search) ──
+  useEffect(() => {
+    if (!pickupCoords || !destCoords || !mapboxToken) return;
+    const key = `${pickupCoords.lat},${pickupCoords.lng}-${destCoords.lat},${destCoords.lng}-${mode}-${scheduledDate}-${scheduledTime}`;
+    if (priceRangeFetched.current === key) return;
+    priceRangeFetched.current = key;
+
+    const fetchPriceRange = async () => {
+      setIsFetchingPrices(true);
+      try {
+        // 1) Get route distance
+        const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoords.lng},${pickupCoords.lat};${destCoords.lng},${destCoords.lat}?access_token=${mapboxToken}`);
+        let dist: number | null = null;
+        let dur: number | null = null;
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          dist = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
+          dur = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
+        }
+        if (dist) { setRouteDistanceKm(dist); setRouteDurationMin(dur); }
+
+        // 2) Find nearby drivers (silent)
+        let schedDate: Date | undefined;
+        if (mode === 'reservation' && scheduledDate && scheduledTime) {
+          schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+        }
+        await searchNearbyDrivers(
+          pickupCoords.lat, pickupCoords.lng,
+          dist || undefined, dur || undefined,
+          schedDate, pickupAddress, destinationAddress,
+          maxSearchRadiusKm, mode
+        );
+      } catch (err) {
+        console.warn('Pre-search price fetch failed:', err);
+      } finally {
+        setIsFetchingPrices(false);
+      }
+    };
+    fetchPriceRange();
+  }, [pickupCoords, destCoords, mapboxToken, mode, scheduledDate, scheduledTime, pickupAddress, destinationAddress, maxSearchRadiusKm, searchNearbyDrivers]);
+
+  // ── Compute price range from fetched drivers ──
+  useEffect(() => {
+    if (drivers.length === 0) { setPriceRange(null); return; }
+    const prices = drivers
+      .filter(d => d.estimated_price && d.estimated_price > 0)
+      .map(d => d.estimated_price!);
+    if (prices.length === 0) { setPriceRange(null); return; }
+    setPriceRange({ min: Math.min(...prices), max: Math.max(...prices) });
+  }, [drivers]);
 
 
   // Submit ride request
@@ -825,18 +883,94 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            {/* Search button - single automatic dispatch */}
+            {/* Guest info - shown inline if not logged in and paying by card */}
+            {!user && clientPaymentMethod === 'card' && (
+              <div className="space-y-2 pt-1 border-t border-border/30">
+                <Label className="text-sm text-foreground flex items-center gap-2">
+                  <UserPlus className="h-3.5 w-3.5 text-primary" />
+                  Vos coordonnées
+                </Label>
+                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email * (obligatoire pour CB)" type="email" className="h-10" />
+              </div>
+            )}
+
+            {/* Card verification - inline in search form */}
+            {clientPaymentMethod === 'card' && !cardVerifiedForBooking && (user || (guestName.trim() && guestPhone.trim() && guestEmail?.trim())) && (
+              <div className="pt-1 border-t border-border/30">
+                <BookingCardStep
+                  isAuthenticated={!!user}
+                  guestName={guestName}
+                  guestEmail={guestEmail}
+                  guestPhone={guestPhone}
+                  estimatedPrice={priceRange ? priceRange.max : undefined}
+                  onCardReady={(info) => {
+                    setCardVerifiedForBooking(true);
+                    setSavedCardInfo(info);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Price range preview - shown when prices are fetched */}
+            {priceRange && pickupCoords && destCoords && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Info className="h-4 w-4 text-primary shrink-0" />
+                  Estimation de prix
+                </div>
+                {priceRange.min === priceRange.max ? (
+                  <p className="text-lg font-bold text-primary pl-6">{priceRange.min.toFixed(0)}€ TTC</p>
+                ) : (
+                  <p className="text-lg font-bold text-primary pl-6">entre {priceRange.min.toFixed(0)}€ et {priceRange.max.toFixed(0)}€ TTC</p>
+                )}
+                <p className="text-[11px] text-muted-foreground pl-6">
+                  Basé sur les {drivers.length} chauffeur{drivers.length > 1 ? 's' : ''} les plus proches • {routeDistanceKm?.toFixed(1)} km
+                </p>
+              </div>
+            )}
+
+            {isFetchingPrices && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Estimation des prix en cours...
+              </div>
+            )}
+
+            {/* Search button - launches dispatch */}
             <Button
               className="w-full h-12 text-base font-semibold gap-2"
               onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
-              disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              disabled={(() => {
+                if (!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod) return true;
+                if (isGeocoding || isLoading) return true;
+                if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return true;
+                if (!user && clientPaymentMethod === 'cash' && (!guestName.trim() || !guestPhone.trim())) return true;
+                return false;
+              })()}
             >
               {isGeocoding || isLoading ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
+              ) : priceRange ? (
+                <><Send className="mr-2 h-5 w-5" />Confirmer et lancer la recherche</>
               ) : (
                 <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
               )}
             </Button>
+
+            {/* Guest info for cash payment */}
+            {!user && clientPaymentMethod === 'cash' && (
+              <div className="space-y-2 pt-1 border-t border-border/30">
+                <Label className="text-sm text-foreground flex items-center gap-2">
+                  <UserPlus className="h-3.5 w-3.5 text-primary" />
+                  Vos coordonnées
+                </Label>
+                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1136,113 +1270,43 @@ export function UnifiedBookingPage() {
               </CardContent>
             </Card>
 
-            {/* Auth options for non-authenticated users */}
-            {!user && !authChoice && (
+            {/* Auth options - only if guest info wasn't already collected in form */}
+            {!user && !guestName.trim() && (
               <Card className="border-primary/30 shadow-lg">
                 <CardContent className="p-4 space-y-3">
-                  <h4 className="font-semibold text-foreground text-base text-center">Comment souhaitez-vous continuer ?</h4>
-                  <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
+                  <h4 className="font-semibold text-foreground text-base text-center">Complétez vos informations</h4>
                   <div className="space-y-2">
-                    <Button variant="default" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => { setAuthChoice('guest'); setShowGuestForm(true); }}>
-                      <UserX className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Commander sans inscription</div>
-                        <div className="text-[10px] opacity-80 font-normal">Rapide, sans compte</div>
-                      </div>
+                    <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                    <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                    <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}>
+                      <UserPlus className="h-3 w-3 mr-1" />Créer un compte
                     </Button>
-                    <Button variant="outline" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}>
-                      <UserPlus className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Créer un compte</div>
-                        <div className="text-[10px] text-muted-foreground font-normal">Suivez vos courses, fidélité</div>
-                      </div>
-                    </Button>
-                    <Button variant="outline" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}>
-                      <LogIn className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Se connecter</div>
-                        <div className="text-[10px] text-muted-foreground font-normal">J'ai déjà un compte</div>
-                      </div>
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}>
+                      <LogIn className="h-3 w-3 mr-1" />Se connecter
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            {/* Guest form */}
-            {!user && showGuestForm && authChoice === 'guest' && (
-              <Card className="border-primary/30">
-                <CardContent className="p-4 space-y-3">
-                  <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
-                  <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
-                  <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
-                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Card step: show for card payments when card not yet verified */}
-            {(() => {
-              const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
-              const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
-              const needsCard = clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking;
-              const isGuest = !user && authChoice === 'guest';
-              const isRegistered = !!user;
-              const guestInfoReady = isGuest && guestName.trim() && guestPhone.trim() && guestEmail?.trim();
-              
-              if (!needsCard) return null;
-              
-              // For guests: only show card form once guest info is complete
-              if (isGuest && !guestInfoReady) {
-                return (
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
-                    <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span>Remplissez vos coordonnées (nom, téléphone, email) pour enregistrer votre carte bancaire.</span>
-                  </div>
-                );
-              }
-              
-              if (isRegistered || guestInfoReady) {
-                return (
-                  <BookingCardStep
-                    isAuthenticated={isRegistered}
-                    guestName={guestName}
-                    guestEmail={guestEmail}
-                    guestPhone={guestPhone}
-                    estimatedPrice={selectedDriversList[0]?.estimated_price}
-                    onCardReady={(info) => {
-                      setCardVerifiedForBooking(true);
-                      setSavedCardInfo(info);
-                      toast.success('Carte vérifiée ! Vous pouvez envoyer votre demande.');
-                    }}
-                  />
-                );
-              }
-              return null;
-            })()}
           </div>
         )}
       </main>
       )}
 
-      {/* Fixed bottom CTA - only for confirmation step (auth/card needed) */}
+      {/* Fixed bottom CTA - only for confirmation step when guest info still needed */}
       {!showWaitingScreen && confirmationStep && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
               className="w-full h-12 text-sm font-bold gap-2"
-              onClick={() => {
-                if (!user && !authChoice) return;
-                handleSubmitRequest();
-              }}
+              onClick={handleSubmitRequest}
               disabled={(() => {
                 if (isSubmitting) return true;
-                if (!user && !authChoice) return true;
-                if (clientPaymentMethod === 'card') {
-                  const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
-                  const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
-                  if (hasStripeDriver && !cardVerifiedForBooking) return true;
-                }
+                if (!user && (!guestName.trim() || !guestPhone.trim())) return true;
+                if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return true;
                 return false;
               })()}
             >
@@ -1252,11 +1316,9 @@ export function UnifiedBookingPage() {
                 <Send className="h-4 w-4" />
               )}
               <span className="truncate">
-                {!user && !authChoice
-                  ? 'Choisissez une option ci-dessus'
-                  : clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
-                    ? 'Vérifiez votre carte ci-dessus'
-                    : 'Lancer la recherche'}
+                {!user && (!guestName.trim() || !guestPhone.trim())
+                  ? 'Remplissez vos coordonnées'
+                  : 'Lancer la recherche'}
               </span>
               {lowestPrice !== Infinity && (
                 <span className="shrink-0">
