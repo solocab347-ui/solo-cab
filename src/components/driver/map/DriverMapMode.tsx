@@ -67,16 +67,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
   const { isAvailable, isOnline, driverStatus, toggleAvailability } = useDriverAvailability();
-  const isAccepting = driverStatus === 'accepting';
-  const isOnTrip = driverStatus === 'on_trip';
-  const isReserved = driverStatus === 'reserved';
-  const isBusy = isOnTrip || isAccepting || isReserved;
-  const busyTitle = isOnTrip ? 'En course' : isReserved ? 'Mission réservée' : 'Demande en attente';
-  const busySubtitle = isOnTrip
+  const isAssigned = driverStatus === 'assigned';
+  const isInRide = driverStatus === 'in_ride';
+  const isBreak = driverStatus === 'break';
+  const isBusy = isInRide || isAssigned;
+  const busyTitle = isInRide ? 'En course' : 'Course assignée';
+  const busySubtitle = isInRide
     ? 'Course en cours — indisponible'
-    : isReserved
-      ? 'Mission attribuée — indisponible'
-      : 'Réponse en attente — indisponible';
+    : 'Course attribuée — indisponible';
 
   const { latitude, longitude, isTracking, isStale } = useDriverLocationTracker({
     driverId,

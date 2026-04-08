@@ -81,7 +81,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       .maybeSingle();
     
     const status = driverData?.driver_status;
-    if (status && status !== 'online_available') return;
+    if (status && status !== 'online') return;
 
     try {
       const [queueResult, sharedResult, rideResult, directResult] = await Promise.all([

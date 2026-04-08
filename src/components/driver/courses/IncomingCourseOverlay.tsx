@@ -179,10 +179,10 @@ export function IncomingCourseOverlay({
           // Show message for 4 seconds then restore status
           setTimeout(async () => {
             if (driverId) {
-              // Only restore if still in 'accepting' — don't override on_trip
+              // Only restore if still in 'assigned' — don't override on_trip
               const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
-              if (!d?.driver_status || d.driver_status === 'accepting') {
-                await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+              if (!d?.driver_status || d.driver_status === 'assigned') {
+                await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
               }
             }
             onDismiss();
@@ -226,7 +226,7 @@ export function IncomingCourseOverlay({
     if (!course || !driverId) { setTimeLeft(TIMEOUT_SECONDS); return; }
     setTimeLeft(TIMEOUT_SECONDS);
     setTakenByOther(false);
-    supabase.from('drivers').update({ driver_status: 'accepting', is_available_now: false }).eq('id', driverId).then(() => {
+    supabase.from('drivers').update({ driver_status: 'assigned', is_available_now: false }).eq('id', driverId).then(() => {
       console.log('[IncomingCourseOverlay] Driver set to accepting');
     });
     const interval = setInterval(() => {
@@ -235,7 +235,7 @@ export function IncomingCourseOverlay({
           clearInterval(interval);
           // Timeout: restore to online_available (not offline!)
           if (driverId) {
-            supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+            supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
           }
           onDismiss();
           return 0;
@@ -287,18 +287,18 @@ export function IncomingCourseOverlay({
           if (data?.already_taken) toast.error('Cette course a déjà été prise par un autre chauffeur');
           else if (data?.expired) toast.error('Cette demande a expiré');
           else toast.error(data?.error || "Erreur lors de l'acceptation");
-          await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+          await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
           onDismiss();
           return;
         }
         toast.success('Course acceptée !');
       }
-      await supabase.from('drivers').update({ driver_status: 'on_trip', is_available_now: false }).eq('id', driverId);
+      await supabase.from('drivers').update({ driver_status: 'in_ride', is_available_now: false }).eq('id', driverId);
       onAccepted();
     } catch (err: any) {
       console.error('Error accepting course:', err);
       toast.error(err.message || "Erreur lors de l'acceptation");
-      if (driverId) await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+      if (driverId) await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
     } finally {
       setAccepting(false);
     }
@@ -308,12 +308,12 @@ export function IncomingCourseOverlay({
     if (audioRef.current) clearInterval(audioRef.current);
     if (navigator.vibrate) navigator.vibrate(0);
     if (driverId) {
-      // Only restore to online_available if driver is currently in 'accepting' state
+      // Only restore to online_available if driver is currently in 'assigned' state
       // Don't override on_trip or other active states
       const { data: currentDriver } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
       const currentStatus = currentDriver?.driver_status;
-      if (!currentStatus || currentStatus === 'accepting') {
-        await supabase.from('drivers').update({ driver_status: 'online_available', is_available_now: true }).eq('id', driverId);
+      if (!currentStatus || currentStatus === 'assigned') {
+        await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
       }
     }
     if (course?.source === 'ride_request' && course.sourceId) {
