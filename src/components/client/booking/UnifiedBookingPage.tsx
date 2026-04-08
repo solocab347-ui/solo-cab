@@ -260,7 +260,7 @@ export function UnifiedBookingPage() {
     setDestinationAddress(val);
     setDestCoords(null);
     if (destDebounce.current) clearTimeout(destDebounce.current);
-    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 300);
+    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 150);
   };
 
   const selectPickupSuggestion = (feature: any) => {
