@@ -837,11 +837,11 @@ export function UnifiedBookingPage() {
           </Alert>
         )}
 
-        {/* Drivers list - horizontal scrollable cards */}
+        {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
         {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
-            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-lg p-3">
+            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
               <Car className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-foreground">Réservez directement auprès de professionnels certifiés.</p>
@@ -860,20 +860,46 @@ export function UnifiedBookingPage() {
                 </Badge>
               )}
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {filteredDrivers.map((driver, index) => (
-                <div key={driver.driver_id} className="snap-start shrink-0 w-[260px]">
-                  <DriverResultCard
-                    driver={driver}
-                    routeDistanceKm={routeDistanceKm || undefined}
-                    isSelected={selectedDriverIds.has(driver.driver_id)}
-                    onToggleSelect={toggleDriverSelection}
-                    onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
-                    rank={index + 1}
-                    clientPaymentMethod={clientPaymentMethod}
-                  />
-                </div>
-              ))}
+
+            {/* Navigation arrows + scrollable container */}
+            <div className="relative">
+              {filteredDrivers.length > 2 && (
+                <>
+                  <button
+                    onClick={() => driverScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
+                    aria-label="Précédent"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => driverScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
+                    aria-label="Suivant"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              <div
+                ref={driverScrollRef}
+                className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
+                {filteredDrivers.map((driver, index) => (
+                  <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-6px)] min-w-[160px] max-w-[220px]">
+                    <DriverResultCard
+                      driver={driver}
+                      routeDistanceKm={routeDistanceKm || undefined}
+                      isSelected={selectedDriverIds.has(driver.driver_id)}
+                      onToggleSelect={toggleDriverSelection}
+                      onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
+                      rank={index + 1}
+                      clientPaymentMethod={clientPaymentMethod}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
