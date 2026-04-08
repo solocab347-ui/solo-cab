@@ -847,7 +847,7 @@ export function UnifiedBookingPage() {
           </Alert>
         )}
 
-        {fallbackToReservation && mode === 'immediate' && (
+        {fallbackToReservation && mode === 'immediate' && filteredDrivers.length === 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
