@@ -166,7 +166,7 @@ serve(async (req) => {
           course_id,
           driver_id: course.driver_id,
           type: "final_payment",
-          solocab_fee: "0.80",
+          solocab_fee: "0.50",
         },
       },
       success_url: `${origin}/reservation-tracking/${course_id}?final_payment=success`,
