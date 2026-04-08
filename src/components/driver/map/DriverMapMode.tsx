@@ -140,20 +140,35 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     };
   }, []);
 
+  const normalizeAngle = useCallback((angle: number) => {
+    return ((angle % 360) + 360) % 360;
+  }, []);
+
   const updateRotation = useCallback((heading: number) => {
     if (!markerRef.current) return;
     const el = markerRef.current.getElement();
     if (!el) return;
     const inner = el.querySelector('#car-marker-inner') as HTMLElement;
-    if (inner) inner.style.transform = `rotate(${heading}deg)`;
-  }, []);
+    if (!inner) return;
+    
+    // Calculate shortest rotation path to avoid spinning
+    const current = normalizeAngle(lastHeading.current);
+    const target = normalizeAngle(heading);
+    let diff = target - current;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    const finalAngle = lastHeading.current + diff;
+    
+    inner.style.transform = `rotate(${finalAngle}deg)`;
+    lastHeading.current = finalAngle;
+  }, [normalizeAngle]);
 
   const calcHeading = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
     const dLng = to.lng - from.lng;
     const dLat = to.lat - from.lat;
-    if (Math.abs(dLat) < 0.00001 && Math.abs(dLng) < 0.00001) return lastHeading.current;
+    // Need significant movement to calculate heading (≈11m)
+    if (Math.abs(dLat) < 0.0001 && Math.abs(dLng) < 0.0001) return null;
     const angle = Math.atan2(dLng, dLat) * (180 / Math.PI);
-    lastHeading.current = angle;
     return angle;
   }, []);
 
