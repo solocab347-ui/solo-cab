@@ -121,7 +121,24 @@ export function UnifiedBookingPage() {
     }
   }, [mapboxToken]); // Only run once when token becomes available
 
-  // Auto-check if authenticated user already has a saved card
+  // ── Handle ?select=driverId from profile page ──
+  useEffect(() => {
+    const selectId = searchParams.get('select');
+    if (selectId && drivers.length > 0) {
+      setSelectedDriverIds(prev => {
+        const next = new Set(prev);
+        next.add(selectId);
+        return next;
+      });
+    }
+  }, [searchParams, drivers]);
+
+  // ── Handle ?mode=immediate from legacy routes ──
+  useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'immediate') setMode('immediate');
+  }, [searchParams]);
+
   useEffect(() => {
     if (!user || clientPaymentMethod !== 'card') return;
     const checkSavedCard = async () => {
