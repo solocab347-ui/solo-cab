@@ -1233,25 +1233,20 @@ export function UnifiedBookingPage() {
       </main>
       )}
 
-      {/* Fixed bottom CTA - hidden when waiting screen is shown */}
-      {!showWaitingScreen && selectedCount > 0 && (
+      {/* Fixed bottom CTA - only for confirmation step (auth/card needed) */}
+      {!showWaitingScreen && confirmationStep && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
               className="w-full h-12 text-sm font-bold gap-2"
               onClick={() => {
-                if (!confirmationStep) {
-                  setConfirmationStep(true);
-                  return;
-                }
                 if (!user && !authChoice) return;
                 handleSubmitRequest();
               }}
               disabled={(() => {
                 if (isSubmitting) return true;
-                if (confirmationStep && !user && !authChoice) return true;
-                // Disable if card payment needed but not verified
-                if (confirmationStep && clientPaymentMethod === 'card') {
+                if (!user && !authChoice) return true;
+                if (clientPaymentMethod === 'card') {
                   const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
                   const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
                   if (hasStripeDriver && !cardVerifiedForBooking) return true;
@@ -1265,18 +1260,15 @@ export function UnifiedBookingPage() {
                 <Send className="h-4 w-4" />
               )}
               <span className="truncate">
-                {!confirmationStep
-                  ? `Continuer • ${selectedCount} chauffeur${selectedCount > 1 ? 's' : ''}`
-                  : confirmationStep && !user && !authChoice
-                    ? 'Choisissez une option ci-dessus'
-                    : confirmationStep && clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
-                      ? 'Vérifiez votre carte ci-dessus'
-                      : `Envoyer la demande`
-                }
+                {!user && !authChoice
+                  ? 'Choisissez une option ci-dessus'
+                  : clientPaymentMethod === 'card' && !cardVerifiedForBooking && drivers.filter(d => selectedDriverIds.has(d.driver_id)).some(d => d.stripe_connect_charges_enabled)
+                    ? 'Vérifiez votre carte ci-dessus'
+                    : 'Lancer la recherche'}
               </span>
               {lowestPrice !== Infinity && (
                 <span className="shrink-0">
-                  {selectedCount === 1 ? `${lowestPrice.toFixed(0)}€` : `dès ${lowestPrice.toFixed(0)}€`}
+                  dès {lowestPrice.toFixed(0)}€
                 </span>
               )}
             </Button>
