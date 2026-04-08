@@ -10,7 +10,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock, Sparkles
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock, Sparkles,
+  Mail, Lock, Eye, EyeOff, CheckCircle2
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
