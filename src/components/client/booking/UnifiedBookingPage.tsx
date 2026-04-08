@@ -18,6 +18,7 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { DriverResultCard } from './DriverResultCard';
 import { DriverMap } from './DriverMap';
 import { BookingCardStep } from './BookingCardStep';
+import { RideWaitingScreen } from '@/components/client/immediate-ride/RideWaitingScreen';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
