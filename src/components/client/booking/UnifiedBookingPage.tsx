@@ -897,7 +897,7 @@ export function UnifiedBookingPage() {
             destinationPosition={destCoords}
             drivers={filteredDrivers}
             selectedDriverIds={selectedDriverIds}
-            onDriverClick={toggleDriverSelection}
+            onDriverClick={() => {}}
             searchRadius={searchRadius}
             mapboxToken={mapboxToken}
             tokenLoading={isTokenLoading}
