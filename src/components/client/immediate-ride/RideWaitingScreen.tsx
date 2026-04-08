@@ -317,7 +317,7 @@ export function RideWaitingScreen({
         <CardContent className="pt-8 pb-8 text-center space-y-5">
           <AnimatePresence mode="wait">
             {/* SEARCHING */}
-            {(status === 'searching' || status === 'extended_searching') && (
+            {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
               <motion.div
                 key={`searching-${phase}`}
                 initial={{ scale: 0.8, opacity: 0 }}
