@@ -508,18 +508,22 @@ export function UnifiedBookingPage() {
       if (insertError) throw insertError;
 
       const isMulti = selectedDrivers.length > 1;
+      const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
+      const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);
+
+      // Show waiting screen inline instead of navigating away
+      setWaitingRequestId(data?.[0]?.id || '');
+      setWaitingGroupId(requestGroupId);
+      setWaitingDriversData(selectedDrivers);
+      setWaitingTimeoutAt(timeoutIso);
+      setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
+      setShowWaitingScreen(true);
+
       toast.success(
         isMulti 
-          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le montant sera bloqué sur votre carte après acceptation.`
-          : 'Demande envoyée ! Vous serez notifié dès que le chauffeur accepte.'
+          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs !`
+          : 'Demande envoyée !'
       );
-
-      // Navigate based on auth state
-      if (user) {
-        navigate('/client-dashboard');
-      } else {
-        navigate('/');
-      }
     } catch (err) {
       console.error('Submit error:', err);
       toast.error('Erreur lors de l\'envoi de la demande');
