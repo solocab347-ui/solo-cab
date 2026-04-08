@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SOLOCAB_FEE = 0.80; // 0.80€ par course
+const SOLOCAB_FEE = 0.50; // 0.50€ par course (cash ou carte)
 const STRIPE_PERCENTAGE = 0.015; // 1.5%
 const STRIPE_FIXED_FEE = 0.25; // 0.25€
 

@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SOLOCAB_FEE_CENTS = 80; // 0.80€ par course
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 const STRIPE_PERCENTAGE = 0.015;
 const STRIPE_FIXED_FEE = 0.25;
 
