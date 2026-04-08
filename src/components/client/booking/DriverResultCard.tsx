@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Eye, Check, Clock, ShieldCheck, CreditCard, Car } from "lucide-react";
+import { MapPin, Eye, Check, Clock, Lock, Car } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
 import { cn } from "@/lib/utils";
 
@@ -180,24 +180,13 @@ export function DriverResultCard({
             </div>
           )}
 
-          {/* Payment badge */}
-          {clientPaymentMethod === 'card' && (
-            <Badge
-              variant="outline"
-              className={cn(
-                "mt-1.5 text-[9px] px-2 py-0 gap-0.5 font-medium",
-                driver.stripe_connect_charges_enabled
-                  ? "border-primary/40 text-primary bg-primary/5"
-                  : "border-muted-foreground/30 text-muted-foreground"
-              )}
-            >
-              {driver.stripe_connect_charges_enabled ? (
-                <><ShieldCheck className="h-2.5 w-2.5" /> Sécurisé</>
-              ) : (
-                <><CreditCard className="h-2.5 w-2.5" /> TPE</>
-              )}
-            </Badge>
-          )}
+          {/* Payment badge - all drivers have Stripe */}
+          <Badge
+            variant="outline"
+            className="mt-1.5 text-[9px] px-2 py-0 gap-0.5 font-medium border-primary/40 text-primary bg-primary/5"
+          >
+            <Lock className="h-2.5 w-2.5" /> CB sécurisée
+          </Badge>
         </div>
 
         {/* Stats row */}

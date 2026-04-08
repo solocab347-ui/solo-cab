@@ -221,8 +221,10 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           };
         });
 
-        setDrivers(driversWithPrices);
-        setSearchRadius(Math.max(...driversWithPrices.map((driver) => driver.search_radius_used || 5), 5));
+        // Only show drivers with active Stripe Connect on public storefront
+        const stripeFilteredDrivers = driversWithPrices.filter(d => d.stripe_connect_charges_enabled === true);
+        setDrivers(stripeFilteredDrivers);
+        setSearchRadius(Math.max(...(stripeFilteredDrivers.length > 0 ? stripeFilteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
         setError('Erreur de connexion');
