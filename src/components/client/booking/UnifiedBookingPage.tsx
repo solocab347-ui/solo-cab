@@ -1005,7 +1005,8 @@ export function UnifiedBookingPage() {
                                 full_name: regName.trim(),
                                 phone: regPhone.trim(),
                                 user_type: 'client',
-                              });
+                                email: regEmail.trim(),
+                              } as any);
                               await supabase.from('clients').upsert({
                                 user_id: data.user.id,
                                 is_exclusive: false,
