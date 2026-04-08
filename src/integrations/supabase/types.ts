@@ -19731,21 +19731,38 @@ export type Database = {
           total_rides: number
         }[]
       }
-      find_nearby_available_drivers: {
-        Args: {
-          p_exclude_driver_ids: string[]
-          p_limit?: number
-          p_pickup_lat: number
-          p_pickup_lon: number
-          p_radius_km: number
-        }
-        Returns: {
-          company_name: string
-          distance_km: number
-          driver_id: string
-          user_id: string
-        }[]
-      }
+      find_nearby_available_drivers:
+        | {
+            Args: {
+              p_exclude_driver_ids?: string[]
+              p_limit?: number
+              p_pickup_lat: number
+              p_pickup_lon: number
+              p_radius_km?: number
+              p_scheduled_date?: string
+            }
+            Returns: {
+              company_name: string
+              distance_km: number
+              driver_id: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_exclude_driver_ids: string[]
+              p_limit?: number
+              p_pickup_lat: number
+              p_pickup_lon: number
+              p_radius_km: number
+            }
+            Returns: {
+              company_name: string
+              distance_km: number
+              driver_id: string
+              user_id: string
+            }[]
+          }
       find_nearby_drivers:
         | {
             Args: {
