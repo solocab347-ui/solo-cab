@@ -28,6 +28,7 @@ import { saveStorefrontState, loadStorefrontState, type StorefrontState } from '
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
+type SearchMode = 'auto' | 'manual' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ export function UnifiedBookingPage() {
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchMode, setSearchMode] = useState<SearchMode>(null);
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
@@ -159,18 +161,25 @@ export function UnifiedBookingPage() {
     
     const selectId = searchParams.get('select');
     if (selectId) {
-      // From profile page — add this specific driver
       setSelectedDriverIds(prev => {
         const next = new Set(prev);
         next.add(selectId);
         return next;
       });
-    } else if (selectedDriverIds.size === 0) {
+    } else if (selectedDriverIds.size === 0 || searchMode === 'auto') {
       // Auto-select up to 10 closest drivers
       const top10 = drivers.slice(0, 10).map(d => d.driver_id);
       setSelectedDriverIds(new Set(top10));
     }
   }, [searchParams, drivers]);
+
+  // ── Auto mode: when drivers are found and auto-selected, go straight to confirmation ──
+  useEffect(() => {
+    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched) {
+      // Skip manual selection, jump to confirmation
+      setConfirmationStep(true);
+    }
+  }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
   // Strategic places for quick search (airports, stations, monuments)
   const STRATEGIC_PLACES = [
@@ -759,18 +768,29 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            {/* Search button */}
-            <Button
-              className="w-full h-12 text-base font-semibold"
-              onClick={handleSearch}
-              disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
-            >
-              {isGeocoding || isLoading ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
-              ) : (
-                <><Search className="mr-2 h-5 w-5" />Rechercher des chauffeurs</>
-              )}
-            </Button>
+            {/* Dual search buttons */}
+            <div className="space-y-2">
+              <Button
+                className="w-full h-12 text-base font-semibold gap-2"
+                onClick={() => { setSearchMode('auto'); handleSearch(); }}
+                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              >
+                {isGeocoding || isLoading ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
+                ) : (
+                  <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-10 text-sm font-medium gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                onClick={() => { setSearchMode('manual'); handleSearch(); }}
+                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              >
+                <Users className="h-4 w-4" />
+                Choisir mes chauffeurs
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -869,7 +889,7 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
-        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && searchMode === 'manual' && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
             <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
@@ -976,11 +996,25 @@ export function UnifiedBookingPage() {
                 setShowAuthStep(false);
                 setAuthChoice(null);
                 setShowGuestForm(false);
+                if (searchMode === 'auto') {
+                  setSearchMode('manual'); // Switch to manual so they can see cards
+                }
               }}
             >
               <ArrowLeft className="h-4 w-4" />
-              Modifier la sélection
+              {searchMode === 'auto' ? 'Choisir mes chauffeurs' : 'Modifier la sélection'}
             </Button>
+
+            {/* Auto mode info banner */}
+            {searchMode === 'auto' && (
+              <Alert className="border-primary/20 bg-primary/5">
+                <Zap className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-xs">
+                  <strong>Recherche automatique :</strong> Nous avons sélectionné les {selectedCount} chauffeur{selectedCount > 1 ? 's' : ''} les plus proches. 
+                  Le premier à accepter sera votre chauffeur.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Selected drivers summary */}
             <Card className="border-border/50">

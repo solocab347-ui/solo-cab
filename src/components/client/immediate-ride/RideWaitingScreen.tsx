@@ -5,19 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Loader2,
-  X,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Crown,
-  Users,
-  Car,
-  Search,
-  MapPin,
-  RefreshCw,
-  CalendarClock,
+  Loader2, X, CheckCircle2, XCircle, Clock, Crown, Users, Car, Search,
+  MapPin, RefreshCw, CalendarClock, User, Phone,
 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
@@ -91,6 +82,37 @@ export function RideWaitingScreen({
   const [currentTimeoutAt, setCurrentTimeoutAt] = useState(timeoutAt);
   const phaseRef = useRef(phase);
   const isExtendingRef = useRef(false);
+
+  // Contacted drivers list for UI
+  interface ContactedDriver {
+    driver_id: string;
+    driver_name: string;
+    photo_url: string | null;
+    status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  }
+  const [contactedDrivers, setContactedDrivers] = useState<ContactedDriver[]>([]);
+
+  // Poll contacted drivers statuses
+  useEffect(() => {
+    const groupId = requestGroupId || requestId;
+    const fetchDrivers = async () => {
+      const { data } = await supabase
+        .from('ride_requests')
+        .select('selected_driver_id, status, drivers:selected_driver_id(display_name, company_name, profile_photo_url)')
+        .eq('request_group_id', groupId);
+      if (data) {
+        setContactedDrivers(data.map((r: any) => ({
+          driver_id: r.selected_driver_id,
+          driver_name: r.drivers?.display_name || r.drivers?.company_name || 'Chauffeur',
+          photo_url: r.drivers?.profile_photo_url || null,
+          status: r.status as ContactedDriver['status'],
+        })));
+      }
+    };
+    fetchDrivers();
+    const interval = setInterval(fetchDrivers, 3000);
+    return () => clearInterval(interval);
+  }, [requestId, requestGroupId, phase]);
 
   phaseRef.current = phase;
 
@@ -524,6 +546,50 @@ export function RideWaitingScreen({
           )}
         </CardContent>
       </Card>
+
+      {/* Contacted drivers list */}
+      {contactedDrivers.length > 0 && (status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
+        <Card className="border-border/50">
+          <CardContent className="p-3 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Chauffeurs contactés ({contactedDrivers.length})
+            </h4>
+            <div className="space-y-1.5">
+              {contactedDrivers.map((d) => (
+                <div key={d.driver_id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30">
+                  <Avatar className="h-8 w-8 border border-border">
+                    <AvatarImage src={d.photo_url || undefined} />
+                    <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
+                      {d.driver_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 text-sm font-medium truncate">{d.driver_name}</span>
+                  {d.status === 'pending' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/30 text-amber-600">
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" /> En attente
+                    </Badge>
+                  )}
+                  {d.status === 'accepted' && (
+                    <Badge className="text-[10px] gap-1 bg-green-500/15 text-green-600 border-green-500/30">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Accepté
+                    </Badge>
+                  )}
+                  {d.status === 'rejected' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
+                      <XCircle className="h-2.5 w-2.5" /> Refusé
+                    </Badge>
+                  )}
+                  {d.status === 'expired' && (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/30 text-muted-foreground">
+                      <Clock className="h-2.5 w-2.5" /> Pas de réponse
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Route Summary */}
       <Card>
