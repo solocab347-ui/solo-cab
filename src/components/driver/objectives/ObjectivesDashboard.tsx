@@ -60,7 +60,7 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
       />
 
       {/* 3. Progress Overview — inline, no tab needed */}
-      <InlineProgressCards progress={hook.progress} />
+      <InlineProgressCards progress={hook.progress} driverId={driverId} />
 
       {/* 4. Inline Objectives Editor — edit in place */}
       <InlineObjectivesEditor

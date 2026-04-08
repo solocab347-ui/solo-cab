@@ -20295,6 +20295,10 @@ export type Database = {
         Args: { _driver_id: string }
         Returns: string[]
       }
+      get_driver_revenue_details: {
+        Args: { p_driver_id: string; p_period: string }
+        Returns: Json
+      }
       get_driver_solocab_day_stats: {
         Args: { p_day: string; p_driver_id: string }
         Returns: {
