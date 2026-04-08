@@ -941,7 +941,7 @@ export function UnifiedBookingPage() {
         )}
 
         {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
-        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && searchMode === 'manual' && (
+        {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (searchMode === 'manual' || searchMode === 'auto') && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
             <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
