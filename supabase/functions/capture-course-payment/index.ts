@@ -117,8 +117,9 @@ serve(async (req) => {
       const isCash = paymentMethod === "Espèces" || paymentMethod === "cash";
       const totalAmount = course.final_payment_amount || course.guest_estimated_price || 0;
 
-      const CASH_FEE_CENTS = 50;
-      const solocabFee = CASH_FEE_CENTS / 100;
+      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
+      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      const solocabFee = solocabFeeCents / 100;
       const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
 
       await supabaseClient
@@ -136,31 +137,29 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      // Unified source of truth: finance ledgers are populated only from payments
-      if (isCash) {
-        try {
-          await supabaseClient.from("payments").insert({
+      // Unified source of truth: payments table — use "succeeded" so trigger fires
+      try {
+        await supabaseClient.from("payments").insert({
+          course_id,
+          driver_id: course.driver_id,
+          client_id: course.client_id,
+          amount: totalAmount,
+          captured_amount: totalAmount,
+          application_fee_amount: solocabFee,
+          stripe_fee_amount: 0,
+          net_to_driver: netToDriver,
+          status: "succeeded",
+          payment_type: "course_payment",
+          capture_method: "manual",
+          payment_method: isCash ? "cash" : paymentMethod,
+          captured_at: new Date().toISOString(),
+          metadata: {
+            flow: isCash ? "cash_manual" : "stripe_manual_tpe",
             course_id,
-            driver_id: course.driver_id,
-            client_id: course.client_id,
-            amount: totalAmount,
-            captured_amount: totalAmount,
-            application_fee_amount: solocabFee,
-            stripe_fee_amount: 0,
-            net_to_driver: netToDriver,
-            status: "succeeded",
-            payment_type: "course_payment",
-            capture_method: "manual",
-            payment_method: "cash",
-            captured_at: new Date().toISOString(),
-            metadata: {
-              flow: "manual_cash_completion",
-              course_id,
-            },
-          });
-        } catch (paymentErr: any) {
-          logStep("Unified payment record creation failed", { error: paymentErr.message });
-        }
+          },
+        });
+      } catch (paymentErr: any) {
+        logStep("Unified payment record creation failed", { error: paymentErr.message });
       }
 
       // Create invoice
