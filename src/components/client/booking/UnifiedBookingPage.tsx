@@ -182,11 +182,14 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found and auto-selected, go straight to confirmation ──
+  // ── Auto mode: when drivers are found and auto-selected, show carousel then auto-confirm after delay ──
+  const autoConfirmTriggered = useRef(false);
   useEffect(() => {
-    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched) {
-      // Skip manual selection, jump to confirmation
-      setConfirmationStep(true);
+    if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
+      autoConfirmTriggered.current = true;
+      // Show carousel for 2s then auto-switch to confirmation
+      const timer = setTimeout(() => setConfirmationStep(true), 2000);
+      return () => clearTimeout(timer);
     }
   }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
