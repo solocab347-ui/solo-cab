@@ -443,14 +443,6 @@ export function UnifiedBookingPage() {
     }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
 
-  const toggleDriverSelection = (driverId: string) => {
-    setSelectedDriverIds(prev => {
-      const next = new Set(prev);
-      if (next.has(driverId)) next.delete(driverId);
-      else next.add(driverId);
-      return next;
-    });
-  };
 
   // Submit ride request
   const handleSubmitRequest = async () => {
