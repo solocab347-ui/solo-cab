@@ -386,7 +386,7 @@ export function RideWaitingScreen({
 
           {/* Status text */}
           <AnimatePresence mode="wait">
-            {(status === 'searching' || status === 'extended_searching') && (
+            {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
               <motion.div
                 key={`text-${phase}`}
                 initial={{ y: 10, opacity: 0 }}
