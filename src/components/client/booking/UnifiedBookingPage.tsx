@@ -78,6 +78,14 @@ export function UnifiedBookingPage() {
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
+  // Waiting screen state
+  const [showWaitingScreen, setShowWaitingScreen] = useState(false);
+  const [waitingRequestId, setWaitingRequestId] = useState<string>('');
+  const [waitingGroupId, setWaitingGroupId] = useState<string>('');
+  const [waitingDriversData, setWaitingDriversData] = useState<NearbyDriver[]>([]);
+  const [waitingTimeoutAt, setWaitingTimeoutAt] = useState<string>('');
+  const [waitingEstimatedPrice, setWaitingEstimatedPrice] = useState<number>(0);
+
   // Horizontal scroll ref for driver gallery
   const driverScrollRef = useRef<HTMLDivElement>(null);
 
