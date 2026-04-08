@@ -768,18 +768,29 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            {/* Search button */}
-            <Button
-              className="w-full h-12 text-base font-semibold"
-              onClick={handleSearch}
-              disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
-            >
-              {isGeocoding || isLoading ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
-              ) : (
-                <><Search className="mr-2 h-5 w-5" />Rechercher des chauffeurs</>
-              )}
-            </Button>
+            {/* Dual search buttons */}
+            <div className="space-y-2">
+              <Button
+                className="w-full h-12 text-base font-semibold gap-2"
+                onClick={() => { setSearchMode('auto'); handleSearch(); }}
+                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              >
+                {isGeocoding || isLoading ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
+                ) : (
+                  <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-10 text-sm font-medium gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                onClick={() => { setSearchMode('manual'); handleSearch(); }}
+                disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              >
+                <Users className="h-4 w-4" />
+                Choisir mes chauffeurs
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
