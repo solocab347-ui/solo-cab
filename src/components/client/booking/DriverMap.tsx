@@ -265,24 +265,37 @@ export function DriverMap({
       ).addTo(routeLayer);
     }
 
-    // Fit bounds
-    const bounds = L.latLngBounds([[clientPosition.lat, clientPosition.lng]]);
+    // Fit bounds — prioritize client position + nearby drivers
+    const nearbyBounds = L.latLngBounds([[clientPosition.lat, clientPosition.lng]]);
 
-    if (destinationPosition) {
-      bounds.extend([destinationPosition.lat, destinationPosition.lng]);
-    }
-
+    // Add driver positions to bounds (they are close to client)
     drivers.forEach((driver) => {
       if (driver.latitude != null && driver.longitude != null) {
-        bounds.extend([driver.latitude, driver.longitude]);
+        nearbyBounds.extend([driver.latitude, driver.longitude]);
       }
     });
 
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, {
-        padding: [50, 50],
-        maxZoom: destinationPosition || drivers.length > 0 ? 13 : searchRadius && searchRadius <= 5 ? 12 : 11,
-      });
+    if (nearbyBounds.isValid()) {
+      if (drivers.length > 0) {
+        // Focus on client + drivers — user can zoom out to see destination
+        map.fitBounds(nearbyBounds, {
+          padding: [60, 60],
+          maxZoom: 14,
+        });
+      } else if (destinationPosition) {
+        // No drivers yet — show full route overview
+        const fullBounds = nearbyBounds.extend([destinationPosition.lat, destinationPosition.lng]);
+        map.fitBounds(fullBounds, {
+          padding: [50, 50],
+          maxZoom: 13,
+        });
+      } else {
+        // Only client position
+        map.fitBounds(nearbyBounds, {
+          padding: [50, 50],
+          maxZoom: searchRadius && searchRadius <= 5 ? 13 : 12,
+        });
+      }
     }
   }, [clientPosition, destinationPosition, drivers, searchRadius]);
 
