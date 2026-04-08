@@ -33,42 +33,49 @@ export function UnifiedBookingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { token: mapboxToken, isLoading: isTokenLoading, error: mapboxError } = useMapboxToken();
-  const [mode, setMode] = useState<BookingMode>('reservation');
+  // ── Restore state from sessionStorage ──
+  const savedState = useRef(loadStorefrontState());
+  const ss = savedState.current;
+
+  const [mode, setMode] = useState<BookingMode>(ss?.mode || 'reservation');
   
   // Addresses
-  const [pickupAddress, setPickupAddress] = useState('');
-  const [destinationAddress, setDestinationAddress] = useState('');
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pickupAddress, setPickupAddress] = useState(ss?.pickupAddress || '');
+  const [destinationAddress, setDestinationAddress] = useState(ss?.destinationAddress || '');
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(ss?.pickupCoords || null);
+  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(ss?.destCoords || null);
   
   // Schedule
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduledDate, setScheduledDate] = useState(ss?.scheduledDate || '');
+  const [scheduledTime, setScheduledTime] = useState(ss?.scheduledTime || '');
   
   // Search state
-  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
-  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(ss?.routeDistanceKm ?? null);
+  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(ss?.routeDurationMin ?? null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(20);
+  const [hasSearched, setHasSearched] = useState(ss?.hasSearched || false);
+  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(ss?.maxSearchRadiusKm || 20);
   
   // Driver selection
-  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set());
+  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set(ss?.selectedDriverIds || []));
   const [profileDriverId, setProfileDriverId] = useState<string | null>(null);
   
   // Guest info
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState(ss?.guestName || '');
+  const [guestPhone, setGuestPhone] = useState(ss?.guestPhone || '');
+  const [guestEmail, setGuestEmail] = useState(ss?.guestEmail || '');
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [showAuthStep, setShowAuthStep] = useState(false);
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
+  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
+
+  // Horizontal scroll ref for driver gallery
+  const driverScrollRef = useRef<HTMLDivElement>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -77,6 +84,41 @@ export function UnifiedBookingPage() {
   const [showDestSuggestions, setShowDestSuggestions] = useState(false);
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
+
+  // ── Persist state to sessionStorage on every relevant change ──
+  useEffect(() => {
+    saveStorefrontState({
+      pickupAddress, destinationAddress, pickupCoords, destCoords,
+      mode, scheduledDate, scheduledTime, maxSearchRadiusKm,
+      clientPaymentMethod, routeDistanceKm, routeDurationMin, hasSearched,
+      selectedDriverIds: Array.from(selectedDriverIds),
+      guestName, guestPhone, guestEmail,
+    });
+  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode,
+      scheduledDate, scheduledTime, maxSearchRadiusKm, clientPaymentMethod,
+      routeDistanceKm, routeDurationMin, hasSearched, selectedDriverIds,
+      guestName, guestPhone, guestEmail]);
+
+  // ── Auto re-search when returning from a profile page with saved state ──
+  const hasAutoSearched = useRef(false);
+  useEffect(() => {
+    if (ss?.hasSearched && !hasAutoSearched.current && pickupCoords && destCoords && clientPaymentMethod && mapboxToken) {
+      hasAutoSearched.current = true;
+      // Re-trigger search with saved params
+      let schedDate: Date | undefined;
+      if (mode === 'reservation' && scheduledDate && scheduledTime) {
+        schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+      }
+      searchNearbyDrivers(
+        pickupCoords.lat, pickupCoords.lng,
+        routeDistanceKm || undefined,
+        routeDurationMin || undefined,
+        schedDate,
+        pickupAddress, destinationAddress,
+        maxSearchRadiusKm, mode
+      );
+    }
+  }, [mapboxToken]); // Only run once when token becomes available
 
   // Auto-check if authenticated user already has a saved card
   useEffect(() => {
