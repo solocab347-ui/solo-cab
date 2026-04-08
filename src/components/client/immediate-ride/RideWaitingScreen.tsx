@@ -19,9 +19,9 @@ import {
   CalendarClock,
 } from 'lucide-react';
 
-export type WaitingStatus = 'searching' | 'transition' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
+export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
-type SearchPhase = 'selected' | 'nearby' | 'extended';
+type SearchPhase = 'selected' | 'relaunch' | 'nearby' | 'extended';
 
 interface RideWaitingScreenProps {
   requestId: string;
@@ -38,9 +38,10 @@ interface RideWaitingScreenProps {
   onExpired: () => void;
 }
 
-const PHASE_CONFIG = {
-  selected: { timeout: 60, nextRadius: 5, nextPhase: 'nearby' as SearchPhase },
-  nearby: { timeout: 60, nextRadius: 10, nextPhase: 'extended' as SearchPhase },
+const PHASE_CONFIG: Record<SearchPhase, { timeout: number; nextRadius: number; nextPhase: SearchPhase | null; relaunchFirst?: boolean }> = {
+  selected: { timeout: 60, nextRadius: 5, nextPhase: 'relaunch', relaunchFirst: true },
+  relaunch: { timeout: 30, nextRadius: 5, nextPhase: 'nearby' },
+  nearby: { timeout: 60, nextRadius: 10, nextPhase: 'extended' },
   extended: { timeout: 60, nextRadius: 20, nextPhase: null },
 };
 
@@ -49,6 +50,11 @@ const PHASE_MESSAGES: Record<SearchPhase, { title: string; subtitle: string; ico
     title: 'Recherche de votre chauffeur…',
     subtitle: '',
     icon: <Car className="h-10 w-10 text-primary" />,
+  },
+  relaunch: {
+    title: 'Relance en cours…',
+    subtitle: 'Certains chauffeurs n\'ont pas répondu. Nous les recontactons.',
+    icon: <RefreshCw className="h-10 w-10 text-primary" />,
   },
   nearby: {
     title: 'Recherche élargie en cours…',
@@ -132,26 +138,58 @@ export function RideWaitingScreen({
       // Wait 2 seconds showing transition message
       setTimeout(async () => {
         try {
+          // RELAUNCH PHASE: relaunch non-responders only (not rejected)
+          if (config.relaunchFirst) {
+            const { data: relaunchData, error: relaunchErr } = await supabase.functions.invoke('extended-driver-search', {
+              body: {
+                request_group_id: requestGroupId || requestId,
+                relaunch_non_responders: true,
+              },
+            });
+
+            if (relaunchErr) throw relaunchErr;
+
+            if (relaunchData?.already_accepted) {
+              isExtendingRef.current = false;
+              return;
+            }
+
+            if (relaunchData?.new_requests > 0) {
+              // Some non-responders were relaunched → go to relaunch phase
+              setPhase('relaunch');
+              setExtendedDriverCount(relaunchData.drivers_relaunched || 0);
+              setCurrentTimeoutAt(relaunchData.timeout_at || new Date(Date.now() + 30000).toISOString());
+              setStatus('relaunching');
+              isExtendingRef.current = false;
+              return;
+            }
+
+            // No one to relaunch (all rejected) → skip to nearby search
+          }
+
+          // STANDARD EXTENDED SEARCH: find new drivers at wider radius
           const { data, error } = await supabase.functions.invoke('extended-driver-search', {
             body: {
               request_group_id: requestGroupId || requestId,
               radius_km: config.nextRadius,
-              search_phase: config.nextPhase,
+              search_phase: config.nextPhase === 'relaunch' ? 'nearby' : config.nextPhase,
             },
           });
 
           if (error) throw error;
 
           if (data?.already_accepted) {
-            return; // Will be handled by realtime
+            isExtendingRef.current = false;
+            return;
           }
 
+          const targetPhase = config.nextPhase === 'relaunch' ? 'nearby' : config.nextPhase;
+
           if (data?.no_drivers || data?.new_requests === 0) {
-            // No drivers found at this radius, try next phase immediately
-            const nextConfig = PHASE_CONFIG[config.nextPhase!];
-            if (nextConfig.nextPhase) {
-              setPhase(config.nextPhase!);
-              // Try wider radius
+            // No drivers found at this radius, try next phase
+            const nextConfig = PHASE_CONFIG[targetPhase!];
+            if (nextConfig?.nextPhase) {
+              setPhase(targetPhase!);
               const { data: data2 } = await supabase.functions.invoke('extended-driver-search', {
                 body: {
                   request_group_id: requestGroupId || requestId,
@@ -179,7 +217,7 @@ export function RideWaitingScreen({
             return;
           }
 
-          setPhase(config.nextPhase!);
+          setPhase(targetPhase!);
           setExtendedDriverCount(data?.drivers_found || 0);
           setCurrentTimeoutAt(data?.timeout_at || new Date(Date.now() + 60000).toISOString());
           setStatus('extended_searching');
@@ -266,7 +304,7 @@ export function RideWaitingScreen({
     <div className="space-y-6">
       <Card className="overflow-hidden border-0 shadow-xl">
         {/* Progress bar */}
-        {(status === 'searching' || status === 'extended_searching') && (
+        {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
           <div className="h-1.5 bg-muted">
             <motion.div
               className={`h-full ${barColor}`}
@@ -279,7 +317,7 @@ export function RideWaitingScreen({
         <CardContent className="pt-8 pb-8 text-center space-y-5">
           <AnimatePresence mode="wait">
             {/* SEARCHING */}
-            {(status === 'searching' || status === 'extended_searching') && (
+            {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
               <motion.div
                 key={`searching-${phase}`}
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -348,7 +386,7 @@ export function RideWaitingScreen({
 
           {/* Status text */}
           <AnimatePresence mode="wait">
-            {(status === 'searching' || status === 'extended_searching') && (
+            {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
               <motion.div
                 key={`text-${phase}`}
                 initial={{ y: 10, opacity: 0 }}
@@ -431,7 +469,7 @@ export function RideWaitingScreen({
           </AnimatePresence>
 
           {/* Timer */}
-          {(status === 'searching' || status === 'extended_searching') && (
+          {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
             <div className="flex items-center justify-center gap-2">
               <Clock className={`h-4 w-4 ${timerColor}`} />
               <span className={`text-sm font-mono font-bold ${timerColor}`}>
@@ -455,6 +493,12 @@ export function RideWaitingScreen({
                 </Badge>
               )
             )}
+            {phase === 'relaunch' && (
+              <Badge className="gap-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Relance ({extendedDriverCount} chauffeur{extendedDriverCount > 1 ? 's' : ''})
+              </Badge>
+            )}
             {phase === 'nearby' && (
               <Badge className="gap-1.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30">
                 <Search className="h-3.5 w-3.5" />
@@ -470,9 +514,10 @@ export function RideWaitingScreen({
           </div>
 
           {/* Phase progress dots */}
-          {(status === 'searching' || status === 'extended_searching' || status === 'transition') && (
+          {(status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
             <div className="flex justify-center gap-2">
               <div className={`w-2 h-2 rounded-full ${phase === 'selected' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+              <div className={`w-2 h-2 rounded-full ${phase === 'relaunch' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
               <div className={`w-2 h-2 rounded-full ${phase === 'nearby' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
               <div className={`w-2 h-2 rounded-full ${phase === 'extended' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
             </div>
