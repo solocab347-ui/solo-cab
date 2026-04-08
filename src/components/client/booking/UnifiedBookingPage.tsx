@@ -1270,90 +1270,27 @@ export function UnifiedBookingPage() {
               </CardContent>
             </Card>
 
-            {/* Auth options for non-authenticated users */}
-            {!user && !authChoice && (
+            {/* Auth options - only if guest info wasn't already collected in form */}
+            {!user && !guestName.trim() && (
               <Card className="border-primary/30 shadow-lg">
                 <CardContent className="p-4 space-y-3">
-                  <h4 className="font-semibold text-foreground text-base text-center">Comment souhaitez-vous continuer ?</h4>
-                  <p className="text-xs text-muted-foreground text-center">Choisissez une option pour finaliser votre demande</p>
+                  <h4 className="font-semibold text-foreground text-base text-center">Complétez vos informations</h4>
                   <div className="space-y-2">
-                    <Button variant="default" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => { setAuthChoice('guest'); setShowGuestForm(true); }}>
-                      <UserX className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Commander sans inscription</div>
-                        <div className="text-[10px] opacity-80 font-normal">Rapide, sans compte</div>
-                      </div>
+                    <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                    <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                    <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}>
+                      <UserPlus className="h-3 w-3 mr-1" />Créer un compte
                     </Button>
-                    <Button variant="outline" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => navigate('/register-client', { state: { returnTo: '/chauffeurs' } })}>
-                      <UserPlus className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Créer un compte</div>
-                        <div className="text-[10px] text-muted-foreground font-normal">Suivez vos courses, fidélité</div>
-                      </div>
-                    </Button>
-                    <Button variant="outline" className="w-full h-12 justify-start gap-3 text-sm font-medium" onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}>
-                      <LogIn className="h-5 w-5 shrink-0" />
-                      <div className="text-left">
-                        <div>Se connecter</div>
-                        <div className="text-[10px] text-muted-foreground font-normal">J'ai déjà un compte</div>
-                      </div>
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate('/login', { state: { returnTo: '/chauffeurs' } })}>
+                      <LogIn className="h-3 w-3 mr-1" />Se connecter
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            {/* Guest form */}
-            {!user && showGuestForm && authChoice === 'guest' && (
-              <Card className="border-primary/30">
-                <CardContent className="p-4 space-y-3">
-                  <h4 className="font-semibold text-foreground text-sm">Vos coordonnées</h4>
-                  <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
-                  <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
-                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Card step: show for card payments when card not yet verified */}
-            {(() => {
-              const selectedDriversList = drivers.filter(d => selectedDriverIds.has(d.driver_id));
-              const hasStripeDriver = selectedDriversList.some(d => d.stripe_connect_charges_enabled);
-              const needsCard = clientPaymentMethod === 'card' && hasStripeDriver && !cardVerifiedForBooking;
-              const isGuest = !user && authChoice === 'guest';
-              const isRegistered = !!user;
-              const guestInfoReady = isGuest && guestName.trim() && guestPhone.trim() && guestEmail?.trim();
-              
-              if (!needsCard) return null;
-              
-              // For guests: only show card form once guest info is complete
-              if (isGuest && !guestInfoReady) {
-                return (
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded-lg">
-                    <CreditCard className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span>Remplissez vos coordonnées (nom, téléphone, email) pour enregistrer votre carte bancaire.</span>
-                  </div>
-                );
-              }
-              
-              if (isRegistered || guestInfoReady) {
-                return (
-                  <BookingCardStep
-                    isAuthenticated={isRegistered}
-                    guestName={guestName}
-                    guestEmail={guestEmail}
-                    guestPhone={guestPhone}
-                    estimatedPrice={selectedDriversList[0]?.estimated_price}
-                    onCardReady={(info) => {
-                      setCardVerifiedForBooking(true);
-                      setSavedCardInfo(info);
-                      toast.success('Carte vérifiée ! Vous pouvez envoyer votre demande.');
-                    }}
-                  />
-                );
-              }
-              return null;
-            })()}
           </div>
         )}
       </main>
