@@ -553,6 +553,17 @@ export function UnifiedBookingPage() {
     return drivers;
   })();
 
+  // Auto-scroll carousel in auto mode
+  useEffect(() => {
+    if (searchMode !== 'auto' || confirmationStep || filteredDrivers.length <= 1) return;
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % filteredDrivers.length;
+      driverScrollRef.current?.scrollTo({ left: idx * 180, behavior: 'smooth' });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [searchMode, confirmationStep, filteredDrivers.length]);
+
   const selectedCount = selectedDriverIds.size;
   const lowestPrice = filteredDrivers
     .filter(d => selectedDriverIds.has(d.driver_id))
