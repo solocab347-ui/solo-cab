@@ -420,10 +420,12 @@ serve(async (req) => {
       const paymentMethod = course.payment_method || course.payment_method_requested || "cash";
       const isCash = paymentMethod === "cash" || paymentMethod === "Espèces";
 
-      // Commission SoloCab: 0.50€ for cash courses (no Stripe fees)
-      const CASH_FEE_CENTS = 50;
-      const solocabFee = CASH_FEE_CENTS / 100;
-      const netToDriver = Math.max(0, Math.round((totalAmount - solocabFee) * 100) / 100);
+      // Commission SoloCab: 0.50€ for cash, 0.80€ for card/stripe
+      const solocabFeeCents = isCash ? 50 : SOLOCAB_FEE_CENTS;
+      const solocabFee = solocabFeeCents / 100;
+      const stripeFee = 0; // No Stripe fees for manual payments
+      const totalFees = solocabFee;
+      const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
       await supabaseClient
         .from("courses")
@@ -434,23 +436,32 @@ serve(async (req) => {
           final_payment_amount: totalAmount,
           course_finalized_by_driver_at: new Date().toISOString(),
           solocab_fee_amount: solocabFee,
-          stripe_fee_amount: 0,
-          total_fees_amount: solocabFee,
+          stripe_fee_amount: stripeFee,
+          total_fees_amount: totalFees,
           net_amount_to_driver: netToDriver,
         })
         .eq("id", course_id);
 
-      // Record in payments table
+      // Record in payments table — MUST use "succeeded" for cash so trigger fires
+      // For stripe manual (TPE), also use "succeeded" since driver collected payment
       await supabaseClient.from("payments").insert({
         course_id,
         driver_id: course.driver_id,
         client_id: course.client_id,
         amount: totalAmount,
-        captured_amount: isCash ? totalAmount : 0,
+        captured_amount: totalAmount,
         application_fee_amount: solocabFee,
+        stripe_fee_amount: stripeFee,
         net_to_driver: netToDriver,
-        status: isCash ? "succeeded" : "pending",
-        payment_method: paymentMethod,
+        status: "succeeded",
+        payment_type: "course_payment",
+        capture_method: "manual",
+        payment_method: isCash ? "cash" : paymentMethod,
+        captured_at: new Date().toISOString(),
+        metadata: {
+          flow: isCash ? "cash_manual" : "stripe_manual_tpe",
+          course_id,
+        },
       });
 
       // Create facture
