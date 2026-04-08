@@ -7337,6 +7337,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          accept_future_bookings: boolean | null
           accepted_payment_methods: string[] | null
           ai_coaching_recommendations: string | null
           airport_surcharge: number | null
@@ -7518,6 +7519,7 @@ export type Database = {
           working_sectors: string[] | null
         }
         Insert: {
+          accept_future_bookings?: boolean | null
           accepted_payment_methods?: string[] | null
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
@@ -7699,6 +7701,7 @@ export type Database = {
           working_sectors?: string[] | null
         }
         Update: {
+          accept_future_bookings?: boolean | null
           accepted_payment_methods?: string[] | null
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
