@@ -972,26 +972,8 @@ export function UnifiedBookingPage() {
             </div>
 
 
-            {/* Navigation arrows + scrollable container */}
-            <div className="relative">
-              {filteredDrivers.length >= 2 && (
-                <>
-                  <button
-                    onClick={() => driverScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
-                    aria-label="Précédent"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => driverScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
-                    aria-label="Suivant"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+            {/* Auto-scrolling carousel */}
+            <div className="relative overflow-hidden">
               <div
                 ref={driverScrollRef}
                 className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
@@ -1002,8 +984,8 @@ export function UnifiedBookingPage() {
                     <DriverResultCard
                       driver={driver}
                       routeDistanceKm={routeDistanceKm || undefined}
-                      isSelected={selectedDriverIds.has(driver.driver_id)}
-                      onToggleSelect={toggleDriverSelection}
+                      isSelected={true}
+                      onToggleSelect={() => {}}
                       onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
                       rank={index + 1}
                       clientPaymentMethod={clientPaymentMethod}
