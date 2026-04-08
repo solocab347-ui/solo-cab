@@ -76,6 +76,11 @@ export function UnifiedBookingPage() {
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
+  // Pre-search price range (fetched silently when addresses are ready)
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null);
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
+  const priceRangeFetched = useRef<string>('');
+
   // Waiting screen state
   const [showWaitingScreen, setShowWaitingScreen] = useState(false);
   const [waitingRequestId, setWaitingRequestId] = useState<string>('');
