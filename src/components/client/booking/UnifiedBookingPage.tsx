@@ -448,6 +448,57 @@ export function UnifiedBookingPage() {
     }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
 
+  // ── Auto-fetch price range when both addresses are set (silent pre-search) ──
+  useEffect(() => {
+    if (!pickupCoords || !destCoords || !mapboxToken) return;
+    const key = `${pickupCoords.lat},${pickupCoords.lng}-${destCoords.lat},${destCoords.lng}-${mode}-${scheduledDate}-${scheduledTime}`;
+    if (priceRangeFetched.current === key) return;
+    priceRangeFetched.current = key;
+
+    const fetchPriceRange = async () => {
+      setIsFetchingPrices(true);
+      try {
+        // 1) Get route distance
+        const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoords.lng},${pickupCoords.lat};${destCoords.lng},${destCoords.lat}?access_token=${mapboxToken}`);
+        let dist: number | null = null;
+        let dur: number | null = null;
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          dist = dirData.routes?.[0]?.distance ? dirData.routes[0].distance / 1000 : null;
+          dur = dirData.routes?.[0]?.duration ? dirData.routes[0].duration / 60 : null;
+        }
+        if (dist) { setRouteDistanceKm(dist); setRouteDurationMin(dur); }
+
+        // 2) Find nearby drivers (silent)
+        let schedDate: Date | undefined;
+        if (mode === 'reservation' && scheduledDate && scheduledTime) {
+          schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+        }
+        await searchNearbyDrivers(
+          pickupCoords.lat, pickupCoords.lng,
+          dist || undefined, dur || undefined,
+          schedDate, pickupAddress, destinationAddress,
+          maxSearchRadiusKm, mode
+        );
+      } catch (err) {
+        console.warn('Pre-search price fetch failed:', err);
+      } finally {
+        setIsFetchingPrices(false);
+      }
+    };
+    fetchPriceRange();
+  }, [pickupCoords, destCoords, mapboxToken, mode, scheduledDate, scheduledTime, pickupAddress, destinationAddress, maxSearchRadiusKm, searchNearbyDrivers]);
+
+  // ── Compute price range from fetched drivers ──
+  useEffect(() => {
+    if (drivers.length === 0) { setPriceRange(null); return; }
+    const prices = drivers
+      .filter(d => d.estimated_price && d.estimated_price > 0)
+      .map(d => d.estimated_price!);
+    if (prices.length === 0) { setPriceRange(null); return; }
+    setPriceRange({ min: Math.min(...prices), max: Math.max(...prices) });
+  }, [drivers]);
+
 
   // Submit ride request
   const handleSubmitRequest = async () => {
