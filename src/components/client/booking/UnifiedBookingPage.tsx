@@ -18,6 +18,7 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { DriverResultCard } from './DriverResultCard';
 import { DriverMap } from './DriverMap';
 import { BookingCardStep } from './BookingCardStep';
+import { RideWaitingScreen } from '@/components/client/immediate-ride/RideWaitingScreen';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +77,14 @@ export function UnifiedBookingPage() {
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
+
+  // Waiting screen state
+  const [showWaitingScreen, setShowWaitingScreen] = useState(false);
+  const [waitingRequestId, setWaitingRequestId] = useState<string>('');
+  const [waitingGroupId, setWaitingGroupId] = useState<string>('');
+  const [waitingDriversData, setWaitingDriversData] = useState<NearbyDriver[]>([]);
+  const [waitingTimeoutAt, setWaitingTimeoutAt] = useState<string>('');
+  const [waitingEstimatedPrice, setWaitingEstimatedPrice] = useState<number>(0);
 
   // Horizontal scroll ref for driver gallery
   const driverScrollRef = useRef<HTMLDivElement>(null);
@@ -499,18 +508,22 @@ export function UnifiedBookingPage() {
       if (insertError) throw insertError;
 
       const isMulti = selectedDrivers.length > 1;
+      const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
+      const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);
+
+      // Show waiting screen inline instead of navigating away
+      setWaitingRequestId(data?.[0]?.id || '');
+      setWaitingGroupId(requestGroupId);
+      setWaitingDriversData(selectedDrivers);
+      setWaitingTimeoutAt(timeoutIso);
+      setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
+      setShowWaitingScreen(true);
+
       toast.success(
         isMulti 
-          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs ! Le premier à répondre sera assigné. Le montant sera bloqué sur votre carte après acceptation.`
-          : 'Demande envoyée ! Vous serez notifié dès que le chauffeur accepte.'
+          ? `Demande envoyée à ${selectedDrivers.length} chauffeurs !`
+          : 'Demande envoyée !'
       );
-
-      // Navigate based on auth state
-      if (user) {
-        navigate('/client-dashboard');
-      } else {
-        navigate('/');
-      }
     } catch (err) {
       console.error('Submit error:', err);
       toast.error('Erreur lors de l\'envoi de la demande');
@@ -570,6 +583,42 @@ export function UnifiedBookingPage() {
         </div>
       </header>
 
+      {/* WAITING SCREEN - shown after submitting request */}
+      {showWaitingScreen ? (
+        <main className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl space-y-4 pb-8">
+          <RideWaitingScreen
+            requestId={waitingRequestId}
+            requestGroupId={waitingGroupId}
+            requestType={waitingDriversData.length === 1 ? 'exclusive' : 'multi'}
+            driverCount={waitingDriversData.length}
+            pickupAddress={pickupAddress}
+            destinationAddress={destinationAddress}
+            estimatedPrice={waitingEstimatedPrice}
+            driverName={waitingDriversData.length === 1 ? (waitingDriversData[0]?.display_name || waitingDriversData[0]?.company_name || 'Chauffeur') : undefined}
+            timeoutAt={waitingTimeoutAt}
+            contactedDriversData={waitingDriversData}
+            routeDistanceKm={routeDistanceKm || undefined}
+            clientPaymentMethod={clientPaymentMethod}
+            onCancel={() => {
+              setShowWaitingScreen(false);
+              setConfirmationStep(false);
+              toast.info('Demande annulée');
+            }}
+            onAccepted={(driverName) => {
+              toast.success(`${driverName} a accepté votre course ! 🎉`);
+              setTimeout(() => {
+                if (user) navigate('/client-dashboard');
+                else navigate('/');
+              }, 3000);
+            }}
+            onExpired={() => {
+              toast.error('Aucun chauffeur disponible. Réessayez.');
+              setShowWaitingScreen(false);
+              setConfirmationStep(false);
+            }}
+          />
+        </main>
+      ) : (
       <main className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl space-y-4 pb-32">
         {/* Mode Toggle */}
         <div className="flex gap-2 p-1 bg-muted/50 rounded-xl border border-border/50">
@@ -1222,9 +1271,10 @@ export function UnifiedBookingPage() {
           </div>
         )}
       </main>
+      )}
 
-      {/* Fixed bottom CTA */}
-      {selectedCount > 0 && (
+      {/* Fixed bottom CTA - hidden when waiting screen is shown */}
+      {!showWaitingScreen && selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
           <div className="container mx-auto max-w-4xl">
             <Button
