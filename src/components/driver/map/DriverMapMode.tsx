@@ -200,14 +200,16 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     }
 
     if (!markerRef.current) {
-      markerRef.current = L.marker(newPos, { icon: CAR_ICON, zIndexOffset: 1000 }).addTo(mapRef.current);
+      markerRef.current = L.marker(newPos, { icon: createCarIcon(), zIndexOffset: 1000 }).addTo(mapRef.current);
       lastGps.current = { lat: latitude, lng: longitude };
       mapRef.current.setView(newPos, 16, { animate: true });
     } else {
       const prev = lastGps.current;
       if (prev) {
         const heading = calcHeading(prev, { lat: latitude, lng: longitude });
-        updateRotation(heading);
+        if (heading !== null) {
+          updateRotation(heading);
+        }
       }
       lastGps.current = { lat: latitude, lng: longitude };
       markerRef.current.setLatLng(newPos);
