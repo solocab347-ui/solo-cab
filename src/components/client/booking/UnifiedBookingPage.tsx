@@ -31,6 +31,7 @@ type ClientPaymentMethod = 'card' | 'cash' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { token: mapboxToken, isLoading: isTokenLoading, error: mapboxError } = useMapboxToken();
   // ── Restore state from sessionStorage ──
