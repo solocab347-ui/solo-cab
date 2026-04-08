@@ -576,48 +576,124 @@ export function RideWaitingScreen({
         </CardContent>
       </Card>
 
-      {/* Contacted drivers list */}
-      {contactedDrivers.length > 0 && (status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
-        <Card className="border-border/50">
-          <CardContent className="p-3 space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Chauffeurs contactés ({contactedDrivers.length})
-            </h4>
-            <div className="space-y-1.5">
-              {contactedDrivers.map((d) => (
-                <div key={d.driver_id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30">
-                  <Avatar className="h-8 w-8 border border-border">
-                    <AvatarImage src={d.photo_url || undefined} />
-                    <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
-                      {d.driver_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="flex-1 text-sm font-medium truncate">{d.driver_name}</span>
-                  {d.status === 'pending' && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/30 text-amber-600">
-                      <Loader2 className="h-2.5 w-2.5 animate-spin" /> En attente
-                    </Badge>
-                  )}
-                  {d.status === 'accepted' && (
-                    <Badge className="text-[10px] gap-1 bg-green-500/15 text-green-600 border-green-500/30">
-                      <CheckCircle2 className="h-2.5 w-2.5" /> Accepté
-                    </Badge>
-                  )}
-                  {d.status === 'rejected' && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
-                      <XCircle className="h-2.5 w-2.5" /> Refusé
-                    </Badge>
-                  )}
-                  {d.status === 'expired' && (
-                    <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/30 text-muted-foreground">
-                      <Clock className="h-2.5 w-2.5" /> Pas de réponse
-                    </Badge>
-                  )}
-                </div>
-              ))}
+      {/* Animated driver cards carousel */}
+      {(status === 'searching' || status === 'extended_searching' || status === 'relaunching' || status === 'transition') && (
+        <>
+          {contactedDriversData && contactedDriversData.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Chauffeurs contactés ({contactedDriversData.length})
+                </h4>
+                {contactedDriversData.length >= 2 && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => carouselRef.current?.scrollBy({ left: -180, behavior: 'smooth' })}
+                      className="w-7 h-7 rounded-full bg-background/90 border border-border shadow flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => carouselRef.current?.scrollBy({ left: 180, behavior: 'smooth' })}
+                      className="w-7 h-7 rounded-full bg-background/90 border border-border shadow flex items-center justify-center hover:bg-accent transition-colors"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div
+                ref={carouselRef}
+                className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
+                {contactedDriversData.map((driver, index) => {
+                  // Find status from polled data
+                  const driverStatus = contactedDrivers.find(d => d.driver_id === driver.driver_id);
+                  const isAccepted = driverStatus?.status === 'accepted';
+                  const isRejected = driverStatus?.status === 'rejected';
+                  return (
+                    <motion.div
+                      key={driver.driver_id}
+                      className="snap-start shrink-0 w-[160px] min-h-[280px] relative"
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <DriverResultCard
+                        driver={driver}
+                        routeDistanceKm={routeDistanceKm}
+                        isSelected={true}
+                        onToggleSelect={() => {}}
+                        onViewProfile={() => {}}
+                        rank={index + 1}
+                        clientPaymentMethod={clientPaymentMethod}
+                      />
+                      {/* Status overlay */}
+                      {(isAccepted || isRejected) && (
+                        <div className={`absolute inset-0 rounded-2xl flex items-center justify-center ${isAccepted ? 'bg-green-500/20' : 'bg-destructive/20'} backdrop-blur-[1px] z-10`}>
+                          <Badge className={`text-xs gap-1 ${isAccepted ? 'bg-green-500 text-white' : 'bg-destructive text-white'}`}>
+                            {isAccepted ? <><CheckCircle2 className="h-3 w-3" /> Accepté</> : <><XCircle className="h-3 w-3" /> Refusé</>}
+                          </Badge>
+                        </div>
+                      )}
+                      {driverStatus?.status === 'pending' && (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                          <motion.div
+                            className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          ) : contactedDrivers.length > 0 ? (
+            <Card className="border-border/50">
+              <CardContent className="p-3 space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Chauffeurs contactés ({contactedDrivers.length})
+                </h4>
+                <div className="space-y-1.5">
+                  {contactedDrivers.map((d) => (
+                    <div key={d.driver_id} className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30">
+                      <Avatar className="h-8 w-8 border border-border">
+                        <AvatarImage src={d.photo_url || undefined} />
+                        <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
+                          {d.driver_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 text-sm font-medium truncate">{d.driver_name}</span>
+                      {d.status === 'pending' && (
+                        <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/30 text-amber-600">
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" /> En attente
+                        </Badge>
+                      )}
+                      {d.status === 'accepted' && (
+                        <Badge className="text-[10px] gap-1 bg-green-500/15 text-green-600 border-green-500/30">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> Accepté
+                        </Badge>
+                      )}
+                      {d.status === 'rejected' && (
+                        <Badge variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
+                          <XCircle className="h-2.5 w-2.5" /> Refusé
+                        </Badge>
+                      )}
+                      {d.status === 'expired' && (
+                        <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/30 text-muted-foreground">
+                          <Clock className="h-2.5 w-2.5" /> Pas de réponse
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </>
       )}
 
       {/* Route Summary */}
