@@ -1025,13 +1025,10 @@ export function UnifiedBookingPage() {
                 setShowAuthStep(false);
                 setAuthChoice(null);
                 setShowGuestForm(false);
-                if (searchMode === 'auto') {
-                  setSearchMode('manual'); // Switch to manual so they can see cards
-                }
               }}
             >
               <ArrowLeft className="h-4 w-4" />
-              {searchMode === 'auto' ? 'Choisir mes chauffeurs' : 'Modifier la sélection'}
+              Modifier la recherche
             </Button>
 
             {/* Auto mode info banner */}
