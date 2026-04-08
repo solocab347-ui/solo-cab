@@ -83,6 +83,37 @@ export function RideWaitingScreen({
   const phaseRef = useRef(phase);
   const isExtendingRef = useRef(false);
 
+  // Contacted drivers list for UI
+  interface ContactedDriver {
+    driver_id: string;
+    driver_name: string;
+    photo_url: string | null;
+    status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  }
+  const [contactedDrivers, setContactedDrivers] = useState<ContactedDriver[]>([]);
+
+  // Poll contacted drivers statuses
+  useEffect(() => {
+    const groupId = requestGroupId || requestId;
+    const fetchDrivers = async () => {
+      const { data } = await supabase
+        .from('ride_requests')
+        .select('selected_driver_id, status, drivers:selected_driver_id(display_name, company_name, profile_photo_url)')
+        .eq('request_group_id', groupId);
+      if (data) {
+        setContactedDrivers(data.map((r: any) => ({
+          driver_id: r.selected_driver_id,
+          driver_name: r.drivers?.display_name || r.drivers?.company_name || 'Chauffeur',
+          photo_url: r.drivers?.profile_photo_url || null,
+          status: r.status as ContactedDriver['status'],
+        })));
+      }
+    };
+    fetchDrivers();
+    const interval = setInterval(fetchDrivers, 3000);
+    return () => clearInterval(interval);
+  }, [requestId, requestGroupId, phase]);
+
   phaseRef.current = phase;
 
   // Update subtitle for selected phase based on request type
