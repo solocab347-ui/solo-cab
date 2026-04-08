@@ -181,14 +181,18 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found and auto-selected, show carousel then auto-confirm after delay ──
+  // ── Auto mode: when drivers are found, auto-select and go to confirmation ──
   const autoConfirmTriggered = useRef(false);
   useEffect(() => {
     if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
       autoConfirmTriggered.current = true;
-      // Show carousel for 2s then auto-switch to confirmation
-      const timer = setTimeout(() => setConfirmationStep(true), 2000);
-      return () => clearTimeout(timer);
+      // If user is logged in and paying cash (or card already verified), auto-dispatch immediately
+      if (user && (clientPaymentMethod === 'cash' || cardVerifiedForBooking)) {
+        handleSubmitRequest();
+      } else {
+        // Show confirmation step for auth/card verification
+        setConfirmationStep(true);
+      }
     }
   }, [searchMode, drivers, selectedDriverIds.size, isLoading, hasSearched]);
 
