@@ -791,11 +791,11 @@ export function UnifiedBookingPage() {
                   </div>
                 </>
               )}
-              {searchRadius && (
+              {maxSearchRadiusKm && (
                 <>
                   <div className="w-px h-8 bg-border" />
                   <div>
-                    <div className="text-lg font-bold text-muted-foreground">{searchRadius} km</div>
+                    <div className="text-lg font-bold text-muted-foreground">{maxSearchRadiusKm} km</div>
                     <div className="text-[11px] text-muted-foreground">Rayon de recherche</div>
                   </div>
                 </>
@@ -923,7 +923,7 @@ export function UnifiedBookingPage() {
 
             {/* Navigation arrows + scrollable container */}
             <div className="relative">
-              {filteredDrivers.length > 2 && (
+              {filteredDrivers.length >= 2 && (
                 <>
                   <button
                     onClick={() => driverScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
