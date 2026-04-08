@@ -77,6 +77,16 @@ export function UnifiedBookingPage() {
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
 
+  // Inline registration state
+  const [inlineAuthTab, setInlineAuthTab] = useState<'register' | 'guest'>('register');
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registrationDone, setRegistrationDone] = useState(false);
+
   // Pre-search price range (fetched silently when addresses are ready)
   const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null);
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
