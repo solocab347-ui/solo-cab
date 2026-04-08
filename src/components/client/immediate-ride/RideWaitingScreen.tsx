@@ -304,7 +304,7 @@ export function RideWaitingScreen({
     <div className="space-y-6">
       <Card className="overflow-hidden border-0 shadow-xl">
         {/* Progress bar */}
-        {(status === 'searching' || status === 'extended_searching') && (
+        {(status === 'searching' || status === 'extended_searching' || status === 'relaunching') && (
           <div className="h-1.5 bg-muted">
             <motion.div
               className={`h-full ${barColor}`}
