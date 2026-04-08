@@ -19763,53 +19763,29 @@ export type Database = {
               user_id: string
             }[]
           }
-      find_nearby_drivers:
-        | {
-            Args: {
-              p_latitude: number
-              p_limit?: number
-              p_longitude: number
-              p_max_radius_km?: number
-              p_mode?: string
-            }
-            Returns: {
-              base_fare: number
-              company_name: string
-              display_name: string
-              distance_meters: number
-              driver_id: string
-              is_live_location: boolean
-              latitude: number
-              longitude: number
-              minimum_price: number
-              per_km_rate: number
-              profile_photo_url: string
-              search_radius_used: number
-            }[]
-          }
-        | {
-            Args: {
-              p_latitude: number
-              p_limit?: number
-              p_longitude: number
-              p_max_radius_km?: number
-              p_mode?: string
-            }
-            Returns: {
-              base_fare: number
-              company_name: string
-              display_name: string
-              distance_meters: number
-              driver_id: string
-              is_live_location: boolean
-              latitude: number
-              longitude: number
-              minimum_price: number
-              per_km_rate: number
-              profile_photo_url: string
-              search_radius_used: number
-            }[]
-          }
+      find_nearby_drivers: {
+        Args: {
+          p_latitude: number
+          p_limit?: number
+          p_longitude: number
+          p_max_radius_km?: number
+          p_mode?: string
+        }
+        Returns: {
+          base_fare: number
+          company_name: string
+          display_name: string
+          distance_meters: number
+          driver_id: string
+          is_live_location: boolean
+          latitude: number
+          longitude: number
+          minimum_price: number
+          per_km_rate: number
+          profile_photo_url: string
+          search_radius_used: number
+        }[]
+      }
       find_nearest_available_fleet_driver:
         | {
             Args: {
