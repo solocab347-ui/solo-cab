@@ -90,8 +90,11 @@ export function DriverResultCard({
           >
             {rank}
           </div>
-          <Badge variant="outline" className="text-[7px] px-1 py-0 gap-0.5 font-medium border-white/20 text-white/60 bg-white/5">
-            <UserCheck className="h-2 w-2" /> Indépendant
+          <Badge
+            className="text-[8px] px-1.5 py-0.5 gap-0.5 font-bold border-0 text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, hsl(${theme.from}), hsl(${theme.to}))` }}
+          >
+            <UserCheck className="h-2.5 w-2.5" /> Indépendant
           </Badge>
           {isSelected ? (
             <div
@@ -141,12 +144,12 @@ export function DriverResultCard({
         </div>
 
         {/* Price — inline compact */}
-        <div className="flex items-center justify-center gap-1 py-1 text-center" style={{ background: `linear-gradient(135deg, hsl(${theme.from} / 0.08), hsl(${theme.to} / 0.12))` }}>
+        <div className="flex flex-col items-center py-1.5 text-center" style={{ background: `linear-gradient(135deg, hsl(${theme.from} / 0.08), hsl(${theme.to} / 0.12))` }}>
           {priceText ? (
             <>
               <span className="text-sm font-bold text-white">{priceText}</span>
               {routeDistanceKm !== undefined && (
-                <span className="text-[8px] text-white/40">• {routeDistanceKm.toFixed(1)} km</span>
+                <span className="text-[8px] text-white/40 mt-0.5">{routeDistanceKm.toFixed(1)} km</span>
               )}
             </>
           ) : (
