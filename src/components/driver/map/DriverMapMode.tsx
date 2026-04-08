@@ -20,11 +20,11 @@ interface DriverMapModeProps {
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
 
-const CAR_ICON = L.divIcon({
+const createCarIcon = () => L.divIcon({
   html: `<div id="car-marker-inner" style="
     width: 52px; height: 52px;
     transform: rotate(0deg);
-    transition: transform 1s ease-out;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
     will-change: transform;
   ">
