@@ -23,6 +23,10 @@ export interface NearbyDriver {
   // Payment info
   accepted_payment_methods?: string[] | null;
   stripe_connect_charges_enabled?: boolean;
+  // Vehicle info
+  vehicle_brand?: string | null;
+  vehicle_model?: string | null;
+  vehicle_color?: string | null;
 }
 
 type SearchMode = 'reservation' | 'immediate';
@@ -181,13 +185,16 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         const driverIds = data.map((d: NearbyDriverRpcRow) => d.driver_id);
         const { data: paymentData } = await supabase
           .from('drivers')
-          .select('id, accepted_payment_methods, stripe_connect_charges_enabled')
+          .select('id, accepted_payment_methods, stripe_connect_charges_enabled, vehicle_brand, vehicle_model, vehicle_color')
           .in('id', driverIds);
         
         const paymentMap = new Map(
           (paymentData || []).map((d: any) => [d.id, {
             accepted_payment_methods: d.accepted_payment_methods,
             stripe_connect_charges_enabled: d.stripe_connect_charges_enabled,
+            vehicle_brand: d.vehicle_brand,
+            vehicle_model: d.vehicle_model,
+            vehicle_color: d.vehicle_color,
           }])
         );
 
@@ -222,6 +229,9 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             has_surcharge: hasSurcharge,
             accepted_payment_methods: payment?.accepted_payment_methods || ['cash', 'card'],
             stripe_connect_charges_enabled: payment?.stripe_connect_charges_enabled || false,
+            vehicle_brand: payment?.vehicle_brand || null,
+            vehicle_model: payment?.vehicle_model || null,
+            vehicle_color: payment?.vehicle_color || null,
           };
         });
 
