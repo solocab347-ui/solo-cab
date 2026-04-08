@@ -955,22 +955,20 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-3 px-1">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                </div>
+              </div>
               <div>
                 <h3 className="font-semibold text-foreground text-sm">
                   Recherche du meilleur chauffeur...
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''} contacté{filteredDrivers.length > 1 ? 's' : ''}
-                  {' • dispatch automatique'}
                 </p>
               </div>
-              {selectedCount > 0 && (
-                <Badge className="bg-primary text-primary-foreground gap-1 shrink-0">
-                  <Users className="h-3 w-3" />
-                  {selectedCount}
-                </Badge>
-              )}
             </div>
 
 
