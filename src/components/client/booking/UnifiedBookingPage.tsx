@@ -89,6 +89,17 @@ export function UnifiedBookingPage() {
   // Horizontal scroll ref for driver gallery
   const driverScrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll carousel in auto mode
+  useEffect(() => {
+    if (searchMode !== 'auto' || confirmationStep || filteredDrivers.length <= 1) return;
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % filteredDrivers.length;
+      driverScrollRef.current?.scrollTo({ left: idx * 180, behavior: 'smooth' });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [searchMode, confirmationStep, filteredDrivers.length]);
+
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
