@@ -61,11 +61,25 @@ export function DriverResultCard({
       <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
         <div
           className="absolute inset-0 animate-spin-slow"
-          style={{ background: `conic-gradient(from 0deg, hsl(${theme.from}) 0%, transparent 15%, hsl(${theme.to}) 30%, transparent 45%, hsl(${theme.from}) 60%, transparent 75%, hsl(${theme.to}) 90%, hsl(${theme.from}) 100%)` }}
+          style={{
+            background: `conic-gradient(from 0deg, hsl(${theme.from}) 0%, transparent 12%, hsl(${theme.to}) 25%, transparent 38%, hsl(${theme.from}) 50%, transparent 62%, hsl(${theme.to}) 75%, transparent 88%, hsl(${theme.from}) 100%)`,
+            opacity: isSelected ? 1 : 0.7,
+          }}
         />
         <div
-          className="absolute inset-0 animate-pulse opacity-40"
-          style={{ background: `radial-gradient(circle at 50% 0%, hsl(${theme.from} / 0.6), transparent 60%)` }}
+          className="absolute inset-0 animate-pulse"
+          style={{
+            background: `radial-gradient(circle at 50% 0%, hsl(${theme.from} / 0.7), transparent 60%)`,
+            opacity: isSelected ? 0.6 : 0.3,
+          }}
+        />
+        {/* Secondary counter-spin for more dynamic effect */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `conic-gradient(from 180deg, transparent 0%, hsl(${theme.to} / 0.5) 10%, transparent 20%, transparent 100%)`,
+            animation: 'spin-slow 2.5s linear infinite reverse',
+          }}
         />
       </div>
 

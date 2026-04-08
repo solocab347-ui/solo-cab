@@ -947,7 +947,7 @@ export function UnifiedBookingPage() {
                 style={{ WebkitOverflowScrolling: 'touch' }}
               >
                 {filteredDrivers.map((driver, index) => (
-                  <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-6px)] min-w-[160px] max-w-[220px]">
+                  <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-6px)] min-w-[160px] max-w-[220px] min-h-[320px]">
                     <DriverResultCard
                       driver={driver}
                       routeDistanceKm={routeDistanceKm || undefined}
