@@ -229,6 +229,9 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             has_surcharge: hasSurcharge,
             accepted_payment_methods: payment?.accepted_payment_methods || ['cash', 'card'],
             stripe_connect_charges_enabled: payment?.stripe_connect_charges_enabled || false,
+            vehicle_brand: payment?.vehicle_brand || null,
+            vehicle_model: payment?.vehicle_model || null,
+            vehicle_color: payment?.vehicle_color || null,
           };
         });
 
