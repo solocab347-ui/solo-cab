@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, MapPin, Loader2, Map as MapIcon, Car } from 'lucide-react';
+import { Wifi, WifiOff, MapPin, Loader2, Map as MapIcon, Car, Coffee } from 'lucide-react';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { cn } from '@/lib/utils';
 import { useDriverAvailability } from '@/contexts/DriverAvailabilityContext';
@@ -16,11 +16,11 @@ export function DriverAvailabilityToggleBig({
   onAvailabilityChange,
   onSwitchToMap,
 }: DriverAvailabilityToggleBigProps) {
-  const { isOnline, isAvailableForCourses, driverStatus, isLoading, toggleAvailability } = useDriverAvailability();
-  const isAccepting = driverStatus === 'accepting';
-  const isOnTrip = driverStatus === 'on_trip';
-  const isReserved = driverStatus === 'reserved';
-  const isBusy = isOnTrip || isAccepting || isReserved;
+  const { isOnline, isAvailableForCourses, driverStatus, isLoading, toggleAvailability, toggleBreak } = useDriverAvailability();
+  const isAssigned = driverStatus === 'assigned';
+  const isInRide = driverStatus === 'in_ride';
+  const isBreak = driverStatus === 'break';
+  const isBusy = isInRide || isAssigned;
 
   const { isTracking, error } = useDriverLocationTracker({
     driverId,
@@ -36,25 +36,25 @@ export function DriverAvailabilityToggleBig({
     }
   };
 
-  const statusTitle = isOnTrip
+  const statusTitle = isInRide
     ? 'En course'
-    : isReserved
-      ? 'Mission réservée'
-      : isAccepting
-        ? 'Demande en attente'
+    : isAssigned
+      ? 'Course assignée'
+      : isBreak
+        ? 'En pause'
         : isOnline
-          ? 'Connecté'
-          : 'Déconnecté';
+          ? 'En ligne'
+          : 'Hors ligne';
 
-  const statusSubtitle = isOnTrip
+  const statusSubtitle = isInRide
     ? 'Course en cours — indisponible'
-    : isReserved
-      ? 'Mission attribuée — indisponible'
-      : isAccepting
-        ? 'Réponse en attente — indisponible'
+    : isAssigned
+      ? 'Course attribuée — indisponible'
+      : isBreak
+        ? 'Aucune course reçue'
         : isOnline
-          ? 'Vous recevez les courses immédiates'
-          : 'Réservations uniquement';
+          ? 'Courses immédiates + réservations'
+          : 'Réservations (>2h) uniquement';
 
   if (isLoading) {
     return (
@@ -74,9 +74,11 @@ export function DriverAvailabilityToggleBig({
           isBusy ? 'cursor-default' : 'cursor-pointer active:scale-[0.98]',
           isBusy
             ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-amber-400/20 border-amber-500/60 shadow-amber-500/25'
-            : isOnline
-              ? 'bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-emerald-400/20 border-emerald-500/60 shadow-emerald-500/25'
-              : 'bg-gradient-to-r from-red-500/10 via-rose-500/10 to-red-400/10 border-red-500/40 shadow-red-500/10'
+            : isBreak
+              ? 'bg-gradient-to-r from-blue-500/10 via-blue-500/10 to-blue-400/10 border-blue-500/40 shadow-blue-500/10'
+              : isOnline
+                ? 'bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-emerald-400/20 border-emerald-500/60 shadow-emerald-500/25'
+                : 'bg-gradient-to-r from-red-500/10 via-rose-500/10 to-red-400/10 border-red-500/40 shadow-red-500/10'
         )}
       >
         <div className="flex items-center gap-3">
@@ -85,13 +87,17 @@ export function DriverAvailabilityToggleBig({
               'relative w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-500',
               isBusy
                 ? 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/40'
-                : isOnline
-                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/40'
-                  : 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30'
+                : isBreak
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30'
+                  : isOnline
+                    ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/40'
+                    : 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30'
             )}
           >
             {isBusy ? (
               <Car className="w-7 h-7 text-white" />
+            ) : isBreak ? (
+              <Coffee className="w-7 h-7 text-white" />
             ) : isOnline ? (
               <Wifi className="w-7 h-7 text-white" />
             ) : (
@@ -106,7 +112,10 @@ export function DriverAvailabilityToggleBig({
             <p
               className={cn(
                 'text-lg font-bold tracking-tight',
-                isBusy ? 'text-amber-400' : isOnline ? 'text-emerald-400' : 'text-red-400'
+                isBusy ? 'text-amber-400' 
+                  : isBreak ? 'text-blue-400'
+                  : isOnline ? 'text-emerald-400' 
+                  : 'text-red-400'
               )}
             >
               {statusTitle}
@@ -145,6 +154,24 @@ export function DriverAvailabilityToggleBig({
           )}
         </div>
       </button>
+
+      {/* Break toggle - only when online and not busy */}
+      {(isOnline || isBreak) && !isBusy && (
+        <button
+          onClick={toggleBreak}
+          className={cn(
+            'w-full rounded-xl p-3 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer',
+            isBreak
+              ? 'bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25'
+              : 'bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25'
+          )}
+        >
+          <Coffee className={cn('w-5 h-5', isBreak ? 'text-emerald-400' : 'text-blue-400')} />
+          <span className={cn('text-sm font-semibold', isBreak ? 'text-emerald-400' : 'text-blue-400')}>
+            {isBreak ? 'Reprendre le service' : 'Prendre une pause'}
+          </span>
+        </button>
+      )}
 
       {isAvailableForCourses && onSwitchToMap && (
         <button
