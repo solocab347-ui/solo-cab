@@ -179,7 +179,7 @@ export function IncomingCourseOverlay({
           // Show message for 4 seconds then restore status
           setTimeout(async () => {
             if (driverId) {
-              // Only restore if still in 'assigned' — don't override on_trip
+              // Only restore if still in 'assigned' — don't override in_ride
               const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
               if (!d?.driver_status || d.driver_status === 'assigned') {
                 await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
@@ -233,7 +233,7 @@ export function IncomingCourseOverlay({
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          // Timeout: restore to online_available (not offline!)
+          // Timeout: restore to online (not offline!)
           if (driverId) {
             supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
           }
@@ -308,8 +308,8 @@ export function IncomingCourseOverlay({
     if (audioRef.current) clearInterval(audioRef.current);
     if (navigator.vibrate) navigator.vibrate(0);
     if (driverId) {
-      // Only restore to online_available if driver is currently in 'assigned' state
-      // Don't override on_trip or other active states
+      // Only restore to online if driver is currently in 'assigned' state
+      // Don't override in_ride or other active states
       const { data: currentDriver } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
       const currentStatus = currentDriver?.driver_status;
       if (!currentStatus || currentStatus === 'assigned') {

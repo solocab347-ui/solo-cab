@@ -258,7 +258,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         driver_status: 'online',
       }).eq('id', driverId);
       wasAvailableBeforeCourseRef.current = null;
-      console.log('[ActiveCourseCard] Driver restored to online_available');
+      console.log('[ActiveCourseCard] Driver restored to online');
       onCourseChange?.();
     }
 
@@ -338,12 +338,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
   const restoreAvailability = useCallback(async () => {
     wasAvailableBeforeCourseRef.current = null;
-    // Always restore to online_available — driver should stay connected after a course
+    // Always restore to online — driver should stay connected after a course
     await supabase.from('drivers').update({ 
       is_available_now: true,
       driver_status: 'online',
     }).eq('id', driverId);
-    console.log('[ActiveCourseCard] Driver restored to online_available');
+    console.log('[ActiveCourseCard] Driver restored to online');
   }, [driverId]);
 
   const handleComplete = useCallback(async () => {
