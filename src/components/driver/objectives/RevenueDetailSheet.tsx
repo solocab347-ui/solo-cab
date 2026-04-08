@@ -41,7 +41,7 @@ export function RevenueDetailSheet({ open, onOpenChange, driverId, period, total
           p_period: period,
         });
         if (error) throw error;
-        setDetails((data as DetailRow[]) || []);
+        setDetails((data as unknown as DetailRow[]) || []);
       } catch (e) {
         console.error('Error fetching revenue details:', e);
         setDetails([]);
