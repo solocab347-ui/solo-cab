@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { subscriptionManager } from "@/lib/subscriptionManager";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -242,7 +242,9 @@ const ChauffeurProfile = () => {
                   <img
                     src={driver.profile_photo_url}
                     alt={driver.full_name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-[center_15%]"
+                    loading="eager"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -306,29 +308,33 @@ const ChauffeurProfile = () => {
             {/* Boutons d'action */}
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
               <Button
-                onClick={handleRegisterWithDriver}
-                disabled={registering}
+                onClick={() => {
+                  // Navigate back to storefront with this driver pre-selected
+                  // The storefront state is already persisted in sessionStorage
+                  navigate(`/chauffeurs?select=${id}`);
+                }}
                 size="lg"
                 className="flex-1 bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 shadow-lg shadow-primary/30"
+              >
+                <Car className="w-5 h-5 mr-2" />
+                Réserver
+              </Button>
+              
+              <Button
+                onClick={handleRegisterWithDriver}
+                disabled={registering}
+                variant="outline"
+                size="lg"
+                className="flex-1 border-white/20 text-white hover:bg-white/10"
               >
                 {registering ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Inscription...</>
                 ) : (
                   <>
                     <UserPlus className="w-5 h-5 mr-2" />
-                    S'inscrire
+                    S'inscrire avec ce chauffeur
                   </>
                 )}
-              </Button>
-              
-              <Button
-                onClick={() => navigate(`/reservation-rapide/${id}`)}
-                variant="outline"
-                size="lg"
-                className="flex-1 border-white/20 text-white hover:bg-white/10"
-              >
-                <Car className="w-5 h-5 mr-2" />
-                Réserver sans s'inscrire
               </Button>
             </div>
           </div>

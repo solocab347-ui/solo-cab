@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,63 +10,73 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   MapPin, Navigation, Search, Loader2, AlertCircle, CalendarClock, 
   Zap, ChevronDown, Send, Users, ArrowLeft, Car, UserPlus, LogIn, UserX,
-  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock
+  CreditCard, Banknote, ShieldCheck, Info, AlertTriangle, Calendar, Clock,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { DriverResultCard } from './DriverResultCard';
 import { DriverMap } from './DriverMap';
 import { BookingCardStep } from './BookingCardStep';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-solocab.png';
+import { saveStorefrontState, loadStorefrontState, type StorefrontState } from '@/lib/storefrontState';
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
 
 export function UnifiedBookingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { token: mapboxToken, isLoading: isTokenLoading, error: mapboxError } = useMapboxToken();
-  const [mode, setMode] = useState<BookingMode>('reservation');
+  // ── Restore state from sessionStorage ──
+  const savedState = useRef(loadStorefrontState());
+  const ss = savedState.current;
+
+  const [mode, setMode] = useState<BookingMode>(ss?.mode || 'reservation');
   
   // Addresses
-  const [pickupAddress, setPickupAddress] = useState('');
-  const [destinationAddress, setDestinationAddress] = useState('');
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pickupAddress, setPickupAddress] = useState(ss?.pickupAddress || '');
+  const [destinationAddress, setDestinationAddress] = useState(ss?.destinationAddress || '');
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(ss?.pickupCoords || null);
+  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(ss?.destCoords || null);
   
   // Schedule
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduledDate, setScheduledDate] = useState(ss?.scheduledDate || '');
+  const [scheduledTime, setScheduledTime] = useState(ss?.scheduledTime || '');
   
   // Search state
-  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
-  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(ss?.routeDistanceKm ?? null);
+  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(ss?.routeDurationMin ?? null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(20);
+  const [hasSearched, setHasSearched] = useState(ss?.hasSearched || false);
+  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(ss?.maxSearchRadiusKm || 20);
   
   // Driver selection
-  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set());
+  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set(ss?.selectedDriverIds || []));
   const [profileDriverId, setProfileDriverId] = useState<string | null>(null);
   
   // Guest info
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState(ss?.guestName || '');
+  const [guestPhone, setGuestPhone] = useState(ss?.guestPhone || '');
+  const [guestEmail, setGuestEmail] = useState(ss?.guestEmail || '');
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [showAuthStep, setShowAuthStep] = useState(false);
   const [authChoice, setAuthChoice] = useState<'guest' | 'login' | 'register' | null>(null);
   const [confirmationStep, setConfirmationStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(null);
+  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
+
+  // Horizontal scroll ref for driver gallery
+  const driverScrollRef = useRef<HTMLDivElement>(null);
 
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -76,7 +86,47 @@ export function UnifiedBookingPage() {
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
 
-  // Auto-check if authenticated user already has a saved card
+  // ── Persist state to sessionStorage on every relevant change ──
+  useEffect(() => {
+    saveStorefrontState({
+      pickupAddress, destinationAddress, pickupCoords, destCoords,
+      mode, scheduledDate, scheduledTime, maxSearchRadiusKm,
+      clientPaymentMethod, routeDistanceKm, routeDurationMin, hasSearched,
+      selectedDriverIds: Array.from(selectedDriverIds),
+      guestName, guestPhone, guestEmail,
+    });
+  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode,
+      scheduledDate, scheduledTime, maxSearchRadiusKm, clientPaymentMethod,
+      routeDistanceKm, routeDurationMin, hasSearched, selectedDriverIds,
+      guestName, guestPhone, guestEmail]);
+
+  // ── Auto re-search when returning from a profile page with saved state ──
+  const hasAutoSearched = useRef(false);
+  useEffect(() => {
+    if (ss?.hasSearched && !hasAutoSearched.current && pickupCoords && destCoords && clientPaymentMethod && mapboxToken) {
+      hasAutoSearched.current = true;
+      // Re-trigger search with saved params
+      let schedDate: Date | undefined;
+      if (mode === 'reservation' && scheduledDate && scheduledTime) {
+        schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+      }
+      searchNearbyDrivers(
+        pickupCoords.lat, pickupCoords.lng,
+        routeDistanceKm || undefined,
+        routeDurationMin || undefined,
+        schedDate,
+        pickupAddress, destinationAddress,
+        maxSearchRadiusKm, mode
+      );
+    }
+  }, [mapboxToken]); // Only run once when token becomes available
+
+  // ── Handle ?mode=immediate from legacy routes ──
+  useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'immediate') setMode('immediate');
+  }, [searchParams]);
+
   useEffect(() => {
     if (!user || clientPaymentMethod !== 'card') return;
     const checkSavedCard = async () => {
@@ -102,6 +152,18 @@ export function UnifiedBookingPage() {
     fallbackToReservation,
     searchNearbyDrivers,
   } = useNearbyDrivers();
+
+  // ── Handle ?select=driverId from profile page (after drivers are loaded) ──
+  useEffect(() => {
+    const selectId = searchParams.get('select');
+    if (selectId && drivers.length > 0) {
+      setSelectedDriverIds(prev => {
+        const next = new Set(prev);
+        next.add(selectId);
+        return next;
+      });
+    }
+  }, [searchParams, drivers]);
 
   // Strategic places for quick search (airports, stations, monuments)
   const STRATEGIC_PLACES = [
@@ -191,14 +253,14 @@ export function UnifiedBookingPage() {
     setPickupAddress(val);
     setPickupCoords(null);
     if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
-    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 300);
+    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 150);
   };
 
   const handleDestChange = (val: string) => {
     setDestinationAddress(val);
     setDestCoords(null);
     if (destDebounce.current) clearTimeout(destDebounce.current);
-    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 300);
+    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 150);
   };
 
   const selectPickupSuggestion = (feature: any) => {
@@ -215,7 +277,7 @@ export function UnifiedBookingPage() {
     setDestSuggestions([]);
   };
 
-  // Geolocation - fast with fallback
+  // Geolocation - robust with cached position fallback
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error('La géolocalisation n\'est pas disponible sur cet appareil');
@@ -224,47 +286,53 @@ export function UnifiedBookingPage() {
     setIsGettingLocation(true);
     
     let resolved = false;
-    const resolve = async (lat: number, lng: number) => {
+    const resolve = async (lat: number, lng: number, accuracy?: number) => {
       if (resolved) return;
       resolved = true;
       setPickupCoords({ lat, lng });
       try {
         if (!mapboxToken) { setIsGettingLocation(false); return; }
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr`);
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr&limit=1`);
+        if (!res.ok) throw new Error('Geocode failed');
         const data = await res.json();
         if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
       } catch {
-        toast.error('Impossible de récupérer votre adresse actuelle');
+        setPickupAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
       }
       setIsGettingLocation(false);
     };
 
-    // Fast attempt (low accuracy, 3s)
+    // 1) Try cached position first (instant)
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
       () => {},
-      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 }
     );
 
-    // High accuracy in parallel (5s)
+    // 2) Fresh position in parallel (high accuracy, 8s timeout)
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
-      () => {
+      (pos) => resolve(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+      (err) => {
         if (!resolved) {
-          toast.error('Autorisez la localisation pour utiliser votre position');
+          console.warn('Geolocation error:', err.code, err.message);
+          if (err.code === 1) {
+            toast.error('Autorisez la localisation dans les paramètres de votre navigateur');
+          } else {
+            toast.error('Position GPS indisponible. Saisissez votre adresse manuellement.');
+          }
           setIsGettingLocation(false);
         }
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
 
     // Safety timeout
     setTimeout(() => {
       if (!resolved) {
         setIsGettingLocation(false);
-        toast.error('Détection GPS trop lente. Saisissez votre adresse manuellement.');
+        toast.error('Détection GPS trop lente. Saisissez votre adresse.');
       }
-    }, 6000);
+    }, 10000);
   }, [mapboxToken]);
 
   // Search
@@ -793,11 +861,11 @@ export function UnifiedBookingPage() {
           </Alert>
         )}
 
-        {/* Drivers list - horizontal scrollable cards */}
+        {/* Drivers list - 2-column grid with horizontal scroll on mobile */}
         {filteredDrivers.length > 0 && clientPaymentMethod && !confirmationStep && (
           <div className="space-y-3">
             {/* Independent drivers banner */}
-            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-lg p-3">
+            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
               <Car className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-foreground">Réservez directement auprès de professionnels certifiés.</p>
@@ -816,20 +884,46 @@ export function UnifiedBookingPage() {
                 </Badge>
               )}
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {filteredDrivers.map((driver, index) => (
-                <div key={driver.driver_id} className="snap-start shrink-0 w-[260px]">
-                  <DriverResultCard
-                    driver={driver}
-                    routeDistanceKm={routeDistanceKm || undefined}
-                    isSelected={selectedDriverIds.has(driver.driver_id)}
-                    onToggleSelect={toggleDriverSelection}
-                    onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
-                    rank={index + 1}
-                    clientPaymentMethod={clientPaymentMethod}
-                  />
-                </div>
-              ))}
+
+            {/* Navigation arrows + scrollable container */}
+            <div className="relative">
+              {filteredDrivers.length > 2 && (
+                <>
+                  <button
+                    onClick={() => driverScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
+                    aria-label="Précédent"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => driverScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-8 h-8 rounded-full bg-background/90 border border-border shadow-lg flex items-center justify-center hover:bg-accent transition-colors"
+                    aria-label="Suivant"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              <div
+                ref={driverScrollRef}
+                className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
+                {filteredDrivers.map((driver, index) => (
+                  <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-6px)] min-w-[160px] max-w-[220px]">
+                    <DriverResultCard
+                      driver={driver}
+                      routeDistanceKm={routeDistanceKm || undefined}
+                      isSelected={selectedDriverIds.has(driver.driver_id)}
+                      onToggleSelect={toggleDriverSelection}
+                      onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
+                      rank={index + 1}
+                      clientPaymentMethod={clientPaymentMethod}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
