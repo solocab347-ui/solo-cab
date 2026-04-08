@@ -185,16 +185,18 @@ export function UnifiedBookingPage() {
     }
   }, [searchParams, drivers]);
 
-  // ── Auto mode: when drivers are found, auto-select and go to confirmation ──
+  // ── Auto mode: when drivers are found after search button click, auto-dispatch ──
   const autoConfirmTriggered = useRef(false);
   useEffect(() => {
     if (searchMode === 'auto' && drivers.length > 0 && selectedDriverIds.size > 0 && !isLoading && hasSearched && !autoConfirmTriggered.current) {
       autoConfirmTriggered.current = true;
-      // If user is logged in and paying cash (or card already verified), auto-dispatch immediately
-      if (user && (clientPaymentMethod === 'cash' || cardVerifiedForBooking)) {
+      // Card is already verified or paying cash + guest info collected in form
+      const guestReady = !user && guestName.trim() && guestPhone.trim();
+      const canDispatch = (user || guestReady) && (clientPaymentMethod === 'cash' || cardVerifiedForBooking);
+      if (canDispatch) {
         handleSubmitRequest();
       } else {
-        // Show confirmation step for auth/card verification
+        // Show confirmation step only if something is still missing
         setConfirmationStep(true);
       }
     }
