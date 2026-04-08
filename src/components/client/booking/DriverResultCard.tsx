@@ -214,23 +214,27 @@ export function DriverResultCard({
         </div>
 
         {/* Price section */}
-        <div className="mt-auto border-t border-border/30 bg-muted/5 p-3 text-center">
+        <div
+          className="mt-auto p-3 text-center rounded-b-xl"
+          style={{
+            background: `linear-gradient(135deg, hsl(${theme.from} / 0.15), hsl(${theme.to} / 0.25))`,
+            borderTop: `1px solid hsl(${theme.from} / 0.3)`,
+          }}
+        >
           {driver.estimated_price !== undefined && driver.estimated_price > 0 ? (
             <div
-              className="text-2xl font-extrabold tracking-tight"
+              className="text-2xl font-extrabold tracking-tight text-white"
               style={{
-                background: `linear-gradient(135deg, hsl(${theme.from}), hsl(${theme.to}))`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                textShadow: `0 0 20px hsl(${theme.from} / 0.5)`,
               }}
             >
               {driver.estimated_price.toFixed(0)}€
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">Sur devis</div>
+            <div className="text-sm text-white/70 italic">Sur devis</div>
           )}
           {routeDistanceKm !== undefined && (
-            <div className="text-[10px] text-muted-foreground mt-0.5">
+            <div className="text-[10px] text-white/60 mt-0.5">
               {routeDistanceKm.toFixed(1)} km
             </div>
           )}
