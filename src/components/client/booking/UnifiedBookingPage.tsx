@@ -153,6 +153,18 @@ export function UnifiedBookingPage() {
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
+  // ── Handle ?select=driverId from profile page (after drivers are loaded) ──
+  useEffect(() => {
+    const selectId = searchParams.get('select');
+    if (selectId && drivers.length > 0) {
+      setSelectedDriverIds(prev => {
+        const next = new Set(prev);
+        next.add(selectId);
+        return next;
+      });
+    }
+  }, [searchParams, drivers]);
+
   // Strategic places for quick search (airports, stations, monuments)
   const STRATEGIC_PLACES = [
     // Aéroports Paris
