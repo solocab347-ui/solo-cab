@@ -332,7 +332,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Les commissions sont accumulées pendant la semaine</li>
-              <li>• Les frais de gestion SoloCab (0,80€/course + 0,25€/partage) sont déduits</li>
+              <li>• Les frais SoloCab (0,50€/course + 0,25€/partage/chauffeur + 0,80€/encaissement spontané) sont déduits</li>
               <li>• Versement net unique chaque <strong>lundi à 6h</strong></li>
             </ul>
           </Card>
