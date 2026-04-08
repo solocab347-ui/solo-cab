@@ -17,12 +17,12 @@ interface DriverResultCardProps {
 
 // SoloCab brand color themes per card rank
 const GLOW_THEMES = [
-  { from: '217 91% 60%', to: '217 91% 45%', name: 'solocab-blue' },      // Primary blue
-  { from: '217 91% 55%', to: '200 80% 50%', name: 'solocab-ocean' },     // Blue → Cyan
-  { from: '230 75% 58%', to: '217 91% 60%', name: 'solocab-indigo' },    // Indigo → Blue
-  { from: '210 85% 55%', to: '195 80% 48%', name: 'solocab-sky' },       // Sky → Teal
-  { from: '225 80% 60%', to: '240 65% 55%', name: 'solocab-royal' },     // Royal blue
-  { from: '205 90% 52%', to: '217 91% 60%', name: 'solocab-steel' },     // Steel → Primary
+  { from: '217 91% 60%', to: '210 100% 45%', name: 'solocab-blue' },     // Bleu SoloCab
+  { from: '270 70% 60%', to: '280 80% 50%', name: 'solocab-violet' },    // Violet
+  { from: '25 95% 55%', to: '15 90% 50%', name: 'solocab-orange' },      // Orange
+  { from: '175 70% 45%', to: '190 80% 40%', name: 'solocab-teal' },      // Teal
+  { from: '340 75% 55%', to: '350 80% 48%', name: 'solocab-rose' },      // Rose
+  { from: '45 90% 50%', to: '35 85% 45%', name: 'solocab-gold' },        // Or
 ];
 
 function estimateApproachTime(distanceMeters: number): string {
