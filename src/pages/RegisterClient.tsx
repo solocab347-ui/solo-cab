@@ -1,113 +1,218 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle, Users, Search } from "lucide-react";
-import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2, CreditCard, ShieldCheck, AlertCircle, Sparkles } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLocale } from "@/hooks/useLocale";
 import { useAuth } from "@/hooks/useAuth";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 
+// ---------- Inline Stripe Card Form ----------
+function CardRegistrationForm({
+  clientSecret,
+  onSuccess,
+}: {
+  clientSecret: string;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) { setError(submitError.message || "Erreur"); return; }
+
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        clientSecret,
+        confirmParams: { return_url: window.location.href },
+        redirect: "if_required",
+      });
+
+      if (stripeError) { setError(stripeError.message || "Erreur de validation"); return; }
+
+      if (setupIntent?.status === "succeeded") {
+        try {
+          await supabase.functions.invoke("persist-card-default", {
+            body: { setup_intent_id: setupIntent.id },
+          });
+        } catch { /* non-blocking */ }
+        toast.success("Carte enregistrée avec succès !");
+        onSuccess();
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <PaymentElement onReady={() => setReady(true)} options={{ layout: "tabs" }} />
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{error}</p>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        🔒 Aucun prélèvement. Votre carte sera utilisée uniquement pour sécuriser vos futures réservations.
+      </p>
+      <Button type="submit" disabled={saving || !stripe || !ready} className="w-full h-11">
+        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+        Enregistrer ma carte
+      </Button>
+    </form>
+  );
+}
+
+// ---------- Main Component ----------
 const RegisterClient = () => {
   const navigate = useNavigate();
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
   const { user, loading: authLoading } = useAuth();
-  
+
+  // Steps: 'form' | 'card' | 'done'
+  const [step, setStep] = useState<"form" | "card" | "done">("form");
   const [loading, setLoading] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
     fullName: "",
     phone: "",
-    address: "",
   });
 
-  // If user is already logged in, redirect
+  // Stripe state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripePublishableKey, setStripePublishableKey] = useState("");
+  const [loadingCard, setLoadingCard] = useState(false);
+
+  const stripePromise = useMemo(() => {
+    if (!stripePublishableKey.startsWith("pk_")) return null;
+    return loadStripe(stripePublishableKey);
+  }, [stripePublishableKey]);
+
+  // If already logged in and on form step, move to card step
   useEffect(() => {
-    if (!authLoading && user) {
-      // Check if already a client
-      const checkClientStatus = async () => {
-        const { data: existingClient } = await supabase
-          .from("clients")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (existingClient) {
-          navigate("/client-dashboard");
-        } else {
-          // User logged in but not a client yet - create client record
-          await createClientRecord(user.id);
-        }
-      };
-      checkClientStatus();
+    if (!authLoading && user && step === "form") {
+      checkAndCreateClient(user.id);
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading]);
 
-  const createClientRecord = async (userId: string) => {
+  const checkAndCreateClient = async (userId: string) => {
     try {
       setLoading(true);
-
-      // Create client record without driver (free client without driver)
-      const { data: newClient, error: insertError } = await supabase
+      const { data: existingClient } = await supabase
         .from("clients")
-        .insert({
-          user_id: userId,
-          is_exclusive: false,
-          driver_ids: [], // Empty - no drivers yet
-          driver_id: null,
-          favorite_driver_id: null,
-        })
-        .select()
-        .single();
+        .select("id, default_payment_method_id")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (insertError) {
-        // If already exists, just redirect
-        if (insertError.code === '23505') {
-          navigate("/client-dashboard");
-          return;
-        }
-        throw insertError;
+      if (existingClient?.default_payment_method_id) {
+        // Already has card, go to dashboard
+        navigate("/client-dashboard");
+        return;
       }
 
-      // Create client role
-      await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: userId,
-          role: "client"
-        }, { onConflict: 'user_id,role' });
+      if (!existingClient) {
+        await createClientRecord(userId);
+      }
 
-      setRegistrationSuccess(true);
-    } catch (error: any) {
-      console.error("Error creating client:", error);
-      toast.error("Erreur lors de la création du compte client");
+      // Move to card step
+      setStep("card");
+      await initializeCardForm();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erreur lors de la vérification du compte");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas");
-      return;
+  const createClientRecord = async (userId: string) => {
+    const { error: insertError } = await supabase
+      .from("clients")
+      .insert({
+        user_id: userId,
+        is_exclusive: false,
+        driver_ids: [],
+        driver_id: null,
+        favorite_driver_id: null,
+      })
+      .select()
+      .single();
+
+    if (insertError && insertError.code !== "23505") throw insertError;
+
+    await supabase
+      .from("user_roles")
+      .upsert({ user_id: userId, role: "client" }, { onConflict: "user_id,role" });
+  };
+
+  const initializeCardForm = async () => {
+    setLoadingCard(true);
+    try {
+      const res = await supabase.functions.invoke("create-setup-intent");
+      if (res.error) throw res.error;
+      const data = res.data;
+      if (!data?.client_secret || !data?.publishable_key) throw new Error("Configuration Stripe manquante");
+      setClientSecret(data.client_secret);
+      setStripePublishableKey(data.publishable_key);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erreur de configuration paiement. Vous pourrez ajouter votre carte plus tard.");
+      setStep("done");
+    } finally {
+      setLoadingCard(false);
     }
-    
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      setLoading(true);
+      localStorage.setItem("solocab_oauth_signup_type", "client");
+      const { lovable } = await import("@/integrations/lovable/index");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/oauth-onboarding",
+      });
+      if (result.error) {
+        toast.error(result.error.message);
+        setLoading(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (formData.password.length < 6) {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
-    
     setLoading(true);
 
     try {
@@ -118,262 +223,243 @@ const RegisterClient = () => {
           data: {
             full_name: formData.fullName,
             phone: formData.phone,
-            address: formData.address,
           },
         },
       });
 
       if (authError) throw authError;
-      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+      if (!authData.user) throw new Error("Erreur de création du compte");
 
-      // Wait for trigger
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((r) => setTimeout(r, 500));
 
-      // Update profile with phone
       await supabase
-        .from('profiles')
-        .update({ 
-          phone: formData.phone,
-          address: formData.address,
-          preferred_language: locale 
-        })
-        .eq('id', authData.user.id);
+        .from("profiles")
+        .update({ phone: formData.phone, preferred_language: locale })
+        .eq("id", authData.user.id);
 
-      // Create client record
       await createClientRecord(authData.user.id);
 
-      toast.success("Compte créé avec succès !");
+      toast.success("Compte créé ! Enregistrez votre carte pour réserver.");
+      setStep("card");
+      await initializeCardForm();
     } catch (error: any) {
-      console.error("Error registering:", error);
       if (error.message?.includes("already registered")) {
         toast.error("Cette adresse email est déjà utilisée");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
       }
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleGoBack = () => {
-    navigate(-1);
-  };
+  // ---------- RENDER ----------
 
-  if (authLoading || (user && loading)) {
+  if (authLoading || (user && loading && step === "form")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Chargement...</p>
-        </Card>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Registration success
-  if (registrationSuccess) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
-          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h1 className="text-2xl font-bold mb-4">Bienvenue sur SoloCab !</h1>
-          <p className="text-muted-foreground mb-6">
-            Votre compte a été créé avec succès. Pour commencer à réserver des courses, 
-            vous devez d'abord ajouter un chauffeur à votre compte.
-          </p>
-          <div className="space-y-3">
-            <Button 
-              onClick={() => navigate("/chauffeurs")}
-              className="w-full gap-2"
-            >
-              <Search className="w-4 h-4" />
-              Trouver un chauffeur
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate("/client-dashboard")}
-              className="w-full gap-2"
-            >
-              <Users className="w-4 h-4" />
-              Mon tableau de bord
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  // Registration form for new users
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="fixed top-4 right-4 z-50">
-        <LanguageSelector />
-      </div>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleGoBack}
-        className="fixed top-4 left-4 z-50 gap-2"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Retour
+      <div className="fixed top-4 right-4 z-50"><LanguageSelector /></div>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="fixed top-4 left-4 z-50 gap-2">
+        <ArrowLeft className="w-4 h-4" /> Retour
       </Button>
-      
-       <Card className="w-full max-w-md p-6">
-        <h1 className="text-2xl font-bold mb-2">Créer un compte client</h1>
-        <p className="text-sm text-muted-foreground mb-4">
-          Inscrivez-vous gratuitement pour accéder à tous les chauffeurs VTC
-        </p>
 
-        {/* Google OAuth signup */}
-        <Button
-          variant="outline"
-          className="w-full h-11 gap-3 mb-4"
-          onClick={async () => {
-            try {
-              localStorage.setItem("solocab_oauth_signup_type", "client");
-              const { lovable } = await import("@/integrations/lovable/index");
-              const result = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin + "/oauth-onboarding",
-              });
-              if (result.error) toast.error(result.error.message);
-            } catch (e: any) {
-              toast.error(e.message);
-            }
-          }}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          S'inscrire avec Google
-        </Button>
+      <Card className="w-full max-w-md overflow-hidden">
+        {/* Progress bar */}
+        <div className="flex h-1">
+          <div className={`flex-1 ${step !== "form" ? "bg-primary" : "bg-primary/30"} transition-colors`} />
+          <div className={`flex-1 ${step === "done" ? "bg-primary" : "bg-muted"} transition-colors`} />
+        </div>
 
-        <div className="relative mb-4">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">ou par email</span></div>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="fullName">{t('register.fullName')}</Label>
-            <Input
-              id="fullName"
-              required
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">{t('auth.email')}</Label>
-            <Input
-              id="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="password">{t('auth.password')}</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                required
-                minLength={6}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder={t('auth.passwordMinLength')}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        <CardContent className="p-6">
+          {/* ============ STEP 1: SIGNUP ============ */}
+          {step === "form" && (
+            <div className="space-y-4">
+              <div className="text-center mb-2">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  <Sparkles className="w-3 h-3" /> 100% gratuit
+                </div>
+                <h1 className="text-2xl font-bold">Rejoignez SoloCab</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Réservez un VTC en quelques secondes
+                </p>
+              </div>
+
+              {/* Google Button - Prominent */}
+              <Button
+                variant="outline"
+                className="w-full h-12 gap-3 text-base font-medium border-2 hover:border-primary/50"
+                onClick={handleGoogleSignup}
+                disabled={loading}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                )}
+                Continuer avec Google
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+
+              {/* Minimal email form */}
+              <form onSubmit={handleEmailSignup} className="space-y-3">
+                <div>
+                  <Label htmlFor="fullName">Nom complet</Label>
+                  <Input
+                    id="fullName"
+                    required
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="jean@exemple.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="6 caractères minimum"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-11" disabled={loading}>
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Créer mon compte
+                </Button>
+              </form>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Déjà un compte ?{" "}
+                <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/auth?redirect=/client-dashboard")}>
+                  Se connecter
+                </Button>
+              </p>
             </div>
-          </div>
-          <div>
-            <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                minLength={6}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                placeholder={t('auth.confirmPassword')}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          )}
+
+          {/* ============ STEP 2: CARD ============ */}
+          {step === "card" && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CreditCard className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold">Enregistrez votre carte</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Pour réserver instantanément sans ressaisir vos infos
+                </p>
+              </div>
+
+              {loadingCard || !clientSecret || !stripePromise ? (
+                <div className="flex items-center justify-center gap-2 py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Préparation...</span>
+                </div>
+              ) : (
+                <Elements
+                  stripe={stripePromise}
+                  key={clientSecret}
+                  options={{
+                    clientSecret,
+                    locale: "fr",
+                    appearance: {
+                      theme: "stripe",
+                      variables: { colorPrimary: "hsl(var(--primary))", borderRadius: "8px" },
+                    },
+                  }}
+                >
+                  <CardRegistrationForm
+                    clientSecret={clientSecret}
+                    onSuccess={() => setStep("done")}
+                  />
+                </Elements>
+              )}
+
+              <Button
+                variant="ghost"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => setStep("done")}
               >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+                Passer cette étape →
+              </Button>
             </div>
-            {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-              <p className="text-sm text-destructive mt-1">{t('auth.passwordMismatch')}</p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="phone">{t('register.phone')} *</Label>
-            <Input
-              id="phone"
-              type="tel"
-              required
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+33 6 12 34 56 78"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('register.phoneHint')}
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="address">{t('register.address')}</Label>
-            <AddressAutocomplete
-              value={formData.address}
-              onChange={(address) => setFormData({ ...formData, address })}
-              placeholder={t('register.addressPlaceholder')}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('register.addressHint')}
-            </p>
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Création en cours...
-              </>
-            ) : (
-              "Créer mon compte"
-            )}
-          </Button>
-        </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Déjà un compte ?{" "}
-            <Button 
-              variant="link" 
-              className="p-0 h-auto"
-              onClick={() => navigate("/auth?redirect=/client-dashboard")}
-            >
-              Se connecter
-            </Button>
-          </p>
-        </div>
+          )}
+
+          {/* ============ STEP 3: DONE ============ */}
+          {step === "done" && (
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Bienvenue sur SoloCab !</h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Votre compte est prêt. Trouvez votre premier chauffeur VTC.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Button onClick={() => navigate("/chauffeurs")} className="w-full h-11">
+                  🔍 Trouver un chauffeur
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/client-dashboard")} className="w-full">
+                  Mon tableau de bord
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
