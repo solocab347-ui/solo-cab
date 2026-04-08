@@ -824,7 +824,7 @@ export function UnifiedBookingPage() {
             <div className="space-y-2">
               <Button
                 className="w-full h-12 text-base font-semibold gap-2"
-                onClick={() => { setSearchMode('auto'); handleSearch(); }}
+                onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
                 disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
               >
                 {isGeocoding || isLoading ? (
