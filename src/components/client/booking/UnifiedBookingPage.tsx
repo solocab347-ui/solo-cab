@@ -583,6 +583,42 @@ export function UnifiedBookingPage() {
         </div>
       </header>
 
+      {/* WAITING SCREEN - shown after submitting request */}
+      {showWaitingScreen ? (
+        <main className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl space-y-4 pb-8">
+          <RideWaitingScreen
+            requestId={waitingRequestId}
+            requestGroupId={waitingGroupId}
+            requestType={waitingDriversData.length === 1 ? 'exclusive' : 'multi'}
+            driverCount={waitingDriversData.length}
+            pickupAddress={pickupAddress}
+            destinationAddress={destinationAddress}
+            estimatedPrice={waitingEstimatedPrice}
+            driverName={waitingDriversData.length === 1 ? (waitingDriversData[0]?.display_name || waitingDriversData[0]?.company_name || 'Chauffeur') : undefined}
+            timeoutAt={waitingTimeoutAt}
+            contactedDriversData={waitingDriversData}
+            routeDistanceKm={routeDistanceKm || undefined}
+            clientPaymentMethod={clientPaymentMethod}
+            onCancel={() => {
+              setShowWaitingScreen(false);
+              setConfirmationStep(false);
+              toast.info('Demande annulée');
+            }}
+            onAccepted={(driverName) => {
+              toast.success(`${driverName} a accepté votre course ! 🎉`);
+              setTimeout(() => {
+                if (user) navigate('/client-dashboard');
+                else navigate('/');
+              }, 3000);
+            }}
+            onExpired={() => {
+              toast.error('Aucun chauffeur disponible. Réessayez.');
+              setShowWaitingScreen(false);
+              setConfirmationStep(false);
+            }}
+          />
+        </main>
+      ) : (
       <main className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl space-y-4 pb-32">
         {/* Mode Toggle */}
         <div className="flex gap-2 p-1 bg-muted/50 rounded-xl border border-border/50">
