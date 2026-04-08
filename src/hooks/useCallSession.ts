@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { playNotificationSound } from '@/lib/notificationSounds';
+import { playNotificationSoundByType } from '@/lib/notificationSounds';
 
 export interface CallSession {
   id: string;
