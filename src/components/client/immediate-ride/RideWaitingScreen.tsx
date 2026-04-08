@@ -19,9 +19,9 @@ import {
   CalendarClock,
 } from 'lucide-react';
 
-export type WaitingStatus = 'searching' | 'transition' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
+export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
-type SearchPhase = 'selected' | 'nearby' | 'extended';
+type SearchPhase = 'selected' | 'relaunch' | 'nearby' | 'extended';
 
 interface RideWaitingScreenProps {
   requestId: string;
