@@ -38,9 +38,10 @@ interface RideWaitingScreenProps {
   onExpired: () => void;
 }
 
-const PHASE_CONFIG = {
-  selected: { timeout: 60, nextRadius: 5, nextPhase: 'nearby' as SearchPhase },
-  nearby: { timeout: 60, nextRadius: 10, nextPhase: 'extended' as SearchPhase },
+const PHASE_CONFIG: Record<SearchPhase, { timeout: number; nextRadius: number; nextPhase: SearchPhase | null; relaunchFirst?: boolean }> = {
+  selected: { timeout: 60, nextRadius: 5, nextPhase: 'relaunch', relaunchFirst: true },
+  relaunch: { timeout: 30, nextRadius: 5, nextPhase: 'nearby' },
+  nearby: { timeout: 60, nextRadius: 10, nextPhase: 'extended' },
   extended: { timeout: 60, nextRadius: 20, nextPhase: null },
 };
 
@@ -49,6 +50,11 @@ const PHASE_MESSAGES: Record<SearchPhase, { title: string; subtitle: string; ico
     title: 'Recherche de votre chauffeur…',
     subtitle: '',
     icon: <Car className="h-10 w-10 text-primary" />,
+  },
+  relaunch: {
+    title: 'Relance en cours…',
+    subtitle: 'Certains chauffeurs n\'ont pas répondu. Nous les recontactons.',
+    icon: <RefreshCw className="h-10 w-10 text-primary" />,
   },
   nearby: {
     title: 'Recherche élargie en cours…',
