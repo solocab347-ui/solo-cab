@@ -881,18 +881,94 @@ export function UnifiedBookingPage() {
               </div>
             </div>
 
-            {/* Search button - single automatic dispatch */}
+            {/* Guest info - shown inline if not logged in and paying by card */}
+            {!user && clientPaymentMethod === 'card' && (
+              <div className="space-y-2 pt-1 border-t border-border/30">
+                <Label className="text-sm text-foreground flex items-center gap-2">
+                  <UserPlus className="h-3.5 w-3.5 text-primary" />
+                  Vos coordonnées
+                </Label>
+                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email * (obligatoire pour CB)" type="email" className="h-10" />
+              </div>
+            )}
+
+            {/* Card verification - inline in search form */}
+            {clientPaymentMethod === 'card' && !cardVerifiedForBooking && (user || (guestName.trim() && guestPhone.trim() && guestEmail?.trim())) && (
+              <div className="pt-1 border-t border-border/30">
+                <BookingCardStep
+                  isAuthenticated={!!user}
+                  guestName={guestName}
+                  guestEmail={guestEmail}
+                  guestPhone={guestPhone}
+                  estimatedPrice={priceRange ? priceRange.max : undefined}
+                  onCardReady={(info) => {
+                    setCardVerifiedForBooking(true);
+                    setSavedCardInfo(info);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Price range preview - shown when prices are fetched */}
+            {priceRange && pickupCoords && destCoords && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Info className="h-4 w-4 text-primary shrink-0" />
+                  Estimation de prix
+                </div>
+                {priceRange.min === priceRange.max ? (
+                  <p className="text-lg font-bold text-primary pl-6">{priceRange.min.toFixed(0)}€ TTC</p>
+                ) : (
+                  <p className="text-lg font-bold text-primary pl-6">entre {priceRange.min.toFixed(0)}€ et {priceRange.max.toFixed(0)}€ TTC</p>
+                )}
+                <p className="text-[11px] text-muted-foreground pl-6">
+                  Basé sur les {drivers.length} chauffeur{drivers.length > 1 ? 's' : ''} les plus proches • {routeDistanceKm?.toFixed(1)} km
+                </p>
+              </div>
+            )}
+
+            {isFetchingPrices && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Estimation des prix en cours...
+              </div>
+            )}
+
+            {/* Search button - launches dispatch */}
             <Button
               className="w-full h-12 text-base font-semibold gap-2"
               onClick={() => { setSearchMode('auto'); autoConfirmTriggered.current = false; handleSearch(); }}
-              disabled={!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod || isGeocoding || isLoading}
+              disabled={(() => {
+                if (!pickupAddress.trim() || !destinationAddress.trim() || !clientPaymentMethod) return true;
+                if (isGeocoding || isLoading) return true;
+                if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return true;
+                if (!user && clientPaymentMethod === 'cash' && (!guestName.trim() || !guestPhone.trim())) return true;
+                return false;
+              })()}
             >
               {isGeocoding || isLoading ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Recherche en cours...</>
+              ) : priceRange ? (
+                <><Send className="mr-2 h-5 w-5" />Confirmer et lancer la recherche</>
               ) : (
                 <><Zap className="mr-2 h-5 w-5" />Rechercher un chauffeur</>
               )}
             </Button>
+
+            {/* Guest info for cash payment */}
+            {!user && clientPaymentMethod === 'cash' && (
+              <div className="space-y-2 pt-1 border-t border-border/30">
+                <Label className="text-sm text-foreground flex items-center gap-2">
+                  <UserPlus className="h-3.5 w-3.5 text-primary" />
+                  Vos coordonnées
+                </Label>
+                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
+                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email (optionnel)" type="email" className="h-10" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
