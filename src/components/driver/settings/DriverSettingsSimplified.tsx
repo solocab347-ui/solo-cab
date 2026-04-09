@@ -316,42 +316,45 @@ export function DriverSettingsSimplified({
             description="Soir, weekend, aéroport"
             defaultOpen={false}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Soir (%)
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">Soir (%)</span>
                 </Label>
                 <NumericInput
                   value={eveningSurcharge}
                   onChange={onEveningSurchargeChange}
                   placeholder="0"
+                  className="h-9 sm:h-10 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">20h-6h</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">20h-6h</p>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Weekend (%)</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm font-medium truncate">Weekend (%)</Label>
                 <NumericInput
                   value={weekendSurcharge}
                   onChange={onWeekendSurchargeChange}
                   placeholder="0"
+                  className="h-9 sm:h-10 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">Sam. & Dim.</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Sam. & Dim.</p>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Plane className="w-4 h-4" />
-                  Aéroport (€)
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                  <Plane className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">Aéro. (€)</span>
                 </Label>
                 <NumericInput
                   value={airportSurcharge}
                   onChange={onAirportSurchargeChange}
                   placeholder="0"
+                  className="h-9 sm:h-10 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">Forfait fixe</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Forfait</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3 p-2 bg-muted/50 rounded">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-3 p-2 bg-muted/50 rounded">
               💡 Mettez 0 si vous ne souhaitez pas de majoration
             </p>
           </CollapsibleSection>
