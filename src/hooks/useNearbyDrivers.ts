@@ -221,9 +221,10 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           };
         });
 
-        // Only show drivers with active Stripe Connect on public storefront
-        const stripeFilteredDrivers = driversWithPrices.filter(d => d.stripe_connect_charges_enabled === true);
-        setDrivers(stripeFilteredDrivers);
+        // Show all drivers - payment method availability is shown on their card
+        // Drivers without Stripe can still accept cash/transfer payments
+        const filteredDrivers = driversWithPrices.filter(d => d.estimated_price > 0 || d.base_fare > 0);
+        setDrivers(filteredDrivers);
         setSearchRadius(Math.max(...(stripeFilteredDrivers.length > 0 ? stripeFilteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
