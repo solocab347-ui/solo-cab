@@ -13,6 +13,8 @@ interface Course {
   scheduled_date: string;
   client_rating: number | null;
   course_number: string | null;
+  client_id: string | null;
+  driver_id: string | null;
   driver: {
     user_id: string;
     profiles: {
@@ -39,7 +41,6 @@ const ClientNotes = () => {
     try {
       setLoading(true);
 
-      // Get client_id first
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("id")
@@ -48,7 +49,6 @@ const ClientNotes = () => {
 
       if (clientError) throw clientError;
 
-      // Fetch completed courses
       const { data: coursesData, error: coursesError } = await supabase
         .from("courses")
         .select(`
@@ -58,6 +58,8 @@ const ClientNotes = () => {
           scheduled_date,
           client_rating,
           course_number,
+          client_id,
+          driver_id,
           driver:drivers!courses_driver_id_fkey (
             user_id,
             profiles:profiles!drivers_user_id_fkey (
@@ -111,7 +113,6 @@ const ClientNotes = () => {
           completedCourses.map((course) => (
             <Card key={course.id} className="p-4 hover:shadow-lg transition-shadow">
               <div className="space-y-3">
-                {/* Driver info */}
                 {course.driver && (
                   <div className="flex items-center gap-2 pb-3 border-b">
                     {course.driver.profiles?.profile_photo_url ? (
@@ -133,14 +134,12 @@ const ClientNotes = () => {
                   </div>
                 )}
 
-                {/* Course number */}
                 {course.course_number && (
                   <div className="text-xs font-mono text-muted-foreground">
                     {course.course_number}
                   </div>
                 )}
 
-                {/* Pickup */}
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 mt-1 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -149,7 +148,6 @@ const ClientNotes = () => {
                   </div>
                 </div>
 
-                {/* Destination */}
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 mt-1 text-destructive flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -158,7 +156,6 @@ const ClientNotes = () => {
                   </div>
                 </div>
 
-                {/* Date */}
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">
@@ -170,10 +167,11 @@ const ClientNotes = () => {
                   </p>
                 </div>
 
-                {/* Rating */}
                 <div className="pt-3 border-t">
                   <CourseRating
                     courseId={course.id}
+                    clientId={course.client_id || undefined}
+                    driverId={course.driver_id || undefined}
                     currentRating={course.client_rating}
                     onRatingSubmitted={handleRatingSubmitted}
                   />

@@ -1117,6 +1117,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          abusive_ratings_count: number | null
           created_at: string
           default_payment_method_id: string | null
           driver_id: string | null
@@ -1127,14 +1128,17 @@ export type Database = {
           is_exclusive: boolean
           preferred_fleet_driver_id: string | null
           qr_code_id: string | null
+          reliability_score: number | null
           saved_cards: Json | null
           stripe_customer_id: string | null
+          total_ratings_given: number | null
           total_rides: number | null
           total_spent: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          abusive_ratings_count?: number | null
           created_at?: string
           default_payment_method_id?: string | null
           driver_id?: string | null
@@ -1145,14 +1149,17 @@ export type Database = {
           is_exclusive?: boolean
           preferred_fleet_driver_id?: string | null
           qr_code_id?: string | null
+          reliability_score?: number | null
           saved_cards?: Json | null
           stripe_customer_id?: string | null
+          total_ratings_given?: number | null
           total_rides?: number | null
           total_spent?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          abusive_ratings_count?: number | null
           created_at?: string
           default_payment_method_id?: string | null
           driver_id?: string | null
@@ -1163,8 +1170,10 @@ export type Database = {
           is_exclusive?: boolean
           preferred_fleet_driver_id?: string | null
           qr_code_id?: string | null
+          reliability_score?: number | null
           saved_cards?: Json | null
           stripe_customer_id?: string | null
+          total_ratings_given?: number | null
           total_rides?: number | null
           total_spent?: number | null
           updated_at?: string
@@ -4012,6 +4021,174 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_ratings: {
+        Row: {
+          adjusted_rating: number | null
+          admin_override: boolean | null
+          admin_override_by: string | null
+          admin_override_reason: string | null
+          ai_analysis: Json | null
+          ai_decision: string | null
+          ai_justification: string | null
+          client_id: string
+          client_response_deadline: string | null
+          course_id: string
+          created_at: string
+          driver_id: string
+          driver_response: string | null
+          driver_response_at: string | null
+          id: string
+          rating: number
+          reason: string | null
+          reason_detail: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          adjusted_rating?: number | null
+          admin_override?: boolean | null
+          admin_override_by?: string | null
+          admin_override_reason?: string | null
+          ai_analysis?: Json | null
+          ai_decision?: string | null
+          ai_justification?: string | null
+          client_id: string
+          client_response_deadline?: string | null
+          course_id: string
+          created_at?: string
+          driver_id: string
+          driver_response?: string | null
+          driver_response_at?: string | null
+          id?: string
+          rating: number
+          reason?: string | null
+          reason_detail?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          adjusted_rating?: number | null
+          admin_override?: boolean | null
+          admin_override_by?: string | null
+          admin_override_reason?: string | null
+          ai_analysis?: Json | null
+          ai_decision?: string | null
+          ai_justification?: string | null
+          client_id?: string
+          client_response_deadline?: string | null
+          course_id?: string
+          created_at?: string
+          driver_id?: string
+          driver_response?: string | null
+          driver_response_at?: string | null
+          id?: string
+          rating?: number
+          reason?: string | null
+          reason_detail?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_ratings_admin_override_by_fkey"
+            columns: ["admin_override_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "course_ratings_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_ratings_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
@@ -7409,6 +7586,7 @@ export type Database = {
           deposit_required_for: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
+          disputed_ratings_won: number | null
           documents: Json | null
           documents_access_blocked: boolean | null
           documents_access_blocked_at: string | null
@@ -7487,6 +7665,7 @@ export type Database = {
           rating: number | null
           registration_data: Json | null
           registration_step: number | null
+          reliability_score: number | null
           reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
@@ -7531,6 +7710,7 @@ export type Database = {
           subscription_status: string | null
           subscription_stripe_id: string | null
           subscription_tier: string
+          total_ratings_received: number | null
           total_rides: number | null
           tpe_received_at: string | null
           trial_activated_at: string | null
@@ -7591,6 +7771,7 @@ export type Database = {
           deposit_required_for?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
+          disputed_ratings_won?: number | null
           documents?: Json | null
           documents_access_blocked?: boolean | null
           documents_access_blocked_at?: string | null
@@ -7669,6 +7850,7 @@ export type Database = {
           rating?: number | null
           registration_data?: Json | null
           registration_step?: number | null
+          reliability_score?: number | null
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
@@ -7713,6 +7895,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           subscription_tier?: string
+          total_ratings_received?: number | null
           total_rides?: number | null
           tpe_received_at?: string | null
           trial_activated_at?: string | null
@@ -7773,6 +7956,7 @@ export type Database = {
           deposit_required_for?: string | null
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
+          disputed_ratings_won?: number | null
           documents?: Json | null
           documents_access_blocked?: boolean | null
           documents_access_blocked_at?: string | null
@@ -7851,6 +8035,7 @@ export type Database = {
           rating?: number | null
           registration_data?: Json | null
           registration_step?: number | null
+          reliability_score?: number | null
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
@@ -7895,6 +8080,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           subscription_tier?: string
+          total_ratings_received?: number | null
           total_rides?: number | null
           tpe_received_at?: string | null
           trial_activated_at?: string | null
@@ -15373,6 +15559,59 @@ export type Database = {
           window_start?: string | null
         }
         Relationships: []
+      }
+      rating_disputes: {
+        Row: {
+          ai_verdict: string | null
+          ai_verdict_detail: string | null
+          client_responded_at: string | null
+          client_response: string | null
+          created_at: string
+          dispute_reason: string | null
+          id: string
+          initiated_by: string
+          rating_id: string
+          resolution: string | null
+          resolved_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_verdict?: string | null
+          ai_verdict_detail?: string | null
+          client_responded_at?: string | null
+          client_response?: string | null
+          created_at?: string
+          dispute_reason?: string | null
+          id?: string
+          initiated_by: string
+          rating_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_verdict?: string | null
+          ai_verdict_detail?: string | null
+          client_responded_at?: string | null
+          client_response?: string | null
+          created_at?: string
+          dispute_reason?: string | null
+          id?: string
+          initiated_by?: string
+          rating_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_disputes_rating_id_fkey"
+            columns: ["rating_id"]
+            isOneToOne: false
+            referencedRelation: "course_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reengagement_campaigns: {
         Row: {
