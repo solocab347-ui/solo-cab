@@ -81,7 +81,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="p-4 sm:p-6 md:p-8 bg-gradient-premium">
+      <Card className="p-4 sm:p-6 md:p-8 bg-gradient-premium" data-tutorial="qr-code">
         <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:gap-8">
           <div className="flex-shrink-0">
             {qrCode.qr_code_image && (
@@ -142,7 +142,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
       </Card>
 
       {/* Share Buttons */}
-      <Card className="p-4 sm:p-6">
+      <Card className="p-4 sm:p-6" data-tutorial="share-button">
         <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
           <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
           Partager votre QR Code
