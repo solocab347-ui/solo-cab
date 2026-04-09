@@ -41,10 +41,9 @@ interface CourseData {
 
 interface DriverInfo {
   id: string;
-  display_name: string | null;
   company_name: string | null;
   profile_photo_url: string | null;
-  phone: string | null;
+  contact_phone: string | null;
 }
 
 const PHASE_ORDER: CoursePhase[] = ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
