@@ -288,6 +288,7 @@ export function RideWaitingScreen({
   }, [requestGroupId, requestId, onExpired]);
 
   // Realtime subscription - listens for ANY accepted request in the group
+  const acceptedRef = useRef(false);
   useEffect(() => {
     const groupId = requestGroupId || requestId;
 
@@ -303,8 +304,10 @@ export function RideWaitingScreen({
         },
         async (payload) => {
           const newStatus = payload.new?.status;
-          if (newStatus === 'accepted') {
+          if (newStatus === 'accepted' && !acceptedRef.current) {
+            acceptedRef.current = true;
             const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
+            const finalCourseId = payload.new?.final_course_id;
             if (driverId) {
               const { data: driver } = await supabase
                 .from('drivers')
@@ -313,7 +316,7 @@ export function RideWaitingScreen({
                 .single();
               const name = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
               setAcceptedDriverName(name);
-              onAccepted(name);
+              onAccepted(name, finalCourseId || undefined);
             }
             setStatus('accepted');
           }
