@@ -128,19 +128,28 @@ const Index = () => {
               {/* Bouton Client */}
               <button
                 onClick={() => setActiveView("client")}
-                className="relative group rounded-2xl p-[2px] transition-all duration-500"
+                className="relative group rounded-2xl overflow-hidden transition-all duration-500"
               >
                 {/* Halo glow — toujours visible */}
                 <div className={cn(
-                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-500",
-                  activeView === "client" ? "opacity-50" : "opacity-15 group-hover:opacity-25"
+                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-700",
+                  activeView === "client" ? "opacity-50" : "opacity-20 group-hover:opacity-30"
                 )} />
-                {/* Bordure gradient */}
+                {/* Bordure gradient statique + shimmer */}
                 <div className={cn(
-                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 transition-opacity duration-500",
-                  activeView === "client" ? "opacity-100 animate-spin-slow" : "opacity-40 group-hover:opacity-60"
+                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 transition-opacity duration-700",
+                  activeView === "client" ? "opacity-100" : "opacity-30 group-hover:opacity-50"
                 )} style={{ padding: '2px' }}>
                   <div className="w-full h-full rounded-2xl bg-storefront-dark" />
+                </div>
+                {/* Lumière qui traverse — shimmer */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
+                )}>
+                  <div className={cn(
+                    "absolute -inset-full bg-gradient-to-r from-transparent via-pink-400/20 to-transparent skew-x-12 transition-opacity duration-700",
+                    activeView === "client" ? "opacity-100 animate-[shimmer_3s_ease-in-out_infinite]" : "opacity-40 animate-[shimmer_5s_ease-in-out_infinite]"
+                  )} />
                 </div>
                 {/* Contenu */}
                 <div className={cn(
@@ -173,19 +182,28 @@ const Index = () => {
               {/* Bouton Chauffeur */}
               <button
                 onClick={() => setActiveView("chauffeur")}
-                className="relative group rounded-2xl p-[2px] transition-all duration-500"
+                className="relative group rounded-2xl overflow-hidden transition-all duration-500"
               >
                 {/* Halo glow — toujours visible */}
                 <div className={cn(
-                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-blue-500 to-cyan-600 transition-opacity duration-500",
-                  activeView === "chauffeur" ? "opacity-50" : "opacity-15 group-hover:opacity-25"
+                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-blue-500 to-cyan-600 transition-opacity duration-700",
+                  activeView === "chauffeur" ? "opacity-50" : "opacity-20 group-hover:opacity-30"
                 )} />
-                {/* Bordure gradient */}
+                {/* Bordure gradient statique + shimmer */}
                 <div className={cn(
-                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 transition-opacity duration-500",
-                  activeView === "chauffeur" ? "opacity-100 animate-spin-slow" : "opacity-40 group-hover:opacity-60"
+                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 transition-opacity duration-700",
+                  activeView === "chauffeur" ? "opacity-100" : "opacity-30 group-hover:opacity-50"
                 )} style={{ padding: '2px' }}>
                   <div className="w-full h-full rounded-2xl bg-storefront-dark" />
+                </div>
+                {/* Lumière qui traverse — shimmer */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
+                )}>
+                  <div className={cn(
+                    "absolute -inset-full bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent skew-x-12 transition-opacity duration-700",
+                    activeView === "chauffeur" ? "opacity-100 animate-[shimmer_3s_ease-in-out_infinite]" : "opacity-40 animate-[shimmer_5s_ease-in-out_infinite]"
+                  )} />
                 </div>
                 {/* Contenu */}
                 <div className={cn(
