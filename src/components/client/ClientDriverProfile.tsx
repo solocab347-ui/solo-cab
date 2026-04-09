@@ -175,7 +175,7 @@ const ClientDriverProfile = () => {
             )}
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              {driver.show_rating_public !== false && driver.rating && (
+              {driver.rating && (
                 <Badge variant="outline" className="text-base px-3 py-1">
                   <Star className="w-4 h-4 mr-1 fill-amber-400 text-amber-400" />
                   {driver.rating.toFixed(1)}

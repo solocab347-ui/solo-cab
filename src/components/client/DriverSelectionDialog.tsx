@@ -198,7 +198,7 @@ export function DriverSelectionDialog({
                             {driver.vehicle_brand} {driver.vehicle_model}
                           </Badge>
                         )}
-                        {driver.rating && driver.rating > 0 && driver.show_rating_public && (
+                        {driver.rating && driver.rating > 0 && (
                           <Badge variant="outline" className="gap-1 text-xs">
                             <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                             {driver.rating.toFixed(1)}

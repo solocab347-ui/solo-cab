@@ -234,7 +234,7 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {driver.rating && driver.rating > 0 && driver.show_rating_public === true && (
+                    {driver.rating && driver.rating > 0 && (
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                         {driver.rating.toFixed(1)}
