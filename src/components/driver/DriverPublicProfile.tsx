@@ -272,33 +272,7 @@ export const DriverPublicProfile = memo(({
         </p>
 
         <div className="space-y-3">
-          {/* Note sur le profil public */}
-          {onShowRatingPublicChange && (
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-500/10">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                </div>
-                <div>
-                  <Label className="font-medium">Note sur le profil public</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Afficher votre note moyenne aux clients sur la vitrine publique
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {showRatingPublic && (
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
-                    Visible
-                  </Badge>
-                )}
-                <Switch
-                  checked={showRatingPublic}
-                  onCheckedChange={onShowRatingPublicChange}
-                />
-              </div>
-            </div>
-          )}
+          {/* Note toujours visible publiquement - pas de toggle */}
 
           {/* Note pour les partenaires */}
           {onShowRatingPartnersChange && (
