@@ -308,12 +308,12 @@ const Index = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/solocab-academy">
+                <a href="https://solocabacademy.fr" target="_blank" rel="noopener noreferrer">
                   <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
                     <GraduationCap className="w-5 h-5 mr-2" />
                     Découvrir SoloCab Academy
                   </Button>
-                </Link>
+                </a>
               </div>
 
               {/* Bloc vision SoloCab */}
