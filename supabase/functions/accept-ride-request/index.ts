@@ -78,8 +78,28 @@ serve(async (req) => {
       paymentMethod: claimed.payment_method,
     });
 
-    // Create the course
+    // Create the course - recalculate price server-side for integrity
     const clientWantsCard = claimed.payment_method === "card";
+
+    // Server-side price recalculation using RPC (source of truth)
+    let serverPrice = claimed.estimated_price;
+    try {
+      const { data: priceData, error: priceError } = await supabaseClient.rpc("calculate_course_price", {
+        _driver_id: driver.id,
+        _distance_km: claimed.distance_km || 0,
+        _scheduled_date: claimed.scheduled_date || new Date().toISOString(),
+        _pickup_address: claimed.pickup_address || null,
+        _destination_address: claimed.destination_address || null,
+      });
+      if (!priceError && priceData && priceData.length > 0) {
+        serverPrice = priceData[0].total_price;
+        logStep("Server-side price calculated", { clientPrice: claimed.estimated_price, serverPrice });
+      } else {
+        logStep("Price RPC fallback to client price", { priceError });
+      }
+    } catch (priceCalcErr) {
+      logStep("Price recalc error, using client price", { error: String(priceCalcErr) });
+    }
 
     const courseData: Record<string, unknown> = {
       driver_id: driver.id,
@@ -93,7 +113,7 @@ serve(async (req) => {
       scheduled_date: claimed.scheduled_date || new Date().toISOString(),
       status: "accepted",
       distance_km: claimed.distance_km,
-      guest_estimated_price: claimed.estimated_price,
+      guest_estimated_price: serverPrice,
       is_guest_booking: !claimed.client_id,
       guest_name: claimed.guest_name,
       guest_email: claimed.guest_email,
