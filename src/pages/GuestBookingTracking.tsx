@@ -201,6 +201,7 @@ const GuestBookingTracking = () => {
     }
   };
 
+  const handlePayment = async () => {
     if (!booking) return;
     
     setPaymentLoading(true);
