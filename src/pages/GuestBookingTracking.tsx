@@ -183,7 +183,24 @@ const GuestBookingTracking = () => {
     fetchBooking();
   };
 
-  const handlePayment = async () => {
+  const handleSubmitRating = async () => {
+    if (!booking || rating === 0) return;
+    setIsSubmittingRating(true);
+    try {
+      const { error } = await supabase
+        .from('courses')
+        .update({ client_rating: rating })
+        .eq('id', booking.id);
+      if (error) throw error;
+      setRatingSubmitted(true);
+      toast.success('Merci pour votre note !');
+    } catch {
+      toast.error('Erreur lors de l\'envoi de votre note');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
     if (!booking) return;
     
     setPaymentLoading(true);
