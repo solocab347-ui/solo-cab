@@ -47,6 +47,7 @@ const RegisterGuestClient = lazy(() => import("./pages/RegisterGuestClient"));
 const RegisterClient = lazy(() => import("./pages/RegisterClient"));
 const PioneerPayment = lazy(() => import("./pages/PioneerPayment"));
 const OurValues = lazy(() => import("./pages/OurValues"));
+const CommentCaMarche = lazy(() => import("./pages/CommentCaMarche"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const SafeMode = lazy(() => import("./pages/SafeMode"));
