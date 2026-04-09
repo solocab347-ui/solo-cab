@@ -233,7 +233,7 @@ export function DriverSettingsSimplified({
         </TabsList>
 
         {/* PRICING TAB */}
-        <TabsContent value="pricing" className="space-y-3 sm:space-y-4">
+        <TabsContent value="pricing" className="space-y-3 sm:space-y-4" data-tutorial="pricing-section">
           {/* Base Pricing */}
           <Card className="bg-gradient-to-br from-card to-card/80 border-primary/20">
             <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
