@@ -91,11 +91,11 @@ const ClientRideTracking = () => {
     // Fetch driver info
     const { data: driverData } = await supabase
       .from('drivers')
-      .select('id, display_name, company_name, profile_photo_url, phone')
+      .select('id, company_name, profile_photo_url, contact_phone')
       .eq('id', data.driver_id)
       .single();
 
-    if (driverData) setDriver(driverData as DriverInfo);
+    if (driverData) setDriver(driverData as unknown as DriverInfo);
 
     // Get ride_request for chat
     const { data: rr } = await supabase
