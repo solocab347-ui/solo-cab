@@ -343,7 +343,7 @@ export function UnifiedBookingPage() {
         }
       }
       const requestGroupId = crypto.randomUUID();
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('ride_requests')
         .insert(selectedDrivers.map(driver => ({
           client_id: clientId, guest_name: useGuestMode ? effectiveGuestName : null,
@@ -354,11 +354,11 @@ export function UnifiedBookingPage() {
           timeout_at: new Date(Date.now() + timeoutMs).toISOString(), payment_method: clientPaymentMethod || 'card',
           request_group_id: requestGroupId,
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() : null,
-        }))).select('id');
+        })));
       if (insertError) throw insertError;
       const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
       const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);
-      setWaitingRequestId(data?.[0]?.id || ''); setWaitingGroupId(requestGroupId);
+      setWaitingRequestId(requestGroupId); setWaitingGroupId(requestGroupId);
       setWaitingDriversData(selectedDrivers); setWaitingTimeoutAt(timeoutIso);
       setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
       setShowWaitingScreen(true);
