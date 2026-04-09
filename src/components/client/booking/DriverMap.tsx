@@ -87,25 +87,35 @@ const createDriverIcon = (driver: NearbyDriver, isSelected: boolean) => {
 const pickupIcon = L.divIcon({
   className: 'pickup-marker',
   html: `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-      <div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:4px solid #ffffff;box-shadow:0 0 0 2px #3b82f6, 0 4px 12px rgba(59,130,246,0.4);"></div>
-      <div style="width:3px;height:12px;background:linear-gradient(to bottom, #3b82f6, transparent);border-radius:2px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 8px rgba(59,130,246,0.5));">
+      <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);border:3px solid #ffffff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #3b82f6;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+      </div>
+      <div style="padding:1px 6px;border-radius:8px;background:#3b82f6;color:white;font-size:9px;font-weight:700;margin-top:2px;white-space:nowrap;border:1.5px solid white;">Vous</div>
     </div>
   `,
-  iconSize: [28, 38],
-  iconAnchor: [14, 34],
+  iconSize: [48, 58],
+  iconAnchor: [24, 50],
 });
 
 const destinationIcon = L.divIcon({
   className: 'destination-marker',
   html: `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-      <div style="width:20px;height:20px;border-radius:4px;background:#ef4444;border:4px solid #ffffff;transform:rotate(45deg);box-shadow:0 0 0 2px #ef4444, 0 4px 12px rgba(239,68,68,0.4);"></div>
-      <div style="width:3px;height:12px;background:linear-gradient(to bottom, #ef4444, transparent);border-radius:2px;margin-top:2px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 8px rgba(239,68,68,0.5));">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);border:3px solid #ffffff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #ef4444;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+          <line x1="4" y1="22" x2="4" y2="15" stroke="white" stroke-width="2"/>
+        </svg>
+      </div>
+      <div style="padding:1px 6px;border-radius:8px;background:#ef4444;color:white;font-size:9px;font-weight:700;margin-top:2px;white-space:nowrap;border:1.5px solid white;">Arrivée</div>
     </div>
   `,
-  iconSize: [28, 40],
-  iconAnchor: [14, 36],
+  iconSize: [48, 56],
+  iconAnchor: [24, 48],
 });
 
 export function DriverMap({
@@ -326,7 +336,7 @@ export function DriverMap({
   }, [mapStatus, drivers.length]);
 
   return (
-    <div className="relative w-full min-h-[280px] overflow-hidden rounded-2xl border border-border/30 shadow-2xl sm:min-h-[380px]">
+    <div className="relative w-full h-full min-h-[150px] overflow-hidden rounded-xl border border-border/30 shadow-lg">
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
       {(tokenLoading || mapStatus === 'loading') && (
