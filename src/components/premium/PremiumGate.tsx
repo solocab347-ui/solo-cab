@@ -1,132 +1,138 @@
-import { ReactNode, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Sparkles, ArrowRight, Loader2, Lock, Zap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { usePremium } from "@/hooks/usePremium";
+import { Crown, Lock, Star, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface PremiumGateProps {
-  /** Content to show if user has premium */
-  children?: ReactNode;
-  /** Whether the user has premium access */
-  isPremium: boolean;
-  /** Feature name for the upgrade prompt */
-  featureName: string;
-  /** Optional description */
+  /** Feature name for display */
+  feature?: string;
+  /** @deprecated Use feature instead */
+  featureName?: string;
+  /** Description of the locked feature */
+  description?: string;
+  /** @deprecated Use description instead */
   featureDescription?: string;
-  /** If true, shows a subtle inline badge instead of full card */
-  inline?: boolean;
+  /** @deprecated Ignored - uses usePremium hook now */
+  isPremium?: boolean;
+  /** Content to blur behind the gate */
+  children?: React.ReactNode;
 }
 
-/**
- * Composant de gating premium.
- * Si l'utilisateur est premium → affiche le contenu enfant.
- * Sinon → affiche un appel à passer premium avec bouton d'upgrade.
- */
-export function PremiumGate({ 
-  children, 
-  isPremium, 
-  featureName, 
-  featureDescription,
-  inline = false 
-}: PremiumGateProps) {
-  const [loading, setLoading] = useState(false);
+export function PremiumGate({ feature, featureName, children, description, featureDescription, isPremium: _ignored }: PremiumGateProps) {
+  const { isPremium, loading } = usePremium();
+  const displayName = feature || featureName || "cette fonctionnalité";
+  const displayDesc = description || featureDescription;
 
-  if (isPremium) {
-    return <>{children}</>;
-  }
+  if (loading) return <>{children}</>;
+  if (isPremium) return <>{children}</>;
 
-  const handleUpgrade = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-premium-checkout");
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("Pas d'URL de paiement reçue");
-      }
-    } catch (error: any) {
-      console.error("Error creating premium checkout:", error);
-      toast.error("Erreur lors de la redirection vers le paiement");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (inline) {
-    return (
-      <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-        <Lock className="h-4 w-4 text-amber-500 shrink-0" />
-        <span className="text-sm text-muted-foreground flex-1">
-          {featureName} — <span className="font-medium text-foreground">Fonctionnalité Premium</span>
-        </span>
-        <Button size="sm" variant="outline" onClick={handleUpgrade} disabled={loading} className="shrink-0 border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
-          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <>9,99€/mois <ArrowRight className="h-3 w-3 ml-1" /></>}
-        </Button>
-      </div>
-    );
+  // If no children, render the lock card standalone
+  if (!children) {
+    return <PremiumLockCard feature={displayName} description={displayDesc} />;
   }
 
   return (
-    <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-background to-orange-500/5 overflow-hidden">
-      <CardContent className="p-6 text-center space-y-4">
-        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <Crown className="h-7 w-7 text-white" />
-        </div>
-        
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10">
-              <Sparkles className="h-3 w-3 mr-1" /> Premium
-            </Badge>
-            <Badge variant="outline" className="border-green-500/40 text-green-600 bg-green-500/10">
-              <Zap className="h-3 w-3 mr-1" /> Prix de lancement
-            </Badge>
+    <div className="relative">
+      <div className="pointer-events-none opacity-30 blur-[2px] select-none">
+        {children}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
+        <PremiumLockCard feature={displayName} description={displayDesc} />
+      </div>
+    </div>
+  );
+}
+
+function PremiumLockCard({ feature, description }: { feature: string; description?: string }) {
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  const { openCheckout } = usePremium();
+
+  const handleUpgrade = async () => {
+    try {
+      setLoadingCheckout(true);
+      await openCheckout(selectedPlan);
+    } catch {
+      toast.error("Erreur lors de l'ouverture du paiement");
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
+
+  return (
+    <Card className="max-w-sm w-full border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/10 shadow-xl">
+      <CardContent className="p-5 space-y-4">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mx-auto">
+            <Crown className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-lg font-bold">{featureName}</h3>
-          {featureDescription && (
-            <p className="text-sm text-muted-foreground mt-1">{featureDescription}</p>
-          )}
+          <h3 className="font-bold text-base">
+            <Lock className="h-4 w-4 inline mr-1" />
+            Fonctionnalité Premium
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {description || `"${feature}" est disponible avec l'abonnement Premium.`}
+          </p>
         </div>
 
-        <div className="space-y-2 text-left text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Partenariats entre chauffeurs
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Échange et partage de courses
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Campagnes marketing & codes promo
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Outils de prospection avancés
-          </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setSelectedPlan("monthly")}
+            className={`p-2.5 rounded-lg border-2 text-left transition-all ${
+              selectedPlan === "monthly"
+                ? "border-amber-500 bg-amber-500/10"
+                : "border-border hover:border-amber-500/30"
+            }`}
+          >
+            <p className="text-xs font-medium">Mensuel</p>
+            <p className="text-lg font-bold">19,99€</p>
+            <p className="text-[10px] text-muted-foreground">/mois</p>
+          </button>
+          <button
+            onClick={() => setSelectedPlan("yearly")}
+            className={`p-2.5 rounded-lg border-2 text-left transition-all relative ${
+              selectedPlan === "yearly"
+                ? "border-amber-500 bg-amber-500/10"
+                : "border-border hover:border-amber-500/30"
+            }`}
+          >
+            <Badge className="absolute -top-2 -right-1 bg-green-600 text-white text-[9px] px-1.5">
+              -20%
+            </Badge>
+            <p className="text-xs font-medium">Annuel</p>
+            <p className="text-lg font-bold">191,90€</p>
+            <p className="text-[10px] text-muted-foreground">~15,99€/mois</p>
+          </button>
         </div>
 
-        <Button 
-          onClick={handleUpgrade} 
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold"
+        <div className="space-y-1.5">
+          {["Encaissements spontanés", "Objectifs & Rentabilité", "Planning avancé", "Partenariats"].map((f) => (
+            <div key={f} className="flex items-center gap-2 text-xs">
+              <CheckCircle2 className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span>{f}</span>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          onClick={handleUpgrade}
+          disabled={loadingCheckout}
+          className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
         >
-          {loading ? (
+          {loadingCheckout ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
-            <Crown className="h-4 w-4 mr-2" />
+            <Star className="h-4 w-4 mr-2" />
           )}
-          Passer Premium — 9,99€/mois
+          Passer en Premium
+          <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
-        
-        <p className="text-xs text-muted-foreground">
-          Abonnement direct · Sans engagement · Résiliable à tout moment
-        </p>
       </CardContent>
     </Card>
   );
 }
+
+export default PremiumGate;

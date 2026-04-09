@@ -286,25 +286,12 @@ export function DriverSettingsSimplified({
                 </div>
               </div>
 
-              {/* Places max + TVA */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-2 border-t border-border/30">
-                <div className="space-y-1">
-                  <Label className="text-xs sm:text-sm font-medium">Places max</Label>
-                  <NumericInput
-                    value={maxPassengers}
-                    onChange={onMaxPassengersChange}
-                    placeholder="4"
-                    min={1}
-                    max={20}
-                    className="h-9 sm:h-10"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <TvaToggle
-                    checked={tvaIncluded}
-                    onCheckedChange={onTvaIncludedChange}
-                  />
-                </div>
+              {/* TVA */}
+              <div className="pt-2 border-t border-border/30">
+                <TvaToggle
+                  checked={tvaIncluded}
+                  onCheckedChange={onTvaIncludedChange}
+                />
               </div>
             </CardContent>
           </Card>

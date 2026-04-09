@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { PremiumProvider } from "@/hooks/usePremium";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
@@ -87,6 +88,7 @@ const App = () => (
     <GlobalSecurityProvider>
       <BrowserRouter>
         <AuthProvider>
+          <PremiumProvider>
           <MaintenanceProvider>
             <PWABannerProvider>
               <TooltipProvider>
@@ -374,6 +376,7 @@ const App = () => (
           </TooltipProvider>
           </PWABannerProvider>
           </MaintenanceProvider>
+          </PremiumProvider>
         </AuthProvider>
       </BrowserRouter>
     </GlobalSecurityProvider>
