@@ -372,62 +372,20 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Rating on Public Profile */}
-          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-500/10">
-                <Star className="h-5 w-5 text-yellow-500" />
-              </div>
-              <div className="space-y-0.5">
-                <Label className="text-base font-medium">
-                  Note sur le Profil Public
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Afficher votre note moyenne aux clients sur la vitrine publique
-                </p>
-              </div>
+          {/* Notes toujours visibles - info seulement */}
+          <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+            <div className="p-2 rounded-lg bg-yellow-500/10">
+              <Star className="h-5 w-5 text-yellow-500" />
             </div>
-            <div className="flex items-center gap-2">
-              {showRatingPublic && (
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
-                  Visible
-                </Badge>
-              )}
-              <Switch
-                checked={showRatingPublic}
-                onCheckedChange={(checked) => updateSetting('show_rating_public', checked)}
-                disabled={updating}
-              />
+            <div className="space-y-0.5">
+              <Label className="text-base font-medium">Notes</Label>
+              <p className="text-sm text-muted-foreground">
+                Votre note est toujours visible publiquement et par les partenaires
+              </p>
             </div>
-          </div>
-
-          {/* Rating for Partners */}
-          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <Star className="h-5 w-5 text-orange-500" />
-              </div>
-              <div className="space-y-0.5">
-                <Label className="text-base font-medium">
-                  Note pour les Partenaires
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Afficher votre note aux chauffeurs, entreprises et gestionnaires
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {showRatingPartners && (
-                <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
-                  Visible
-                </Badge>
-              )}
-              <Switch
-                checked={showRatingPartners}
-                onCheckedChange={(checked) => updateSetting('show_rating_partners', checked)}
-                disabled={updating}
-              />
-            </div>
+            <Badge variant="secondary" className="ml-auto bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+              Toujours visible
+            </Badge>
           </div>
 
           {/* Pricing for Partners */}

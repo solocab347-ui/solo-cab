@@ -468,24 +468,8 @@ export const DriverPublicProfileSimplified = memo(({
             </div>
           </Card>
 
-          {/* Note publique */}
-          {onShowRatingPublicChange && (
-            <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-              <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Affichage de la note</h3>
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50">
-                <div className="flex-1 min-w-0 pr-3">
-                  <Label className="font-medium text-sm">Montrer ma note</Label>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
-                    Note visible sur votre profil
-                  </p>
-                </div>
-                <Switch
-                  checked={showRatingPublic}
-                  onCheckedChange={onShowRatingPublicChange}
-                />
-              </div>
-            </Card>
-          )}
+          {/* Note toujours visible - plus de toggle */}
+
         </TabsContent>
       </Tabs>
     </div>

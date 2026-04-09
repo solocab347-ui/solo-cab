@@ -217,46 +217,15 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <Star className="h-5 w-5 text-yellow-500" />
-              <div>
-                <Label htmlFor="show-rating-public-setting" className="font-medium">
-                  Afficher ma note publiquement
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Votre note est visible sur votre profil public (clients)
-                </p>
-              </div>
+          {/* Notes toujours visibles */}
+          <div className="flex items-center gap-3 py-2">
+            <Star className="h-5 w-5 text-yellow-500" />
+            <div>
+              <Label className="font-medium">Notes</Label>
+              <p className="text-sm text-muted-foreground">
+                Votre note est toujours visible publiquement et par les partenaires
+              </p>
             </div>
-            <Switch
-              id="show-rating-public-setting"
-              checked={showRatingPublic}
-              onCheckedChange={(value) => updateSetting('show_rating_public', value)}
-              disabled={loading}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <Star className="h-5 w-5 text-amber-500" />
-              <div>
-                <Label htmlFor="show-rating-partners-setting" className="font-medium">
-                  Afficher ma note aux partenaires chauffeurs
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Vos partenaires chauffeurs peuvent voir votre note
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="show-rating-partners-setting"
-              checked={showRatingPartners}
-              onCheckedChange={(value) => updateSetting('show_rating_partners', value)}
-              disabled={loading}
-            />
           </div>
 
           <Separator />

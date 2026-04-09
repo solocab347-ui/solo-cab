@@ -69,8 +69,8 @@ export function ClientHomeView({
     return parts.join(' ') || '';
   };
 
-  // Respect driver visibility settings
-  const shouldShowRating = favoriteDriver?.show_rating_public !== false && favoriteDriver?.rating > 0;
+  // Rating always visible
+  const shouldShowRating = favoriteDriver?.rating > 0;
   const shouldShowPhone = favoriteDriver?.show_phone !== false && favoriteDriver?.profiles?.phone;
 
   return (

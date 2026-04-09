@@ -238,7 +238,7 @@ export function FavoriteDriverSection({
                 <h3 className="font-semibold text-foreground truncate">
                   {getDriverDisplayName(favoriteDriver)}
                 </h3>
-                {favoriteDriver.rating && favoriteDriver.rating > 0 && favoriteDriver.show_rating_public && (
+                {favoriteDriver.rating && favoriteDriver.rating > 0 && (
                   <Badge variant="secondary" className="gap-0.5 text-xs px-1.5 py-0">
                     <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                     {favoriteDriver.rating.toFixed(1)}
