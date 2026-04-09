@@ -349,10 +349,14 @@ export function UnifiedBookingPage() {
           client_id: clientId, guest_name: useGuestMode ? effectiveGuestName : null,
           guest_phone: useGuestMode ? effectiveGuestPhone : null, guest_email: useGuestMode ? effectiveGuestEmail || null : null,
           pickup_address: pickupAddress, destination_address: destinationAddress,
+          pickup_latitude: pickupCoords?.lat || null, pickup_longitude: pickupCoords?.lng || null,
+          destination_latitude: destCoords?.lat || null, destination_longitude: destCoords?.lng || null,
           distance_km: routeDistanceKm || 0, ride_type: mode === 'reservation' ? 'scheduled' : 'immediate',
           status: 'pending', selected_driver_id: driver.driver_id, estimated_price: driver.estimated_price,
           timeout_at: new Date(Date.now() + timeoutMs).toISOString(), payment_method: clientPaymentMethod || 'card',
           request_group_id: requestGroupId,
+          request_type: selectedDrivers.length > 1 ? 'multi' : 'exclusive',
+          driver_count: selectedDrivers.length,
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() : null,
         })));
       if (insertError) throw insertError;
