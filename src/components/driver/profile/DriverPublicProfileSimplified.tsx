@@ -355,6 +355,28 @@ export const DriverPublicProfileSimplified = memo(({
           </Card>
         </TabsContent>
 
+        {/* Tab Véhicule */}
+        <TabsContent value="vehicle" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          {/* Gestionnaire véhicules */}
+          {driverId && (
+            <DriverVehiclesManager driverId={driverId} />
+          )}
+
+          {/* Catégories véhicule */}
+          <VehicleCategorySelector
+            selectedCategories={vehicleCategories || []}
+            onChange={onVehicleCategoriesChange}
+          />
+
+          {/* Équipements */}
+          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
+            <EquipmentSelector
+              selectedEquipment={vehicleEquipment || []}
+              onChange={onVehicleEquipmentChange}
+            />
+          </Card>
+        </TabsContent>
+
         {/* Tab Services */}
         <TabsContent value="services" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           {/* Secteurs */}
@@ -387,17 +409,6 @@ export const DriverPublicProfileSimplified = memo(({
             </p>
           </Card>
 
-          {/* Gestionnaire véhicules */}
-          {driverId && (
-            <DriverVehiclesManager driverId={driverId} />
-          )}
-
-          {/* Catégories véhicule */}
-          <VehicleCategorySelector
-            selectedCategories={vehicleCategories || []}
-            onChange={onVehicleCategoriesChange}
-          />
-
           {/* Services */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
             <ServicesSelector
@@ -405,20 +416,6 @@ export const DriverPublicProfileSimplified = memo(({
               onChange={onServicesOfferedChange}
             />
           </Card>
-
-          {/* Équipements */}
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <EquipmentSelector
-              selectedEquipment={vehicleEquipment || []}
-              onChange={onVehicleEquipmentChange}
-            />
-          </Card>
-        </TabsContent>
-
-        {/* Tab Contact */}
-        <TabsContent value="contact" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Coordonnées publiques</h3>
             
             <div className="space-y-3 sm:space-y-4">
               {/* Téléphone */}
