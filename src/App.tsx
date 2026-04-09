@@ -58,6 +58,7 @@ const NfcPlateOrderSuccess = lazy(() => import("./pages/NfcPlateOrderSuccess"));
 const TrackNfcOrder = lazy(() => import("./pages/TrackNfcOrder"));
 const Tarifs = lazy(() => import("./pages/Tarifs"));
 const ImmediateRide = lazy(() => import("./pages/ImmediateRide"));
+const ClientRideTracking = lazy(() => import("./pages/ClientRideTracking"));
 
 // Legacy migration pages
 const LegacyMigration = lazy(() => import("./pages/chauffeur/LegacyMigration"));
@@ -139,6 +140,7 @@ const App = () => (
               <Route path="/suivi-plaque-nfc" element={<Suspense fallback={<LoadingFallback />}><TrackNfcOrder /></Suspense>} />
               <Route path="/tarifs" element={<Suspense fallback={<LoadingFallback />}><Tarifs /></Suspense>} />
               <Route path="/course-immediate" element={<Suspense fallback={<LoadingFallback />}><ImmediateRide /></Suspense>} />
+              <Route path="/suivi-course/:courseId" element={<Suspense fallback={<LoadingFallback />}><ClientRideTracking /></Suspense>} />
               
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>

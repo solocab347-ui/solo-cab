@@ -271,7 +271,7 @@ serve(async (req) => {
           title: "🎉 Un chauffeur a accepté votre course !",
           message: `${driver.company_name || 'Votre chauffeur'} a accepté votre demande. ${paymentMessage}`,
           type: autoHoldResult === "auto_confirmed" ? "success" : "info",
-          link: `/reservation-tracking/${course.id}`,
+          link: `/suivi-course/${course.id}`,
         });
       }
     }

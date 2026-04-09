@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -51,6 +51,10 @@ const GuestBookingTracking = () => {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [driverUsesStripe, setDriverUsesStripe] = useState(false);
   const [rideRequestId, setRideRequestId] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
 
   const fetchBooking = async () => {
@@ -179,6 +183,24 @@ const GuestBookingTracking = () => {
     fetchBooking();
   };
 
+  const handleSubmitRating = async () => {
+    if (!booking || rating === 0) return;
+    setIsSubmittingRating(true);
+    try {
+      const { error } = await supabase
+        .from('courses')
+        .update({ client_rating: rating })
+        .eq('id', booking.id);
+      if (error) throw error;
+      setRatingSubmitted(true);
+      toast.success('Merci pour votre note !');
+    } catch {
+      toast.error('Erreur lors de l\'envoi de votre note');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!booking) return;
     
@@ -223,6 +245,20 @@ const GuestBookingTracking = () => {
             Confirmée
           </Badge>
         );
+      case 'driver_approaching':
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+            <Navigation className="w-3 h-3 mr-1" />
+            Chauffeur en approche
+          </Badge>
+        );
+      case 'driver_arrived':
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+            <Car className="w-3 h-3 mr-1" />
+            Chauffeur arrivé
+          </Badge>
+        );
       case 'in_progress':
         return (
           <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
@@ -259,7 +295,11 @@ const GuestBookingTracking = () => {
       case 'pending':
         return "Votre demande de réservation a été envoyée. Le chauffeur va l'examiner et vous confirmer la course.";
       case 'accepted':
-        return "Votre réservation a été confirmée ! Le chauffeur sera au point de rendez-vous à l'heure convenue.";
+        return "Votre réservation a été confirmée ! Le chauffeur se prépare.";
+      case 'driver_approaching':
+        return "Le chauffeur est en route vers votre point de prise en charge.";
+      case 'driver_arrived':
+        return "Le chauffeur est arrivé au point de rendez-vous !";
       case 'in_progress':
         return "Votre course est en cours. Bon trajet !";
       case 'refused':
@@ -282,13 +322,15 @@ const GuestBookingTracking = () => {
   // Status timeline steps
   const getTimelineSteps = (status: string) => {
     const steps = [
-      { key: 'pending', label: 'Demande envoyée', icon: Clock3 },
+      { key: 'pending', label: 'Envoyée', icon: Clock3 },
       { key: 'accepted', label: 'Confirmée', icon: CheckCircle },
+      { key: 'driver_approaching', label: 'En approche', icon: Navigation },
+      { key: 'driver_arrived', label: 'Arrivé', icon: Car },
       { key: 'in_progress', label: 'En cours', icon: Car },
       { key: 'completed', label: 'Terminée', icon: CheckCircle },
     ];
 
-    const statusOrder = ['pending', 'accepted', 'in_progress', 'completed'];
+    const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
     const currentIndex = statusOrder.indexOf(status);
     const isCancelled = status === 'refused' || status === 'cancelled';
 
@@ -581,6 +623,59 @@ const GuestBookingTracking = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Rating Section */}
+        {booking.status === 'completed' && !ratingSubmitted && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-center">Comment s'est passée votre course ?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-10 w-10 transition-colors ${
+                        star <= (hoverRating || rating)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-muted-foreground/30'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              {rating > 0 && (
+                <Button
+                  onClick={handleSubmitRating}
+                  className="w-full"
+                  disabled={isSubmittingRating}
+                >
+                  {isSubmittingRating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Envoyer ma note ({rating}/5)
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {booking.status === 'completed' && ratingSubmitted && (
+          <Card className="mb-6 border-green-500/20 bg-green-500/5">
+            <CardContent className="pt-4 pb-4 text-center">
+              <div className="flex justify-center gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} className={`h-6 w-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">Merci pour votre évaluation !</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Registration CTA */}
         <Alert className="border-primary/50 bg-primary/5">
