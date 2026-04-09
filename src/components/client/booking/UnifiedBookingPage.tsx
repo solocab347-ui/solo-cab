@@ -110,6 +110,9 @@ export function UnifiedBookingPage() {
   const [showDestSuggestions, setShowDestSuggestions] = useState(false);
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
+  // Lock flags to prevent re-opening after selection
+  const pickupLock = useRef(false);
+  const destLock = useRef(false);
 
   // ── Persist state to sessionStorage on every relevant change ──
   useEffect(() => {
@@ -300,18 +303,22 @@ export function UnifiedBookingPage() {
   const handlePickupChange = (val: string) => {
     setPickupAddress(val);
     setPickupCoords(null);
+    pickupLock.current = false;
     if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
-    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 150);
+    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 300);
   };
 
   const handleDestChange = (val: string) => {
     setDestinationAddress(val);
     setDestCoords(null);
+    destLock.current = false;
     if (destDebounce.current) clearTimeout(destDebounce.current);
-    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 150);
+    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 300);
   };
 
   const selectPickupSuggestion = (feature: any) => {
+    if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
+    pickupLock.current = true;
     setPickupAddress(feature.place_name);
     setPickupCoords({ lat: feature.center[1], lng: feature.center[0] });
     setShowPickupSuggestions(false);
@@ -319,6 +326,8 @@ export function UnifiedBookingPage() {
   };
 
   const selectDestSuggestion = (feature: any) => {
+    if (destDebounce.current) clearTimeout(destDebounce.current);
+    destLock.current = true;
     setDestinationAddress(feature.place_name);
     setDestCoords({ lat: feature.center[1], lng: feature.center[0] });
     setShowDestSuggestions(false);
