@@ -376,6 +376,7 @@ const App = () => (
           </TooltipProvider>
           </PWABannerProvider>
           </MaintenanceProvider>
+          </PremiumProvider>
         </AuthProvider>
       </BrowserRouter>
     </GlobalSecurityProvider>
