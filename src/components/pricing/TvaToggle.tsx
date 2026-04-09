@@ -51,61 +51,58 @@ export const TvaToggle = ({
   }
 
   return (
-    <div className={`p-4 rounded-lg border ${checked ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'} ${className}`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
+    <div className={`p-3 sm:p-4 rounded-lg border ${checked ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'} ${className}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             {checked ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
             ) : (
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 shrink-0" />
             )}
-            <Label className="font-semibold text-base">
+            <Label className="font-semibold text-sm sm:text-base">
               Mode de tarification
             </Label>
           </div>
           
           {checked ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <Badge className="bg-green-600 text-white font-bold px-3">TTC</Badge>
-                <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                <Badge className="bg-green-600 text-white font-bold px-2 sm:px-3 text-xs">TTC</Badge>
+                <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-400">
                   Vos prix incluent la TVA
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
                 Les prix que vous saisissez sont les prix finaux affichés au client.
                 <br />
                 <strong>Exemple:</strong> Vous entrez 50€ → Le client voit 50€ sur le devis
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="border-orange-500 text-orange-600 font-bold px-3">HT</Badge>
-                <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
+                <Badge variant="outline" className="border-orange-500 text-orange-600 font-bold px-2 sm:px-3 text-xs">HT</Badge>
+                <span className="text-xs sm:text-sm font-medium text-orange-700 dark:text-orange-400">
                   Vos prix sont hors taxes
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
-                <p>La TVA sera ajoutée automatiquement sur les devis et factures :</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    🚗 Course classique: +10% TVA
+              <div className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed space-y-1">
+                <p>La TVA sera ajoutée automatiquement :</p>
+                <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mt-1">
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs font-normal w-fit">
+                    🚗 Course: +10%
                   </Badge>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    ⏱️ Mise à disposition: +20% TVA
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs font-normal w-fit">
+                    ⏱️ Mise à dispo: +20%
                   </Badge>
                 </div>
-                <p className="mt-1">
-                  <strong>Exemple:</strong> Vous entrez 50€ HT → Le client voit 55€ TTC (course) ou 60€ TTC (mise à disposition)
-                </p>
               </div>
             </div>
           )}
         </div>
         
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 shrink-0">
           <Switch
             checked={checked}
             onCheckedChange={onCheckedChange}
@@ -117,11 +114,10 @@ export const TvaToggle = ({
         </div>
       </div>
       
-      {/* Info box pour les nouveaux chauffeurs */}
-      <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
-        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+      <div className="mt-2 sm:mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded text-[11px] sm:text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+        <Info className="w-3 h-3 sm:w-4 sm:h-4 shrink-0 mt-0.5" />
         <span>
-          <strong>Par défaut :</strong> Les prix sont en TTC. Cette option est recommandée pour la majorité des chauffeurs VTC.
+          <strong>Par défaut :</strong> Les prix sont en TTC. Recommandé pour la majorité des chauffeurs.
         </span>
       </div>
     </div>
