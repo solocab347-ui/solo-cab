@@ -125,6 +125,7 @@ const App = () => (
               <Route path="/inscription-congres" element={<Navigate to="/register-driver-promo" replace />} />
               <Route path="/pioneer-payment" element={<Suspense fallback={<LoadingFallback />}><PioneerPayment /></Suspense>} />
               <Route path="/nos-valeurs" element={<Suspense fallback={<LoadingFallback />}><OurValues /></Suspense>} />
+              <Route path="/comment-ca-marche" element={<Suspense fallback={<LoadingFallback />}><CommentCaMarche /></Suspense>} />
               <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
               <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
               <Route path="/safe-mode" element={<Suspense fallback={<LoadingFallback />}><SafeMode /></Suspense>} />
