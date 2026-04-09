@@ -341,6 +341,10 @@ export function UnifiedBookingPage() {
       return;
     }
     setIsGettingLocation(true);
+    pickupLock.current = true;
+    if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
+    setShowPickupSuggestions(false);
+    setPickupSuggestions([]);
     
     let resolved = false;
     const resolve = async (lat: number, lng: number, accuracy?: number) => {
