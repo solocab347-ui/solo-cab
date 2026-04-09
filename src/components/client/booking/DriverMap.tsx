@@ -63,7 +63,7 @@ const createDriverIcon = (driver: NearbyDriver, isSelected: boolean) => {
 
   const borderColor = isSelected ? '#3b82f6' : '#ffffff';
   const glowColor = isSelected ? 'rgba(59,130,246,0.5)' : 'rgba(0,0,0,0.3)';
-  const priceDisplay = price && price > 0 ? `${price.toFixed(0)}€` : '';
+  const priceDisplay = price && price > 0 ? `${price.toFixed(2)}€` : '';
 
   const avatarContent = photoUrl
     ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><div style="display:none;width:100%;height:100%;border-radius:50%;background:#3b82f6;color:white;font-size:12px;font-weight:700;align-items:center;justify-content:center;">${initials}</div>`
