@@ -1391,6 +1391,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clients_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clients_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
@@ -19438,6 +19445,30 @@ export type Database = {
           logo_url?: string | null
           status?: string | null
           visible_to_drivers?: boolean | null
+        }
+        Relationships: []
+      }
+      qr_codes_public: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          scans_count: number | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          scans_count?: number | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          scans_count?: number | null
         }
         Relationships: []
       }
