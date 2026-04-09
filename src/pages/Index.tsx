@@ -130,46 +130,43 @@ const Index = () => {
                 onClick={() => setActiveView("client")}
                 className="relative group rounded-2xl p-[2px] transition-all duration-500"
               >
-                {/* Bordure lumineuse tournante */}
+                {/* Halo glow — toujours visible */}
                 <div className={cn(
-                  "absolute inset-0 rounded-2xl transition-opacity duration-500",
-                  activeView === "client" ? "opacity-100" : "opacity-0 group-hover:opacity-60"
-                )}>
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 animate-spin-slow" style={{ padding: '2px' }}>
-                    <div className="w-full h-full rounded-2xl bg-storefront-dark" />
-                  </div>
-                </div>
-                {/* Halo glow */}
-                <div className={cn(
-                  "absolute -inset-1 rounded-2xl blur-lg transition-opacity duration-500",
-                  activeView === "client" 
-                    ? "opacity-40 bg-gradient-to-r from-pink-500 to-purple-600" 
-                    : "opacity-0 group-hover:opacity-20 bg-gradient-to-r from-pink-500 to-purple-600"
+                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-500",
+                  activeView === "client" ? "opacity-50" : "opacity-15 group-hover:opacity-25"
                 )} />
+                {/* Bordure gradient */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 transition-opacity duration-500",
+                  activeView === "client" ? "opacity-100 animate-spin-slow" : "opacity-40 group-hover:opacity-60"
+                )} style={{ padding: '2px' }}>
+                  <div className="w-full h-full rounded-2xl bg-storefront-dark" />
+                </div>
                 {/* Contenu */}
                 <div className={cn(
-                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl border transition-all duration-300",
+                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl transition-all duration-300",
                   activeView === "client"
-                    ? "bg-gradient-to-br from-pink-500/20 to-purple-600/20 border-pink-500/50 shadow-lg shadow-pink-500/20"
-                    : "bg-muted/20 border-border hover:border-pink-500/30"
+                    ? "bg-gradient-to-br from-pink-500/20 to-purple-600/20"
+                    : "bg-storefront-dark/80"
                 )}>
                   <div className={cn(
                     "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
                     activeView === "client"
-                      ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
-                      : "bg-muted/40"
+                      ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/40"
+                      : "bg-gradient-to-br from-pink-500/30 to-purple-600/30"
                   )}>
-                    <Search className={cn("w-7 h-7 transition-colors", activeView === "client" ? "text-white" : "text-muted-foreground")} />
+                    <Search className="w-7 h-7 text-white" />
                   </div>
                   <span className={cn(
                     "font-bold text-sm transition-colors",
-                    activeView === "client" ? "text-foreground" : "text-muted-foreground"
+                    activeView === "client" ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )}>
                     Je cherche un chauffeur
                   </span>
-                  {activeView === "client" && (
-                    <div className="w-8 h-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 animate-fade-in" />
-                  )}
+                  <div className={cn(
+                    "w-8 h-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-300",
+                    activeView === "client" ? "opacity-100" : "opacity-0"
+                  )} />
                 </div>
               </button>
 
