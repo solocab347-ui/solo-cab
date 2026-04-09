@@ -337,7 +337,7 @@ export function OnboardingTrialStartStep({
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Play className="w-5 h-5 mr-2" />
+                <Rocket className="w-5 h-5 mr-2" />
                 Activer mon compte
               </>
             )}
