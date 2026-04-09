@@ -2,26 +2,18 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   CreditCard, 
   Banknote, 
-  Building2, 
-  Wallet, 
-  CheckCircle2, 
-  Settings2,
-  Smartphone,
   Globe,
   Save,
   Loader2,
   Info,
-  Zap,
-  ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,24 +38,6 @@ const PAYMENT_METHODS = [
   },
 ];
 
-const BILLING_TYPES = [
-  {
-    value: "own_equipment",
-    label: "Mon propre matériel",
-    description: "Vous utilisez votre propre TPE ou solution d'encaissement",
-    icon: Smartphone,
-    features: ["TPE personnel", "Facturation autonome", "Sans frais SoloCab"]
-  },
-  {
-    value: "solocab_stripe",
-    label: "Encaissement en ligne SoloCab",
-    description: "Acceptez les paiements CB en ligne via Stripe Connect",
-    icon: Zap,
-    features: ["Paiement CB en ligne", "Acomptes automatiques", "Virements directs"],
-    requiresSetup: true
-  }
-];
-
 interface DriverPaymentSettingsProps {
   driverId: string;
   onUpdate?: () => void;
@@ -72,8 +46,7 @@ interface DriverPaymentSettingsProps {
 export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSettingsProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [acceptedMethods, setAcceptedMethods] = useState<string[]>(["cash", "card", "transfer"]);
-  const [billingType, setBillingType] = useState<string>("own_equipment");
+  const [acceptedMethods, setAcceptedMethods] = useState<string[]>(["cash", "card"]);
   const [showPublicly, setShowPublicly] = useState(true);
   const [defaultMethod, setDefaultMethod] = useState<string>("not_specified");
   const [stripeConnected, setStripeConnected] = useState(false);
@@ -85,8 +58,6 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
   const loadSettings = async () => {
     try {
       setLoading(true);
-      
-      // Load driver payment settings - use any to bypass strict typing for new columns
       const { data: driver, error } = await supabase
         .from("drivers")
         .select("*")
@@ -98,7 +69,6 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
       if (driver) {
         const driverData = driver as any;
         setAcceptedMethods(driverData.accepted_payment_methods || ["cash", "card"]);
-        setBillingType(driverData.billing_type || "own_equipment");
         setShowPublicly(driverData.show_payment_methods_publicly ?? true);
         setDefaultMethod(driverData.default_payment_method || "not_specified");
         setStripeConnected(!!driverData.stripe_account_id);
@@ -114,7 +84,6 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
   const handleMethodToggle = (method: string) => {
     setAcceptedMethods(prev => {
       if (prev.includes(method)) {
-        // Ensure at least one method remains
         if (prev.length === 1) {
           toast.error("Vous devez conserver au moins un moyen de paiement");
           return prev;
@@ -129,17 +98,11 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
     try {
       setSaving(true);
 
-      // Validate: if solocab_stripe, must have card method and stripe connected
-      if (billingType === "solocab_stripe" && !acceptedMethods.includes("card")) {
-        toast.error("Le mode SoloCab Stripe nécessite d'accepter la carte bancaire");
-        return;
-      }
-
       const { error } = await supabase
         .from("drivers")
         .update({
           accepted_payment_methods: acceptedMethods,
-          billing_type: billingType,
+          billing_type: "solocab_stripe",
           show_payment_methods_publicly: showPublicly,
           default_payment_method: defaultMethod,
           payment_config_updated_at: new Date().toISOString()
@@ -169,131 +132,53 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
   }
 
   return (
-    <div className="space-y-6">
-      {/* Billing Type Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings2 className="h-5 w-5 text-primary" />
-            Type de facturation
-          </CardTitle>
-          <CardDescription>
-            Choisissez comment vous souhaitez gérer vos encaissements
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup value={billingType} onValueChange={setBillingType} className="space-y-4">
-            {BILLING_TYPES.map((type) => {
-              const IconComponent = type.icon;
-              const isSelected = billingType === type.value;
-              const isStripeDisabled = type.value === "solocab_stripe" && !stripeConnected;
-              
-              return (
-                <div key={type.value} className="relative">
-                  <RadioGroupItem
-                    value={type.value}
-                    id={`billing-${type.value}`}
-                    className="peer sr-only"
-                    disabled={isStripeDisabled}
-                  />
-                  <Label
-                    htmlFor={`billing-${type.value}`}
-                    className={cn(
-                      "flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all",
-                      isSelected 
-                        ? "border-primary bg-primary/5" 
-                        : "border-muted hover:border-muted-foreground/30",
-                      isStripeDisabled && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <div className={cn(
-                      "rounded-lg p-3",
-                      isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
-                      <IconComponent className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{type.label}</span>
-                        {isSelected && (
-                          <Badge variant="secondary" className="bg-primary/10 text-primary">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Actif
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {type.features.map((feature, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </Label>
-                  
-                  {type.value === "solocab_stripe" && (
-                    <div className="mt-3">
-                      <StripeConnectCard 
-                        driverId={driverId} 
-                        onStatusChange={() => {
-                          loadSettings();
-                          onUpdate?.();
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </RadioGroup>
-        </CardContent>
-      </Card>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Stripe Connect - Section principale */}
+      <StripeConnectCard 
+        driverId={driverId} 
+        onStatusChange={() => {
+          loadSettings();
+          onUpdate?.();
+        }}
+      />
 
-      {/* Accepted Payment Methods */}
+      {/* Moyens de paiement acceptés */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
+        <CardHeader className="px-4 sm:px-6 pb-3">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Moyens de paiement acceptés
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Sélectionnez les moyens de paiement que vous acceptez
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <CardContent className="space-y-4 px-4 sm:px-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {PAYMENT_METHODS.map((method) => {
               const IconComponent = method.icon;
               const isChecked = acceptedMethods.includes(method.value);
-              const isCardRequired = billingType === "solocab_stripe" && method.value === "card";
               
               return (
                 <div
                   key={method.value}
-                  onClick={() => !isCardRequired && handleMethodToggle(method.value)}
+                  onClick={() => handleMethodToggle(method.value)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all",
+                    "flex items-center gap-2 sm:gap-3 rounded-lg border-2 p-2.5 sm:p-3 cursor-pointer transition-all",
                     isChecked 
                       ? `${method.color} border-current` 
                       : "border-muted hover:border-muted-foreground/30",
-                    isCardRequired && "cursor-not-allowed"
                   )}
                 >
                   <Checkbox 
                     checked={isChecked}
-                    disabled={isCardRequired}
                     className="pointer-events-none"
                   />
-                  <IconComponent className="h-5 w-5" />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{method.label}</p>
-                    <p className="text-xs text-muted-foreground">{method.description}</p>
+                  <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs sm:text-sm">{method.label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{method.description}</p>
                   </div>
-                  {isCardRequired && (
-                    <Badge variant="secondary" className="text-xs">Requis</Badge>
-                  )}
                 </div>
               );
             })}
@@ -301,24 +186,21 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
 
           <Separator />
 
-          {/* Default Payment Method */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Méthode par défaut suggérée</Label>
+          {/* Méthode par défaut */}
+          <div className="space-y-2">
+            <Label className="text-xs sm:text-sm font-medium">Méthode par défaut</Label>
             <RadioGroup 
               value={defaultMethod} 
               onValueChange={setDefaultMethod}
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap gap-3"
             >
-              {acceptedMethods.length === 0 && (
-                <p className="text-sm text-muted-foreground">Veuillez d'abord sélectionner des méthodes de paiement acceptées.</p>
-              )}
               {acceptedMethods.map((method) => {
                 const methodInfo = PAYMENT_METHODS.find(m => m.value === method);
                 if (!methodInfo) return null;
                 return (
                   <div key={method} className="flex items-center space-x-2">
                     <RadioGroupItem value={method} id={`default-${method}`} />
-                    <Label htmlFor={`default-${method}`} className="text-sm cursor-pointer">
+                    <Label htmlFor={`default-${method}`} className="text-xs sm:text-sm cursor-pointer">
                       {methodInfo.label}
                     </Label>
                   </div>
@@ -329,20 +211,17 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
-      {/* Visibility Settings */}
+      {/* Visibilité */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Visibilité
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="show-publicly">Afficher sur mon profil public</Label>
-              <p className="text-sm text-muted-foreground">
-                Les clients verront les moyens de paiement acceptés sur votre vitrine
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary shrink-0" />
+                <Label htmlFor="show-publicly" className="text-sm font-medium">Afficher sur mon profil</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Les clients verront les moyens de paiement acceptés
               </p>
             </div>
             <Switch
@@ -354,15 +233,13 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
-      {/* Preview */}
+      {/* Aperçu client */}
       <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Info className="h-4 w-4" />
-            Aperçu client
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs sm:text-sm font-medium">Aperçu client</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {acceptedMethods.map((method) => {
               const methodInfo = PAYMENT_METHODS.find(m => m.value === method);
@@ -372,7 +249,7 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
                 <Badge 
                   key={method} 
                   variant="outline" 
-                  className={cn("gap-1.5", methodInfo.color)}
+                  className={cn("gap-1.5 text-xs", methodInfo.color)}
                 >
                   <IconComponent className="h-3 w-3" />
                   {methodInfo.label}
@@ -383,17 +260,14 @@ export function DriverPaymentSettings({ driverId, onUpdate }: DriverPaymentSetti
         </CardContent>
       </Card>
 
+      {/* Deposit Settings */}
+      <DepositSettings
+        driverId={driverId}
+        stripeConnected={stripeConnected}
+        onUpdate={onUpdate}
+      />
 
-      {/* Deposit Settings - only visible if using SoloCab Stripe */}
-      {billingType === "solocab_stripe" && (
-        <DepositSettings
-          driverId={driverId}
-          stripeConnected={stripeConnected}
-          onUpdate={onUpdate}
-        />
-      )}
-
-      {/* Save Button */}
+      {/* Bouton Enregistrer */}
       <Button 
         onClick={handleSave} 
         disabled={saving}

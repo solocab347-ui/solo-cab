@@ -80,16 +80,16 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
   if (isReady) {
     return (
       <Card className="border-2 border-success/30 bg-gradient-to-br from-success/10 to-success/5 overflow-hidden">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-success/20 p-3 rounded-xl">
-                <CheckCircle2 className="h-6 w-6 text-success" />
+              <div className="bg-success/20 p-2.5 sm:p-3 rounded-xl shrink-0">
+                <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-success" />
               </div>
-              <div>
-                <h3 className="font-semibold text-success">Compte Stripe connecté</h3>
-                <p className="text-sm text-success/80">
-                  Vos clients peuvent payer par carte bancaire
+              <div className="min-w-0">
+                <h3 className="font-semibold text-success text-sm sm:text-base">Compte Stripe connecté</h3>
+                <p className="text-xs sm:text-sm text-success/80">
+                  Paiements par carte activés
                 </p>
               </div>
             </div>
@@ -98,18 +98,77 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
             </Button>
           </div>
 
-          <div className="bg-success/10 rounded-lg p-3 border border-success/20">
-            <p className="text-sm text-success">
-              <strong>Les fonds sont versés directement sur votre compte.</strong>
-              <br />
-              <span className="text-success/80 text-xs">Virements automatiques sous 2 jours ouvrés</span>
+          {/* Infos du compte Stripe */}
+          <div className="bg-card/60 rounded-lg p-3 sm:p-4 border border-border/50 space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Compte</span>
+              <Badge variant="secondary" className="bg-success/10 text-success text-xs">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Actif
+              </Badge>
+            </div>
+            {status?.email && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">Email</span>
+                <span className="text-xs font-medium truncate max-w-[200px]">{status.email}</span>
+              </div>
+            )}
+            {status?.business_profile_name && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">Entreprise</span>
+                <span className="text-xs font-medium truncate max-w-[200px]">{status.business_profile_name}</span>
+              </div>
+            )}
+            {status?.account_id && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">ID</span>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  {status.account_id.slice(0, 12)}...
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-success/10 rounded-lg p-3 border border-success/20 mb-4">
+            <p className="text-xs sm:text-sm text-success">
+              <strong>Virements automatiques sous 2 jours ouvrés</strong>
             </p>
           </div>
 
-          {/* Transparence */}
-          <div className="mt-4 pt-4 border-t border-success/20">
-            <p className="text-xs text-muted-foreground text-center">
-              <strong>Frais par course :</strong> 0,50€ SoloCab • Encaissement spontané : 0,80€
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleConnectStripe}
+              disabled={connecting}
+              className="flex-1 text-xs"
+            >
+              {connecting ? (
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+              ) : (
+                <ExternalLink className="h-3 w-3 mr-1.5" />
+              )}
+              Gérer mon compte Stripe
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                toast.info("Pour changer de compte Stripe, contactez le support SoloCab.", {
+                  description: "Votre compte actuel sera dissocié puis un nouveau sera créé."
+                });
+              }}
+              className="flex-1 text-xs text-muted-foreground"
+            >
+              Changer de compte
+            </Button>
+          </div>
+
+          {/* Transparence frais */}
+          <div className="mt-4 pt-3 border-t border-success/20">
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
+              <strong>Frais :</strong> 0,50€/course • Encaissement spontané : 0,80€
             </p>
           </div>
         </CardContent>

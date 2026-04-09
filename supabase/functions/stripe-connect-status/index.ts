@@ -135,6 +135,8 @@ serve(async (req) => {
         payouts_enabled: account.payouts_enabled,
         details_submitted: account.details_submitted,
         account_id: account.id,
+        email: account.email || null,
+        business_profile_name: account.business_profile?.name || null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
