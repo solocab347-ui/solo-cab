@@ -20745,7 +20745,7 @@ export type Database = {
         }[]
       }
       get_drivers_with_full_access: {
-        Args: { limit_count?: number; visibility_field: string }
+        Args: { limit_count?: number; visibility_field?: string }
         Returns: {
           bio: string
           card_photo_url: string
@@ -20762,7 +20762,7 @@ export type Database = {
           services_offered: string[]
           show_email: boolean
           show_phone: boolean
-          status: Database["public"]["Enums"]["driver_status"]
+          status: string
           total_rides: number
           user_id: string
           vehicle_brand: string
