@@ -749,8 +749,14 @@ export function UnifiedBookingPage() {
                   <Input
                     value={pickupAddress}
                     onChange={(e) => handlePickupChange(e.target.value)}
-                    onFocus={() => pickupSuggestions.length > 0 && setShowPickupSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 200)}
+                    onFocus={() => {
+                      if (!pickupLock.current && pickupSuggestions.length > 0) {
+                        setShowPickupSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowPickupSuggestions(false), 300);
+                    }}
                     placeholder="Adresse de départ"
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
@@ -789,8 +795,14 @@ export function UnifiedBookingPage() {
                   <Input
                     value={destinationAddress}
                     onChange={(e) => handleDestChange(e.target.value)}
-                    onFocus={() => destSuggestions.length > 0 && setShowDestSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
+                    onFocus={() => {
+                      if (!destLock.current && destSuggestions.length > 0) {
+                        setShowDestSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowDestSuggestions(false), 300);
+                    }}
                     placeholder="Adresse de destination"
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
