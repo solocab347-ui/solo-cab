@@ -7,8 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Premium price: 9,99€/mois
-const PREMIUM_PRICE_ID = "price_1TEEJnAdFPYTU471ZfCzkgJE";
+const PRICES = {
+  monthly: "price_1TKMxCAdFPYTU471ZinaFMmJ",
+  yearly: "price_1TKMy1AdFPYTU471bWDDdN2T",
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -31,7 +33,6 @@ serve(async (req) => {
     
     const user = userData.user;
 
-    // Get driver ID
     const { data: driver } = await supabaseClient
       .from("drivers")
       .select("id")
@@ -40,12 +41,15 @@ serve(async (req) => {
 
     if (!driver) throw new Error("Profil chauffeur non trouvé");
 
+    const body = await req.json().catch(() => ({}));
+    const plan = body.plan === "yearly" ? "yearly" : "monthly";
+    const priceId = PRICES[plan];
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Configuration Stripe manquante");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Find or create customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string;
     
@@ -64,13 +68,13 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [{ price: PREMIUM_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${origin}/driver-dashboard?subscription=success`,
-      cancel_url: `${origin}/driver-dashboard?subscription=cancelled`,
-      metadata: { driver_id: driver.id, tier: "premium" },
+      success_url: `${origin}/driver-dashboard?premium=success`,
+      cancel_url: `${origin}/driver-dashboard?premium=cancel`,
+      metadata: { driver_id: driver.id, user_id: user.id, plan },
       subscription_data: {
-        metadata: { driver_id: driver.id, tier: "premium" },
+        metadata: { driver_id: driver.id, user_id: user.id, plan },
       },
     });
 
