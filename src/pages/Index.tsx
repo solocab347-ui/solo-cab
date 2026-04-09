@@ -352,7 +352,7 @@ const Index = () => {
                 <span className="text-xl font-bold text-foreground">SoloCab</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                La plateforme équitable pour chauffeurs indépendants et clients exigeants.
+                La plateforme équitable pour chauffeurs indépendants et clients engagés.
               </p>
             </div>
 
