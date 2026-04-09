@@ -1,47 +1,42 @@
+## Système de notation intelligent SoloCab
 
-## Analyse de l'existant
+### Phase 1 — Base de données
+- Table `course_ratings` : note, motif, commentaire, status (validated/pending_review/contested/ai_resolved/cancelled), décision IA, score ajusté
+- Table `rating_disputes` : contestation chauffeur, réponse client, analyse IA, décision finale
+- Colonnes `client_reliability_score` et `driver_reliability_score` sur les tables existantes
+- RLS policies appropriées
 
-~70% du système est déjà en place :
-- ✅ Recherche chauffeurs (`useNearbyDrivers`)
-- ✅ Sélection manuelle avec cartes
-- ✅ `RideWaitingScreen` avec phases progressives
-- ✅ Edge function `extended-driver-search` avec relance intelligente
-- ✅ Popup chauffeur avec timer 60s
-- ✅ Filtrage refus vs non-réponse
+### Phase 2 — Composant de notation (refonte CourseRating)
+- Notes 4-5★ → validation automatique
+- Notes 1-2-3★ → formulaire obligatoire (motif + commentaire)
+- Status `pending_review` pour notes basses
 
-## Ce qui manque
+### Phase 3 — Notification et contestation chauffeur
+- Notification au chauffeur quand note ≤3★
+- Options : accepter ou contester
+- Timer 24h pour réponse client si contestation
 
-### 1. Double bouton sur la page booking
-Remplacer le bouton unique "Continuer" par :
-- **"Rechercher un chauffeur"** (primary, gros) → mode auto
-- **"Choisir mes chauffeurs"** (secondary, en dessous) → mode manuel (flow actuel)
+### Phase 4 — Arbitrage IA (Edge Function)
+- Analyse des données course (durée, retard, trafic, GPS)
+- Analyse comportement client/chauffeur (historique, scores)
+- Analyse du texte (ton, cohérence)
+- Décision : maintenue / ajustée / annulée / partagée
 
-### 2. Mode Auto
-Quand le client clique "Rechercher un chauffeur" :
-- Lancer la recherche
-- Auto-sélectionner les 10 plus proches
-- **Sauter l'étape de sélection** → aller directement au `RideWaitingScreen`
-- Diffuser immédiatement la demande
+### Phase 5 — Scores de fiabilité
+- Calcul automatique `client_reliability_score`
+- Calcul automatique `driver_reliability_score`
+- Impact sur la pondération des notes futures
 
-### 3. UI "Chauffeurs contactés" pendant recherche
-Améliorer `RideWaitingScreen` pour afficher la liste des chauffeurs contactés avec leur statut :
-- 🔵 Contacté
-- ⏳ En attente de réponse
-- ❌ Refusé
-- ✅ Accepté
+### Phase 6 — Interface Admin
+- Page litiges notation IA dans AdminDashboard
+- Vue détaillée : course, client, chauffeur, décision IA
+- Actions admin : override, bloquer, sanctionner, supprimer
 
-### 4. Permettre modification pendant recherche
-Dans le mode auto, pendant l'attente :
-- Le client peut voir la liste des chauffeurs contactés
-- Ajouter/retirer des chauffeurs
-- Voir la carte
+### Phase 7 — Interface chauffeur
+- Affichage notes validées / en arbitrage / annulées
+- Score de confiance SoloCab
 
-### Fichiers à modifier
-- `UnifiedBookingPage.tsx` — Double bouton + mode auto
-- `RideWaitingScreen.tsx` — Liste chauffeurs contactés avec statuts
-
-### Ce qui ne change PAS
-- La logique de diffusion (phases, relance, extension)
-- La popup chauffeur (60s timer)
-- Les règles de refus/non-réponse
-- L'edge function `extended-driver-search`
+### Phase 8 — Protections anti-abus
+- Max 2 contestations chauffeur/jour
+- Détection clients abusifs automatique
+- Pondération variable des notes selon fiabilité
