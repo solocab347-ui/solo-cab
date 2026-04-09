@@ -110,6 +110,9 @@ export function UnifiedBookingPage() {
   const [showDestSuggestions, setShowDestSuggestions] = useState(false);
   const pickupDebounce = useRef<NodeJS.Timeout>();
   const destDebounce = useRef<NodeJS.Timeout>();
+  // Lock flags to prevent re-opening after selection
+  const pickupLock = useRef(false);
+  const destLock = useRef(false);
 
   // ── Persist state to sessionStorage on every relevant change ──
   useEffect(() => {
@@ -300,18 +303,22 @@ export function UnifiedBookingPage() {
   const handlePickupChange = (val: string) => {
     setPickupAddress(val);
     setPickupCoords(null);
+    pickupLock.current = false;
     if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
-    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 150);
+    pickupDebounce.current = setTimeout(() => fetchSuggestions(val, setPickupSuggestions, setShowPickupSuggestions), 300);
   };
 
   const handleDestChange = (val: string) => {
     setDestinationAddress(val);
     setDestCoords(null);
+    destLock.current = false;
     if (destDebounce.current) clearTimeout(destDebounce.current);
-    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 150);
+    destDebounce.current = setTimeout(() => fetchSuggestions(val, setDestSuggestions, setShowDestSuggestions), 300);
   };
 
   const selectPickupSuggestion = (feature: any) => {
+    if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
+    pickupLock.current = true;
     setPickupAddress(feature.place_name);
     setPickupCoords({ lat: feature.center[1], lng: feature.center[0] });
     setShowPickupSuggestions(false);
@@ -319,6 +326,8 @@ export function UnifiedBookingPage() {
   };
 
   const selectDestSuggestion = (feature: any) => {
+    if (destDebounce.current) clearTimeout(destDebounce.current);
+    destLock.current = true;
     setDestinationAddress(feature.place_name);
     setDestCoords({ lat: feature.center[1], lng: feature.center[0] });
     setShowDestSuggestions(false);
@@ -332,6 +341,10 @@ export function UnifiedBookingPage() {
       return;
     }
     setIsGettingLocation(true);
+    pickupLock.current = true;
+    if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
+    setShowPickupSuggestions(false);
+    setPickupSuggestions([]);
     
     let resolved = false;
     const resolve = async (lat: number, lng: number, accuracy?: number) => {
@@ -736,8 +749,14 @@ export function UnifiedBookingPage() {
                   <Input
                     value={pickupAddress}
                     onChange={(e) => handlePickupChange(e.target.value)}
-                    onFocus={() => pickupSuggestions.length > 0 && setShowPickupSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 200)}
+                    onFocus={() => {
+                      if (!pickupLock.current && pickupSuggestions.length > 0) {
+                        setShowPickupSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowPickupSuggestions(false), 300);
+                    }}
                     placeholder="Adresse de départ"
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
@@ -776,8 +795,14 @@ export function UnifiedBookingPage() {
                   <Input
                     value={destinationAddress}
                     onChange={(e) => handleDestChange(e.target.value)}
-                    onFocus={() => destSuggestions.length > 0 && setShowDestSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
+                    onFocus={() => {
+                      if (!destLock.current && destSuggestions.length > 0) {
+                        setShowDestSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowDestSuggestions(false), 300);
+                    }}
                     placeholder="Adresse de destination"
                     className="border-0 shadow-none bg-muted/30 h-11 pl-3"
                   />
