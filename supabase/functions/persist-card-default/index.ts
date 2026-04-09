@@ -28,15 +28,6 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Authenticate user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("User not authenticated");
-
-    const user = userData.user;
     const body = await req.json();
     const { setup_intent_id } = body;
 
@@ -44,16 +35,22 @@ serve(async (req) => {
       throw new Error("setup_intent_id required");
     }
 
-    logStep("Persisting card from SetupIntent", { userId: user.id, setupIntentId: setup_intent_id });
+    // Try to authenticate user (optional - guests won't have a valid token)
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      try {
+        const { data: userData } = await supabaseClient.auth.getUser(token);
+        if (userData?.user) {
+          userId = userData.user.id;
+        }
+      } catch {
+        // Guest flow - no valid user token, that's fine
+      }
+    }
 
-    // Get client record
-    const { data: client, error: clientError } = await supabaseClient
-      .from("clients")
-      .select("id, stripe_customer_id, default_payment_method_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (clientError || !client) throw new Error("Client record not found");
+    logStep("Persisting card from SetupIntent", { setupIntentId: setup_intent_id, userId: userId || "guest" });
 
     // Retrieve the SetupIntent to get the payment_method
     const setupIntent = await stripe.setupIntents.retrieve(setup_intent_id);
@@ -70,36 +67,50 @@ serve(async (req) => {
       throw new Error("No payment method found on SetupIntent");
     }
 
-    logStep("Payment method found", { paymentMethodId });
+    const customerId = typeof setupIntent.customer === "string"
+      ? setupIntent.customer
+      : setupIntent.customer?.id;
 
-    // Always set as default if no default exists yet
-    const shouldSetDefault = !client.default_payment_method_id;
+    logStep("Payment method found", { paymentMethodId, customerId });
 
-    const updateData: Record<string, unknown> = {};
-
-    if (shouldSetDefault) {
-      updateData.default_payment_method_id = paymentMethodId;
-      logStep("Setting as default payment method (first card)");
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      await supabaseClient
+    // If we have an authenticated user, update their client record
+    if (userId) {
+      const { data: client } = await supabaseClient
         .from("clients")
-        .update(updateData)
-        .eq("id", client.id);
-    }
+        .select("id, default_payment_method_id, stripe_customer_id")
+        .eq("user_id", userId)
+        .single();
 
-    // Also set this as the default payment method on the Stripe Customer
-    if (shouldSetDefault && client.stripe_customer_id) {
+      if (client) {
+        const shouldSetDefault = !client.default_payment_method_id;
+        if (shouldSetDefault) {
+          await supabaseClient
+            .from("clients")
+            .update({ default_payment_method_id: paymentMethodId })
+            .eq("id", client.id);
+          logStep("Set as default payment method for authenticated user");
+        }
+
+        // Also set on Stripe Customer
+        if (shouldSetDefault && client.stripe_customer_id) {
+          try {
+            await stripe.customers.update(client.stripe_customer_id, {
+              invoice_settings: { default_payment_method: paymentMethodId },
+            });
+          } catch (e) {
+            logStep("Warning: could not update Stripe default", { error: String(e) });
+          }
+        }
+      }
+    } else if (customerId) {
+      // Guest flow: set default on Stripe Customer directly
       try {
-        await stripe.customers.update(client.stripe_customer_id, {
-          invoice_settings: {
-            default_payment_method: paymentMethodId,
-          },
+        await stripe.customers.update(customerId, {
+          invoice_settings: { default_payment_method: paymentMethodId },
         });
-        logStep("Updated Stripe Customer default payment method");
-      } catch (stripeErr) {
-        logStep("Warning: could not update Stripe Customer default", { error: String(stripeErr) });
+        logStep("Set default payment method on Stripe Customer (guest)");
+      } catch (e) {
+        logStep("Warning: could not update Stripe default for guest", { error: String(e) });
       }
     }
 
@@ -107,7 +118,6 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         payment_method_id: paymentMethodId,
-        set_as_default: shouldSetDefault,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
