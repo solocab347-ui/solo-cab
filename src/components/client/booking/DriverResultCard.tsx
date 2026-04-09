@@ -49,7 +49,7 @@ export function DriverResultCard({
   const theme = GLOW_THEMES[(rank - 1) % GLOW_THEMES.length];
 
   const priceText = driver.estimated_price !== undefined && driver.estimated_price > 0
-    ? `${driver.estimated_price.toFixed(0)}€`
+    ? `${driver.estimated_price.toFixed(2)}€`
     : null;
 
   return (
