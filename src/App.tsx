@@ -47,6 +47,7 @@ const RegisterGuestClient = lazy(() => import("./pages/RegisterGuestClient"));
 const RegisterClient = lazy(() => import("./pages/RegisterClient"));
 const PioneerPayment = lazy(() => import("./pages/PioneerPayment"));
 const OurValues = lazy(() => import("./pages/OurValues"));
+const CommentCaMarche = lazy(() => import("./pages/CommentCaMarche"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const SafeMode = lazy(() => import("./pages/SafeMode"));
@@ -124,6 +125,7 @@ const App = () => (
               <Route path="/inscription-congres" element={<Navigate to="/register-driver-promo" replace />} />
               <Route path="/pioneer-payment" element={<Suspense fallback={<LoadingFallback />}><PioneerPayment /></Suspense>} />
               <Route path="/nos-valeurs" element={<Suspense fallback={<LoadingFallback />}><OurValues /></Suspense>} />
+              <Route path="/comment-ca-marche" element={<Suspense fallback={<LoadingFallback />}><CommentCaMarche /></Suspense>} />
               <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
               <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
               <Route path="/safe-mode" element={<Suspense fallback={<LoadingFallback />}><SafeMode /></Suspense>} />

@@ -119,32 +119,103 @@ const Index = () => {
       {/* ============ TOGGLE CLIENT / CHAUFFEUR ============ */}
       <section className="py-8 md:py-12 bg-gradient-to-b from-storefront-dark to-storefront">
         <div className="container mx-auto px-4 max-w-5xl">
-          {/* Sélecteur Client / Chauffeur */}
+          {/* Sélecteur Client / Chauffeur — Design premium avec glow */}
           <div className="flex justify-center mb-10">
-            <div className="grid grid-cols-2 gap-0 rounded-xl overflow-hidden border border-border w-full max-w-md">
+            <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+              {/* Bouton Client */}
               <button
                 onClick={() => setActiveView("client")}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-4 px-4 font-semibold text-sm transition-all duration-300",
-                  activeView === "client"
-                    ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-inner"
-                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                )}
+                className="relative group rounded-2xl p-[2px] transition-all duration-500"
               >
-                <Search className="w-5 h-5" />
-                Je cherche un chauffeur
+                {/* Bordure lumineuse tournante */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl transition-opacity duration-500",
+                  activeView === "client" ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                )}>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 animate-spin-slow" style={{ padding: '2px' }}>
+                    <div className="w-full h-full rounded-2xl bg-storefront-dark" />
+                  </div>
+                </div>
+                {/* Halo glow */}
+                <div className={cn(
+                  "absolute -inset-1 rounded-2xl blur-lg transition-opacity duration-500",
+                  activeView === "client" 
+                    ? "opacity-40 bg-gradient-to-r from-pink-500 to-purple-600" 
+                    : "opacity-0 group-hover:opacity-20 bg-gradient-to-r from-pink-500 to-purple-600"
+                )} />
+                {/* Contenu */}
+                <div className={cn(
+                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl border transition-all duration-300",
+                  activeView === "client"
+                    ? "bg-gradient-to-br from-pink-500/20 to-purple-600/20 border-pink-500/50 shadow-lg shadow-pink-500/20"
+                    : "bg-muted/20 border-border hover:border-pink-500/30"
+                )}>
+                  <div className={cn(
+                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    activeView === "client"
+                      ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                      : "bg-muted/40"
+                  )}>
+                    <Search className={cn("w-7 h-7 transition-colors", activeView === "client" ? "text-white" : "text-muted-foreground")} />
+                  </div>
+                  <span className={cn(
+                    "font-bold text-sm transition-colors",
+                    activeView === "client" ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    Je cherche un chauffeur
+                  </span>
+                  {activeView === "client" && (
+                    <div className="w-8 h-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 animate-fade-in" />
+                  )}
+                </div>
               </button>
+
+              {/* Bouton Chauffeur */}
               <button
                 onClick={() => setActiveView("chauffeur")}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-4 px-4 font-semibold text-sm transition-all duration-300",
-                  activeView === "chauffeur"
-                    ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-inner"
-                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                )}
+                className="relative group rounded-2xl p-[2px] transition-all duration-500"
               >
-                <Car className="w-5 h-5" />
-                Je suis chauffeur
+                {/* Bordure lumineuse tournante */}
+                <div className={cn(
+                  "absolute inset-0 rounded-2xl transition-opacity duration-500",
+                  activeView === "chauffeur" ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                )}>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-spin-slow" style={{ padding: '2px' }}>
+                    <div className="w-full h-full rounded-2xl bg-storefront-dark" />
+                  </div>
+                </div>
+                {/* Halo glow */}
+                <div className={cn(
+                  "absolute -inset-1 rounded-2xl blur-lg transition-opacity duration-500",
+                  activeView === "chauffeur" 
+                    ? "opacity-40 bg-gradient-to-r from-blue-500 to-cyan-600" 
+                    : "opacity-0 group-hover:opacity-20 bg-gradient-to-r from-blue-500 to-cyan-600"
+                )} />
+                {/* Contenu */}
+                <div className={cn(
+                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl border transition-all duration-300",
+                  activeView === "chauffeur"
+                    ? "bg-gradient-to-br from-blue-500/20 to-cyan-600/20 border-blue-500/50 shadow-lg shadow-blue-500/20"
+                    : "bg-muted/20 border-border hover:border-blue-500/30"
+                )}>
+                  <div className={cn(
+                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    activeView === "chauffeur"
+                      ? "bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/30"
+                      : "bg-muted/40"
+                  )}>
+                    <Car className={cn("w-7 h-7 transition-colors", activeView === "chauffeur" ? "text-white" : "text-muted-foreground")} />
+                  </div>
+                  <span className={cn(
+                    "font-bold text-sm transition-colors",
+                    activeView === "chauffeur" ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    Je suis chauffeur
+                  </span>
+                  {activeView === "chauffeur" && (
+                    <div className="w-8 h-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 animate-fade-in" />
+                  )}
+                </div>
               </button>
             </div>
           </div>
@@ -182,7 +253,7 @@ const Index = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/nos-valeurs">
+                <Link to="/comment-ca-marche">
                   <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
                     Comment ça fonctionne
                   </Button>
