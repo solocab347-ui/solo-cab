@@ -88,6 +88,7 @@ const App = () => (
     <GlobalSecurityProvider>
       <BrowserRouter>
         <AuthProvider>
+          <PremiumProvider>
           <MaintenanceProvider>
             <PWABannerProvider>
               <TooltipProvider>
