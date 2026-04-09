@@ -27,7 +27,7 @@ interface RideWaitingScreenProps {
   driverName?: string;
   timeoutAt: string;
   onCancel: () => void;
-  onAccepted: (driverName: string) => void;
+  onAccepted: (driverName: string, courseId?: string) => void;
   onExpired: () => void;
   /** Driver data for animated card carousel during wait */
   contactedDriversData?: NearbyDriver[];
