@@ -286,9 +286,9 @@ export function DriverSettingsSimplified({
                 </div>
               </div>
 
-              {/* Places max + TVA side by side */}
-              <div className="flex items-center gap-3 sm:gap-4 pt-2 border-t border-border/30">
-                <div className="flex-1 space-y-1">
+              {/* Places max + TVA */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-2 border-t border-border/30">
+                <div className="space-y-1">
                   <Label className="text-xs sm:text-sm font-medium">Places max</Label>
                   <NumericInput
                     value={maxPassengers}
@@ -299,7 +299,7 @@ export function DriverSettingsSimplified({
                     className="h-9 sm:h-10"
                   />
                 </div>
-                <div className="shrink-0">
+                <div className="flex items-end">
                   <TvaToggle
                     checked={tvaIncluded}
                     onCheckedChange={onTvaIncludedChange}
