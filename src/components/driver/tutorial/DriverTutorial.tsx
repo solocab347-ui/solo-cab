@@ -1,382 +1,492 @@
-import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  QrCode, Users, Car, FileText, Calculator, Settings,
-  ChevronRight, ChevronLeft, X, Sparkles,
-  CreditCard, BarChart3, Crown,
-  CheckCircle2, ArrowRight, Lightbulb, Star, Rocket
-} from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import Joyride, { Step, CallBackProps, STATUS, EVENTS, ACTIONS } from "react-joyride";
 import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { 
+  Rocket, QrCode, ChevronRight, ChevronLeft, X, 
+  Smartphone, ExternalLink, Share2, CheckCircle2,
+  Sparkles
+} from "lucide-react";
 
-export interface TutorialStep {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  description: string;
-  tips: string[];
-  targetTab: string;
-  importance: "critical" | "important" | "useful";
+// ─── Welcome overlay (shown before Joyride starts) ──────────────────
+function WelcomeOverlay({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-card rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-border/50"
+      >
+        {/* Gradient header */}
+        <div className="bg-gradient-to-br from-success to-success/80 p-6 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-4"
+          >
+            <Rocket className="w-8 h-8 text-white" />
+          </motion.div>
+          <h2 className="text-xl font-bold text-white mb-1">
+            Bienvenue sur SoloCab
+          </h2>
+          <p className="text-sm text-white/80">
+            Vous pouvez maintenant accepter vos propres clients.
+          </p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-foreground/80 text-center leading-relaxed">
+            Nous allons vous montrer comment obtenir votre <strong>premier client</strong> en quelques étapes simples.
+          </p>
+
+          <div className="space-y-2">
+            {[
+              "Configurer vos tarifs",
+              "Découvrir votre QR code",
+              "Tester avec un vrai scan",
+              "Partager votre lien",
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+                className="flex items-center gap-2.5 text-sm text-foreground/70"
+              >
+                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                {item}
+              </motion.div>
+            ))}
+          </div>
+
+          <Button
+            onClick={onStart}
+            className="w-full h-12 text-base font-semibold bg-success hover:bg-success/90 text-white gap-2"
+          >
+            <Sparkles className="w-5 h-5" />
+            Commencer
+          </Button>
+          <button
+            onClick={onSkip}
+            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+          >
+            Passer le tutoriel
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 }
 
-const TUTORIAL_STEPS: TutorialStep[] = [
-  {
-    id: "welcome",
-    icon: <Sparkles className="w-5 h-5" />,
-    title: "Bienvenue sur SoloCab !",
-    subtitle: "Votre outil de gestion VTC",
-    description: "Ce guide rapide vous montre comment utiliser SoloCab. En 5 minutes, vous serez opérationnel.",
-    tips: [
-      "Suivez les étapes dans l'ordre",
-      "Chaque étape vous redirige vers la section concernée",
-      "Relancez ce tutoriel depuis les paramètres"
-    ],
-    targetTab: "home",
-    importance: "critical"
-  },
-  {
-    id: "qrcode",
-    icon: <QrCode className="w-5 h-5" />,
-    title: "Votre QR Code",
-    subtitle: "🔥 Le nerf de la guerre",
-    description: "Quand un passager le scanne, il est lié à VOTRE compte pour toujours. Chaque scan = un client fidélisé.",
-    tips: [
-      "Affichez-le dans votre véhicule",
-      "Le passager scanne → compte créé → lié à vous",
-      "Objectif : 25 clients = réservations régulières",
-      "C'est VOTRE base de données"
-    ],
-    targetTab: "qrcode",
-    importance: "critical"
-  },
-  {
-    id: "clients",
-    icon: <Users className="w-5 h-5" />,
-    title: "Vos Clients",
-    subtitle: "Votre base de données",
-    description: "Tous les clients qui scannent votre QR Code apparaissent ici avec leur historique et préférences.",
-    tips: [
-      "Clients exclusifs = ne voient QUE vous",
-      "Consultez l'historique de chaque client",
-      "Plus de clients = plus de courses"
-    ],
-    targetTab: "clients",
-    importance: "critical"
-  },
-  {
-    id: "courses",
-    icon: <Car className="w-5 h-5" />,
-    title: "Gestion des Courses",
-    subtitle: "Créez et suivez vos courses",
-    description: "Gérez les réservations, suivez le statut en temps réel. Le prix se calcule automatiquement.",
-    tips: [
-      "Prix automatique selon vos tarifs",
-      "Validez pour générer la facture",
-      "Statut : en attente → en cours → terminée"
-    ],
-    targetTab: "courses",
-    importance: "critical"
-  },
-  {
-    id: "pricing",
-    icon: <Calculator className="w-5 h-5" />,
-    title: "Vos Tarifs",
-    subtitle: "Prix au km ou à l'heure",
-    description: "Définissez prise en charge, tarif km, horaire et minimum. Configurez majorations soirée/week-end.",
-    tips: [
-      "Tarif au km pour trajets classiques",
-      "Tarif horaire pour mises à disposition",
-      "Testez avec le simulateur de prix"
-    ],
-    targetTab: "calculator",
-    importance: "important"
-  },
-  {
-    id: "devis",
-    icon: <FileText className="w-5 h-5" />,
-    title: "Devis",
-    subtitle: "Proposez des devis pro",
-    description: "Créez des devis détaillés. Une fois accepté, le devis se transforme en course automatiquement.",
-    tips: [
-      "Document professionnel avec votre marque",
-      "Devis accepté → converti en course"
-    ],
-    targetTab: "devis",
-    importance: "important"
-  },
-  {
-    id: "invoices",
-    icon: <CreditCard className="w-5 h-5" />,
-    title: "Facturation",
-    subtitle: "Factures automatiques",
-    description: "Chaque course terminée génère une facture. Exportez en PDF pour votre comptabilité.",
-    tips: [
-      "Factures générées automatiquement",
-      "Export PDF pour votre comptable",
-      "Suivi des encaissements"
-    ],
-    targetTab: "factures",
-    importance: "important"
-  },
-  {
-    id: "finances",
-    icon: <BarChart3 className="w-5 h-5" />,
-    title: "Finances",
-    subtitle: "Vue d'ensemble",
-    description: "Suivez vos revenus et performances pour prendre les bonnes décisions.",
-    tips: [
-      "Chiffre d'affaires en temps réel",
-      "Comparez mois par mois"
-    ],
-    targetTab: "finance",
-    importance: "useful"
-  },
-  {
-    id: "settings",
-    icon: <Settings className="w-5 h-5" />,
-    title: "Paramètres",
-    subtitle: "Votre profil & vitrine",
-    description: "Photo, véhicule, équipements, zones — c'est ce que vos clients voient en premier.",
-    tips: [
-      "Photo pro = plus de confiance",
-      "Listez vos équipements",
-      "Profil visible via votre QR Code"
-    ],
-    targetTab: "settings",
-    importance: "useful"
-  },
-  {
-    id: "premium",
-    icon: <Crown className="w-5 h-5" />,
-    title: "Premium",
-    subtitle: "9,99€/mois — prix de lancement",
-    description: "Campagnes marketing, réseau de partage de courses, prospection client et bien plus.",
-    tips: [
-      "Campagnes marketing automatisées",
-      "Partage de courses entre chauffeurs",
-      "Sans engagement"
-    ],
-    targetTab: "subscription",
-    importance: "useful"
-  }
-];
+// ─── Interactive test overlay (Step 4) ──────────────────────────────
+function InteractiveTestOverlay({ onDone, onSkip }: { onDone: () => void; onSkip: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25 }}
+        className="bg-card rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-border/50"
+      >
+        <div className="bg-gradient-to-br from-primary to-accent p-5 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-3">
+            <Smartphone className="w-7 h-7 text-white" />
+          </div>
+          <h3 className="text-lg font-bold text-white">Essayez maintenant !</h3>
+        </div>
 
-interface DriverTutorialProps {
+        <div className="p-5 space-y-4">
+          <div className="space-y-3">
+            {[
+              { num: "1", text: "Prenez un autre téléphone" },
+              { num: "2", text: "Scannez votre QR code affiché" },
+              { num: "3", text: "Ouvrez la page de réservation client" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                  {item.num}
+                </div>
+                <p className="text-sm text-foreground/80 pt-1">{item.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={onSkip}
+              className="flex-1 h-11 gap-2 text-sm"
+            >
+              Passer
+            </Button>
+            <Button
+              onClick={onDone}
+              className="flex-1 h-11 gap-2 text-sm bg-success hover:bg-success/90 text-white font-semibold"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              J'ai testé
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Conclusion overlay (Step 7) ────────────────────────────────────
+function ConclusionOverlay({ onFinish }: { onFinish: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25 }}
+        className="bg-card rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-border/50"
+      >
+        <div className="bg-gradient-to-br from-success to-emerald-600 p-6 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-4"
+          >
+            <Rocket className="w-8 h-8 text-white" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-white mb-2">Vous êtes prêt !</h3>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              <strong>Chaque client scanné devient votre client.</strong>
+            </p>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              Montrez votre QR code après chaque course pour fidéliser vos passagers.
+            </p>
+          </div>
+
+          <div className="bg-success/10 rounded-xl p-3 space-y-2">
+            {[
+              "✓ Vos tarifs sont configurés",
+              "✓ Votre QR code est prêt",
+              "✓ Vous savez partager votre lien",
+            ].map((item, i) => (
+              <p key={i} className="text-xs text-success font-medium">{item}</p>
+            ))}
+          </div>
+
+          <Button
+            onClick={onFinish}
+            className="w-full h-12 text-base font-semibold bg-success hover:bg-success/90 text-white gap-2"
+          >
+            <Rocket className="w-5 h-5" />
+            Terminer
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Custom tooltip for Joyride ─────────────────────────────────────
+function TutorialTooltip({
+  continuous,
+  index,
+  step,
+  backProps,
+  primaryProps,
+  skipProps,
+  tooltipProps,
+  size,
+  isLastStep,
+}: any) {
+  return (
+    <div
+      {...tooltipProps}
+      className="bg-card rounded-2xl shadow-2xl max-w-[340px] w-full border border-border/50 overflow-hidden"
+    >
+      {/* Progress */}
+      <div className="h-1 bg-muted">
+        <div
+          className="h-full bg-gradient-to-r from-success to-success/80 transition-all duration-500"
+          style={{ width: `${((index + 1) / size) * 100}%` }}
+        />
+      </div>
+
+      <div className="p-4">
+        {step.title && (
+          <h4 className="font-bold text-base text-foreground mb-1">{step.title}</h4>
+        )}
+        <div className="text-sm text-foreground/80 leading-relaxed">
+          {step.content}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-border/30">
+        {index > 0 && (
+          <Button
+            {...backProps}
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs h-8"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Précédent
+          </Button>
+        )}
+        <div className="flex-1" />
+        <button
+          {...skipProps}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+        >
+          Quitter
+        </button>
+        <Button
+          {...primaryProps}
+          size="sm"
+          className="gap-1 h-8 px-3 text-xs font-semibold bg-success hover:bg-success/90 text-white"
+        >
+          Suivant
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Tutorial Component ────────────────────────────────────────
+export interface DriverTutorialProps {
+  isVisible: boolean;
   onNavigateToTab: (tab: string) => void;
   onComplete: () => void;
-  isVisible: boolean;
 }
 
-const importanceConfig = {
-  critical: {
-    gradient: "from-red-500 to-orange-500",
-    badge: "bg-red-500 text-white",
-    label: "Essentiel",
-    ring: "ring-red-500/30",
-  },
-  important: {
-    gradient: "from-amber-400 to-orange-500",
-    badge: "bg-amber-500 text-white",
-    label: "Important",
-    ring: "ring-amber-500/30",
-  },
-  useful: {
-    gradient: "from-blue-500 to-indigo-500",
-    badge: "bg-blue-500 text-white",
-    label: "Utile",
-    ring: "ring-blue-500/30",
-  },
-};
+type Phase = "welcome" | "joyride" | "test" | "conclusion" | "done";
 
-export function DriverTutorial({ onNavigateToTab, onComplete, isVisible }: DriverTutorialProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+const JOYRIDE_STEPS: Step[] = [
+  // Step 2 — Tarifs (navigates to settings tab)
+  {
+    target: '[data-tutorial="pricing-section"]',
+    title: "Vos tarifs",
+    content: (
+      <div className="space-y-2">
+        <p>Définissez vos prix pour accepter vos réservations.</p>
+        <p className="text-muted-foreground text-xs">
+          Vos clients paieront directement selon ces tarifs.
+        </p>
+      </div>
+    ),
+    placement: "bottom",
+    disableBeacon: true,
+    disableOverlayClose: true,
+  },
+  // Step 3 — QR Code (navigates to qrcode tab)
+  {
+    target: '[data-tutorial="qr-code"]',
+    title: "Votre QR code client",
+    content: (
+      <div className="space-y-2">
+        <p>Voici votre QR code client.</p>
+        <p className="text-muted-foreground text-xs">
+          Montrez-le à vos passagers après chaque course.
+        </p>
+      </div>
+    ),
+    placement: "bottom",
+    disableBeacon: true,
+    disableOverlayClose: true,
+  },
+  // Step 5 — Page client explanation
+  {
+    target: '[data-tutorial="qr-code"]',
+    title: "Ce que voit votre client",
+    content: (
+      <div className="space-y-2">
+        <p>Voici ce que votre client voit après le scan.</p>
+        <p className="text-muted-foreground text-xs">
+          Le client peut réserver directement avec vous — sans intermédiaire.
+        </p>
+      </div>
+    ),
+    placement: "bottom",
+    disableBeacon: true,
+    disableOverlayClose: true,
+  },
+  // Step 6 — Share button
+  {
+    target: '[data-tutorial="share-button"]',
+    title: "Partagez votre lien",
+    content: (
+      <div className="space-y-2">
+        <p>Vous pouvez aussi envoyer votre lien à vos clients par SMS, WhatsApp ou e-mail.</p>
+        <p className="text-muted-foreground text-xs">
+          Pratique pour les clients réguliers ou les recommandations.
+        </p>
+      </div>
+    ),
+    placement: "bottom",
+    disableBeacon: true,
+    disableOverlayClose: true,
+  },
+];
 
-  const step = TUTORIAL_STEPS[currentStep];
-  const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100;
-  const isLastStep = currentStep === TUTORIAL_STEPS.length - 1;
-  const isFirstStep = currentStep === 0;
-  const config = importanceConfig[step.importance];
+export function DriverTutorial({ isVisible, onNavigateToTab, onComplete }: DriverTutorialProps) {
+  const [phase, setPhase] = useState<Phase>("welcome");
+  const [runJoyride, setRunJoyride] = useState(false);
+  const [joyrideStepIndex, setJoyrideStepIndex] = useState(0);
 
-  const handleNext = useCallback(() => {
-    if (isLastStep) {
-      onComplete();
-    } else {
-      setCurrentStep(prev => prev + 1);
+  // Reset when visibility changes
+  useEffect(() => {
+    if (isVisible) {
+      setPhase("welcome");
+      setRunJoyride(false);
+      setJoyrideStepIndex(0);
     }
-  }, [isLastStep, onComplete]);
+  }, [isVisible]);
 
-  const handlePrev = useCallback(() => {
-    if (!isFirstStep) setCurrentStep(prev => prev - 1);
-  }, [isFirstStep]);
+  const handleStartTour = useCallback(() => {
+    // Navigate to settings tab to show pricing
+    onNavigateToTab("settings");
+    setPhase("joyride");
+    // Small delay to let tab render
+    setTimeout(() => {
+      setJoyrideStepIndex(0);
+      setRunJoyride(true);
+    }, 600);
+  }, [onNavigateToTab]);
 
-  const handleGoToTab = useCallback(() => {
-    onNavigateToTab(step.targetTab);
+  const handleJoyrideCallback = useCallback((data: CallBackProps) => {
+    const { action, index, status, type } = data;
+
+    // User finished or skipped
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      setRunJoyride(false);
+      setPhase("conclusion");
+      return;
+    }
+
+    if (type === EVENTS.STEP_AFTER) {
+      const nextIndex = index + (action === ACTIONS.PREV ? -1 : 1);
+      
+      // Navigate to appropriate tab before showing next step
+      if (action !== ACTIONS.PREV) {
+        if (nextIndex === 0) {
+          // Pricing step → settings tab
+          onNavigateToTab("settings");
+        } else if (nextIndex === 1 || nextIndex === 2 || nextIndex === 3) {
+          // QR code / client view / share → qrcode tab
+          onNavigateToTab("qrcode");
+        }
+
+        // After step 1 (qr code shown), show interactive test
+        if (nextIndex === 2) {
+          setRunJoyride(false);
+          setPhase("test");
+          return;
+        }
+      } else {
+        // Going back
+        if (nextIndex === 0) {
+          onNavigateToTab("settings");
+        } else {
+          onNavigateToTab("qrcode");
+        }
+      }
+
+      // Delay to let tab render
+      setTimeout(() => {
+        setJoyrideStepIndex(nextIndex);
+      }, 400);
+    }
+  }, [onNavigateToTab]);
+
+  const handleTestDone = useCallback(() => {
+    setPhase("joyride");
+    onNavigateToTab("qrcode");
+    setTimeout(() => {
+      setJoyrideStepIndex(2); // Continue from step 5 (client page)
+      setRunJoyride(true);
+    }, 400);
+  }, [onNavigateToTab]);
+
+  const handleFinish = useCallback(() => {
+    setPhase("done");
+    onNavigateToTab("home");
     onComplete();
-  }, [onNavigateToTab, step.targetTab, onComplete]);
+  }, [onNavigateToTab, onComplete]);
 
   if (!isVisible) return null;
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key="tutorial-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end justify-center"
-        onClick={(e) => { if (e.target === e.currentTarget) onComplete(); }}
-      >
-        <motion.div
-          key={step.id}
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 30 }}
-          transition={{ type: "spring", damping: 28, stiffness: 300 }}
-          className="w-full max-w-lg"
-        >
-          <div className="bg-card rounded-t-3xl shadow-2xl overflow-hidden border-t border-border/50">
-            {/* Progress bar */}
-            <div className="h-1 bg-muted">
-              <motion.div
-                className={`h-full bg-gradient-to-r ${config.gradient}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.4 }}
-              />
-            </div>
+    <>
+      <AnimatePresence mode="wait">
+        {phase === "welcome" && (
+          <WelcomeOverlay
+            key="welcome"
+            onStart={handleStartTour}
+            onSkip={handleFinish}
+          />
+        )}
+        {phase === "test" && (
+          <InteractiveTestOverlay
+            key="test"
+            onDone={handleTestDone}
+            onSkip={handleTestDone}
+          />
+        )}
+        {phase === "conclusion" && (
+          <ConclusionOverlay
+            key="conclusion"
+            onFinish={handleFinish}
+          />
+        )}
+      </AnimatePresence>
 
-            {/* Header compact */}
-            <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground">
-                  {currentStep + 1}/{TUTORIAL_STEPS.length}
-                </span>
-                <Badge className={`${config.badge} text-[10px] px-2 py-0 h-5 border-0 font-semibold`}>
-                  {config.label}
-                </Badge>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onComplete}
-                className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Step dots */}
-            <div className="flex gap-1 justify-center px-4 pb-3">
-              {TUTORIAL_STEPS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentStep(i)}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    i === currentStep
-                      ? "w-8 bg-primary"
-                      : i < currentStep
-                      ? "w-2 bg-primary/50"
-                      : "w-2 bg-muted-foreground/20"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Content */}
-            <div className="px-5 pb-3 max-h-[55vh] overflow-y-auto">
-              {/* Icon + Title row */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${config.gradient} text-white shadow-md`}>
-                  {step.icon}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-base text-foreground leading-tight truncate">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{step.subtitle}</p>
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-foreground/80 leading-relaxed mb-3">
-                {step.description}
-              </p>
-
-              {/* Tips */}
-              <div className="bg-muted/50 rounded-xl p-3 space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  <Lightbulb className="w-3 h-3" />
-                  À retenir
-                </div>
-                {step.tips.map((tip, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs text-foreground/70 leading-snug">{tip}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Navigate to section CTA */}
-              {!isFirstStep && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGoToTab}
-                  className="w-full mt-3 gap-2 text-xs h-9 border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  Aller voir cette section
-                </Button>
-              )}
-            </div>
-
-            {/* Footer navigation — fixed */}
-            <div className="flex items-center gap-2 px-5 py-3 border-t border-border/50 bg-card">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePrev}
-                disabled={isFirstStep}
-                className="gap-1 text-xs h-9"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Retour
-              </Button>
-              <div className="flex-1" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onComplete}
-                className="text-muted-foreground text-xs h-9"
-              >
-                Passer
-              </Button>
-              <Button
-                onClick={handleNext}
-                size="sm"
-                className={`gap-1.5 font-semibold h-9 px-4 ${
-                  isLastStep
-                    ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/25"
-                    : "bg-primary text-primary-foreground"
-                }`}
-              >
-                {isLastStep ? (
-                  <>
-                    <Rocket className="w-4 h-4" />
-                    C'est parti !
-                  </>
-                ) : (
-                  <>
-                    Suivant
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      {phase === "joyride" && (
+        <Joyride
+          steps={JOYRIDE_STEPS}
+          stepIndex={joyrideStepIndex}
+          run={runJoyride}
+          continuous
+          scrollToFirstStep
+          showSkipButton
+          disableCloseOnEsc={false}
+          disableOverlayClose
+          spotlightClicks={false}
+          callback={handleJoyrideCallback}
+          tooltipComponent={TutorialTooltip}
+          floaterProps={{
+            disableAnimation: true,
+          }}
+          styles={{
+            options: {
+              zIndex: 9998,
+              arrowColor: 'hsl(var(--card))',
+              overlayColor: 'rgba(0, 0, 0, 0.75)',
+            },
+            spotlight: {
+              borderRadius: 12,
+            },
+          }}
+        />
+      )}
+    </>
   );
 }
