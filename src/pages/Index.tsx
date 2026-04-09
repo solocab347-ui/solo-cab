@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Search,
   Zap,
+  Clock,
   Heart,
   Shield,
   DollarSign,
