@@ -65,13 +65,10 @@ function InlinePaymentForm({
       }
 
       if (setupIntent?.status === 'succeeded') {
-        try {
-          await supabase.functions.invoke('persist-card-default', {
-            body: { setup_intent_id: setupIntent.id },
-          });
-        } catch {
-          // Non-blocking
-        }
+        // Non-blocking: persist card default in background
+        supabase.functions.invoke('persist-card-default', {
+          body: { setup_intent_id: setupIntent.id },
+        }).catch(() => { /* silently ignore */ });
         toast.success('✅ Moyen de paiement vérifié avec succès !');
         onSuccess();
       } else if (setupIntent?.status === 'requires_action') {
