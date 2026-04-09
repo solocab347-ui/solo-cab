@@ -416,9 +416,18 @@ export function UnifiedBookingPage() {
             routeDistanceKm={routeDistanceKm || undefined}
             clientPaymentMethod={clientPaymentMethod}
             onCancel={() => { setShowWaitingScreen(false); toast.info('Demande annulée'); }}
-            onAccepted={(driverName) => {
+            onAccepted={(driverName, courseId) => {
               toast.success(`${driverName} a accepté votre course ! 🎉`);
-              setTimeout(() => { if (user) navigate('/client-dashboard'); else navigate('/'); }, 3000);
+              // Redirect to tracking page
+              setTimeout(() => {
+                if (courseId) {
+                  navigate(`/suivi-course/${courseId}`);
+                } else if (user) {
+                  navigate('/client-dashboard');
+                } else {
+                  navigate('/');
+                }
+              }, 2000);
             }}
             onExpired={() => { toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
           />
