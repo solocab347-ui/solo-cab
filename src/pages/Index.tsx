@@ -122,116 +122,79 @@ const Index = () => {
       {/* ============ TOGGLE CLIENT / CHAUFFEUR ============ */}
       <section className="py-8 md:py-12 bg-gradient-to-b from-storefront-dark to-storefront">
         <div className="container mx-auto px-4 max-w-5xl">
-          {/* Sélecteur Client / Chauffeur — Design premium avec glow */}
+          {/* Sélecteur Client / Chauffeur — Design unifié pill toggle */}
           <div className="flex justify-center mb-10">
-            <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
-              {/* Bouton Client */}
-              <button
-                onClick={() => setActiveView("client")}
-                className="relative group rounded-2xl overflow-hidden transition-all duration-500"
+            <div className="relative bg-muted/10 backdrop-blur-sm border border-border/30 rounded-2xl p-1.5 w-full max-w-md">
+              {/* Indicateur glissant */}
+              <div
+                className={cn(
+                  "absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] rounded-xl transition-all duration-500 ease-out",
+                  activeView === "client" ? "left-1.5" : "left-[calc(50%+3px)]"
+                )}
               >
-                {/* Halo glow — toujours visible */}
                 <div className={cn(
-                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-700",
-                  activeView === "client" ? "opacity-50" : "opacity-20 group-hover:opacity-30"
-                )} />
-                {/* Bordure gradient statique + shimmer */}
-                <div className={cn(
-                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 transition-opacity duration-700",
-                  activeView === "client" ? "opacity-100" : "opacity-30 group-hover:opacity-50"
-                )} style={{ padding: '2px' }}>
-                  <div className="w-full h-full rounded-2xl bg-storefront-dark" />
-                </div>
-                {/* Lumière qui traverse — shimmer */}
-                <div className={cn(
-                  "absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
-                )}>
-                  <div className={cn(
-                    "absolute -inset-full bg-gradient-to-r from-transparent via-pink-400/20 to-transparent skew-x-12 transition-opacity duration-700",
-                    activeView === "client" ? "opacity-100 animate-[shimmer_3s_ease-in-out_infinite]" : "opacity-40 animate-[shimmer_5s_ease-in-out_infinite]"
-                  )} />
-                </div>
-                {/* Contenu */}
-                <div className={cn(
-                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl transition-all duration-300",
+                  "absolute inset-0 rounded-xl transition-all duration-500",
                   activeView === "client"
-                    ? "bg-gradient-to-br from-pink-500/20 to-purple-600/20"
-                    : "bg-storefront-dark/80"
-                )}>
+                    ? "bg-gradient-to-r from-pink-500/20 to-purple-600/20 shadow-[0_0_20px_rgba(236,72,153,0.3)]"
+                    : "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                )} />
+                <div className={cn(
+                  "absolute inset-0 rounded-xl border transition-all duration-500",
+                  activeView === "client"
+                    ? "border-pink-500/60"
+                    : "border-blue-500/60"
+                )} />
+              </div>
+
+              <div className="relative grid grid-cols-2 gap-1">
+                {/* Bouton Client */}
+                <button
+                  onClick={() => setActiveView("client")}
+                  className="relative z-10 flex items-center justify-center gap-3 py-4 px-3 rounded-xl transition-all duration-300 group"
+                >
                   <div className={cn(
-                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300",
                     activeView === "client"
-                      ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/40"
-                      : "bg-gradient-to-br from-pink-500/30 to-purple-600/30"
+                      ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-lg shadow-pink-500/30"
+                      : "bg-muted/20 group-hover:bg-muted/30"
                   )}>
-                    <Search className="w-7 h-7 text-white" />
+                    <Search className={cn(
+                      "w-5 h-5 transition-colors duration-300",
+                      activeView === "client" ? "text-white" : "text-muted-foreground group-hover:text-foreground"
+                    )} />
                   </div>
                   <span className={cn(
-                    "font-bold text-sm transition-colors",
+                    "font-semibold text-sm transition-colors duration-300",
                     activeView === "client" ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )}>
                     Je cherche un chauffeur
                   </span>
-                  <div className={cn(
-                    "w-8 h-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 transition-opacity duration-300",
-                    activeView === "client" ? "opacity-100" : "opacity-0"
-                  )} />
-                </div>
-              </button>
+                </button>
 
-              {/* Bouton Chauffeur */}
-              <button
-                onClick={() => setActiveView("chauffeur")}
-                className="relative group rounded-2xl overflow-hidden transition-all duration-500"
-              >
-                {/* Halo glow — toujours visible */}
-                <div className={cn(
-                  "absolute -inset-1 rounded-2xl blur-lg bg-gradient-to-r from-blue-500 to-cyan-600 transition-opacity duration-700",
-                  activeView === "chauffeur" ? "opacity-50" : "opacity-20 group-hover:opacity-30"
-                )} />
-                {/* Bordure gradient statique + shimmer */}
-                <div className={cn(
-                  "absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 transition-opacity duration-700",
-                  activeView === "chauffeur" ? "opacity-100" : "opacity-30 group-hover:opacity-50"
-                )} style={{ padding: '2px' }}>
-                  <div className="w-full h-full rounded-2xl bg-storefront-dark" />
-                </div>
-                {/* Lumière qui traverse — shimmer */}
-                <div className={cn(
-                  "absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
-                )}>
+                {/* Bouton Chauffeur */}
+                <button
+                  onClick={() => setActiveView("chauffeur")}
+                  className="relative z-10 flex items-center justify-center gap-3 py-4 px-3 rounded-xl transition-all duration-300 group"
+                >
                   <div className={cn(
-                    "absolute -inset-full bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent skew-x-12 transition-opacity duration-700",
-                    activeView === "chauffeur" ? "opacity-100 animate-[shimmer_3s_ease-in-out_infinite]" : "opacity-40 animate-[shimmer_5s_ease-in-out_infinite]"
-                  )} />
-                </div>
-                {/* Contenu */}
-                <div className={cn(
-                  "relative flex flex-col items-center gap-3 py-6 px-4 rounded-2xl transition-all duration-300",
-                  activeView === "chauffeur"
-                    ? "bg-gradient-to-br from-blue-500/20 to-cyan-600/20"
-                    : "bg-storefront-dark/80"
-                )}>
-                  <div className={cn(
-                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300",
                     activeView === "chauffeur"
-                      ? "bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/40"
-                      : "bg-gradient-to-br from-blue-500/30 to-cyan-600/30"
+                      ? "bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/30"
+                      : "bg-muted/20 group-hover:bg-muted/30"
                   )}>
-                    <Car className="w-7 h-7 text-white" />
+                    <Car className={cn(
+                      "w-5 h-5 transition-colors duration-300",
+                      activeView === "chauffeur" ? "text-white" : "text-muted-foreground group-hover:text-foreground"
+                    )} />
                   </div>
                   <span className={cn(
-                    "font-bold text-sm transition-colors",
+                    "font-semibold text-sm transition-colors duration-300",
                     activeView === "chauffeur" ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )}>
                     Je suis chauffeur
                   </span>
-                  <div className={cn(
-                    "w-8 h-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 transition-opacity duration-300",
-                    activeView === "chauffeur" ? "opacity-100" : "opacity-0"
-                  )} />
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
           </div>
 
