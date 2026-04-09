@@ -624,6 +624,59 @@ const GuestBookingTracking = () => {
           </CardContent>
         </Card>
 
+        {/* Rating Section */}
+        {booking.status === 'completed' && !ratingSubmitted && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-center">Comment s'est passée votre course ?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-10 w-10 transition-colors ${
+                        star <= (hoverRating || rating)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-muted-foreground/30'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              {rating > 0 && (
+                <Button
+                  onClick={handleSubmitRating}
+                  className="w-full"
+                  disabled={isSubmittingRating}
+                >
+                  {isSubmittingRating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Envoyer ma note ({rating}/5)
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {booking.status === 'completed' && ratingSubmitted && (
+          <Card className="mb-6 border-green-500/20 bg-green-500/5">
+            <CardContent className="pt-4 pb-4 text-center">
+              <div className="flex justify-center gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} className={`h-6 w-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">Merci pour votre évaluation !</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Registration CTA */}
         <Alert className="border-primary/50 bg-primary/5">
           <UserPlus className="h-4 w-4" />
