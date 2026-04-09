@@ -312,8 +312,8 @@ const ClientRideTracking = () => {
                   <p className="font-semibold truncate">{driverName}</p>
                   <p className="text-xs text-muted-foreground">Votre chauffeur</p>
                 </div>
-                {driver.phone && isActive && (
-                  <a href={`tel:${driver.phone}`} className="shrink-0">
+                {driver.contact_phone && isActive && (
+                  <a href={`tel:${driver.contact_phone}`} className="shrink-0">
                     <Button variant="outline" size="icon" className="rounded-full">
                       <Phone className="h-4 w-4" />
                     </Button>
