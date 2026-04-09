@@ -548,11 +548,25 @@ export function UnifiedBookingPage() {
     try {
       const timeoutMs = 5 * 60 * 1000; // 5 minutes
       
-      // Get client ID if logged in
+      // Get client ID if logged in and confirmed
       let clientId: string | null = null;
+      let useGuestMode = !user;
+      let effectiveGuestName = guestName;
+      let effectiveGuestPhone = guestPhone;
+      let effectiveGuestEmail = guestEmail;
+
       if (user) {
         const { data: clientData } = await supabase.from('clients').select('id').eq('user_id', user.id).single();
         clientId = clientData?.id || null;
+        
+        // If user exists but client record not accessible (email not confirmed, RLS, etc.)
+        // Fall back to guest mode with user's info
+        if (!clientId) {
+          useGuestMode = true;
+          effectiveGuestName = user.user_metadata?.full_name || regName || guestName || 'Client';
+          effectiveGuestPhone = user.user_metadata?.phone || regPhone || guestPhone || '';
+          effectiveGuestEmail = user.email || regEmail || guestEmail || '';
+        }
       }
 
       // Generate a unique group ID for all requests in this batch
@@ -565,9 +579,9 @@ export function UnifiedBookingPage() {
         .from('ride_requests')
         .insert(selectedDrivers.map(driver => ({
           client_id: clientId,
-          guest_name: !user ? guestName : null,
-          guest_phone: !user ? guestPhone : null,
-          guest_email: !user ? guestEmail || null : null,
+          guest_name: useGuestMode ? effectiveGuestName : null,
+          guest_phone: useGuestMode ? effectiveGuestPhone : null,
+          guest_email: useGuestMode ? effectiveGuestEmail || null : null,
           pickup_address: pickupAddress,
           destination_address: destinationAddress,
           distance_km: routeDistanceKm || 0,
