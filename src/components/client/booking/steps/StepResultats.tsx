@@ -1,6 +1,5 @@
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertCircle, ArrowLeft, Car
@@ -46,15 +45,15 @@ export function StepResultats({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
-      {/* Back + route summary inline */}
+    <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300 pb-20">
+      {/* Back + route summary */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground px-2" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground px-2 h-8" onClick={onBack}>
+          <ArrowLeft className="h-3.5 w-3.5" />
           Modifier
         </Button>
         {routeDistanceKm !== null && (
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2 text-xs">
             <span className="font-bold text-foreground">{routeDistanceKm.toFixed(1)} km</span>
             {routeDurationMin !== null && (
               <>
@@ -70,48 +69,33 @@ export function StepResultats({
 
       {/* Error states */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>
       )}
-
       {fallbackToReservation && mode === 'immediate' && filteredDrivers.length === 0 && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Aucun chauffeur connecté en temps réel. Voici ceux disponibles sur réservation.</AlertDescription>
-        </Alert>
+        <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur en temps réel. Voici ceux sur réservation.</AlertDescription></Alert>
       )}
-
       {noDriversFound && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Aucun chauffeur dans un rayon de {maxSearchRadiusKm} km. Élargissez la zone.</AlertDescription>
-        </Alert>
+        <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur dans {maxSearchRadiusKm} km.</AlertDescription></Alert>
       )}
-
       {clientPaymentMethod === 'cash' && filteredDrivers.length === 0 && drivers.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Aucun chauffeur dans cette zone n'accepte les espèces.</AlertDescription>
-        </Alert>
+        <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur n'accepte les espèces ici.</AlertDescription></Alert>
       )}
 
-      {/* Drivers carousel FIRST */}
+      {/* Drivers carousel — COMPACT cards */}
       {filteredDrivers.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <Car className="h-4 w-4 text-primary shrink-0" />
-            <p className="text-xs font-semibold text-foreground">Professionnels certifiés à proximité</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 px-1">
+            <Car className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-[11px] font-semibold text-foreground">Professionnels certifiés</p>
           </div>
 
           <div
             ref={scrollRef}
-            className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
+            className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {filteredDrivers.map((driver, index) => (
-              <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-5px)] min-w-[155px] max-w-[200px]">
+              <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-4px)] min-w-[150px] max-w-[180px]">
                 <DriverResultCard
                   driver={driver}
                   routeDistanceKm={routeDistanceKm || undefined}
@@ -127,8 +111,8 @@ export function StepResultats({
         </div>
       )}
 
-      {/* Map AFTER drivers - compact height */}
-      <div className="rounded-xl overflow-hidden border border-border/50" style={{ height: '180px' }}>
+      {/* Map — compact */}
+      <div className="rounded-xl overflow-hidden border border-border/50" style={{ height: '150px' }}>
         <DriverMap
           clientPosition={pickupCoords}
           destinationPosition={destCoords}
@@ -141,21 +125,15 @@ export function StepResultats({
         />
       </div>
 
-      {mapboxError && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Carte temporairement indisponible.</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Next button */}
+      {/* Fixed bottom CTA */}
       {filteredDrivers.length > 0 && (
-        <Button
-          className="w-full h-12 text-base font-semibold gap-2"
-          onClick={onNext}
-        >
-          Continuer · {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''}
-        </Button>
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50">
+          <div className="container mx-auto max-w-4xl">
+            <Button className="w-full h-11 text-sm font-semibold gap-2" onClick={onNext}>
+              Continuer · {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? 's' : ''}
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
