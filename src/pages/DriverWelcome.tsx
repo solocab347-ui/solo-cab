@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { HorizontalOnboardingTunnel } from "@/components/driver/onboarding";
+import { SimplifiedOnboardingTunnel } from "@/components/driver/onboarding/SimplifiedOnboardingTunnel";
 import { logger } from "@/lib/productionLogger";
 import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
@@ -240,14 +240,12 @@ const DriverWelcome = () => {
   const driverProfile = { driver: driverData, profile: profileData };
 
   return (
-    <div className="min-h-screen bg-background">
-      <HorizontalOnboardingTunnel 
-        driverId={driverData.id}
-        userId={user.id}
-        driverProfile={driverProfile}
-        onComplete={() => navigate("/driver-dashboard", { replace: true })}
-      />
-    </div>
+    <SimplifiedOnboardingTunnel 
+      driverId={driverData.id}
+      userId={user.id}
+      driverProfile={driverProfile}
+      onComplete={() => navigate("/driver-dashboard", { replace: true })}
+    />
   );
 };
 
