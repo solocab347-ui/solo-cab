@@ -184,34 +184,41 @@ export const DriverPublicProfileSimplified = memo(({
 
       {/* Tabs de navigation - Compact */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-muted/50">
+        <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-muted/50">
           <TabsTrigger 
             value="visibility" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-1 text-[10px] sm:text-xs data-[state=active]:bg-background"
+            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
           >
-            <Eye className="w-4 h-4" />
-            <span>Visibilité</span>
+            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">Visibilité</span>
           </TabsTrigger>
           <TabsTrigger 
             value="identity" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-1 text-[10px] sm:text-xs data-[state=active]:bg-background"
+            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
           >
-            <Camera className="w-4 h-4" />
-            <span>Identité</span>
+            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">Identité</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="vehicle" 
+            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
+          >
+            <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">Véhicule</span>
           </TabsTrigger>
           <TabsTrigger 
             value="services" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-1 text-[10px] sm:text-xs data-[state=active]:bg-background"
+            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
           >
-            <Briefcase className="w-4 h-4" />
-            <span>Services</span>
+            <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">Services</span>
           </TabsTrigger>
           <TabsTrigger 
             value="contact" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-1 text-[10px] sm:text-xs data-[state=active]:bg-background"
+            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
           >
-            <Phone className="w-4 h-4" />
-            <span>Contact</span>
+            <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">Contact</span>
           </TabsTrigger>
         </TabsList>
 
