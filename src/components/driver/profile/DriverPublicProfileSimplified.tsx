@@ -416,7 +416,12 @@ export const DriverPublicProfileSimplified = memo(({
               onChange={onServicesOfferedChange}
             />
           </Card>
-            
+        </TabsContent>
+
+        {/* Tab Contact */}
+        <TabsContent value="contact" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
+            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Coordonnées publiques</h3>
             <div className="space-y-3 sm:space-y-4">
               {/* Téléphone */}
               <div className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 space-y-2 sm:space-y-3">
