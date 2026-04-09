@@ -336,7 +336,7 @@ export function DriverMap({
   }, [mapStatus, drivers.length]);
 
   return (
-    <div className="relative w-full min-h-[280px] overflow-hidden rounded-2xl border border-border/30 shadow-2xl sm:min-h-[380px]">
+    <div className="relative w-full h-full min-h-[150px] overflow-hidden rounded-xl border border-border/30 shadow-lg">
       <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
 
       {(tokenLoading || mapStatus === 'loading') && (
