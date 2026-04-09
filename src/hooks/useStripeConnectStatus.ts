@@ -8,6 +8,8 @@ export interface StripeConnectStatus {
   payouts_enabled: boolean;
   details_submitted: boolean;
   account_id?: string;
+  email?: string | null;
+  business_profile_name?: string | null;
 }
 
 export function useStripeConnectStatus(driverId: string | undefined) {
