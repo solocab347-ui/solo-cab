@@ -225,7 +225,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         // Drivers without Stripe can still accept cash/transfer payments
         const filteredDrivers = driversWithPrices.filter(d => d.estimated_price > 0 || d.base_fare > 0);
         setDrivers(filteredDrivers);
-        setSearchRadius(Math.max(...(stripeFilteredDrivers.length > 0 ? stripeFilteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
+        setSearchRadius(Math.max(...(filteredDrivers.length > 0 ? filteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
         setError('Erreur de connexion');
