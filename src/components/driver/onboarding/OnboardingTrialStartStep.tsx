@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { 
   Loader2,
   Rocket,
-  Play,
   Clock,
   CheckCircle2,
   Package,
@@ -16,7 +15,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { subscriptionManager } from '@/lib/subscriptionManager';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { WelcomeVideoModal } from '../ui/WelcomeVideoModal';
 
 interface OnboardingTrialStartStepProps {
   driverId: string;
@@ -40,7 +38,7 @@ export function OnboardingTrialStartStep({
   const [activating, setActivating] = useState(false);
   
   const [documentsStatus, setDocumentsStatus] = useState(initialDocumentsStatus);
-  const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
+  
   const [refreshing, setRefreshing] = useState(false);
 
   // Polling rapide + Realtime pour mise à jour INSTANTANÉE
@@ -144,15 +142,7 @@ export function OnboardingTrialStartStep({
     return true;
   };
 
-  // Afficher la vidéo de bienvenue puis activer le compte
-  const handleLaunchWithVideo = () => {
-    setShowWelcomeVideo(true);
-  };
 
-  const handleVideoComplete = () => {
-    setShowWelcomeVideo(false);
-    handleActivateAccount();
-  };
 
   const handleActivateAccount = async () => {
     if (!canActivate()) return;
@@ -339,7 +329,7 @@ export function OnboardingTrialStartStep({
       >
         {canActivate() ? (
           <Button 
-            onClick={handleLaunchWithVideo} 
+            onClick={handleActivateAccount} 
             disabled={activating || loading}
             className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
           >
@@ -347,7 +337,7 @@ export function OnboardingTrialStartStep({
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Play className="w-5 h-5 mr-2" />
+                <Rocket className="w-5 h-5 mr-2" />
                 Activer mon compte
               </>
             )}
@@ -396,13 +386,8 @@ export function OnboardingTrialStartStep({
         )}
       </motion.div>
 
-      {/* Modal vidéo de bienvenue obligatoire */}
-      <WelcomeVideoModal
-        open={showWelcomeVideo}
-        onOpenChange={setShowWelcomeVideo}
-        driverId={driverId}
-        onComplete={handleVideoComplete}
-      />
+
+
     </div>
   );
 }
