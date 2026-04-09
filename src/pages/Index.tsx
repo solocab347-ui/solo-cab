@@ -253,7 +253,7 @@ const Index = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/nos-valeurs">
+                <Link to="/comment-ca-marche">
                   <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
                     Comment ça fonctionne
                   </Button>
