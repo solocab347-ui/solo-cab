@@ -61,6 +61,7 @@ const Index = () => {
     { icon: Scale, text: "Pas d'algorithme abusif" },
     { icon: Star, text: "Qualité premium" },
     { icon: HandHeart, text: "Chauffeurs justement rémunérés" },
+    { icon: Clock, text: "Disponibilité en temps réel" },
   ];
 
   const clientTrust = [
@@ -79,6 +80,7 @@ const Index = () => {
     { icon: Globe, text: "Indépendance totale" },
     { icon: Scale, text: "Système juste de notation" },
     { icon: Car, text: "Recevez des courses SoloCab" },
+    { icon: Shield, text: "Protection et sécurité" },
   ];
 
   const driverVision = [
