@@ -369,7 +369,7 @@ const Index = () => {
             <div>
               <h4 className="font-bold mb-3 text-foreground">Ressources</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/solocab-academy" className="hover:text-foreground transition-colors">SoloCab Academy</Link></li>
+                <li><a href="https://solocabacademy.fr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">SoloCab Academy</a></li>
                 <li><Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
               </ul>
             </div>
