@@ -363,7 +363,10 @@ export function UnifiedBookingPage() {
       setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
       setShowWaitingScreen(true);
       toast.success(selectedDrivers.length > 1 ? `Demande envoyée à ${selectedDrivers.length} chauffeurs !` : 'Demande envoyée !');
-    } catch { toast.error("Erreur lors de l'envoi"); } finally { setIsSubmitting(false); }
+    } catch (err: any) {
+      console.error('Booking submit error:', err);
+      toast.error(err?.message || "Erreur lors de l'envoi");
+    } finally { setIsSubmitting(false); }
   };
 
   return (
