@@ -309,7 +309,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           // Respecter les paramètres de visibilité
           const showPhone = driverData.show_phone_for_sharing || false;
           const showEmail = driverData.show_email || false;
-          const showRating = driverData.show_rating_for_sharing || false;
+          const showRating = true; // Rating always visible
           const showRides = driverData.show_rides_for_sharing || false;
           
           // Téléphone: contact_phone prioritaire, sinon profile.phone si autorisé
