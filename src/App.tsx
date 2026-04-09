@@ -48,6 +48,7 @@ const RegisterClient = lazy(() => import("./pages/RegisterClient"));
 const PioneerPayment = lazy(() => import("./pages/PioneerPayment"));
 const OurValues = lazy(() => import("./pages/OurValues"));
 const CommentCaMarche = lazy(() => import("./pages/CommentCaMarche"));
+const Contact = lazy(() => import("./pages/Contact"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const SafeMode = lazy(() => import("./pages/SafeMode"));
@@ -128,6 +129,8 @@ const App = () => (
               <Route path="/comment-ca-marche" element={<Suspense fallback={<LoadingFallback />}><CommentCaMarche /></Suspense>} />
               <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
               <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
+              <Route path="/contact" element={<Suspense fallback={<LoadingFallback />}><Contact /></Suspense>} />
+              <Route path="/cgu" element={<Navigate to="/terms-of-service" replace />} />
               <Route path="/safe-mode" element={<Suspense fallback={<LoadingFallback />}><SafeMode /></Suspense>} />
               <Route path="/plaque-nfc" element={<Suspense fallback={<LoadingFallback />}><NfcPlatePage /></Suspense>} />
               <Route path="/plaque-nfc/success" element={<Suspense fallback={<LoadingFallback />}><NfcPlateOrderSuccess /></Suspense>} />

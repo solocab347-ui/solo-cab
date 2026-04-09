@@ -1,6 +1,6 @@
 // Configuration for the Guide du Chauffeur Indépendant
 // Academy Hub URL — will be updated when the hub is ready
-export const ACADEMY_HUB_URL = "https://academy.solocab.fr";
+export const ACADEMY_HUB_URL = "https://solocabacademy.fr";
 
 // Tool download formats
 export type ToolFormat = "pdf" | "word" | "excel";

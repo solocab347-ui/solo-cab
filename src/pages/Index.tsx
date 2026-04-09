@@ -308,12 +308,12 @@ const Index = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/solocab-academy">
+                <a href="https://solocabacademy.fr" target="_blank" rel="noopener noreferrer">
                   <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
                     <GraduationCap className="w-5 h-5 mr-2" />
                     Découvrir SoloCab Academy
                   </Button>
-                </Link>
+                </a>
               </div>
 
               {/* Bloc vision SoloCab */}
@@ -369,7 +369,7 @@ const Index = () => {
             <div>
               <h4 className="font-bold mb-3 text-foreground">Ressources</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/solocab-academy" className="hover:text-foreground transition-colors">SoloCab Academy</Link></li>
+                <li><a href="https://solocabacademy.fr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">SoloCab Academy</a></li>
                 <li><Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
               </ul>
             </div>
