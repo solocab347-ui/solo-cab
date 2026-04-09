@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ import {
 const Index = () => {
   const { user, userRole, loading } = useAuth();
   const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<"client" | "chauffeur">("client");
 
   useEffect(() => {
     if (!loading && user && userRole) {
@@ -115,130 +116,155 @@ const Index = () => {
         </div>
       </header>
 
-      {/* ============ SECTION CLIENT ============ */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-storefront-dark to-storefront">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <Badge className="mb-6 bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0 text-sm px-4 py-1.5">
-            <Users className="w-4 h-4 mr-2" />
-            Pour les clients
-          </Badge>
-
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-foreground">
-            Réservez un chauffeur professionnel{" "}
-            <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              en toute transparence
-            </span>
-          </h1>
-
-          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Une plateforme qui respecte les chauffeurs pour garantir un service juste et de qualité.
-          </p>
-
-          {/* Arguments client */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10">
-            {clientArguments.map((arg, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 rounded-lg px-3 py-2.5">
-                <arg.icon className="w-4 h-4 text-pink-400 shrink-0" />
-                <span>{arg.text}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA Client */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link to="/chauffeurs">
-              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg w-full sm:w-auto text-base px-8">
-                <Search className="w-5 h-5 mr-2" />
-                Réserver un chauffeur
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/nos-valeurs">
-              <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
-                Comment ça fonctionne
-              </Button>
-            </Link>
-          </div>
-
-          {/* Bloc confiance client */}
-          <Card className="p-6 bg-muted/20 border-border max-w-2xl mx-auto">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center justify-center gap-2">
-              <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
-              SoloCab c'est :
-            </h3>
-            <div className="space-y-2.5">
-              {clientTrust.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                  {item}
-                </div>
-              ))}
+      {/* ============ TOGGLE CLIENT / CHAUFFEUR ============ */}
+      <section className="py-8 md:py-12 bg-gradient-to-b from-storefront-dark to-storefront">
+        <div className="container mx-auto px-4 max-w-5xl">
+          {/* Sélecteur Client / Chauffeur */}
+          <div className="flex justify-center mb-10">
+            <div className="grid grid-cols-2 gap-0 rounded-xl overflow-hidden border border-border w-full max-w-md">
+              <button
+                onClick={() => setActiveView("client")}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-4 px-4 font-semibold text-sm transition-all duration-300",
+                  activeView === "client"
+                    ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-inner"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                <Search className="w-5 h-5" />
+                Je cherche un chauffeur
+              </button>
+              <button
+                onClick={() => setActiveView("chauffeur")}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-4 px-4 font-semibold text-sm transition-all duration-300",
+                  activeView === "chauffeur"
+                    ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-inner"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                <Car className="w-5 h-5" />
+                Je suis chauffeur
+              </button>
             </div>
-          </Card>
-        </div>
-      </section>
+          </div>
 
-      {/* ============ SECTION CHAUFFEUR ============ */}
-      <section className="py-16 md:py-24 bg-storefront">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <Badge className="mb-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0 text-sm px-4 py-1.5">
-            <Car className="w-4 h-4 mr-2" />
-            Pour les chauffeurs
-          </Badge>
+          {/* ============ VUE CLIENT ============ */}
+          {activeView === "client" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-foreground">
+                Réservez un chauffeur professionnel{" "}
+                <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  en toute transparence
+                </span>
+              </h1>
 
-          <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-foreground">
-            Devenez indépendant{" "}
-            <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-              avec SoloCab
-            </span>
-          </h2>
+              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+                Une plateforme qui respecte les chauffeurs pour garantir un service juste et de qualité.
+              </p>
 
-          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Recevez des courses et développez votre propre clientèle.
-          </p>
-
-          {/* Arguments chauffeur */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10">
-            {driverArguments.map((arg, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 rounded-lg px-3 py-2.5">
-                <arg.icon className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>{arg.text}</span>
+              {/* Arguments client */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10 max-w-3xl mx-auto">
+                {clientArguments.map((arg, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 rounded-lg px-3 py-2.5">
+                    <arg.icon className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span>{arg.text}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* CTA Chauffeur */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link to="/devenir-chauffeur">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white shadow-lg w-full sm:w-auto text-base px-8">
-                <UserPlus className="w-5 h-5 mr-2" />
-                S'inscrire comme chauffeur
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/solocab-academy">
-              <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
-                <GraduationCap className="w-5 h-5 mr-2" />
-                Découvrir SoloCab Academy
-              </Button>
-            </Link>
-          </div>
+              {/* CTA Client */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <Link to="/chauffeurs">
+                  <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg w-full sm:w-auto text-base px-8">
+                    <Search className="w-5 h-5 mr-2" />
+                    Réserver un chauffeur
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/nos-valeurs">
+                  <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
+                    Comment ça fonctionne
+                  </Button>
+                </Link>
+              </div>
 
-          {/* Bloc vision SoloCab */}
-          <Card className="p-6 bg-muted/20 border-border max-w-2xl mx-auto">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center justify-center gap-2">
-              <Scale className="w-5 h-5 text-blue-500" />
-              SoloCab est conçu pour :
-            </h3>
-            <div className="space-y-2.5">
-              {driverVision.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                  {item}
+              {/* Bloc confiance client */}
+              <Card className="p-6 bg-muted/20 border-border max-w-2xl mx-auto">
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center justify-center gap-2">
+                  <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
+                  SoloCab c'est :
+                </h3>
+                <div className="space-y-2.5">
+                  {clientTrust.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                      {item}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </Card>
             </div>
-          </Card>
+          )}
+
+          {/* ============ VUE CHAUFFEUR ============ */}
+          {activeView === "chauffeur" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-foreground">
+                Devenez indépendant{" "}
+                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                  avec SoloCab
+                </span>
+              </h1>
+
+              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+                Recevez des courses et développez votre propre clientèle.
+              </p>
+
+              {/* Arguments chauffeur */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10 max-w-3xl mx-auto">
+                {driverArguments.map((arg, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 rounded-lg px-3 py-2.5">
+                    <arg.icon className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>{arg.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Chauffeur */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <Link to="/devenir-chauffeur">
+                  <Button size="lg" className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white shadow-lg w-full sm:w-auto text-base px-8">
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    S'inscrire comme chauffeur
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/solocab-academy">
+                  <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto">
+                    <GraduationCap className="w-5 h-5 mr-2" />
+                    Découvrir SoloCab Academy
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Bloc vision SoloCab */}
+              <Card className="p-6 bg-muted/20 border-border max-w-2xl mx-auto">
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center justify-center gap-2">
+                  <Scale className="w-5 h-5 text-blue-500" />
+                  SoloCab est conçu pour :
+                </h3>
+                <div className="space-y-2.5">
+                  {driverVision.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       </section>
 
