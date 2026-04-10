@@ -39,6 +39,8 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
+      // Ensure token is fresh before calling edge function
+      await supabase.auth.refreshSession();
 
       const { data, error } = await supabase.functions.invoke("check-premium-subscription");
       if (error) throw error;
