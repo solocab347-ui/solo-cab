@@ -61,6 +61,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const radarLayerRef = useRef<L.Marker | null>(null);
   const lastHeading = useRef<number>(0);
   const lastGps = useRef<{ lat: number; lng: number } | null>(null);
+  const followMode = useRef<boolean>(true);
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [revenueHidden, setRevenueHidden] = useState(false);
@@ -117,12 +118,16 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     if (!mapContainerRef.current || mapRef.current) return;
     const map = L.map(mapContainerRef.current, {
       center: [48.8566, 2.3522],
-      zoom: 15,
+      zoom: 16,
       zoomControl: false,
       attributionControl: false,
     });
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
+
+    // When user drags the map, disable follow; recenter button re-enables it
+    map.on('dragstart', () => { followMode.current = false; });
+
     setTimeout(() => map.invalidateSize(), 200);
     setIsMapReady(true);
     return () => {
@@ -151,9 +156,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     const inner = el.querySelector('#car-marker-inner') as HTMLElement;
     if (!inner) return;
     
+    // The car-top-view.png image points UP (north=0°).
+    // heading from calcHeading is 0°=north, 90°=east, etc.
+    // Apply -90° offset since the car image faces right (east) by default.
+    const displayAngle = heading - 90;
+    
     // Calculate shortest rotation path to avoid spinning
     const current = normalizeAngle(lastHeading.current);
-    const target = normalizeAngle(heading);
+    const target = normalizeAngle(displayAngle);
     let diff = target - current;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
@@ -213,11 +223,17 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       }
       lastGps.current = { lat: latitude, lng: longitude };
       markerRef.current.setLatLng(newPos);
+
+      // Auto-follow: keep the car centered on the map
+      if (followMode.current) {
+        mapRef.current.panTo(newPos, { animate: true, duration: 0.8 });
+      }
     }
   }, [latitude, longitude, isMapReady, isAvailable, calcHeading, updateRotation]);
 
   const recenter = useCallback(() => {
     if (mapRef.current && latitude && longitude) {
+      followMode.current = true;
       mapRef.current.setView([latitude, longitude], 16, { animate: true });
     }
   }, [latitude, longitude]);
