@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,21 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import QRCode from "qrcode";
+
+function QrCodeImage({ data }: { data: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, data, { width: 200, margin: 2 });
+    }
+  }, [data]);
+  return (
+    <div className="flex justify-center py-2">
+      <canvas ref={canvasRef} className="rounded-lg border" />
+    </div>
+  );
+}
 
 interface SpontaneousPaymentProps {
   driverId: string;
@@ -160,15 +175,7 @@ export function SpontaneousPayment({ driverId, stripeEnabled }: SpontaneousPayme
           </div>
 
           {/* QR Code */}
-          {showQr && (
-            <div className="flex justify-center py-2">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentLink)}`}
-                alt="QR Code paiement"
-                className="w-48 h-48 rounded-lg border"
-              />
-            </div>
-          )}
+          {showQr && <QrCodeImage data={paymentLink} />}
 
           {/* Actions */}
           <div className="grid grid-cols-2 gap-2">
