@@ -15912,6 +15912,8 @@ export type Database = {
           search_radius_km: number | null
           selected_driver_id: string | null
           status: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
           timeout_at: string | null
           updated_at: string | null
         }
@@ -15941,6 +15943,8 @@ export type Database = {
           search_radius_km?: number | null
           selected_driver_id?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
           timeout_at?: string | null
           updated_at?: string | null
         }
@@ -15970,6 +15974,8 @@ export type Database = {
           search_radius_km?: number | null
           selected_driver_id?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
           timeout_at?: string | null
           updated_at?: string | null
         }
