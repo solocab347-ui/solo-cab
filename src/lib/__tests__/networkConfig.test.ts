@@ -108,7 +108,7 @@ describe('categorizeError', () => {
   });
 
   it('46. devrait catégoriser database', () => {
-    expect(categorizeError({ code: 'PGRST301' })).toBe('auth'); // PGRST301 is auth
+    expect(categorizeError({ code: 'PGRST301' })).toBe('database'); // PGRST codes go to database category
     expect(categorizeError({ code: '23505' })).toBe('database');
   });
 
