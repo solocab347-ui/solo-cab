@@ -20993,6 +20993,10 @@ export type Database = {
           status: string
         }[]
       }
+      get_guest_tracking_token: {
+        Args: { _course_id: string }
+        Returns: string
+      }
       get_my_driver_statistics: {
         Args: never
         Returns: {
