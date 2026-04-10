@@ -19801,6 +19801,10 @@ export type Database = {
         Args: { p_driver_id: string; p_ride_request_id: string }
         Returns: Json
       }
+      atomic_start_course_finalization: {
+        Args: { p_course_id: string; p_driver_user_id: string }
+        Returns: Json
+      }
       auto_assign_fleet_driver: {
         Args: {
           p_duration_minutes?: number
