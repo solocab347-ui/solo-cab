@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Navigation, Loader2, Wifi, WifiOff, QrCode, Receipt, Car, LayoutGrid } from 'lucide-react';
 import { ActiveCourseCard } from './ActiveCourseCard';
+import { UpcomingReservationsBanner } from './UpcomingReservationsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
