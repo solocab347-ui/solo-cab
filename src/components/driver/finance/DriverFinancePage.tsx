@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, DollarSign, Banknote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -40,31 +40,49 @@ interface PendingPayment {
   receiver_driver_id: string;
 }
 
+interface TransactionItem {
+  id: string;
+  course_id: string;
+  amount: number;
+  net_to_driver: number;
+  stripe_fee_amount: number;
+  solocab_fee_amount: number;
+  status: string;
+  payment_type: string;
+  payment_method: string;
+  created_at: string;
+}
+
 interface WalletStats {
   totalEarned: number;
   totalFees: number;
   totalNet: number;
   totalCourses: number;
   avgPerCourse: number;
-  recentTransactions: Array<{
-    id: string;
-    course_id: string;
-    amount: number;
-    net_to_driver: number;
-    stripe_fee_amount: number;
-    solocab_fee_amount: number;
-    status: string;
-    payment_type: string;
-    created_at: string;
-    pickup?: string;
-    destination?: string;
-  }>;
+  // Breakdown by payment method
+  cardCourses: number;
+  cashCourses: number;
+  cardStripeFees: number;
+  cardSolocabFees: number;
+  cashSolocabFees: number;
+  recentTransactions: TransactionItem[];
+}
+
+interface PendingBalanceStats {
+  totalGross: number;
+  totalSolocabFees: number;
+  totalStripeFees: number;
+  totalNet: number;
+  courseCount: number;
+  cashFeesOwed: number; // SoloCab fees from cash courses (to be deducted)
+  cardFeesCollected: number; // SoloCab fees from card courses (already taken)
 }
 
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
+  const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
 
@@ -75,7 +93,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const loadData = async () => {
     try {
       // Load all data in parallel
-      const [balancesResult, pendingResult, paymentsResult, driverResult] = await Promise.all([
+      const [balancesResult, pendingResult, paymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
           .select(`
@@ -96,7 +114,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .order("created_at", { ascending: false }),
         supabase
           .from("stripe_transactions")
-          .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, created_at, description")
+          .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
           .eq("driver_id", driverId)
           .in("status", ["succeeded", "completed"])
           .order("created_at", { ascending: false })
@@ -106,6 +124,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .select("stripe_connect_charges_enabled")
           .eq("id", driverId)
           .single(),
+        supabase
+          .from("driver_balance_pending" as any)
+          .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type")
+          .eq("driver_id", driverId)
+          .eq("status", "pending"),
       ]);
 
       setStripeEnabled(!!driverResult.data?.stripe_connect_charges_enabled);
@@ -118,12 +141,15 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       setPendingPayments(pendingResult.data || []);
 
       // Calculate wallet stats from stripe_transactions
-      const txns = paymentsResult.data || [];
-      const totalEarned = txns.reduce((s, p) => s + (p.gross_amount || 0), 0);
-      const totalStripeFees = txns.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
-      const totalSolocabFees = txns.reduce((s, p) => s + (p.solocab_fee_amount || 0), 0);
+      const txns = (paymentsResult.data || []) as any[];
+      const totalEarned = txns.reduce((s: number, p: any) => s + (p.gross_amount || 0), 0);
+      const totalStripeFees = txns.reduce((s: number, p: any) => s + (p.stripe_fee_amount || 0), 0);
+      const totalSolocabFees = txns.reduce((s: number, p: any) => s + (p.solocab_fee_amount || 0), 0);
       const totalFees = totalStripeFees + totalSolocabFees;
-      const totalNet = txns.reduce((s, p) => s + (p.net_amount || 0), 0);
+      const totalNet = txns.reduce((s: number, p: any) => s + (p.net_amount || 0), 0);
+
+      const cardTxns = txns.filter((t: any) => t.payment_method !== 'cash');
+      const cashTxns = txns.filter((t: any) => t.payment_method === 'cash');
 
       setWalletStats({
         totalEarned,
@@ -131,7 +157,12 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         totalNet,
         totalCourses: txns.length,
         avgPerCourse: txns.length > 0 ? totalEarned / txns.length : 0,
-        recentTransactions: txns.slice(0, 20).map(p => ({
+        cardCourses: cardTxns.length,
+        cashCourses: cashTxns.length,
+        cardStripeFees: cardTxns.reduce((s: number, t: any) => s + (t.stripe_fee_amount || 0), 0),
+        cardSolocabFees: cardTxns.reduce((s: number, t: any) => s + (t.solocab_fee_amount || 0), 0),
+        cashSolocabFees: cashTxns.reduce((s: number, t: any) => s + (t.solocab_fee_amount || 0), 0),
+        recentTransactions: txns.slice(0, 30).map((p: any) => ({
           id: p.id,
           course_id: p.course_id || '',
           amount: p.gross_amount || 0,
@@ -140,8 +171,31 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           solocab_fee_amount: p.solocab_fee_amount || 0,
           status: p.status,
           payment_type: p.transaction_type || "full_payment",
+          payment_method: p.payment_method || 'stripe',
           created_at: p.created_at,
         })),
+      });
+
+      // Calculate pending balance from driver_balance_pending
+      const pbData = (pendingBalanceResult.data || []) as any[];
+      let cashFeesOwed = 0;
+      let cardFeesCollected = 0;
+      for (const b of pbData) {
+        const fee = Number(b.solocab_fee || 0);
+        if (b.payment_type === 'cash') {
+          cashFeesOwed += fee;
+        } else {
+          cardFeesCollected += fee;
+        }
+      }
+      setPendingBalance({
+        totalGross: pbData.reduce((s: number, b: any) => s + Number(b.gross_amount || 0), 0),
+        totalSolocabFees: pbData.reduce((s: number, b: any) => s + Number(b.solocab_fee || 0), 0),
+        totalStripeFees: pbData.reduce((s: number, b: any) => s + Number(b.stripe_fee || 0), 0),
+        totalNet: pbData.reduce((s: number, b: any) => s + Number(b.net_amount || 0), 0),
+        courseCount: pbData.length,
+        cashFeesOwed,
+        cardFeesCollected,
       });
     } catch (err) {
       console.error("Error loading finance data:", err);
@@ -197,10 +251,6 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
     .filter(p => p.sender_driver_id === driverId)
     .reduce((sum, p) => sum + p.sender_commission_amount, 0);
 
-  const totalPendingFees = pendingPayments
-    .filter(p => p.receiver_driver_id === driverId)
-    .reduce((sum, p) => sum + (p.platform_fee || 0.10), 0);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -219,7 +269,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total encaissé</p>
+                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut)</p>
                 <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
               </div>
               <div className="p-3 rounded-full bg-primary/20">
@@ -228,54 +278,80 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             </div>
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
               <TrendingUp className="w-3 h-3 text-success" />
-              <span>{walletStats.totalCourses} courses • Moy. {walletStats.avgPerCourse.toFixed(2)}€/course</span>
+              <span>{walletStats.totalCourses} courses • {walletStats.cardCourses} CB • {walletStats.cashCourses} Espèces</span>
             </div>
           </Card>
 
           <Card className="p-3 bg-success/5 border-success/20">
-            <p className="text-xs text-muted-foreground mb-1">Net reçu</p>
+            <p className="text-xs text-muted-foreground mb-1">Net chauffeur</p>
             <p className="text-xl font-bold text-success">{walletStats.totalNet.toFixed(2)}€</p>
           </Card>
           <Card className="p-3 bg-destructive/5 border-destructive/20">
             <p className="text-xs text-muted-foreground mb-1">Total frais</p>
             <p className="text-xl font-bold text-destructive">-{walletStats.totalFees.toFixed(2)}€</p>
+            <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+              <p>Stripe: -{(walletStats.cardStripeFees).toFixed(2)}€</p>
+              <p>SoloCab: -{(walletStats.cardSolocabFees + walletStats.cashSolocabFees).toFixed(2)}€</p>
+            </div>
           </Card>
         </div>
       )}
 
-      {/* Weekly settlement summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 bg-success/5 border-success/20">
-          <div className="flex items-center gap-2 text-success text-sm mb-1">
-            <ArrowUpRight className="w-4 h-4" />
-            Commissions en attente
-          </div>
-          <p className="text-2xl font-bold text-success">+{totalPendingCommissions.toFixed(2)}€</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {pendingPayments.filter(p => p.sender_driver_id === driverId).length} courses partagées
-          </p>
-        </Card>
-        <Card className="p-4 bg-destructive/5 border-destructive/20">
-          <div className="flex items-center gap-2 text-destructive text-sm mb-1">
-            <ArrowDownRight className="w-4 h-4" />
-            Frais à déduire
-          </div>
-          <p className="text-2xl font-bold text-destructive">-{totalPendingFees.toFixed(2)}€</p>
-          <p className="text-xs text-muted-foreground mt-1">Frais de gestion SoloCab</p>
-        </Card>
-        <Card className="p-4 bg-primary/5 border-primary/20">
-          <div className="flex items-center gap-2 text-primary text-sm mb-1">
-            <Wallet className="w-4 h-4" />
-            Net estimé
-          </div>
-          <p className="text-2xl font-bold text-foreground">
-            {(totalPendingCommissions - totalPendingFees).toFixed(2)}€
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Prochain versement lundi 6h</p>
-        </Card>
-      </div>
+      {/* Weekly settlement summary from driver_balance_pending */}
+      {pendingBalance && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex items-center gap-2 text-primary text-sm mb-1">
+              <Wallet className="w-4 h-4" />
+              Prochain versement
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {pendingBalance.totalNet.toFixed(2)}€
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {pendingBalance.courseCount} courses • Lundi 6h
+            </p>
+          </Card>
+          <Card className="p-4 bg-destructive/5 border-destructive/20">
+            <div className="flex items-center gap-2 text-destructive text-sm mb-1">
+              <ArrowDownRight className="w-4 h-4" />
+              Frais SoloCab
+            </div>
+            <p className="text-2xl font-bold text-destructive">
+              -{pendingBalance.totalSolocabFees.toFixed(2)}€
+            </p>
+            <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+              <p>✅ Prélevé (CB): {pendingBalance.cardFeesCollected.toFixed(2)}€</p>
+              <p>⏳ À déduire (Espèces): {pendingBalance.cashFeesOwed.toFixed(2)}€</p>
+            </div>
+          </Card>
+          {totalPendingCommissions > 0 ? (
+            <Card className="p-4 bg-success/5 border-success/20">
+              <div className="flex items-center gap-2 text-success text-sm mb-1">
+                <ArrowUpRight className="w-4 h-4" />
+                Commissions partage
+              </div>
+              <p className="text-2xl font-bold text-success">+{totalPendingCommissions.toFixed(2)}€</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingPayments.filter(p => p.sender_driver_id === driverId).length} courses partagées
+              </p>
+            </Card>
+          ) : (
+            <Card className="p-4 bg-muted/30 border-border">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                <CreditCard className="w-4 h-4" />
+                Frais Stripe
+              </div>
+              <p className="text-2xl font-bold text-destructive">
+                -{pendingBalance.totalStripeFees.toFixed(2)}€
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Frais de transaction CB</p>
+            </Card>
+          )}
+        </div>
+      )}
 
-      <Tabs defaultValue={initialTab === "spontaneous" ? "wallet" : "wallet"} className="space-y-4">
+      <Tabs defaultValue="wallet" className="space-y-4">
         <TabsList className="w-full">
           <TabsTrigger value="wallet" className="flex-1 gap-1">
             <CreditCard className="w-4 h-4" />
@@ -296,34 +372,56 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           {!walletStats?.recentTransactions.length ? (
             <Card className="p-8 text-center text-muted-foreground">
               <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Aucune transaction Stripe pour le moment</p>
+              <p>Aucune transaction pour le moment</p>
             </Card>
           ) : (
-            walletStats.recentTransactions.map((t) => (
-              <Card key={t.id} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-success/10">
-                      <CheckCircle className="w-4 h-4 text-success" />
+            walletStats.recentTransactions.map((t) => {
+              const isCash = t.payment_method === 'cash';
+              return (
+                <Card key={t.id} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-lg ${isCash ? 'bg-amber-500/10' : 'bg-success/10'}`}>
+                        {isCash ? (
+                          <Banknote className="w-4 h-4 text-amber-500" />
+                        ) : (
+                          <CreditCard className="w-4 h-4 text-success" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{getPaymentTypeLabel(t.payment_type)}</p>
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${isCash ? 'border-amber-500/30 text-amber-500' : 'border-primary/30 text-primary'}`}>
+                            {isCash ? 'Espèces' : 'CB'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(t.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{getPaymentTypeLabel(t.payment_type)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(t.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
-                      </p>
+                    <div className="text-right">
+                      <p className="font-bold text-foreground">{t.amount.toFixed(2)}€</p>
+                      <p className="text-xs text-success">Net: {t.net_to_driver.toFixed(2)}€</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-foreground">{t.amount.toFixed(2)}€</p>
-                    <p className="text-xs text-success">Net: {t.net_to_driver.toFixed(2)}€</p>
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    {isCash ? (
+                      <>
+                        <span className="text-amber-500">⏳ SoloCab: -{t.solocab_fee_amount.toFixed(2)}€</span>
+                        <span className="text-muted-foreground italic">À déduire lundi</span>
+                      </>
+                    ) : (
+                      <>
+                        {t.stripe_fee_amount > 0 && <span>Stripe: -{t.stripe_fee_amount.toFixed(2)}€</span>}
+                        <span>SoloCab: -{t.solocab_fee_amount.toFixed(2)}€</span>
+                        <span className="text-success">✓ Prélevé</span>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="flex gap-3 text-xs text-muted-foreground">
-                  <span>Stripe: -{t.stripe_fee_amount.toFixed(2)}€</span>
-                  <span>SoloCab: -{t.solocab_fee_amount.toFixed(2)}€</span>
-                </div>
-              </Card>
-            ))
+                </Card>
+              );
+            })
           )}
         </TabsContent>
 
@@ -332,8 +430,9 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <Card className="p-4 bg-primary/10 border-primary/20">
             <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Les commissions sont accumulées pendant la semaine</li>
-              <li>• Les frais SoloCab (0,50€/course + 0,25€/partage/chauffeur + 0,80€/encaissement spontané) sont déduits</li>
+              <li>• Les frais SoloCab (0,50€/course) sont déduits automatiquement</li>
+              <li>• Pour les CB : frais prélevés à la transaction</li>
+              <li>• Pour les espèces : frais déduits du prochain versement</li>
               <li>• Versement net unique chaque <strong>lundi à 6h</strong></li>
             </ul>
           </Card>
@@ -416,10 +515,10 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                       {isSender ? (
                         <p className="font-bold text-success">+{p.sender_commission_amount.toFixed(2)}€</p>
                       ) : (
-                        <p className="text-xs text-muted-foreground">Course: {p.course_amount.toFixed(2)}€</p>
+                        <p className="font-bold text-foreground">{p.course_amount.toFixed(2)}€</p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {isSender ? `sur ${p.course_amount.toFixed(2)}€` : `Frais: ${(p.platform_fee || 0.10).toFixed(2)}€`}
+                        {isSender ? `sur ${p.course_amount.toFixed(2)}€` : `Frais: -${(p.platform_fee || 0.25).toFixed(2)}€`}
                       </p>
                     </div>
                   </div>
@@ -428,7 +527,6 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             })
           )}
         </TabsContent>
-
       </Tabs>
     </div>
   );
