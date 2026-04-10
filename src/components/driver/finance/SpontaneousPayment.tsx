@@ -160,15 +160,7 @@ export function SpontaneousPayment({ driverId, stripeEnabled }: SpontaneousPayme
           </div>
 
           {/* QR Code */}
-          {showQr && (
-            <div className="flex justify-center py-2">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentLink)}`}
-                alt="QR Code paiement"
-                className="w-48 h-48 rounded-lg border"
-              />
-            </div>
-          )}
+          {showQr && <QrCodeImage data={paymentLink} />}
 
           {/* Actions */}
           <div className="grid grid-cols-2 gap-2">
