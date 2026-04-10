@@ -187,7 +187,7 @@ serve(async (req) => {
     });
 
     // Construire le lien de suivi
-    const trackingUrl = `https://solocab.fr/suivi/${course.guest_tracking_token}`;
+    const trackingUrl = `https://solocab.fr/reservation-suivi/${course.guest_tracking_token}`;
 
     console.log(`📧 Envoi email de suivi à ${course.guest_email} pour course ${course_id}`);
 
