@@ -171,7 +171,22 @@ export function IncomingCourseOverlay({
           .maybeSingle();
         
         if (data && data.status !== 'pending') {
-          console.log('[IncomingCourseOverlay] Ride request no longer pending:', data.status);
+          // Check if the current driver is the one who accepted
+          const { data: rideData } = await supabase
+            .from('ride_requests')
+            .select('accepted_driver_id')
+            .eq('id', rideRequestId)
+            .maybeSingle();
+          
+          const acceptedByMe = rideData?.accepted_driver_id === driverId;
+          
+          if (acceptedByMe) {
+            // Don't show "taken by other" — the overlay will be dismissed by onAccepted
+            console.log('[IncomingCourseOverlay] Ride accepted by current driver');
+            return;
+          }
+          
+          console.log('[IncomingCourseOverlay] Ride taken by another driver:', data.status);
           setTakenByOther(true);
           if (audioRef.current) clearInterval(audioRef.current);
           if (navigator.vibrate) navigator.vibrate(0);

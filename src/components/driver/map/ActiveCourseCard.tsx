@@ -365,6 +365,13 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     
     let paymentResult = { success: false, status: '', error: '', alreadyPaid: false };
     
+    // Mark course as completed in DB FIRST to prevent it from reappearing
+    await supabase
+      .from('courses')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', course.id)
+      .eq('driver_id', driverId);
+    
     if (isCardPayment) {
       try {
         const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
