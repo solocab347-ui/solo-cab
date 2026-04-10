@@ -224,14 +224,26 @@ const ClientRideTracking = () => {
       setRatingSubmitted(true);
     }
 
-    // Fetch driver info including GPS
+    // Fetch driver info including GPS and profile data
     const { data: driverData } = await supabase
       .from('drivers')
-      .select('id, company_name, profile_photo_url, contact_phone, current_latitude, current_longitude')
+      .select('id, company_name, contact_phone, show_phone, current_latitude, current_longitude, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)')
       .eq('id', data.driver_id)
       .single();
 
-    if (driverData) setDriver(driverData as unknown as DriverInfo);
+    if (driverData) {
+      const profile = (driverData as any).profiles;
+      setDriver({
+        id: driverData.id,
+        company_name: driverData.company_name,
+        profile_photo_url: profile?.profile_photo_url || null,
+        contact_phone: driverData.show_phone ? (driverData.contact_phone || profile?.phone) : null,
+        show_phone: driverData.show_phone ?? false,
+        full_name: profile?.full_name || null,
+        current_latitude: driverData.current_latitude,
+        current_longitude: driverData.current_longitude,
+      });
+    }
 
     // Get ride_request for chat
     const { data: rr } = await supabase
