@@ -441,7 +441,7 @@ export function UnifiedBookingPage() {
                 if (!user && courseId) {
                   try {
                     // Fetch the tracking token via RPC to avoid RLS issues
-                    const { data: tokenData } = await supabase.rpc('get_guest_tracking_token', { _course_id: courseId });
+                    const { data: tokenData } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: courseId });
                     if (tokenData) {
                       navigate(`/reservation-suivi/${tokenData}`);
                       return;
@@ -470,7 +470,7 @@ export function UnifiedBookingPage() {
                         // For guests, try to get tracking token
                         if (!user) {
                           try {
-                            const { data: tk } = await supabase.rpc('get_guest_tracking_token', { _course_id: data.final_course_id });
+                            const { data: tk } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: data.final_course_id });
                             if (tk) { navigate(`/reservation-suivi/${tk}`); return; }
                           } catch (e) { console.error(e); }
                         }
