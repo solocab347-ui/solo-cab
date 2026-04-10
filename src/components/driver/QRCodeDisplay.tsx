@@ -118,7 +118,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
           
           {/* QR Code with glow */}
           {qrCode.qr_code_image && (
-            <div className="relative group mb-5">
+            <div className="relative group mb-4">
               {/* Outer glow */}
               <div className="absolute -inset-3 bg-white/15 rounded-2xl blur-xl group-hover:bg-white/25 transition-all duration-500" />
               {/* Inner frame */}
@@ -126,16 +126,17 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
                 <img 
                   src={qrCode.qr_code_image} 
                   alt="QR Code" 
-                  className="w-44 h-44 sm:w-56 sm:h-56"
+                  className="w-52 h-52 sm:w-64 sm:h-64"
                 />
-              </div>
-              {/* Scan hint */}
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
-                <Smartphone className="w-3 h-3 text-white/80" />
-                <span className="text-[10px] text-white/80 font-medium">Scanner pour s'inscrire</span>
               </div>
             </div>
           )}
+          
+          {/* Scan hint - below QR code */}
+          <div className="flex items-center gap-2 mb-5 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+            <Smartphone className="w-4 h-4 text-white/90" />
+            <span className="text-sm text-white/90 font-medium">Scanner pour s'inscrire</span>
+          </div>
           
           {/* Stats badges */}
           <div className="flex items-center gap-3 mb-5">
