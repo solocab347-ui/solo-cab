@@ -11,6 +11,21 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import QRCode from "qrcode";
+
+function QrCodeImage({ data }: { data: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, data, { width: 200, margin: 2 });
+    }
+  }, [data]);
+  return (
+    <div className="flex justify-center py-2">
+      <canvas ref={canvasRef} className="rounded-lg border" />
+    </div>
+  );
+}
 
 interface SpontaneousPaymentProps {
   driverId: string;
