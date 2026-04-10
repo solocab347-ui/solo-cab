@@ -22164,6 +22164,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+        | "expired"
       devis_status: "pending" | "accepted" | "rejected" | "expired"
       driver_status: "pending" | "validated" | "rejected" | "on_hold"
       payment_status: "pending" | "paid" | "failed" | "refunded"
@@ -22309,6 +22310,7 @@ export const Constants = {
         "in_progress",
         "completed",
         "cancelled",
+        "expired",
       ],
       devis_status: ["pending", "accepted", "rejected", "expired"],
       driver_status: ["pending", "validated", "rejected", "on_hold"],
