@@ -174,11 +174,11 @@ export function IncomingCourseOverlay({
           // Check if the current driver is the one who accepted
           const { data: rideData } = await supabase
             .from('ride_requests')
-            .select('accepted_driver_id')
+            .select('accepted_by_driver_id')
             .eq('id', rideRequestId)
             .maybeSingle();
           
-          const acceptedByMe = rideData?.accepted_driver_id === driverId;
+          const acceptedByMe = rideData?.accepted_by_driver_id === driverId;
           
           if (acceptedByMe) {
             // Don't show "taken by other" — the overlay will be dismissed by onAccepted
