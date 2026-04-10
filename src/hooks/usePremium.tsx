@@ -39,9 +39,6 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
-      // Ensure token is fresh before calling edge function
-      await supabase.auth.refreshSession();
-
       const { data, error } = await supabase.functions.invoke("check-premium-subscription");
       if (error) throw error;
 
@@ -59,14 +56,18 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkSubscription();
 
-    const interval = setInterval(checkSubscription, 60000);
+    // Check every 5 minutes, not every minute
+    const interval = setInterval(checkSubscription, 300000);
     return () => clearInterval(interval);
   }, [checkSubscription]);
 
   // Listen to auth changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkSubscription();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      // Only re-check on actual sign-in, not on every token refresh
+      if (event === "SIGNED_IN") {
+        checkSubscription();
+      }
     });
     return () => subscription.unsubscribe();
   }, [checkSubscription]);
