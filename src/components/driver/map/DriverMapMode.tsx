@@ -118,12 +118,16 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     if (!mapContainerRef.current || mapRef.current) return;
     const map = L.map(mapContainerRef.current, {
       center: [48.8566, 2.3522],
-      zoom: 15,
+      zoom: 16,
       zoomControl: false,
       attributionControl: false,
     });
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
+
+    // When user drags the map, disable follow; recenter button re-enables it
+    map.on('dragstart', () => { followMode.current = false; });
+
     setTimeout(() => map.invalidateSize(), 200);
     setIsMapReady(true);
     return () => {
