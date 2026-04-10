@@ -28,7 +28,7 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("User not authenticated");
+    if (userError || !userData.user) throw new Error(`User not authenticated: ${userError?.message || 'no user data'}`);
 
     const { ride_request_id } = await req.json();
     if (!ride_request_id) throw new Error("ride_request_id required");
