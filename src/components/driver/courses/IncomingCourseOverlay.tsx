@@ -265,6 +265,12 @@ export function IncomingCourseOverlay({
     if (navigator.vibrate) navigator.vibrate(0);
 
     try {
+      // Refresh session before any edge function call to avoid expired token
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn('Session refresh warning:', refreshError.message);
+      }
+
       if (course.source === 'queue') {
         await supabase.from('course_queue').update({ status: 'forced', resolved_at: new Date().toISOString(), resolved_action: 'forced_via_overlay', updated_at: new Date().toISOString() }).eq('id', course.sourceId);
         toast.success('Course acceptée !');
