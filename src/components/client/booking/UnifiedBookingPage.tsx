@@ -515,7 +515,7 @@ export function UnifiedBookingPage() {
                 }
               }, 2000);
             }}
-            onExpired={() => { toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
+            onExpired={() => { localStorage.removeItem('solocab_active_ride'); toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
           />
         ) : (
           <div className="space-y-4">
