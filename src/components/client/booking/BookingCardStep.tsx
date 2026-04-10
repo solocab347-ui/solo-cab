@@ -27,7 +27,7 @@ function InlinePaymentForm({
   estimatedPrice,
 }: { 
   clientSecret: string; 
-  onSuccess: () => void;
+  onSuccess: (paymentMethodId?: string) => void;
   estimatedPrice?: number;
 }) {
   const stripe = useStripe();
