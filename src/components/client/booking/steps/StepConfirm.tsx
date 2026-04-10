@@ -29,7 +29,7 @@ interface StepConfirmProps {
   setClientPaymentMethod: (v: 'card' | 'cash') => void;
   cardVerifiedForBooking: boolean;
   setCardVerifiedForBooking: (v: boolean) => void;
-  setSavedCardInfo: (v: { customerId: string } | null) => void;
+  setSavedCardInfo: (v: { customerId: string; paymentMethodId?: string } | null) => void;
   priceRange: { min: number; max: number } | null;
   // Guest
   guestName: string;

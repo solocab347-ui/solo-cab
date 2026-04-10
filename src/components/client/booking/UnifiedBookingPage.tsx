@@ -59,7 +59,7 @@ export function UnifiedBookingPage() {
   const [guestEmail, setGuestEmail] = useState(ss?.guestEmail || '');
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
-  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
+  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string; paymentMethodId?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Registration
@@ -121,7 +121,7 @@ export function UnifiedBookingPage() {
         .single();
       if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
         setCardVerifiedForBooking(true);
-        setSavedCardInfo({ customerId: clientData.stripe_customer_id });
+        setSavedCardInfo({ customerId: clientData.stripe_customer_id, paymentMethodId: clientData.default_payment_method_id });
       }
     };
     checkSavedCard();
@@ -358,7 +358,9 @@ export function UnifiedBookingPage() {
           request_type: selectedDrivers.length > 1 ? 'multi' : 'exclusive',
           driver_count: selectedDrivers.length,
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() : null,
-        })));
+          stripe_customer_id: savedCardInfo?.customerId || null,
+          stripe_payment_method_id: savedCardInfo?.paymentMethodId || null,
+        } as any)));
       if (insertError) throw insertError;
       const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
       const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);

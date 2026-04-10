@@ -477,7 +477,7 @@ serve(async (req) => {
         title: "✅ Course terminée",
         message: isCash
           ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Commission: ${solocabFee.toFixed(2)}€`
-          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissement manuel requis.`,
+          : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissement par lien de paiement requis.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });

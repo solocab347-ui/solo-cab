@@ -27,7 +27,7 @@ function InlinePaymentForm({
   estimatedPrice,
 }: { 
   clientSecret: string; 
-  onSuccess: () => void;
+  onSuccess: (paymentMethodId?: string) => void;
   estimatedPrice?: number;
 }) {
   const stripe = useStripe();
@@ -65,12 +65,13 @@ function InlinePaymentForm({
       }
 
       if (setupIntent?.status === 'succeeded') {
+        const pmId = typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method?.id;
         // Non-blocking: persist card default in background
         supabase.functions.invoke('persist-card-default', {
           body: { setup_intent_id: setupIntent.id },
         }).catch(() => { /* silently ignore */ });
         toast.success('✅ Moyen de paiement vérifié avec succès !');
-        onSuccess();
+        onSuccess(pmId);
       } else if (setupIntent?.status === 'requires_action') {
         toast.info('Vérification en cours...');
       }
@@ -230,9 +231,9 @@ export function BookingCardStep({
         >
           <InlinePaymentForm
             clientSecret={clientSecret}
-            onSuccess={() => {
+            onSuccess={(paymentMethodId) => {
               setCardVerified(true);
-              onCardReady({ customerId: customerId || '' });
+              onCardReady({ customerId: customerId || '', paymentMethodId });
             }}
             estimatedPrice={estimatedPrice}
           />
