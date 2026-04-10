@@ -17155,6 +17155,7 @@ export type Database = {
           gross_amount: number
           id: string
           net_amount: number
+          payment_method: string | null
           solocab_fee_amount: number | null
           source_payment_id: string | null
           status: string
@@ -17175,6 +17176,7 @@ export type Database = {
           gross_amount: number
           id?: string
           net_amount: number
+          payment_method?: string | null
           solocab_fee_amount?: number | null
           source_payment_id?: string | null
           status?: string
@@ -17195,6 +17197,7 @@ export type Database = {
           gross_amount?: number
           id?: string
           net_amount?: number
+          payment_method?: string | null
           solocab_fee_amount?: number | null
           source_payment_id?: string | null
           status?: string
