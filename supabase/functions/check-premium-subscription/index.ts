@@ -102,7 +102,7 @@ serve(async (req) => {
       const { data: driver } = await supabaseClient
         .from("drivers")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (driver) {
@@ -110,7 +110,7 @@ serve(async (req) => {
           .from("driver_subscriptions")
           .upsert({
             driver_id: driver.id,
-            user_id: user.id,
+            user_id: userId,
             stripe_subscription_id: subscriptionId,
             stripe_customer_id: customerId,
             plan: plan,
