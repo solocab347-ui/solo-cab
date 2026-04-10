@@ -12,12 +12,22 @@ const PRODUCT_IDS = {
   yearly: "prod_UIyvQp5D4JWxP5",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  const authHeader = req.headers.get("Authorization");
+
+  // User-context client for JWT validation
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader! } }, auth: { persistSession: false } }
+  );
+
+  // Admin client for DB writes
+  const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     { auth: { persistSession: false } }
@@ -27,7 +37,6 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not set");
 
-    const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,18 +46,42 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) {
-      console.error("Auth error:", userError?.message);
-      return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+    // Try local JWT validation first (no network call)
+    let userId: string;
+    let userEmail: string;
+    
+    try {
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      if (!claimsError && claimsData?.claims?.sub) {
+        userId = claimsData.claims.sub as string;
+        userEmail = claimsData.claims.email as string;
+      } else {
+        // Fallback to getUser with admin client
+        const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
+        if (userError || !user) {
+          console.error("Auth error:", userError?.message || claimsError?.message);
+          return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 401,
+          });
+        }
+        userId = user.id;
+        userEmail = user.email!;
+      }
+    } catch {
+      // Last resort fallback
+      const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
+      if (userError || !user) {
+        console.error("Auth fallback error:", userError?.message);
+        return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+      userId = user.id;
+      userEmail = user.email!;
     }
 
-    const userId = user.id;
-    const userEmail = user.email;
-    
     if (!userEmail) {
       return new Response(JSON.stringify({ error: "No email in token", subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,14 +126,14 @@ serve(async (req) => {
 
     // Sync to database
     if (isPremium) {
-      const { data: driver } = await supabaseClient
+      const { data: driver } = await adminClient
         .from("drivers")
         .select("id")
         .eq("user_id", userId)
         .single();
 
       if (driver) {
-        await supabaseClient
+        await adminClient
           .from("driver_subscriptions")
           .upsert({
             driver_id: driver.id,
