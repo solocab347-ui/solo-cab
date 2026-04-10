@@ -156,9 +156,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     const inner = el.querySelector('#car-marker-inner') as HTMLElement;
     if (!inner) return;
     
+    // The car-top-view.png image points UP (north=0°).
+    // heading from calcHeading is 0°=north, 90°=east, etc.
+    // Apply -90° offset since the car image faces right (east) by default.
+    const displayAngle = heading - 90;
+    
     // Calculate shortest rotation path to avoid spinning
     const current = normalizeAngle(lastHeading.current);
-    const target = normalizeAngle(heading);
+    const target = normalizeAngle(displayAngle);
     let diff = target - current;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
