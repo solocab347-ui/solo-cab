@@ -167,6 +167,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
+      case "course_payment": return "Course";
       case "full_payment": return "Course complète";
       case "capture": return "Capture paiement";
       case "final_payment": return "Solde final";
