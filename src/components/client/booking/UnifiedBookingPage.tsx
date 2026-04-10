@@ -459,8 +459,9 @@ export function UnifiedBookingPage() {
             contactedDriversData={waitingDriversData}
             routeDistanceKm={routeDistanceKm || undefined}
             clientPaymentMethod={clientPaymentMethod}
-            onCancel={() => { setShowWaitingScreen(false); toast.info('Demande annulée'); }}
+            onCancel={() => { localStorage.removeItem('solocab_active_ride'); setShowWaitingScreen(false); toast.info('Demande annulée'); }}
             onAccepted={(driverName, courseId) => {
+              localStorage.removeItem('solocab_active_ride');
               toast.success(`${driverName} a accepté votre course ! 🎉`);
               // Redirect to tracking page after a brief delay for UX
               setTimeout(async () => {
