@@ -597,7 +597,7 @@ export function IncomingCourseOverlay({
               >
                 <X className="h-8 w-8 text-red-400 mx-auto mb-2" />
                 <p className="text-lg font-black text-red-300">Course déjà prise</p>
-                <p className="text-sm text-red-300/70 mt-1">Un autre chauffeur a accepté cette course</p>
+                <p className="text-sm text-red-300/70 mt-1">Un autre chauffeur a accepté cette course avant vous</p>
               </motion.div>
             )}
 
