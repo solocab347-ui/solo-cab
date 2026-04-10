@@ -50,8 +50,19 @@ interface DriverInfo {
   company_name: string | null;
   profile_photo_url: string | null;
   contact_phone: string | null;
+  show_phone: boolean;
+  full_name: string | null;
   current_latitude: number | null;
   current_longitude: number | null;
+}
+
+/** Returns "Prénom L." for privacy */
+function getPrivacySafeName(fullName: string | null, companyName: string | null): string {
+  if (companyName) return companyName;
+  if (!fullName) return 'Chauffeur';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
 }
 
 const PHASE_ORDER: CoursePhase[] = ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
