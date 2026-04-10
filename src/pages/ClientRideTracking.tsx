@@ -183,9 +183,28 @@ const ClientRideTracking = () => {
       .single();
 
     if (error || !data) {
+      // If fetch failed, try redirecting guest to token-based tracking
+      try {
+        const { data: tokenData } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: courseId });
+        if (tokenData) {
+          navigate(`/reservation-suivi/${tokenData}`, { replace: true });
+          return;
+        }
+      } catch (e) {
+        console.error('Token fallback failed:', e);
+      }
       console.error('Error fetching course:', error);
       setLoading(false);
       return;
+    }
+
+    // If guest booking and user not authenticated, redirect to guest tracking page
+    if (data.is_guest_booking && data.guest_tracking_token) {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        navigate(`/reservation-suivi/${data.guest_tracking_token}`, { replace: true });
+        return;
+      }
     }
 
     setCourse(data as CourseData);
@@ -212,7 +231,7 @@ const ClientRideTracking = () => {
     if (rr?.[0]) setRideRequestId(rr[0].id);
 
     setLoading(false);
-  }, [courseId]);
+  }, [courseId, navigate]);
 
   useEffect(() => { fetchCourse(); }, [fetchCourse]);
 
