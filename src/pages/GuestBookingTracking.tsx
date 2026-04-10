@@ -62,7 +62,7 @@ const GuestBookingTracking = () => {
     
     try {
       const { data, error } = await supabase
-        .rpc('get_guest_booking_by_token', { _token: token });
+        .rpc('get_guest_booking_by_token' as any, { _token: token });
 
       if (error) throw error;
 
