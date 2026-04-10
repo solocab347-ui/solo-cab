@@ -376,7 +376,7 @@ const ClientRideTracking = () => {
   const isCompleted = course.status === 'completed';
   const isActive = !isCancelled && !isCompleted;
   const currentPhaseIndex = getCurrentPhaseIndex();
-  const driverName = driver?.company_name || 'Chauffeur';
+  const driverName = getPrivacySafeName(driver?.full_name ?? null, driver?.company_name ?? null);
   const price = course.final_payment_amount || course.guest_estimated_price;
 
   return (
