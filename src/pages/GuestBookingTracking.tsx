@@ -92,13 +92,12 @@ const GuestBookingTracking = () => {
         };
         setBooking(parsedBooking);
 
-        // Look up ride_request for chat
-        const { data: rideReq } = await supabase
-          .from('ride_requests')
-          .select('id')
-          .eq('final_course_id', parsedBooking.id)
-          .limit(1);
-        if (rideReq?.[0]) setRideRequestId(rideReq[0].id);
+        // Look up ride_request for chat via RPC (anon can't SELECT ride_requests directly)
+        if (token) {
+          const { data: rideReqId } = await supabase
+            .rpc('get_ride_request_id_for_guest' as any, { _token: token });
+          if (rideReqId) setRideRequestId(rideReqId);
+        }
 
         // Check if driver uses Stripe and check payment status
         await checkDriverPaymentAndStatus(parsedBooking);
