@@ -231,9 +231,9 @@ export function BookingCardStep({
         >
           <InlinePaymentForm
             clientSecret={clientSecret}
-            onSuccess={() => {
+            onSuccess={(paymentMethodId) => {
               setCardVerified(true);
-              onCardReady({ customerId: customerId || '' });
+              onCardReady({ customerId: customerId || '', paymentMethodId });
             }}
             estimatedPrice={estimatedPrice}
           />
