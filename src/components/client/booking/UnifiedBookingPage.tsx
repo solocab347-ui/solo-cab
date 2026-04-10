@@ -82,6 +82,27 @@ export function UnifiedBookingPage() {
   const [waitingTimeoutAt, setWaitingTimeoutAt] = useState('');
   const [waitingEstimatedPrice, setWaitingEstimatedPrice] = useState(0);
 
+  // ── Ride persistence: restore active ride on mount ──
+  useEffect(() => {
+    const saved = localStorage.getItem('solocab_active_ride');
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      // Check if the ride is still recent (less than 2 hours old)
+      if (Date.now() - data.timestamp > 2 * 60 * 60 * 1000) {
+        localStorage.removeItem('solocab_active_ride');
+        return;
+      }
+      setWaitingRequestId(data.requestId || '');
+      setWaitingGroupId(data.groupId || '');
+      setWaitingTimeoutAt(data.timeoutAt || '');
+      setWaitingEstimatedPrice(data.estimatedPrice || 0);
+      setPickupAddress(data.pickupAddress || '');
+      setDestinationAddress(data.destinationAddress || '');
+      setShowWaitingScreen(true);
+    } catch { localStorage.removeItem('solocab_active_ride'); }
+  }, []);
+
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
@@ -383,6 +404,12 @@ export function UnifiedBookingPage() {
       setWaitingDriversData(selectedDrivers); setWaitingTimeoutAt(timeoutIso);
       setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
       setShowWaitingScreen(true);
+      // Persist active ride for reload recovery
+      localStorage.setItem('solocab_active_ride', JSON.stringify({
+        requestId: requestGroupId, groupId: requestGroupId,
+        timeoutAt: timeoutIso, estimatedPrice: lowestPriceVal !== Infinity ? lowestPriceVal : 0,
+        pickupAddress, destinationAddress, timestamp: Date.now(),
+      }));
       toast.success(selectedDrivers.length > 1 ? `Demande envoyée à ${selectedDrivers.length} chauffeurs !` : 'Demande envoyée !');
     } catch (err: any) {
       console.error('Booking submit error:', err);
@@ -432,8 +459,9 @@ export function UnifiedBookingPage() {
             contactedDriversData={waitingDriversData}
             routeDistanceKm={routeDistanceKm || undefined}
             clientPaymentMethod={clientPaymentMethod}
-            onCancel={() => { setShowWaitingScreen(false); toast.info('Demande annulée'); }}
+            onCancel={() => { localStorage.removeItem('solocab_active_ride'); setShowWaitingScreen(false); toast.info('Demande annulée'); }}
             onAccepted={(driverName, courseId) => {
+              localStorage.removeItem('solocab_active_ride');
               toast.success(`${driverName} a accepté votre course ! 🎉`);
               // Redirect to tracking page after a brief delay for UX
               setTimeout(async () => {
@@ -487,7 +515,7 @@ export function UnifiedBookingPage() {
                 }
               }, 2000);
             }}
-            onExpired={() => { toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
+            onExpired={() => { localStorage.removeItem('solocab_active_ride'); toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
           />
         ) : (
           <div className="space-y-4">
