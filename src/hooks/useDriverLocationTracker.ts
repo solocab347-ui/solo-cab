@@ -19,12 +19,14 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 60_000; // position older than 60s = stale
+const STALE_THRESHOLD_MS = 60_000;
+const MIN_MOVEMENT_DEG = 0.0001; // ~11m
+const MIN_SEND_INTERVAL_MS = 8_000;
 
 export function useDriverLocationTracker({
   driverId,
   enabled,
-  updateIntervalMs = 10_000,
+  updateIntervalMs = 8_000,
 }: LocationTrackerOptions) {
   const [locationState, setLocationState] = useState<LocationState>({
     latitude: null,
@@ -40,18 +42,19 @@ export function useDriverLocationTracker({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const staleCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSentRef = useRef<{ lat: number; lon: number; time: number } | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // ── Send location to DB (GPS only, never touch is_available_now) ──
   const sendLocationToServer = useCallback(
     async (latitude: number, longitude: number) => {
       if (!driverId) return;
 
-      // Skip if barely moved and sent recently (< 10s)
       if (lastSentRef.current) {
         const latDiff = Math.abs(latitude - lastSentRef.current.lat);
         const lonDiff = Math.abs(longitude - lastSentRef.current.lon);
         const timeDiff = Date.now() - lastSentRef.current.time;
-        if (latDiff < 0.0001 && lonDiff < 0.0001 && timeDiff < 10_000) {
+        // Send if moved significantly OR if enough time passed (keep-alive)
+        if (latDiff < MIN_MOVEMENT_DEG && lonDiff < MIN_MOVEMENT_DEG && timeDiff < MIN_SEND_INTERVAL_MS) {
           return;
         }
       }
@@ -142,6 +145,45 @@ export function useDriverLocationTracker({
     console.error('[GPS] Geolocation error:', errorMessage);
   }, []);
 
+  // ── Wake Lock: prevent screen from sleeping (keeps GPS alive on mobile web) ──
+  const acquireWakeLock = useCallback(async () => {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+      wakeLockRef.current?.addEventListener('release', () => {
+        console.log('[GPS] Wake lock released');
+      });
+      console.log('[GPS] Wake lock acquired — screen will stay on');
+    } catch (err) {
+      console.warn('[GPS] Wake lock failed:', err);
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    wakeLockRef.current?.release();
+    wakeLockRef.current = null;
+  }, []);
+
+  // Re-acquire wake lock when page becomes visible again
+  useEffect(() => {
+    if (!enabled) return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && enabled) {
+        acquireWakeLock();
+        // Force a fresh GPS update when coming back to foreground
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [enabled, acquireWakeLock, handlePositionUpdate, handleError]);
+
   // ── Web tracking start/stop ──
   const startWebTracking = useCallback(() => {
     if (!navigator.geolocation) {
@@ -152,6 +194,9 @@ export function useDriverLocationTracker({
       }));
       return;
     }
+
+    // Acquire wake lock to keep screen on
+    acquireWakeLock();
 
     // Immediate fresh position
     navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
@@ -167,7 +212,8 @@ export function useDriverLocationTracker({
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 
-    // Periodic forced refresh
+    // Periodic forced refresh — ensures DB gets updated even if watchPosition
+    // is throttled by the browser in background
     intervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
         enableHighAccuracy: true,
@@ -177,7 +223,7 @@ export function useDriverLocationTracker({
     }, updateIntervalMs);
 
     setLocationState((prev) => ({ ...prev, isTracking: true }));
-  }, [handlePositionUpdate, handleError, updateIntervalMs]);
+  }, [handlePositionUpdate, handleError, updateIntervalMs, acquireWakeLock]);
 
   const stopWebTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -188,8 +234,9 @@ export function useDriverLocationTracker({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    releaseWakeLock();
     setLocationState((prev) => ({ ...prev, isTracking: false }));
-  }, []);
+  }, [releaseWakeLock]);
 
   // ── Stale position checker ──
   useEffect(() => {
