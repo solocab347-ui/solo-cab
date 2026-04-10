@@ -435,14 +435,34 @@ export function UnifiedBookingPage() {
             onCancel={() => { setShowWaitingScreen(false); toast.info('Demande annulée'); }}
             onAccepted={(driverName, courseId) => {
               toast.success(`${driverName} a accepté votre course ! 🎉`);
-              // Redirect to tracking page
+              // Redirect to tracking page after a brief delay for UX
               setTimeout(() => {
                 if (courseId) {
                   navigate(`/suivi-course/${courseId}`);
-                } else if (user) {
-                  navigate('/client-dashboard');
                 } else {
-                  navigate('/');
+                  // Fallback: poll ride_requests for course_id
+                  const groupId = waitingGroupId || waitingRequestId;
+                  const poll = async () => {
+                    for (let i = 0; i < 10; i++) {
+                      const { data } = await supabase
+                        .from('ride_requests')
+                        .select('final_course_id')
+                        .eq('request_group_id', groupId)
+                        .eq('status', 'accepted')
+                        .not('final_course_id', 'is', null)
+                        .limit(1)
+                        .single();
+                      if (data?.final_course_id) {
+                        navigate(`/suivi-course/${data.final_course_id}`);
+                        return;
+                      }
+                      await new Promise(r => setTimeout(r, 1000));
+                    }
+                    // Ultimate fallback
+                    if (user) navigate('/client-dashboard');
+                    else navigate('/');
+                  };
+                  poll();
                 }
               }, 2000);
             }}

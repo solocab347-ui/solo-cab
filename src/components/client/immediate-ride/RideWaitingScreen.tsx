@@ -293,6 +293,20 @@ export function RideWaitingScreen({
   useEffect(() => {
     const groupId = requestGroupId || requestId;
 
+    // Poll for final_course_id which may not be set at time of realtime event
+    const pollForCourseId = async (rideRequestId: string, maxRetries = 10): Promise<string | null> => {
+      for (let i = 0; i < maxRetries; i++) {
+        const { data } = await supabase
+          .from('ride_requests')
+          .select('final_course_id')
+          .eq('id', rideRequestId)
+          .single();
+        if (data?.final_course_id) return data.final_course_id;
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      return null;
+    };
+
     const channel = supabase
       .channel(`waiting-${groupId}`)
       .on(
@@ -307,19 +321,30 @@ export function RideWaitingScreen({
           const newStatus = payload.new?.status;
           if (newStatus === 'accepted' && !acceptedRef.current) {
             acceptedRef.current = true;
+            setStatus('accepted');
+            
             const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
-            const finalCourseId = payload.new?.final_course_id;
+            let finalCourseId = payload.new?.final_course_id;
+            
+            // Fetch driver name
+            let name = 'Chauffeur';
             if (driverId) {
               const { data: driver } = await supabase
                 .from('drivers')
                 .select('profiles:user_id(full_name), company_name')
                 .eq('id', driverId)
                 .single();
-              const name = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
+              name = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
               setAcceptedDriverName(name);
-              onAccepted(name, finalCourseId || undefined);
             }
-            setStatus('accepted');
+            
+            // If final_course_id not yet set (race condition), poll for it
+            if (!finalCourseId) {
+              console.log('[RideWaiting] final_course_id not yet set, polling...');
+              finalCourseId = await pollForCourseId(payload.new?.id || requestId);
+            }
+            
+            onAccepted(name, finalCourseId || undefined);
           }
         }
       )
