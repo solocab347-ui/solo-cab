@@ -62,7 +62,7 @@ serve(async (req) => {
     const amountCents = Math.round(amount * 100);
     const platformFeeCents = 80; // 0.80€ SoloCab fee
 
-    const driverName = driver.display_name || driver.company_name || "Chauffeur VTC";
+    const driverName = driver.company_name || "Chauffeur VTC";
 
     // Create a Stripe Checkout session in payment mode with destination charge
     const session = await stripe.checkout.sessions.create({
