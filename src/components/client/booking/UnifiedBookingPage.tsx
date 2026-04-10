@@ -404,6 +404,12 @@ export function UnifiedBookingPage() {
       setWaitingDriversData(selectedDrivers); setWaitingTimeoutAt(timeoutIso);
       setWaitingEstimatedPrice(lowestPriceVal !== Infinity ? lowestPriceVal : 0);
       setShowWaitingScreen(true);
+      // Persist active ride for reload recovery
+      localStorage.setItem('solocab_active_ride', JSON.stringify({
+        requestId: requestGroupId, groupId: requestGroupId,
+        timeoutAt: timeoutIso, estimatedPrice: lowestPriceVal !== Infinity ? lowestPriceVal : 0,
+        pickupAddress, destinationAddress, timestamp: Date.now(),
+      }));
       toast.success(selectedDrivers.length > 1 ? `Demande envoyée à ${selectedDrivers.length} chauffeurs !` : 'Demande envoyée !');
     } catch (err: any) {
       console.error('Booking submit error:', err);
