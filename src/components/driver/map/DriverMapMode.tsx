@@ -8,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
 import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
-import carTopView from '@/assets/car-top-view.png';
 import { useDriverAvailability } from '@/contexts/DriverAvailabilityContext';
 
 interface DriverMapModeProps {
@@ -22,17 +21,29 @@ const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
 
 const createCarIcon = () => L.divIcon({
   html: `<div id="car-marker-inner" style="
-    width: 52px; height: 52px;
+    width: 44px; height: 68px;
     transform: rotate(0deg);
     transform-origin: 50% 50%;
     transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
     will-change: transform;
   ">
-    <img src="${carTopView}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;" />
+    <svg viewBox="0 0 44 68" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;pointer-events:none;overflow:visible;">
+      <rect x="7" y="3" width="30" height="62" rx="15" fill="hsl(var(--foreground))" />
+      <path d="M14 8H30C33 11 34.5 15 34.5 20V24H9.5V20C9.5 15 11 11 14 8Z" fill="hsl(var(--background))" opacity="0.18" />
+      <rect x="11" y="24" width="22" height="19" rx="8" fill="hsl(var(--background))" opacity="0.16" />
+      <rect x="12.5" y="45.5" width="19" height="10" rx="5" fill="hsl(var(--background))" opacity="0.12" />
+      <path d="M15 10C17.5 6.5 20 5 22 5C24 5 26.5 6.5 29 10" fill="none" stroke="hsl(var(--primary))" stroke-width="1.75" stroke-linecap="round" opacity="0.95" />
+      <circle cx="14.5" cy="15" r="2.2" fill="white" opacity="0.95" />
+      <circle cx="29.5" cy="15" r="2.2" fill="white" opacity="0.95" />
+      <circle cx="15" cy="55" r="1.9" fill="hsl(var(--destructive))" opacity="0.95" />
+      <circle cx="29" cy="55" r="1.9" fill="hsl(var(--destructive))" opacity="0.95" />
+      <rect x="5" y="27" width="3" height="9" rx="1.5" fill="hsl(var(--muted-foreground))" opacity="0.7" />
+      <rect x="36" y="27" width="3" height="9" rx="1.5" fill="hsl(var(--muted-foreground))" opacity="0.7" />
+    </svg>
   </div>`,
-  iconSize: [52, 52],
-  iconAnchor: [26, 26],
+  iconSize: [44, 68],
+  iconAnchor: [22, 34],
   className: 'car-marker-stable',
 });
 
