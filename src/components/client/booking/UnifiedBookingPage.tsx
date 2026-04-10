@@ -358,7 +358,9 @@ export function UnifiedBookingPage() {
           request_type: selectedDrivers.length > 1 ? 'multi' : 'exclusive',
           driver_count: selectedDrivers.length,
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() : null,
-        })));
+          stripe_customer_id: savedCardInfo?.customerId || null,
+          stripe_payment_method_id: savedCardInfo?.paymentMethodId || null,
+        } as any)));
       if (insertError) throw insertError;
       const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
       const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);
