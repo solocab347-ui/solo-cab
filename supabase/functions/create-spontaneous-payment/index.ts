@@ -34,7 +34,7 @@ serve(async (req) => {
     // Get driver
     const { data: driver, error: driverError } = await adminClient
       .from("drivers")
-      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, company_name, display_name")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, company_name")
       .eq("user_id", userId)
       .single();
 
@@ -62,7 +62,7 @@ serve(async (req) => {
     const amountCents = Math.round(amount * 100);
     const platformFeeCents = 80; // 0.80€ SoloCab fee
 
-    const driverName = driver.display_name || driver.company_name || "Chauffeur VTC";
+    const driverName = driver.company_name || "Chauffeur VTC";
 
     // Create a Stripe Checkout session in payment mode with destination charge
     const session = await stripe.checkout.sessions.create({
