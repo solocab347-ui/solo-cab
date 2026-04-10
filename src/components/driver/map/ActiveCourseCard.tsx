@@ -156,6 +156,13 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const [estimatedArrival, setEstimatedArrival] = useState<string | null>(null);
   const [upcomingReservations, setUpcomingReservations] = useState<ActiveCourse[]>([]);
   const wasAvailableBeforeCourseRef = useRef<boolean | null>(null);
+  const [completionData, setCompletionData] = useState<{
+    courseId: string;
+    clientName: string;
+    amount: number;
+    paymentMethod: string;
+    paymentResult: { success: boolean; status?: string; error?: string; alreadyPaid?: boolean };
+  } | null>(null);
   const [dismissedCourseIds, setDismissedCourseIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('solocab_dismissed_courses');
