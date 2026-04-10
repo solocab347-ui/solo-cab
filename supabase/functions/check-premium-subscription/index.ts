@@ -37,23 +37,17 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     
-    // Use user-context client to validate the token
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !user) {
+      console.error("Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
-    
-    const userId = claimsData.claims.sub;
-    const userEmail = claimsData.claims.email as string;
+
+    const userId = user.id;
+    const userEmail = user.email;
     
     if (!userEmail) {
       return new Response(JSON.stringify({ error: "No email in token", subscribed: false }), {
