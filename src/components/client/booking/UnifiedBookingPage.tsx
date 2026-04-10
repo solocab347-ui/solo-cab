@@ -82,6 +82,27 @@ export function UnifiedBookingPage() {
   const [waitingTimeoutAt, setWaitingTimeoutAt] = useState('');
   const [waitingEstimatedPrice, setWaitingEstimatedPrice] = useState(0);
 
+  // ── Ride persistence: restore active ride on mount ──
+  useEffect(() => {
+    const saved = localStorage.getItem('solocab_active_ride');
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      // Check if the ride is still recent (less than 2 hours old)
+      if (Date.now() - data.timestamp > 2 * 60 * 60 * 1000) {
+        localStorage.removeItem('solocab_active_ride');
+        return;
+      }
+      setWaitingRequestId(data.requestId || '');
+      setWaitingGroupId(data.groupId || '');
+      setWaitingTimeoutAt(data.timeoutAt || '');
+      setWaitingEstimatedPrice(data.estimatedPrice || 0);
+      setPickupAddress(data.pickupAddress || '');
+      setDestinationAddress(data.destinationAddress || '');
+      setShowWaitingScreen(true);
+    } catch { localStorage.removeItem('solocab_active_ride'); }
+  }, []);
+
   // Autocomplete
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<any[]>([]);
