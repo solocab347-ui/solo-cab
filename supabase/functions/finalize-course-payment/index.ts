@@ -44,7 +44,63 @@ serve(async (req) => {
 
     logStep("Finalize course payment request", { course_id });
 
-    // Get course with all payment info
+    // ═══════════════════════════════════════════════════════════════
+    // ATOMIC LOCK: Prevent race condition on concurrent finalization
+    // Uses FOR UPDATE NOWAIT in the database to ensure only one
+    // process can finalize a course at a time.
+    // ═══════════════════════════════════════════════════════════════
+    const { data: lockResult, error: lockError } = await supabaseClient
+      .rpc("atomic_start_course_finalization", {
+        p_course_id: course_id,
+        p_driver_user_id: userData.user.id,
+      });
+
+    if (lockError) {
+      logStep("Lock RPC error", { lockError });
+      throw new Error("Erreur serveur lors de la finalisation");
+    }
+
+    if (!lockResult?.success) {
+      logStep("Lock denied", { result: lockResult });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: lockResult?.error || "Finalisation impossible",
+          status: lockResult?.status || "unknown",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+      );
+    }
+
+    // Already finalized (idempotent)
+    if (lockResult.already_done) {
+      logStep("Already finalized (idempotent return)", { status: lockResult.status });
+
+      if (lockResult.status === "already_captured") {
+        // Complete the course if not already
+        await supabaseClient
+          .from("courses")
+          .update({
+            status: "completed",
+            final_payment_status: "succeeded",
+            course_finalized_by_driver_at: new Date().toISOString(),
+          })
+          .eq("id", course_id);
+
+        try {
+          await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+        } catch (e) {
+          logStep("Facture creation failed (non-blocking)", { error: String(e) });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà finalisé" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Get course with all payment info (lock already acquired)
     const { data: course, error: courseError } = await supabaseClient
       .from("courses")
       .select(`
@@ -63,67 +119,9 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
-    // Verify caller is the driver
-    if (course.driver.user_id !== userData.user.id) {
-      throw new Error("Unauthorized: only the course driver can finalize payment");
-    }
-
     // Vérifier que le chauffeur utilise Stripe Connect
     if (!course.driver.stripe_connect_account_id || !course.driver.stripe_connect_charges_enabled) {
       throw new Error("Stripe Connect non configuré pour ce chauffeur");
-    }
-
-    // Idempotency: if already processing or succeeded, don't retry
-    if (course.final_payment_status === "succeeded") {
-      logStep("Course already finalized (idempotent return)", { course_id });
-      return new Response(
-        JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà finalisé" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    // Also check if payment_status is already "paid" (e.g. webhook captured it)
-    if (course.payment_status === "paid" && course.payment_captured_at) {
-      logStep("Payment already captured (via webhook or other flow)", { course_id });
-      
-      // Just complete the course
-      await supabaseClient
-        .from("courses")
-        .update({
-          status: "completed",
-          final_payment_status: "succeeded",
-          course_finalized_by_driver_at: new Date().toISOString(),
-        })
-        .eq("id", course_id);
-
-      // Create invoice
-      try {
-        await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
-      } catch (e) {
-        logStep("Facture creation failed (non-blocking)", { error: String(e) });
-      }
-
-      // Notify driver - payment already done
-      await supabaseClient.from("notifications").insert({
-        user_id: course.driver.user_id,
-        title: "✅ Course terminée",
-        message: `Course terminée. Le paiement de ${(course.final_payment_amount || 0).toFixed(2)}€ a déjà été encaissé.`,
-        type: "info",
-        link: "/driver-dashboard?tab=courses",
-      });
-
-      return new Response(
-        JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà encaissé" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    if (course.final_payment_status === "processing") {
-      logStep("Course payment already processing (idempotent return)", { course_id });
-      return new Response(
-        JSON.stringify({ success: false, status: "processing", message: "Paiement en cours de traitement" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
     }
 
     // Calculer le montant total
@@ -133,15 +131,6 @@ serve(async (req) => {
     if (totalAmount <= 0) {
       throw new Error("Montant de la course invalide (0€)");
     }
-
-    // Marquer comme en cours de traitement
-    await supabaseClient
-      .from("courses")
-      .update({
-        final_payment_status: "processing",
-        course_finalized_by_driver_at: new Date().toISOString(),
-      })
-      .eq("id", course_id);
 
     logStep("Processing final payment", { totalAmount });
 
