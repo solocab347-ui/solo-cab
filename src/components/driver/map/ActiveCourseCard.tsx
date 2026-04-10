@@ -434,6 +434,31 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const paymentLabel = paymentMethod === 'stripe' || paymentMethod === 'card'
     ? '💳 Paiement carte' : '💵 Paiement espèces';
 
+  const handleDismissCompletion = useCallback(() => {
+    if (completionData) {
+      dismissCourse(completionData.courseId);
+      clearPersistedPhase(completionData.courseId);
+    }
+    setCompletionData(null);
+    setCourse(null);
+    restoreAvailability();
+    onCourseChange?.();
+  }, [completionData, restoreAvailability, onCourseChange]);
+
+  // Show completion screen if available
+  if (completionData) {
+    return (
+      <CourseCompletionScreen
+        courseId={completionData.courseId}
+        clientName={completionData.clientName}
+        amount={completionData.amount}
+        paymentMethod={completionData.paymentMethod}
+        paymentResult={completionData.paymentResult}
+        onDismiss={handleDismissCompletion}
+      />
+    );
+  }
+
   // If no active course, show upcoming reservations banner only
   if (!course) {
     if (upcomingReservations.length === 0) return null;
