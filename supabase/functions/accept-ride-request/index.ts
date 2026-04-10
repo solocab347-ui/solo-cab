@@ -162,32 +162,47 @@ serve(async (req) => {
 
     // Auto card hold for Stripe drivers with saved cards
     let autoHoldResult: string | null = null;
-    if (clientWantsCard && driverHasStripe && claimed.client_id) {
+    if (clientWantsCard && driverHasStripe) {
       try {
-        const { data: clientRecord } = await supabaseClient
-          .from("clients")
-          .select("user_id, stripe_customer_id, default_payment_method_id")
-          .eq("id", claimed.client_id)
-          .single();
+        let stripeCustomerId: string | null = null;
+        let paymentMethodToUse: string | null = null;
 
-        if (clientRecord?.stripe_customer_id) {
-          let paymentMethodToUse = clientRecord.default_payment_method_id;
+        if (claimed.client_id) {
+          // Registered client: look up from clients table
+          const { data: clientRecord } = await supabaseClient
+            .from("clients")
+            .select("user_id, stripe_customer_id, default_payment_method_id")
+            .eq("id", claimed.client_id)
+            .single();
 
+          stripeCustomerId = clientRecord?.stripe_customer_id || null;
+          paymentMethodToUse = clientRecord?.default_payment_method_id || null;
+        } else {
+          // Guest: use Stripe info from ride_request
+          stripeCustomerId = claimed.stripe_customer_id || null;
+          paymentMethodToUse = claimed.stripe_payment_method_id || null;
+        }
+
+        if (stripeCustomerId) {
+          // If no payment method stored, try to find one from Stripe
           if (!paymentMethodToUse) {
             const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
             if (stripeKey) {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
               const pms = await stripe.paymentMethods.list({
-                customer: clientRecord.stripe_customer_id,
+                customer: stripeCustomerId,
                 type: "card",
                 limit: 1,
               });
               if (pms.data.length > 0) {
                 paymentMethodToUse = pms.data[0].id;
-                await supabaseClient
-                  .from("clients")
-                  .update({ default_payment_method_id: paymentMethodToUse })
-                  .eq("id", claimed.client_id);
+                // Update client record if registered
+                if (claimed.client_id) {
+                  await supabaseClient
+                    .from("clients")
+                    .update({ default_payment_method_id: paymentMethodToUse })
+                    .eq("id", claimed.client_id);
+                }
               }
             }
           }
@@ -203,14 +218,14 @@ serve(async (req) => {
                 amount: holdAmountCents,
                 currency: "eur",
                 capture_method: "manual",
-                customer: clientRecord.stripe_customer_id,
+                customer: stripeCustomerId,
                 payment_method: paymentMethodToUse,
                 off_session: true,
                 confirm: true,
                 metadata: {
                   driver_id: driver.id,
                   course_id: course.id,
-                  client_id: claimed.client_id,
+                  client_id: claimed.client_id || "guest",
                   type: "course_hold",
                   auto_created: "true",
                 },
@@ -226,7 +241,7 @@ serve(async (req) => {
                     card_hold_amount: holdAmountCents / 100,
                     payment_status: "bank_imprint_confirmed",
                     stripe_payment_method_id: paymentMethodToUse,
-                    stripe_customer_id: clientRecord.stripe_customer_id,
+                    stripe_customer_id: stripeCustomerId,
                   })
                   .eq("id", course.id);
                 autoHoldResult = "auto_confirmed";
