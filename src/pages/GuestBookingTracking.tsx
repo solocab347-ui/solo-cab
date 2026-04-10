@@ -566,7 +566,7 @@ const GuestBookingTracking = () => {
               <div>
                 <p className="font-semibold">{driverDisplayName}</p>
                 <p className="text-xs text-muted-foreground">Chauffeur principal</p>
-                {booking.driver_phone && (booking.status === 'accepted' || booking.status === 'in_progress') && (
+                {booking.driver_phone && ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
                   <a 
                     href={`tel:${booking.driver_phone}`}
                     className="flex items-center gap-1 text-primary hover:underline text-sm mt-1"
@@ -579,7 +579,7 @@ const GuestBookingTracking = () => {
             </div>
 
             {/* Chat button for active rides */}
-            {rideRequestId && ['accepted', 'in_progress', 'driver_arrived'].includes(booking.status) && (
+            {rideRequestId && ['accepted', 'driver_approaching', 'in_progress', 'driver_arrived'].includes(booking.status) && (
               <div className="mt-3">
                 <RideChatPanel
                   rideId={rideRequestId}
