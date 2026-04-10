@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
@@ -16,6 +16,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import logo from "@/assets/logo-solocab.png";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
 
@@ -37,6 +39,10 @@ interface CourseData {
   driver_id: string;
   is_guest_booking: boolean;
   guest_name: string | null;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  destination_latitude: number | null;
+  destination_longitude: number | null;
 }
 
 interface DriverInfo {
@@ -44,6 +50,8 @@ interface DriverInfo {
   company_name: string | null;
   profile_photo_url: string | null;
   contact_phone: string | null;
+  current_latitude: number | null;
+  current_longitude: number | null;
 }
 
 const PHASE_ORDER: CoursePhase[] = ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
@@ -55,6 +63,104 @@ const PHASE_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; de
   in_progress: { label: 'En cours', icon: Car, description: 'Vous êtes en route vers votre destination' },
   completed: { label: 'Terminée', icon: CheckCircle, description: 'Votre course est terminée' },
 };
+
+const MAPBOX_TOKEN = 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg';
+
+// ── Live Map Component ──
+function LiveTrackingMap({
+  driverLat, driverLng, driverPhoto, driverName,
+  pickupLat, pickupLng,
+  destLat, destLng,
+  status,
+}: {
+  driverLat: number | null; driverLng: number | null;
+  driverPhoto: string | null; driverName: string;
+  pickupLat: number | null; pickupLng: number | null;
+  destLat: number | null; destLng: number | null;
+  status: string;
+}) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const driverMarker = useRef<mapboxgl.Marker | null>(null);
+  const pickupMarker = useRef<mapboxgl.Marker | null>(null);
+  const destMarker = useRef<mapboxgl.Marker | null>(null);
+
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    const center: [number, number] = driverLng && driverLat
+      ? [driverLng, driverLat]
+      : pickupLng && pickupLat
+        ? [pickupLng, pickupLat]
+        : [2.3522, 48.8566];
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center,
+      zoom: 13,
+      attributionControl: false,
+    });
+
+    // Pickup marker (green person icon)
+    if (pickupLat && pickupLng) {
+      const pickupEl = document.createElement('div');
+      pickupEl.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🧑</div>`;
+      pickupMarker.current = new mapboxgl.Marker({ element: pickupEl })
+        .setLngLat([pickupLng, pickupLat])
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Point de prise en charge'))
+        .addTo(map.current);
+    }
+
+    // Destination marker (red flag)
+    if (destLat && destLng) {
+      const destEl = document.createElement('div');
+      destEl.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🏁</div>`;
+      destMarker.current = new mapboxgl.Marker({ element: destEl })
+        .setLngLat([destLng, destLat])
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Destination'))
+        .addTo(map.current);
+    }
+
+    // Driver marker (photo or car)
+    const driverEl = document.createElement('div');
+    if (driverPhoto) {
+      driverEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;border:3px solid hsl(var(--primary));overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.4);"><img src="${driverPhoto}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
+    } else {
+      driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
+    }
+    driverMarker.current = new mapboxgl.Marker({ element: driverEl })
+      .setLngLat(driverLng && driverLat ? [driverLng, driverLat] : center)
+      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(driverName))
+      .addTo(map.current);
+
+    // Fit bounds to show all markers
+    const bounds = new mapboxgl.LngLatBounds();
+    if (pickupLat && pickupLng) bounds.extend([pickupLng, pickupLat]);
+    if (destLat && destLng) bounds.extend([destLng, destLat]);
+    if (driverLat && driverLng) bounds.extend([driverLng, driverLat]);
+    if (!bounds.isEmpty()) {
+      map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+    }
+
+    return () => { map.current?.remove(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update driver position in real-time
+  useEffect(() => {
+    if (!driverLat || !driverLng || !driverMarker.current) return;
+    driverMarker.current.setLngLat([driverLng, driverLat]);
+    // Smoothly pan if driver is approaching
+    if ((status === 'driver_approaching' || status === 'in_progress') && map.current) {
+      map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
+    }
+  }, [driverLat, driverLng, status]);
+
+  return (
+    <div ref={mapContainer} className="w-full h-48 rounded-xl overflow-hidden border border-border" />
+  );
+}
 
 const ClientRideTracking = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -72,7 +178,7 @@ const ClientRideTracking = () => {
     if (!courseId) return;
     const { data, error } = await supabase
       .from('courses')
-      .select('id, status, pickup_address, destination_address, scheduled_date, distance_km, duration_minutes, guest_estimated_price, final_payment_amount, payment_method, payment_status, client_rating, guest_tracking_token, course_started_at, driver_id, is_guest_booking, guest_name')
+      .select('id, status, pickup_address, destination_address, scheduled_date, distance_km, duration_minutes, guest_estimated_price, final_payment_amount, payment_method, payment_status, client_rating, guest_tracking_token, course_started_at, driver_id, is_guest_booking, guest_name, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude')
       .eq('id', courseId)
       .single();
 
@@ -88,10 +194,10 @@ const ClientRideTracking = () => {
       setRatingSubmitted(true);
     }
 
-    // Fetch driver info
+    // Fetch driver info including GPS
     const { data: driverData } = await supabase
       .from('drivers')
-      .select('id, company_name, profile_photo_url, contact_phone')
+      .select('id, company_name, profile_photo_url, contact_phone, current_latitude, current_longitude')
       .eq('id', data.driver_id)
       .single();
 
@@ -110,7 +216,7 @@ const ClientRideTracking = () => {
 
   useEffect(() => { fetchCourse(); }, [fetchCourse]);
 
-  // Realtime updates
+  // Realtime course updates
   useEffect(() => {
     if (!courseId) return;
     const cleanup = subscriptionManager.subscribe(
@@ -120,7 +226,6 @@ const ClientRideTracking = () => {
         const updated = payload.new as any;
         setCourse(prev => prev ? { ...prev, ...updated } : null);
         
-        // Show toast for status changes
         if (updated.status === 'driver_arrived') {
           toast.info('🚗 Votre chauffeur est arrivé !');
         } else if (updated.status === 'in_progress') {
@@ -133,10 +238,46 @@ const ClientRideTracking = () => {
     return cleanup;
   }, [courseId]);
 
-  // Polling fallback
+  // Realtime driver GPS updates
+  useEffect(() => {
+    if (!driver?.id) return;
+    const cleanup = subscriptionManager.subscribe(
+      `driver-gps-${driver.id}`,
+      { table: 'drivers', event: 'UPDATE', filter: `id=eq.${driver.id}`, debounceMs: 2000 },
+      (payload) => {
+        const updated = payload.new as any;
+        if (updated.current_latitude && updated.current_longitude) {
+          setDriver(prev => prev ? {
+            ...prev,
+            current_latitude: updated.current_latitude,
+            current_longitude: updated.current_longitude,
+          } : null);
+        }
+      }
+    );
+    return cleanup;
+  }, [driver?.id]);
+
+  // Polling fallback for GPS
+  useEffect(() => {
+    if (!courseId || !driver?.id) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('drivers')
+        .select('current_latitude, current_longitude')
+        .eq('id', driver.id)
+        .single();
+      if (data?.current_latitude && data?.current_longitude) {
+        setDriver(prev => prev ? { ...prev, current_latitude: data.current_latitude, current_longitude: data.current_longitude } : null);
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [courseId, driver?.id]);
+
+  // Polling fallback for course
   useEffect(() => {
     if (!courseId) return;
-    const interval = setInterval(fetchCourse, 10000);
+    const interval = setInterval(fetchCourse, 15000);
     return () => clearInterval(interval);
   }, [courseId, fetchCourse]);
 
@@ -214,6 +355,21 @@ const ClientRideTracking = () => {
       </header>
 
       <main className="container mx-auto px-4 py-4 max-w-lg space-y-4 pb-8">
+        {/* Live Map - always show when active */}
+        {isActive && (
+          <LiveTrackingMap
+            driverLat={driver?.current_latitude ?? null}
+            driverLng={driver?.current_longitude ?? null}
+            driverPhoto={driver?.profile_photo_url ?? null}
+            driverName={driverName}
+            pickupLat={course.pickup_latitude}
+            pickupLng={course.pickup_longitude}
+            destLat={course.destination_latitude}
+            destLng={course.destination_longitude}
+            status={course.status}
+          />
+        )}
+
         {/* Live Status Card */}
         <AnimatePresence mode="wait">
           <motion.div
