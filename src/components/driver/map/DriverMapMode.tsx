@@ -61,6 +61,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const radarLayerRef = useRef<L.Marker | null>(null);
   const lastHeading = useRef<number>(0);
   const lastGps = useRef<{ lat: number; lng: number } | null>(null);
+  const followMode = useRef<boolean>(true);
   const [todayRevenue, setTodayRevenue] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [revenueHidden, setRevenueHidden] = useState(false);
