@@ -50,8 +50,19 @@ interface DriverInfo {
   company_name: string | null;
   profile_photo_url: string | null;
   contact_phone: string | null;
+  show_phone: boolean;
+  full_name: string | null;
   current_latitude: number | null;
   current_longitude: number | null;
+}
+
+/** Returns "Prénom L." for privacy */
+function getPrivacySafeName(fullName: string | null, companyName: string | null): string {
+  if (companyName) return companyName;
+  if (!fullName) return 'Chauffeur';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
 }
 
 const PHASE_ORDER: CoursePhase[] = ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
@@ -213,14 +224,26 @@ const ClientRideTracking = () => {
       setRatingSubmitted(true);
     }
 
-    // Fetch driver info including GPS
+    // Fetch driver info including GPS and profile data
     const { data: driverData } = await supabase
       .from('drivers')
-      .select('id, company_name, profile_photo_url, contact_phone, current_latitude, current_longitude')
+      .select('id, company_name, contact_phone, show_phone, current_latitude, current_longitude, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)')
       .eq('id', data.driver_id)
       .single();
 
-    if (driverData) setDriver(driverData as unknown as DriverInfo);
+    if (driverData) {
+      const profile = (driverData as any).profiles;
+      setDriver({
+        id: driverData.id,
+        company_name: driverData.company_name,
+        profile_photo_url: profile?.profile_photo_url || null,
+        contact_phone: driverData.show_phone ? (driverData.contact_phone || profile?.phone) : null,
+        show_phone: driverData.show_phone ?? false,
+        full_name: profile?.full_name || null,
+        current_latitude: driverData.current_latitude,
+        current_longitude: driverData.current_longitude,
+      });
+    }
 
     // Get ride_request for chat
     const { data: rr } = await supabase
@@ -353,7 +376,7 @@ const ClientRideTracking = () => {
   const isCompleted = course.status === 'completed';
   const isActive = !isCancelled && !isCompleted;
   const currentPhaseIndex = getCurrentPhaseIndex();
-  const driverName = driver?.company_name || 'Chauffeur';
+  const driverName = getPrivacySafeName(driver?.full_name ?? null, driver?.company_name ?? null);
   const price = course.final_payment_amount || course.guest_estimated_price;
 
   return (
