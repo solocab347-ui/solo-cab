@@ -121,7 +121,7 @@ export function UnifiedBookingPage() {
         .single();
       if (clientData?.stripe_customer_id && clientData?.default_payment_method_id) {
         setCardVerifiedForBooking(true);
-        setSavedCardInfo({ customerId: clientData.stripe_customer_id });
+        setSavedCardInfo({ customerId: clientData.stripe_customer_id, paymentMethodId: clientData.default_payment_method_id });
       }
     };
     checkSavedCard();
