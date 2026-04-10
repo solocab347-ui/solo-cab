@@ -24,6 +24,7 @@ const createCarIcon = () => L.divIcon({
   html: `<div id="car-marker-inner" style="
     width: 52px; height: 52px;
     transform: rotate(0deg);
+    transform-origin: 50% 50%;
     transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
     will-change: transform;
@@ -125,9 +126,6 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
-    // When user drags the map, disable follow; recenter button re-enables it
-    map.on('dragstart', () => { followMode.current = false; });
-
     setTimeout(() => map.invalidateSize(), 200);
     setIsMapReady(true);
     return () => {
@@ -156,10 +154,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     const inner = el.querySelector('#car-marker-inner') as HTMLElement;
     if (!inner) return;
     
-    // The car-top-view.png image points UP (north=0°).
-    // heading from calcHeading is 0°=north, 90°=east, etc.
-    // Apply -90° offset since the car image faces right (east) by default.
-    const displayAngle = heading - 90;
+    // The sprite nose already points up, so a north heading must remain 0°.
+    const displayAngle = heading;
     
     // Calculate shortest rotation path to avoid spinning
     const current = normalizeAngle(lastHeading.current);
@@ -173,14 +169,34 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     lastHeading.current = finalAngle;
   }, [normalizeAngle]);
 
-  const calcHeading = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
-    const dLng = to.lng - from.lng;
-    const dLat = to.lat - from.lat;
-    // Need significant movement to calculate heading (≈11m)
-    if (Math.abs(dLat) < 0.0001 && Math.abs(dLng) < 0.0001) return null;
-    const angle = Math.atan2(dLng, dLat) * (180 / Math.PI);
-    return angle;
+  const getDistanceMeters = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const earthRadius = 6371000;
+    const dLat = ((to.lat - from.lat) * Math.PI) / 180;
+    const dLng = ((to.lng - from.lng) * Math.PI) / 180;
+    const lat1 = (from.lat * Math.PI) / 180;
+    const lat2 = (to.lat * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+    return 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }, []);
+
+  const calcHeading = useCallback((from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    if (getDistanceMeters(from, to) < 4) return null;
+
+    const lat1 = (from.lat * Math.PI) / 180;
+    const lat2 = (to.lat * Math.PI) / 180;
+    const dLng = ((to.lng - from.lng) * Math.PI) / 180;
+
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x =
+      Math.cos(lat1) * Math.sin(lat2) -
+      Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+    return normalizeAngle((Math.atan2(y, x) * 180) / Math.PI);
+  }, [getDistanceMeters, normalizeAngle]);
 
   // Update car + radar on map
   useEffect(() => {
@@ -224,9 +240,9 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       lastGps.current = { lat: latitude, lng: longitude };
       markerRef.current.setLatLng(newPos);
 
-      // Auto-follow: keep the car centered on the map
+      // Auto-follow: keep the vehicle as the fixed focus point
       if (followMode.current) {
-        mapRef.current.panTo(newPos, { animate: true, duration: 0.8 });
+        mapRef.current.setView(newPos, mapRef.current.getZoom(), { animate: true, duration: 0.8 });
       }
     }
   }, [latitude, longitude, isMapReady, isAvailable, calcHeading, updateRotation]);
