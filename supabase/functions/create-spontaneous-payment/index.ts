@@ -34,7 +34,7 @@ serve(async (req) => {
     // Get driver
     const { data: driver, error: driverError } = await adminClient
       .from("drivers")
-      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, company_name, display_name")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, company_name")
       .eq("user_id", userId)
       .single();
 
