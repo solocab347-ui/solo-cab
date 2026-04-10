@@ -223,11 +223,17 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       }
       lastGps.current = { lat: latitude, lng: longitude };
       markerRef.current.setLatLng(newPos);
+
+      // Auto-follow: keep the car centered on the map
+      if (followMode.current) {
+        mapRef.current.panTo(newPos, { animate: true, duration: 0.8 });
+      }
     }
   }, [latitude, longitude, isMapReady, isAvailable, calcHeading, updateRotation]);
 
   const recenter = useCallback(() => {
     if (mapRef.current && latitude && longitude) {
+      followMode.current = true;
       mapRef.current.setView([latitude, longitude], 16, { animate: true });
     }
   }, [latitude, longitude]);
