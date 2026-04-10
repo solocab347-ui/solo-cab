@@ -303,6 +303,19 @@ serve(async (req) => {
       link: "/driver-dashboard?tab=courses",
     });
 
+    // Send tracking email to guest
+    if (!claimed.client_id && claimed.guest_email) {
+      try {
+        await supabaseClient.functions.invoke("send-guest-tracking-email", {
+          body: { course_id: course.id },
+          headers: { "x-internal-secret": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "" },
+        });
+        logStep("Guest tracking email sent", { email: claimed.guest_email });
+      } catch (emailErr) {
+        logStep("Guest tracking email failed (non-blocking)", { error: String(emailErr) });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
