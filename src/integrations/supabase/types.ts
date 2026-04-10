@@ -21129,6 +21129,10 @@ export type Database = {
           profile_photo_url: string
         }[]
       }
+      get_ride_request_id_for_guest: {
+        Args: { _token: string }
+        Returns: string
+      }
       get_safe_public_driver_data: {
         Args: { driver_id_param: string }
         Returns: {
