@@ -20972,27 +20972,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_guest_booking_by_token: {
-        Args: { _token: string }
-        Returns: {
-          created_at: string
-          destination_address: string
-          devis_amount: number
-          driver_avatar_url: string
-          driver_company: string
-          driver_name: string
-          driver_phone: string
-          guest_estimated_price: number
-          guest_name: string
-          id: string
-          is_shared_course: boolean
-          pickup_address: string
-          quote_number: string
-          scheduled_date: string
-          shared_drivers: Json
-          status: string
-        }[]
-      }
+      get_guest_booking_by_token:
+        | {
+            Args: { _token: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.get_guest_booking_by_token(_token => text), public.get_guest_booking_by_token(_token => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"[]
+          }
+        | {
+            Args: { _token: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.get_guest_booking_by_token(_token => text), public.get_guest_booking_by_token(_token => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"[]
+          }
       get_guest_tracking_token: {
         Args: { _course_id: string }
         Returns: string
