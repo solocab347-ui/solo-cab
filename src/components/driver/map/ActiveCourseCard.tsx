@@ -373,16 +373,16 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         if (error) {
           paymentResult = { success: false, status: 'failed', error: error.message || 'Erreur lors du paiement', alreadyPaid: false };
         } else if (data?.status === 'succeeded' || data?.success || data?.already_paid) {
-          paymentResult = { success: true, status: 'succeeded', alreadyPaid: !!data?.already_paid };
+          paymentResult = { success: true, status: 'succeeded', error: '', alreadyPaid: !!data?.already_paid };
         } else {
-          paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'Le paiement n\'a pas abouti' };
+          paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'Le paiement n\'a pas abouti', alreadyPaid: false };
         }
       } catch (err: any) {
-        paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau' };
+        paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false };
       }
     } else {
       // Cash payment — course is complete, no Stripe action needed
-      paymentResult = { success: true, status: 'cash' };
+      paymentResult = { success: true, status: 'cash', error: '', alreadyPaid: false };
     }
 
     // Show completion screen with all info
