@@ -436,7 +436,21 @@ export function UnifiedBookingPage() {
             onAccepted={(driverName, courseId) => {
               toast.success(`${driverName} a accepté votre course ! 🎉`);
               // Redirect to tracking page after a brief delay for UX
-              setTimeout(() => {
+              setTimeout(async () => {
+                // For guests (not authenticated), use the guest tracking page
+                if (!user && courseId) {
+                  try {
+                    // Fetch the tracking token via RPC to avoid RLS issues
+                    const { data: tokenData } = await supabase.rpc('get_guest_tracking_token', { _course_id: courseId });
+                    if (tokenData) {
+                      navigate(`/reservation-suivi/${tokenData}`);
+                      return;
+                    }
+                  } catch (e) {
+                    console.error('Error fetching tracking token:', e);
+                  }
+                }
+                
                 if (courseId) {
                   navigate(`/suivi-course/${courseId}`);
                 } else {
@@ -453,6 +467,13 @@ export function UnifiedBookingPage() {
                         .limit(1)
                         .single();
                       if (data?.final_course_id) {
+                        // For guests, try to get tracking token
+                        if (!user) {
+                          try {
+                            const { data: tk } = await supabase.rpc('get_guest_tracking_token', { _course_id: data.final_course_id });
+                            if (tk) { navigate(`/reservation-suivi/${tk}`); return; }
+                          } catch (e) { console.error(e); }
+                        }
                         navigate(`/suivi-course/${data.final_course_id}`);
                         return;
                       }
