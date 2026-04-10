@@ -109,40 +109,27 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
         let rpcError: unknown = null;
 
         if (mode === 'immediate') {
-          const [immediateResponse, reservationResponse] = await Promise.all([
-            searchDrivers('immediate'),
-            searchDrivers('reservation'),
-          ]);
-
-          if (immediateResponse.error && reservationResponse.error) {
+          // ONLY search immediate — do NOT merge with reservation results
+          // Offline drivers must NEVER appear in immediate mode
+          const immediateResponse = await searchDrivers('immediate');
+          
+          if (immediateResponse.error) {
             rpcError = immediateResponse.error;
           } else {
             const immediateDrivers = (immediateResponse.data ?? []) as NearbyDriverRpcRow[];
-            const reservationDrivers = (reservationResponse.data ?? []) as NearbyDriverRpcRow[];
-            const mergedDrivers = new Map<string, NearbyDriverRpcRow>();
-
-            immediateDrivers.forEach((driver) => {
-              mergedDrivers.set(driver.driver_id, {
-                ...driver,
-                is_live_location: true,
-              });
-            });
-
-            reservationDrivers.forEach((driver) => {
-              if (!mergedDrivers.has(driver.driver_id)) {
-                mergedDrivers.set(driver.driver_id, driver);
+            
+            if (immediateDrivers.length === 0) {
+              // No online drivers found — fallback: search reservation mode to show availability
+              const reservationResponse = await searchDrivers('reservation');
+              if (!reservationResponse.error && (reservationResponse.data ?? []).length > 0) {
+                data = (reservationResponse.data ?? []) as NearbyDriverRpcRow[];
+                setFallbackToReservation(true);
+              } else {
+                data = [];
               }
-            });
-
-            data = Array.from(mergedDrivers.values()).sort((a, b) => {
-              const aLive = a.is_live_location ? 1 : 0;
-              const bLive = b.is_live_location ? 1 : 0;
-              if (aLive !== bLive) return bLive - aLive;
-              return a.distance_meters - b.distance_meters;
-            });
-
-            if (reservationDrivers.length > 0) {
-              setFallbackToReservation(immediateDrivers.length === 0 || reservationDrivers.length > immediateDrivers.length);
+            } else {
+              data = immediateDrivers;
+              setFallbackToReservation(false);
             }
           }
         } else {
