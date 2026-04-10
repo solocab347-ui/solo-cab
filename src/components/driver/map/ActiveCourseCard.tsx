@@ -357,30 +357,45 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const handleComplete = useCallback(async () => {
     if (!course) return;
     setLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('finalize-course-payment', {
-        body: { course_id: course.id },
-      });
-      toast.success('Course terminée !');
-      dismissCourse(course.id);
-      setCourse(null);
-      if (course) clearPersistedPhase(course.id);
-      restoreAvailability();
-      onCourseChange?.();
-    } catch {
-      // Even on error, dismiss the course from UI to prevent loop
-      toast.info('Course terminée');
-      if (course) {
-        dismissCourse(course.id);
-        clearPersistedPhase(course.id);
+    
+    const currentPaymentMethod = course.payment_method || course.payment_method_requested || 'cash';
+    const isCardPayment = currentPaymentMethod === 'card' || currentPaymentMethod === 'stripe' || currentPaymentMethod === 'card_online';
+    const courseAmount = course.final_payment_amount ?? course.guest_estimated_price ?? getAcceptedDevis(course)?.amount ?? 0;
+    const courseClientName = course.clients?.profiles?.full_name || course.guest_name || 'Client';
+    
+    let paymentResult = { success: false, status: '', error: '', alreadyPaid: false };
+    
+    if (isCardPayment) {
+      try {
+        const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
+          body: { course_id: course.id },
+        });
+        if (error) {
+          paymentResult = { success: false, status: 'failed', error: error.message || 'Erreur lors du paiement', alreadyPaid: false };
+        } else if (data?.status === 'succeeded' || data?.success || data?.already_paid) {
+          paymentResult = { success: true, status: 'succeeded', alreadyPaid: !!data?.already_paid };
+        } else {
+          paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'Le paiement n\'a pas abouti' };
+        }
+      } catch (err: any) {
+        paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau' };
       }
-      setCourse(null);
-      restoreAvailability();
-      onCourseChange?.();
-    } finally {
-      setLoading(false);
+    } else {
+      // Cash payment — course is complete, no Stripe action needed
+      paymentResult = { success: true, status: 'cash' };
     }
-  }, [course, driverId, onCourseChange, restoreAvailability]);
+
+    // Show completion screen with all info
+    setCompletionData({
+      courseId: course.id,
+      clientName: courseClientName,
+      amount: courseAmount,
+      paymentMethod: currentPaymentMethod,
+      paymentResult,
+    });
+    
+    setLoading(false);
+  }, [course, driverId]);
 
   const handleStopCourse = useCallback(async (reason: string) => {
     if (!course) return;
