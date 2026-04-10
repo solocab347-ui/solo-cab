@@ -372,24 +372,21 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       .eq('id', course.id)
       .eq('driver_id', driverId);
     
-    if (isCardPayment) {
-      try {
-        const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
-          body: { course_id: course.id },
-        });
-        if (error) {
-          paymentResult = { success: false, status: 'failed', error: error.message || 'Erreur lors du paiement', alreadyPaid: false };
-        } else if (data?.status === 'succeeded' || data?.success || data?.already_paid) {
-          paymentResult = { success: true, status: 'succeeded', error: '', alreadyPaid: !!data?.already_paid };
-        } else {
-          paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'Le paiement n\'a pas abouti', alreadyPaid: false };
-        }
-      } catch (err: any) {
-        paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false };
+    // Always call finalize-course-payment for ALL payment types (card AND cash)
+    // This creates the payment record, calculates fees, and triggers financial sync
+    try {
+      const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
+        body: { course_id: course.id },
+      });
+      if (error) {
+        paymentResult = { success: false, status: 'failed', error: error.message || 'Erreur lors de la finalisation', alreadyPaid: false };
+      } else if (data?.status === 'succeeded' || data?.success || data?.already_paid || data?.flow === 'manual') {
+        paymentResult = { success: true, status: data?.status || 'succeeded', error: '', alreadyPaid: !!data?.already_paid };
+      } else {
+        paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'La finalisation n\'a pas abouti', alreadyPaid: false };
       }
-    } else {
-      // Cash payment — course is complete, no Stripe action needed
-      paymentResult = { success: true, status: 'cash', error: '', alreadyPaid: false };
+    } catch (err: any) {
+      paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false };
     }
 
     // Show completion screen with all info
