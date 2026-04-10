@@ -98,7 +98,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .from("stripe_transactions")
           .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, created_at, description")
           .eq("driver_id", driverId)
-          .eq("status", "succeeded")
+          .in("status", ["succeeded", "completed"])
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
@@ -218,7 +218,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total encaissé (Stripe)</p>
+                <p className="text-xs text-muted-foreground mb-1">Total encaissé</p>
                 <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
               </div>
               <div className="p-3 rounded-full bg-primary/20">
