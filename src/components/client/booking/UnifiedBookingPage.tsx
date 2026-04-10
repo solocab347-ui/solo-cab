@@ -221,8 +221,23 @@ export function UnifiedBookingPage() {
   };
 
   // Geolocation
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) { toast.error('Géolocalisation non disponible'); return; }
+  const getCurrentLocation = useCallback(async () => {
+    if (!navigator.geolocation) { toast.error('Géolocalisation non disponible sur ce navigateur'); return; }
+    
+    // Check permission status first via Permissions API
+    if (navigator.permissions) {
+      try {
+        const permStatus = await navigator.permissions.query({ name: 'geolocation' });
+        if (permStatus.state === 'denied') {
+          toast.error('La localisation est bloquée. Activez-la dans les paramètres de votre navigateur puis réessayez.');
+          return;
+        }
+        // 'granted' or 'prompt' → proceed normally
+      } catch {
+        // Permissions API not fully supported, proceed anyway
+      }
+    }
+
     setIsGettingLocation(true);
     pickupLock.current = true;
     if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
@@ -245,10 +260,10 @@ export function UnifiedBookingPage() {
     );
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
-      (err) => { if (!resolved) { toast.error(err.code === 1 ? 'Autorisez la localisation' : 'GPS indisponible'); setIsGettingLocation(false); } },
+      (err) => { if (!resolved) { toast.error(err.code === 1 ? 'La localisation est bloquée. Activez-la dans les paramètres de votre navigateur.' : 'GPS indisponible, réessayez'); setIsGettingLocation(false); } },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
-    setTimeout(() => { if (!resolved) { setIsGettingLocation(false); toast.error('GPS trop lent'); } }, 10000);
+    setTimeout(() => { if (!resolved) { setIsGettingLocation(false); toast.error('GPS trop lent, réessayez'); } }, 10000);
   }, [mapboxToken]);
 
   // Search
