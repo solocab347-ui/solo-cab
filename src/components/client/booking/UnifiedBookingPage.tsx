@@ -59,7 +59,7 @@ export function UnifiedBookingPage() {
   const [guestEmail, setGuestEmail] = useState(ss?.guestEmail || '');
   const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
-  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string } | null>(null);
+  const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string; paymentMethodId?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Registration
