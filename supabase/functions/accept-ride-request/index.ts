@@ -101,6 +101,9 @@ serve(async (req) => {
       logStep("Price recalc error, using client price", { error: String(priceCalcErr) });
     }
 
+    // Generate guest tracking token if guest booking
+    const guestTrackingToken = !claimed.client_id ? crypto.randomUUID() : null;
+
     const courseData: Record<string, unknown> = {
       driver_id: driver.id,
       client_id: claimed.client_id || null,
@@ -119,6 +122,7 @@ serve(async (req) => {
       guest_email: claimed.guest_email,
       guest_phone: claimed.guest_phone,
       payment_method: claimed.payment_method || "cash",
+      guest_tracking_token: guestTrackingToken,
     };
 
     if (clientWantsCard && driverHasStripe) {
@@ -298,6 +302,19 @@ serve(async (req) => {
       type: "info",
       link: "/driver-dashboard?tab=courses",
     });
+
+    // Send tracking email to guest
+    if (!claimed.client_id && claimed.guest_email) {
+      try {
+        await supabaseClient.functions.invoke("send-guest-tracking-email", {
+          body: { course_id: course.id },
+          headers: { "x-internal-secret": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "" },
+        });
+        logStep("Guest tracking email sent", { email: claimed.guest_email });
+      } catch (emailErr) {
+        logStep("Guest tracking email failed (non-blocking)", { error: String(emailErr) });
+      }
+    }
 
     return new Response(
       JSON.stringify({
