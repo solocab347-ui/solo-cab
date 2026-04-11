@@ -86,6 +86,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeBalance, setStripeBalance] = useState<any>(null);
+  const [stripePayouts, setStripePayouts] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
