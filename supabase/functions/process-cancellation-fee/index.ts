@@ -312,6 +312,11 @@ serve(async (req) => {
                 confirm: true,
                 off_session: true,
                 description: `Frais d'annulation - Course VTC`,
+                // DESTINATION CHARGES: Funds go to driver
+                ...(course.driver?.stripe_connect_account_id && course.driver?.stripe_connect_charges_enabled ? {
+                  transfer_data: { destination: course.driver.stripe_connect_account_id },
+                  application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
+                } : {}),
                 metadata: {
                   course_id,
                   type: "cancellation_fee",
@@ -320,7 +325,6 @@ serve(async (req) => {
                 },
               };
 
-              // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
               const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
               chargeResult = paymentIntent;
               logStep("Cancellation fee charged via fallback PI", { piId: paymentIntent.id });
@@ -339,6 +343,11 @@ serve(async (req) => {
             confirm: true,
             off_session: true,
             description: `Frais d'annulation - Course VTC`,
+            // DESTINATION CHARGES: Funds go to driver
+            ...(course.driver?.stripe_connect_account_id && course.driver?.stripe_connect_charges_enabled ? {
+              transfer_data: { destination: course.driver.stripe_connect_account_id },
+              application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
+            } : {}),
             metadata: {
               course_id,
               type: "cancellation_fee",
@@ -346,8 +355,6 @@ serve(async (req) => {
               cancelled_by,
             },
           };
-
-          // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
 
           const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
           chargeResult = paymentIntent;
