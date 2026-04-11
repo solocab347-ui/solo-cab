@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -85,6 +86,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeBalance, setStripeBalance] = useState<any>(null);
+  const [stripePayouts, setStripePayouts] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -197,6 +200,18 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         cashFeesOwed,
         cardFeesCollected,
       });
+
+      // Fetch Stripe real-time data
+      try {
+        const [balRes, payRes] = await Promise.all([
+          supabase.functions.invoke("driver-stripe-data", { body: { action: "get_balance" } }),
+          supabase.functions.invoke("driver-stripe-data", { body: { action: "list_payouts" } }),
+        ]);
+        if (balRes.data && !balRes.data.error) setStripeBalance(balRes.data);
+        if (payRes.data?.data) setStripePayouts(payRes.data.data);
+      } catch (e) {
+        console.error("Stripe data fetch error:", e);
+      }
     } catch (err) {
       console.error("Error loading finance data:", err);
     } finally {
@@ -357,13 +372,17 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             <CreditCard className="w-4 h-4" />
             Transactions
           </TabsTrigger>
+          <TabsTrigger value="stripe" className="flex-1 gap-1">
+            <Wallet className="w-4 h-4" />
+            Stripe
+          </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1">
             <Calendar className="w-4 h-4" />
             Versements
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
-            En attente ({pendingPayments.length})
+            ({pendingPayments.length})
           </TabsTrigger>
         </TabsList>
 
@@ -423,6 +442,77 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               );
             })
           )}
+        </TabsContent>
+
+        {/* Stripe Balance & Payouts */}
+        <TabsContent value="stripe" className="space-y-3">
+          {/* Stripe Balance */}
+          {stripeBalance ? (
+            <Card className="p-4">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-primary" />
+                Balance Stripe (temps réel)
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-center">
+                  <p className="text-2xl font-bold text-success">
+                    {((stripeBalance.available?.[0]?.amount || 0) / 100).toFixed(2)}€
+                  </p>
+                  <p className="text-xs text-muted-foreground">Disponible</p>
+                </div>
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-center">
+                  <p className="text-2xl font-bold text-warning">
+                    {((stripeBalance.pending?.[0]?.amount || 0) / 100).toFixed(2)}€
+                  </p>
+                  <p className="text-xs text-muted-foreground">En attente</p>
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-8 text-center text-muted-foreground">
+              <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>Balance Stripe indisponible</p>
+              <p className="text-xs mt-1">Activez votre compte Stripe Connect pour voir votre balance</p>
+            </Card>
+          )}
+
+          {/* Stripe Payouts */}
+          <Card className="p-4">
+            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Virements Stripe récents
+            </h4>
+            {stripePayouts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Aucun virement effectué</p>
+            ) : (
+              <div className="space-y-2">
+                {stripePayouts.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
+                    <div>
+                      <p className="text-sm font-medium">{format(new Date(p.arrival_date * 1000), "dd MMM yyyy", { locale: fr })}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{p.id}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-foreground">{(p.amount / 100).toFixed(2)}€</p>
+                      <Badge variant={p.status === "paid" ? "default" : "outline"} className="text-[10px]">
+                        {p.status === "paid" ? "Versé" : p.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <h4 className="font-semibold text-primary text-sm mb-2">💡 Virements automatiques</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>• Stripe verse automatiquement votre solde chaque <strong>lundi</strong></li>
+              <li>• Les frais Stripe sont déduits à chaque transaction CB</li>
+              <li>• Les frais SoloCab (0,50€) sont prélevés via application_fee</li>
+              <li>• SoloCab ne détient jamais vos fonds</li>
+            </ul>
+          </Card>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-3">
