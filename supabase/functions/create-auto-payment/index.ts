@@ -130,6 +130,7 @@ serve(async (req) => {
       transfer_data: {
         destination: driver.stripe_connect_account_id,
       },
+      on_behalf_of: driver.stripe_connect_account_id,
       application_fee_amount: SOLOCAB_FEE_CENTS,
       metadata: {
         course_id,

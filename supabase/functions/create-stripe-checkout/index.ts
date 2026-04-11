@@ -114,6 +114,7 @@ serve(async (req) => {
         // DESTINATION CHARGES: Funds go directly to driver
         ...(driverData?.stripe_connect_account_id && driverData?.stripe_connect_charges_enabled ? {
           transfer_data: { destination: driverData.stripe_connect_account_id },
+          on_behalf_of: driverData.stripe_connect_account_id,
           application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
         } : {}),
       },
