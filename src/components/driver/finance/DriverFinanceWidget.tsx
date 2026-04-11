@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wallet, ArrowUpRight, ArrowDownRight, Clock, ChevronRight, TrendingUp, RefreshCw, CalendarClock } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, CalendarClock, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -11,20 +11,21 @@ interface DriverFinanceWidgetProps {
   onViewDetails?: () => void;
 }
 
-interface BalanceSummary {
-  totalRevenue: number;
-  solocabFees: number;
-  stripeFees: number;
-  netEarnings: number;
+interface FinanceSummary {
+  // From stripe_transactions (DB)
+  weekGross: number;
+  weekStripeFees: number;
+  weekSolocabFees: number;
+  weekNet: number;
+  weekCourses: number;
+  totalNet: number;
   totalCourses: number;
-  pendingBalance: number;
-  // Weekly settlement data
-  pendingDriverBalance: number;
-  pendingAdminFees: number;
-  pendingCourseCount: number;
-  // Partnership data
-  pendingCommissions: number;
-  currentWeekShared: number;
+  // From Stripe API (real-time)
+  stripeAvailable: number;
+  stripePending: number;
+  stripePayoutsEnabled: boolean;
+  lastPayoutAmount: number | null;
+  lastPayoutDate: string | null;
 }
 
 function getNextMonday(): string {
@@ -36,8 +37,17 @@ function getNextMonday(): string {
   return nextMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
+function getWeekStart(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString();
+}
+
 export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWidgetProps) {
-  const [summary, setSummary] = useState<BalanceSummary | null>(null);
+  const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,62 +57,67 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
   const loadSummary = async () => {
     try {
       setLoading(true);
+      const weekStart = getWeekStart();
 
-      // 1. Get actual course revenue from driver_wallets view
-      const { data: wallet } = await supabase
-        .from("driver_wallets")
-        .select("*")
-        .eq("driver_id", driverId)
-        .maybeSingle();
+      // Parallel: DB transactions + Stripe real-time
+      const [weekTxns, allWallet, stripeRes] = await Promise.all([
+        supabase
+          .from("stripe_transactions")
+          .select("gross_amount, stripe_fee_amount, solocab_fee_amount, net_amount")
+          .eq("driver_id", driverId)
+          .in("status", ["succeeded", "completed"])
+          .gte("created_at", weekStart),
+        supabase
+          .from("driver_wallets")
+          .select("net_earnings, total_courses")
+          .eq("driver_id", driverId)
+          .maybeSingle(),
+        supabase.functions.invoke("driver-stripe-data", {
+          body: { action: "get_balance" },
+        }),
+      ]);
 
-      // 2. Get pending driver balance (weekly settlement)
-      const { data: pendingBalances } = await supabase
-        .from("driver_balance_pending" as any)
-        .select("net_amount, solocab_fee, stripe_fee, gross_amount")
-        .eq("driver_id", driverId)
-        .eq("status", "pending");
+      const weekData = weekTxns.data || [];
+      const weekGross = weekData.reduce((s, t: any) => s + Number(t.gross_amount || 0), 0);
+      const weekStripeFees = weekData.reduce((s, t: any) => s + Number(t.stripe_fee_amount || 0), 0);
+      const weekSolocabFees = weekData.reduce((s, t: any) => s + Number(t.solocab_fee_amount || 0), 0);
+      const weekNet = weekData.reduce((s, t: any) => s + Number(t.net_amount || 0), 0);
 
-      let pendingDriverBalance = 0;
-      let pendingAdminFees = 0;
-      let pendingCourseCount = 0;
-      for (const b of (pendingBalances || [])) {
-        pendingDriverBalance += Number((b as any).net_amount || 0);
-        pendingAdminFees += Number((b as any).solocab_fee || 0);
-        pendingCourseCount++;
+      // Get Stripe balance
+      let stripeAvailable = 0, stripePending = 0, stripePayoutsEnabled = false;
+      if (stripeRes.data && !stripeRes.data.error) {
+        stripeAvailable = (stripeRes.data.available?.[0]?.amount || 0) / 100;
+        stripePending = (stripeRes.data.pending?.[0]?.amount || 0) / 100;
+        stripePayoutsEnabled = true;
       }
 
-      // 3. Get pending partnership commissions
-      const { data: pendingPayments } = await supabase
-        .from("shared_course_payments")
-        .select("sender_commission_amount, sender_driver_id")
-        .eq("status", "completed")
-        .eq("sender_driver_id", driverId)
-        .is("settlement_id", null);
-
-      let pendingCommissions = 0;
-      for (const p of (pendingPayments || [])) {
-        pendingCommissions += p.sender_commission_amount || 0;
-      }
-
-      const { count: sharedCount } = await supabase
-        .from("shared_course_payments")
-        .select("id", { count: "exact", head: true })
-        .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
-        .eq("status", "completed")
-        .is("settlement_id", null);
+      // Get last payout
+      let lastPayoutAmount: number | null = null;
+      let lastPayoutDate: string | null = null;
+      try {
+        const payoutsRes = await supabase.functions.invoke("driver-stripe-data", {
+          body: { action: "list_payouts" },
+        });
+        if (payoutsRes.data?.data?.[0]) {
+          const p = payoutsRes.data.data[0];
+          lastPayoutAmount = p.amount / 100;
+          lastPayoutDate = new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR');
+        }
+      } catch {}
 
       setSummary({
-        totalRevenue: Number(wallet?.total_revenue || 0),
-        solocabFees: Number(wallet?.total_solocab_fees || 0),
-        stripeFees: Number(wallet?.total_stripe_fees || 0),
-        netEarnings: Number(wallet?.net_earnings || 0),
-        totalCourses: Number(wallet?.total_courses || 0),
-        pendingBalance: Number(wallet?.pending_balance || 0),
-        pendingDriverBalance,
-        pendingAdminFees,
-        pendingCourseCount,
-        pendingCommissions,
-        currentWeekShared: sharedCount || 0,
+        weekGross,
+        weekStripeFees,
+        weekSolocabFees,
+        weekNet,
+        weekCourses: weekData.length,
+        totalNet: Number(allWallet.data?.net_earnings || 0),
+        totalCourses: Number(allWallet.data?.total_courses || 0),
+        stripeAvailable,
+        stripePending,
+        stripePayoutsEnabled,
+        lastPayoutAmount,
+        lastPayoutDate,
       });
     } catch (err) {
       console.error("Error loading finance summary:", err);
@@ -145,64 +160,65 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
         </div>
       </div>
 
-      {/* Pending weekly payout — main highlight */}
+      {/* Stripe Balance — main highlight */}
       <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 mb-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground mb-0.5">Prochain virement</p>
+            <p className="text-xs text-muted-foreground mb-0.5">Balance Stripe</p>
             <p className="text-2xl font-bold text-primary">
-              {summary.pendingDriverBalance.toFixed(2)}€
+              {summary.stripeAvailable.toFixed(2)}€
             </p>
+            <p className="text-[10px] text-muted-foreground">disponible</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">{summary.pendingCourseCount} courses</p>
-            <p className="text-xs text-muted-foreground">en attente</p>
+            <p className="text-sm font-semibold text-amber-600">{summary.stripePending.toFixed(2)}€</p>
+            <p className="text-[10px] text-muted-foreground">en attente</p>
           </div>
         </div>
       </div>
 
-      {/* Revenue & Fees */}
+      {/* Weekly Revenue & Fees */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="p-3 rounded-lg bg-success/10 border border-success/20">
           <div className="flex items-center gap-1 text-xs text-success mb-1">
             <ArrowUpRight className="w-3 h-3" />
-            Revenus bruts (semaine)
+            Revenus semaine
           </div>
           <p className="text-lg font-bold text-success">
-            +{(summary.pendingDriverBalance + summary.pendingAdminFees).toFixed(2)}€
+            +{summary.weekGross.toFixed(2)}€
           </p>
+          <p className="text-[10px] text-muted-foreground">{summary.weekCourses} courses</p>
         </div>
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
           <div className="flex items-center gap-1 text-xs text-destructive mb-1">
             <ArrowDownRight className="w-3 h-3" />
-            Frais SoloCab
+            Frais totaux
           </div>
           <p className="text-lg font-bold text-destructive">
-            -{summary.pendingAdminFees.toFixed(2)}€
+            -{(summary.weekStripeFees + summary.weekSolocabFees).toFixed(2)}€
           </p>
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            <p>Stripe: {summary.weekStripeFees.toFixed(2)}€</p>
+            <p>SoloCab: {summary.weekSolocabFees.toFixed(2)}€</p>
+          </div>
         </div>
       </div>
 
-      {/* Historic totals */}
+      {/* Last payout + historic */}
       <div className="p-3 rounded-lg bg-muted/50 border border-border mb-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Total encaissé (historique)</span>
-          <span className="font-semibold text-foreground">{summary.netEarnings.toFixed(2)}€</span>
+          <span className="font-semibold text-foreground">{summary.totalNet.toFixed(2)}€</span>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
           <span>{summary.totalCourses} courses au total</span>
-          <span>Frais totaux: {(summary.solocabFees + summary.stripeFees).toFixed(2)}€</span>
+          {summary.lastPayoutAmount !== null && (
+            <span className="flex items-center gap-1">
+              <CreditCard className="w-3 h-3" />
+              Dernier: {summary.lastPayoutAmount.toFixed(2)}€ ({summary.lastPayoutDate})
+            </span>
+          )}
         </div>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-        <span>{summary.currentWeekShared} partages en attente</span>
-        {summary.pendingCommissions > 0 && (
-          <span className="flex items-center gap-1 text-success">
-            <TrendingUp className="w-3 h-3" />
-            +{summary.pendingCommissions.toFixed(2)}€ commissions
-          </span>
-        )}
       </div>
 
       {onViewDetails && (
