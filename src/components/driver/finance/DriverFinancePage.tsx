@@ -372,13 +372,17 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             <CreditCard className="w-4 h-4" />
             Transactions
           </TabsTrigger>
+          <TabsTrigger value="stripe" className="flex-1 gap-1">
+            <Wallet className="w-4 h-4" />
+            Stripe
+          </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1">
             <Calendar className="w-4 h-4" />
             Versements
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
-            En attente ({pendingPayments.length})
+            ({pendingPayments.length})
           </TabsTrigger>
         </TabsList>
 
