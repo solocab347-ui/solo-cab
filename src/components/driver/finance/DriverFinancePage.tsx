@@ -515,6 +515,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           </Card>
         </TabsContent>
 
+        <TabsContent value="history" className="space-y-3">
           {/* Info banner */}
           <Card className="p-4 bg-primary/10 border-primary/20">
             <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
