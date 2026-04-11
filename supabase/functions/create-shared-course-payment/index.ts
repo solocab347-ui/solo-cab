@@ -124,10 +124,11 @@ serve(async (req) => {
       ],
       // Payment goes to receiver's Stripe Connect account
       payment_intent_data: {
-        // Use destination charge: full amount to receiver, we'll transfer to sender after
+        // Use destination charge: full amount to receiver
         transfer_data: {
           destination: sharedCourse.receiver_driver.stripe_connect_account_id,
         },
+        on_behalf_of: sharedCourse.receiver_driver.stripe_connect_account_id,
         metadata: {
           shared_course_id,
           course_id: sharedCourse.course_id,
