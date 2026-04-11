@@ -52,8 +52,9 @@ const AdminDriversFinanceTable = ({ periodStart, periodEnd }: Props) => {
   };
 
   if (selectedDriver) {
+    const AdminDriverDetailView = require("../AdminDriverDetailView").default;
     return (
-      <AdminDriverFinanceDetail
+      <AdminDriverDetailView
         driverId={selectedDriver}
         onBack={() => setSelectedDriver(null)}
       />
