@@ -46,7 +46,7 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
       const [driverRes, coursesRes, ratingsRes] = await Promise.all([
         supabase.from("drivers").select("*, profiles:user_id(first_name, last_name, email, phone, full_name, profile_photo_url)").eq("id", driverId).single(),
         supabase.from("courses").select("id, course_number, pickup_address, destination_address, final_payment_amount, payment_method_used, payment_status, status, updated_at, created_at, stripe_payment_intent_id, client_id, clients(profiles:user_id(full_name))").eq("driver_id", driverId).eq("status", "completed").gte("updated_at", filterDate).order("updated_at", { ascending: false }).limit(100),
-        supabase.from("ratings").select("rating").eq("rated_user_id", driverId),
+        supabase.from("course_ratings").select("rating").eq("driver_id", driverId),
       ]);
 
       const driverData = driverRes.data;
