@@ -217,7 +217,9 @@ serve(async (req) => {
               const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
               const coursePrice = course.final_payment_amount || course.guest_estimated_price || 0;
               const holdAmountCents = Math.max(Math.round(coursePrice * 100), 100);
-              // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
+              const SOLOCAB_FEE_CENTS = 50;
+              const applicationFeeCents = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents);
+              // DESTINATION CHARGES: Funds go directly to driver
               const paymentIntent = await stripe.paymentIntents.create({
                 amount: holdAmountCents,
                 currency: "eur",
@@ -226,12 +228,17 @@ serve(async (req) => {
                 payment_method: paymentMethodToUse,
                 off_session: true,
                 confirm: true,
+                transfer_data: {
+                  destination: driver.stripe_connect_account_id,
+                },
+                application_fee_amount: applicationFeeCents,
                 metadata: {
                   driver_id: driver.id,
                   course_id: course.id,
                   client_id: claimed.client_id || "guest",
                   type: "course_hold",
                   auto_created: "true",
+                  solocab_fee: (applicationFeeCents / 100).toFixed(2),
                 },
                 description: `Réservation VTC ${(holdAmountCents / 100).toFixed(2)}€ TTC`,
               } as any);
