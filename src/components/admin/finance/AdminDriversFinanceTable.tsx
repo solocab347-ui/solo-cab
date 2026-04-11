@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Users } from "lucide-react";
-import AdminDriverFinanceDetail from "./AdminDriverFinanceDetail";
+import AdminDriverDetailView from "../AdminDriverDetailView";
 
 interface DriverFinance {
   driver_id: string;
@@ -53,7 +53,7 @@ const AdminDriversFinanceTable = ({ periodStart, periodEnd }: Props) => {
 
   if (selectedDriver) {
     return (
-      <AdminDriverFinanceDetail
+      <AdminDriverDetailView
         driverId={selectedDriver}
         onBack={() => setSelectedDriver(null)}
       />

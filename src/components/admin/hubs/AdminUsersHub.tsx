@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Trash2, CreditCard, BarChart3 } from "lucide-react";
+import { Users, Trash2, CreditCard, BarChart3, Eye } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
 import AdminUserCleanup from "../AdminUserCleanup";
 import AdminNfcHub from "./AdminNfcHub";
 import DriverProgressionTracker from "../DriverProgressionTracker";
+import AdminDriverDetailView from "../AdminDriverDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const AdminUsersHub = () => {
   const [activeSection, setActiveSection] = useState<"tracking" | "drivers" | "nfc" | "cleanup">("tracking");
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  if (selectedDriverId) {
+    return <AdminDriverDetailView driverId={selectedDriverId} onBack={() => setSelectedDriverId(null)} />;
+  }
 
   return (
     <div className="space-y-4">
