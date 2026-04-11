@@ -200,6 +200,18 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         cashFeesOwed,
         cardFeesCollected,
       });
+
+      // Fetch Stripe real-time data
+      try {
+        const [balRes, payRes] = await Promise.all([
+          supabase.functions.invoke("driver-stripe-data", { body: { action: "get_balance" } }),
+          supabase.functions.invoke("driver-stripe-data", { body: { action: "list_payouts" } }),
+        ]);
+        if (balRes.data && !balRes.data.error) setStripeBalance(balRes.data);
+        if (payRes.data?.data) setStripePayouts(payRes.data.data);
+      } catch (e) {
+        console.error("Stripe data fetch error:", e);
+      }
     } catch (err) {
       console.error("Error loading finance data:", err);
     } finally {
