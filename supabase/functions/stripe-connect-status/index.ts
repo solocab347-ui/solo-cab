@@ -110,6 +110,23 @@ serve(async (req) => {
     let status = "pending";
     if (account.charges_enabled && account.payouts_enabled) {
       status = "active";
+      
+      // Ensure payout schedule is weekly/monday for all active accounts
+      try {
+        await stripe.accounts.update(driver.stripe_connect_account_id, {
+          settings: {
+            payouts: {
+              schedule: {
+                interval: "weekly",
+                weekly_anchor: "monday",
+              },
+            },
+          },
+        });
+        logStep("Payout schedule confirmed weekly/monday");
+      } catch (schedErr) {
+        logStep("Payout schedule update failed (non-blocking)", { error: String(schedErr) });
+      }
     } else if (account.details_submitted) {
       status = "pending_verification";
     }
