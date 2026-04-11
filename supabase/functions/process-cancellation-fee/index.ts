@@ -305,6 +305,10 @@ serve(async (req) => {
           // Fallback: nouveau PI avec carte enregistrée
           if (course.stripe_payment_method_id) {
             try {
+              if (!course.driver?.stripe_connect_account_id || !course.driver?.stripe_connect_charges_enabled) {
+                throw new Error("Le chauffeur n'a pas de compte Stripe Connect actif. Impossible de facturer les frais d'annulation.");
+              }
+
               const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
                 amount: feeAmountCents,
                 currency: "eur",
@@ -312,12 +316,9 @@ serve(async (req) => {
                 confirm: true,
                 off_session: true,
                 description: `Frais d'annulation - Course VTC`,
-                // DESTINATION CHARGES: Funds go to driver
-                ...(course.driver?.stripe_connect_account_id && course.driver?.stripe_connect_charges_enabled ? {
-                  transfer_data: { destination: course.driver.stripe_connect_account_id },
-                  on_behalf_of: course.driver.stripe_connect_account_id,
-                  application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
-                } : {}),
+                transfer_data: { destination: course.driver.stripe_connect_account_id },
+                on_behalf_of: course.driver.stripe_connect_account_id,
+                application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
                 metadata: {
                   course_id,
                   type: "cancellation_fee",
@@ -336,6 +337,10 @@ serve(async (req) => {
         }
       } else if (course.stripe_payment_method_id) {
         // Pas de hold actif mais carte enregistrée → nouveau PI
+        if (!course.driver?.stripe_connect_account_id || !course.driver?.stripe_connect_charges_enabled) {
+          throw new Error("Le chauffeur n'a pas de compte Stripe Connect actif. Impossible de facturer les frais d'annulation.");
+        }
+
         try {
           const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
             amount: feeAmountCents,
@@ -344,12 +349,9 @@ serve(async (req) => {
             confirm: true,
             off_session: true,
             description: `Frais d'annulation - Course VTC`,
-            // DESTINATION CHARGES: Funds go to driver
-            ...(course.driver?.stripe_connect_account_id && course.driver?.stripe_connect_charges_enabled ? {
-              transfer_data: { destination: course.driver.stripe_connect_account_id },
-              on_behalf_of: course.driver.stripe_connect_account_id,
-              application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
-            } : {}),
+            transfer_data: { destination: course.driver.stripe_connect_account_id },
+            on_behalf_of: course.driver.stripe_connect_account_id,
+            application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, feeAmountCents),
             metadata: {
               course_id,
               type: "cancellation_fee",

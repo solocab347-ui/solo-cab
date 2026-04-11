@@ -75,17 +75,21 @@ serve(async (req) => {
       console.log("[CREATE-STRIPE-CHECKOUT] Creating new customer");
     }
 
-    // Get driver Stripe Connect account
+    // Get driver Stripe Connect account — MANDATORY
     const { data: driverData } = await supabaseClient
       .from("drivers")
       .select("stripe_connect_account_id, stripe_connect_charges_enabled")
       .eq("id", devis.driver_id)
       .single();
 
+    if (!driverData?.stripe_connect_account_id || !driverData?.stripe_connect_charges_enabled) {
+      throw new Error("Le chauffeur n'a pas de compte Stripe Connect actif. Paiement impossible.");
+    }
+
     const amountCents = Math.round(parseFloat(devis.amount) * 100);
     const SOLOCAB_FEE_CENTS = 50;
 
-    // Create checkout session with DESTINATION CHARGES
+    // Create checkout session with DESTINATION CHARGES — NO FALLBACK
     const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -111,12 +115,9 @@ serve(async (req) => {
           client_id: devis.client_id,
           solocab_fee: "0.50",
         },
-        // DESTINATION CHARGES: Funds go directly to driver
-        ...(driverData?.stripe_connect_account_id && driverData?.stripe_connect_charges_enabled ? {
-          transfer_data: { destination: driverData.stripe_connect_account_id },
-          on_behalf_of: driverData.stripe_connect_account_id,
-          application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
-        } : {}),
+        transfer_data: { destination: driverData.stripe_connect_account_id },
+        on_behalf_of: driverData.stripe_connect_account_id,
+        application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
       },
       success_url: `${req.headers.get("origin")}/client-dashboard?payment=success&devis_id=${devis_id}`,
       cancel_url: `${req.headers.get("origin")}/client-dashboard?payment=cancelled`,
