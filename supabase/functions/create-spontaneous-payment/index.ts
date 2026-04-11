@@ -85,6 +85,7 @@ serve(async (req) => {
         transfer_data: {
           destination: driver.stripe_connect_account_id,
         },
+        on_behalf_of: driver.stripe_connect_account_id,
         application_fee_amount: Math.min(platformFeeCents, amountCents),
         metadata: {
           driver_id: driver.id,

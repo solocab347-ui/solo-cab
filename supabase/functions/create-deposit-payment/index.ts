@@ -158,6 +158,7 @@ serve(async (req) => {
         transfer_data: {
           destination: course.driver.stripe_connect_account_id,
         },
+        on_behalf_of: course.driver.stripe_connect_account_id,
         // Application fee on the deposit
         application_fee_amount: Math.round(SOLOCAB_FEE_CENTS * (depositPercentage / 100)),
         metadata: {
