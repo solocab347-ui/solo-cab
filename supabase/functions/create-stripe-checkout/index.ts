@@ -75,8 +75,18 @@ serve(async (req) => {
       console.log("[CREATE-STRIPE-CHECKOUT] Creating new customer");
     }
 
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Get driver Stripe Connect account
+    const { data: driverData } = await supabaseClient
+      .from("drivers")
+      .select("stripe_connect_account_id, stripe_connect_charges_enabled")
+      .eq("id", devis.driver_id)
+      .single();
+
+    const amountCents = Math.round(parseFloat(devis.amount) * 100);
+    const SOLOCAB_FEE_CENTS = 50;
+
+    // Create checkout session with DESTINATION CHARGES
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -87,12 +97,26 @@ serve(async (req) => {
               name: `Course ${devis.courses.pickup_address} → ${devis.courses.destination_address}`,
               description: `Devis ${devis.quote_number} - ${devis.drivers.profiles?.full_name || devis.drivers.company_name}`,
             },
-            unit_amount: Math.round(parseFloat(devis.amount) * 100), // Convert to cents
+            unit_amount: amountCents,
           },
           quantity: 1,
         },
       ],
       mode: "payment",
+      payment_intent_data: {
+        metadata: {
+          devis_id: devis_id,
+          course_id: devis.course_id,
+          driver_id: devis.driver_id,
+          client_id: devis.client_id,
+          solocab_fee: "0.50",
+        },
+        // DESTINATION CHARGES: Funds go directly to driver
+        ...(driverData?.stripe_connect_account_id && driverData?.stripe_connect_charges_enabled ? {
+          transfer_data: { destination: driverData.stripe_connect_account_id },
+          application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
+        } : {}),
+      },
       success_url: `${req.headers.get("origin")}/client-dashboard?payment=success&devis_id=${devis_id}`,
       cancel_url: `${req.headers.get("origin")}/client-dashboard?payment=cancelled`,
       metadata: {
@@ -101,7 +125,9 @@ serve(async (req) => {
         driver_id: devis.driver_id,
         client_id: devis.client_id,
       },
-    });
+    };
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log("[CREATE-STRIPE-CHECKOUT] Checkout session created:", session.id);
 

@@ -88,6 +88,23 @@ serve(async (req) => {
       accountId = account.id;
       logStep("Stripe Connect account created", { accountId });
 
+      // Configure payout schedule: weekly on Monday — Stripe handles everything
+      try {
+        await stripe.accounts.update(accountId, {
+          settings: {
+            payouts: {
+              schedule: {
+                interval: "weekly",
+                weekly_anchor: "monday",
+              },
+            },
+          },
+        });
+        logStep("Payout schedule set to weekly/monday", { accountId });
+      } catch (payoutErr) {
+        logStep("Warning: payout schedule config failed (will default)", { error: String(payoutErr) });
+      }
+
       // Save account ID to driver
       await supabaseClient
         .from("drivers")

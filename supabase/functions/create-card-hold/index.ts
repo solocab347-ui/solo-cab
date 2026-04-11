@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const MIN_HOLD_CENTS = 100; // 1€ safety minimum (hold = exact TTC price)
+const SOLOCAB_FEE_CENTS = 50; // 0.50€ platform fee
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -143,12 +144,17 @@ serve(async (req) => {
       }
     }
 
-    // WEEKLY SETTLEMENT: No transfer_data/application_fee — funds stay on platform
-    // Fees and driver payouts are handled weekly via process-weekly-settlement
+    // DESTINATION CHARGES: Funds go directly to driver's Stripe Connect account
+    // SoloCab takes its fee via application_fee_amount — never holds funds
+    const applicationFeeCents = Math.min(SOLOCAB_FEE_CENTS, holdAmountCents); // Cap fee at hold amount
     const piParams: any = {
       amount: holdAmountCents,
       currency: "eur",
       capture_method: "manual",
+      transfer_data: {
+        destination: driver.stripe_connect_account_id,
+      },
+      application_fee_amount: applicationFeeCents,
       metadata: {
         driver_id,
         course_id: course_id || "",
@@ -157,6 +163,7 @@ serve(async (req) => {
         type: "course_hold",
         hold_amount_cents: holdAmountCents.toString(),
         cancellation_fee_cents: "1000", // 10€ cancellation policy (separate from hold amount)
+        solocab_fee: (applicationFeeCents / 100).toFixed(2),
       },
       description: `Réservation VTC ${holdAmountEuros}€ TTC${course_id ? ` - Course #${course_id.slice(0, 8)}` : ''}`,
     };

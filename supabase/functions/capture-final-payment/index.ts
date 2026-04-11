@@ -161,7 +161,11 @@ serve(async (req) => {
       },
       payment_intent_data: {
         capture_method: "automatic",
-        // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
+        // DESTINATION CHARGES: Funds go directly to driver
+        transfer_data: {
+          destination: course.driver.stripe_connect_account_id,
+        },
+        application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, finalAmountCents),
         metadata: {
           course_id,
           driver_id: course.driver_id,

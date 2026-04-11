@@ -498,13 +498,18 @@ serve(async (req) => {
       confirm: true,
       off_session: true,
       description: `Course VTC - ${course.pickup_address} → ${course.destination_address}`,
+      // DESTINATION CHARGES: Funds go directly to driver
+      transfer_data: {
+        destination: course.driver.stripe_connect_account_id,
+      },
+      application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
       metadata: {
         course_id,
         driver_id: course.driver_id,
         type: "course_final_payment",
         flow: "fallback_new_pi",
+        solocab_fee: (Math.min(SOLOCAB_FEE_CENTS, amountCents) / 100).toFixed(2),
       },
-      // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
     };
 
     if (course.stripe_customer_id) {

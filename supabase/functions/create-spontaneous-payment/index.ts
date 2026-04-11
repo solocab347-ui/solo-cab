@@ -81,11 +81,15 @@ serve(async (req) => {
         },
       ],
       payment_intent_data: {
-        // WEEKLY SETTLEMENT: No transfer_data — funds stay on platform
+        // DESTINATION CHARGES: Funds go directly to driver
+        transfer_data: {
+          destination: driver.stripe_connect_account_id,
+        },
+        application_fee_amount: Math.min(platformFeeCents, amountCents),
         metadata: {
           driver_id: driver.id,
           type: "spontaneous_payment",
-          solocab_fee: "0.80",
+          solocab_fee: (platformFeeCents / 100).toFixed(2),
           description: description.trim().slice(0, 200),
           date: date || new Date().toISOString(),
         },
