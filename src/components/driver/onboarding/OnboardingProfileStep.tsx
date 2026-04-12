@@ -1,7 +1,7 @@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+
 import { SingleProfilePhotoUpload } from './SingleProfilePhotoUpload';
 import { SectorSelector } from '../SectorSelector';
 import { ServicesSelector } from '../ServicesSelector';
@@ -26,8 +26,6 @@ interface OnboardingProfileStepProps {
     vehicleCategories: string[];
     displayDriverName: boolean;
     displayCompanyName: boolean;
-    homeAddress: string;
-    homeCoordinates: { latitude: number; longitude: number } | null;
   };
   driverProfile: any;
   userId: string;
@@ -118,21 +116,6 @@ export function OnboardingProfileStep({ data, driverProfile, userId, onUpdate }:
         />
       </div>
 
-      {/* Home address */}
-      <div>
-        <SectionHeader icon={MapPin} title="Adresse de départ" />
-        <AddressAutocomplete
-          value={data.homeAddress}
-          onChange={(address, coords) => {
-            onUpdate({ 
-              homeAddress: address,
-              homeCoordinates: coords || null
-            });
-          }}
-          placeholder="Votre adresse de départ"
-        />
-        <p className="text-[10px] text-muted-foreground mt-1">Non visible publiquement</p>
-      </div>
 
       {/* Services */}
       <div>
