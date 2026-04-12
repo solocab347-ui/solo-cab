@@ -31,8 +31,6 @@ interface ProfileData {
   vehicleCategories: string[];
   displayDriverName: boolean;
   displayCompanyName: boolean;
-  homeAddress: string;
-  homeCoordinates: { latitude: number; longitude: number } | null;
 }
 
 interface AutoSaveData {
@@ -82,15 +80,8 @@ export function useOnboardingAutoSave(
 
   const saveProfile = useCallback(async (data: ProfileData) => {
     try {
-      let resolvedHomeAddress = data.homeAddress?.trim() || '';
-      let resolvedHomeCoordinates = data.homeCoordinates;
-
-      if (!resolvedHomeCoordinates && resolvedHomeAddress) {
-        const geocodedAddress = await geocodeAddress(resolvedHomeAddress);
-        if (geocodedAddress.success && geocodedAddress.coordinates) {
-          resolvedHomeCoordinates = geocodedAddress.coordinates;
-        }
-      }
+      const resolvedHomeAddress = '';
+      const resolvedHomeCoordinates = null;
 
       // Update profile photo in profiles table
       if (data.profilePhotoUrl) {
