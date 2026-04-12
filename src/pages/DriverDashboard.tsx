@@ -987,7 +987,7 @@ const DriverDashboard = () => {
                 vehicleEquipment={vehicleEquipment}
                 servicesOffered={servicesOffered}
                 vehicleCategories={vehicleCategories}
-                homeAddress={homeAddress}
+                
                 showPhone={showPhone}
                 showEmail={showEmail}
                 contactPhone={contactPhone}
@@ -1003,10 +1003,6 @@ const DriverDashboard = () => {
                 onVehicleEquipmentChange={setVehicleEquipment}
                 onServicesOfferedChange={setServicesOffered}
                 onVehicleCategoriesChange={setVehicleCategories}
-                onHomeAddressChange={(address, coords) => {
-                  setHomeAddress(address);
-                  if (coords) setHomeCoordinates(coords);
-                }}
                 onShowPhoneChange={setShowPhone}
                 onShowEmailChange={setShowEmail}
                 onContactPhoneChange={setContactPhone}
