@@ -90,16 +90,6 @@ export const useDriverProfileCompletion = (driverProfile: any): ProfileCompletio
         navigateTo: "profile",
         tip: "Plus vous êtes précis, mieux les clients vous trouvent",
       },
-      {
-        id: "home_address",
-        category: "profile",
-        label: "Adresse de départ",
-        description: "Point de départ pour le calcul des distances",
-        isComplete: !!driver.home_address,
-        priority: "recommended",
-        navigateTo: "profile",
-        tip: "Utilisé pour optimiser vos déplacements",
-      },
 
       // === VÉHICULE ===
       {

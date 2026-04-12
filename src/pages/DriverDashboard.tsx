@@ -206,8 +206,6 @@ const DriverDashboard = () => {
   const [contactEmail, setContactEmail] = useState("");
   const [workingSectors, setWorkingSectors] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState("");
-  const [homeAddress, setHomeAddress] = useState("");
-  const [homeCoordinates, setHomeCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [baseFare, setBaseFare] = useState("");
   const [perKmRate, setPerKmRate] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
@@ -264,16 +262,6 @@ const DriverDashboard = () => {
     setContactEmail((driver as any).contact_email || driverProfile.email || "");
     setWorkingSectors(driver.working_sectors || []);
     setServiceDescription(driver.service_description || "");
-    setHomeAddress(driver.home_address || "");
-    
-    if (driver.home_latitude && driver.home_longitude) {
-      setHomeCoordinates({
-        latitude: driver.home_latitude,
-        longitude: driver.home_longitude,
-      });
-    } else {
-      setHomeCoordinates(null);
-    }
     
     setBaseFare(driver.base_fare?.toString() || "");
     setPerKmRate(driver.per_km_rate?.toString() || "");
@@ -381,24 +369,7 @@ const DriverDashboard = () => {
     try {
       logger.info("Début de la sauvegarde du profil");
 
-      let resolvedHomeAddress = homeAddress?.trim() || "";
-      let resolvedHomeCoordinates = homeCoordinates;
-
-      if (!resolvedHomeCoordinates && companyAddress?.trim()) {
-        const geocodedCompanyAddress = await geocodeAddress(companyAddress.trim());
-        if (geocodedCompanyAddress.success && geocodedCompanyAddress.coordinates) {
-          resolvedHomeAddress = resolvedHomeAddress || companyAddress.trim();
-          resolvedHomeCoordinates = geocodedCompanyAddress.coordinates;
-          setHomeAddress(resolvedHomeAddress);
-          setHomeCoordinates(geocodedCompanyAddress.coordinates);
-        }
-      }
-
-      if (!resolvedHomeCoordinates) {
-        toast.error("Ajoutez une adresse de départ valide pour être visible sur la carte et dans la recherche.");
-        setLoading(false);
-        return;
-      }
+      // GPS-only: no static address required
       
       // 1. Sauvegarder les données du driver - profil toujours public
       const driverUpdates = {
@@ -409,9 +380,6 @@ const DriverDashboard = () => {
         contact_email: contactEmail || null,
         working_sectors: workingSectors,
         service_description: serviceDescription,
-        home_address: resolvedHomeAddress,
-        home_latitude: resolvedHomeCoordinates.latitude,
-        home_longitude: resolvedHomeCoordinates.longitude,
         base_fare: baseFare ? parseFloat(baseFare) : null,
         per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
@@ -1019,7 +987,7 @@ const DriverDashboard = () => {
                 vehicleEquipment={vehicleEquipment}
                 servicesOffered={servicesOffered}
                 vehicleCategories={vehicleCategories}
-                homeAddress={homeAddress}
+                
                 showPhone={showPhone}
                 showEmail={showEmail}
                 contactPhone={contactPhone}
@@ -1035,10 +1003,6 @@ const DriverDashboard = () => {
                 onVehicleEquipmentChange={setVehicleEquipment}
                 onServicesOfferedChange={setServicesOffered}
                 onVehicleCategoriesChange={setVehicleCategories}
-                onHomeAddressChange={(address, coords) => {
-                  setHomeAddress(address);
-                  if (coords) setHomeCoordinates(coords);
-                }}
                 onShowPhoneChange={setShowPhone}
                 onShowEmailChange={setShowEmail}
                 onContactPhoneChange={setContactPhone}

@@ -114,7 +114,6 @@ export function SenderProfileDialog({
           sharing_number,
           rating,
           total_rides,
-          home_address,
           vehicle_brand,
           vehicle_model,
           vehicle_color,
@@ -139,9 +138,7 @@ export function SenderProfileDialog({
           .eq('id', driverData.user_id)
           .single();
 
-        // Extract city from home_address if available
-        const addressParts = driverData.home_address?.split(',') || [];
-        const cityFromAddress = addressParts.length > 1 ? addressParts[addressParts.length - 2]?.trim() : null;
+        const cityFromAddress = null; // GPS-only — no static address
 
         // Respecter les paramètres de visibilité
         const showPhone = driverData.show_phone_for_sharing || false;

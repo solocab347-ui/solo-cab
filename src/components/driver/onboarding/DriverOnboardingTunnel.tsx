@@ -99,10 +99,6 @@ export function DriverOnboardingTunnel({
       vehicleCategories: driverProfile?.driver?.vehicle_category || [],
       displayDriverName: driverProfile?.driver?.display_driver_name !== false,
       displayCompanyName: driverProfile?.driver?.display_company_name || false,
-      homeAddress: driverProfile?.driver?.home_address || '',
-      homeCoordinates: driverProfile?.driver?.home_latitude && driverProfile?.driver?.home_longitude 
-        ? { latitude: driverProfile.driver.home_latitude, longitude: driverProfile.driver.home_longitude }
-        : null,
     },
     documents: {
       documentsStatus: driverProfile?.driver?.documents_status || 'pending',
@@ -312,9 +308,6 @@ export function DriverOnboardingTunnel({
           vehicle_category: profile.vehicleCategories,
           display_driver_name: profile.displayDriverName,
           display_company_name: profile.displayCompanyName,
-          home_address: profile.homeAddress,
-          home_latitude: profile.homeCoordinates?.latitude || null,
-          home_longitude: profile.homeCoordinates?.longitude || null,
           public_profile_enabled: true,
           onboarding_profile_completed: true,
           onboarding_step: 'documents',

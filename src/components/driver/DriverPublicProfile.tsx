@@ -29,7 +29,7 @@ interface DriverPublicProfileProps {
   contactEmail?: string;
   workingSectors: string[];
   serviceDescription: string;
-  homeAddress: string;
+  
   displayDriverName: boolean;
   displayCompanyName: boolean;
   companyName: string;
@@ -53,7 +53,7 @@ interface DriverPublicProfileProps {
   onContactEmailChange?: (email: string) => void;
   onWorkingSectorsChange: (sectors: string[]) => void;
   onServiceDescriptionChange: (description: string) => void;
-  onHomeAddressChange: (address: string, coords?: { latitude: number; longitude: number }) => void;
+  
   onDisplayDriverNameChange: (checked: boolean) => void;
   onDisplayCompanyNameChange: (checked: boolean) => void;
   onVehicleEquipmentChange: (equipment: string[]) => void;
@@ -77,7 +77,7 @@ export const DriverPublicProfile = memo(({
   contactEmail = "",
   workingSectors,
   serviceDescription,
-  homeAddress,
+  
   displayDriverName,
   displayCompanyName,
   companyName,
@@ -101,7 +101,7 @@ export const DriverPublicProfile = memo(({
   onContactEmailChange,
   onWorkingSectorsChange,
   onServiceDescriptionChange,
-  onHomeAddressChange,
+  
   onDisplayDriverNameChange,
   onDisplayCompanyNameChange,
   onVehicleEquipmentChange,
@@ -488,40 +488,6 @@ export const DriverPublicProfile = memo(({
         />
       </Card>
 
-      {/* Adresse - DÉPLACÉ plus haut */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <div className="flex items-center gap-2 mb-4">
-          <MapPin className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Adresse de localisation</h3>
-        </div>
-        <AddressAutocomplete
-          value={homeAddress || ""}
-          onChange={(address, coords) => {
-            if (coords) {
-              onHomeAddressChange(address, coords);
-            } else {
-              onHomeAddressChange(address);
-            }
-          }}
-          placeholder="Votre adresse de départ habituelle"
-        />
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border/50">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
-            <div className="space-y-2 text-sm">
-              <p className="font-medium">Pourquoi cette adresse est importante ?</p>
-              <p className="text-muted-foreground">
-                Cette adresse permet de vous géolocaliser quand un client cherche des chauffeurs à proximité.
-                Renseignez l'adresse de départ d'où vous décollez quotidiennement.
-              </p>
-              <p className="text-muted-foreground">
-                💡 <span className="font-medium">Important :</span> Cette adresse est uniquement pour la recherche 
-                de proximité et ne sera jamais affichée publiquement.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
 
       {/* Gestionnaire Multi-Véhicules - NOUVEAU SYSTÈME */}
       {driverId && (
