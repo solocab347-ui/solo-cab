@@ -103,9 +103,6 @@ export function useOnboardingAutoSave(
           vehicle_category: data.vehicleCategories,
           display_driver_name: data.displayDriverName,
           display_company_name: data.displayCompanyName,
-          home_address: resolvedHomeAddress || null,
-          home_latitude: resolvedHomeCoordinates?.latitude || null,
-          home_longitude: resolvedHomeCoordinates?.longitude || null,
         })
         .eq('id', driverId);
 
