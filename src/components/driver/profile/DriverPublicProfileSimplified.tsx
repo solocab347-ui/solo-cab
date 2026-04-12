@@ -39,7 +39,7 @@ interface DriverPublicProfileSimplifiedProps {
   vehicleEquipment: string[];
   servicesOffered: string[];
   vehicleCategories: string[];
-  homeAddress: string;
+  
   // Contact
   showPhone: boolean;
   showEmail: boolean;
@@ -57,7 +57,7 @@ interface DriverPublicProfileSimplifiedProps {
   onVehicleEquipmentChange: (equipment: string[]) => void;
   onServicesOfferedChange: (services: string[]) => void;
   onVehicleCategoriesChange: (categories: string[]) => void;
-  onHomeAddressChange: (address: string, coords?: { latitude: number; longitude: number }) => void;
+  
   onShowPhoneChange: (checked: boolean) => void;
   onShowEmailChange: (checked: boolean) => void;
   onContactPhoneChange?: (phone: string) => void;
@@ -82,7 +82,7 @@ export const DriverPublicProfileSimplified = memo(({
   vehicleEquipment,
   servicesOffered,
   vehicleCategories,
-  homeAddress,
+  
   showPhone,
   showEmail,
   contactPhone = "",
@@ -98,7 +98,7 @@ export const DriverPublicProfileSimplified = memo(({
   onVehicleEquipmentChange,
   onServicesOfferedChange,
   onVehicleCategoriesChange,
-  onHomeAddressChange,
+  
   onShowPhoneChange,
   onShowEmailChange,
   onContactPhoneChange,
@@ -387,27 +387,6 @@ export const DriverPublicProfileSimplified = memo(({
             />
           </Card>
 
-          {/* Adresse de localisation */}
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
-              <h3 className="text-sm sm:text-base font-semibold">Zone de départ</h3>
-            </div>
-            <AddressAutocomplete
-              value={homeAddress || ""}
-              onChange={(address, coords) => {
-                if (coords) {
-                  onHomeAddressChange(address, coords);
-                } else {
-                  onHomeAddressChange(address);
-                }
-              }}
-              placeholder="Votre adresse de départ"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              📍 Recherche de proximité (non visible)
-            </p>
-          </Card>
 
           {/* Services */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
