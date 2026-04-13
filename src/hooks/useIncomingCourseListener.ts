@@ -81,9 +81,10 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       .maybeSingle();
     
     const status = driverData?.driver_status;
-    if (status && status !== 'online') return;
+    if (status && ['offline', 'break', 'in_ride'].includes(status)) return;
 
     try {
+      const nowIso = new Date().toISOString();
       const [queueResult, sharedResult, rideResult, directResult] = await Promise.all([
         supabase
           .from('course_queue')
@@ -99,7 +100,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           `)
           .eq('driver_id', driverId)
           .eq('status', 'pending')
-          .gt('expires_at', new Date().toISOString())
+          .gt('expires_at', nowIso)
           .order('priority', { ascending: false })
           .limit(3),
 
@@ -126,6 +127,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           .select('id, pickup_address, destination_address, estimated_price, timeout_at, created_at, request_type, driver_count, distance_km, guest_name, scheduled_date, payment_method, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude')
           .eq('selected_driver_id', driverId)
           .eq('status', 'pending')
+          .gt('timeout_at', nowIso)
           .order('created_at', { ascending: false })
           .limit(3),
 
@@ -290,6 +292,31 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     if (driverId && enabled) checkForNewCourses();
   }, [driverId, enabled, checkForNewCourses]);
 
+  // Fallback polling + app resume recovery
+  useEffect(() => {
+    if (!driverId || !enabled) return;
+
+    const interval = window.setInterval(() => {
+      checkForNewCourses();
+    }, 5000);
+
+    const handleFocus = () => checkForNewCourses();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkForNewCourses();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [driverId, enabled, checkForNewCourses]);
+
   // Realtime subscriptions
   useEffect(() => {
     if (!driverId || !enabled) return;
@@ -325,9 +352,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         const newStatus = payload?.new?.status;
         const rideId = payload?.new?.id;
         if (rideId && newStatus && newStatus !== 'pending') {
-          // Only remove from queue, NOT from the currently displayed overlay
-          // The overlay's own polling will detect the status change and show "Course déjà prise"
-          queueRef.current = queueRef.current.filter(c => c.rideId !== rideId);
+          removeRide(rideId);
         }
       }
     );
@@ -339,7 +364,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       cleanupRideInsert();
       cleanupRideUpdate();
     };
-  }, [driverId, enabled, checkForNewCourses]);
+  }, [driverId, enabled, checkForNewCourses, removeRide]);
 
   return {
     incomingCourse,

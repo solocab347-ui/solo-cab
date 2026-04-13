@@ -44,7 +44,7 @@ export function GlobalRideOverlay() {
     clearCurrent,
   } = useIncomingCourseListener({
     driverId,
-    enabled: !!driverId && overlayEnabled,
+    enabled: !!driverId,
   });
 
   // After accepting → navigate to map mode to see active course
