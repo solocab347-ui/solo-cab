@@ -39,6 +39,10 @@ interface BookingInfo {
   shared_drivers: SharedDriver[];
   devis_amount: number | null;
   quote_number: string | null;
+  final_payment_amount: number | null;
+  distance_km: number | null;
+  driver_latitude: number | null;
+  driver_longitude: number | null;
 }
 
 const GuestBookingTracking = () => {
@@ -88,7 +92,11 @@ const GuestBookingTracking = () => {
           is_shared_course: rawBooking.is_shared_course ?? false,
           shared_drivers: sharedDrivers,
           devis_amount: rawBooking.devis_amount,
-          quote_number: rawBooking.quote_number
+          quote_number: rawBooking.quote_number,
+          final_payment_amount: rawBooking.final_payment_amount ?? null,
+          distance_km: rawBooking.distance_km ?? null,
+          driver_latitude: rawBooking.driver_latitude ?? null,
+          driver_longitude: rawBooking.driver_longitude ?? null,
         };
         setBooking(parsedBooking);
 
@@ -445,9 +453,9 @@ const GuestBookingTracking = () => {
             <CardContent className="space-y-4">
               <div className="bg-background rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Montant à régler</span>
+                   <span className="text-muted-foreground">Montant à régler</span>
                   <span className="text-2xl font-bold text-primary">
-                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                    {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
@@ -483,7 +491,7 @@ const GuestBookingTracking = () => {
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
               <h3 className="font-semibold text-emerald-700 mb-1">Paiement confirmé</h3>
               <p className="text-sm text-muted-foreground">
-                Votre paiement de {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
+                Votre paiement de {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
               </p>
             </CardContent>
           </Card>
@@ -538,7 +546,7 @@ const GuestBookingTracking = () => {
                     )}
                   </div>
                   <span className="text-xl font-bold text-primary">
-                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                    {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
