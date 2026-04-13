@@ -77,8 +77,8 @@ export function StepConfirm({
     if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return false;
     if (!user && !registrationDone) {
       if (!guestName.trim()) return false;
-      // Email is ALWAYS mandatory for guests (tracking link)
       if (!guestEmail.trim()) return false;
+      if (!guestPhone.trim()) return false;
     }
     return true;
   })();
@@ -260,7 +260,7 @@ export function StepConfirm({
                 <p className="text-[11px] text-muted-foreground">Coordonnées pour recevoir votre lien de suivi.</p>
                 <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
                 <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email * (pour le suivi de course)" type="email" className="h-10" />
-                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone (optionnel)" type="tel" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
               </div>
             )}
           </CardContent>
