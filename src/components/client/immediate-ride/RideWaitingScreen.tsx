@@ -7,11 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Loader2, X, CheckCircle2, XCircle, Clock, Crown, Users, Car, Search,
-  MapPin, RefreshCw, CalendarClock, User, Phone, ChevronLeft, ChevronRight,
+  MapPin, RefreshCw, CalendarClock,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
-import { DriverResultCard } from '@/components/client/booking/DriverResultCard';
+import { DriverCarousel3D } from './DriverCarousel3D';
+import { formatDriverName } from '@/lib/formatDriverName';
 
 export type WaitingStatus = 'searching' | 'transition' | 'relaunching' | 'extended_searching' | 'accepted' | 'rejected' | 'expired' | 'no_drivers' | 'cancelled';
 
