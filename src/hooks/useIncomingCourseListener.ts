@@ -81,7 +81,9 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
       .maybeSingle();
     
     const status = driverData?.driver_status;
-    if (status && ['offline', 'break', 'in_ride'].includes(status)) return;
+    // Only block polling for explicit non-receptive statuses
+    // 'assigned' is allowed because the driver could have multiple pending requests
+    if (status && ['offline', 'break'].includes(status)) return;
 
     try {
       const nowIso = new Date().toISOString();
