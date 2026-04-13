@@ -110,24 +110,40 @@ export function RideWaitingScreen({
   useEffect(() => {
     const groupId = requestGroupId || requestId;
     const fetchDrivers = async () => {
-      const { data } = await supabase
+      // First get ride_requests (works for both authenticated and guest users)
+      const { data: requests } = await supabase
         .from('ride_requests')
-        .select('selected_driver_id, status, drivers:selected_driver_id(company_name, profile_photo_url, profiles:user_id(full_name))')
+        .select('selected_driver_id, status')
         .eq('request_group_id', groupId);
-      if (data) {
-        setContactedDrivers(data.map((r: any) => {
-          const rawName = r.drivers?.profiles?.full_name || r.drivers?.company_name || 'Chauffeur';
-          // Mask: Prénom + initiale
-          const parts = rawName.trim().split(/\s+/);
-          const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
-          return {
-            driver_id: r.selected_driver_id,
-            driver_name: maskedName,
-            photo_url: r.drivers?.profile_photo_url || null,
-            status: r.status as ContactedDriver['status'],
-          };
-        }));
+      
+      if (!requests || requests.length === 0) return;
+
+      // Try to enrich with driver info (may fail for guests due to RLS)
+      const driverIds = [...new Set(requests.map(r => r.selected_driver_id).filter(Boolean))];
+      let driverMap: Record<string, { name: string; photo: string | null }> = {};
+      
+      if (driverIds.length > 0) {
+        const { data: drivers } = await supabase
+          .from('drivers')
+          .select('id, company_name, profile_photo_url, profiles:user_id(full_name)')
+          .in('id', driverIds);
+        
+        if (drivers) {
+          for (const d of drivers) {
+            const rawName = (d as any).profiles?.full_name || d.company_name || 'Chauffeur';
+            const parts = rawName.trim().split(/\s+/);
+            const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
+            driverMap[d.id] = { name: maskedName, photo: d.profile_photo_url };
+          }
+        }
       }
+
+      setContactedDrivers(requests.map((r: any) => ({
+        driver_id: r.selected_driver_id,
+        driver_name: driverMap[r.selected_driver_id]?.name || 'Chauffeur',
+        photo_url: driverMap[r.selected_driver_id]?.photo || null,
+        status: r.status as ContactedDriver['status'],
+      })));
     };
     fetchDrivers();
     const interval = setInterval(fetchDrivers, 3000);
