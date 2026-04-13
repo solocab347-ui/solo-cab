@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { playSoloCabSound } from '@/lib/solocabNotificationSound';
+import { playSoloCabSound, stopCurrentPlayback } from '@/lib/solocabNotificationSound';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
