@@ -39,6 +39,10 @@ interface BookingInfo {
   shared_drivers: SharedDriver[];
   devis_amount: number | null;
   quote_number: string | null;
+  final_payment_amount: number | null;
+  distance_km: number | null;
+  driver_latitude: number | null;
+  driver_longitude: number | null;
 }
 
 const GuestBookingTracking = () => {
