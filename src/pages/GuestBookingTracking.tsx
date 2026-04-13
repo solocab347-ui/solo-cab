@@ -387,7 +387,12 @@ const GuestBookingTracking = () => {
     );
   }
 
-  const driverDisplayName = booking.driver_company || booking.driver_name || "Votre chauffeur";
+  const rawDriverName = booking.driver_company || booking.driver_name || "Votre chauffeur";
+  const driverDisplayName = (() => {
+    const parts = rawDriverName.trim().split(/\s+/);
+    if (parts.length > 1) return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`;
+    return rawDriverName;
+  })();
   const timelineSteps = getTimelineSteps(booking.status);
   const showPaymentSection = booking.status === 'completed' && driverUsesStripe && paymentStatus !== 'paid';
   const showPaymentSuccess = booking.status === 'completed' && paymentStatus === 'paid';
