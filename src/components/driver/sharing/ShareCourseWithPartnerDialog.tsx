@@ -98,7 +98,7 @@ export function ShareCourseWithPartnerDialog({
           <PremiumGate 
             isPremium={false} 
             featureName="Partage de courses" 
-            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des commissions."
+            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des rétributions."
           />
         </DialogContent>
       </Dialog>
@@ -415,7 +415,7 @@ export function ShareCourseWithPartnerDialog({
                 Répartition automatique
               </p>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Votre commission ({commissionInfo.percentage}%)</span>
+                <span className="text-muted-foreground">Votre rétribution ({commissionInfo.percentage}%)</span>
                 <span className="font-medium text-primary">{commissionInfo.commission.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between">

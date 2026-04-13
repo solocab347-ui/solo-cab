@@ -607,7 +607,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '🤝 Nouvelle demande de partenariat',
-      message: `${senderName} souhaite devenir votre partenaire (${commission}% de commission)`,
+      message: `${senderName} souhaite devenir votre partenaire (${commission}% de rétribution)`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -652,7 +652,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '📤 Course proposée par un partenaire',
-      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de commission)`,
+      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de rétribution)`,
       type: 'course',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -682,7 +682,7 @@ export const notificationService = {
     return this.create({
       userId: senderUserId,
       title: '🏁 Course partenaire terminée',
-      message: `${partnerName} a effectué votre course (${amount}€, commission: ${commission}€)`,
+      message: `${partnerName} a effectué votre course (${amount}€, rétribution: ${commission}€)`,
       type: 'success',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -768,7 +768,7 @@ export const notificationService = {
     return this.create({
       userId: fleetManagerUserId,
       title: '🏁 Course partenaire terminée',
-      message: `${driverName} a terminé une course (${amount}€, commission: ${commission}€)`,
+      message: `${driverName} a terminé une course (${amount}€, rétribution: ${commission}€)`,
       type: 'success',
       link: '/fleet-dashboard?tab=partnerships'
     });
@@ -777,8 +777,8 @@ export const notificationService = {
   async notifyDriverFleetCommissionDue(driverUserId: string, fleetName: string, amount: number, dueDate: string) {
     return this.create({
       userId: driverUserId,
-      title: '⏰ Commission flotte à régler',
-      message: `${amount.toFixed(2)}€ de commission à régler à ${fleetName} avant le ${dueDate}`,
+      title: '⏰ Rétribution flotte à régler',
+      message: `${amount.toFixed(2)}€ de rétribution à régler à ${fleetName} avant le ${dueDate}`,
       type: 'warning',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -791,7 +791,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '🔄 Contre-proposition reçue',
-      message: `${senderName} propose ${newCommission} de commission`,
+      message: `${senderName} propose ${newCommission} de rétribution`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -801,7 +801,7 @@ export const notificationService = {
     return this.create({
       userId: fleetManagerUserId,
       title: '🔄 Contre-proposition du chauffeur',
-      message: `${driverName} propose ${newCommission} de commission`,
+      message: `${driverName} propose ${newCommission} de rétribution`,
       type: 'partnership',
       link: '/fleet-dashboard?tab=partnerships'
     });

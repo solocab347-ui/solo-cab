@@ -925,7 +925,7 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
                         
                         <div className="flex flex-wrap gap-2 mt-2 text-sm text-muted-foreground">
                           {contract.commission_percentage && (
-                            <span>Commission: {contract.commission_percentage}%</span>
+                            <span>Rétribution: {contract.commission_percentage}%</span>
                           )}
                           {contract.payment_schedule && (
                             <span>• Paiement: {contract.payment_schedule}</span>

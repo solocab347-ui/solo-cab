@@ -889,8 +889,8 @@ serve(async (req) => {
           if (senderData?.user_id) {
             await supabaseClient.from("notifications").insert({
               user_id: senderData.user_id,
-              title: "💰 Commission en attente",
-              message: `${commissionAmount.toFixed(2)}€ de commission enregistrée. Versement groupé chaque lundi.`,
+              title: "💰 Revenus partenaire en attente",
+              message: `${commissionAmount.toFixed(2)}€ de revenus partenaire enregistrés. Versement groupé chaque lundi.`,
               type: "info",
             });
           }

@@ -83,12 +83,12 @@ export const fleetPublicTranslations: Translations = {
     ar: 'شروط الشراكة'
   },
   'fleetPublic.commission': {
-    fr: 'Commission',
-    en: 'Commission',
-    es: 'Comisión',
-    it: 'Commissione',
-    zh: '佣金',
-    ar: 'عمولة'
+    fr: 'Rétribution',
+    en: 'Earnings',
+    es: 'Retribución',
+    it: 'Retribuzione',
+    zh: '报酬',
+    ar: 'مكافأة'
   },
   'fleetPublic.ourDrivers': {
     fr: 'Nos Chauffeurs',

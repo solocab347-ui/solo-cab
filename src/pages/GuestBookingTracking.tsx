@@ -43,6 +43,7 @@ interface BookingInfo {
   distance_km: number | null;
   driver_latitude: number | null;
   driver_longitude: number | null;
+  client_rating: number | null;
 }
 
 const GuestBookingTracking = () => {
@@ -97,8 +98,15 @@ const GuestBookingTracking = () => {
           distance_km: rawBooking.distance_km ?? null,
           driver_latitude: rawBooking.driver_latitude ?? null,
           driver_longitude: rawBooking.driver_longitude ?? null,
+          client_rating: rawBooking.client_rating ?? null,
         };
         setBooking(parsedBooking);
+
+        // If already rated, mark as submitted
+        if (parsedBooking.client_rating && parsedBooking.client_rating > 0) {
+          setRating(parsedBooking.client_rating);
+          setRatingSubmitted(true);
+        }
 
         // Look up ride_request for chat via RPC (anon can't SELECT ride_requests directly)
         if (token) {
