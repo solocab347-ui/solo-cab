@@ -152,16 +152,19 @@ export function RideWaitingScreen({
 
   phaseRef.current = phase;
 
+  // Use polled driver count as primary (survives reload), fallback to prop
+  const effectiveDriverCount = contactedDrivers.length > 0 ? contactedDrivers.length : driverCount;
+
   // Update subtitle for selected phase based on request type
   const getPhaseMessage = useCallback(() => {
     const msg = { ...PHASE_MESSAGES[phase] };
     if (phase === 'selected') {
       msg.subtitle = requestType === 'exclusive'
         ? `${driverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`
-        : `${driverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+        : `${effectiveDriverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
     }
     return msg;
-  }, [phase, requestType, driverName, driverCount]);
+  }, [phase, requestType, driverName, effectiveDriverCount]);
 
   // Timer countdown
   useEffect(() => {
