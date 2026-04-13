@@ -306,7 +306,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     doc.setFont(undefined, 'normal');
     yPos += 5;
     
-    const driverName = course.drivers?.profiles?.full_name || "N/A";
+    const rawDriverName = course.drivers?.profiles?.full_name || "N/A";
+    const driverNameParts = rawDriverName.trim().split(/\s+/);
+    const driverName = driverNameParts.length > 1 ? `${driverNameParts[0]} ${driverNameParts[driverNameParts.length - 1][0]?.toUpperCase()}.` : rawDriverName;
     doc.text(driverName, 20, yPos);
     yPos += 4;
     
@@ -416,7 +418,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     doc.setFont(undefined, 'normal');
     yPos += 5;
     
-    const driverName = course.drivers?.profiles?.full_name || "N/A";
+    const rawDriverName2 = course.drivers?.profiles?.full_name || "N/A";
+    const driverName2Parts = rawDriverName2.trim().split(/\s+/);
+    const driverName = driverName2Parts.length > 1 ? `${driverName2Parts[0]} ${driverName2Parts[driverName2Parts.length - 1][0]?.toUpperCase()}.` : rawDriverName2;
     doc.text(driverName, 20, yPos);
     yPos += 4;
     
@@ -638,7 +642,11 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               </div>
             )}
             <div>
-              <h3 className="font-bold">{course.drivers?.profiles?.full_name || ''}</h3>
+              <h3 className="font-bold">{(() => {
+                const n = course.drivers?.profiles?.full_name || '';
+                const p = n.trim().split(/\s+/);
+                return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]?.toUpperCase()}.` : n;
+              })()}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                 {(() => {
                   // Affichage: modèle/marque en premier, couleur à la fin
