@@ -204,15 +204,20 @@ const ChauffeurProfile = () => {
     return null;
   }
 
-  // Déterminer le nom à afficher
+  // Déterminer le nom à afficher (masqué pour le public)
+  const maskName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length <= 1) return parts[0] || "Chauffeur";
+    return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`;
+  };
   const displayNameParts = [];
   if (driver.display_driver_name !== false || !driver.company_name) {
-    displayNameParts.push(driver.full_name);
+    displayNameParts.push(maskName(driver.full_name));
   }
   if (driver.display_company_name && driver.company_name) {
     displayNameParts.push(driver.company_name);
   }
-  const displayName = displayNameParts.length > 0 ? displayNameParts.join(" - ") : driver.full_name;
+  const displayName = displayNameParts.length > 0 ? displayNameParts.join(" - ") : maskName(driver.full_name);
 
   return (
     <div className="min-h-screen bg-background">
