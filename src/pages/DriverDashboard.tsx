@@ -129,6 +129,47 @@ const DriverDashboard = () => {
     }
   }, [searchParams]);
 
+  // AUTO-SWITCH to map when driver has an active course (assigned/in_ride)
+  useEffect(() => {
+    const driverId = driverProfile?.driver?.id;
+    if (!driverId) return;
+
+    // Check current status on mount
+    const checkStatus = async () => {
+      const { data } = await supabase
+        .from('drivers')
+        .select('driver_status')
+        .eq('id', driverId)
+        .single();
+      if (data && ['assigned', 'in_ride'].includes(data.driver_status)) {
+        setViewMode("map");
+      }
+    };
+    checkStatus();
+
+    // Listen for realtime status changes
+    const channel = supabase
+      .channel(`driver-status-automap-${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drivers',
+          filter: `id=eq.${driverId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new?.driver_status;
+          if (newStatus && ['assigned', 'in_ride'].includes(newStatus)) {
+            setViewMode("map");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [driverProfile?.driver?.id]);
+
   // Incoming course overlay is now handled globally in GlobalRideOverlay
 
   // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
