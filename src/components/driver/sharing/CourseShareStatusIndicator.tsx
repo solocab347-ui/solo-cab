@@ -354,7 +354,7 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
                         <div>
                           <p className="font-medium text-sm">{share.receiver_name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {share.commission_percentage}% commission
+                            {share.commission_percentage}% rétribution
                           </p>
                         </div>
                       </div>

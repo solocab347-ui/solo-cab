@@ -98,7 +98,7 @@ export function ShareCourseWithPartnerDialog({
           <PremiumGate 
             isPremium={false} 
             featureName="Partage de courses" 
-            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des commissions."
+            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des rétributions."
           />
         </DialogContent>
       </Dialog>
