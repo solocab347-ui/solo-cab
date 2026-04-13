@@ -491,7 +491,7 @@ const GuestBookingTracking = () => {
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
               <h3 className="font-semibold text-emerald-700 mb-1">Paiement confirmé</h3>
               <p className="text-sm text-muted-foreground">
-                Votre paiement de {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
+                Votre paiement de {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
               </p>
             </CardContent>
           </Card>
@@ -546,7 +546,7 @@ const GuestBookingTracking = () => {
                     )}
                   </div>
                   <span className="text-xl font-bold text-primary">
-                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                    {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
