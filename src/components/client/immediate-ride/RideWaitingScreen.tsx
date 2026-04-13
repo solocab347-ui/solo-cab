@@ -152,16 +152,24 @@ export function RideWaitingScreen({
 
   phaseRef.current = phase;
 
+  // Use polled driver count as primary (survives reload), fallback to prop
+  const effectiveDriverCount = contactedDrivers.length > 0 ? contactedDrivers.length : driverCount;
+
   // Update subtitle for selected phase based on request type
+  const effectiveDriverName = driverName || (contactedDrivers.length === 1 ? contactedDrivers[0]?.driver_name : null);
   const getPhaseMessage = useCallback(() => {
     const msg = { ...PHASE_MESSAGES[phase] };
     if (phase === 'selected') {
-      msg.subtitle = requestType === 'exclusive'
-        ? `${driverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`
-        : `${driverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+      if (requestType === 'exclusive') {
+        msg.subtitle = `${effectiveDriverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`;
+      } else if (effectiveDriverCount > 0) {
+        msg.subtitle = `${effectiveDriverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+      } else {
+        msg.subtitle = 'Recherche de chauffeurs disponibles…';
+      }
     }
     return msg;
-  }, [phase, requestType, driverName, driverCount]);
+  }, [phase, requestType, effectiveDriverName, effectiveDriverCount]);
 
   // Timer countdown
   useEffect(() => {
@@ -583,7 +591,7 @@ export function RideWaitingScreen({
               ) : (
                 <Badge className="gap-1.5 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30">
                   <Users className="h-3.5 w-3.5" />
-                  {driverCount} chauffeurs contactés
+                  {effectiveDriverCount} chauffeurs contactés
                 </Badge>
               )
             )}
