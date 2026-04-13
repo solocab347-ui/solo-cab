@@ -81,7 +81,7 @@ export function StepResultats({
         <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur n'accepte les espèces ici.</AlertDescription></Alert>
       )}
 
-      {/* Drivers carousel — COMPACT cards */}
+      {/* Drivers 3D carousel */}
       {filteredDrivers.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 px-1">
@@ -89,25 +89,12 @@ export function StepResultats({
             <p className="text-[11px] font-semibold text-foreground">Professionnels certifiés</p>
           </div>
 
-          <div
-            ref={scrollRef}
-            className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide -mx-1 px-1"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            {filteredDrivers.map((driver, index) => (
-              <div key={driver.driver_id} className="snap-start shrink-0 w-[calc(50%-4px)] min-w-[150px] max-w-[180px]">
-                <DriverResultCard
-                  driver={driver}
-                  routeDistanceKm={routeDistanceKm || undefined}
-                  isSelected={selectedDriverIds.has(driver.driver_id)}
-                  onToggleSelect={() => {}}
-                  onViewProfile={(d) => navigate(`/chauffeur/${d.driver_id}`)}
-                  rank={index + 1}
-                  clientPaymentMethod={clientPaymentMethod}
-                />
-              </div>
-            ))}
-          </div>
+          <DriverResultsCarousel3D
+            drivers={filteredDrivers}
+            selectedDriverIds={selectedDriverIds}
+            routeDistanceKm={routeDistanceKm}
+            clientPaymentMethod={clientPaymentMethod}
+          />
         </div>
       )}
 
