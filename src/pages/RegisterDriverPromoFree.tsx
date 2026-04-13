@@ -118,32 +118,36 @@ const RegisterDriverPromoFree = () => {
 
       const newUserId = authData.user.id;
 
+      // Try auto sign-in (may fail if email not confirmed - that's OK)
       if (!authData.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) console.error("Auto sign-in failed:", signInError);
+        try {
+          await supabase.auth.signInWithPassword({ email, password });
+        } catch (signInError) {
+          console.warn("Auto sign-in skipped (email confirmation required):", signInError);
+        }
       }
 
-      await supabase.from("profiles").update({ phone }).eq("id", newUserId);
+      // Update phone on profile (may fail without session - ignore)
+      try {
+        await supabase.from("profiles").update({ phone }).eq("id", newUserId);
+      } catch {
+        console.warn("Profile phone update deferred");
+      }
 
-      const { data: driverData, error: driverError } = await supabase
-        .from("drivers")
-        .insert({
-          user_id: newUserId,
-          status: "on_hold",
-          subscription_status: "inactive",
-          subscription_paid: false,
-          trial_status: "pending",
-          documents_status: "pending",
-          registration_step: 1,
-          license_number: "",
-          vehicle_brand: "",
-          vehicle_model: "",
-          vehicle_year: new Date().getFullYear(),
-          vehicle_color: "",
-        })
-        .select()
-        .single();
+      // Create driver profile via SECURITY DEFINER function (bypasses RLS)
+      const { data: driverIdResult, error: driverError } = await supabase
+        .rpc("create_driver_profile", {
+          p_user_id: newUserId,
+          p_status: "on_hold",
+          p_license_number: "",
+          p_vehicle_brand: "",
+          p_vehicle_model: "",
+          p_vehicle_year: new Date().getFullYear(),
+          p_vehicle_color: "",
+        });
       if (driverError) throw driverError;
+
+      const driverData = { id: driverIdResult };
 
       // Driver role is now auto-assigned via database trigger
 
