@@ -356,9 +356,16 @@ export function ClientDriversGrid({
     const fullName = driver.profiles?.full_name?.trim();
     const companyName = driver.company_name?.trim();
 
-    if (driver.display_driver_name && fullName) return fullName;
+    // Always mask full name for public display
+    const maskedName = fullName ? (() => {
+      const parts = fullName.split(/\s+/);
+      if (parts.length <= 1) return parts[0] || "Chauffeur VTC";
+      return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`;
+    })() : null;
+
+    if (driver.display_driver_name && maskedName) return maskedName;
     if (driver.display_company_name && companyName) return companyName;
-    return fullName || companyName || "Chauffeur VTC";
+    return maskedName || companyName || "Chauffeur VTC";
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {

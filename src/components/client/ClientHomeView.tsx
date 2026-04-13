@@ -54,10 +54,15 @@ export function ClientHomeView({
 
   const favoriteDriver = clientProfile?.client?.drivers;
   
-  const getDriverDisplayName = (driver: any): string => {
+  const getDriverDisplayName = (driver: any, isExclusive: boolean = false): string => {
     if (!driver) return "Chauffeur VTC";
     const fullName = driver.profiles?.full_name?.trim();
-    return fullName || "Chauffeur VTC";
+    if (!fullName) return "Chauffeur VTC";
+    if (isExclusive) return fullName;
+    // Non-exclusive: Prénom + initiale nom
+    const parts = fullName.split(/\s+/);
+    if (parts.length <= 1) return parts[0] || "Chauffeur VTC";
+    return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`;
   };
 
   const getVehicleDescription = (driver: any): string => {
