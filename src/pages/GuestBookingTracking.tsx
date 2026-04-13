@@ -98,6 +98,7 @@ const GuestBookingTracking = () => {
           distance_km: rawBooking.distance_km ?? null,
           driver_latitude: rawBooking.driver_latitude ?? null,
           driver_longitude: rawBooking.driver_longitude ?? null,
+          client_rating: rawBooking.client_rating ?? null,
         };
         setBooking(parsedBooking);
 
