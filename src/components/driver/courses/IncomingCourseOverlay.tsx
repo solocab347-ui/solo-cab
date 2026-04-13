@@ -279,6 +279,7 @@ export function IncomingCourseOverlay({
     if (!course || !driverId || accepting) return;
     setAccepting(true);
     if (audioRef.current) clearInterval(audioRef.current);
+    stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
 
     try {
@@ -342,6 +343,7 @@ export function IncomingCourseOverlay({
 
   const handleDismiss = useCallback(async () => {
     if (audioRef.current) clearInterval(audioRef.current);
+    stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
     if (driverId) {
       // Only restore to online if driver is currently in 'assigned' state
