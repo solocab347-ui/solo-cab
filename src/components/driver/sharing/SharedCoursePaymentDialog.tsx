@@ -129,7 +129,7 @@ export function SharedCoursePaymentDialog({
             </div>
             
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Commission partenaire ({sharedCourse.commission_percentage}%)</span>
+              <span className="text-muted-foreground">Rétribution partenaire ({sharedCourse.commission_percentage}%)</span>
               <span className="text-amber-500">-{sharedCourse.commission_amount.toFixed(2)}€</span>
             </div>
             
@@ -146,7 +146,7 @@ export function SharedCoursePaymentDialog({
           {sharedCourse.sender_driver?.profiles?.full_name && (
             <Alert className="border-indigo-500/30 bg-indigo-500/10">
               <CheckCircle2 className="h-4 w-4 text-indigo-500" />
-              <AlertTitle className="text-indigo-400">Commission partenaire</AlertTitle>
+              <AlertTitle className="text-indigo-400">Rétribution partenaire</AlertTitle>
               <AlertDescription className="text-sm text-muted-foreground">
                 {sharedCourse.commission_amount.toFixed(2)}€ seront automatiquement transférés à {sharedCourse.sender_driver.profiles.full_name} après le paiement.
               </AlertDescription>

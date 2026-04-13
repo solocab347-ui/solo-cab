@@ -362,7 +362,7 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
                         <div className="flex items-center gap-4 text-sm p-2 bg-muted/30 rounded">
                           <span>Montant: <strong>{course.course_amount.toFixed(2)} €</strong></span>
                           <span className="text-muted-foreground">|</span>
-                          <span>Commission: <strong className="text-primary">{(course.commission_amount || 0).toFixed(2)} €</strong></span>
+                          <span>Rétribution: <strong className="text-primary">{(course.commission_amount || 0).toFixed(2)} €</strong></span>
                         </div>
                       )}
 

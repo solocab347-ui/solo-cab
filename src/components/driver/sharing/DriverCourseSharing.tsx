@@ -145,7 +145,7 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
         <Alert className="mx-1 border-primary/30 bg-primary/5">
           <Globe className="h-4 w-4 text-primary" />
           <AlertDescription className="text-sm">
-            <strong>Vous pouvez recevoir et accepter des courses partagées.</strong> Pour partager vos propres courses et gagner des commissions, passez en Premium.
+            <strong>Vous pouvez recevoir et accepter des courses partagées.</strong> Pour partager vos propres courses et gagner des rétributions, passez en Premium.
           </AlertDescription>
         </Alert>
       )}
