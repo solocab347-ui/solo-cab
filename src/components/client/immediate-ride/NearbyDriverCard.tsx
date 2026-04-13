@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, Car } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
+import { formatDriverName } from "@/lib/formatDriverName";
 
 interface NearbyDriverCardProps {
   driver: NearbyDriver;
@@ -18,7 +19,7 @@ export function NearbyDriverCard({
   onSelect,
   isSelected = false,
 }: NearbyDriverCardProps) {
-  const displayName = driver.display_name || driver.company_name || 'Chauffeur';
+  const displayName = formatDriverName(driver.display_name || driver.company_name, false);
   const initials = displayName
     .split(' ')
     .map((n) => n[0])

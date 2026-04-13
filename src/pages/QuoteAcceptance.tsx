@@ -230,7 +230,11 @@ const QuoteAcceptance = () => {
                 </div>
               )}
               <div>
-                <p className="font-semibold text-foreground">{driver.full_name || 'Votre chauffeur'}</p>
+                <p className="font-semibold text-foreground">{(() => {
+                  const n = driver.full_name || 'Votre chauffeur';
+                  const p = n.trim().split(/\s+/);
+                  return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]?.toUpperCase()}.` : n;
+                })()}</p>
                 {driver.vehicle_brand && (
                   <p className="text-sm text-muted-foreground">{driver.vehicle_brand} {driver.vehicle_model} {driver.vehicle_color && `· ${driver.vehicle_color}`}</p>
                 )}

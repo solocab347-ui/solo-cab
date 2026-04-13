@@ -131,12 +131,18 @@ export function RideWaitingScreen({
         .select('selected_driver_id, status, drivers:selected_driver_id(company_name, profile_photo_url, profiles:user_id(full_name))')
         .eq('request_group_id', groupId);
       if (data) {
-        setContactedDrivers(data.map((r: any) => ({
-          driver_id: r.selected_driver_id,
-          driver_name: r.drivers?.profiles?.full_name || r.drivers?.company_name || 'Chauffeur',
-          photo_url: r.drivers?.profile_photo_url || null,
-          status: r.status as ContactedDriver['status'],
-        })));
+        setContactedDrivers(data.map((r: any) => {
+          const rawName = r.drivers?.profiles?.full_name || r.drivers?.company_name || 'Chauffeur';
+          // Mask: Prénom + initiale
+          const parts = rawName.trim().split(/\s+/);
+          const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
+          return {
+            driver_id: r.selected_driver_id,
+            driver_name: maskedName,
+            photo_url: r.drivers?.profile_photo_url || null,
+            status: r.status as ContactedDriver['status'],
+          };
+        }));
       }
     };
     fetchDrivers();
@@ -334,7 +340,9 @@ export function RideWaitingScreen({
                 .select('profiles:user_id(full_name), company_name')
                 .eq('id', driverId)
                 .single();
-              name = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
+              const rawName = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
+              const parts = rawName.trim().split(/\s+/);
+              name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
               setAcceptedDriverName(name);
             }
             

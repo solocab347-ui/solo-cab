@@ -131,7 +131,11 @@ const ClientDriverProfile = () => {
     );
   }
 
-  const driverName = driver.profiles?.full_name || "Votre chauffeur";
+  const driverName = (() => {
+    const n = driver.profiles?.full_name || "Votre chauffeur";
+    // ClientDriverProfile is for exclusive clients — show full name
+    return n;
+  })();
 
   return (
     <div className="space-y-6">
