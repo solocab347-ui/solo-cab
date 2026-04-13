@@ -137,11 +137,12 @@ export function RideWaitingScreen({
           const parts = rawName.trim().split(/\s+/);
           const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
           return {
-          driver_id: r.selected_driver_id,
-          driver_name: maskedName,
-          photo_url: r.drivers?.profile_photo_url || null,
-          status: r.status as ContactedDriver['status'],
-        })));
+            driver_id: r.selected_driver_id,
+            driver_name: maskedName,
+            photo_url: r.drivers?.profile_photo_url || null,
+            status: r.status as ContactedDriver['status'],
+          };
+        }));
       }
     };
     fetchDrivers();
