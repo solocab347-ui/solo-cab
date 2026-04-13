@@ -586,7 +586,7 @@ export function RideWaitingScreen({
               ) : (
                 <Badge className="gap-1.5 bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30">
                   <Users className="h-3.5 w-3.5" />
-                  {driverCount} chauffeurs contactés
+                  {effectiveDriverCount} chauffeurs contactés
                 </Badge>
               )
             )}
