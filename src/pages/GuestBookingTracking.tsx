@@ -582,31 +582,28 @@ const GuestBookingTracking = () => {
                 <p className="font-semibold">{driverDisplayName}</p>
                 <p className="text-xs text-muted-foreground">Chauffeur principal</p>
               </div>
-              {/* Quick action buttons */}
-              {['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
-                <div className="flex gap-2">
-                  {booking.driver_phone && (
-                    <a href={`tel:${booking.driver_phone}`}>
-                      <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-green-500/30 text-green-500 hover:bg-green-500/10">
-                        <Phone className="w-4 h-4" />
-                      </Button>
-                    </a>
-                  )}
-                  {rideRequestId && (
-                    <RideChatPanel
-                      rideId={rideRequestId}
-                      senderType="guest"
-                      senderId={guestId}
-                      otherName={driverDisplayName.split(' ')[0]}
-                      triggerLabel=""
-                      triggerIcon={<MessageSquare className="w-4 h-4" />}
-                      triggerVariant="outline"
-                      triggerClassName="rounded-full h-10 w-10 border-primary/30 text-primary hover:bg-primary/10"
-                    />
-                  )}
-                </div>
+              {/* Quick call button */}
+              {booking.driver_phone && ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
+                <a href={`tel:${booking.driver_phone}`}>
+                  <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-green-500/30 text-green-500 hover:bg-green-500/10">
+                    <Phone className="w-4 h-4" />
+                  </Button>
+                </a>
               )}
             </div>
+
+            {/* Chat + Call actions for active rides */}
+            {rideRequestId && ['accepted', 'driver_approaching', 'in_progress', 'driver_arrived'].includes(booking.status) && (
+              <div className="mt-3">
+                <RideChatPanel
+                  rideId={rideRequestId}
+                  senderType="guest"
+                  senderId={guestId}
+                  otherName={driverDisplayName.split(' ')[0]}
+                  triggerLabel="💬 Contacter le chauffeur"
+                />
+              </div>
+            )}
 
             {booking.is_shared_course && booking.shared_drivers && booking.shared_drivers.length > 0 && (
               <div className="mt-4 pt-4 border-t">
