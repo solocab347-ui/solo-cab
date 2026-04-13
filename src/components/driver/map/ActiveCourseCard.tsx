@@ -389,6 +389,10 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false };
     }
 
+    // ✅ Restore driver availability IMMEDIATELY after completing the ride
+    // This allows the driver to receive new requests while viewing the completion screen
+    await restoreAvailability();
+
     // Show completion screen with all info
     setCompletionData({
       courseId: course.id,
