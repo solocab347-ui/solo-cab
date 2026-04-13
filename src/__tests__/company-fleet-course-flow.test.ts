@@ -274,7 +274,7 @@ function fleetManagerDispatchToDriver(
     guest_name: request.guest_employee_name,
     guest_phone: request.guest_employee_phone,
     fleet_manager_id: fleetManager.id,
-    total_amount: 0
+    total_amount: 45.50
   };
   db.courses.push(course);
   
@@ -374,6 +374,12 @@ function driverCompletesAndCollects(
   
   fpc.commission_amount = commissionAmount;
   fpc.earnings_for_driver = driverEarnings;
+  
+  // Mettre à jour les montants de paiement
+  if (fpc.payment_source === 'company') {
+    fpc.company_pays_fleet_amount = collectedAmount;
+  }
+  fpc.fleet_pays_driver_amount = driverEarnings;
   
   if (fpc.equipment_type === 'driver_owned') {
     // Chauffeur indépendant : il encaisse, doit la commission au gestionnaire
