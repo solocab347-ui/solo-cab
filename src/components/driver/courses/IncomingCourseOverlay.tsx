@@ -182,6 +182,7 @@ export function IncomingCourseOverlay({
             console.log('[IncomingCourseOverlay] Ride accepted by current driver (poll detected)');
             dismissed = true;
             if (audioRef.current) clearInterval(audioRef.current);
+            stopCurrentPlayback();
             if (navigator.vibrate) navigator.vibrate(0);
             onAccepted();
             return;
@@ -191,6 +192,7 @@ export function IncomingCourseOverlay({
           dismissed = true;
           setTakenByOther(true);
           if (audioRef.current) clearInterval(audioRef.current);
+          stopCurrentPlayback();
           if (navigator.vibrate) navigator.vibrate(0);
           
           // Show message for 4 seconds then restore status
