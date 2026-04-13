@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { playSoloCabSound } from '@/lib/solocabNotificationSound';
+import { playSoloCabSound, stopCurrentPlayback } from '@/lib/solocabNotificationSound';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -182,6 +182,7 @@ export function IncomingCourseOverlay({
             console.log('[IncomingCourseOverlay] Ride accepted by current driver (poll detected)');
             dismissed = true;
             if (audioRef.current) clearInterval(audioRef.current);
+            stopCurrentPlayback();
             if (navigator.vibrate) navigator.vibrate(0);
             onAccepted();
             return;
@@ -191,6 +192,7 @@ export function IncomingCourseOverlay({
           dismissed = true;
           setTakenByOther(true);
           if (audioRef.current) clearInterval(audioRef.current);
+          stopCurrentPlayback();
           if (navigator.vibrate) navigator.vibrate(0);
           
           // Show message for 4 seconds then restore status
@@ -279,6 +281,7 @@ export function IncomingCourseOverlay({
     if (!course || !driverId || accepting) return;
     setAccepting(true);
     if (audioRef.current) clearInterval(audioRef.current);
+    stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
 
     try {
@@ -342,6 +345,7 @@ export function IncomingCourseOverlay({
 
   const handleDismiss = useCallback(async () => {
     if (audioRef.current) clearInterval(audioRef.current);
+    stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
     if (driverId) {
       // Only restore to online if driver is currently in 'assigned' state

@@ -1,5 +1,8 @@
 // Service Worker SoloCab — Push Notifications avec son signature
-const SW_VERSION = '3.0.0';
+const SW_VERSION = '3.1.0';
+
+// Sound file for ride notifications (same as in-app)
+const RIDE_SOUND_URL = '/sounds/ride-request.mp3';
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker v' + SW_VERSION + ': Installé');
@@ -73,6 +76,7 @@ self.addEventListener('push', (event) => {
   }
 
   const style = getNotificationStyle(data);
+  const isRideNotification = isCourseNotification(data);
 
   const options = {
     body: data.message || data.body || '',
@@ -82,22 +86,42 @@ self.addEventListener('push', (event) => {
     renotify: style.renotify,
     data: {
       url: data.link || data.url || '/',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      isRide: isRideNotification
     },
     requireInteraction: style.requireInteraction,
     vibrate: SOLOCAB_VIBRATION,
     actions: getNotificationActions(data),
-    silent: false
+    // For ride notifications, set silent=true so we play our custom sound instead of system default
+    silent: isRideNotification
   };
 
-  console.log('Service Worker: Affichage notification:', data.title);
+  console.log('Service Worker: Affichage notification:', data.title, 'isRide:', isRideNotification);
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title, options).then(() => {
+      // Tell all open clients to play the ride sound
+      if (isRideNotification) {
+        return clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+          clientList.forEach((client) => {
+            client.postMessage({ type: 'PLAY_RIDE_SOUND' });
+          });
+        });
+      }
+    })
   );
 });
 
-// Contextual actions based on notification type
+// Check if notification is for a course/ride request
+function isCourseNotification(data) {
+  const tag = data.tag || '';
+  const title = data.title || '';
+  const type = data.type || '';
+  return tag.includes('course') || tag.includes('ride') ||
+    title.includes('🚗') || title.includes('🚕') || title.includes('📍') ||
+    type === 'ride_request' || type === 'new_course' || type === 'course_request' ||
+    /nouvelle course/i.test(title) || /demande de course/i.test(title) || /course reçue/i.test(title);
+}
 function getNotificationActions(data) {
   const tag = data.tag || '';
   const title = data.title || '';
