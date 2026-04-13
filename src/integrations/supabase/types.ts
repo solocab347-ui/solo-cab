@@ -20990,6 +20990,7 @@ export type Database = {
       get_guest_booking_by_token: {
         Args: { _token: string }
         Returns: {
+          client_rating: number
           created_at: string
           destination_address: string
           destination_latitude: number
