@@ -81,7 +81,7 @@ function calculateDistancePrice(
   }
 
   const tva_amount = subtotal * (tvaRate / 100);
-  const total_price = driver.tva_included ? subtotal : subtotal + tva_amount;
+  const total_price = subtotal + tva_amount;
 
   return {
     base_price,
@@ -140,7 +140,7 @@ function calculateHourlyPrice(
   }
 
   const tva_amount = subtotal * (tvaRate / 100);
-  const total_price = driver.tva_included ? subtotal : subtotal + tva_amount;
+  const total_price = subtotal + tva_amount;
 
   return {
     base_price: 0,
@@ -198,8 +198,8 @@ describe('Calculs de prix - Course au kilomètre', () => {
 
     expect(result.subtotal).toBe(48); // 40 + 20%
     expect(result.surcharge_evening).toBe(8);
-    expect(result.tva_amount).toBe(4.8); // 48 * 10%
-    expect(result.total_price).toBe(52.8);
+    expect(result.tva_amount).toBeCloseTo(4.8, 10); // 48 * 10%
+    expect(result.total_price).toBeCloseTo(52.8, 10);
   });
 
   it('devrait appliquer augmentation weekend', () => {

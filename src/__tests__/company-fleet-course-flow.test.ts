@@ -205,7 +205,7 @@ function createFleetPartnerCourse(
     company_request_id: courseRequest?.id,
     company_id: courseRequest?.company_id,
     payment_source: paymentSource,
-    company_pays_fleet_amount: paymentSource === 'company' ? courseAmount : 0,
+    company_pays_fleet_amount: paymentSource === 'company' ? collectedAmount : 0,
     fleet_pays_driver_amount: driverEarnings,
     company_payment_status: 'pending',
     fleet_payment_to_driver_status: 'pending'
@@ -274,7 +274,7 @@ function fleetManagerDispatchToDriver(
     guest_name: request.guest_employee_name,
     guest_phone: request.guest_employee_phone,
     fleet_manager_id: fleetManager.id,
-    total_amount: 45.50
+    total_amount: 0
   };
   db.courses.push(course);
   
