@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Eye, Check, Clock, Lock, Car, UserCheck, Star } from "lucide-react";
 import { NearbyDriver } from "@/hooks/useNearbyDrivers";
 import { cn } from "@/lib/utils";
+import { formatDriverName } from "@/lib/formatDriverName";
 
 interface DriverResultCardProps {
   driver: NearbyDriver;
@@ -42,8 +43,9 @@ export function DriverResultCard({
   onViewProfile,
   rank,
 }: DriverResultCardProps) {
-  const displayName = driver.display_name || driver.company_name || 'Chauffeur VTC';
-  const initials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const rawName = driver.display_name || driver.company_name || 'Chauffeur VTC';
+  const displayName = formatDriverName(rawName, false);
+  const initials = rawName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   const formatDistance = (meters: number) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
   const approachTime = estimateApproachTime(driver.distance_meters);
   const theme = GLOW_THEMES[(rank - 1) % GLOW_THEMES.length];
