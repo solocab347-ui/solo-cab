@@ -484,7 +484,7 @@ const DriverDashboard = () => {
     let initialStep = savedStep ? (onboardingStepMap[savedStep] ?? 0) : 0;
     
     // Ajuster si le chauffeur a déjà une plaque NFC (on saute l'étape NFC)
-    if (hasNfcPlate && initialStep >= 5) {
+    if (hasNfcPlate && initialStep >= 6) {
       initialStep = Math.max(0, initialStep - 1);
     }
     
