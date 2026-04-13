@@ -53,11 +53,10 @@ export function GlobalRideOverlay() {
     navigate('/driver-dashboard?view=map');
   }, [clearCurrent, navigate]);
 
-  // After refusing → navigate back to map
+  // After refusing → stay on current page (don't force navigate)
   const handleDismiss = useCallback(() => {
     dismiss();
-    navigate('/driver-dashboard?view=map');
-  }, [dismiss, navigate]);
+  }, [dismiss]);
 
   // Don't render anything if not a driver
   if (!driverId) return null;
