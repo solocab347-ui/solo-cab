@@ -88,13 +88,12 @@ export function RideWaitingScreen({
   const [phase, setPhase] = useState<SearchPhase>('selected');
   const [timeLeft, setTimeLeft] = useState(60);
   const [acceptedDriverName, setAcceptedDriverName] = useState<string | null>(null);
+  const [acceptedDriverId, setAcceptedDriverId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [extendedDriverCount, setExtendedDriverCount] = useState(0);
   const [currentTimeoutAt, setCurrentTimeoutAt] = useState(timeoutAt);
   const phaseRef = useRef(phase);
   const isExtendingRef = useRef(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [autoScrollIndex, setAutoScrollIndex] = useState(0);
 
   // Auto-scroll carousel of driver cards during search
   useEffect(() => {
