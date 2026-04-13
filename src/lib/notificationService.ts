@@ -607,7 +607,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '🤝 Nouvelle demande de partenariat',
-      message: `${senderName} souhaite devenir votre partenaire (${commission}% de commission)`,
+      message: `${senderName} souhaite devenir votre partenaire (${commission}% de rétribution)`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -652,7 +652,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '📤 Course proposée par un partenaire',
-      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de commission)`,
+      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de rétribution)`,
       type: 'course',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -682,7 +682,7 @@ export const notificationService = {
     return this.create({
       userId: senderUserId,
       title: '🏁 Course partenaire terminée',
-      message: `${partnerName} a effectué votre course (${amount}€, commission: ${commission}€)`,
+      message: `${partnerName} a effectué votre course (${amount}€, rétribution: ${commission}€)`,
       type: 'success',
       link: '/driver-dashboard?tab=partnerships'
     });

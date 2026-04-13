@@ -465,7 +465,7 @@ serve(async (req) => {
         user_id: course.driver.user_id,
         title: "✅ Course terminée",
         message: isCash
-          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Commission: ${solocabFee.toFixed(2)}€`
+          ? `Course de ${totalAmount.toFixed(2)}€ terminée — paiement en espèces. Frais: ${solocabFee.toFixed(2)}€`
           : `Course de ${totalAmount.toFixed(2)}€ terminée — encaissement par lien de paiement requis.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
