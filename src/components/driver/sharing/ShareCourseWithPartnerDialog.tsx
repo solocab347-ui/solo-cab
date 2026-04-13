@@ -415,7 +415,7 @@ export function ShareCourseWithPartnerDialog({
                 Répartition automatique
               </p>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Votre commission ({commissionInfo.percentage}%)</span>
+                <span className="text-muted-foreground">Votre rétribution ({commissionInfo.percentage}%)</span>
                 <span className="font-medium text-primary">{commissionInfo.commission.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between">

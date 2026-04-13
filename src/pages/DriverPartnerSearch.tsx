@@ -595,7 +595,7 @@ export default function DriverPartnerSearch() {
             )}
 
             <div className="space-y-2">
-              <Label>Commission proposée : {proposedCommission}%</Label>
+              <Label>Rétribution proposée : {proposedCommission}%</Label>
               <p className="text-sm text-muted-foreground">
                 Pourcentage que vous vous engagez à reverser pour chaque course transférée
               </p>

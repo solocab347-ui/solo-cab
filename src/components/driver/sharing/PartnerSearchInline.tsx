@@ -491,7 +491,7 @@ export function PartnerSearchInline({ driverId }: Props) {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Commission : {proposedCommission}%</Label>
+              <Label>Rétribution : {proposedCommission}%</Label>
               <Slider
                 value={[proposedCommission]}
                 onValueChange={(v) => setProposedCommission(v[0])}
