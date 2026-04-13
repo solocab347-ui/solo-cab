@@ -319,7 +319,10 @@ export function RideWaitingScreen({
           const newStatus = payload.new?.status;
           if (newStatus === 'accepted' && !acceptedRef.current) {
             acceptedRef.current = true;
-            setStatus('accepted');
+            const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
+            setAcceptedDriverId(driverId || null);
+            // Delay status change to let carousel animate to accepted driver
+            setTimeout(() => setStatus('accepted'), 2000);
             
             const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
             let finalCourseId = payload.new?.final_course_id;
