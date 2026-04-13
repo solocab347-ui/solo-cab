@@ -8,12 +8,26 @@ import { toast } from 'sonner';
 
 // Système de sons contextuels
 import { playNotificationSoundByType } from '@/lib/notificationSounds';
+import { playSoloCabSound } from '@/lib/solocabNotificationSound';
 
 export const PushNotificationListener = () => {
   const { user } = useAuth();
   const channelRef = useRef<RealtimeChannel | null>(null);
   const lastNotificationRef = useRef<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+
+  // Listen for PLAY_RIDE_SOUND messages from the service worker
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'PLAY_RIDE_SOUND') {
+        playSoloCabSound(1.0).catch(() => {});
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, []);
 
   const showBrowserNotification = useCallback(async (title: string, body: string, link?: string, notificationId?: string, notificationType?: string) => {
     // Jouer le son adapté au type de notification
