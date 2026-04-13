@@ -148,12 +148,12 @@ export const fleetDashboardTranslations: Translations = {
     ar: 'الشراكات',
   },
   'fleetDashboard.tabs.commissions': {
-    fr: 'Commissions',
-    en: 'Commissions',
-    es: 'Comisiones',
-    it: 'Commissioni',
-    zh: '佣金',
-    ar: 'العمولات',
+    fr: 'Rétributions',
+    en: 'Earnings',
+    es: 'Retribuciones',
+    it: 'Retribuzioni',
+    zh: '报酬',
+    ar: 'مكافآت',
   },
   'fleetDashboard.tabs.settings': {
     fr: 'Réglages',
