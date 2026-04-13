@@ -156,15 +156,20 @@ export function RideWaitingScreen({
   const effectiveDriverCount = contactedDrivers.length > 0 ? contactedDrivers.length : driverCount;
 
   // Update subtitle for selected phase based on request type
+  const effectiveDriverName = driverName || (contactedDrivers.length === 1 ? contactedDrivers[0]?.driver_name : null);
   const getPhaseMessage = useCallback(() => {
     const msg = { ...PHASE_MESSAGES[phase] };
     if (phase === 'selected') {
-      msg.subtitle = requestType === 'exclusive'
-        ? `${driverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`
-        : `${effectiveDriverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+      if (requestType === 'exclusive') {
+        msg.subtitle = `${effectiveDriverName || 'Le chauffeur'} a été contacté. En attente de sa réponse…`;
+      } else if (effectiveDriverCount > 0) {
+        msg.subtitle = `${effectiveDriverCount} chauffeurs sont contactés. Le premier à accepter prendra votre course.`;
+      } else {
+        msg.subtitle = 'Recherche de chauffeurs disponibles…';
+      }
     }
     return msg;
-  }, [phase, requestType, driverName, effectiveDriverCount]);
+  }, [phase, requestType, effectiveDriverName, effectiveDriverCount]);
 
   // Timer countdown
   useEffect(() => {
