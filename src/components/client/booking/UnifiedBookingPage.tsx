@@ -357,7 +357,8 @@ export function UnifiedBookingPage() {
   // Submit
   const handleSubmitRequest = async () => {
     if (selectedDriverIds.size === 0) { toast.error('Aucun chauffeur sélectionné'); return; }
-    if (!user && (!guestName.trim() || !guestPhone.trim())) { toast.error('Renseignez vos coordonnées'); return; }
+    if (!user && !guestName.trim()) { toast.error('Renseignez votre nom'); return; }
+    if (!user && !guestEmail.trim()) { toast.error('Renseignez votre email pour le suivi de course'); return; }
     const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
     if (clientPaymentMethod === 'card' && selectedDrivers.some(d => d.stripe_connect_charges_enabled) && !cardVerifiedForBooking) {
       toast.error('Vérifiez votre carte bancaire'); return;
