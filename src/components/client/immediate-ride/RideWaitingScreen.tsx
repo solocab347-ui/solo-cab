@@ -125,15 +125,15 @@ export function RideWaitingScreen({
       if (driverIds.length > 0) {
         const { data: drivers } = await supabase
           .from('drivers')
-          .select('id, company_name, profile_photo_url, profiles:user_id(full_name)')
+          .select('id, company_name, profiles:user_id(full_name, profile_photo_url)')
           .in('id', driverIds);
         
         if (drivers) {
-          for (const d of drivers) {
-            const rawName = (d as any).profiles?.full_name || d.company_name || 'Chauffeur';
+          for (const d of drivers as any[]) {
+            const rawName = d.profiles?.full_name || d.company_name || 'Chauffeur';
             const parts = rawName.trim().split(/\s+/);
             const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
-            driverMap[d.id] = { name: maskedName, photo: d.profile_photo_url };
+            driverMap[d.id] = { name: maskedName, photo: d.profiles?.profile_photo_url || null };
           }
         }
       }
