@@ -445,9 +445,9 @@ const GuestBookingTracking = () => {
             <CardContent className="space-y-4">
               <div className="bg-background rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Montant à régler</span>
+                   <span className="text-muted-foreground">Montant à régler</span>
                   <span className="text-2xl font-bold text-primary">
-                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                    {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
