@@ -1,5 +1,8 @@
 // Service Worker SoloCab — Push Notifications avec son signature
-const SW_VERSION = '3.0.0';
+const SW_VERSION = '3.1.0';
+
+// Sound file for ride notifications (same as in-app)
+const RIDE_SOUND_URL = '/sounds/ride-request.mp3';
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker v' + SW_VERSION + ': Installé');
