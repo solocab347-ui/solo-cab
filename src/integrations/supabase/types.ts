@@ -20992,16 +20992,26 @@ export type Database = {
         Returns: {
           created_at: string
           destination_address: string
+          destination_latitude: number
+          destination_longitude: number
           devis_amount: number
+          distance_km: number
           driver_avatar_url: string
           driver_company: string
+          driver_heading: number
+          driver_latitude: number
+          driver_longitude: number
           driver_name: string
           driver_phone: string
+          duration_minutes: number
+          final_payment_amount: number
           guest_estimated_price: number
           guest_name: string
           id: string
           is_shared_course: boolean
           pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
           quote_number: string
           scheduled_date: string
           shared_drivers: Json
