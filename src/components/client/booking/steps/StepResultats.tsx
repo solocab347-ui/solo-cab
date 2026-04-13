@@ -5,7 +5,7 @@ import {
   AlertCircle, ArrowLeft, Car
 } from 'lucide-react';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
-import { DriverResultCard } from '../DriverResultCard';
+import { DriverResultsCarousel3D } from '../DriverResultsCarousel3D';
 import { DriverMap } from '../DriverMap';
 import { useNavigate } from 'react-router-dom';
 
