@@ -340,7 +340,9 @@ export function RideWaitingScreen({
                 .select('profiles:user_id(full_name), company_name')
                 .eq('id', driverId)
                 .single();
-              name = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
+              const rawName = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
+              const parts = rawName.trim().split(/\s+/);
+              name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
               setAcceptedDriverName(name);
             }
             
