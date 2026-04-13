@@ -288,14 +288,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Create driver or client profile FIRST (trigger will assign role automatically)
       if (role === "driver" && additionalData) {
-        const { error: driverError } = await supabase
-          .from("drivers")
-          .insert({
-            user_id: data.user.id,
-            license_number: additionalData.licenseNumber,
-            vehicle_model: additionalData.vehicleModel,
-            vehicle_plate: additionalData.vehiclePlate || null,
-          });
+        const { error: driverError } = await supabase.rpc("create_driver_profile", {
+          p_user_id: data.user.id,
+          p_license_number: additionalData.licenseNumber || "",
+          p_vehicle_brand: "",
+          p_vehicle_model: additionalData.vehicleModel || "",
+          p_vehicle_year: new Date().getFullYear(),
+          p_vehicle_color: "",
+        });
 
         if (driverError) throw driverError;
       } else if (role === "client") {

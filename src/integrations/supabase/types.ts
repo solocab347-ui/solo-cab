@@ -20063,6 +20063,18 @@ export type Database = {
         }
         Returns: string
       }
+      create_driver_profile: {
+        Args: {
+          p_license_number?: string
+          p_status?: string
+          p_user_id: string
+          p_vehicle_brand?: string
+          p_vehicle_color?: string
+          p_vehicle_model?: string
+          p_vehicle_year?: number
+        }
+        Returns: string
+      }
       create_expense_report_for_course: {
         Args: { p_amount: number; p_course_id: string; p_employee_id: string }
         Returns: string
