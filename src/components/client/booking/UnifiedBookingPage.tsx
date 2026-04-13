@@ -158,6 +158,46 @@ export function UnifiedBookingPage() {
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
+  const notifySelectedDrivers = useCallback(async (selected: NearbyDriver[]) => {
+    try {
+      const driverIds = selected.map((driver) => driver.driver_id).filter(Boolean);
+      if (driverIds.length === 0) return;
+
+      const { data: driverUsers, error: driverUsersError } = await supabase
+        .from('drivers')
+        .select('id, user_id')
+        .in('id', driverIds);
+
+      if (driverUsersError || !driverUsers?.length) {
+        console.error('Driver push lookup error:', driverUsersError);
+        return;
+      }
+
+      const title = mode === 'immediate'
+        ? '🚗 Nouvelle demande de course'
+        : '📅 Nouvelle réservation à confirmer';
+      const message = `${pickupAddress} → ${destinationAddress}`;
+
+      await Promise.allSettled(
+        driverUsers
+          .filter((driver): driver is { id: string; user_id: string } => Boolean(driver.user_id))
+          .map((driver) =>
+            supabase.functions.invoke('send-push-notification', {
+              body: {
+                user_id: driver.user_id,
+                title,
+                message,
+                link: '/driver-dashboard?view=map',
+                tag: 'course_request',
+              },
+            })
+          )
+      );
+    } catch (notificationError) {
+      console.error('Immediate driver push error:', notificationError);
+    }
+  }, [destinationAddress, mode, pickupAddress]);
+
   // Auto-select top 10 drivers
   useEffect(() => {
     if (drivers.length === 0) return;
@@ -412,6 +452,8 @@ export function UnifiedBookingPage() {
           stripe_payment_method_id: savedCardInfo?.paymentMethodId || null,
         } as any)));
       if (insertError) throw insertError;
+      void notifySelectedDrivers(selectedDrivers);
+
       const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
       const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);
       setWaitingRequestId(requestGroupId); setWaitingGroupId(requestGroupId);

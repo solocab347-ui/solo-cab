@@ -10,6 +10,26 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[EXTENDED-SEARCH] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
+const sendDriverPushNotification = async (userId: string, title: string, message: string, link: string) => {
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        title,
+        message,
+        link,
+        tag: "course_request",
+      }),
+    });
+  } catch (error) {
+    logStep("Push driver notification failed", { userId, error: String(error) });
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -143,27 +163,25 @@ serve(async (req) => {
       logStep("Relaunch requests created", { count: inserted?.length });
 
       // Notify relaunched drivers
-      for (const r of relaunchRequests) {
+      await Promise.all(relaunchRequests.map(async (r) => {
         const driverReq = originalRequests.find(o => o.selected_driver_id === r.selected_driver_id);
-        if (driverReq) {
-          // Get user_id for notification
-          const { data: driverData } = await supabase
-            .from("drivers")
-            .select("user_id")
-            .eq("id", r.selected_driver_id!)
-            .single();
+        if (!driverReq) return;
 
-          if (driverData?.user_id) {
-            await supabase.from("notifications").insert({
-              user_id: driverData.user_id,
-              title: "🔄 Nouvelle demande disponible",
-              message: `Client toujours en attente • ${firstReq.pickup_address} → ${firstReq.destination_address}`,
-              type: "info",
-              link: "/driver-dashboard?tab=courses",
-            });
-          }
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("user_id")
+          .eq("id", r.selected_driver_id!)
+          .single();
+
+        if (driverData?.user_id) {
+          await sendDriverPushNotification(
+            driverData.user_id,
+            "🔄 Nouvelle demande disponible",
+            `Client toujours en attente • ${firstReq.pickup_address} → ${firstReq.destination_address}`,
+            "/driver-dashboard?view=map"
+          );
         }
-      }
+      }));
 
       return new Response(
         JSON.stringify({
@@ -254,15 +272,14 @@ serve(async (req) => {
     logStep("Extended requests created", { count: inserted?.length });
 
     // Notify each nearby driver
-    for (const driver of nearbyDrivers) {
-      await supabase.from("notifications").insert({
-        user_id: driver.user_id,
-        title: "🚗 Nouvelle course disponible !",
-        message: `${firstReq.pickup_address} → ${firstReq.destination_address} (${driver.distance_km.toFixed(1)} km de vous)`,
-        type: "info",
-        link: "/driver-dashboard?tab=courses",
-      });
-    }
+    await Promise.all(nearbyDrivers.map((driver: any) =>
+      sendDriverPushNotification(
+        driver.user_id,
+        "🚗 Nouvelle course disponible !",
+        `${firstReq.pickup_address} → ${firstReq.destination_address} (${driver.distance_km.toFixed(1)} km de vous)`,
+        "/driver-dashboard?view=map"
+      )
+    ));
 
     return new Response(
       JSON.stringify({

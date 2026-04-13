@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
@@ -61,9 +61,18 @@ const GuestBookingTracking = () => {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
+  const retryTimeoutRef = useRef<number | null>(null);
 
-  const fetchBooking = async () => {
+  const fetchBooking = async (attempt = 0) => {
     if (!token) return;
+
+    let shouldFinalize = true;
+    const scheduleRetry = () => {
+      if (retryTimeoutRef.current) window.clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = window.setTimeout(() => {
+        fetchBooking(attempt + 1);
+      }, 1500);
+    };
     
     try {
       const { data, error } = await supabase
@@ -102,29 +111,38 @@ const GuestBookingTracking = () => {
         };
         setBooking(parsedBooking);
 
-        // If already rated, mark as submitted
         if (parsedBooking.client_rating && parsedBooking.client_rating > 0) {
           setRating(parsedBooking.client_rating);
           setRatingSubmitted(true);
         }
 
-        // Look up ride_request for chat via RPC (anon can't SELECT ride_requests directly)
         if (token) {
           const { data: rideReqId } = await supabase
             .rpc('get_ride_request_id_for_guest' as any, { _token: token });
           if (rideReqId) setRideRequestId(rideReqId);
         }
 
-        // Check if driver uses Stripe and check payment status
         await checkDriverPaymentAndStatus(parsedBooking);
+      } else if (attempt < 4) {
+        shouldFinalize = false;
+        scheduleRetry();
+        return;
       } else {
         setBooking(null);
       }
     } catch (error) {
+      if (attempt < 4) {
+        shouldFinalize = false;
+        scheduleRetry();
+        return;
+      }
       console.error("Error fetching booking:", error);
+      setBooking(null);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (shouldFinalize) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -162,12 +180,14 @@ const GuestBookingTracking = () => {
   };
 
   useEffect(() => {
-    fetchBooking();
+    fetchBooking(0);
     
-    // Polling every 15 seconds for more responsive updates
-    const interval = setInterval(fetchBooking, 15000);
+    const interval = setInterval(() => fetchBooking(0), 15000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (retryTimeoutRef.current) window.clearTimeout(retryTimeoutRef.current);
+    };
   }, [token]);
 
   // Realtime subscription for instant status updates
