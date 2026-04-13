@@ -95,23 +95,7 @@ export function RideWaitingScreen({
   const phaseRef = useRef(phase);
   const isExtendingRef = useRef(false);
 
-  // Auto-scroll carousel of driver cards during search
-  useEffect(() => {
-    if (!contactedDriversData || contactedDriversData.length <= 1) return;
-    if (status !== 'searching' && status !== 'extended_searching' && status !== 'relaunching' && status !== 'transition') return;
-    
-    const interval = setInterval(() => {
-      setAutoScrollIndex(prev => {
-        const next = (prev + 1) % contactedDriversData.length;
-        if (carouselRef.current) {
-          const cardWidth = 180; // approximate card width + gap
-          carouselRef.current.scrollTo({ left: next * cardWidth, behavior: 'smooth' });
-        }
-        return next;
-      });
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [contactedDriversData, status]);
+
 
   // Contacted drivers list for UI
   interface ContactedDriver {
