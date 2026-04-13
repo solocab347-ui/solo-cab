@@ -102,6 +102,12 @@ const GuestBookingTracking = () => {
         };
         setBooking(parsedBooking);
 
+        // If already rated, mark as submitted
+        if (parsedBooking.client_rating && parsedBooking.client_rating > 0) {
+          setRating(parsedBooking.client_rating);
+          setRatingSubmitted(true);
+        }
+
         // Look up ride_request for chat via RPC (anon can't SELECT ride_requests directly)
         if (token) {
           const { data: rideReqId } = await supabase
