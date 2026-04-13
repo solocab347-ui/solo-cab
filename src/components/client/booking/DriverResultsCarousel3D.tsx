@@ -145,7 +145,7 @@ export function DriverResultsCarousel3D({
               >
                 <motion.div
                   style={{
-                    transform: count > 1 ? `rotateY(${-angle - rotation}deg)` : `rotateY(${rotation}deg)`,
+                    transform: count > 1 ? `rotateY(${-angle - rotation}deg)` : 'none',
                   }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
