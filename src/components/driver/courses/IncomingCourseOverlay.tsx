@@ -158,35 +158,37 @@ export function IncomingCourseOverlay({
   const [approachInfo, setApproachInfo] = useState<{ distanceKm: number; minutes: number } | null>(null);
 
   // Poll ride_request status to auto-dismiss if taken by another driver
+  // ALSO: detect when OUR acceptance succeeded (edge function slow) → auto-dismiss
   useEffect(() => {
     if (!course || course.source !== 'ride_request') return;
     const rideRequestId = course.sourceId;
+    let dismissed = false;
     
     const checkStatus = async () => {
+      if (dismissed) return;
       try {
         const { data } = await supabase
           .from('ride_requests')
-          .select('status')
+          .select('status, accepted_by_driver_id, final_course_id')
           .eq('id', rideRequestId)
           .maybeSingle();
         
         if (data && data.status !== 'pending') {
-          // Check if the current driver is the one who accepted
-          const { data: rideData } = await supabase
-            .from('ride_requests')
-            .select('accepted_by_driver_id')
-            .eq('id', rideRequestId)
-            .maybeSingle();
-          
-          const acceptedByMe = rideData?.accepted_by_driver_id === driverId;
+          const acceptedByMe = data.accepted_by_driver_id === driverId;
           
           if (acceptedByMe) {
-            // Don't show "taken by other" — the overlay will be dismissed by onAccepted
-            console.log('[IncomingCourseOverlay] Ride accepted by current driver');
+            // Edge function may still be running, but DB confirms WE got it
+            // → Immediately dismiss overlay and navigate (don't wait for slow edge fn)
+            console.log('[IncomingCourseOverlay] Ride accepted by current driver (poll detected)');
+            dismissed = true;
+            if (audioRef.current) clearInterval(audioRef.current);
+            if (navigator.vibrate) navigator.vibrate(0);
+            onAccepted();
             return;
           }
           
           console.log('[IncomingCourseOverlay] Ride taken by another driver:', data.status);
+          dismissed = true;
           setTakenByOther(true);
           if (audioRef.current) clearInterval(audioRef.current);
           if (navigator.vibrate) navigator.vibrate(0);
@@ -194,7 +196,6 @@ export function IncomingCourseOverlay({
           // Show message for 4 seconds then restore status
           setTimeout(async () => {
             if (driverId) {
-              // Only restore if still in 'assigned' — don't override in_ride
               const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
               if (!d?.driver_status || d.driver_status === 'assigned') {
                 await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
@@ -214,10 +215,11 @@ export function IncomingCourseOverlay({
     const initialCheck = setTimeout(checkStatus, 1000);
 
     return () => {
+      dismissed = true;
       clearInterval(pollInterval);
       clearTimeout(initialCheck);
     };
-  }, [course?.id, course?.source, course?.sourceId, driverId, onDismiss]);
+  }, [course?.id, course?.source, course?.sourceId, driverId, onDismiss, onAccepted]);
 
   useEffect(() => {
     if (!course || !driverId || !course.pickupLatitude || !course.pickupLongitude) {
@@ -302,7 +304,20 @@ export function IncomingCourseOverlay({
         } catch (holdErr) { console.error('Card hold check failed:', holdErr); }
         toast.success('Course acceptée !');
       } else if (course.source === 'ride_request') {
-        const { data, error } = await supabase.functions.invoke('accept-ride-request', { body: { ride_request_id: course.sourceId } });
+        // Use a race: edge function call vs 15s safety timeout
+        // The poll will detect acceptance via DB if edge fn is slow
+        const invokePromise = supabase.functions.invoke('accept-ride-request', { body: { ride_request_id: course.sourceId } });
+        const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 15000)
+        );
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+        
+        if (error?.message === 'timeout') {
+          // Edge function still running — poll will handle navigation
+          console.warn('[IncomingCourseOverlay] Edge function slow, relying on status poll');
+          // Don't dismiss or show error — the poll useEffect will detect acceptedByMe and call onAccepted
+          return;
+        }
         if (error) throw error;
         if (!data?.success) {
           if (data?.already_taken) toast.error('Cette course a déjà été prise par un autre chauffeur');

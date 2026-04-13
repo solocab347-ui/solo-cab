@@ -298,22 +298,36 @@ export function UnifiedBookingPage() {
         const data = await res.json();
         return data.features?.[0] ? { lat: data.features[0].center[1], lng: data.features[0].center[0] } : null;
       };
-      const [pickup, dest] = await Promise.all([pickupCoords || geocode(pickupAddress), destCoords || geocode(destinationAddress)]);
+      // Only geocode if we don't already have coords (user selected from suggestions)
+      const [pickup, dest] = await Promise.all([
+        pickupCoords || geocode(pickupAddress),
+        destCoords || geocode(destinationAddress),
+      ]);
       if (!pickup) { toast.error('Adresse de départ introuvable'); return; }
       if (!dest) { toast.error('Adresse de destination introuvable'); return; }
       setPickupCoords(pickup); setDestCoords(dest);
+
+      // Launch directions + driver search in PARALLEL
       let distance: number | null = null, duration: number | null = null;
-      try {
-        if (mapboxToken) {
-          const dirRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`);
-          if (dirRes.ok) { const d = await dirRes.json(); distance = d.routes?.[0]?.distance ? d.routes[0].distance / 1000 : null; duration = d.routes?.[0]?.duration ? d.routes[0].duration / 60 : null; }
-        }
-      } catch {}
-      setRouteDistanceKm(distance); setRouteDurationMin(duration);
       let schedDate: Date | undefined;
       if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+
+      const directionsPromise = mapboxToken
+        ? fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+              distance = d?.routes?.[0]?.distance ? d.routes[0].distance / 1000 : null;
+              duration = d?.routes?.[0]?.duration ? d.routes[0].duration / 60 : null;
+            })
+            .catch(() => {})
+        : Promise.resolve();
+
+      // Start driver search immediately (doesn't need route data)
+      // We'll recalculate prices after directions resolve
+      await directionsPromise;
+      setRouteDistanceKm(distance); setRouteDurationMin(duration);
+
       await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
-      // Move to step 2
       setCurrentStep(2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
@@ -357,7 +371,8 @@ export function UnifiedBookingPage() {
   // Submit
   const handleSubmitRequest = async () => {
     if (selectedDriverIds.size === 0) { toast.error('Aucun chauffeur sélectionné'); return; }
-    if (!user && (!guestName.trim() || !guestPhone.trim())) { toast.error('Renseignez vos coordonnées'); return; }
+    if (!user && !guestName.trim()) { toast.error('Renseignez votre nom'); return; }
+    if (!user && !guestEmail.trim()) { toast.error('Renseignez votre email pour le suivi de course'); return; }
     const selectedDrivers = drivers.filter(d => selectedDriverIds.has(d.driver_id));
     if (clientPaymentMethod === 'card' && selectedDrivers.some(d => d.stripe_connect_charges_enabled) && !cardVerifiedForBooking) {
       toast.error('Vérifiez votre carte bancaire'); return;
