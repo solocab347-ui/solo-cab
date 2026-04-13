@@ -22,6 +22,7 @@ interface LocationState {
 const STALE_THRESHOLD_MS = 60_000;
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m
 const MIN_SEND_INTERVAL_MS = 8_000;
+const MAX_RETRY_ATTEMPTS = 2;
 
 export function useDriverLocationTracker({
   driverId,
@@ -42,18 +43,21 @@ export function useDriverLocationTracker({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const staleCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSentRef = useRef<{ lat: number; lon: number; time: number } | null>(null);
+  const lastCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const mountedRef = useRef(true);
+  const trackingRef = useRef(false);
 
-  // ── Send location to DB (GPS only, never touch is_available_now) ──
+  // ── Send location to DB — silent, no UI re-render on success ──
   const sendLocationToServer = useCallback(
-    async (latitude: number, longitude: number) => {
-      if (!driverId) return;
+    async (latitude: number, longitude: number, retryCount = 0) => {
+      if (!driverId || !mountedRef.current) return;
 
+      // Deduplicate: skip if position hasn't changed enough AND not enough time passed
       if (lastSentRef.current) {
         const latDiff = Math.abs(latitude - lastSentRef.current.lat);
         const lonDiff = Math.abs(longitude - lastSentRef.current.lon);
         const timeDiff = Date.now() - lastSentRef.current.time;
-        // Send if moved significantly OR if enough time passed (keep-alive)
         if (latDiff < MIN_MOVEMENT_DEG && lonDiff < MIN_MOVEMENT_DEG && timeDiff < MIN_SEND_INTERVAL_MS) {
           return;
         }
@@ -70,19 +74,45 @@ export function useDriverLocationTracker({
           .eq('id', driverId);
 
         if (error) {
-          console.error('[GPS] DB update failed:', error);
-          setLocationState((prev) => ({ ...prev, error: 'Erreur serveur' }));
+          // Silent retry — don't spam the UI with transient errors
+          if (retryCount < MAX_RETRY_ATTEMPTS) {
+            setTimeout(() => {
+              if (mountedRef.current) {
+                sendLocationToServer(latitude, longitude, retryCount + 1);
+              }
+            }, 2000 * (retryCount + 1)); // 2s, 4s backoff
+            return;
+          }
+          console.error('[GPS] DB update failed after retries:', error.message);
+          // Only show error to user after all retries exhausted
+          if (mountedRef.current) {
+            setLocationState((prev) => ({ ...prev, error: 'Erreur serveur GPS' }));
+          }
         } else {
           lastSentRef.current = { lat: latitude, lon: longitude, time: Date.now() };
-          setLocationState((prev) => ({
-            ...prev,
-            lastUpdate: new Date(),
-            error: null,
-            isStale: false,
-          }));
+          // Only update lastUpdate timestamp — avoid full state re-render
+          if (mountedRef.current) {
+            setLocationState((prev) => {
+              if (prev.error || prev.isStale) {
+                return { ...prev, lastUpdate: new Date(), error: null, isStale: false };
+              }
+              // Minimal update — only change lastUpdate if needed for stale check
+              if (!prev.lastUpdate || Date.now() - prev.lastUpdate.getTime() > 5000) {
+                return { ...prev, lastUpdate: new Date() };
+              }
+              return prev; // No re-render
+            });
+          }
         }
       } catch (err) {
-        console.error('[GPS] Location update error:', err);
+        // Network error — silent retry
+        if (retryCount < MAX_RETRY_ATTEMPTS) {
+          setTimeout(() => {
+            if (mountedRef.current) {
+              sendLocationToServer(latitude, longitude, retryCount + 1);
+            }
+          }, 2000 * (retryCount + 1));
+        }
       }
     },
     [driverId]
@@ -91,15 +121,22 @@ export function useDriverLocationTracker({
   // ── Native GPS handler (Capacitor) ──
   const handleNativeLocation = useCallback(
     (lat: number, lng: number, _accuracy: number) => {
-      setLocationState((prev) => ({
-        ...prev,
-        latitude: lat,
-        longitude: lng,
-        accuracy: _accuracy,
-        isTracking: true,
-        error: null,
-        isStale: false,
-      }));
+      lastCoordsRef.current = { lat, lon: lng };
+      // Only re-render if coordinates actually changed significantly
+      setLocationState((prev) => {
+        const latChanged = !prev.latitude || Math.abs(lat - prev.latitude) > MIN_MOVEMENT_DEG;
+        const lonChanged = !prev.longitude || Math.abs(lng - prev.longitude) > MIN_MOVEMENT_DEG;
+        if (!latChanged && !lonChanged && prev.isTracking) return prev; // No re-render
+        return {
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          accuracy: _accuracy,
+          isTracking: true,
+          error: null,
+          isStale: false,
+        };
+      });
       sendLocationToServer(lat, lng);
     },
     [sendLocationToServer]
@@ -110,19 +147,30 @@ export function useDriverLocationTracker({
     onLocation: handleNativeLocation,
   });
 
-  // ── Web GPS handlers ──
+  // ── Web GPS handler — optimized to avoid re-renders ──
   const handlePositionUpdate = useCallback(
     (position: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = position.coords;
-      setLocationState((prev) => ({
-        ...prev,
-        latitude,
-        longitude,
-        accuracy,
-        isTracking: true,
-        error: null,
-        isStale: false,
-      }));
+      lastCoordsRef.current = { lat: latitude, lon: longitude };
+
+      // Only re-render state if position changed meaningfully or tracking just started
+      setLocationState((prev) => {
+        const latChanged = !prev.latitude || Math.abs(latitude - prev.latitude) > MIN_MOVEMENT_DEG;
+        const lonChanged = !prev.longitude || Math.abs(longitude - prev.longitude) > MIN_MOVEMENT_DEG;
+        const needsUpdate = !prev.isTracking || latChanged || lonChanged || prev.error;
+        if (!needsUpdate) return prev; // No re-render — position barely changed
+        return {
+          ...prev,
+          latitude,
+          longitude,
+          accuracy,
+          isTracking: true,
+          error: null,
+          isStale: false,
+        };
+      });
+
+      // Always send to server (server-side dedup handles frequency)
       sendLocationToServer(latitude, longitude);
     },
     [sendLocationToServer]
@@ -138,24 +186,26 @@ export function useDriverLocationTracker({
         errorMessage = 'Position indisponible';
         break;
       case error.TIMEOUT:
-        errorMessage = 'Délai de localisation dépassé';
-        break;
+        // Timeout is often transient — don't show error, just log
+        console.warn('[GPS] Position timeout — will retry automatically');
+        return; // Don't update state for timeouts
     }
-    setLocationState((prev) => ({ ...prev, error: errorMessage, isTracking: false }));
+    if (mountedRef.current) {
+      setLocationState((prev) => ({ ...prev, error: errorMessage, isTracking: false }));
+    }
     console.error('[GPS] Geolocation error:', errorMessage);
   }, []);
 
-  // ── Wake Lock: prevent screen from sleeping (keeps GPS alive on mobile web) ──
+  // ── Wake Lock ──
   const acquireWakeLock = useCallback(async () => {
-    if (!('wakeLock' in navigator)) return;
+    if (!('wakeLock' in navigator) || wakeLockRef.current) return;
     try {
       wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
       wakeLockRef.current?.addEventListener('release', () => {
-        console.log('[GPS] Wake lock released');
+        wakeLockRef.current = null;
       });
-      console.log('[GPS] Wake lock acquired — screen will stay on');
-    } catch (err) {
-      console.warn('[GPS] Wake lock failed:', err);
+    } catch {
+      // Silent — wake lock is optional enhancement
     }
   }, []);
 
@@ -164,14 +214,14 @@ export function useDriverLocationTracker({
     wakeLockRef.current = null;
   }, []);
 
-  // Re-acquire wake lock when page becomes visible again
+  // Re-acquire wake lock + force GPS refresh on page focus
   useEffect(() => {
     if (!enabled) return;
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && enabled) {
+      if (document.visibilityState === 'visible' && enabled && mountedRef.current) {
         acquireWakeLock();
         // Force a fresh GPS update when coming back to foreground
-        if (navigator.geolocation) {
+        if (navigator.geolocation && !Capacitor.isNativePlatform()) {
           navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
             enableHighAccuracy: true,
             timeout: 10000,
@@ -184,18 +234,11 @@ export function useDriverLocationTracker({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [enabled, acquireWakeLock, handlePositionUpdate, handleError]);
 
-  // ── Web tracking start/stop ──
+  // ── Web tracking start/stop — stable refs ──
   const startWebTracking = useCallback(() => {
-    if (!navigator.geolocation) {
-      setLocationState((prev) => ({
-        ...prev,
-        error: 'Géolocalisation non supportée',
-        isTracking: false,
-      }));
-      return;
-    }
+    if (!navigator.geolocation || trackingRef.current) return;
+    trackingRef.current = true;
 
-    // Acquire wake lock to keep screen on
     acquireWakeLock();
 
     // Immediate fresh position
@@ -205,27 +248,32 @@ export function useDriverLocationTracker({
       maximumAge: 0,
     });
 
-    // Continuous watch
+    // Continuous watch — primary source
     watchIdRef.current = navigator.geolocation.watchPosition(
       handlePositionUpdate,
       handleError,
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
     );
 
-    // Periodic forced refresh — ensures DB gets updated even if watchPosition
-    // is throttled by the browser in background
+    // Periodic keep-alive — ensures DB gets updated even if watchPosition
+    // is throttled by the browser in background. Uses longer timeout to reduce load.
     intervalRef.current = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(handlePositionUpdate, handleError, {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      });
+      if (mountedRef.current) {
+        navigator.geolocation.getCurrentPosition(handlePositionUpdate, () => {}, {
+          enableHighAccuracy: false, // Less accurate but faster for keep-alive
+          timeout: 10000,
+          maximumAge: 5000,
+        });
+      }
     }, updateIntervalMs);
 
-    setLocationState((prev) => ({ ...prev, isTracking: true }));
+    if (mountedRef.current) {
+      setLocationState((prev) => prev.isTracking ? prev : { ...prev, isTracking: true });
+    }
   }, [handlePositionUpdate, handleError, updateIntervalMs, acquireWakeLock]);
 
   const stopWebTracking = useCallback(() => {
+    trackingRef.current = false;
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
@@ -235,7 +283,9 @@ export function useDriverLocationTracker({
       intervalRef.current = null;
     }
     releaseWakeLock();
-    setLocationState((prev) => ({ ...prev, isTracking: false }));
+    if (mountedRef.current) {
+      setLocationState((prev) => prev.isTracking ? { ...prev, isTracking: false } : prev);
+    }
   }, [releaseWakeLock]);
 
   // ── Stale position checker ──
@@ -243,6 +293,7 @@ export function useDriverLocationTracker({
     if (!enabled) return;
 
     staleCheckRef.current = setInterval(() => {
+      if (!mountedRef.current) return;
       setLocationState((prev) => {
         if (!prev.lastUpdate) return prev;
         const age = Date.now() - prev.lastUpdate.getTime();
@@ -258,24 +309,32 @@ export function useDriverLocationTracker({
 
   // ── Main effect: start/stop based on platform ──
   useEffect(() => {
+    mountedRef.current = true;
+
     if (enabled && driverId && !Capacitor.isNativePlatform()) {
       startWebTracking();
     } else if (!enabled || !driverId) {
       stopWebTracking();
     }
-    return () => stopWebTracking();
+    return () => {
+      mountedRef.current = false;
+      stopWebTracking();
+    };
   }, [enabled, driverId, startWebTracking, stopWebTracking]);
 
-  // Merge native position into state
+  // Merge native position into state (only if changed)
   useEffect(() => {
     if (Capacitor.isNativePlatform() && nativeGeo.latitude && nativeGeo.longitude) {
-      setLocationState((prev) => ({
-        ...prev,
-        latitude: nativeGeo.latitude,
-        longitude: nativeGeo.longitude,
-        accuracy: nativeGeo.accuracy,
-        isTracking: true,
-      }));
+      setLocationState((prev) => {
+        if (prev.latitude === nativeGeo.latitude && prev.longitude === nativeGeo.longitude) return prev;
+        return {
+          ...prev,
+          latitude: nativeGeo.latitude,
+          longitude: nativeGeo.longitude,
+          accuracy: nativeGeo.accuracy,
+          isTracking: true,
+        };
+      });
     }
   }, [nativeGeo.latitude, nativeGeo.longitude, nativeGeo.accuracy]);
 
