@@ -124,7 +124,7 @@ export function DriverResultsCarousel3D({
           className="absolute inset-0 flex items-center justify-center"
           style={{
             transformStyle: 'preserve-3d',
-            transform: count > 1 ? `rotateY(${rotation}deg)` : 'none',
+            transform: `rotateY(${rotation}deg)`,
           }}
         >
           {drivers.map((driver, index) => {
