@@ -75,7 +75,11 @@ export function StepConfirm({
   const canSubmit = (() => {
     if (!clientPaymentMethod) return false;
     if (clientPaymentMethod === 'card' && !cardVerifiedForBooking) return false;
-    if (!user && !registrationDone && (!guestName.trim() || !guestPhone.trim())) return false;
+    if (!user && !registrationDone) {
+      if (!guestName.trim()) return false;
+      // Email is ALWAYS mandatory for guests (tracking link)
+      if (!guestEmail.trim()) return false;
+    }
     return true;
   })();
 
@@ -252,11 +256,11 @@ export function StepConfirm({
                 <p className="text-[10px] text-muted-foreground text-center">100% gratuit</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-[11px] text-muted-foreground">Coordonnées pour que le chauffeur vous contacte.</p>
+            <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">Coordonnées pour recevoir votre lien de suivi.</p>
                 <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Votre nom *" className="h-10" />
-                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone *" type="tel" className="h-10" />
-                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder={clientPaymentMethod === 'card' ? "Email * (obligatoire pour CB)" : "Email (optionnel)"} type="email" className="h-10" />
+                <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email * (pour le suivi de course)" type="email" className="h-10" />
+                <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Téléphone (optionnel)" type="tel" className="h-10" />
               </div>
             )}
           </CardContent>
