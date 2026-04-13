@@ -33,7 +33,7 @@ async function loadSoundBuffer(): Promise<AudioBuffer | null> {
 /**
  * Stop any currently playing sound to prevent overlap
  */
-function stopCurrentPlayback() {
+export function stopCurrentPlayback() {
   try {
     if (activeSource) {
       activeSource.stop();
