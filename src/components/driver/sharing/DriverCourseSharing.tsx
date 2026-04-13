@@ -145,7 +145,7 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
         <Alert className="mx-1 border-primary/30 bg-primary/5">
           <Globe className="h-4 w-4 text-primary" />
           <AlertDescription className="text-sm">
-            <strong>Vous pouvez recevoir et accepter des courses partagées.</strong> Pour partager vos propres courses et gagner des commissions, passez en Premium.
+            <strong>Vous pouvez recevoir et accepter des courses partagées.</strong> Pour partager vos propres courses et gagner des rétributions, passez en Premium.
           </AlertDescription>
         </Alert>
       )}
@@ -175,10 +175,10 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
               </Button>
             </div>
 
-            {/* Commission info */}
+            {/* Rétribution info */}
             <div className="mt-3 p-2 bg-background/60 rounded-lg border border-border/30">
               <p className="text-xs text-muted-foreground">
-                <strong>Commissions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.25€/course
+                <strong>Rétributions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.25€/course
               </p>
             </div>
           </CardContent>

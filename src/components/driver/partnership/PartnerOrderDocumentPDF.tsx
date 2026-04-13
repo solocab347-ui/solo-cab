@@ -183,7 +183,7 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setFillColor(255, 235, 235);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.setTextColor(...dangerColor);
-    doc.text(`Commission à verser (${data.commission_percentage}%)`, 25, yPos + 5);
+    doc.text(`Rétribution à verser (${data.commission_percentage}%)`, 25, yPos + 5);
     doc.text(`-${data.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
@@ -200,7 +200,7 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setFillColor(235, 255, 235);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.setTextColor(...successColor);
-    doc.text(`Commission à recevoir (${data.commission_percentage}%)`, 25, yPos + 5);
+    doc.text(`Rétribution à recevoir (${data.commission_percentage}%)`, 25, yPos + 5);
     doc.text(`+${data.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
@@ -210,7 +210,7 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(11);
-    doc.text("COMMISSION À RECEVOIR", 25, yPos + 6);
+    doc.text("RÉTRIBUTION À RECEVOIR", 25, yPos + 6);
     doc.text(`${data.commission_amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
   }
 
