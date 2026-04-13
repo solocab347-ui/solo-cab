@@ -319,25 +319,21 @@ export function RideWaitingScreen({
           const newStatus = payload.new?.status;
           if (newStatus === 'accepted' && !acceptedRef.current) {
             acceptedRef.current = true;
-            const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
-            setAcceptedDriverId(driverId || null);
-            // Delay status change to let carousel animate to accepted driver
-            setTimeout(() => setStatus('accepted'), 2000);
+            const acceptDriverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
+            setAcceptedDriverId(acceptDriverId || null);
             
-            const driverId = payload.new?.accepted_by_driver_id || payload.new?.selected_driver_id;
             let finalCourseId = payload.new?.final_course_id;
             
             // Fetch driver name
             let name = 'Chauffeur';
-            if (driverId) {
+            if (acceptDriverId) {
               const { data: driver } = await supabase
                 .from('drivers')
                 .select('profiles:user_id(full_name), company_name')
-                .eq('id', driverId)
+                .eq('id', acceptDriverId)
                 .single();
               const rawName = (driver as any)?.profiles?.full_name || (driver as any)?.company_name || 'Chauffeur';
-              const parts = rawName.trim().split(/\s+/);
-              name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
+              name = formatDriverName(rawName, false);
               setAcceptedDriverName(name);
             }
             
@@ -347,7 +343,11 @@ export function RideWaitingScreen({
               finalCourseId = await pollForCourseId(payload.new?.id || requestId);
             }
             
-            onAccepted(name, finalCourseId || undefined);
+            // Delay onAccepted to let 3D carousel animate the reveal
+            setTimeout(() => {
+              setStatus('accepted');
+              onAccepted(name, finalCourseId || undefined);
+            }, 3000);
           }
         }
       )
