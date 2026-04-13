@@ -304,7 +304,20 @@ export function IncomingCourseOverlay({
         } catch (holdErr) { console.error('Card hold check failed:', holdErr); }
         toast.success('Course acceptée !');
       } else if (course.source === 'ride_request') {
-        const { data, error } = await supabase.functions.invoke('accept-ride-request', { body: { ride_request_id: course.sourceId } });
+        // Use a race: edge function call vs 15s safety timeout
+        // The poll will detect acceptance via DB if edge fn is slow
+        const invokePromise = supabase.functions.invoke('accept-ride-request', { body: { ride_request_id: course.sourceId } });
+        const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 15000)
+        );
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+        
+        if (error?.message === 'timeout') {
+          // Edge function still running — poll will handle navigation
+          console.warn('[IncomingCourseOverlay] Edge function slow, relying on status poll');
+          // Don't dismiss or show error — the poll useEffect will detect acceptedByMe and call onAccepted
+          return;
+        }
         if (error) throw error;
         if (!data?.success) {
           if (data?.already_taken) toast.error('Cette course a déjà été prise par un autre chauffeur');
