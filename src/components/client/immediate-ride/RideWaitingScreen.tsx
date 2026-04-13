@@ -128,12 +128,12 @@ export function RideWaitingScreen({
     const fetchDrivers = async () => {
       const { data } = await supabase
         .from('ride_requests')
-        .select('selected_driver_id, status, drivers:selected_driver_id(display_name, company_name, profile_photo_url)')
+        .select('selected_driver_id, status, drivers:selected_driver_id(company_name, profile_photo_url, profiles:user_id(full_name))')
         .eq('request_group_id', groupId);
       if (data) {
         setContactedDrivers(data.map((r: any) => ({
           driver_id: r.selected_driver_id,
-          driver_name: r.drivers?.display_name || r.drivers?.company_name || 'Chauffeur',
+          driver_name: r.drivers?.profiles?.full_name || r.drivers?.company_name || 'Chauffeur',
           photo_url: r.drivers?.profile_photo_url || null,
           status: r.status as ContactedDriver['status'],
         })));
