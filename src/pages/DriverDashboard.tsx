@@ -468,13 +468,14 @@ const DriverDashboard = () => {
       'vision': 0,
       'objectives': 0,
       'goals': 1,
-      'settings': 2,
-      'profile': 3,
-      'documents': 4,
-      'nfc': 5,
-      'billing': 6,
-      'trial_start': 7,
-      'encaissements': 6,
+      'planning': 2,
+      'settings': 3,
+      'profile': 4,
+      'documents': 5,
+      'nfc': 6,
+      'billing': 7,
+      'trial_start': 8,
+      'encaissements': 7,
     };
     
     const savedStep = driverProfile?.driver?.onboarding_step;

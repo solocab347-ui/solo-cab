@@ -298,7 +298,6 @@ export function UnifiedBookingPage() {
         const data = await res.json();
         return data.features?.[0] ? { lat: data.features[0].center[1], lng: data.features[0].center[0] } : null;
       };
-      // Only geocode if we don't already have coords (user selected from suggestions)
       const [pickup, dest] = await Promise.all([
         pickupCoords || geocode(pickupAddress),
         destCoords || geocode(destinationAddress),
@@ -307,10 +306,11 @@ export function UnifiedBookingPage() {
       if (!dest) { toast.error('Adresse de destination introuvable'); return; }
       setPickupCoords(pickup); setDestCoords(dest);
 
-      // Launch directions + driver search in PARALLEL
-      let distance: number | null = null, duration: number | null = null;
       let schedDate: Date | undefined;
       if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+
+      // Launch directions + driver search TRULY in parallel
+      let distance: number | null = null, duration: number | null = null;
 
       const directionsPromise = mapboxToken
         ? fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${dest.lng},${dest.lat}?access_token=${mapboxToken}`)
@@ -322,12 +322,10 @@ export function UnifiedBookingPage() {
             .catch(() => {})
         : Promise.resolve();
 
-      // Start driver search immediately (doesn't need route data)
-      // We'll recalculate prices after directions resolve
-      await directionsPromise;
-      setRouteDistanceKm(distance); setRouteDurationMin(duration);
+      const driverSearchPromise = searchNearbyDrivers(pickup.lat, pickup.lng, undefined, undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
 
-      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+      await Promise.all([directionsPromise, driverSearchPromise]);
+      setRouteDistanceKm(distance); setRouteDurationMin(duration);
       setCurrentStep(2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
