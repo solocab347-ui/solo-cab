@@ -43,6 +43,7 @@ interface BookingInfo {
   distance_km: number | null;
   driver_latitude: number | null;
   driver_longitude: number | null;
+  client_rating: number | null;
 }
 
 const GuestBookingTracking = () => {
