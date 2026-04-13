@@ -42,7 +42,6 @@ export function StepResultats({
   onBack, onNext,
 }: StepResultatsProps) {
   const navigate = useNavigate();
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300 pb-20">
