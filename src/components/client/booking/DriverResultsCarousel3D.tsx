@@ -53,24 +53,20 @@ export function DriverResultsCarousel3D({
 
   // Continuous rotation animation
   useEffect(() => {
-    if (count <= 1 || isPaused) {
-      // Single card: gentle oscillation
-      if (count === 1 && !isPaused) {
-        const oscillate = (time: number) => {
-          if (lastTimeRef.current === 0) lastTimeRef.current = time;
-          const elapsed = (time - lastTimeRef.current) / 1000;
-          // Gentle back-and-forth wobble
-          const angle = Math.sin(elapsed * 0.8) * 8;
-          setRotation(angle);
-          animFrameRef.current = requestAnimationFrame(oscillate);
-        };
+    if (isPaused) return;
+    if (count === 0) return;
+
+    if (count === 1) {
+      // Single card: gentle floating Y-axis oscillation
+      const startTime = performance.now();
+      const oscillate = (time: number) => {
+        const elapsed = (time - startTime) / 1000;
+        const angle = Math.sin(elapsed * 0.8) * 12;
+        setRotation(angle);
         animFrameRef.current = requestAnimationFrame(oscillate);
-        return () => {
-          cancelAnimationFrame(animFrameRef.current);
-          lastTimeRef.current = 0;
-        };
-      }
-      return;
+      };
+      animFrameRef.current = requestAnimationFrame(oscillate);
+      return () => cancelAnimationFrame(animFrameRef.current);
     }
 
     const speed = 0.2; // degrees per frame (~12°/s — slower for browsing)
@@ -128,7 +124,7 @@ export function DriverResultsCarousel3D({
           className="absolute inset-0 flex items-center justify-center"
           style={{
             transformStyle: 'preserve-3d',
-            transform: count > 1 ? `rotateY(${rotation}deg)` : 'none',
+            transform: `rotateY(${rotation}deg)`,
           }}
         >
           {drivers.map((driver, index) => {
@@ -149,7 +145,7 @@ export function DriverResultsCarousel3D({
               >
                 <motion.div
                   style={{
-                    transform: count > 1 ? `rotateY(${-angle - rotation}deg)` : `rotateY(${rotation}deg)`,
+                    transform: count > 1 ? `rotateY(${-angle - rotation}deg)` : 'none',
                   }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
