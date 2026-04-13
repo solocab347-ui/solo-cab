@@ -92,7 +92,11 @@ const GuestBookingTracking = () => {
           is_shared_course: rawBooking.is_shared_course ?? false,
           shared_drivers: sharedDrivers,
           devis_amount: rawBooking.devis_amount,
-          quote_number: rawBooking.quote_number
+          quote_number: rawBooking.quote_number,
+          final_payment_amount: rawBooking.final_payment_amount ?? null,
+          distance_km: rawBooking.distance_km ?? null,
+          driver_latitude: rawBooking.driver_latitude ?? null,
+          driver_longitude: rawBooking.driver_longitude ?? null,
         };
         setBooking(parsedBooking);
 
