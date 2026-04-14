@@ -11,8 +11,9 @@ import AdminFinanceCharts from "../finance/AdminFinanceCharts";
 import AdminPeriodSummary from "../finance/AdminPeriodSummary";
 import AdminStripePayments from "../finance/AdminStripePayments";
 import AdminGlobalSearch from "../AdminGlobalSearch";
+import AdminStripeAnomalies from "../finance/AdminStripeAnomalies";
 
-type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "search";
+type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "anomalies" | "search";
 type Preset = "week" | "month" | "year" | "custom";
 
 const getPresetDates = (preset: Preset): { start: string; end: string } => {
