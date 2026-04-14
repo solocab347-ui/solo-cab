@@ -76,8 +76,8 @@ serve(async (req) => {
         },
         business_profile: {
           name: driver.company_name || profile?.full_name || "Chauffeur VTC",
-          mcc: "4121", // Taxi/limo services
-          url: `${origin}/driver/${driver.id}`,
+          mcc: "4121",
+          url: `${productionUrl}/driver/${driver.id}`,
         },
         metadata: {
           driver_id: driver.id,
