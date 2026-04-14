@@ -60,6 +60,9 @@ const GuestBookingTracking = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [showReasonForm, setShowReasonForm] = useState(false);
+  const [ratingReason, setRatingReason] = useState('');
+  const [ratingReasonDetail, setRatingReasonDetail] = useState('');
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
 
