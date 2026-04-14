@@ -197,7 +197,7 @@ const DriverDashboard = () => {
     if (driverProfile?.driver && driverProfile.driver.onboarding_completed) {
       const driver = driverProfile.driver;
       const isProfileComplete = !!(
-        (driverProfile.profile_photo_url || driver.profile_photo_url) &&
+        ((driverProfile as any).profile_photo_url || (driver as any).profile_photo_url) &&
         (driver.display_driver_name || driver.display_company_name) &&
         driver.service_description && driver.service_description.length >= 20 &&
         driver.working_sectors && driver.working_sectors.length > 0 &&
