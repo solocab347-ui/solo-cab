@@ -211,15 +211,18 @@ const GuestBookingTracking = () => {
   };
 
   const handleSubmitRating = async () => {
-    if (!booking || rating === 0) return;
+    if (!booking || rating === 0 || !token) return;
     setIsSubmittingRating(true);
     try {
+      // Use RPC for guest rating (anon can't update courses directly)
       const { error } = await supabase
-        .from('courses')
-        .update({ client_rating: rating })
-        .eq('id', booking.id);
+        .rpc('guest_submit_rating' as any, { 
+          _token: token, 
+          _rating: rating 
+        });
       if (error) throw error;
       setRatingSubmitted(true);
+      setBooking(prev => prev ? { ...prev, client_rating: rating } : null);
       toast.success('Merci pour votre note !');
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');
