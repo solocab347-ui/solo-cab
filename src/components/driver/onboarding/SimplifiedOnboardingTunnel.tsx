@@ -250,7 +250,7 @@ export function SimplifiedOnboardingTunnel({
   };
 
   // Computed
-  const isProfileComplete = companyName && siret.length === 14 && companyAddress;
+  const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
   const isVehicleComplete = vehicleBrand && vehicleModel && vehicleColor;
   const isPricingComplete = baseFare && perKmRate;
   const isDocsSubmitted = documentsStatus === 'submitted' || documentsStatus === 'validated';
