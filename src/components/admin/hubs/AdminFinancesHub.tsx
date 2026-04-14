@@ -173,6 +173,7 @@ const AdminFinancesHub = () => {
       {activeTab === "audit" && <AdminPaymentAudit />}
       {activeTab === "charts" && <AdminFinanceCharts />}
       {activeTab === "stripe" && <AdminStripePayments />}
+      {activeTab === "anomalies" && <AdminStripeAnomalies />}
       {activeTab === "search" && <AdminGlobalSearch />}
     </div>
   );
