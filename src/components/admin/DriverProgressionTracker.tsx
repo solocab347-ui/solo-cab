@@ -243,47 +243,42 @@ const DriverProgressionTracker = () => {
   const calculateOnboardingSteps = (driver: DriverFullData): OnboardingStep[] => {
     const currentStepIndex = getStepIndex(driver.onboarding_step);
     const isComplete = driver.onboarding_completed;
+    const stepIdx = currentStepIndex;
+    const hasStarted = stepIdx >= 0;
     
-    // Le paiement réel = trial démarré OU abonnement actif avec subscription_paid ET pas en trial pending
+    const hasProfile = driver.onboarding_profile_completed || !!driver.company_name || !!driver.siret;
+    const hasVehicle = !!driver.vehicle_brand;
+    const hasPricing = driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate);
+    const hasStripe = driver.stripe_connect_status === 'active' || driver.stripe_connect_status === 'pending';
+    
     const hasRealPayment = !!driver.trial_started_at || 
       (driver.subscription_paid && driver.trial_status === 'active') ||
       driver.free_access_granted;
     
-    // Déterminer l'étape actuelle
-    // currentStepIndex: -1 = pas commencé, 0-7 = en cours, 8+ = terminé
-    const stepIdx = currentStepIndex;
-    const hasStarted = stepIdx >= 0;
-    
     return [
-      {
-        id: "vision",
-        label: "Vision",
-        isComplete: isComplete || stepIdx > 0 || driver.onboarding_objectives_completed,
-        status: (!hasStarted && !driver.onboarding_objectives_completed) ? "current" :
-          stepIdx === 0 && !isComplete ? "current" : 
-          (stepIdx > 0 || isComplete || driver.onboarding_objectives_completed) ? "complete" : "incomplete",
-      },
-      {
-        id: "goals",
-        label: "Objectifs",
-        isComplete: isComplete || stepIdx > 1 || driver.objectives_completed,
-        status: stepIdx === 1 && !isComplete ? "current" :
-          (isComplete || stepIdx > 1 || driver.objectives_completed) ? "complete" : "incomplete",
-      },
-      {
-        id: "settings",
-        label: "Tarifs",
-        isComplete: isComplete || stepIdx > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate),
-        status: stepIdx === 2 && !isComplete ? "current" :
-          (isComplete || stepIdx > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate)) ? "complete" : "incomplete",
-        details: driver.base_fare ? `${driver.base_fare}€ base` : undefined,
-      },
       {
         id: "profile",
         label: "Profil",
-        isComplete: isComplete || stepIdx > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url,
-        status: stepIdx === 3 && !isComplete ? "current" :
-          (isComplete || stepIdx > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url) ? "complete" : "incomplete",
+        isComplete: isComplete || hasProfile || stepIdx > 0,
+        status: isComplete || hasProfile || stepIdx > 0 ? "complete" :
+          (!hasStarted || stepIdx === 0) ? "current" : "incomplete",
+        details: driver.company_name || undefined,
+      },
+      {
+        id: "vehicle",
+        label: "Véhicule",
+        isComplete: isComplete || hasVehicle || stepIdx > 1,
+        status: isComplete || hasVehicle || stepIdx > 1 ? "complete" :
+          stepIdx === 1 ? "current" : "incomplete",
+        details: driver.vehicle_brand || undefined,
+      },
+      {
+        id: "pricing",
+        label: "Tarifs",
+        isComplete: isComplete || hasPricing || stepIdx > 2,
+        status: isComplete || hasPricing || stepIdx > 2 ? "complete" :
+          stepIdx === 2 ? "current" : "incomplete",
+        details: driver.base_fare ? `${driver.base_fare}€ base` : undefined,
       },
       {
         id: "documents",
@@ -291,37 +286,28 @@ const DriverProgressionTracker = () => {
         isComplete: driver.documents_status === "validated",
         status: driver.documents_status === "validated" ? "complete" :
           driver.documents_status === "submitted" ? "pending" :
-          stepIdx === 4 && !isComplete ? "current" : "incomplete",
+          stepIdx === 3 ? "current" : "incomplete",
         details: driver.documents_status === "validated" ? "Validés" :
           driver.documents_status === "submitted" ? "En attente admin" : "À déposer",
       },
       {
-        id: "nfc",
-        label: "NFC",
-        isComplete: driver.has_nfc_plate,
-        status: driver.has_nfc_plate ? "complete" : 
-          driver.nfc_plate_ordered_at ? "pending" :
-          stepIdx === 5 && !isComplete ? "current" : "incomplete",
-        details: driver.has_nfc_plate ? "Reçue" : driver.nfc_plate_ordered_at ? "Commandée" : "Non",
+        id: "stripe",
+        label: "Paiements",
+        isComplete: hasStripe,
+        status: hasStripe ? "complete" :
+          stepIdx === 4 ? "current" : "incomplete",
+        details: driver.stripe_connect_status === "active" ? "Stripe actif" :
+          driver.stripe_connect_status === "pending" ? "En cours" : undefined,
       },
       {
-        id: "billing",
-        label: "Encaissements",
-        isComplete: !!driver.billing_type,
-        status: driver.billing_type ? "complete" :
-          stepIdx === 6 && !isComplete ? "current" : "incomplete",
-        details: driver.billing_type === "solocab_stripe" ? "Stripe" : 
-          driver.billing_type === "own_equipment" ? "TPE propre" : undefined,
-      },
-      {
-        id: "trial_start",
+        id: "validation",
         label: "Lancement",
-        isComplete: hasRealPayment,
-        status: hasRealPayment ? "complete" :
-          stepIdx === 7 && !isComplete ? "current" :
-          driver.documents_status !== "validated" ? "incomplete" : "pending",
-        details: hasRealPayment ? (driver.free_access_granted ? "Gratuit" : "Essai actif") : 
-          driver.documents_status !== "validated" ? "Docs requis" : "Prêt à lancer",
+        isComplete: hasRealPayment || (isComplete && driver.documents_status === "validated" && hasStripe),
+        status: (hasRealPayment || (isComplete && driver.documents_status === "validated" && hasStripe)) ? "complete" :
+          (driver.documents_status === "validated" && hasStripe) ? "pending" :
+          stepIdx === 5 ? "current" : "incomplete",
+        details: hasRealPayment ? (driver.free_access_granted ? "Gratuit" : "Actif") : 
+          (driver.documents_status === "validated" && hasStripe) ? "Prêt à lancer" : "En attente",
       },
     ];
   };
