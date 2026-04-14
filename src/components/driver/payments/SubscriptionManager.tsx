@@ -158,10 +158,6 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   
   // Accès gratuit admin
   const hasAdminFreeAccess = localAccessStatus.hasAdminFreeAccess || driverProfile?.driver?.free_access_granted;
-  // Période d'essai 14 jours pour non-pionniers
-  const isInTrialPeriod = localAccessStatus.isInTrialPeriod && !isPioneer && !hasAdminFreeAccess;
-  const trialDaysLeft = localAccessStatus.trialDaysLeft || 0;
-  const trialEndDate = localAccessStatus.trialEndDate;
   
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
