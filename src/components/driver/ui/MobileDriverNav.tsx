@@ -13,7 +13,7 @@ import {
   Menu, Home, Users, Car, MessageSquare, FileText, CreditCard,
   FolderOpen, Calendar, Calculator, QrCode,
   Megaphone, PieChart, Sparkles, Lightbulb, TrendingUp,
-  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown, Lock
+  Globe, BarChart3, Handshake, Settings, ChevronDown, Wrench, Target, Clock, Crown, Lock, Wallet, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/useLocale";
@@ -86,6 +86,7 @@ export const MobileDriverNav = ({
     { value: "messages", icon: MessageSquare, label: t('driverDashboard.menu.messages'), gradient: "from-cyan-500 to-blue-600" },
     { value: "devis", icon: FileText, label: t('driverDashboard.menu.quotes'), gradient: "from-purple-500 to-blue-600" },
     { value: "factures", icon: CreditCard, label: t('driverDashboard.menu.invoices'), gradient: "from-green-500 to-emerald-600" },
+    { value: "finances", icon: Wallet, label: "Finances", gradient: "from-amber-500 to-orange-600" },
   ];
 
   // Ajouter documents si pas fleet driver
@@ -101,6 +102,7 @@ export const MobileDriverNav = ({
       gradient: "from-purple-500 to-pink-600",
       items: [
         { value: "planning", icon: Calendar, label: t('driverDashboard.menu.planning'), premium: true },
+        { value: "encaisser", icon: Zap, label: "Encaisser", premium: true },
         { value: "calculator", icon: Calculator, label: t('driverDashboard.menu.calculator') },
         { value: "qrcode", icon: QrCode, label: t('driverDashboard.menu.myQRCode') },
       ],

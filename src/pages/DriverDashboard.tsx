@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon, Zap } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -793,6 +793,11 @@ const DriverDashboard = () => {
                     {t('driverDashboard.menu.planning')}
                     {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à l'encaissement — 19,99€/mois" }); } else { setActiveTab("encaisser"); } }} className="gap-2 cursor-pointer hover:bg-muted">
+                    <Zap className="w-4 h-4" />
+                    Encaisser
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-muted">
                     <Calculator className="w-4 h-4" />
                     {t('driverDashboard.menu.calculator')}
@@ -1147,12 +1152,12 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Partage & Partenariats Tab - Premium can send, all can receive */}
+          {/* Partage & Partenariats Tab - PREMIUM */}
           <TabsContent value="sharing" className="space-y-6">
             {isPremium ? (
               <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
             ) : (
-              <DriverCourseSharing />
+              <PremiumGate featureName="Partenariats & Partage de courses" featureDescription="Accédez au réseau de partenaires, échangez des courses et développez votre activité avec d'autres chauffeurs." />
             )}
           </TabsContent>
 

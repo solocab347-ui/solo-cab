@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePremium } from "@/hooks/usePremium";
+import { useDriverPremium } from "@/hooks/useDriverPremium";
 import { Crown, Lock, Star, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,7 +23,11 @@ interface PremiumGateProps {
 }
 
 export function PremiumGate({ feature, featureName, children, description, featureDescription, isPremium: _ignored }: PremiumGateProps) {
-  const { isPremium, loading } = usePremium();
+  // Use BOTH hooks - driver premium (DB-based, fast) takes priority
+  const driverPremium = useDriverPremium();
+  const contextPremium = usePremium();
+  const isPremium = driverPremium.isPremium || contextPremium.isPremium;
+  const loading = driverPremium.loading && contextPremium.loading;
   const displayName = feature || featureName || "cette fonctionnalité";
   const displayDesc = description || featureDescription;
 
