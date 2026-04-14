@@ -570,8 +570,27 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                 <p className="text-lg font-bold text-foreground truncate">{clientName}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{paymentLabel}</p>
               </div>
-              {clientPhoneHref && (
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                {rideRequestId ? (
+                  <>
+                    <button
+                      onClick={() => setChatOpen(true)}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+                      aria-label="Chat avec le client"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </button>
+                    <RideChatPanel
+                      rideId={rideRequestId}
+                      senderType="driver"
+                      senderId={driverId}
+                      otherName={clientName.split(' ')[0]}
+                      isOpen={chatOpen}
+                      onOpenChange={setChatOpen}
+                      triggerLabel=""
+                    />
+                  </>
+                ) : clientPhoneHref ? (
                   <a
                     href={`sms:${clientPhoneHref}`}
                     className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
@@ -579,6 +598,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                   >
                     <MessageCircle className="w-5 h-5" />
                   </a>
+                ) : null}
+                {clientPhoneHref && (
                   <a
                     href={`tel:${clientPhoneHref}`}
                     className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
@@ -586,8 +607,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                   >
                     <Phone className="w-5 h-5" />
                   </a>
-                </div>
-              )}
+                )}
             </div>
             {course?.course_number && (
               <div className="mt-3 rounded-xl bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground">
