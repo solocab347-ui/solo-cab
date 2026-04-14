@@ -7852,6 +7852,7 @@ export type Database = {
           weekend_surcharge: number | null
           welcome_video_watched: boolean | null
           welcome_video_watched_at: string | null
+          wizard_current_step: number | null
           working_sectors: string[] | null
         }
         Insert: {
@@ -8038,6 +8039,7 @@ export type Database = {
           weekend_surcharge?: number | null
           welcome_video_watched?: boolean | null
           welcome_video_watched_at?: string | null
+          wizard_current_step?: number | null
           working_sectors?: string[] | null
         }
         Update: {
@@ -8224,6 +8226,7 @@ export type Database = {
           weekend_surcharge?: number | null
           welcome_video_watched?: boolean | null
           welcome_video_watched_at?: string | null
+          wizard_current_step?: number | null
           working_sectors?: string[] | null
         }
         Relationships: [
