@@ -191,6 +191,23 @@ const ClientRideTracking = () => {
   const [ratingReason, setRatingReason] = useState('');
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
 
+  // ETA calculation
+  const isApproaching = course?.status === 'driver_approaching';
+  const isInProgress = course?.status === 'in_progress';
+  const etaEnabled = (isApproaching || isInProgress) && !!driver?.current_latitude && !!driver?.current_longitude;
+
+  const etaTarget = isApproaching
+    ? (course?.pickup_latitude && course?.pickup_longitude ? { lat: course.pickup_latitude, lng: course.pickup_longitude } : null)
+    : (course?.destination_latitude && course?.destination_longitude ? { lat: course.destination_latitude, lng: course.destination_longitude } : null);
+
+  const { eta, loading: etaLoading, forceRefresh: refreshETA } = useETACalculation({
+    driverLocation: driver?.current_latitude && driver?.current_longitude
+      ? { lat: driver.current_latitude, lng: driver.current_longitude }
+      : null,
+    targetLocation: etaTarget,
+    enabled: etaEnabled,
+  });
+
   const fetchCourse = useCallback(async () => {
     if (!courseId) return;
     const { data, error } = await supabase
