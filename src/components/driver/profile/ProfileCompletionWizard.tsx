@@ -88,11 +88,10 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     setAutoSaving(true);
     try {
       const updatePayload: Record<string, any> = {
-        profile_photo_url: dataToSave.profilePhotoUrl,
         card_photo_url: dataToSave.profilePhotoUrl,
         display_driver_name: dataToSave.displayDriverName,
         display_company_name: dataToSave.displayCompanyName,
-        service_description: dataToSave.serviceDescription,
+        service_description: dataToSave.serviceDescription || null,
         working_sectors: dataToSave.workingSectors,
         services_offered: dataToSave.servicesOffered,
         vehicle_categories: dataToSave.vehicleCategories,
