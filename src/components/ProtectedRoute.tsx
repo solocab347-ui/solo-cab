@@ -161,29 +161,9 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // ========== PRIORITÉ 2: ACCÈS GRATUIT TEMPORAIRE (time_limited) ==========
-      const hasTimeLimitedAccess = driver.free_access_granted === true && 
-        driver.free_access_type === 'time_limited' && 
-        driver.free_access_end_date && 
-        new Date(driver.free_access_end_date) > new Date();
-      
-      if (hasTimeLimitedAccess) {
-        logger.info("Accès gratuit temporaire valide - accès accordé", {
-          endDate: driver.free_access_end_date
-        });
-        setDriverStatus("validated");
-        setCheckingDriver(false);
-        return;
-      }
-
-      // Vérifier si l'essai gratuit (trial) est encore valide
-      const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
-        driver.free_access_end_date && 
-        new Date(driver.free_access_end_date) > new Date();
-
       // CRITICAL: Vérifier si le chauffeur est un legacy qui nécessite une migration
       // Ces chauffeurs avaient un compte Stripe sur l'ancien compte, ils doivent re-souscrire
-      // SAUF s'ils ont un accès gratuit (déjà vérifié ci-dessus)
+      // Leur migration n'affecte pas le modèle freemium, uniquement l'ancien historique d'abonnement
       if (driver.is_legacy_stripe && driver.migration_required && !driver.migrated_at) {
         logger.info("Chauffeur legacy - migration Stripe requise");
         setDriverStatus("legacy_migration_required");
@@ -191,73 +171,25 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // PIONNIERS: Traités comme les chauffeurs classiques
-      // Ils doivent payer 19,99€/mois pour le Premium sauf s'ils ont un accès gratuit explicite accordé par admin
+      // Les pionniers restent soumis au même modèle freemium/premium pour l'accès fonctionnel.
+      // Leur statut n'accorde plus d'accès premium automatique ni n'impose un paiement pour le dashboard de base.
       if (driver.is_pioneer) {
-        // Vérifier si le pionnier a un accès gratuit accordé par admin
-        const hasFreeAccessFromAdmin = driver.free_access_granted === true && 
-          driver.free_access_end_date && 
-          new Date(driver.free_access_end_date) > new Date();
-        
-        logger.info("Vérification pionnier", { 
-          hasFreeAccessFromAdmin,
-          freeAccessEndDate: driver.free_access_end_date,
-          hasStripeCustomer: !!driver.stripe_customer_id,
-          subscriptionPaid: driver.subscription_paid
-        });
-        
-        // PRIORITÉ 1: Si le pionnier a un accès gratuit (admin), accès accordé
-        if (hasFreeAccessFromAdmin) {
-          logger.info("Pionnier avec accès gratuit admin - accès accordé");
-          setDriverStatus("validated");
-          setCheckingDriver(false);
-          return;
-        }
-        
-        // PRIORITÉ 2: Si le pionnier a déjà payé, accès accordé
-        if (driver.subscription_paid === true) {
-          logger.info("Pionnier avec abonnement payé - accès accordé");
-          setDriverStatus("validated");
-          setCheckingDriver(false);
-          return;
-        }
-        
-        // Pas de paiement ni d'accès gratuit = rediriger vers paiement
-        logger.info("Pionnier - paiement requis");
-        setDriverStatus("pioneer_payment_required");
+        logger.info("Pionnier basculé sur le modèle freemium standard");
+        setDriverStatus("validated");
         setCheckingDriver(false);
         return;
       }
 
-      // CRITICAL: Vérification stricte du paiement
-      // Un chauffeur doit avoir SOIT:
-      // 1. subscription_paid = true (paiement validé par webhook Stripe)
-      // 2. free_access_granted = true (accès gratuit accordé par admin)
-      // 3. Un essai actif avec stripe_customer_id (empreinte bancaire faite)
-      const hasStripePaid = driver.subscription_paid === true;
-      const hasFreeAccess = driver.free_access_granted === true;
-      const hasTrialWithCard = hasActiveTrialAccess && driver.stripe_customer_id;
-
-      // Log pour debug
-      logger.info("Vérification accès chauffeur", { 
-        hasStripePaid, 
-        hasFreeAccess, 
-        hasActiveTrialAccess,
-        hasTrialWithCard,
-        stripe_customer_id: !!driver.stripe_customer_id 
+      // Modèle freemium strict : le dashboard de base est accessible après validation,
+      // le premium ne sert qu'à débloquer les modules avancés dans l'interface.
+      logger.info("Accès dashboard validé en mode freemium", {
+        subscriptionPaid: driver.subscription_paid,
+        freeAccessGranted: driver.free_access_granted,
+        freeAccessType: driver.free_access_type,
       });
-
-      // Accès valide = paiement Stripe confirmé OU accès gratuit admin OU essai avec empreinte
-      const hasValidAccess = hasStripePaid || hasFreeAccess || hasTrialWithCard;
-
-      if (!hasValidAccess) {
-        logger.error("Accès refusé : paiement requis - aucune condition remplie");
-        setDriverStatus("payment_required");
-      } else {
-        // ✅ Accès valide = accès direct au dashboard
-        logger.info("Accès accordé : paiement vérifié");
-        setDriverStatus("validated");
-      }
+      setDriverStatus("validated");
+      setCheckingDriver(false);
+      return;
     } catch (error) {
       logger.error("Erreur vérification driver", { error });
       setDriverStatus("error");

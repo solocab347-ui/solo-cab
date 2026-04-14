@@ -58,6 +58,18 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
   const { getTapProps } = useInstantTap();
   const { isFree } = useDriverPremium();
 
+  const handleObjectivesAccess = () => {
+    if (isFree) {
+      toast.info("Fonctionnalité Premium", {
+        description: "Passez à Premium pour accéder aux objectifs et au coaching IA — 19,99€/mois"
+      });
+      onTabChange("subscription");
+      return;
+    }
+
+    onTabChange("objectives");
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -134,7 +146,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
       <ProactiveCoachPopup
         message={currentMessage}
         onDismiss={dismissMessage}
-        onAction={() => onTabChange("objectives")}
+        onAction={handleObjectivesAccess}
         driverName={displayName}
       />
       {/* Welcome Header */}
@@ -174,7 +186,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
         <DashboardObjectivesWidget
           driverId={driverProfile.driver.id}
           driverName={displayName}
-          onNavigateToObjectives={() => onTabChange("objectives")}
+          onNavigateToObjectives={handleObjectivesAccess}
           refreshKey={statsRefreshKey}
         />
       )}
