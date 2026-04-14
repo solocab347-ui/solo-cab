@@ -28,7 +28,7 @@ export const RecoveryEmail = ({
     <Body style={main}>
       <Container style={container}>
         <div style={logoSection}>
-          <img src="https://solo-cab-to-lovable.lovable.app/logo-solocab.png" width="60" height="60" alt="SoloCab" style={logoImg} />
+          <img src="https://solocab.fr/logo-solocab.png" width="60" height="60" alt="SoloCab" style={logoImg} />
         </div>
         <Heading style={h1}>Réinitialiser votre mot de passe</Heading>
         <Text style={text}>
