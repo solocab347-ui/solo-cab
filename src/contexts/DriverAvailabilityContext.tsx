@@ -203,6 +203,8 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       .update({
         is_available_now: newOnline,
         driver_status: newStatus,
+        // Keep GPS timestamp fresh when going online to ensure visibility
+        ...(newOnline ? { last_location_update: new Date().toISOString() } : {}),
       })
       .eq('id', driverId);
     playAvailabilitySound(newOnline);
@@ -221,6 +223,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       .update({
         is_available_now: newStatus === 'online',
         driver_status: newStatus,
+        ...(newStatus === 'online' ? { last_location_update: new Date().toISOString() } : {}),
       })
       .eq('id', driverId);
   }, [driverStatus, driverId]);

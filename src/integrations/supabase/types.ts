@@ -20991,7 +20991,7 @@ export type Database = {
           destination_longitude: number
           devis_amount: number
           distance_km: number
-          driver_avatar_url: string
+          driver_avatar: string
           driver_company: string
           driver_heading: number
           driver_latitude: number
