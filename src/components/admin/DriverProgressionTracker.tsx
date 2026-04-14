@@ -31,7 +31,6 @@ import {
   Flame,
   Minus,
   Settings,
-  Compass,
   Wallet,
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
@@ -99,23 +98,14 @@ interface DriverFullData {
   first_client_at: string | null;
 }
 
-// Les 8 vraies étapes du tunnel d'onboarding
+// Les 6 vraies étapes du tunnel d'onboarding (synchronisé avec SimplifiedOnboardingTunnel)
 const TUNNEL_STEPS = [
-  { id: "vision", label: "Vision", icon: Compass },
-  { id: "goals", label: "Objectifs", icon: TrendingUp },
-  { id: "settings", label: "Tarifs", icon: Settings },
   { id: "profile", label: "Profil", icon: User },
+  { id: "vehicle", label: "Véhicule", icon: TrendingUp },
+  { id: "pricing", label: "Tarifs", icon: Settings },
   { id: "documents", label: "Documents", icon: FileText },
-  { id: "nfc", label: "NFC", icon: CreditCard },
-  { id: "billing", label: "Encaissements", icon: Wallet },
-  { id: "trial_start", label: "Lancement", icon: PlayCircle },
-];
-
-// Étapes post-onboarding
-const POST_STEPS = [
-  { id: "first_scan", label: "1er scan", icon: ScanLine },
-  { id: "first_client", label: "1er client", icon: UserPlus },
-  { id: "first_course", label: "1re course", icon: Activity },
+  { id: "stripe", label: "Paiements", icon: Wallet },
+  { id: "validation", label: "Lancement", icon: PlayCircle },
 ];
 
 interface OnboardingStep {
@@ -154,31 +144,25 @@ const DriverCardSkeleton = () => (
 );
 
 // Calcul de l'étape actuelle basé sur onboarding_step
-// Supporte les deux formats: numérique ("0"-"7") ET textuel ("vision", "goals"...)
 const getStepIndex = (stepId: string | null): number => {
-  if (!stepId) return -1; // -1 = pas encore commencé
+  if (!stepId) return -1;
   
-  // D'abord essayer en tant que nombre (format DB courant: "0", "1", "2"...)
   const numericValue = parseInt(stepId, 10);
   if (!isNaN(numericValue) && numericValue >= 0 && numericValue < TUNNEL_STEPS.length) {
     return numericValue;
   }
   
-  // Ensuite essayer en tant qu'ID textuel
   const idx = TUNNEL_STEPS.findIndex(s => s.id === stepId);
   if (idx >= 0) return idx;
   
-  // Mapping élargi pour les variantes possibles
   const stepMapping: Record<string, number> = {
-    "welcome": 0, "intro": 0, "vision": 0,
-    "objectives": 1, "goals": 1,
+    "profile": 0, "public_profile": 0,
+    "vehicle": 1, "vehicule": 1,
     "pricing": 2, "tarifs": 2, "settings": 2,
-    "profile": 3, "public_profile": 3,
-    "documents": 4, "docs": 4,
-    "nfc": 5, "nfc_order": 5,
-    "billing": 6, "payment": 6, "encaissements": 6,
-    "trial": 7, "trial_start": 7, "launch": 7, "lancement": 7,
-    "completed": 8, "complete": 8, "done": 8,
+    "documents": 3, "docs": 3,
+    "stripe": 4, "payment": 4, "billing": 4, "encaissements": 4,
+    "validation": 5, "launch": 5, "lancement": 5, "trial_start": 5, "trial": 5,
+    "completed": 6, "complete": 6, "done": 6,
   };
   
   return stepMapping[stepId.toLowerCase()] ?? -1;
@@ -258,47 +242,42 @@ const DriverProgressionTracker = () => {
   const calculateOnboardingSteps = (driver: DriverFullData): OnboardingStep[] => {
     const currentStepIndex = getStepIndex(driver.onboarding_step);
     const isComplete = driver.onboarding_completed;
+    const stepIdx = currentStepIndex;
+    const hasStarted = stepIdx >= 0;
     
-    // Le paiement réel = trial démarré OU abonnement actif avec subscription_paid ET pas en trial pending
+    const hasProfile = driver.onboarding_profile_completed || !!driver.company_name || !!driver.siret;
+    const hasVehicle = !!driver.vehicle_brand;
+    const hasPricing = driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate);
+    const hasStripe = driver.stripe_connect_status === 'active' || driver.stripe_connect_status === 'pending';
+    
     const hasRealPayment = !!driver.trial_started_at || 
       (driver.subscription_paid && driver.trial_status === 'active') ||
       driver.free_access_granted;
     
-    // Déterminer l'étape actuelle
-    // currentStepIndex: -1 = pas commencé, 0-7 = en cours, 8+ = terminé
-    const stepIdx = currentStepIndex;
-    const hasStarted = stepIdx >= 0;
-    
     return [
-      {
-        id: "vision",
-        label: "Vision",
-        isComplete: isComplete || stepIdx > 0 || driver.onboarding_objectives_completed,
-        status: (!hasStarted && !driver.onboarding_objectives_completed) ? "current" :
-          stepIdx === 0 && !isComplete ? "current" : 
-          (stepIdx > 0 || isComplete || driver.onboarding_objectives_completed) ? "complete" : "incomplete",
-      },
-      {
-        id: "goals",
-        label: "Objectifs",
-        isComplete: isComplete || stepIdx > 1 || driver.objectives_completed,
-        status: stepIdx === 1 && !isComplete ? "current" :
-          (isComplete || stepIdx > 1 || driver.objectives_completed) ? "complete" : "incomplete",
-      },
-      {
-        id: "settings",
-        label: "Tarifs",
-        isComplete: isComplete || stepIdx > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate),
-        status: stepIdx === 2 && !isComplete ? "current" :
-          (isComplete || stepIdx > 2 || driver.onboarding_settings_completed || !!(driver.base_fare && driver.per_km_rate)) ? "complete" : "incomplete",
-        details: driver.base_fare ? `${driver.base_fare}€ base` : undefined,
-      },
       {
         id: "profile",
         label: "Profil",
-        isComplete: isComplete || stepIdx > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url,
-        status: stepIdx === 3 && !isComplete ? "current" :
-          (isComplete || stepIdx > 3 || driver.onboarding_profile_completed || !!driver.profile_photo_url) ? "complete" : "incomplete",
+        isComplete: isComplete || hasProfile || stepIdx > 0,
+        status: isComplete || hasProfile || stepIdx > 0 ? "complete" :
+          (!hasStarted || stepIdx === 0) ? "current" : "incomplete",
+        details: driver.company_name || undefined,
+      },
+      {
+        id: "vehicle",
+        label: "Véhicule",
+        isComplete: isComplete || hasVehicle || stepIdx > 1,
+        status: isComplete || hasVehicle || stepIdx > 1 ? "complete" :
+          stepIdx === 1 ? "current" : "incomplete",
+        details: driver.vehicle_brand || undefined,
+      },
+      {
+        id: "pricing",
+        label: "Tarifs",
+        isComplete: isComplete || hasPricing || stepIdx > 2,
+        status: isComplete || hasPricing || stepIdx > 2 ? "complete" :
+          stepIdx === 2 ? "current" : "incomplete",
+        details: driver.base_fare ? `${driver.base_fare}€ base` : undefined,
       },
       {
         id: "documents",
@@ -306,37 +285,28 @@ const DriverProgressionTracker = () => {
         isComplete: driver.documents_status === "validated",
         status: driver.documents_status === "validated" ? "complete" :
           driver.documents_status === "submitted" ? "pending" :
-          stepIdx === 4 && !isComplete ? "current" : "incomplete",
+          stepIdx === 3 ? "current" : "incomplete",
         details: driver.documents_status === "validated" ? "Validés" :
           driver.documents_status === "submitted" ? "En attente admin" : "À déposer",
       },
       {
-        id: "nfc",
-        label: "NFC",
-        isComplete: driver.has_nfc_plate,
-        status: driver.has_nfc_plate ? "complete" : 
-          driver.nfc_plate_ordered_at ? "pending" :
-          stepIdx === 5 && !isComplete ? "current" : "incomplete",
-        details: driver.has_nfc_plate ? "Reçue" : driver.nfc_plate_ordered_at ? "Commandée" : "Non",
+        id: "stripe",
+        label: "Paiements",
+        isComplete: hasStripe,
+        status: hasStripe ? "complete" :
+          stepIdx === 4 ? "current" : "incomplete",
+        details: driver.stripe_connect_status === "active" ? "Stripe actif" :
+          driver.stripe_connect_status === "pending" ? "En cours" : undefined,
       },
       {
-        id: "billing",
-        label: "Encaissements",
-        isComplete: !!driver.billing_type,
-        status: driver.billing_type ? "complete" :
-          stepIdx === 6 && !isComplete ? "current" : "incomplete",
-        details: driver.billing_type === "solocab_stripe" ? "Stripe" : 
-          driver.billing_type === "own_equipment" ? "TPE propre" : undefined,
-      },
-      {
-        id: "trial_start",
+        id: "validation",
         label: "Lancement",
-        isComplete: hasRealPayment,
-        status: hasRealPayment ? "complete" :
-          stepIdx === 7 && !isComplete ? "current" :
-          driver.documents_status !== "validated" ? "incomplete" : "pending",
-        details: hasRealPayment ? (driver.free_access_granted ? "Gratuit" : "Essai actif") : 
-          driver.documents_status !== "validated" ? "Docs requis" : "Prêt à lancer",
+        isComplete: hasRealPayment || (isComplete && driver.documents_status === "validated" && hasStripe),
+        status: (hasRealPayment || (isComplete && driver.documents_status === "validated" && hasStripe)) ? "complete" :
+          (driver.documents_status === "validated" && hasStripe) ? "pending" :
+          stepIdx === 5 ? "current" : "incomplete",
+        details: hasRealPayment ? (driver.free_access_granted ? "Gratuit" : "Actif") : 
+          (driver.documents_status === "validated" && hasStripe) ? "Prêt à lancer" : "En attente",
       },
     ];
   };
