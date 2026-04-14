@@ -1,4 +1,5 @@
 interface CourseQuoteLike {
+  amount?: number | null;
   accepted_at?: string | null;
   created_at?: string | null;
   status?: string | null;
