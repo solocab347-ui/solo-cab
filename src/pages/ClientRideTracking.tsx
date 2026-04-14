@@ -326,17 +326,63 @@ const ClientRideTracking = () => {
     return () => clearInterval(interval);
   }, [courseId, fetchCourse]);
 
+  const handleStarClick = (star: number) => {
+    setRating(star);
+    if (star <= 3) {
+      setShowReasonForm(true);
+    } else {
+      setShowReasonForm(false);
+      setRatingReason('');
+      setRatingReasonDetail('');
+    }
+  };
+
   const handleSubmitRating = async () => {
     if (!courseId || rating === 0) return;
+    
+    if (rating <= 3) {
+      if (!ratingReason) {
+        toast.error('Veuillez sélectionner un motif');
+        return;
+      }
+      if (!ratingReasonDetail.trim()) {
+        toast.error('Veuillez expliquer brièvement ce qui s\'est passé');
+        return;
+      }
+    }
+    
     setIsSubmittingRating(true);
     try {
-      const { error } = await supabase
+      // Insert into course_ratings for full arbitration flow
+      const status = rating >= 4 ? 'validated' : 'pending_review';
+      
+      const { error: ratingError } = await supabase
+        .from('course_ratings')
+        .insert({
+          course_id: courseId,
+          client_id: course?.client_id || null,
+          driver_id: course?.driver_id || null,
+          rating,
+          reason: rating <= 3 ? ratingReason : null,
+          reason_detail: rating <= 3 ? ratingReasonDetail.trim() : null,
+          status,
+          client_response_deadline: rating <= 3 ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
+        });
+      
+      if (ratingError && ratingError.code !== '23505') throw ratingError;
+      
+      // Also update legacy client_rating
+      await supabase
         .from('courses')
         .update({ client_rating: rating })
         .eq('id', courseId);
-      if (error) throw error;
+      
       setRatingSubmitted(true);
-      toast.success('Merci pour votre note !');
+      if (rating >= 4) {
+        toast.success('Merci pour votre évaluation !');
+      } else {
+        toast.success('Votre note a été soumise et sera examinée par notre système d\'arbitrage.');
+      }
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');
     } finally {
