@@ -62,7 +62,7 @@ export const MobileDriverNav = ({
       onTabChange("subscription");
       setIsOpen(false);
       toast.info("Fonctionnalité Premium", {
-        description: "Passez à Premium pour accéder à cette fonctionnalité — 9,99€/mois"
+        description: "Passez à Premium pour accéder à cette fonctionnalité — 19,99€/mois"
       });
       return;
     }
@@ -100,7 +100,7 @@ export const MobileDriverNav = ({
       icon: Wrench,
       gradient: "from-purple-500 to-pink-600",
       items: [
-        { value: "planning", icon: Calendar, label: t('driverDashboard.menu.planning') },
+        { value: "planning", icon: Calendar, label: t('driverDashboard.menu.planning'), premium: true },
         { value: "calculator", icon: Calculator, label: t('driverDashboard.menu.calculator') },
         { value: "qrcode", icon: QrCode, label: t('driverDashboard.menu.myQRCode') },
       ],
@@ -110,9 +110,9 @@ export const MobileDriverNav = ({
       icon: Wrench,
       gradient: "from-blue-500 to-cyan-600",
       items: [
-        { value: "objectives", icon: Target, label: t('driverDashboard.menu.objectives') },
+        { value: "objectives", icon: Target, label: t('driverDashboard.menu.objectives'), premium: true },
         { value: "campaigns", icon: Megaphone, label: t('driverDashboard.menu.campaign'), premium: true },
-        { value: "profitability", icon: PieChart, label: t('driverDashboard.menu.profitability') },
+        { value: "profitability", icon: PieChart, label: t('driverDashboard.menu.profitability'), premium: true },
         { value: "prospection", icon: Sparkles, label: t('driverDashboard.menu.prospection'), premium: true },
       ],
     },
