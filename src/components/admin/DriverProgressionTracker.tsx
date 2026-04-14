@@ -145,31 +145,25 @@ const DriverCardSkeleton = () => (
 );
 
 // Calcul de l'étape actuelle basé sur onboarding_step
-// Supporte les deux formats: numérique ("0"-"7") ET textuel ("vision", "goals"...)
 const getStepIndex = (stepId: string | null): number => {
-  if (!stepId) return -1; // -1 = pas encore commencé
+  if (!stepId) return -1;
   
-  // D'abord essayer en tant que nombre (format DB courant: "0", "1", "2"...)
   const numericValue = parseInt(stepId, 10);
   if (!isNaN(numericValue) && numericValue >= 0 && numericValue < TUNNEL_STEPS.length) {
     return numericValue;
   }
   
-  // Ensuite essayer en tant qu'ID textuel
   const idx = TUNNEL_STEPS.findIndex(s => s.id === stepId);
   if (idx >= 0) return idx;
   
-  // Mapping élargi pour les variantes possibles
   const stepMapping: Record<string, number> = {
-    "welcome": 0, "intro": 0, "vision": 0,
-    "objectives": 1, "goals": 1,
+    "profile": 0, "public_profile": 0,
+    "vehicle": 1, "vehicule": 1,
     "pricing": 2, "tarifs": 2, "settings": 2,
-    "profile": 3, "public_profile": 3,
-    "documents": 4, "docs": 4,
-    "nfc": 5, "nfc_order": 5,
-    "billing": 6, "payment": 6, "encaissements": 6,
-    "trial": 7, "trial_start": 7, "launch": 7, "lancement": 7,
-    "completed": 8, "complete": 8, "done": 8,
+    "documents": 3, "docs": 3,
+    "stripe": 4, "payment": 4, "billing": 4, "encaissements": 4,
+    "validation": 5, "launch": 5, "lancement": 5, "trial_start": 5, "trial": 5,
+    "completed": 6, "complete": 6, "done": 6,
   };
   
   return stepMapping[stepId.toLowerCase()] ?? -1;
