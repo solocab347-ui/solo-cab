@@ -15,6 +15,8 @@ import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-solocab.png";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
+import { useETACalculation } from "@/hooks/useETACalculation";
+import { ETADisplay } from "@/components/tracking/ETADisplay";
 
 interface SharedDriver {
   id: string;
@@ -41,6 +43,11 @@ interface BookingInfo {
   quote_number: string | null;
   final_payment_amount: number | null;
   distance_km: number | null;
+  duration_minutes: number | null;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  destination_latitude: number | null;
+  destination_longitude: number | null;
   driver_latitude: number | null;
   driver_longitude: number | null;
   client_rating: number | null;
@@ -65,6 +72,23 @@ const GuestBookingTracking = () => {
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
+
+  // ETA calculation
+  const guestIsApproaching = booking?.status === 'driver_approaching';
+  const guestIsInProgress = booking?.status === 'in_progress';
+  const guestEtaEnabled = (guestIsApproaching || guestIsInProgress) && !!booking?.driver_latitude && !!booking?.driver_longitude;
+
+  const guestEtaTarget = guestIsApproaching
+    ? (booking?.pickup_latitude && booking?.pickup_longitude ? { lat: booking.pickup_latitude, lng: booking.pickup_longitude } : null)
+    : (booking?.destination_latitude && booking?.destination_longitude ? { lat: booking.destination_latitude, lng: booking.destination_longitude } : null);
+
+  const { eta: guestEta, loading: guestEtaLoading, forceRefresh: refreshGuestETA } = useETACalculation({
+    driverLocation: booking?.driver_latitude && booking?.driver_longitude
+      ? { lat: booking.driver_latitude, lng: booking.driver_longitude }
+      : null,
+    targetLocation: guestEtaTarget,
+    enabled: guestEtaEnabled,
+  });
 
   const fetchBooking = async (attempt = 0) => {
     if (!token) return;
@@ -108,6 +132,11 @@ const GuestBookingTracking = () => {
           quote_number: rawBooking.quote_number,
           final_payment_amount: rawBooking.final_payment_amount ?? null,
           distance_km: rawBooking.distance_km ?? null,
+          duration_minutes: rawBooking.duration_minutes ?? null,
+          pickup_latitude: rawBooking.pickup_latitude ?? null,
+          pickup_longitude: rawBooking.pickup_longitude ?? null,
+          destination_latitude: rawBooking.destination_latitude ?? null,
+          destination_longitude: rawBooking.destination_longitude ?? null,
           driver_latitude: rawBooking.driver_latitude ?? null,
           driver_longitude: rawBooking.driver_longitude ?? null,
           client_rating: rawBooking.client_rating ?? null,
@@ -499,6 +528,19 @@ const GuestBookingTracking = () => {
             </p>
           </CardContent>
         </Card>
+
+        {/* ETA Dynamic Display */}
+        {(guestIsApproaching || guestIsInProgress) && guestEtaEnabled && (
+          <div className="mb-6">
+            <ETADisplay
+              eta={guestEta}
+              loading={guestEtaLoading}
+              onRefresh={refreshGuestETA}
+              phase={guestIsApproaching ? "approaching" : "in_progress"}
+              totalDistanceKm={booking.distance_km}
+            />
+          </div>
+        )}
 
         {/* Payment Section - When course is completed and driver uses Stripe */}
         {showPaymentSection && (
