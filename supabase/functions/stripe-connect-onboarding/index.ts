@@ -58,7 +58,7 @@ serve(async (req) => {
       .eq("id", userId)
       .single();
 
-    const origin = req.headers.get("origin") || "https://solocab.fr";
+    const productionUrl = "https://solocab.fr";
     let accountId = driver.stripe_connect_account_id;
 
     // Create Stripe Connect account if not exists
@@ -76,8 +76,8 @@ serve(async (req) => {
         },
         business_profile: {
           name: driver.company_name || profile?.full_name || "Chauffeur VTC",
-          mcc: "4121", // Taxi/limo services
-          url: `${origin}/driver/${driver.id}`,
+          mcc: "4121",
+          url: `${productionUrl}/driver/${driver.id}`,
         },
         metadata: {
           driver_id: driver.id,
@@ -117,10 +117,11 @@ serve(async (req) => {
     }
 
     // Create onboarding link - IMPORTANT: Return to driver-welcome (onboarding page)
+    const returnOrigin = req.headers.get("origin") || productionUrl;
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/driver-welcome?stripe_connect=refresh`,
-      return_url: `${origin}/driver-welcome?stripe_connect=success`,
+      refresh_url: `${returnOrigin}/driver-welcome?stripe_connect=refresh`,
+      return_url: `${returnOrigin}/driver-welcome?stripe_connect=success`,
       type: "account_onboarding",
     });
 
