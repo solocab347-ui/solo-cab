@@ -213,71 +213,7 @@ export const DriverPublicProfileSimplified = memo(({
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Visibilité - Uniquement partenariats */}
-        <TabsContent value="visibility" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          {/* Info: Profil automatiquement public */}
-          <Card className="p-3 sm:p-6 bg-primary/10 border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span className="text-sm sm:text-base text-primary font-medium">
-                Profil public actif
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
-              Votre profil est automatiquement visible sur la vitrine SoloCab.
-            </p>
-            {/* Lien du profil */}
-            {driverId && (
-              <div className="flex items-center gap-2">
-                <Input
-                  value={publicProfileUrl}
-                  readOnly
-                  className="flex-1 text-xs h-8 sm:h-9 bg-background/50"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  className="gap-1 shrink-0 h-8"
-                >
-                  {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* Visibilité partenaires */}
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-4">Partenariats chauffeurs</h3>
-            
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2">
-                <div className="p-1.5 sm:p-2 rounded-lg bg-secondary shrink-0">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-secondary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <Label className="font-medium text-sm">Visible aux chauffeurs</Label>
-                  <p className="text-xs text-muted-foreground truncate hidden sm:block">
-                    Recevoir des propositions de partenariat
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {visibleToDrivers && (
-                  <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
-                    Actif
-                  </Badge>
-                )}
-                <Switch
-                  checked={visibleToDrivers}
-                  onCheckedChange={onVisibleToDriversChange}
-                />
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Tab Identité */}
+        {/* Tab Identité - includes public profile link */}
         <TabsContent value="identity" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           {/* Photo unique - utilisée partout (profil et carte) */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
