@@ -325,7 +325,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       client: newClient,
-      message: 'Inscription réussie en tant que client exclusif' 
+      driver_name: driverName,
+      message: `Inscription réussie avec ${driverName}` 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
