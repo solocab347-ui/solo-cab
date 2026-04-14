@@ -99,23 +99,14 @@ interface DriverFullData {
   first_client_at: string | null;
 }
 
-// Les 8 vraies étapes du tunnel d'onboarding
+// Les 6 vraies étapes du tunnel d'onboarding (synchronisé avec SimplifiedOnboardingTunnel)
 const TUNNEL_STEPS = [
-  { id: "vision", label: "Vision", icon: Compass },
-  { id: "goals", label: "Objectifs", icon: TrendingUp },
-  { id: "settings", label: "Tarifs", icon: Settings },
   { id: "profile", label: "Profil", icon: User },
+  { id: "vehicle", label: "Véhicule", icon: TrendingUp },
+  { id: "pricing", label: "Tarifs", icon: Settings },
   { id: "documents", label: "Documents", icon: FileText },
-  { id: "nfc", label: "NFC", icon: CreditCard },
-  { id: "billing", label: "Encaissements", icon: Wallet },
-  { id: "trial_start", label: "Lancement", icon: PlayCircle },
-];
-
-// Étapes post-onboarding
-const POST_STEPS = [
-  { id: "first_scan", label: "1er scan", icon: ScanLine },
-  { id: "first_client", label: "1er client", icon: UserPlus },
-  { id: "first_course", label: "1re course", icon: Activity },
+  { id: "stripe", label: "Paiements", icon: Wallet },
+  { id: "validation", label: "Lancement", icon: PlayCircle },
 ];
 
 interface OnboardingStep {
