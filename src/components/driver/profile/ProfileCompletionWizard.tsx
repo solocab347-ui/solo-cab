@@ -66,7 +66,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
   const latestDataRef = useRef<WizardData | null>(null);
 
   const [data, setData] = useState<WizardData>({
-    profilePhotoUrl: driver?.profile_photo_url || driverProfile?.profile_photo_url || null,
+    profilePhotoUrl: driver?.card_photo_url || driverProfile?.profile_photo_url || null,
     displayDriverName: driver?.display_driver_name ?? true,
     displayCompanyName: driver?.display_company_name ?? false,
     serviceDescription: driver?.service_description || "",
