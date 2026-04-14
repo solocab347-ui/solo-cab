@@ -191,6 +191,24 @@ const DriverDashboard = () => {
       navigate("/driver-welcome", { replace: true });
     }
   }, [driverProfile?.driver?.onboarding_completed, navigate]);
+
+  // Check if profile needs completion wizard
+  useEffect(() => {
+    if (driverProfile?.driver && driverProfile.driver.onboarding_completed) {
+      const driver = driverProfile.driver;
+      const isProfileComplete = !!(
+        (driverProfile.profile_photo_url || driver.profile_photo_url) &&
+        (driver.display_driver_name || driver.display_company_name) &&
+        driver.service_description && driver.service_description.length >= 20 &&
+        driver.working_sectors && driver.working_sectors.length > 0 &&
+        driver.services_offered && driver.services_offered.length > 0 &&
+        driver.vehicle_category && driver.vehicle_category.length > 0
+      );
+      if (!isProfileComplete && !driver.onboarding_profile_completed) {
+        setShowProfileWizard(true);
+      }
+    }
+  }, [driverProfile?.driver?.id]);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
