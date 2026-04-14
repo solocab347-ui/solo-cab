@@ -254,7 +254,7 @@ const DriverWelcome = () => {
   return (
     <SimplifiedOnboardingTunnel 
       driverId={driverData.id}
-      userId={user.id}
+      userId={user?.id || driverData.user_id}
       driverProfile={driverProfile}
       onComplete={() => navigate("/driver-dashboard", { replace: true })}
     />
