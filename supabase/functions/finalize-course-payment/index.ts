@@ -518,6 +518,23 @@ serve(async (req) => {
         },
       });
 
+      // Record in stripe_transactions for wallet/finance tracking
+      await supabaseClient.from("stripe_transactions").insert({
+        course_id,
+        driver_id: course.driver_id,
+        gross_amount: totalAmount,
+        net_amount: netToDriver,
+        stripe_fee_amount: stripeFee,
+        solocab_fee_amount: solocabFee,
+        status: "succeeded",
+        transaction_type: "course_payment",
+        payment_method: isCash ? "cash" : paymentMethod,
+        description: isCash
+          ? `Course espèces - ${totalAmount.toFixed(2)}€`
+          : `Course manuelle - ${totalAmount.toFixed(2)}€`,
+      });
+      logStep("Stripe transaction ledger recorded for cash/manual course", { course_id, totalAmount });
+
       // Create facture
       try {
         await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
