@@ -608,7 +608,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
                     <Phone className="w-5 h-5" />
                   </a>
                 )}
-            </div>
+              </div>
             {course?.course_number && (
               <div className="mt-3 rounded-xl bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground">
                 Course {course.course_number}
