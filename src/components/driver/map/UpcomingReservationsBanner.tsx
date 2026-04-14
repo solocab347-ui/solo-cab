@@ -58,8 +58,29 @@ export function UpcomingReservationsBanner({ driverId, hasActiveCourse }: Upcomi
   useEffect(() => {
     fetchReservations();
     const interval = setInterval(fetchReservations, 30000);
-    return () => clearInterval(interval);
-  }, [fetchReservations]);
+
+    // Realtime: refresh immediately when any course status changes
+    const channel = supabase
+      .channel('banner-course-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'courses',
+          filter: `driver_id=eq.${driverId}`,
+        },
+        () => {
+          fetchReservations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchReservations, driverId]);
 
   // Auto-scroll when multiple reservations
   useEffect(() => {
