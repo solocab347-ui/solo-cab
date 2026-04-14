@@ -98,7 +98,10 @@ const DriverWelcome = () => {
         }).catch(err => console.error("Welcome email error:", err));
       }
 
-      if (driver.onboarding_completed) { navigate("/driver-dashboard", { replace: true }); return; }
+      // If onboarding is completed OR docs validated + stripe connected → go to dashboard
+      const isFullyReady = driver.onboarding_completed || 
+        (driver.documents_status === "validated" && driver.stripe_connect_status === "active");
+      if (isFullyReady) { navigate("/driver-dashboard", { replace: true }); return; }
     } catch (err) {
       logger.error("Exception fetchDriverData", { err });
     } finally {
