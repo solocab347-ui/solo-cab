@@ -58,7 +58,7 @@ serve(async (req) => {
       .eq("id", userId)
       .single();
 
-    const origin = req.headers.get("origin") || "https://solocab.fr";
+    const productionUrl = "https://solocab.fr";
     let accountId = driver.stripe_connect_account_id;
 
     // Create Stripe Connect account if not exists
