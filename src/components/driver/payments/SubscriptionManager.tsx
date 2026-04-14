@@ -67,20 +67,12 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     toast.success("Votre abonnement Pioneer est préservé ! 🏆");
   };
 
-  // NOUVEAU: Calcul synchrone du statut d'accès (évite le flickering)
+  // CALCUL SYNCHRONE du statut d'accès — modèle FREEMIUM (pas de trial)
   const calculateAccessStatus = () => {
     const driver = driverProfile?.driver;
-    if (!driver) return { hasFullAccess: false, isInTrialPeriod: false, trialDaysLeft: 0 };
+    if (!driver) return { hasFullAccess: false, hasAdminFreeAccess: false };
 
     const now = new Date();
-    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
-    
-    // Période d'essai de 14 jours pour tous les nouveaux inscrits (non-pionniers)
-    const trialPeriodEnd = createdAt ? new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) : null;
-    const isInTrialPeriod = trialPeriodEnd ? now < trialPeriodEnd : false;
-    const trialDaysLeft = trialPeriodEnd ? Math.max(0, Math.ceil((trialPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
-    const trialEndDate = trialPeriodEnd;
-
     const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
     const isPioneerTrialActive = driver.is_pioneer && 
       driver.free_access_type === "trial" && 
@@ -90,20 +82,20 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     // Accès gratuit accordé par admin (illimité ou avec période)
     const freeAccessWithPeriod = freeAccessEndDate && 
       freeAccessEndDate > now && 
-      driver.free_access_type !== "trial"; // Exclure les trials pioneers
+      driver.free_access_type !== "trial";
     
     const hasAdminFreeAccess = driver.free_access_granted === true || 
       driver.free_access_type === "unlimited" ||
+      driver.free_access_type === "administrative" ||
       freeAccessWithPeriod;
 
     const hasFullAccess = 
       driver.subscription_status === "active" ||
       driver.subscription_paid === true ||
-      (isInTrialPeriod && !driver.is_pioneer) || // Essai 14 jours pour non-pionniers
       isPioneerTrialActive ||
       hasAdminFreeAccess;
 
-    return { hasFullAccess, isInTrialPeriod, trialDaysLeft, trialEndDate, hasAdminFreeAccess };
+    return { hasFullAccess, hasAdminFreeAccess };
   };
 
   const localAccessStatus = calculateAccessStatus();
@@ -166,10 +158,6 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   
   // Accès gratuit admin
   const hasAdminFreeAccess = localAccessStatus.hasAdminFreeAccess || driverProfile?.driver?.free_access_granted;
-  // Période d'essai 14 jours pour non-pionniers
-  const isInTrialPeriod = localAccessStatus.isInTrialPeriod && !isPioneer && !hasAdminFreeAccess;
-  const trialDaysLeft = localAccessStatus.trialDaysLeft || 0;
-  const trialEndDate = localAccessStatus.trialEndDate;
   
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
@@ -594,22 +582,21 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               👑 Premium (19,99€/mois) :
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Partenariats entre chauffeurs</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Échange et partage de courses</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Codes promotionnels</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Prospection avancée</span>
-              </li>
+              {[
+                "Planning avancé des courses",
+                "Objectifs & Coaching IA",
+                "Encaissements spontanés",
+                "Calcul de rentabilité",
+                "Partenariats entre chauffeurs",
+                "Échange et partage de courses",
+                "Campagnes promotionnelles",
+                "Prospection avancée",
+              ].map((feat) => (
+                <li key={feat} className="flex items-center gap-2">
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                  <span className="text-gray-200">{feat}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -634,9 +621,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       <SubscriptionManagementCard
         userType="driver"
         hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
-        isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
-        isInTrialPeriod={isInTrialPeriod || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0)}
-        trialEndDate={isInTrialPeriod ? trialEndDate : (isPioneer ? new Date(pioneerTrialEnd!) : undefined)}
+        isActive={isActive || hasAdminFreeAccess || isPastDue}
+        isInTrialPeriod={isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0}
+        trialEndDate={isPioneer ? (pioneerTrialEnd ? new Date(pioneerTrialEnd) : undefined) : undefined}
         trialCancelled={trialCancelled}
         nextBillingDate={driverProfile?.driver?.subscription_end_date}
         nextBillingAmount={19.99}

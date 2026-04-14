@@ -109,7 +109,7 @@ function PremiumLockCard({ feature, description }: { feature: string; descriptio
         </div>
 
         <div className="space-y-1.5">
-          {["Encaissements spontanés", "Objectifs & Rentabilité", "Planning avancé", "Partenariats"].map((f) => (
+          {["Planning avancé", "Objectifs & Coaching IA", "Encaissements spontanés", "Calcul de rentabilité", "Partenariats", "Campagnes & Prospection"].map((f) => (
             <div key={f} className="flex items-center gap-2 text-xs">
               <CheckCircle2 className="h-3.5 w-3.5 text-amber-500 shrink-0" />
               <span>{f}</span>
