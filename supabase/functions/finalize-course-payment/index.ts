@@ -14,15 +14,22 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[FINALIZE-COURSE-PAYMENT] ${step}${detailsStr}`);
 };
 
-const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; status?: string | null }) => {
+const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; status?: string | null; updated_at?: string | null; created_at?: string | null }) => {
   if (course.status === "in_progress") return true;
 
   const now = new Date();
+  const DAY_MS = 24 * 60 * 60 * 1000;
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  const todayEnd = new Date(todayStart.getTime() + DAY_MS);
   const scheduledDate = course.scheduled_date ? new Date(course.scheduled_date) : null;
 
   if (scheduledDate && scheduledDate < todayStart) return false;
+
+  // Immediate courses older than 24h are stale/orphaned
+  if (!scheduledDate) {
+    const lastActivity = new Date(course.updated_at || course.created_at || 0).getTime();
+    if (lastActivity < Date.now() - DAY_MS) return false;
+  }
 
   return !scheduledDate || scheduledDate < todayEnd;
 };

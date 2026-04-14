@@ -41,6 +41,14 @@ export const isCourseTodayOrImmediate = (course: DriverLifecycleCourseLike) => {
 
   if (scheduledDate && scheduledDate < todayStart) return false;
 
+  // For immediate courses (no scheduled_date), check staleness:
+  // If the course was last updated more than 24h ago, it's stale/orphaned
+  if (!scheduledDate) {
+    const lastActivity = new Date(course.updated_at || course.created_at || 0).getTime();
+    const twentyFourHoursAgo = Date.now() - DAY_MS;
+    if (lastActivity < twentyFourHoursAgo) return false;
+  }
+
   return !scheduledDate || scheduledDate < todayEnd;
 };
 
