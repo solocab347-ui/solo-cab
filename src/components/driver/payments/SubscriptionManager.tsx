@@ -582,22 +582,21 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               👑 Premium (19,99€/mois) :
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Partenariats entre chauffeurs</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Échange et partage de courses</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Codes promotionnels</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                <span className="text-gray-200">Prospection avancée</span>
-              </li>
+              {[
+                "Planning avancé des courses",
+                "Objectifs & Coaching IA",
+                "Encaissements spontanés",
+                "Calcul de rentabilité",
+                "Partenariats entre chauffeurs",
+                "Échange et partage de courses",
+                "Campagnes promotionnelles",
+                "Prospection avancée",
+              ].map((feat) => (
+                <li key={feat} className="flex items-center gap-2">
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
+                  <span className="text-gray-200">{feat}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
