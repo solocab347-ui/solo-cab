@@ -54,12 +54,17 @@ const STEPS = [
 
 export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: ProfileCompletionWizardProps) {
   const driver = driverProfile?.driver;
-  const [currentStep, setCurrentStep] = useState(0);
+  // Restore persisted step
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = driver?.wizard_current_step;
+    return typeof saved === "number" && saved >= 0 && saved < STEPS.length ? saved : 0;
+  });
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
+  const savingRef = useRef(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestDataRef = useRef<WizardData | null>(null);
 
-  // Initialize from existing driver data (persisted from previous sessions)
   const [data, setData] = useState<WizardData>({
     profilePhotoUrl: driver?.profile_photo_url || driverProfile?.profile_photo_url || null,
     displayDriverName: driver?.display_driver_name ?? true,
@@ -71,29 +76,39 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     vehicleEquipment: driver?.vehicle_equipment || [],
   });
 
-  // Auto-save to database with debounce whenever data changes
-  const saveToDatabase = useCallback(async (dataToSave: WizardData) => {
-    if (!driver?.id) return;
+  // Keep latest data in ref for beforeunload flush
+  useEffect(() => {
+    latestDataRef.current = data;
+  }, [data]);
+
+  // Immediate save (no debounce) - used on step transitions
+  const saveToDatabase = useCallback(async (dataToSave: WizardData, step?: number) => {
+    if (!driver?.id || savingRef.current) return;
+    savingRef.current = true;
     setAutoSaving(true);
     try {
+      const updatePayload: Record<string, any> = {
+        profile_photo_url: dataToSave.profilePhotoUrl,
+        card_photo_url: dataToSave.profilePhotoUrl,
+        display_driver_name: dataToSave.displayDriverName,
+        display_company_name: dataToSave.displayCompanyName,
+        service_description: dataToSave.serviceDescription,
+        working_sectors: dataToSave.workingSectors,
+        services_offered: dataToSave.servicesOffered,
+        vehicle_categories: dataToSave.vehicleCategories,
+        vehicle_equipment: dataToSave.vehicleEquipment,
+      };
+      if (typeof step === "number") {
+        updatePayload.wizard_current_step = step;
+      }
+
       const { error } = await supabase
         .from("drivers")
-        .update({
-          profile_photo_url: dataToSave.profilePhotoUrl,
-          card_photo_url: dataToSave.profilePhotoUrl,
-          display_driver_name: dataToSave.displayDriverName,
-          display_company_name: dataToSave.displayCompanyName,
-          service_description: dataToSave.serviceDescription,
-          working_sectors: dataToSave.workingSectors,
-          services_offered: dataToSave.servicesOffered,
-          vehicle_categories: dataToSave.vehicleCategories,
-          vehicle_equipment: dataToSave.vehicleEquipment,
-        })
+        .update(updatePayload)
         .eq("id", driver.id);
 
       if (error) throw error;
 
-      // Also sync profile photo
       if (dataToSave.profilePhotoUrl) {
         await supabase
           .from("profiles")
@@ -103,30 +118,61 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     } catch (err) {
       console.error("Auto-save error:", err);
     } finally {
+      savingRef.current = false;
       setAutoSaving(false);
     }
   }, [driver?.id, userId]);
 
+  // Debounced save for field-level changes
+  const debouncedSave = useCallback((dataToSave: WizardData) => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveToDatabase(dataToSave);
+    }, 1500);
+  }, [saveToDatabase]);
+
   const updateData = useCallback((updates: Partial<WizardData>) => {
     setData(prev => {
       const newData = { ...prev, ...updates };
-
-      // Debounced auto-save
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-        saveToDatabase(newData);
-      }, 1500);
-
+      debouncedSave(newData);
       return newData;
     });
-  }, [saveToDatabase]);
+  }, [debouncedSave]);
 
-  // Cleanup timeout on unmount
+  // Flush pending save on unmount / page leave
   useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    const handleBeforeUnload = () => {
+      if (saveTimeoutRef.current && latestDataRef.current && driver?.id) {
+        clearTimeout(saveTimeoutRef.current);
+        // Use sendBeacon for reliable save on page close
+        const payload = JSON.stringify({
+          profile_photo_url: latestDataRef.current.profilePhotoUrl,
+          card_photo_url: latestDataRef.current.profilePhotoUrl,
+          display_driver_name: latestDataRef.current.displayDriverName,
+          display_company_name: latestDataRef.current.displayCompanyName,
+          service_description: latestDataRef.current.serviceDescription,
+          working_sectors: latestDataRef.current.workingSectors,
+          services_offered: latestDataRef.current.servicesOffered,
+          vehicle_categories: latestDataRef.current.vehicleCategories,
+          vehicle_equipment: latestDataRef.current.vehicleEquipment,
+        });
+        // Fallback: trigger the save
+        saveToDatabase(latestDataRef.current);
+      }
     };
-  }, []);
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        // Flush on unmount
+        if (latestDataRef.current) {
+          saveToDatabase(latestDataRef.current);
+        }
+      }
+    };
+  }, [driver?.id, saveToDatabase]);
 
   const canProceed = (): boolean => {
     switch (currentStep) {
@@ -140,12 +186,20 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     }
   };
 
-  // Save on step change to ensure data is persisted
-  const handleNext = useCallback(() => {
+  // Save immediately on step change and persist current step
+  const handleNext = useCallback(async () => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveToDatabase(data);
-    setCurrentStep(s => s + 1);
-  }, [data, saveToDatabase]);
+    const nextStep = currentStep + 1;
+    await saveToDatabase(data, nextStep);
+    setCurrentStep(nextStep);
+  }, [data, currentStep, saveToDatabase]);
+
+  const handleBack = useCallback(async () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    const prevStep = currentStep - 1;
+    await saveToDatabase(data, prevStep);
+    setCurrentStep(prevStep);
+  }, [data, currentStep, saveToDatabase]);
 
   const handleFinish = async () => {
     if (!driver?.id) return;
@@ -167,6 +221,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
           vehicle_equipment: data.vehicleEquipment,
           public_profile_enabled: true,
           onboarding_profile_completed: true,
+          wizard_current_step: STEPS.length, // Mark as fully done
         })
         .eq("id", driver.id);
 
@@ -183,7 +238,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
       onComplete();
     } catch (err) {
       console.error("Error saving profile:", err);
-      toast.error("Erreur lors de la sauvegarde");
+      toast.error("Erreur lors de la sauvegarde. Veuillez réessayer.");
     } finally {
       setSaving(false);
     }
@@ -369,8 +424,8 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
       <div className="flex justify-between mt-4 pb-4">
         <Button
           variant="outline"
-          onClick={() => setCurrentStep(s => s - 1)}
-          disabled={currentStep === 0}
+          onClick={handleBack}
+          disabled={currentStep === 0 || autoSaving}
           size="sm"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -380,9 +435,10 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
         {currentStep < STEPS.length - 1 ? (
           <Button
             onClick={handleNext}
-            disabled={!canProceed()}
+            disabled={!canProceed() || autoSaving}
             size="sm"
           >
+            {autoSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
             Suivant
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
