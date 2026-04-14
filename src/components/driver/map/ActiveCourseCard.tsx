@@ -407,47 +407,65 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const isCardPayment = currentPaymentMethod === 'card' || currentPaymentMethod === 'stripe' || currentPaymentMethod === 'card_online';
     const courseAmount = course.final_payment_amount ?? course.guest_estimated_price ?? getAcceptedCourseQuote(course)?.amount ?? 0;
     const courseClientName = course.clients?.profiles?.full_name || course.guest_name || 'Client';
-    
-    let paymentResult = { success: false, status: '', error: '', alreadyPaid: false };
+    const completingCourseId = course.id;
     
     // Mark course as completed in DB FIRST to prevent it from reappearing
     await supabase
       .from('courses')
       .update({ status: 'completed', updated_at: new Date().toISOString() })
-      .eq('id', course.id)
+      .eq('id', completingCourseId)
       .eq('driver_id', driverId);
     
-    // Always call finalize-course-payment for ALL payment types (card AND cash)
-    // This creates the payment record, calculates fees, and triggers financial sync
-    try {
-      const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
-        body: { course_id: course.id },
-      });
-      if (error) {
-        paymentResult = { success: false, status: 'failed', error: error.message || 'Erreur lors de la finalisation', alreadyPaid: false };
-      } else if (data?.status === 'succeeded' || data?.success || data?.already_paid || data?.flow === 'manual') {
-        paymentResult = { success: true, status: data?.status || 'succeeded', error: '', alreadyPaid: !!data?.already_paid };
-      } else {
-        paymentResult = { success: false, status: data?.status || 'failed', error: data?.error || 'La finalisation n\'a pas abouti', alreadyPaid: false };
-      }
-    } catch (err: any) {
-      paymentResult = { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false };
-    }
-
-    // ✅ Restore driver availability IMMEDIATELY after completing the ride
-    // This allows the driver to receive new requests while viewing the completion screen
-    await restoreAvailability();
-
-    // Show completion screen with all info
+    // ✅ INSTANT: Show completion screen IMMEDIATELY with optimistic result
+    // For cash → always success (no payment to capture)
+    // For card → show "processing" state, will update when finalize returns
+    const optimisticResult = !isCardPayment 
+      ? { success: true, status: 'cash', error: '', alreadyPaid: false }
+      : { success: true, status: 'processing', error: '', alreadyPaid: false };
+    
     setCompletionData({
-      courseId: course.id,
+      courseId: completingCourseId,
       clientName: courseClientName,
       amount: courseAmount,
       paymentMethod: currentPaymentMethod,
-      paymentResult,
+      paymentResult: optimisticResult,
     });
     
     setLoading(false);
+    
+    // ✅ Restore driver availability in parallel (non-blocking)
+    restoreAvailability();
+    
+    // ✅ Run payment finalization in BACKGROUND — screen is already visible
+    supabase.functions.invoke('finalize-course-payment', {
+      body: { course_id: completingCourseId },
+    }).then(({ data, error }) => {
+      if (error) {
+        // Update completion screen with error — only matters for card
+        if (isCardPayment) {
+          setCompletionData(prev => prev ? {
+            ...prev,
+            paymentResult: { success: false, status: 'failed', error: error.message || 'Erreur lors de la finalisation', alreadyPaid: false },
+          } : null);
+        }
+      } else if (data?.status === 'succeeded' || data?.success || data?.already_paid || data?.flow === 'manual') {
+        // Confirm success silently (screen already shows success)
+        console.log('[ActiveCourseCard] Payment finalized successfully');
+      } else if (isCardPayment) {
+        // Card payment failed — update screen
+        setCompletionData(prev => prev ? {
+          ...prev,
+          paymentResult: { success: false, status: data?.status || 'failed', error: data?.error || 'La finalisation n\'a pas abouti', alreadyPaid: false },
+        } : null);
+      }
+    }).catch((err: any) => {
+      if (isCardPayment) {
+        setCompletionData(prev => prev ? {
+          ...prev,
+          paymentResult: { success: false, status: 'failed', error: err.message || 'Erreur réseau', alreadyPaid: false },
+        } : null);
+      }
+    });
   }, [course, driverId]);
 
   const handleStopCourse = useCallback(async (reason: string) => {
