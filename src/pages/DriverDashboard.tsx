@@ -1184,6 +1184,7 @@ const DriverDashboard = () => {
           {/* Company Payments Tab - supprimé, intégré dans UnifiedPartnershipHub */}
 
         </Tabs>
+        </>)}
       </div>
       
       {/* Floating Map button - only when disconnected, as connected drivers have it in the toggle */}
