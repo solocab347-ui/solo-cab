@@ -13,20 +13,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) throw new Error("Invalid token");
 
+    // Use service role client for DB queries
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Get driver for this user
-    const { data: driver } = await supabaseClient
+    const { data: driver } = await serviceClient
       .from("drivers")
       .select("id, stripe_connect_account_id, stripe_connect_charges_enabled")
       .eq("user_id", user.id)
