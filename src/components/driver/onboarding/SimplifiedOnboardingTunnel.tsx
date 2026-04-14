@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -249,6 +249,55 @@ export function SimplifiedOnboardingTunnel({
     }
   };
 
+  // Auto-save with debounce
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save profile
+  useEffect(() => {
+    if (!firstName || !lastName || !companyName || siret.length !== 14 || !companyAddress) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
+      await supabase.from('drivers').update({
+        company_name: companyName, siret, company_address: companyAddress,
+      }).eq('id', driverId);
+      console.log('Auto-saved profile');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [firstName, lastName, companyName, siret, companyAddress, userId, driverId]);
+
+  // Auto-save vehicle
+  useEffect(() => {
+    if (!vehicleBrand || !vehicleModel || !vehicleColor) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await supabase.from('drivers').update({
+        vehicle_brand: vehicleBrand, vehicle_model: vehicleModel,
+        vehicle_year: parseInt(vehicleYear), vehicle_color: vehicleColor,
+        vehicle_seats: parseInt(vehicleSeats),
+      }).eq('id', driverId);
+      console.log('Auto-saved vehicle');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [vehicleBrand, vehicleModel, vehicleYear, vehicleColor, vehicleSeats, driverId]);
+
+  // Auto-save pricing
+  useEffect(() => {
+    if (!baseFare || !perKmRate) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await supabase.from('drivers').update({
+        base_fare: parseFloat(baseFare),
+        per_km_rate: parseFloat(perKmRate),
+        minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
+        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+      }).eq('id', driverId);
+      console.log('Auto-saved pricing');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [baseFare, perKmRate, minimumPrice, hourlyRate, driverId]);
+
   // Computed
   const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
   const isVehicleComplete = vehicleBrand && vehicleModel && vehicleColor;
@@ -387,7 +436,7 @@ export function SimplifiedOnboardingTunnel({
             {currentStep === 4 && (
               <StripeStep
                 stripeStatus={stripeStatus} stripeLoading={stripeLoading} stripeStatusLoading={stripeStatusLoading}
-                onStartStripe={startStripeOnboarding} onCheckStatus={checkStripeStatus} onSkipForNow={() => goToStep(5)}
+                onStartStripe={startStripeOnboarding} onCheckStatus={checkStripeStatus}
               />
             )}
             {currentStep === 5 && (
@@ -420,10 +469,10 @@ export function SimplifiedOnboardingTunnel({
             ) : (
               <Button
                 onClick={() => goToStep(5)}
-                variant={isStripeReady ? 'default' : 'outline'}
+                disabled={!isStripeReady}
                 className="flex-1 h-12 text-base font-semibold"
               >
-                {isStripeReady ? <>Continuer <ArrowRight className="w-5 h-5 ml-2" /></> : <>Passer pour l'instant <ChevronRight className="w-5 h-5 ml-1" /></>}
+                {isStripeReady ? <>Continuer <ArrowRight className="w-5 h-5 ml-2" /></> : <>Stripe requis pour continuer</>}
               </Button>
             )}
           </div>
@@ -437,10 +486,10 @@ export function SimplifiedOnboardingTunnel({
 
 function StripeStep({
   stripeStatus, stripeLoading, stripeStatusLoading,
-  onStartStripe, onCheckStatus, onSkipForNow,
+  onStartStripe, onCheckStatus,
 }: {
   stripeStatus: any; stripeLoading: boolean; stripeStatusLoading: boolean;
-  onStartStripe: () => void; onCheckStatus: () => void; onSkipForNow: () => void;
+  onStartStripe: () => void; onCheckStatus: () => void;
 }) {
   if (stripeStatus?.charges_enabled) {
     return (
