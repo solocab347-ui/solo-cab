@@ -163,7 +163,7 @@ export function RideWaitingScreen({
     fetchDrivers();
     const interval = setInterval(fetchDrivers, 3000);
     return () => clearInterval(interval);
-  }, [requestId, requestGroupId, phase]);
+  }, [requestId, requestGroupId, phase, contactedDriversData]);
 
   phaseRef.current = phase;
 
