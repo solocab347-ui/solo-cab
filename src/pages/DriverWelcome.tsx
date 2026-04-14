@@ -156,7 +156,7 @@ const DriverWelcome = () => {
     );
   }
 
-  if (!user && !driverData) { navigate("/auth"); return null; }
+  if (!user && !driverData) { navigate("/login"); return null; }
   if (!driverData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -175,7 +175,7 @@ const DriverWelcome = () => {
         <div className="relative overflow-hidden flex-1 flex flex-col items-center justify-center px-4 py-8">
           {/* Logout button */}
           <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+            onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}
             className="absolute top-4 right-4 z-20 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-muted/50"
           >
             <LogOut className="w-3.5 h-3.5" />
