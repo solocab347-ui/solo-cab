@@ -99,17 +99,24 @@ const isCourseTodayOrImmediate = (course: ActiveCourse) => {
   // in_progress courses always show
   if (course.status === 'in_progress') return true;
   
-  // For accepted/pending: only show if scheduled today or earlier (not future)
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   
   const scheduledDate = course.scheduled_date ? new Date(course.scheduled_date) : null;
   
-  // If scheduled in the past (before today start) and not in_progress → expired, don't show
-  if (scheduledDate && scheduledDate < todayStart && course.status !== 'in_progress') return false;
+  // If scheduled in the past (before today start) → expired, don't show
+  if (scheduledDate && scheduledDate < todayStart) return false;
   
-  // If scheduled today or no date (immediate) → show
+  // For immediate courses (no scheduled_date), check staleness:
+  // If updated more than 24h ago → orphaned, don't show
+  if (!scheduledDate) {
+    const lastActivity = new Date(course.updated_at || course.created_at).getTime();
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    if (lastActivity < twentyFourHoursAgo) return false;
+  }
+  
+  // If scheduled today or immediate (fresh) → show
   if (!scheduledDate || scheduledDate < todayEnd) return true;
   
   return false;
