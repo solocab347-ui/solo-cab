@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { qr_code_id } = await req.json();
+    const body = await req.json();
+    const { qr_code_id, qr_code } = body;
 
-    if (!qr_code_id) {
-      return new Response(JSON.stringify({ error: 'qr_code_id requis' }), {
+    if (!qr_code_id && !qr_code) {
+      return new Response(JSON.stringify({ error: 'qr_code_id ou qr_code requis' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
