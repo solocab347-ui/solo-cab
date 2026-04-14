@@ -122,6 +122,19 @@ export function RideWaitingScreen({
       const driverIds = [...new Set(requests.map(r => r.selected_driver_id).filter(Boolean))];
       let driverMap: Record<string, { name: string; photo: string | null }> = {};
       
+      // First, pre-populate from contactedDriversData prop (always available from search phase)
+      if (contactedDriversData) {
+        for (const cd of contactedDriversData) {
+          const rawName = cd.display_name || cd.company_name || '';
+          if (rawName) {
+            const parts = rawName.trim().split(/\s+/);
+            const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
+            driverMap[cd.driver_id] = { name: maskedName, photo: cd.profile_photo_url || null };
+          }
+        }
+      }
+
+      // Then try DB enrichment (may fail for guests)
       if (driverIds.length > 0) {
         const { data: drivers } = await supabase
           .from('drivers')
@@ -130,10 +143,12 @@ export function RideWaitingScreen({
         
         if (drivers) {
           for (const d of drivers as any[]) {
-            const rawName = d.profiles?.full_name || d.company_name || 'Chauffeur';
-            const parts = rawName.trim().split(/\s+/);
-            const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
-            driverMap[d.id] = { name: maskedName, photo: d.profiles?.profile_photo_url || null };
+            const rawName = d.profiles?.full_name || d.company_name || '';
+            if (rawName) {
+              const parts = rawName.trim().split(/\s+/);
+              const maskedName = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.` : rawName;
+              driverMap[d.id] = { name: maskedName, photo: d.profiles?.profile_photo_url || null };
+            }
           }
         }
       }
