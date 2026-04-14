@@ -89,6 +89,15 @@ const DriverWelcome = () => {
 
       setDriverData(driver);
       setProfileData(profile);
+
+      // Send welcome email once (after email validation, user lands here)
+      if (driver && !driver.onboarding_completed && !sessionStorage.getItem(`welcome_email_sent_${driver.id}`)) {
+        sessionStorage.setItem(`welcome_email_sent_${driver.id}`, 'true');
+        supabase.functions.invoke("send-email", {
+          body: { driver_id: driver.id, type: "driver_welcome_new" },
+        }).catch(err => console.error("Welcome email error:", err));
+      }
+
       if (driver.onboarding_completed) { navigate("/driver-dashboard", { replace: true }); return; }
     } catch (err) {
       logger.error("Exception fetchDriverData", { err });

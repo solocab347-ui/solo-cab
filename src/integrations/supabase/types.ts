@@ -7843,6 +7843,7 @@ export type Database = {
           vehicle_model: string
           vehicle_photos: string[] | null
           vehicle_plate: string | null
+          vehicle_seats: number | null
           vehicle_year: number | null
           visible_to_companies: boolean | null
           visible_to_drivers: boolean | null
@@ -8028,6 +8029,7 @@ export type Database = {
           vehicle_model: string
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
+          vehicle_seats?: number | null
           vehicle_year?: number | null
           visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
@@ -8213,6 +8215,7 @@ export type Database = {
           vehicle_model?: string
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
+          vehicle_seats?: number | null
           vehicle_year?: number | null
           visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
