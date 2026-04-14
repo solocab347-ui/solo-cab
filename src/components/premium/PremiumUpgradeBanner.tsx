@@ -16,7 +16,7 @@ interface PremiumUpgradeBannerProps {
 /**
  * Bannière CTA Premium contextuelle.
  * S'affiche uniquement pour les utilisateurs Free.
- * Propose l'abonnement direct à 9,99€/mois (prix de lancement).
+ * Propose l'abonnement direct à 19,99€/mois.
  */
 export function PremiumUpgradeBanner({ 
   message = "Débloquez tout le potentiel de SoloCab",
