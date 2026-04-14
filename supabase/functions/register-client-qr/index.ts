@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
             emailType: "client_welcome (QR)",
             recipient: profileData.email,
             error: emailResult.error || "Erreur inconnue",
-            context: `Client ID: ${newClient.id}, QR Code ID: ${qr_code_id}`
+            context: `Client ID: ${newClient.id}, QR Code ID: ${qrCode.id}`
           });
         }
 
