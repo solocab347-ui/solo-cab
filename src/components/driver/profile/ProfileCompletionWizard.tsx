@@ -143,19 +143,6 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     const handleBeforeUnload = () => {
       if (saveTimeoutRef.current && latestDataRef.current && driver?.id) {
         clearTimeout(saveTimeoutRef.current);
-        // Use sendBeacon for reliable save on page close
-        const payload = JSON.stringify({
-          profile_photo_url: latestDataRef.current.profilePhotoUrl,
-          card_photo_url: latestDataRef.current.profilePhotoUrl,
-          display_driver_name: latestDataRef.current.displayDriverName,
-          display_company_name: latestDataRef.current.displayCompanyName,
-          service_description: latestDataRef.current.serviceDescription,
-          working_sectors: latestDataRef.current.workingSectors,
-          services_offered: latestDataRef.current.servicesOffered,
-          vehicle_categories: latestDataRef.current.vehicleCategories,
-          vehicle_equipment: latestDataRef.current.vehicleEquipment,
-        });
-        // Fallback: trigger the save
         saveToDatabase(latestDataRef.current);
       }
     };
