@@ -15,6 +15,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
+import { useETACalculation } from "@/hooks/useETACalculation";
+import { ETADisplay } from "@/components/tracking/ETADisplay";
 import logo from "@/assets/logo-solocab.png";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
