@@ -164,6 +164,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     paymentMethod: string;
     paymentResult: { success: boolean; status?: string; error?: string; alreadyPaid?: boolean };
   } | null>(null);
+  const [rideRequestId, setRideRequestId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [dismissedCourseIds, setDismissedCourseIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('solocab_dismissed_courses');
