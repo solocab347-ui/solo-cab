@@ -16,9 +16,9 @@ import logo from "@/assets/logo-solocab.png";
 
 // Step-by-step wizard registration
 
-type Step = "welcome" | "name" | "email" | "phone" | "password" | "creating";
+type Step = "welcome" | "name" | "email" | "phone" | "password" | "confirm_password" | "creating" | "check_email";
 
-const STEP_ORDER: Step[] = ["welcome", "name", "email", "phone", "password"];
+const STEP_ORDER: Step[] = ["welcome", "name", "email", "phone", "password", "confirm_password"];
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -55,6 +55,7 @@ const RegisterDriverPromoFree = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,6 +134,10 @@ const RegisterDriverPromoFree = () => {
         if (!password) newErrors.password = "Choisissez un mot de passe";
         else if (password.length < 6) newErrors.password = "Minimum 6 caractères";
         break;
+      case "confirm_password":
+        if (!confirmPassword) newErrors.confirmPassword = "Confirmez votre mot de passe";
+        else if (confirmPassword !== password) newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+        break;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -140,12 +145,12 @@ const RegisterDriverPromoFree = () => {
       return;
     }
 
-    if (currentStep === "password") {
+    if (currentStep === "confirm_password") {
       handleRegister();
     } else {
       goNext();
     }
-  }, [currentStep, fullName, email, phone, password, goNext]);
+  }, [currentStep, fullName, email, phone, password, confirmPassword, goNext]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -216,8 +221,7 @@ const RegisterDriverPromoFree = () => {
       }
 
       toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
-      await new Promise(resolve => setTimeout(resolve, 800));
-      navigate("/driver-welcome", { replace: true });
+      setCurrentStep("check_email");
     } catch (error: any) {
       let errorMessage = error.message || "Erreur lors de la création du compte";
       if (error.message?.includes("User already registered")) {
@@ -226,7 +230,7 @@ const RegisterDriverPromoFree = () => {
         setLoginEmail(email);
       }
       toast.error(errorMessage);
-      setCurrentStep("password");
+      setCurrentStep("confirm_password");
     } finally {
       setLoading(false);
     }
@@ -439,15 +443,29 @@ const RegisterDriverPromoFree = () => {
                 loading={loading}
               />
             )}
+            {currentStep === "confirm_password" && (
+              <ConfirmPasswordStep
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                showPassword={showPassword}
+                onToggleShow={() => setShowPassword(!showPassword)}
+                error={errors.confirmPassword}
+                onNext={validateAndNext}
+                loading={loading}
+              />
+            )}
             {currentStep === "creating" && (
               <CreatingStep />
+            )}
+            {currentStep === "check_email" && (
+              <CheckEmailStep email={email} onLogin={() => setIsLoginMode(true)} />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Footer - Terms */}
-      {currentStep === "password" && (
+      {(currentStep === "password" || currentStep === "confirm_password") && (
         <div className="px-6 pb-4 pt-2 text-center">
           <p className="text-[10px] text-muted-foreground">
             En créant un compte, vous acceptez nos{" "}
@@ -687,16 +705,10 @@ function PasswordStep({ value, onChange, showPassword, onToggleShow, error, onNe
       <Button 
         onClick={onNext}
         disabled={!value || loading}
-        className="w-full h-12 text-base font-semibold gap-2 bg-success hover:bg-success/90 text-success-foreground"
+        className="w-full h-12 text-base font-semibold gap-2"
       >
-        {loading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <>
-            <Rocket className="w-5 h-5" />
-            Créer mon compte
-          </>
-        )}
+        Continuer
+        <ChevronRight className="w-4 h-4" />
       </Button>
     </div>
   );
@@ -721,6 +733,105 @@ function CreatingStep() {
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">Création en cours...</h2>
         <p className="text-sm text-muted-foreground">Nous préparons votre espace chauffeur</p>
+      </motion.div>
+    </div>
+  );
+}
+
+// Confirm Password Step
+function ConfirmPasswordStep({ value, onChange, showPassword, onToggleShow, error, onNext, loading }: PasswordStepProps) {
+  return (
+    <div className="flex-1 flex flex-col justify-center pb-16">
+      <div className="mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <Shield className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-1">Confirmez votre mot de passe</h2>
+        <p className="text-sm text-muted-foreground">Saisissez-le à nouveau pour éviter les erreurs</p>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Confirmez votre mot de passe"
+            className={`h-14 text-lg bg-input border-border rounded-xl px-4 pr-12 ${error ? 'border-destructive ring-1 ring-destructive/30' : ''}`}
+            autoComplete="new-password"
+            autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onNext(); }}}
+          />
+          <button 
+            type="button" 
+            onClick={onToggleShow} 
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {error && (
+          <motion.p 
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs text-destructive pl-1"
+          >
+            {error}
+          </motion.p>
+        )}
+      </div>
+
+      <Button 
+        onClick={onNext}
+        disabled={!value || loading}
+        className="w-full h-12 text-base font-semibold gap-2 bg-success hover:bg-success/90 text-success-foreground"
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            <Rocket className="w-5 h-5" />
+            Créer mon compte
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// Check Email Step
+function CheckEmailStep({ email, onLogin }: { email: string; onLogin: () => void }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center pb-16">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="text-center max-w-sm"
+      >
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/15 flex items-center justify-center">
+          <Mail className="w-10 h-10 text-success" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-3">Vérifiez votre boîte mail</h2>
+        <p className="text-sm text-muted-foreground mb-2">
+          Un email de confirmation a été envoyé à :
+        </p>
+        <p className="text-sm font-semibold text-primary mb-6">{email}</p>
+        <div className="bg-card border border-border rounded-xl p-4 mb-6 text-left">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            📩 Cliquez sur le bouton <strong>"Valider mon adresse email"</strong> dans l'email que vous avez reçu de SoloCab pour activer votre compte.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            💡 Pensez à vérifier vos spams si vous ne le trouvez pas.
+          </p>
+        </div>
+        <button 
+          onClick={onLogin}
+          className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+        >
+          J'ai validé mon email → Se connecter
+        </button>
       </motion.div>
     </div>
   );

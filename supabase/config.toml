@@ -1,250 +1,171 @@
 project_id = "iyothopplhbwcfrpxryc"
 
-[functions.get-vapid-public-key]
-verify_jwt = false
-
-[functions.secure-admin-init]
-verify_jwt = false
-
-[functions.qr-code-manager]
-verify_jwt = true
-
-[functions.register-client-qr]
-verify_jwt = false
-
-[functions.create-devis-auto]
-verify_jwt = true
-
-[functions.create-stripe-checkout]
-verify_jwt = true
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.cleanup-old-messages]
-verify_jwt = true
-
-[functions.driver-assistant]
-verify_jwt = true
-
-[functions.send-email]
-verify_jwt = true
-
-[functions.manage-driver-subscription]
-verify_jwt = true
-
-[functions.send-bulk-email]
-verify_jwt = true
-
-[functions.analyze-feedback]
-verify_jwt = true
-
-[functions.regenerate-qr-codes]
-verify_jwt = true
-
-[functions.auth-login]
-verify_jwt = false
-
-[functions.cleanup-deleted-users]
-verify_jwt = true
-
-[functions.create-facture-auto]
-verify_jwt = true
-
-[functions.register-client-driver]
-verify_jwt = false
-
-[functions.check-driver-subscription]
-verify_jwt = true
-
-[functions.get-mapbox-token]
-verify_jwt = false
-
-[functions.send-payment-reminder-email]
-verify_jwt = true
-
-[functions.validate-course-price]
-verify_jwt = true
-
-[functions.email-health-check]
-verify_jwt = false
-
-[functions.repair-driver-profiles]
-verify_jwt = true
-
-[functions.cleanup-expired-promos]
-verify_jwt = true
-
-[functions.calculate-mapbox-route]
-verify_jwt = true
-
-[functions.send-driver-client-registered]
-verify_jwt = true
-
-[functions.send-admin-driver-pending]
-verify_jwt = true
-
-[functions.create-driver-subscription]
-verify_jwt = true
-
-[functions.auto-reassign-course]
-verify_jwt = true
-
-[functions.calculate-smart-buffer]
-verify_jwt = true
-
-[functions.send-push-notification]
-verify_jwt = true
-
-[functions.complete-course-invitation]
-verify_jwt = false
-
-[functions.send-driver-document-reminder]
-verify_jwt = true
-
-[functions.register-guest-client]
-verify_jwt = false
-
-[functions.accept-company-course-quote]
-verify_jwt = true
-
-[functions.create-pioneer-subscription]
-verify_jwt = true
-
-[functions.analyze-error]
-verify_jwt = true
-
-[functions.process-course-queue-retries]
-verify_jwt = true
-
-[functions.send-guest-tracking-email]
-verify_jwt = true
-
-[functions.check-expired-free-access]
-verify_jwt = false
-
-[functions.manage-driver-free-access]
-verify_jwt = true
-
-[functions.stripe-connect-onboarding]
-verify_jwt = true
-
-[functions.stripe-connect-status]
-verify_jwt = true
-
-[functions.create-shared-course-payment]
-verify_jwt = true
-
-[functions.create-nfc-plate-order]
-verify_jwt = false
-
-[functions.track-nfc-order]
-verify_jwt = false
-
-[functions.send-nfc-status-email]
-verify_jwt = false
-
-[functions.delete-user-account]
-verify_jwt = false
-
-[functions.reset-trial-on-validation]
-verify_jwt = false
-
-[functions.activate-driver-trial]
-verify_jwt = true
-
-[functions.cancel-trial]
-verify_jwt = true
-
-[functions.check-expired-trials]
-verify_jwt = false
-
-[functions.send-trial-emails]
-verify_jwt = true
-
-[functions.reactivate-trial]
-verify_jwt = true
-
-[functions.reactivate-subscription]
-verify_jwt = true
-
-[functions.create-post-trial-checkout]
-verify_jwt = true
-
-[functions.resubscribe-driver]
-verify_jwt = true
-
-[functions.create-legacy-migration-checkout]
-verify_jwt = true
-
-[functions.customer-portal]
-verify_jwt = true
-
-[functions.platform-maintenance]
-verify_jwt = false
-
-[functions.error-intelligence]
-verify_jwt = true
-
-[functions.driver-coach-ai]
-verify_jwt = true
-
-[functions.send-daily-report]
-verify_jwt = true
-
-[functions.send-admin-documents-submitted]
-verify_jwt = true
-
-[functions.check-documents-deadline]
-verify_jwt = false
-
-[functions.notify-registration-error]
-verify_jwt = false
-
-[functions.send-reengagement-emails]
-verify_jwt = true
-
-[functions.send-payment-reminder]
-verify_jwt = true
-
-[functions.create-pioneer-payment]
-verify_jwt = true
-
-[functions.geocode-cached]
-verify_jwt = true
-
-[functions.create-course-payment]
-verify_jwt = true
-
-[functions.create-deposit-payment]
-verify_jwt = true
-
-[functions.create-card-hold]
-verify_jwt = true
-
-[functions.confirm-card-hold]
-verify_jwt = true
-
-[functions.capture-course-payment]
-verify_jwt = true
-
-[functions.capture-final-payment]
-verify_jwt = true
-
-[functions.finalize-course-payment]
-verify_jwt = true
-
-[functions.refund-deposit]
-verify_jwt = true
-
-[functions.process-cancellation-fee]
-verify_jwt = true
-
-[functions.create-payment-request]
-verify_jwt = true
-
-[functions.elevenlabs-tts]
-verify_jwt = true
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.accept-company-course-quote]
+    verify_jwt = true
+  [functions.activate-driver-trial]
+    verify_jwt = true
+  [functions.analyze-error]
+    verify_jwt = true
+  [functions.analyze-feedback]
+    verify_jwt = true
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auth-login]
+    verify_jwt = false
+  [functions.auto-reassign-course]
+    verify_jwt = true
+  [functions.calculate-mapbox-route]
+    verify_jwt = true
+  [functions.calculate-smart-buffer]
+    verify_jwt = true
+  [functions.cancel-trial]
+    verify_jwt = true
+  [functions.capture-course-payment]
+    verify_jwt = true
+  [functions.capture-final-payment]
+    verify_jwt = true
+  [functions.check-documents-deadline]
+    verify_jwt = false
+  [functions.check-driver-subscription]
+    verify_jwt = true
+  [functions.check-expired-free-access]
+    verify_jwt = false
+  [functions.check-expired-trials]
+    verify_jwt = false
+  [functions.cleanup-deleted-users]
+    verify_jwt = true
+  [functions.cleanup-expired-promos]
+    verify_jwt = true
+  [functions.cleanup-old-messages]
+    verify_jwt = true
+  [functions.complete-course-invitation]
+    verify_jwt = false
+  [functions.confirm-card-hold]
+    verify_jwt = true
+  [functions.create-card-hold]
+    verify_jwt = true
+  [functions.create-course-payment]
+    verify_jwt = true
+  [functions.create-deposit-payment]
+    verify_jwt = true
+  [functions.create-devis-auto]
+    verify_jwt = true
+  [functions.create-driver-subscription]
+    verify_jwt = true
+  [functions.create-facture-auto]
+    verify_jwt = true
+  [functions.create-legacy-migration-checkout]
+    verify_jwt = true
+  [functions.create-nfc-plate-order]
+    verify_jwt = false
+  [functions.create-payment-request]
+    verify_jwt = true
+  [functions.create-pioneer-payment]
+    verify_jwt = true
+  [functions.create-pioneer-subscription]
+    verify_jwt = true
+  [functions.create-post-trial-checkout]
+    verify_jwt = true
+  [functions.create-shared-course-payment]
+    verify_jwt = true
+  [functions.create-stripe-checkout]
+    verify_jwt = true
+  [functions.customer-portal]
+    verify_jwt = true
+  [functions.delete-user-account]
+    verify_jwt = false
+  [functions.driver-assistant]
+    verify_jwt = true
+  [functions.driver-coach-ai]
+    verify_jwt = true
+  [functions.elevenlabs-tts]
+    verify_jwt = true
+  [functions.email-health-check]
+    verify_jwt = false
+  [functions.error-intelligence]
+    verify_jwt = true
+  [functions.finalize-course-payment]
+    verify_jwt = true
+  [functions.geocode-cached]
+    verify_jwt = true
+  [functions.get-mapbox-token]
+    verify_jwt = false
+  [functions.get-vapid-public-key]
+    verify_jwt = false
+  [functions.manage-driver-free-access]
+    verify_jwt = true
+  [functions.manage-driver-subscription]
+    verify_jwt = true
+  [functions.notify-registration-error]
+    verify_jwt = false
+  [functions.platform-maintenance]
+    verify_jwt = false
+  [functions.process-cancellation-fee]
+    verify_jwt = true
+  [functions.process-course-queue-retries]
+    verify_jwt = true
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.qr-code-manager]
+    verify_jwt = true
+  [functions.reactivate-subscription]
+    verify_jwt = true
+  [functions.reactivate-trial]
+    verify_jwt = true
+  [functions.refund-deposit]
+    verify_jwt = true
+  [functions.regenerate-qr-codes]
+    verify_jwt = true
+  [functions.register-client-driver]
+    verify_jwt = false
+  [functions.register-client-qr]
+    verify_jwt = false
+  [functions.register-guest-client]
+    verify_jwt = false
+  [functions.repair-driver-profiles]
+    verify_jwt = true
+  [functions.reset-trial-on-validation]
+    verify_jwt = false
+  [functions.resubscribe-driver]
+    verify_jwt = true
+  [functions.secure-admin-init]
+    verify_jwt = false
+  [functions.send-admin-documents-submitted]
+    verify_jwt = true
+  [functions.send-admin-driver-pending]
+    verify_jwt = true
+  [functions.send-bulk-email]
+    verify_jwt = true
+  [functions.send-daily-report]
+    verify_jwt = true
+  [functions.send-driver-client-registered]
+    verify_jwt = true
+  [functions.send-driver-document-reminder]
+    verify_jwt = true
+  [functions.send-email]
+    verify_jwt = true
+  [functions.send-guest-tracking-email]
+    verify_jwt = true
+  [functions.send-nfc-status-email]
+    verify_jwt = false
+  [functions.send-payment-reminder]
+    verify_jwt = true
+  [functions.send-payment-reminder-email]
+    verify_jwt = true
+  [functions.send-push-notification]
+    verify_jwt = true
+  [functions.send-reengagement-emails]
+    verify_jwt = true
+  [functions.send-trial-emails]
+    verify_jwt = true
+  [functions.stripe-connect-onboarding]
+    verify_jwt = true
+  [functions.stripe-connect-status]
+    verify_jwt = true
+  [functions.stripe-webhook]
+    verify_jwt = false
+  [functions.track-nfc-order]
+    verify_jwt = false
+  [functions.validate-course-price]
+    verify_jwt = true
