@@ -37,7 +37,7 @@ const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; s
 const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<typeof createClient>, driverId: string) => {
   const { data: activeCourses, error } = await supabaseClient
     .from("courses")
-    .select("status, scheduled_date")
+    .select("status, scheduled_date, updated_at, created_at")
     .eq("driver_id", driverId)
     .in("status", ["accepted", "in_progress"])
     .order("updated_at", { ascending: false })
