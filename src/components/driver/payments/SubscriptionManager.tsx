@@ -515,11 +515,6 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <Trophy className="w-3 h-3 mr-1" />
               Pionnier
             </Badge>
-          ) : isInTrialPeriod ? (
-            <Badge className="bg-blue-500 self-start">
-              <Calendar className="w-3 h-3 mr-1" />
-              Essai Gratuit
-            </Badge>
           ) : hasAdminFreeAccess ? (
             <Badge className="bg-green-500 self-start">
               <Gift className="w-3 h-3 mr-1" />
@@ -528,9 +523,14 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           ) : isActive ? (
             <Badge className="bg-green-500 self-start">
               <Check className="w-3 h-3 mr-1" />
-              Actif
+              Premium Actif
             </Badge>
-          ) : null}
+          ) : (
+            <Badge className="bg-blue-500 self-start">
+              <Gift className="w-3 h-3 mr-1" />
+              Freemium
+            </Badge>
+          )}
         </div>
 
         <div className="space-y-3 sm:space-y-4">
@@ -543,15 +543,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 <span className="font-bold text-sm sm:text-base text-amber-400">Tarif préférentiel</span>
               </div>
             </div>
-          ) : isInTrialPeriod ? (
-            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
-              <span className="text-xs sm:text-sm text-gray-300">Période d'essai</span>
-              <div className="flex flex-col items-end">
-                <Badge className="bg-blue-500 mb-1">{trialDaysLeft} jour{trialDaysLeft > 1 ? 's' : ''} restant{trialDaysLeft > 1 ? 's' : ''}</Badge>
-                <span className="font-bold text-sm sm:text-base text-white">puis 19,99€ / mois</span>
-              </div>
-            </div>
-          ) : !hasAdminFreeAccess && (
+          ) : !hasAdminFreeAccess && !isActive && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Abonnement Premium</span>
               <div className="flex flex-col items-end">
