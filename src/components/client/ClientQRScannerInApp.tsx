@@ -31,11 +31,24 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
     setProcessing(true);
 
     try {
-      // Extract QR code ID from URL
-      const url = new URL(decodedText);
-      const qrCodeId = url.searchParams.get("qr");
+      // Extract QR code ID from URL — supports ?qr=ID or /qr/CODE formats
+      let qrCodeId: string | null = null;
+      let qrCode: string | null = null;
 
-      if (!qrCodeId) {
+      try {
+        const url = new URL(decodedText);
+        qrCodeId = url.searchParams.get("qr");
+        // Also support /qr/<code> path format
+        const pathMatch = url.pathname.match(/\/qr\/([^/]+)/);
+        if (!qrCodeId && pathMatch) {
+          qrCode = pathMatch[1];
+        }
+      } catch {
+        // If not a valid URL, treat as raw QR code value
+        qrCode = decodedText.trim();
+      }
+
+      if (!qrCodeId && !qrCode) {
         toast.error("QR code invalide");
         setProcessing(false);
         return;
@@ -48,29 +61,19 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
       }
       setScanning(false);
 
-      // Look up driver from QR code
-      const { data: qrData, error: qrError } = await supabase
-        .from("qr_codes")
-        .select("driver_id")
-        .eq("id", qrCodeId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (qrError || !qrData) {
-        toast.error("QR code invalide ou expiré");
-        setProcessing(false);
-        return;
-      }
-
-      // Call register-client-driver to instantly link
-      const { data, error } = await supabase.functions.invoke("register-client-driver", {
-        body: { driver_id: qrData.driver_id },
+      // Use register-client-qr edge function which handles QR lookup securely
+      // This bypasses RLS issues with qr_codes table
+      const { data, error } = await supabase.functions.invoke("register-client-qr", {
+        body: { 
+          qr_code_id: qrCodeId || undefined,
+          qr_code: qrCode || undefined,
+        },
       });
 
       if (error) throw error;
 
       if (data?.error) {
-        if (data.error.includes("déjà inscrit") || data.error.includes("already")) {
+        if (data.error.includes("déjà inscrit") || data.error.includes("already") || data.error.includes("déjà associé")) {
           toast.info("Vous êtes déjà inscrit avec ce chauffeur !");
         } else {
           toast.error(data.error);
@@ -79,9 +82,9 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
         return;
       }
 
-      const driverName = data?.driver_name || "le chauffeur";
+      const driverName = data?.driver_name || data?.driverName || "le chauffeur";
       setSuccess({ driverName });
-      toast.success(`Inscription réussie avec ${driverName} !`);
+      toast.success(`${driverName} ajouté à vos chauffeurs !`);
       onDriverAdded?.();
     } catch (error: any) {
       console.error("QR scan error:", error);

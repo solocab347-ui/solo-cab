@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { qr_code_id } = await req.json();
+    const body = await req.json();
+    const { qr_code_id, qr_code } = body;
 
-    if (!qr_code_id) {
-      return new Response(JSON.stringify({ error: 'qr_code_id requis' }), {
+    if (!qr_code_id && !qr_code) {
+      return new Response(JSON.stringify({ error: 'qr_code_id ou qr_code requis' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -58,12 +59,18 @@ Deno.serve(async (req) => {
     }
 
     // Verify QR code exists and is active using SERVICE_ROLE (bypasses RLS)
-    const { data: qrCode, error: qrError } = await serviceClient
+    let qrQuery = serviceClient
       .from('qr_codes')
-      .select('*, drivers:driver_id(id, user_id, status)')
-      .eq('id', qr_code_id)
-      .eq('is_active', true)
-      .maybeSingle();
+      .select('*, drivers:driver_id(id, user_id, status, profiles:user_id(full_name))')
+      .eq('is_active', true);
+
+    if (qr_code_id) {
+      qrQuery = qrQuery.eq('id', qr_code_id);
+    } else if (qr_code) {
+      qrQuery = qrQuery.eq('code', qr_code);
+    }
+
+    const { data: qrCode, error: qrError } = await qrQuery.maybeSingle();
 
     if (qrError) {
       return new Response(JSON.stringify({ error: 'Erreur de base de données' }), {
@@ -87,22 +94,69 @@ Deno.serve(async (req) => {
       });
     }
 
+    const driverName = qrCode.drivers?.profiles?.full_name || 'votre chauffeur';
+
     // Check if client already exists
-    const { data: existingClient } = await authClient
+    const { data: existingClient } = await serviceClient
       .from('clients')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (existingClient) {
-      // Return success for existing clients to prevent duplicate notifications
+      // If exclusive client, can't add another driver
+      if (existingClient.is_exclusive) {
+        return new Response(JSON.stringify({ 
+          error: 'Vous êtes déjà associé à un chauffeur exclusif',
+          driver_name: driverName,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Free client: check if already has this driver
+      const alreadyHasDriver = 
+        existingClient.driver_id === qrCode.driver_id || 
+        existingClient.driver_ids?.includes(qrCode.driver_id);
+
+      if (alreadyHasDriver) {
+        return new Response(JSON.stringify({ 
+          success: true,
+          alreadyRegistered: true,
+          error: 'Vous êtes déjà inscrit avec ce chauffeur',
+          driver_name: driverName,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Add driver to existing free client's driver list
+      const updatedDriverIds = [...(existingClient.driver_ids || []), qrCode.driver_id];
+      
+      const { error: updateError } = await serviceClient
+        .from('clients')
+        .update({ 
+          driver_ids: updatedDriverIds,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingClient.id);
+
+      if (updateError) throw updateError;
+
+      // Increment QR scan counter
+      await serviceClient
+        .from('qr_codes')
+        .update({ scans_count: (qrCode.scans_count || 0) + 1 })
+        .eq('id', qrCode.id);
+
       return new Response(JSON.stringify({ 
         success: true,
-        alreadyRegistered: true,
-        client: existingClient,
-        message: 'Vous êtes déjà inscrit' 
+        driver_name: driverName,
+        message: `${driverName} ajouté à vos chauffeurs`,
+        client: { ...existingClient, driver_ids: updatedDriverIds }
       }), {
-        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -133,9 +187,10 @@ Deno.serve(async (req) => {
       .insert({
         user_id: user.id,
         driver_id: qrCode.driver_id,
-        driver_ids: [qrCode.driver_id], // Dual association
-        qr_code_id: qr_code_id,
+        driver_ids: [qrCode.driver_id],
+        qr_code_id: qrCode.id,
         is_exclusive: true,
+        favorite_driver_id: qrCode.driver_id,
       })
       .select()
       .single();
@@ -170,7 +225,7 @@ Deno.serve(async (req) => {
     await serviceClient
       .from('qr_codes')
       .update({ scans_count: (qrCode.scans_count || 0) + 1 })
-      .eq('id', qr_code_id);
+      .eq('id', qrCode.id);
 
     // Envoyer l'email de bienvenue au client AVEC RETRY
     try {
@@ -236,7 +291,7 @@ Deno.serve(async (req) => {
             emailType: "client_welcome (QR)",
             recipient: profileData.email,
             error: emailResult.error || "Erreur inconnue",
-            context: `Client ID: ${newClient.id}, QR Code ID: ${qr_code_id}`
+            context: `Client ID: ${newClient.id}, QR Code ID: ${qrCode.id}`
           });
         }
 
@@ -270,7 +325,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       client: newClient,
-      message: 'Inscription réussie en tant que client exclusif' 
+      driver_name: driverName,
+      message: `Inscription réussie avec ${driverName}` 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
