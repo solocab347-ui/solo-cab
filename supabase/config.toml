@@ -144,7 +144,7 @@ project_id = "iyothopplhbwcfrpxryc"
   [functions.send-driver-document-reminder]
     verify_jwt = true
   [functions.send-email]
-    verify_jwt = true
+    verify_jwt = false
   [functions.send-guest-tracking-email]
     verify_jwt = true
   [functions.send-nfc-status-email]
