@@ -16,10 +16,10 @@ import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
 
 const ONBOARDING_STEPS = [
-  { icon: Target, label: "Votre vision & objectifs" },
-  { icon: Shield, label: "Tarifs & profil professionnel" },
-  { icon: Users, label: "Documents & paiements" },
-  { icon: Rocket, label: "Lancement de votre activité" },
+  { icon: Users, label: "Profil & activité" },
+  { icon: Target, label: "Véhicule & tarifs" },
+  { icon: Shield, label: "Documents & paiements" },
+  { icon: Rocket, label: "Validation & lancement" },
 ];
 
 const DriverWelcome = () => {
@@ -225,8 +225,8 @@ const DriverWelcome = () => {
               </Button>
 
               <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
-                <span>✓ 14 jours gratuits</span>
-                <span>✓ Sans carte bancaire</span>
+                <span>✓ 100% gratuit</span>
+                <span>✓ Sans engagement</span>
                 <span>✓ 5 min de configuration</span>
               </div>
             </motion.div>
