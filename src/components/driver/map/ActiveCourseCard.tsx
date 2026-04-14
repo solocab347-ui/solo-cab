@@ -264,9 +264,10 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       await supabase.from('drivers').update({
         is_available_now: true,
         driver_status: 'online',
+        last_location_update: new Date().toISOString(),
       }).eq('id', driverId);
       wasAvailableBeforeCourseRef.current = null;
-      console.log('[ActiveCourseCard] Driver restored to online');
+      console.log('[ActiveCourseCard] Driver restored to online with fresh GPS');
       onCourseChange?.();
     }
 
@@ -347,11 +348,14 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const restoreAvailability = useCallback(async () => {
     wasAvailableBeforeCourseRef.current = null;
     // Always restore to online — driver should stay connected after a course
+    // CRITICAL: Also update last_location_update to prevent GPS staleness
+    // that would make the driver invisible in find_nearby_drivers
     await supabase.from('drivers').update({ 
       is_available_now: true,
       driver_status: 'online',
+      last_location_update: new Date().toISOString(),
     }).eq('id', driverId);
-    console.log('[ActiveCourseCard] Driver restored to online');
+    console.log('[ActiveCourseCard] Driver restored to online with fresh GPS timestamp');
   }, [driverId]);
 
   const handleComplete = useCallback(async () => {

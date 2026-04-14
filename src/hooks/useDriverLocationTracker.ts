@@ -22,6 +22,7 @@ interface LocationState {
 const STALE_THRESHOLD_MS = 60_000;
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m
 const MIN_SEND_INTERVAL_MS = 8_000;
+const HEARTBEAT_INTERVAL_MS = 20_000; // Force DB update every 20s even if stationary
 const MAX_RETRY_ATTEMPTS = 2;
 
 export function useDriverLocationTracker({
@@ -54,11 +55,13 @@ export function useDriverLocationTracker({
       if (!driverId || !mountedRef.current) return;
 
       // Deduplicate: skip if position hasn't changed enough AND not enough time passed
+      // BUT always force a heartbeat every HEARTBEAT_INTERVAL_MS to keep last_location_update fresh
       if (lastSentRef.current) {
         const latDiff = Math.abs(latitude - lastSentRef.current.lat);
         const lonDiff = Math.abs(longitude - lastSentRef.current.lon);
         const timeDiff = Date.now() - lastSentRef.current.time;
-        if (latDiff < MIN_MOVEMENT_DEG && lonDiff < MIN_MOVEMENT_DEG && timeDiff < MIN_SEND_INTERVAL_MS) {
+        const isHeartbeatDue = timeDiff >= HEARTBEAT_INTERVAL_MS;
+        if (latDiff < MIN_MOVEMENT_DEG && lonDiff < MIN_MOVEMENT_DEG && timeDiff < MIN_SEND_INTERVAL_MS && !isHeartbeatDue) {
           return;
         }
       }
