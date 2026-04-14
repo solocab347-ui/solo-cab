@@ -89,7 +89,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       driver.subscription_paid === true &&
       (driver.subscription_status === "active" || driver.subscription_status === "trialing");
 
-    const hasPremiumAccess = hasAdminPremiumAccess || hasPaidPremiumAccess || isPioneerTrialActive;
+    const hasPremiumAccess = hasAdminPremiumAccess || hasPaidPremiumAccess;
 
     return { hasPremiumAccess, hasAdminPremiumAccess };
   };
@@ -148,8 +148,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   // Utiliser d'abord le statut local (synchrone) puis le statut API si disponible
   const effectiveStatus = subscriptionStatus?.subscription_status || driverProfile?.driver?.subscription_status || "inactive";
   const syncedPremiumAccess = subscriptionStatus?.subscribed && subscriptionStatus?.subscription_tier === "premium";
-  const isActive = localAccessStatus.hasPremiumAccess || syncedPremiumAccess || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
-  const isInactive = !isActive && effectiveStatus === "inactive" && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const isActive = localAccessStatus.hasPremiumAccess || syncedPremiumAccess;
+  const isInactive = !isActive && effectiveStatus === "inactive";
   const isPastDue = effectiveStatus === "past_due";
   const isCanceled = effectiveStatus === "canceled";
   

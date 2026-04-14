@@ -154,14 +154,14 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    // Find active/trialing subscription
+    // Find active paid subscription only
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       limit: 10,
     });
 
     const validSubscription = subscriptions.data.find(
-      (sub: { status: string }) => sub.status === "active" || sub.status === "trialing"
+      (sub: { status: string }) => sub.status === "active"
     );
 
     if (validSubscription) {
