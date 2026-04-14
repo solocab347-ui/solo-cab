@@ -98,7 +98,10 @@ const DriverWelcome = () => {
         }).catch(err => console.error("Welcome email error:", err));
       }
 
-      if (driver.onboarding_completed) { navigate("/driver-dashboard", { replace: true }); return; }
+      // If onboarding is completed OR docs validated + stripe connected → go to dashboard
+      const isFullyReady = driver.onboarding_completed || 
+        (driver.documents_status === "validated" && driver.stripe_connect_status === "active");
+      if (isFullyReady) { navigate("/driver-dashboard", { replace: true }); return; }
     } catch (err) {
       logger.error("Exception fetchDriverData", { err });
     } finally {
@@ -153,7 +156,7 @@ const DriverWelcome = () => {
     );
   }
 
-  if (!user && !driverData) { navigate("/auth"); return null; }
+  if (!user && !driverData) { navigate("/login"); return null; }
   if (!driverData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -172,7 +175,7 @@ const DriverWelcome = () => {
         <div className="relative overflow-hidden flex-1 flex flex-col items-center justify-center px-4 py-8">
           {/* Logout button */}
           <button
-            onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+            onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}
             className="absolute top-4 right-4 z-20 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-muted/50"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -251,7 +254,7 @@ const DriverWelcome = () => {
   return (
     <SimplifiedOnboardingTunnel 
       driverId={driverData.id}
-      userId={user.id}
+      userId={user?.id || driverData.user_id}
       driverProfile={driverProfile}
       onComplete={() => navigate("/driver-dashboard", { replace: true })}
     />
