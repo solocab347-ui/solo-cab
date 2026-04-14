@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -420,10 +420,10 @@ export function SimplifiedOnboardingTunnel({
             ) : (
               <Button
                 onClick={() => goToStep(5)}
-                variant={isStripeReady ? 'default' : 'outline'}
+                disabled={!isStripeReady}
                 className="flex-1 h-12 text-base font-semibold"
               >
-                {isStripeReady ? <>Continuer <ArrowRight className="w-5 h-5 ml-2" /></> : <>Passer pour l'instant <ChevronRight className="w-5 h-5 ml-1" /></>}
+                {isStripeReady ? <>Continuer <ArrowRight className="w-5 h-5 ml-2" /></> : <>Stripe requis pour continuer</>}
               </Button>
             )}
           </div>
