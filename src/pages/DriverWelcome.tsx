@@ -226,7 +226,7 @@ const DriverWelcome = () => {
 
               <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
                 <span>✓ 100% gratuit</span>
-                <span>✓ Sans engagement</span>
+                <span>✓ Toutes fonctionnalités</span>
                 <span>✓ 5 min de configuration</span>
               </div>
             </motion.div>

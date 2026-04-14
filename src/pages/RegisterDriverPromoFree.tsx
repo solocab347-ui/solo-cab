@@ -503,7 +503,7 @@ function WelcomeStep({ onStart, onLogin }: { onStart: () => void; onLogin: () =>
         </p>
         <Badge className="bg-success/15 text-success border-success/30 px-3 py-1 text-xs font-semibold">
           <CheckCircle className="w-3 h-3 mr-1.5" />
-          Gratuit • Sans carte bancaire
+          Inscription 100% gratuite
         </Badge>
       </motion.div>
 
@@ -556,11 +556,11 @@ function WelcomeStep({ onStart, onLogin }: { onStart: () => void; onLogin: () =>
         </div>
         <div className="flex flex-col items-center gap-1">
           <CheckCircle className="w-4 h-4 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground">Sans engagement</span>
+          <span className="text-[9px] text-muted-foreground">100% gratuit</span>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <CheckCircle className="w-4 h-4 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground">100% gratuit</span>
+          <Rocket className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground">Toutes fonctionnalités</span>
         </div>
       </div>
     </div>
