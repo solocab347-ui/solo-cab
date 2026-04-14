@@ -192,7 +192,7 @@ export const ProtectedRoute = ({
       }
 
       // PIONNIERS: Traités comme les chauffeurs classiques
-      // Ils doivent payer 9,99€/mois pour le Premium sauf s'ils ont un accès gratuit explicite accordé par admin
+      // Ils doivent payer 19,99€/mois pour le Premium sauf s'ils ont un accès gratuit explicite accordé par admin
       if (driver.is_pioneer) {
         // Vérifier si le pionnier a un accès gratuit accordé par admin
         const hasFreeAccessFromAdmin = driver.free_access_granted === true && 

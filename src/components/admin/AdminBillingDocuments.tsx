@@ -416,7 +416,7 @@ const AdminBillingDocuments = () => {
     setItems([
       { id: "1", description: "Création d'application VTC (forfait)", quantity: 1, unitPrice: 999, isMonthly: false },
       { id: "2", description: "Implémentation gestion NFC", quantity: 1, unitPrice: 200, isMonthly: false },
-      { id: "3", description: "Abonnement Premium chauffeur mensuel", quantity: 1, unitPrice: 9.99, isMonthly: true }
+      { id: "3", description: "Abonnement Premium chauffeur mensuel", quantity: 1, unitPrice: 19.99, isMonthly: true }
     ]);
     setTvaRate(20);
     setValidityDays(30);

@@ -432,7 +432,7 @@ export function OnboardingObjectivesStep({ driverId, onComplete }: OnboardingObj
                 🎯 14 jours d'essai gratuit
               </p>
               <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
-                Gratuit • Premium 9,99€/mois
+                Gratuit • Premium 19,99€/mois
               </p>
             </motion.div>
           </div>
