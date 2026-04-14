@@ -360,7 +360,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <p className="text-2xl font-bold text-destructive">
                 -{pendingBalance.totalStripeFees.toFixed(2)}€
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Frais de transaction CB</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingBalance.totalStripeFees > 0 
+                  ? `Frais sur ${walletStats?.cardCourses || 0} transaction(s) CB`
+                  : 'Aucune transaction CB en attente'}
+              </p>
             </Card>
           )}
         </div>
