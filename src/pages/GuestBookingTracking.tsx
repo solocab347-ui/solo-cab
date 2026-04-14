@@ -73,6 +73,23 @@ const GuestBookingTracking = () => {
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
 
+  // ETA calculation
+  const guestIsApproaching = booking?.status === 'driver_approaching';
+  const guestIsInProgress = booking?.status === 'in_progress';
+  const guestEtaEnabled = (guestIsApproaching || guestIsInProgress) && !!booking?.driver_latitude && !!booking?.driver_longitude;
+
+  const guestEtaTarget = guestIsApproaching
+    ? (booking?.pickup_latitude && booking?.pickup_longitude ? { lat: booking.pickup_latitude, lng: booking.pickup_longitude } : null)
+    : (booking?.destination_latitude && booking?.destination_longitude ? { lat: booking.destination_latitude, lng: booking.destination_longitude } : null);
+
+  const { eta: guestEta, loading: guestEtaLoading, forceRefresh: refreshGuestETA } = useETACalculation({
+    driverLocation: booking?.driver_latitude && booking?.driver_longitude
+      ? { lat: booking.driver_latitude, lng: booking.driver_longitude }
+      : null,
+    targetLocation: guestEtaTarget,
+    enabled: guestEtaEnabled,
+  });
+
   const fetchBooking = async (attempt = 0) => {
     if (!token) return;
 
