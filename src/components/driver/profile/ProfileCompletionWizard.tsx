@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   Car,
   CheckCircle2,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { SingleProfilePhotoUpload } from "../onboarding/SingleProfilePhotoUpload";
 import { SectorSelector } from "../SectorSelector";
@@ -55,7 +56,10 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
   const driver = driverProfile?.driver;
   const [currentStep, setCurrentStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Initialize from existing driver data (persisted from previous sessions)
   const [data, setData] = useState<WizardData>({
     profilePhotoUrl: driver?.profile_photo_url || driverProfile?.profile_photo_url || null,
     displayDriverName: driver?.display_driver_name ?? true,
@@ -67,8 +71,61 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     vehicleEquipment: driver?.vehicle_equipment || [],
   });
 
+  // Auto-save to database with debounce whenever data changes
+  const saveToDatabase = useCallback(async (dataToSave: WizardData) => {
+    if (!driver?.id) return;
+    setAutoSaving(true);
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          profile_photo_url: dataToSave.profilePhotoUrl,
+          card_photo_url: dataToSave.profilePhotoUrl,
+          display_driver_name: dataToSave.displayDriverName,
+          display_company_name: dataToSave.displayCompanyName,
+          service_description: dataToSave.serviceDescription,
+          working_sectors: dataToSave.workingSectors,
+          services_offered: dataToSave.servicesOffered,
+          vehicle_categories: dataToSave.vehicleCategories,
+          vehicle_equipment: dataToSave.vehicleEquipment,
+        })
+        .eq("id", driver.id);
+
+      if (error) throw error;
+
+      // Also sync profile photo
+      if (dataToSave.profilePhotoUrl) {
+        await supabase
+          .from("profiles")
+          .update({ profile_photo_url: dataToSave.profilePhotoUrl })
+          .eq("id", userId);
+      }
+    } catch (err) {
+      console.error("Auto-save error:", err);
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [driver?.id, userId]);
+
   const updateData = useCallback((updates: Partial<WizardData>) => {
-    setData(prev => ({ ...prev, ...updates }));
+    setData(prev => {
+      const newData = { ...prev, ...updates };
+
+      // Debounced auto-save
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        saveToDatabase(newData);
+      }, 1500);
+
+      return newData;
+    });
+  }, [saveToDatabase]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, []);
 
   const canProceed = (): boolean => {
@@ -83,10 +140,19 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     }
   };
 
+  // Save on step change to ensure data is persisted
+  const handleNext = useCallback(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveToDatabase(data);
+    setCurrentStep(s => s + 1);
+  }, [data, saveToDatabase]);
+
   const handleFinish = async () => {
     if (!driver?.id) return;
     setSaving(true);
     try {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
       const { error } = await supabase
         .from("drivers")
         .update({
@@ -106,7 +172,6 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
 
       if (error) throw error;
 
-      // Also update profile photo on profiles table
       if (data.profilePhotoUrl) {
         await supabase
           .from("profiles")
@@ -145,6 +210,12 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-muted-foreground">
             Étape {currentStep + 1}/{STEPS.length}
+            {autoSaving && (
+              <span className="ml-2 inline-flex items-center gap-1 text-primary">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Sauvegarde...
+              </span>
+            )}
           </span>
           <span className="text-xs font-medium">{STEPS[currentStep].title}</span>
         </div>
@@ -308,7 +379,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
 
         {currentStep < STEPS.length - 1 ? (
           <Button
-            onClick={() => setCurrentStep(s => s + 1)}
+            onClick={handleNext}
             disabled={!canProceed()}
             size="sm"
           >
