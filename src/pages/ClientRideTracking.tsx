@@ -193,7 +193,7 @@ const ClientRideTracking = () => {
     if (!courseId) return;
     const { data, error } = await supabase
       .from('courses')
-      .select('id, status, pickup_address, destination_address, scheduled_date, distance_km, duration_minutes, guest_estimated_price, final_payment_amount, payment_method, payment_status, client_rating, guest_tracking_token, course_started_at, driver_id, is_guest_booking, guest_name, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude')
+      .select('id, status, pickup_address, destination_address, scheduled_date, distance_km, duration_minutes, guest_estimated_price, final_payment_amount, payment_method, payment_status, client_rating, guest_tracking_token, course_started_at, driver_id, client_id, is_guest_booking, guest_name, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude')
       .eq('id', courseId)
       .single();
 
