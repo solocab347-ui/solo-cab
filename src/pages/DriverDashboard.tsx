@@ -837,20 +837,24 @@ const DriverDashboard = () => {
 
           {/* Planning Tab */}
           <TabsContent value="planning">
-            {driverProfile?.driver?.id && (
-              <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-primary" />
+            {isPremium ? (
+              driverProfile?.driver?.id && (
+                <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">Planning des Courses</h2>
+                      <p className="text-sm text-muted-foreground">Visualisez et gérez votre planning</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">Planning des Courses</h2>
-                    <p className="text-sm text-muted-foreground">Visualisez et gérez votre planning</p>
-                  </div>
-                </div>
-                <OutOfScheduleAlerts driverId={driverProfile.driver.id} />
-                <DriverPlanning driverId={driverProfile.driver.id} />
-              </Card>
+                  <OutOfScheduleAlerts driverId={driverProfile.driver.id} />
+                  <DriverPlanning driverId={driverProfile.driver.id} />
+                </Card>
+              )
+            ) : (
+              <PremiumGate isPremium={false} featureName="Planning des courses" featureDescription="Visualisez et gérez votre planning de courses avec une vue jour, semaine et mois." />
             )}
           </TabsContent>
 
@@ -897,15 +901,21 @@ const DriverDashboard = () => {
 
           {/* Encaisser Tab */}
           <TabsContent value="encaisser">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
-              <FloatingMapButton onClick={() => setViewMode("map")} />
-            </div>
-            {driverProfile?.driver?.id && (
-              <SpontaneousPayment 
-                driverId={driverProfile.driver.id} 
-                stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled} 
-              />
+            {isPremium ? (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
+                  <FloatingMapButton onClick={() => setViewMode("map")} />
+                </div>
+                {driverProfile?.driver?.id && (
+                  <SpontaneousPayment 
+                    driverId={driverProfile.driver.id} 
+                    stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled} 
+                  />
+                )}
+              </>
+            ) : (
+              <PremiumGate isPremium={false} featureName="Encaissement spontané" featureDescription="Encaissez vos clients directement via Stripe Connect pour un paiement rapide et sécurisé." />
             )}
           </TabsContent>
 
@@ -1079,7 +1089,11 @@ const DriverDashboard = () => {
 
           {/* Profitability Tab */}
           <TabsContent value="profitability" className="space-y-6">
-            <ProfitabilityCalculator />
+            {isPremium ? (
+              <ProfitabilityCalculator />
+            ) : (
+              <PremiumGate isPremium={false} featureName="Calcul de rentabilité" featureDescription="Analysez la rentabilité de votre activité avec des outils de calcul avancés." />
+            )}
           </TabsContent>
 
           {/* Feedback Tab */}
@@ -1121,8 +1135,12 @@ const DriverDashboard = () => {
 
           {/* Objectives Tab */}
           <TabsContent value="objectives">
-            {driverProfile?.driver?.id && (
-              <ObjectivesDashboard driverId={driverProfile.driver.id} />
+            {isPremium ? (
+              driverProfile?.driver?.id && (
+                <ObjectivesDashboard driverId={driverProfile.driver.id} />
+              )
+            ) : (
+              <PremiumGate isPremium={false} featureName="Objectifs & Coaching IA" featureDescription="Définissez vos objectifs de revenus et recevez un coaching IA personnalisé." />
             )}
           </TabsContent>
 
