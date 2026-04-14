@@ -103,3 +103,83 @@ export const FRENCH_SECTORS = [
   { id: "974", label: "La Réunion (974)" },
   { id: "976", label: "Mayotte (976)" },
 ];
+
+// Régions françaises avec leurs départements
+export interface FrenchRegion {
+  id: string;
+  label: string;
+  departmentIds: string[];
+}
+
+export const FRENCH_REGIONS: FrenchRegion[] = [
+  {
+    id: "idf",
+    label: "🏙️ Île-de-France",
+    departmentIds: ["75", "77", "78", "91", "92", "93", "94", "95"],
+  },
+  {
+    id: "aura",
+    label: "Auvergne-Rhône-Alpes",
+    departmentIds: ["01", "03", "07", "15", "26", "38", "42", "43", "63", "69", "73", "74"],
+  },
+  {
+    id: "bfc",
+    label: "Bourgogne-Franche-Comté",
+    departmentIds: ["21", "25", "39", "58", "70", "71", "89", "90"],
+  },
+  {
+    id: "bretagne",
+    label: "Bretagne",
+    departmentIds: ["22", "29", "35", "56"],
+  },
+  {
+    id: "cvl",
+    label: "Centre-Val de Loire",
+    departmentIds: ["18", "28", "36", "37", "41", "45"],
+  },
+  {
+    id: "corse",
+    label: "Corse",
+    departmentIds: [],
+  },
+  {
+    id: "ge",
+    label: "Grand Est",
+    departmentIds: ["08", "10", "51", "52", "54", "55", "57", "67", "68", "88"],
+  },
+  {
+    id: "hdf",
+    label: "Hauts-de-France",
+    departmentIds: ["02", "59", "60", "62", "80"],
+  },
+  {
+    id: "normandie",
+    label: "Normandie",
+    departmentIds: ["14", "27", "50", "61", "76"],
+  },
+  {
+    id: "na",
+    label: "Nouvelle-Aquitaine",
+    departmentIds: ["16", "17", "19", "23", "24", "33", "40", "47", "64", "79", "86", "87"],
+  },
+  {
+    id: "occitanie",
+    label: "Occitanie",
+    departmentIds: ["09", "11", "12", "30", "31", "32", "34", "46", "48", "65", "66", "81", "82"],
+  },
+  {
+    id: "pdl",
+    label: "Pays de la Loire",
+    departmentIds: ["44", "49", "53", "72", "85"],
+  },
+  {
+    id: "paca",
+    label: "Provence-Alpes-Côte d'Azur",
+    departmentIds: ["04", "05", "06", "13", "83", "84"],
+  },
+  {
+    id: "domtom",
+    label: "🌴 DOM-TOM",
+    departmentIds: ["971", "972", "973", "974", "976"],
+  },
+];
