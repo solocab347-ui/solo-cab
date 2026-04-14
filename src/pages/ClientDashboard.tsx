@@ -22,6 +22,8 @@ import {
   Search,
   QrCode,
   CreditCard,
+  Settings,
+  ChevronLeft,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -51,7 +53,7 @@ const ClientDashboard = () => {
   useUserLanguage();
   const navigate = useNavigate();
 
-  // SÉCURITÉ: Double vérification du rôle pour éviter les mélanges de dashboard
+  // SÉCURITÉ: Double vérification du rôle
   useEffect(() => {
     if (userRole && userRole !== "client") {
       console.warn("ClientDashboard: wrong role detected, redirecting", userRole);
@@ -62,6 +64,7 @@ const ClientDashboard = () => {
       navigate(redirectMap[userRole] || "/login", { replace: true });
     }
   }, [userRole, navigate]);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [clientProfile, setClientProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -99,7 +102,7 @@ const ClientDashboard = () => {
 
       const cardStatus = searchParams.get("card");
       if (cardStatus === "success") {
-        toast.success("Carte enregistrée avec succès. Les prochains paiements pourront être automatiques.");
+        toast.success("Carte enregistrée avec succès.");
         setSearchParams({});
       } else if (cardStatus === "cancelled") {
         toast.error("L'enregistrement de la carte a été annulé.");
@@ -265,15 +268,30 @@ const ClientDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">{t('clientDashboard.loading')}</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">{t('clientDashboard.loading')}</p>
+        </div>
       </div>
     );
   }
 
-  const menuItems = [
+  const isExclusive = clientProfile?.client?.is_exclusive;
+
+  // Bottom nav items for mobile
+  const bottomNavItems = [
+    { id: "accueil", label: "Accueil", icon: Home },
+    { id: "courses", label: "Courses", icon: Clock },
+    { id: "chauffeurs", label: isExclusive ? "Chauffeur" : "Chauffeurs", icon: Users },
+    { id: "messages", label: "Messages", icon: MessageSquare },
+    { id: "more", label: "Plus", icon: Menu },
+  ];
+
+  // Side menu items (desktop + mobile "more" sheet)
+  const sideMenuItems = [
     { id: "accueil", label: "Accueil", icon: Home },
     { id: "courses", label: "Mes courses", icon: Clock },
-    { id: "chauffeurs", label: clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
+    { id: "chauffeurs", label: isExclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "devis-factures", label: "Devis & Factures", icon: FileText },
     { id: "paiement", label: "Paiement", icon: CreditCard },
     { id: "messages", label: "Messages", icon: MessageSquare },
@@ -281,22 +299,33 @@ const ClientDashboard = () => {
     { id: "compte", label: "Mon compte", icon: User },
   ];
 
+  const getPageTitle = (): string => {
+    if (activeTab === "accueil") {
+      const firstName = clientProfile?.full_name?.split(" ")[0] || "Client";
+      return `Bonjour, ${firstName}`;
+    }
+    const item = sideMenuItems.find(m => m.id === activeTab);
+    if (item) return item.label;
+    if (activeTab === "scan-qr") return "Scanner QR";
+    return "Dashboard";
+  };
+
   const renderNavigation = () => (
-    <nav className="space-y-1 flex-1">
-      {menuItems.map((item) => {
+    <nav className="space-y-0.5 flex-1">
+      {sideMenuItems.map((item) => {
         const Icon = item.icon;
         return (
           <button
             key={item.id}
             onClick={() => handleTabChange(item.id)}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+              "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-left text-sm",
               activeTab === item.id
-                ? "bg-primary/10 text-primary font-medium"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <Icon className="w-5 h-5 flex-shrink-0" />
+            <Icon className="w-[18px] h-[18px] flex-shrink-0" />
             <span className="truncate">{item.label}</span>
           </button>
         );
@@ -329,32 +358,32 @@ const ClientDashboard = () => {
       case "notes":
         return <ClientNotes />;
       case "chauffeurs":
-        const hasNoDrivers = !clientProfile?.client?.is_exclusive && 
+        const hasNoDrivers = !isExclusive && 
           (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0);
         
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-xl font-bold">
-                {clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs"}
+              <h2 className="text-lg font-bold">
+                {isExclusive ? "Mon chauffeur" : "Mes chauffeurs"}
               </h2>
-              {!clientProfile?.client?.is_exclusive && (
+              {!isExclusive && (
                 <div className="flex gap-2">
                   <Button
                     onClick={() => handleTabChange("scan-qr")}
                     size="sm"
                     variant="outline"
-                    className="gap-2"
+                    className="gap-1.5 h-8 text-xs"
                   >
-                    <QrCode className="w-4 h-4" />
-                    Scanner QR
+                    <QrCode className="w-3.5 h-3.5" />
+                    Scanner
                   </Button>
                   <Button
                     onClick={() => navigate("/chauffeurs")}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1.5 h-8 text-xs"
                   >
-                    <Search className="w-4 h-4" />
+                    <Search className="w-3.5 h-3.5" />
                     Rechercher
                   </Button>
                 </div>
@@ -366,13 +395,13 @@ const ClientDashboard = () => {
             ) : (
               clientProfile?.client?.id && (
                 <Tabs defaultValue="active" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="active" className="gap-2">
-                      <Users className="w-4 h-4" />
+                  <TabsList className="grid w-full grid-cols-2 mb-3 h-9">
+                    <TabsTrigger value="active" className="gap-1.5 text-xs">
+                      <Users className="w-3.5 h-3.5" />
                       Actifs
                     </TabsTrigger>
-                    <TabsTrigger value="blocked" className="gap-2">
-                      <ShieldOff className="w-4 h-4" />
+                    <TabsTrigger value="blocked" className="gap-1.5 text-xs">
+                      <ShieldOff className="w-3.5 h-3.5" />
                       Bloqués ({blockedDriversCount})
                     </TabsTrigger>
                   </TabsList>
@@ -380,11 +409,11 @@ const ClientDashboard = () => {
                   <TabsContent value="active">
                     <ClientDriversGrid
                       clientId={clientProfile.client.id}
-                      driverIds={clientProfile?.client?.is_exclusive ? 
+                      driverIds={isExclusive ? 
                         (clientProfile.client.driver_id ? [clientProfile.client.driver_id] : []) : 
                         (clientProfile.client.driver_ids || [])}
                       favoriteDriverId={clientProfile.client.favorite_driver_id}
-                      isExclusive={clientProfile?.client?.is_exclusive}
+                      isExclusive={isExclusive}
                       onRefresh={fetchClientProfile}
                     />
                   </TabsContent>
@@ -411,7 +440,6 @@ const ClientDashboard = () => {
         return (
           <ClientQRScannerInApp 
             onDriverAdded={() => {
-              // Refresh and go back to chauffeurs
               handleTabChange("chauffeurs");
               window.location.reload();
             }} 
@@ -425,68 +453,96 @@ const ClientDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 border-r border-border bg-card/50 p-4 flex-col">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
+      <aside className="hidden md:flex w-60 border-r border-border bg-card/50 p-3 flex-col">
+        <div className="mb-6 px-2">
+          <div className="flex items-center gap-2.5 mb-1">
+            <img src={logo} alt="SoloCab" className="w-10 h-10 object-contain" />
+            <span className="font-bold text-sm text-foreground">SoloCab</span>
           </div>
-          <p className="text-sm text-muted-foreground">Espace client</p>
+          <p className="text-[11px] text-muted-foreground ml-[50px]">Espace client</p>
         </div>
         {renderNavigation()}
+        <div className="border-t border-border pt-3 mt-3 space-y-1">
+          <button
+            onClick={signOut}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+          >
+            <LogOut className="w-[18px] h-[18px]" />
+            <span>Déconnexion</span>
+          </button>
+        </div>
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile "More" Menu Sheet */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-64 p-4">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
+          <div className="pt-2 pb-4">
+            <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-6" />
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+                { id: "paiement", label: "Paiement", icon: CreditCard },
+                { id: "notes", label: "Notes", icon: StickyNote },
+                { id: "compte", label: "Mon compte", icon: User },
+                ...(!isExclusive ? [{ id: "scan-qr" as const, label: "Scanner QR", icon: QrCode }] : []),
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-xl transition-all",
+                      activeTab === item.id
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={signOut}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-destructive/5 text-destructive hover:bg-destructive/10 transition-all"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="text-[11px] font-medium">Déconnexion</span>
+              </button>
             </div>
-            <p className="text-sm text-muted-foreground">Espace client</p>
           </div>
-          {renderNavigation()}
         </SheetContent>
       </Sheet>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="border-b border-border bg-card sticky top-0 z-10">
-          <div className="px-4 py-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
+        <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="px-4 py-2.5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               {activeTab !== "accueil" && (
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => handleTabChange("accueil")}
-                  className="gap-1"
+                  className="h-8 w-8 flex-shrink-0"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden sm:inline">Retour</span>
+                  <ChevronLeft className="w-4 h-4" />
                 </Button>
               )}
-            </div>
-
-            <div className="flex-1 min-w-0 text-center md:text-left">
-              <h1 className="text-lg font-bold truncate">
-                {activeTab === "accueil" 
-                  ? `Bonjour, ${clientProfile?.full_name?.split(" ")[0] || "Client"}`
-                  : menuItems.find(m => m.id === activeTab)?.label}
+              {activeTab === "accueil" && (
+                <img src={logo} alt="SoloCab" className="w-8 h-8 object-contain md:hidden flex-shrink-0" />
+              )}
+              <h1 className="text-base font-bold truncate">
+                {getPageTitle()}
               </h1>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <LanguageSelector variant="header" />
               <NotificationBell />
-              <Button variant="ghost" size="icon" onClick={signOut}>
+              <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 hidden md:flex">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -494,10 +550,54 @@ const ClientDashboard = () => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-auto pb-20 md:pb-6">
           {renderContent()}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
+        <div className="flex items-center justify-around px-1 py-1">
+          {bottomNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.id === "more" 
+              ? mobileMenuOpen 
+              : activeTab === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === "more") {
+                    setMobileMenuOpen(true);
+                  } else {
+                    handleTabChange(item.id);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-lg transition-all min-w-0 flex-1",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                  isActive ? "bg-primary/10" : ""
+                )}>
+                  <Icon className="w-[18px] h-[18px]" />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium truncate",
+                  isActive && "font-semibold"
+                )}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Driver Selection Dialog */}
       <DriverSelectionDialog
@@ -587,40 +687,40 @@ function BlockedDriversList({ clientId, onRefresh }: { clientId: string; onRefre
   };
 
   if (loading) {
-    return <p className="text-center text-muted-foreground py-8">Chargement...</p>;
+    return <p className="text-center text-muted-foreground py-8 text-sm">Chargement...</p>;
   }
 
   if (blockedDrivers.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <ShieldOff className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-muted-foreground">Aucun chauffeur bloqué</p>
+        <ShieldOff className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+        <p className="text-sm text-muted-foreground">Aucun chauffeur bloqué</p>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {blockedDrivers.map((driver) => (
-        <Card key={driver.id} className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+        <Card key={driver.id} className="p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
             {driver.profiles?.profile_photo_url ? (
               <img
                 src={driver.profiles.profile_photo_url}
                 alt={getDisplayName(driver)}
-                className="w-12 h-12 rounded-full object-cover"
+                className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              <User className="w-6 h-6 text-muted-foreground" />
+              <User className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
-          <div className="flex-1">
-            <p className="font-medium">{getDisplayName(driver)}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{getDisplayName(driver)}</p>
             {driver.block_reason && (
-              <p className="text-xs text-muted-foreground">{driver.block_reason}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{driver.block_reason}</p>
             )}
           </div>
-          <Button size="sm" variant="outline" onClick={() => handleUnblock(driver.block_id)}>
+          <Button size="sm" variant="outline" onClick={() => handleUnblock(driver.block_id)} className="h-8 text-xs flex-shrink-0">
             Débloquer
           </Button>
         </Card>
