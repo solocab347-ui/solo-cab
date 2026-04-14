@@ -319,7 +319,7 @@ const NfcPlatePage = () => {
                    <div className="pt-3 border-t border-border">
                     <p className="text-2xl font-bold text-foreground">
                       {PLATES[selectedPlate].promoPrice.toFixed(2)}€
-                      <span className="text-sm font-normal text-muted-foreground ml-2">+ 9,99€/mois</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-2">+ 19,99€/mois</span>
                     </p>
                     <p className="text-xs text-muted-foreground">14 jours d'essai gratuit</p>
                    </div>
