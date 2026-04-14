@@ -43,6 +43,11 @@ interface BookingInfo {
   quote_number: string | null;
   final_payment_amount: number | null;
   distance_km: number | null;
+  duration_minutes: number | null;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  destination_latitude: number | null;
+  destination_longitude: number | null;
   driver_latitude: number | null;
   driver_longitude: number | null;
   client_rating: number | null;
