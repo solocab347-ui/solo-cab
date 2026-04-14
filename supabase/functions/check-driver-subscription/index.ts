@@ -75,13 +75,13 @@ serve(async (req) => {
     // Le premium (19,99€/mois) débloque des fonctionnalités avancées.
     // ========================================
 
-    // Admin unlimited/administrative access = premium tier
+    // Only permanent administrative access can unlock premium without payment
     if (driver.free_access_granted) {
       const isPermanent = driver.free_access_type === "unlimited" || driver.free_access_type === "administrative";
       const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
       const isValid = isPermanent || !endDate || endDate > now;
 
-      if (isValid) {
+      if (isPermanent && isValid) {
         logStep("Admin free access = premium tier", { type: driver.free_access_type });
         await supabaseClient
           .from("drivers")
@@ -98,8 +98,22 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
+      }
+
+      if (!isPermanent && isValid) {
+        logStep("Temporary free access detected → keep freemium tier", { type: driver.free_access_type });
+      } else if (!isPermanent) {
+        logStep("Temporary free access expired → free tier");
+        await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_tier: "free",
+            subscription_status: "inactive",
+            subscription_paid: false,
+          })
+          .eq("id", driver.id);
       } else {
-        // Expired admin access → revoke to free tier
+        // Expired permanent admin access → revoke to free tier
         logStep("Admin free access expired → free tier");
         await supabaseClient
           .from("drivers")

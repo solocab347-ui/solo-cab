@@ -87,20 +87,9 @@ const calculateAccessStatus = (driver: any) => {
     ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) 
     : 0;
 
-  // ACCÈS COMPLET = Documents validés + (abonnement actif OU essai 14j actif OU période de grâce OU accès gratuit)
-  // Les chauffeurs de flotte sont exemptés de la validation documents
-  const hasPaymentAccess = 
-    driver.subscription_status === "active" ||
-    driver.subscription_status === "trialing" ||
-    driver.subscription_paid === true ||
-    isTrialActive ||
-    isInGracePeriod ||
-    isPioneerTrialActive ||
-    hasFreeAccess;
-  
-  const hasFullAccess = 
-    (documentsValidated && hasPaymentAccess) || 
-    driver.is_fleet_driver; // Exemption chauffeurs de flotte
+  // En modèle freemium, l'accès au dashboard dépend de la validation des documents,
+  // pas d'un abonnement premium. Le premium ne sert qu'à débloquer les modules avancés.
+  const hasFullAccess = documentsValidated || driver.is_fleet_driver;
 
   return {
     hasFullAccess,

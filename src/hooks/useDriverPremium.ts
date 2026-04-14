@@ -53,16 +53,31 @@ export function useDriverPremium(): DriverPremiumStatus {
         return;
       }
 
+      const hasPermanentAdminPremiumAccess = driver.free_access_granted &&
+        (driver.free_access_type === 'unlimited' || driver.free_access_type === 'administrative');
+
+      const hasTemporaryFreeAccess = driver.free_access_granted && !hasPermanentAdminPremiumAccess;
+
       // Admin unlimited/administrative access = premium
-      if (driver.free_access_granted && 
-          (driver.free_access_type === 'unlimited' || driver.free_access_type === 'administrative')) {
+      if (hasPermanentAdminPremiumAccess) {
         setTier('premium');
         setLoading(false);
         return;
       }
 
-      // Check subscription_tier from DB (set by webhook/check-driver-subscription)
-      if (driver.subscription_tier === 'premium' && driver.subscription_paid) {
+      // Temporary free access must NEVER unlock premium modules
+      if (hasTemporaryFreeAccess) {
+        setTier('free');
+        setLoading(false);
+        return;
+      }
+
+      // Premium only when the paid subscription is actually active
+      if (
+        driver.subscription_tier === 'premium' &&
+        driver.subscription_paid &&
+        driver.subscription_status === 'active'
+      ) {
         setTier('premium');
       } else {
         setTier('free');

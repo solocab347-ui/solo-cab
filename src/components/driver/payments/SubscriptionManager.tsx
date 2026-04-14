@@ -67,10 +67,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     toast.success("Votre abonnement Pioneer est préservé ! 🏆");
   };
 
-  // CALCUL SYNCHRONE du statut d'accès — modèle FREEMIUM (pas de trial)
+  // CALCUL SYNCHRONE du statut premium — modèle FREEMIUM strict
   const calculateAccessStatus = () => {
     const driver = driverProfile?.driver;
-    if (!driver) return { hasFullAccess: false, hasAdminFreeAccess: false };
+    if (!driver) return { hasPremiumAccess: false, hasAdminPremiumAccess: false };
 
     const now = new Date();
     const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
@@ -79,23 +79,19 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       freeAccessEndDate && 
       freeAccessEndDate > now;
 
-    // Accès gratuit accordé par admin (illimité ou avec période)
-    const freeAccessWithPeriod = freeAccessEndDate && 
-      freeAccessEndDate > now && 
-      driver.free_access_type !== "trial";
-    
-    const hasAdminFreeAccess = driver.free_access_granted === true || 
+    const hasAdminPremiumAccess = driver.free_access_granted === true && (
       driver.free_access_type === "unlimited" ||
-      driver.free_access_type === "administrative" ||
-      freeAccessWithPeriod;
+      driver.free_access_type === "administrative"
+    );
 
-    const hasFullAccess = 
-      driver.subscription_status === "active" ||
-      driver.subscription_paid === true ||
-      isPioneerTrialActive ||
-      hasAdminFreeAccess;
+    const hasPaidPremiumAccess =
+      driver.subscription_tier === "premium" &&
+      driver.subscription_paid === true &&
+      (driver.subscription_status === "active" || driver.subscription_status === "trialing");
 
-    return { hasFullAccess, hasAdminFreeAccess };
+    const hasPremiumAccess = hasAdminPremiumAccess || hasPaidPremiumAccess || isPioneerTrialActive;
+
+    return { hasPremiumAccess, hasAdminPremiumAccess };
   };
 
   const localAccessStatus = calculateAccessStatus();
@@ -151,13 +147,14 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   // Utiliser d'abord le statut local (synchrone) puis le statut API si disponible
   const effectiveStatus = subscriptionStatus?.subscription_status || driverProfile?.driver?.subscription_status || "inactive";
-  const isActive = localAccessStatus.hasFullAccess || effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
-  const isInactive = !isActive && effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const syncedPremiumAccess = subscriptionStatus?.subscribed && subscriptionStatus?.subscription_tier === "premium";
+  const isActive = localAccessStatus.hasPremiumAccess || syncedPremiumAccess || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const isInactive = !isActive && effectiveStatus === "inactive" && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isPastDue = effectiveStatus === "past_due";
   const isCanceled = effectiveStatus === "canceled";
   
-  // Accès gratuit admin
-  const hasAdminFreeAccess = localAccessStatus.hasAdminFreeAccess || driverProfile?.driver?.free_access_granted;
+  // Accès premium offert par admin (uniquement permanent)
+  const hasAdminFreeAccess = localAccessStatus.hasAdminPremiumAccess;
   
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
