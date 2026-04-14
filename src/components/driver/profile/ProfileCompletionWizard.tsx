@@ -95,6 +95,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
         working_sectors: dataToSave.workingSectors,
         services_offered: dataToSave.servicesOffered,
         vehicle_categories: dataToSave.vehicleCategories,
+        vehicle_category: dataToSave.vehicleCategories,
         vehicle_equipment: dataToSave.vehicleEquipment,
       };
       if (typeof step === "number") {
