@@ -262,7 +262,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                   <CreditCard className="w-5 h-5 mr-2" />
                 )}
                 <div className="text-left">
-                  <div className="font-bold">Repasser Premium — 119,99€/mois</div>
+                  <div className="font-bold">Repasser Premium — 19,99€/mois</div>
                   <div className="text-xs opacity-80">Sans engagement</div>
                 </div>
               </Button>
@@ -282,7 +282,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                 Votre abonnement Pioneer a été résilié et vous avez perdu le tarif préférentiel.
-                Si vous souhaitez vous réabonner, le tarif standard de 119,99€/mois s'appliquera.
+                Si vous souhaitez vous réabonner, le tarif standard de 19,99€/mois s'appliquera.
               </p>
             </div>
           </div>
@@ -325,7 +325,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                   </>
                 ) : (
                   <p className="text-green-600 dark:text-green-400 font-medium">
-                    ✓ Vous bénéficiez du tarif Pioneer : 3119,99€/mois à vie !
+                    ✓ Vous bénéficiez du tarif Pioneer : 19,99€/mois à vie !
                   </p>
                 )}
               </div>
@@ -359,7 +359,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                   </p>
                 )}
                 <p className="pt-2 text-blue-600 dark:text-blue-400 font-medium">
-                  💡 À la fin de l'essai : seulement 119,99€/mois pour continuer
+                  💡 À la fin de l'essai : seulement 19,99€/mois pour continuer
                 </p>
               </div>
             </div>
@@ -450,7 +450,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Passer Premium — 119,99€/mois</span>
+                <span className="truncate">Passer Premium — 19,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -630,7 +630,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </ul>
             
             <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-amber-400 pt-3 border-t border-white/10">
-              👑 Premium (119,99€/mois) :
+              👑 Premium (19,99€/mois) :
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
@@ -660,9 +660,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               className="w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
-              <span className="truncate">
-                Passer Premium — 119,99€/mois
-              </span>
+                <span className="truncate">
+                Passer Premium — 19,99€/mois
+                </span>
             </Button>
           )}
         </div>
@@ -706,7 +706,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
               <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab Premium</p>
-              <p className="text-lg sm:text-2xl font-bold text-white break-words">119,99€/mois</p>
+              <p className="text-lg sm:text-2xl font-bold text-white break-words">19,99€/mois</p>
               <p className="text-white/80 text-xs">0% commission • Gratuit de base</p>
             </div>
           </div>
@@ -726,7 +726,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
               <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">Votre Tarif Pionnier</p>
-              <p className="text-lg sm:text-2xl font-bold text-white break-words">3119,99€/mois</p>
+              <p className="text-lg sm:text-2xl font-bold text-white break-words">19,99€/mois</p>
               <p className="text-white/80 text-xs">À vie • 0% commission</p>
             </div>
           </div>
