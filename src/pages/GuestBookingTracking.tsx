@@ -15,6 +15,8 @@ import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-solocab.png";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
+import { useETACalculation } from "@/hooks/useETACalculation";
+import { ETADisplay } from "@/components/tracking/ETADisplay";
 
 interface SharedDriver {
   id: string;
