@@ -213,20 +213,48 @@ const GuestBookingTracking = () => {
     fetchBooking();
   };
 
+  const handleStarClick = (star: number) => {
+    setRating(star);
+    if (star <= 3) {
+      setShowReasonForm(true);
+    } else {
+      setShowReasonForm(false);
+      setRatingReason('');
+      setRatingReasonDetail('');
+    }
+  };
+
   const handleSubmitRating = async () => {
     if (!booking || rating === 0 || !token) return;
+    
+    if (rating <= 3) {
+      if (!ratingReason) {
+        toast.error('Veuillez sélectionner un motif');
+        return;
+      }
+      if (!ratingReasonDetail.trim()) {
+        toast.error('Veuillez expliquer brièvement ce qui s\'est passé');
+        return;
+      }
+    }
+    
     setIsSubmittingRating(true);
     try {
-      // Use RPC for guest rating (anon can't update courses directly)
       const { error } = await supabase
         .rpc('guest_submit_rating' as any, { 
           _token: token, 
-          _rating: rating 
+          _rating: rating,
+          _reason: rating <= 3 ? ratingReason : null,
+          _reason_detail: rating <= 3 ? ratingReasonDetail.trim() : null,
         });
       if (error) throw error;
       setRatingSubmitted(true);
       setBooking(prev => prev ? { ...prev, client_rating: rating } : null);
-      toast.success('Merci pour votre note !');
+      if (rating >= 4) {
+        toast.success('Merci pour votre évaluation !');
+      } else {
+        toast.success('Votre note a été soumise et sera examinée par notre système d\'arbitrage.');
+      }
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');
     } finally {
