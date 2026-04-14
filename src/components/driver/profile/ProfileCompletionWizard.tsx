@@ -94,7 +94,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
         service_description: dataToSave.serviceDescription || null,
         working_sectors: dataToSave.workingSectors,
         services_offered: dataToSave.servicesOffered,
-        vehicle_categories: dataToSave.vehicleCategories,
+        vehicle_category: dataToSave.vehicleCategories,
         vehicle_equipment: dataToSave.vehicleEquipment,
       };
       if (typeof step === "number") {
@@ -202,7 +202,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
           service_description: data.serviceDescription || null,
           working_sectors: data.workingSectors,
           services_offered: data.servicesOffered,
-          vehicle_categories: data.vehicleCategories,
+          vehicle_category: data.vehicleCategories,
           vehicle_equipment: data.vehicleEquipment,
           public_profile_enabled: true,
           onboarding_profile_completed: true,
