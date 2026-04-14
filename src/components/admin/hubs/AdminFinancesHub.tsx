@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search } from "lucide-react";
+import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search, ShieldAlert } from "lucide-react";
 import AdminFinanceKPIs from "../finance/AdminFinanceKPIs";
 import AdminWeeklySummary from "../finance/AdminWeeklySummary";
 import AdminDriversFinanceTable from "../finance/AdminDriversFinanceTable";
