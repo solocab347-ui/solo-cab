@@ -436,7 +436,7 @@ export function SimplifiedOnboardingTunnel({
             {currentStep === 4 && (
               <StripeStep
                 stripeStatus={stripeStatus} stripeLoading={stripeLoading} stripeStatusLoading={stripeStatusLoading}
-                onStartStripe={startStripeOnboarding} onCheckStatus={checkStripeStatus} onSkipForNow={() => goToStep(5)}
+                onStartStripe={startStripeOnboarding} onCheckStatus={checkStripeStatus}
               />
             )}
             {currentStep === 5 && (
