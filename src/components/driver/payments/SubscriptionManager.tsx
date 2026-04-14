@@ -622,9 +622,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       <SubscriptionManagementCard
         userType="driver"
         hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
-        isActive={isActive || isInTrialPeriod || hasAdminFreeAccess || isPastDue}
-        isInTrialPeriod={isInTrialPeriod || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0)}
-        trialEndDate={isInTrialPeriod ? trialEndDate : (isPioneer ? new Date(pioneerTrialEnd!) : undefined)}
+        isActive={isActive || hasAdminFreeAccess || isPastDue}
+        isInTrialPeriod={isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0}
+        trialEndDate={isPioneer ? (pioneerTrialEnd ? new Date(pioneerTrialEnd) : undefined) : undefined}
         trialCancelled={trialCancelled}
         nextBillingDate={driverProfile?.driver?.subscription_end_date}
         nextBillingAmount={19.99}
