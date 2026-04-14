@@ -19563,24 +19563,18 @@ export type Database = {
       qr_codes_public: {
         Row: {
           code: string | null
-          created_at: string | null
           id: string | null
           is_active: boolean | null
-          scans_count: number | null
         }
         Insert: {
           code?: string | null
-          created_at?: string | null
           id?: string | null
           is_active?: boolean | null
-          scans_count?: number | null
         }
         Update: {
           code?: string | null
-          created_at?: string | null
           id?: string | null
           is_active?: boolean | null
-          scans_count?: number | null
         }
         Relationships: []
       }
@@ -21017,6 +21011,38 @@ export type Database = {
           scheduled_date: string
           shared_drivers: Json
           status: string
+        }[]
+      }
+      get_guest_course_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          course_number: string
+          created_at: string
+          destination_address: string
+          destination_latitude: number
+          destination_longitude: number
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          driver_photo_url: string
+          estimated_distance_km: number
+          final_payment_amount: number
+          guest_name: string
+          guest_phone: string
+          guest_tracking_token: string
+          id: string
+          is_guest_booking: boolean
+          payment_method: string
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          scheduled_date: string
+          status: string
+          updated_at: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
         }[]
       }
       get_guest_tracking_token: {
