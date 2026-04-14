@@ -37,6 +37,7 @@ interface CourseData {
   guest_tracking_token: string | null;
   course_started_at: string | null;
   driver_id: string;
+  client_id: string | null;
   is_guest_booking: boolean;
   guest_name: string | null;
   pickup_latitude: number | null;
