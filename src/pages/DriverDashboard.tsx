@@ -665,6 +665,20 @@ const DriverDashboard = () => {
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
 
+        {/* Profile Completion Wizard - Mandatory before accessing dashboard */}
+        {showProfileWizard && driverProfile && user && (
+          <ProfileCompletionWizard
+            driverProfile={driverProfile}
+            userId={user.id}
+            onComplete={() => {
+              setShowProfileWizard(false);
+              queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user.id] });
+            }}
+          />
+        )}
+
+        {!showProfileWizard && (<>
+
         {/* Pioneer Banner - Affichage pour les pionniers */}
         {driverProfile?.driver?.is_pioneer && (
           <PioneerBanner
