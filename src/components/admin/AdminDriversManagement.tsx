@@ -227,6 +227,7 @@ const AdminDriversManagement = () => {
         // IMPORTANT: Synchroniser documents_status avec status pour éviter les désynchronisations
         if (newStatus === "validated") {
           updateData.documents_status = "validated";
+          updateData.public_profile_enabled = true;
         }
         const { error } = await supabase
           .from("drivers")

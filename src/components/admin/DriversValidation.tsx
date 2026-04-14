@@ -62,6 +62,7 @@ const DriversValidation = () => {
         .update({ 
           status: "validated",
           documents_status: "validated",
+          public_profile_enabled: true,
           validation_date: new Date().toISOString()
         })
         .eq("id", driverId);
