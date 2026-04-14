@@ -481,6 +481,17 @@ const ClientRideTracking = () => {
           />
         )}
 
+        {/* ETA Dynamic Display */}
+        {(isApproaching || isInProgress) && etaEnabled && (
+          <ETADisplay
+            eta={eta}
+            loading={etaLoading}
+            onRefresh={refreshETA}
+            phase={isApproaching ? "approaching" : "in_progress"}
+            totalDistanceKm={course.distance_km}
+          />
+        )}
+
         {/* Live Status Card */}
         <AnimatePresence mode="wait">
           <motion.div
