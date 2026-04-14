@@ -399,8 +399,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Free Tier Info - When user has free access (no premium) */}
-      {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
+      {/* Free Tier Info - When user has no premium subscription */}
+      {!isActive && !hasAdminFreeAccess && !isPioneer && (
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <div className="p-3 bg-amber-500/20 rounded-xl">
