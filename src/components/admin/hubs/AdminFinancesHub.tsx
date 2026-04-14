@@ -76,6 +76,7 @@ const AdminFinancesHub = () => {
     { id: "dashboard" as Tab, label: "Dashboard", icon: LayoutDashboard },
     { id: "drivers" as Tab, label: "Chauffeurs", icon: Users },
     { id: "stripe" as Tab, label: "Stripe", icon: CreditCard },
+    { id: "anomalies" as Tab, label: "Anomalies", icon: ShieldAlert },
     { id: "audit" as Tab, label: "Audit", icon: FileSearch },
     { id: "charts" as Tab, label: "Graphiques", icon: BarChart3 },
     { id: "search" as Tab, label: "Recherche", icon: Search },
