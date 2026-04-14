@@ -211,14 +211,7 @@ const RegisterDriverPromoFree = () => {
         });
       if (driverError) throw driverError;
 
-      // Send welcome email
-      try {
-        await supabase.functions.invoke("send-email", {
-          body: { driver_id: driverIdResult, type: "driver_welcome_new" },
-        });
-      } catch {
-        console.error("Welcome email error");
-      }
+      // Welcome email will be sent after email validation on DriverWelcome page
 
       toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
       setCurrentStep("check_email");
