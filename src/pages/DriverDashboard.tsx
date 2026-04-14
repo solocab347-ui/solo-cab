@@ -33,6 +33,7 @@ import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/vehicles/VehiclePhotosManager";
 import { DriverPublicProfileSimplified } from "@/components/driver/profile/DriverPublicProfileSimplified";
+import { ProfileCompletionWizard } from "@/components/driver/profile/ProfileCompletionWizard";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
 import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
