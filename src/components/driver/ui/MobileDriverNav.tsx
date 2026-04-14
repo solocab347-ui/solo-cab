@@ -86,6 +86,7 @@ export const MobileDriverNav = ({
     { value: "messages", icon: MessageSquare, label: t('driverDashboard.menu.messages'), gradient: "from-cyan-500 to-blue-600" },
     { value: "devis", icon: FileText, label: t('driverDashboard.menu.quotes'), gradient: "from-purple-500 to-blue-600" },
     { value: "factures", icon: CreditCard, label: t('driverDashboard.menu.invoices'), gradient: "from-green-500 to-emerald-600" },
+    { value: "finances", icon: Wallet, label: "Finances", gradient: "from-amber-500 to-orange-600" },
   ];
 
   // Ajouter documents si pas fleet driver
