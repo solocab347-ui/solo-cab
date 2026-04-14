@@ -222,7 +222,7 @@ const AdminOverview = () => {
                 {stats.mrr.toFixed(2)}€
               </div>
               <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                {stats.active_subscriptions} × 9.99€/mois
+                {stats.active_subscriptions} × 19.99€/mois
               </p>
             </CardContent>
           </Card>

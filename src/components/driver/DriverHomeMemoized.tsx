@@ -242,35 +242,76 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
             </div>
           </Card>
 
+          {/* Planning Shortcut - Premium */}
           <Card
-            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-warning group touch-manipulation active:scale-[0.98]"
-            {...getTapProps<HTMLDivElement>(() => onTabChange("planning"))}
+            className={`relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border ${isFree ? 'border-amber-500/30' : 'border-border/50'} shadow-lg group touch-manipulation active:scale-[0.98]`}
+            {...getTapProps<HTMLDivElement>(() => {
+              if (isFree) {
+                onTabChange("subscription");
+              } else {
+                onTabChange("planning");
+              }
+            })}
           >
             <div className="absolute inset-0 bg-gradient-warning opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            {isFree && (
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
+                <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10">
+                  <Crown className="w-3 h-3 mr-0.5" />
+                  Premium
+                </Badge>
+              </div>
+            )}
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-warning rounded-xl sm:rounded-2xl flex items-center justify-center shadow-warning group-hover:scale-110 transition-transform">
-                <Calendar className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                {isFree ? (
+                  <Lock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                ) : (
+                  <Calendar className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                )}
               </div>
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Planning</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Voir mes courses</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  {isFree ? "Premium" : "Voir mes courses"}
+                </p>
               </div>
             </div>
           </Card>
 
-          {/* Objectives Shortcut */}
+          {/* Objectives Shortcut - Premium */}
           <Card
-            className="relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-border/50 shadow-lg group touch-manipulation active:scale-[0.98]"
-            {...getTapProps<HTMLDivElement>(() => onTabChange("objectives"))}
+            className={`relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border ${isFree ? 'border-amber-500/30' : 'border-border/50'} shadow-lg group touch-manipulation active:scale-[0.98]`}
+            {...getTapProps<HTMLDivElement>(() => {
+              if (isFree) {
+                onTabChange("subscription");
+              } else {
+                onTabChange("objectives");
+              }
+            })}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            {isFree && (
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
+                <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10">
+                  <Crown className="w-3 h-3 mr-0.5" />
+                  Premium
+                </Badge>
+              </div>
+            )}
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-accent to-primary rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Target className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                {isFree ? (
+                  <Lock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                ) : (
+                  <Target className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                )}
               </div>
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Objectifs</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Suivi & coaching</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  {isFree ? "Premium" : "Suivi & coaching"}
+                </p>
               </div>
             </div>
           </Card>
@@ -306,7 +347,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Partenaires</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground/70 hidden sm:block">
-                  {isFree ? "9,99€/mois" : "Réseau de partage"}
+                  {isFree ? "19,99€/mois" : "Réseau de partage"}
                 </p>
               </div>
             </div>
@@ -329,38 +370,47 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
             </div>
           </Card>
 
-          {/* Encaissement spontané */}
+          {/* Encaissement spontané - Premium */}
           <Card
-            className={`relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl transition-all border border-border/50 shadow-lg group touch-manipulation ${
-              driverProfile?.driver?.stripe_connect_charges_enabled
+            className={`relative overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl transition-all border ${isFree ? 'border-amber-500/30' : 'border-border/50'} shadow-lg group touch-manipulation ${
+              !isFree && driverProfile?.driver?.stripe_connect_charges_enabled
                 ? 'hover:scale-[1.02] cursor-pointer active:scale-[0.98]'
-                : 'opacity-60 cursor-not-allowed'
+                : isFree ? 'hover:scale-[1.02] cursor-pointer active:scale-[0.98]' : 'opacity-60 cursor-not-allowed'
             }`}
-            {...(driverProfile?.driver?.stripe_connect_charges_enabled
-              ? getTapProps<HTMLDivElement>(() => onTabChange("encaisser"))
-              : {}
+            {...(isFree
+              ? getTapProps<HTMLDivElement>(() => onTabChange("subscription"))
+              : driverProfile?.driver?.stripe_connect_charges_enabled
+                ? getTapProps<HTMLDivElement>(() => onTabChange("encaisser"))
+                : {}
             )}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/15 to-emerald-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            {isFree && (
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
+                <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0.5 border-amber-500/40 text-amber-600 bg-amber-500/10">
+                  <Crown className="w-3 h-3 mr-0.5" />
+                  Premium
+                </Badge>
+              </div>
+            )}
             <div className="relative z-10 flex flex-col items-center text-center space-y-2 sm:space-y-4">
               <div className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ${
-                driverProfile?.driver?.stripe_connect_charges_enabled
+                !isFree && driverProfile?.driver?.stripe_connect_charges_enabled
                   ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                  : 'bg-muted'
+                  : isFree ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-muted'
               }`}>
-                <Zap className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                {isFree ? (
+                  <Lock className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                ) : (
+                  <Zap className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
+                )}
               </div>
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Encaisser</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {driverProfile?.driver?.stripe_connect_charges_enabled
-                    ? 'Paiement spontané'
-                    : 'Connectez Stripe'}
+                  {isFree ? 'Premium' : driverProfile?.driver?.stripe_connect_charges_enabled ? 'Paiement spontané' : 'Connectez Stripe'}
                 </p>
               </div>
-              {!driverProfile?.driver?.stripe_connect_charges_enabled && (
-                <p className="text-[10px] text-primary font-medium">Connecter votre compte Stripe</p>
-              )}
             </div>
           </Card>
         </div>

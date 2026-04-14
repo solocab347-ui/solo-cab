@@ -14,6 +14,10 @@ export interface DriverPremiumStatus {
   canAccessCourseSharing: boolean;
   canAccessPromotions: boolean;
   canAccessProspection: boolean;
+  canAccessPlanning: boolean;
+  canAccessObjectives: boolean;
+  canAccessEncaissement: boolean;
+  canAccessProfitability: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -86,6 +90,10 @@ export function useDriverPremium(): DriverPremiumStatus {
     canAccessCourseSharing: isPremium,
     canAccessPromotions: isPremium,
     canAccessProspection: isPremium,
+    canAccessPlanning: isPremium,
+    canAccessObjectives: isPremium,
+    canAccessEncaissement: isPremium,
+    canAccessProfitability: isPremium,
     refresh: checkPremiumStatus,
   };
 }

@@ -83,7 +83,7 @@ const AdminSubscriptionStats = () => {
         d.subscription_status === 'active' && !d.free_access_granted
       );
 
-      const mrr = activeSubscriptions.length * 9.99;
+      const mrr = activeSubscriptions.length * 19.99;
       const newThisPeriod = drivers?.filter(d => d.subscription_status === 'active').length || 0;
       
       // Taux de churn (approximation)

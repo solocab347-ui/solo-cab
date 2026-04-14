@@ -58,7 +58,7 @@ const getEmailTemplate = (emailNumber: number, data: { firstName: string; blocke
                   <li>✅ Fidélisez vos clients grâce au QR code personnalisé</li>
                   <li>✅ Gérez vos courses, devis et factures facilement</li>
                   <li>✅ Outil 100% adapté aux chauffeurs indépendants</li>
-                  <li>✅ Seulement 9,99€/mois après validation</li>
+                  <li>✅ Seulement 19,99€/mois après validation</li>
                 </ul>
                 
                 <div style="text-align: center;">
@@ -171,7 +171,7 @@ const getEmailTemplate = (emailNumber: number, data: { firstName: string; blocke
                   <li>📱 Clients satisfaits grâce au suivi en temps réel</li>
                 </ul>
                 
-                <p><strong>Et tout ça pour seulement 9,99€/mois</strong> - soit le prix d'une demi-course !</p>
+                <p><strong>Et tout ça pour seulement 19,99€/mois</strong> - soit le prix d'une demi-course !</p>
                 
                 <div style="text-align: center;">
                   <a href="https://solocab.fr/chauffeur/connexion" class="button">Je me lance maintenant →</a>
@@ -280,7 +280,7 @@ const getEmailTemplate = (emailNumber: number, data: { firstName: string; blocke
                 <ul>
                   <li>❓ Problème technique → <em>Tout est résolu maintenant !</em></li>
                   <li>❓ Manque de temps → <em>5 minutes suffisent pour reprendre</em></li>
-                  <li>❓ Hésitation sur le prix → <em>9,99€/mois, sans engagement</em></li>
+                  <li>❓ Hésitation sur le prix → <em>19,99€/mois, sans engagement</em></li>
                 </ul>
                 
                 <p>Si vous avez une question, répondez directement à cet email. Nous sommes là pour vous aider.</p>
@@ -388,7 +388,7 @@ const getEmailTemplate = (emailNumber: number, data: { firstName: string; blocke
                   <li>🚗 Gestion complète de vos courses</li>
                   <li>📱 QR code pour fidéliser vos clients</li>
                   <li>📋 Devis et factures automatiques</li>
-                  <li>💰 Seulement 9,99€/mois</li>
+                  <li>💰 Seulement 19,99€/mois</li>
                 </ul>
                 
                 <p>Si un jour vous décidez de vous lancer, nous serons là.</p>

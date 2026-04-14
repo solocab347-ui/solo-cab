@@ -16,7 +16,7 @@ interface PremiumUpgradeBannerProps {
 /**
  * Bannière CTA Premium contextuelle.
  * S'affiche uniquement pour les utilisateurs Free.
- * Propose l'abonnement direct à 9,99€/mois (prix de lancement).
+ * Propose l'abonnement direct à 19,99€/mois.
  */
 export function PremiumUpgradeBanner({ 
   message = "Débloquez tout le potentiel de SoloCab",
@@ -53,7 +53,7 @@ export function PremiumUpgradeBanner({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{message}</p>
-          <p className="text-xs text-muted-foreground">9,99€/mois · Prix de lancement</p>
+          <p className="text-xs text-muted-foreground">19,99€/mois</p>
         </div>
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
@@ -80,8 +80,8 @@ export function PremiumUpgradeBanner({
             </p>
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <Badge variant="outline" className="border-green-500/40 text-green-600 bg-green-500/10 text-[10px]">
-              <Zap className="w-3 h-3 mr-0.5" /> Lancement
+            <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10 text-[10px]">
+              <Zap className="w-3 h-3 mr-0.5" /> Premium
             </Badge>
             <Button 
               onClick={handleUpgrade}
@@ -92,7 +92,7 @@ export function PremiumUpgradeBanner({
               {loading ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <>9,99€/mois</>
+                <>19,99€/mois</>
               )}
             </Button>
           </div>

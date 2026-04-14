@@ -237,7 +237,7 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
                       <p className="text-xs text-muted-foreground">
                         {isPremium 
                           ? 'La course sera partagée avec mes partenaires'
-                          : 'Passez au Premium (9,99€/mois) pour partager automatiquement'
+                          : 'Passez au Premium (19,99€/mois) pour partager automatiquement'
                         }
                       </p>
                     </div>
@@ -286,7 +286,7 @@ export function DriverSmartBufferSettings({ driverId }: DriverSmartBufferSetting
               <p className="text-sm text-muted-foreground mt-1">
                 {isPremium 
                   ? 'Accepter automatiquement les courses de mes partenaires de confiance'
-                  : 'Disponible avec le Premium à 9,99€/mois'
+                  : 'Disponible avec le Premium à 19,99€/mois'
                 }
               </p>
             </div>

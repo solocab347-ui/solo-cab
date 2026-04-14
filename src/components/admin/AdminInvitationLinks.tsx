@@ -136,7 +136,7 @@ const AdminInvitationLinks = () => {
           <CardDescription>
             Créez des liens d'inscription uniques. Les utilisateurs suivront le parcours classique 
             (documents, onboarding) mais bénéficieront d'un accès gratuit pendant la durée choisie.
-            Après expiration, ils conservent l'accès gratuit. Premium disponible à 9,99€/mois.
+            Après expiration, ils conservent l'accès gratuit. Premium disponible à 19,99€/mois.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,7 +185,7 @@ const AdminInvitationLinks = () => {
 
           <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
             <p>📋 <strong>Parcours utilisateur :</strong> Inscription → Documents → Onboarding → Accès gratuit ({DURATION_OPTIONS.find(d => d.value === duration)?.label})</p>
-            <p className="mt-1">💳 Après la période gratuite → Accès de base gratuit, Premium à 9,99€/mois</p>
+            <p className="mt-1">💳 Après la période gratuite → Accès de base gratuit, Premium à 19,99€/mois</p>
           </div>
         </CardContent>
       </Card>

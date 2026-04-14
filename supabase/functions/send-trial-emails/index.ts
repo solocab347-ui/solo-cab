@@ -207,7 +207,7 @@ const getEmailTemplate = (emailType: string, data: {
                 
                 <p><strong>SoloCab, c'est votre outil pour devenir vraiment indépendant.</strong> Plus besoin de dépendre des plateformes qui prennent une commission sur chaque course.</p>
                 
-                <p>L'accès de base est <strong>gratuit</strong>. Pour débloquer les fonctionnalités Premium (partenariats, promotions, prospection), l'abonnement est à seulement <strong>9,99€/mois</strong> !</p>
+                <p>L'accès de base est <strong>gratuit</strong>. Pour débloquer les fonctionnalités Premium (partenariats, promotions, prospection), l'abonnement est à seulement <strong>19,99€/mois</strong> !</p>
                 
                 <div style="text-align: center;">
                   <a href="https://solocab.fr/driver-dashboard" class="button">Continuer l'aventure →</a>
@@ -252,7 +252,7 @@ const getEmailTemplate = (emailType: string, data: {
                   <li>🔓 Vous pourrez réactiver votre compte à tout moment en vous abonnant</li>
                 </ul>
                 
-                <p><strong>L'accès de base reste gratuit.</strong> Pour les fonctionnalités avancées, abonnez-vous au Premium à 9,99€/mois (sans engagement).</p>
+                <p><strong>L'accès de base reste gratuit.</strong> Pour les fonctionnalités avancées, abonnez-vous au Premium à 19,99€/mois (sans engagement).</p>
                 
                 <div style="text-align: center;">
                   <a href="https://solocab.fr/chauffeur/subscription" class="button">M'abonner maintenant →</a>
@@ -296,7 +296,7 @@ const getEmailTemplate = (emailType: string, data: {
                 <p><strong>Pour retrouver l'accès complet :</strong></p>
                 <ul>
                   <li>✅ L'accès de base reste <strong>gratuit</strong> (clients, courses, factures)</li>
-                  <li>💳 Passez au Premium à 9,99€/mois pour les partenariats et promotions</li>
+                  <li>💳 Passez au Premium à 19,99€/mois pour les partenariats et promotions</li>
                   <li>🔓 Accès immédiat après paiement</li>
                 </ul>
                 

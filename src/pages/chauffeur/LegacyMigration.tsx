@@ -115,7 +115,7 @@ export default function LegacyMigration() {
     {
       id: "monthly" as const,
       name: "Mensuel",
-      price: 9.99,
+      price: 19.99,
       period: "/mois",
       description: "Facturation mensuelle, sans engagement",
       features: [

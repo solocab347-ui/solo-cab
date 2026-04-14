@@ -362,7 +362,7 @@ serve(async (req) => {
                 user_id: driverData.user_id,
                 type: "payment_failed",
                 title: "⚠️ Échec de paiement",
-                message: `Votre paiement de 9,99€ n'a pas pu être effectué (tentative ${attemptCount}). Mettez à jour votre carte pour éviter la suspension.`,
+                message: `Votre paiement de 19,99€ n'a pas pu être effectué (tentative ${attemptCount}). Mettez à jour votre carte pour éviter la suspension.`,
                 priority: "high",
                 action_url: "/driver-dashboard?tab=subscription",
               });

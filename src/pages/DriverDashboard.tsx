@@ -754,9 +754,10 @@ const DriverDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("planning")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au planning — 19,99€/mois" }); } else { setActiveTab("planning"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Calendar className="w-4 h-4" />
                     {t('driverDashboard.menu.planning')}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-muted">
                     <Calculator className="w-4 h-4" />
@@ -778,20 +779,22 @@ const DriverDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("objectives")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux objectifs — 19,99€/mois" }); } else { setActiveTab("objectives"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Target className="w-4 h-4" />
                     {t('driverDashboard.menu.objectives')}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 9,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 19,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Megaphone className="w-4 h-4" />
                     {t('driverDashboard.menu.campaign')}
                     {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au calcul de rentabilité — 19,99€/mois" }); } else { setActiveTab("profitability"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <PieChart className="w-4 h-4" />
                     {t('driverDashboard.menu.profitability')}
+                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 9,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
+                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 19,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
                     <Sparkles className="w-4 h-4" />
                     {t('driverDashboard.menu.prospection')}
                     {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
