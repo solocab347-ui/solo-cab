@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +8,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Loader2, CheckCircle, Shield, Eye, EyeOff, 
-  ArrowRight, Rocket, Users, Target, CreditCard,
-  Sparkles, Clock
+  ArrowRight, ArrowLeft, Rocket, Users, Target, CreditCard,
+  Sparkles, User, Mail, Phone, Lock, ChevronRight
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo-solocab.png";
 
-// Registration page - Free access model
+// Step-by-step wizard registration
+
+type Step = "welcome" | "name" | "email" | "phone" | "password" | "creating";
+
+const STEP_ORDER: Step[] = ["welcome", "name", "email", "phone", "password"];
+
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? "100%" : "-100%",
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? "-100%" : "100%",
+    opacity: 0,
+  }),
+};
 
 const RegisterDriverPromoFree = () => {
   const navigate = useNavigate();
@@ -23,16 +41,23 @@ const RegisterDriverPromoFree = () => {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState<Step>("welcome");
+  const [direction, setDirection] = useState(1);
+
+  // Form data
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Validation
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -41,7 +66,7 @@ const RegisterDriverPromoFree = () => {
         if (session?.user) {
           const { data: existingDriver } = await supabase
             .from("drivers")
-            .select("id, subscription_status, subscription_paid, trial_status")
+            .select("id")
             .eq("user_id", session.user.id)
             .maybeSingle();
           if (existingDriver) {
@@ -57,6 +82,155 @@ const RegisterDriverPromoFree = () => {
     };
     checkExistingSession();
   }, [navigate]);
+
+  const currentStepIndex = STEP_ORDER.indexOf(currentStep);
+  const progress = currentStep === "creating" ? 100 : ((currentStepIndex) / (STEP_ORDER.length - 1)) * 100;
+
+  const goToStep = useCallback((step: Step) => {
+    const newIndex = STEP_ORDER.indexOf(step);
+    const oldIndex = STEP_ORDER.indexOf(currentStep);
+    setDirection(newIndex > oldIndex ? 1 : -1);
+    setErrors({});
+    setCurrentStep(step);
+  }, [currentStep]);
+
+  const goNext = useCallback(() => {
+    const idx = STEP_ORDER.indexOf(currentStep);
+    if (idx < STEP_ORDER.length - 1) {
+      setDirection(1);
+      setErrors({});
+      setCurrentStep(STEP_ORDER[idx + 1]);
+    }
+  }, [currentStep]);
+
+  const goBack = useCallback(() => {
+    const idx = STEP_ORDER.indexOf(currentStep);
+    if (idx > 0) {
+      setDirection(-1);
+      setErrors({});
+      setCurrentStep(STEP_ORDER[idx - 1]);
+    }
+  }, [currentStep]);
+
+  const validateAndNext = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+
+    switch (currentStep) {
+      case "name":
+        if (!fullName.trim()) newErrors.fullName = "Entrez votre nom complet";
+        else if (fullName.trim().length < 2) newErrors.fullName = "Nom trop court";
+        else if (fullName.trim().length > 100) newErrors.fullName = "Nom trop long";
+        break;
+      case "email":
+        if (!email.trim()) newErrors.email = "Entrez votre email";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = "Email invalide";
+        break;
+      case "phone":
+        if (!phone.trim()) newErrors.phone = "Entrez votre numéro";
+        else if (phone.replace(/\s/g, '').length < 8) newErrors.phone = "Numéro trop court";
+        break;
+      case "password":
+        if (!password) newErrors.password = "Choisissez un mot de passe";
+        else if (password.length < 6) newErrors.password = "Minimum 6 caractères";
+        break;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (currentStep === "password") {
+      handleRegister();
+    } else {
+      goNext();
+    }
+  }, [currentStep, fullName, email, phone, password, goNext]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (currentStep !== "welcome") {
+        validateAndNext();
+      } else {
+        goNext();
+      }
+    }
+  }, [currentStep, validateAndNext, goNext]);
+
+  const handleRegister = async () => {
+    setDirection(1);
+    setCurrentStep("creating");
+    setLoading(true);
+    
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { full_name: fullName.trim() },
+          emailRedirectTo: `${window.location.origin}/driver-welcome`,
+        },
+      });
+      if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error("Échec de création du compte");
+
+      const newUserId = authData.user.id;
+
+      // Try auto sign-in
+      if (!authData.session) {
+        try {
+          await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        } catch {
+          console.warn("Auto sign-in skipped (email confirmation required)");
+        }
+      }
+
+      // Update phone
+      try {
+        await supabase.from("profiles").update({ phone: phone.trim() }).eq("id", newUserId);
+      } catch {
+        console.warn("Profile phone update deferred");
+      }
+
+      // Create driver profile via SECURITY DEFINER function
+      const { data: driverIdResult, error: driverError } = await supabase
+        .rpc("create_driver_profile", {
+          p_user_id: newUserId,
+          p_status: "on_hold",
+          p_license_number: "",
+          p_vehicle_brand: "",
+          p_vehicle_model: "",
+          p_vehicle_year: new Date().getFullYear(),
+          p_vehicle_color: "",
+        });
+      if (driverError) throw driverError;
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke("send-email", {
+          body: { driver_id: driverIdResult, type: "driver_welcome_new" },
+        });
+      } catch {
+        console.error("Welcome email error");
+      }
+
+      toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
+      await new Promise(resolve => setTimeout(resolve, 800));
+      navigate("/driver-welcome", { replace: true });
+    } catch (error: any) {
+      let errorMessage = error.message || "Erreur lors de la création du compte";
+      if (error.message?.includes("User already registered")) {
+        errorMessage = "Cet email est déjà utilisé. Connectez-vous.";
+        setIsLoginMode(true);
+        setLoginEmail(email);
+      }
+      toast.error(errorMessage);
+      setCurrentStep("password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,88 +267,6 @@ const RegisterDriverPromoFree = () => {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas");
-      return;
-    }
-    if (password.length < 6) {
-      toast.error("Le mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/driver-welcome`,
-        },
-      });
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error("Échec de création du compte");
-
-      const newUserId = authData.user.id;
-
-      // Try auto sign-in (may fail if email not confirmed - that's OK)
-      if (!authData.session) {
-        try {
-          await supabase.auth.signInWithPassword({ email, password });
-        } catch (signInError) {
-          console.warn("Auto sign-in skipped (email confirmation required):", signInError);
-        }
-      }
-
-      // Update phone on profile (may fail without session - ignore)
-      try {
-        await supabase.from("profiles").update({ phone }).eq("id", newUserId);
-      } catch {
-        console.warn("Profile phone update deferred");
-      }
-
-      // Create driver profile via SECURITY DEFINER function (bypasses RLS)
-      const { data: driverIdResult, error: driverError } = await supabase
-        .rpc("create_driver_profile", {
-          p_user_id: newUserId,
-          p_status: "on_hold",
-          p_license_number: "",
-          p_vehicle_brand: "",
-          p_vehicle_model: "",
-          p_vehicle_year: new Date().getFullYear(),
-          p_vehicle_color: "",
-        });
-      if (driverError) throw driverError;
-
-      const driverData = { id: driverIdResult };
-
-      // Driver role is now auto-assigned via database trigger
-
-      try {
-        await supabase.functions.invoke("send-email", {
-          body: { driver_id: driverData.id, type: "driver_welcome_new" },
-        });
-      } catch (emailError) {
-        console.error("Welcome email error:", emailError);
-      }
-
-      toast.success("🎉 Compte créé ! Bienvenue sur SoloCab.");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      navigate("/driver-welcome", { replace: true });
-    } catch (error: any) {
-      let errorMessage = error.message || "Erreur lors de la création du compte";
-      if (error.message?.includes("User already registered")) {
-        errorMessage = "Cet email est déjà utilisé. Connectez-vous.";
-        setIsLoginMode(true);
-        setLoginEmail(email);
-      }
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (initializing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,190 +275,455 @@ const RegisterDriverPromoFree = () => {
     );
   }
 
+  // Login mode
+  if (isLoginMode) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button onClick={() => setIsLoginMode(false)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">Retour à l'inscription</span>
+        </div>
+        
+        <div className="flex-1 flex flex-col justify-center px-6 pb-12 max-w-md mx-auto w-full">
+          <img src={logo} alt="SoloCab" className="w-12 h-12 mx-auto mb-6 object-contain" />
+          <h1 className="text-2xl font-bold text-center mb-1">Connexion</h1>
+          <p className="text-sm text-muted-foreground text-center mb-8">Accédez à votre espace chauffeur</p>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="loginEmail" className="text-xs text-muted-foreground mb-1.5 block">Email</Label>
+              <Input 
+                id="loginEmail" 
+                type="email" 
+                value={loginEmail} 
+                onChange={(e) => setLoginEmail(e.target.value)} 
+                required 
+                placeholder="votre@email.com" 
+                className="h-12 bg-input" 
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label htmlFor="loginPassword" className="text-xs text-muted-foreground mb-1.5 block">Mot de passe</Label>
+              <div className="relative">
+                <Input 
+                  id="loginPassword" 
+                  type={showLoginPassword ? "text" : "password"} 
+                  value={loginPassword} 
+                  onChange={(e) => setLoginPassword(e.target.value)} 
+                  required 
+                  placeholder="Votre mot de passe" 
+                  className="h-12 pr-10 bg-input" 
+                />
+                <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <Button type="submit" disabled={loading} className="w-full h-12">
+              {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Se connecter
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Step-by-step wizard
+  return (
+    <div className="min-h-screen bg-background flex flex-col" onKeyDown={handleKeyDown}>
+      {/* Header with progress */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-3">
+          {currentStep !== "welcome" && currentStep !== "creating" ? (
+            <button onClick={goBack} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
+          <img src={logo} alt="SoloCab" className="w-8 h-8 object-contain" />
+          {currentStep !== "welcome" ? (
+            <span className="text-xs text-muted-foreground w-9 text-right">
+              {currentStepIndex}/{STEP_ORDER.length - 1}
+            </span>
+          ) : (
+            <div className="w-9" />
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {currentStep !== "welcome" && (
+          <div className="h-1 bg-muted rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-primary rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Step Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentStep}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="flex-1 flex flex-col px-6 max-w-md mx-auto w-full"
+          >
+            {currentStep === "welcome" && (
+              <WelcomeStep onStart={goNext} onLogin={() => setIsLoginMode(true)} />
+            )}
+            {currentStep === "name" && (
+              <FieldStep
+                icon={User}
+                title="Comment vous appelez-vous ?"
+                subtitle="Votre nom complet tel qu'il apparaît sur vos documents"
+                value={fullName}
+                onChange={setFullName}
+                placeholder="Jean Dupont"
+                error={errors.fullName}
+                onNext={validateAndNext}
+                autoComplete="name"
+                autoFocus
+              />
+            )}
+            {currentStep === "email" && (
+              <FieldStep
+                icon={Mail}
+                title="Votre adresse email"
+                subtitle="Nous vous enverrons un lien de confirmation"
+                value={email}
+                onChange={setEmail}
+                placeholder="votre@email.com"
+                type="email"
+                error={errors.email}
+                onNext={validateAndNext}
+                autoComplete="email"
+                autoFocus
+              />
+            )}
+            {currentStep === "phone" && (
+              <FieldStep
+                icon={Phone}
+                title="Votre numéro de téléphone"
+                subtitle="Pour que vos clients puissent vous contacter"
+                value={phone}
+                onChange={setPhone}
+                placeholder="06 12 34 56 78"
+                type="tel"
+                error={errors.phone}
+                onNext={validateAndNext}
+                autoComplete="tel"
+                autoFocus
+              />
+            )}
+            {currentStep === "password" && (
+              <PasswordStep
+                value={password}
+                onChange={setPassword}
+                showPassword={showPassword}
+                onToggleShow={() => setShowPassword(!showPassword)}
+                error={errors.password}
+                onNext={validateAndNext}
+                loading={loading}
+              />
+            )}
+            {currentStep === "creating" && (
+              <CreatingStep />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Footer - Terms */}
+      {currentStep === "password" && (
+        <div className="px-6 pb-4 pt-2 text-center">
+          <p className="text-[10px] text-muted-foreground">
+            En créant un compte, vous acceptez nos{" "}
+            <a href="/terms-of-service" className="underline hover:text-foreground">conditions d'utilisation</a>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Welcome Step
+function WelcomeStep({ onStart, onLogin }: { onStart: () => void; onLogin: () => void }) {
   const benefits = [
     { icon: Users, text: "Construisez votre propre clientèle" },
     { icon: Target, text: "Fixez vos prix en toute liberté" },
     { icon: CreditCard, text: "Gardez 100% de vos revenus" },
-    { icon: Sparkles, text: "Coach IA pour optimiser votre activité" },
+    { icon: Sparkles, text: "Coach IA pour votre activité" },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/10" />
-        <div className="relative z-10 px-4 pt-8 pb-6 text-center max-w-lg mx-auto">
-          <motion.img 
-            src={logo} 
-            alt="SoloCab" 
-            className="w-16 h-16 mx-auto mb-4 object-contain"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          />
-          <motion.h1 
-            className="text-2xl sm:text-3xl font-bold text-foreground mb-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            Devenez indépendant
-          </motion.h1>
-          <motion.p 
-            className="text-sm text-muted-foreground mb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            L'outil des chauffeurs VTC qui reprennent le contrôle
-          </motion.p>
-          
-          {/* Trial Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Badge className="bg-success/20 text-success border-success/30 px-4 py-1.5 text-sm font-semibold">
-              <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-              Inscription gratuite • Sans carte bancaire
-            </Badge>
-          </motion.div>
+    <div className="flex-1 flex flex-col justify-center pb-8">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="text-center mb-8"
+      >
+        <img src={logo} alt="SoloCab" className="w-20 h-20 mx-auto mb-5 object-contain" />
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Devenez indépendant
+        </h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          L'outil des chauffeurs VTC qui reprennent le contrôle
+        </p>
+        <Badge className="bg-success/15 text-success border-success/30 px-3 py-1 text-xs font-semibold">
+          <CheckCircle className="w-3 h-3 mr-1.5" />
+          Gratuit • Sans carte bancaire
+        </Badge>
+      </motion.div>
+
+      <motion.div 
+        className="grid grid-cols-2 gap-2.5 mb-8"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        {benefits.map((b, i) => {
+          const Icon = b.icon;
+          return (
+            <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border/60">
+              <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-xs text-foreground leading-tight">{b.text}</span>
+            </div>
+          );
+        })}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="space-y-3"
+      >
+        <Button 
+          onClick={onStart} 
+          className="w-full h-13 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base gap-2"
+          size="lg"
+        >
+          <Rocket className="w-5 h-5" />
+          Commencer l'inscription
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+        
+        <button 
+          onClick={onLogin}
+          className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+        >
+          Déjà inscrit ? <span className="font-medium text-primary">Se connecter</span>
+        </button>
+      </motion.div>
+
+      {/* Trust signals */}
+      <div className="flex justify-center gap-8 mt-8">
+        <div className="flex flex-col items-center gap-1">
+          <Shield className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground">Sécurisé</span>
         </div>
-      </div>
-
-      <div className="px-4 pb-8 max-w-lg mx-auto space-y-5">
-        {/* Benefits - Compact */}
-        <motion.div 
-          className="grid grid-cols-2 gap-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          {benefits.map((b, i) => {
-            const Icon = b.icon;
-            return (
-              <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border">
-                <Icon className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-xs text-foreground leading-tight">{b.text}</span>
-              </div>
-            );
-          })}
-        </motion.div>
-
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          {isLoginMode ? (
-            <Card className="p-5 border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4">Connexion</h2>
-              <form onSubmit={handleLogin} className="space-y-3">
-                <div>
-                  <Label htmlFor="loginEmail" className="text-xs text-muted-foreground">Email</Label>
-                  <Input id="loginEmail" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required placeholder="votre@email.com" className="h-11 bg-input border-border" />
-                </div>
-                <div>
-                  <Label htmlFor="loginPassword" className="text-xs text-muted-foreground">Mot de passe</Label>
-                  <div className="relative">
-                    <Input id="loginPassword" type={showPassword ? "text" : "password"} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required placeholder="Votre mot de passe" className="h-11 pr-10 bg-input border-border" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" disabled={loading} className="w-full h-11">
-                  {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  Se connecter
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setIsLoginMode(false)} className="w-full text-sm text-muted-foreground">
-                  ← Créer un nouveau compte
-                </Button>
-              </form>
-            </Card>
-          ) : (
-            <Card className="p-5 border-border">
-              <h2 className="text-lg font-bold text-foreground mb-1">Créez votre compte</h2>
-              <p className="text-xs text-muted-foreground mb-4">Accès gratuit – toutes les fonctionnalités de base – aucun paiement requis</p>
-
-
-
-              <form onSubmit={handleRegister} className="space-y-3">
-                <div>
-                  <Label htmlFor="fullName" className="text-xs text-muted-foreground">Nom complet</Label>
-                  <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Jean Dupont" className="h-11 bg-input border-border" autoComplete="name" />
-                </div>
-                <div>
-                  <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="votre@email.com" className="h-11 bg-input border-border" autoComplete="email" />
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="text-xs text-muted-foreground">Téléphone</Label>
-                  <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="06 12 34 56 78" className="h-11 bg-input border-border" autoComplete="tel" />
-                </div>
-                <div>
-                  <Label htmlFor="password" className="text-xs text-muted-foreground">Mot de passe</Label>
-                  <div className="relative">
-                    <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="Minimum 6 caractères" className="h-11 pr-10 bg-input border-border" autoComplete="new-password" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground">Confirmer le mot de passe</Label>
-                  <div className="relative">
-                    <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} placeholder="Confirmez votre mot de passe" className="h-11 pr-10 bg-input border-border" autoComplete="new-password" />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={loading} className="w-full h-12 bg-success hover:bg-success/90 text-success-foreground font-semibold text-sm">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
-                  Créer mon compte gratuit
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                
-                <p className="text-[10px] text-center text-muted-foreground">
-                  En vous inscrivant, vous acceptez nos{" "}
-                  <a href="/terms-of-service" className="underline hover:text-foreground">conditions d'utilisation</a>
-                </p>
-
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                  <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">Déjà inscrit ?</span></div>
-                </div>
-
-                <Button type="button" variant="outline" onClick={() => setIsLoginMode(true)} className="w-full border-border text-muted-foreground">
-                  Se connecter
-                </Button>
-              </form>
-            </Card>
-          )}
-        </motion.div>
-
-        {/* Trust Signals */}
-        <div className="flex justify-center gap-6 text-center">
-          <div className="flex flex-col items-center gap-1">
-            <Shield className="w-5 h-5 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Données sécurisées</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <CheckCircle className="w-5 h-5 text-success" />
-            <span className="text-[10px] text-muted-foreground">Sans engagement</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <CheckCircle className="w-5 h-5 text-success" />
-            <span className="text-[10px] text-muted-foreground">Gratuit</span>
-          </div>
+        <div className="flex flex-col items-center gap-1">
+          <CheckCircle className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground">Sans engagement</span>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <CheckCircle className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground">100% gratuit</span>
         </div>
       </div>
     </div>
   );
-};
+}
+
+// Generic Field Step
+interface FieldStepProps {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  type?: string;
+  error?: string;
+  onNext: () => void;
+  autoComplete?: string;
+  autoFocus?: boolean;
+}
+
+function FieldStep({ icon: Icon, title, subtitle, value, onChange, placeholder, type = "text", error, onNext, autoComplete, autoFocus }: FieldStepProps) {
+  return (
+    <div className="flex-1 flex flex-col justify-center pb-16">
+      <div className="mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <Icon className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-1">{title}</h2>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        <Input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`h-14 text-lg bg-input border-border rounded-xl px-4 ${error ? 'border-destructive ring-1 ring-destructive/30' : ''}`}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onNext(); }}}
+        />
+        {error && (
+          <motion.p 
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs text-destructive pl-1"
+          >
+            {error}
+          </motion.p>
+        )}
+      </div>
+
+      <Button 
+        onClick={onNext}
+        className="w-full h-12 text-base font-semibold gap-2"
+        disabled={!value.trim()}
+      >
+        Continuer
+        <ChevronRight className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+// Password Step
+interface PasswordStepProps {
+  value: string;
+  onChange: (v: string) => void;
+  showPassword: boolean;
+  onToggleShow: () => void;
+  error?: string;
+  onNext: () => void;
+  loading: boolean;
+}
+
+function PasswordStep({ value, onChange, showPassword, onToggleShow, error, onNext, loading }: PasswordStepProps) {
+  const strength = value.length >= 8 ? (value.length >= 12 ? "Fort" : "Moyen") : value.length >= 6 ? "Faible" : "";
+  const strengthColor = strength === "Fort" ? "text-success" : strength === "Moyen" ? "text-secondary" : "text-destructive";
+
+  return (
+    <div className="flex-1 flex flex-col justify-center pb-16">
+      <div className="mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <Lock className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-1">Créez votre mot de passe</h2>
+        <p className="text-sm text-muted-foreground">Minimum 6 caractères pour sécuriser votre compte</p>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Votre mot de passe"
+            className={`h-14 text-lg bg-input border-border rounded-xl px-4 pr-12 ${error ? 'border-destructive ring-1 ring-destructive/30' : ''}`}
+            autoComplete="new-password"
+            autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onNext(); }}}
+          />
+          <button 
+            type="button" 
+            onClick={onToggleShow} 
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+        
+        {value && (
+          <div className="flex items-center justify-between px-1">
+            <div className="flex gap-1">
+              {[1, 2, 3].map(i => (
+                <div 
+                  key={i}
+                  className={`h-1 w-8 rounded-full transition-colors ${
+                    i === 1 ? (value.length >= 6 ? 'bg-destructive' : 'bg-muted') :
+                    i === 2 ? (value.length >= 8 ? 'bg-secondary' : 'bg-muted') :
+                    (value.length >= 12 ? 'bg-success' : 'bg-muted')
+                  }`}
+                />
+              ))}
+            </div>
+            {strength && <span className={`text-[10px] font-medium ${strengthColor}`}>{strength}</span>}
+          </div>
+        )}
+
+        {error && (
+          <motion.p 
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs text-destructive pl-1"
+          >
+            {error}
+          </motion.p>
+        )}
+      </div>
+
+      <Button 
+        onClick={onNext}
+        disabled={!value || loading}
+        className="w-full h-12 text-base font-semibold gap-2 bg-success hover:bg-success/90 text-success-foreground"
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            <Rocket className="w-5 h-5" />
+            Créer mon compte
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// Creating Step (loading animation)
+function CreatingStep() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center pb-16">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="text-center"
+      >
+        <div className="relative w-20 h-20 mx-auto mb-6">
+          <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+          <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-primary/10 flex items-center justify-center">
+            <Rocket className="w-7 h-7 text-primary" />
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-2">Création en cours...</h2>
+        <p className="text-sm text-muted-foreground">Nous préparons votre espace chauffeur</p>
+      </motion.div>
+    </div>
+  );
+}
 
 export default RegisterDriverPromoFree;
