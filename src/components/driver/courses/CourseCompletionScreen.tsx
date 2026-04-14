@@ -42,6 +42,11 @@ export function CourseCompletionScreen({
   const [linkSent, setLinkSent] = useState(false);
   const [localResult, setLocalResult] = useState(paymentResult);
 
+  // Sync with parent prop updates (e.g. from background finalization)
+  useEffect(() => {
+    setLocalResult(paymentResult);
+  }, [paymentResult]);
+
   const isCard = paymentMethod === "card" || paymentMethod === "stripe" || paymentMethod === "card_online";
   const isCash = !isCard;
   const isSuccess = localResult.success || localResult.alreadyPaid;
