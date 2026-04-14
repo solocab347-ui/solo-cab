@@ -9,6 +9,11 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CourseCompletionScreen } from '@/components/driver/courses/CourseCompletionScreen';
 import { RideChatPanel } from '@/components/chat/RideChatPanel';
+import {
+  getAcceptedDevis as getAcceptedCourseQuote,
+  getDriverStatusFromCourse as getDriverBusyStatus,
+  pickRelevantOperationalCourse,
+} from '@/lib/driverCourseLifecycle';
 
 interface ActiveCourse {
   id: string;
@@ -219,7 +224,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const candidates = (data ?? []) as unknown as ActiveCourse[];
     const nonDismissed = candidates.filter(c => !dismissedCourseIds.has(c.id));
     const todayOnly = nonDismissed.filter(isCourseTodayOrImmediate);
-    const newCourse = pickRelevantCourse(todayOnly);
+    const newCourse = pickRelevantOperationalCourse(todayOnly);
 
     const upcoming = todayOnly
       .filter(c => c.id !== newCourse?.id && c.scheduled_date)
@@ -234,8 +239,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
 
     const prev = course;
-    const prevBusyStatus = prev ? getDriverStatusFromCourse(prev) : null;
-    const nextBusyStatus = newCourse ? getDriverStatusFromCourse(newCourse) : null;
+    const prevBusyStatus = prev ? getDriverBusyStatus(prev) : null;
+    const nextBusyStatus = newCourse ? getDriverBusyStatus(newCourse) : null;
 
     setCourse(newCourse);
     onCourseActive?.(!!newCourse);
@@ -355,6 +360,15 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         .update({ status: 'in_progress', updated_at: new Date().toISOString() })
         .eq('id', course.id)
         .eq('driver_id', driverId); // Extra safety
+
+      await supabase
+        .from('drivers')
+        .update({
+          driver_status: 'in_ride',
+          is_available_now: false,
+        })
+        .eq('id', driverId);
+
       setPhase('in_progress');
       if (course) persistPhase(course.id, 'in_progress');
       toast.success('Course démarrée !');
@@ -384,7 +398,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     
     const currentPaymentMethod = course.payment_method || course.payment_method_requested || 'cash';
     const isCardPayment = currentPaymentMethod === 'card' || currentPaymentMethod === 'stripe' || currentPaymentMethod === 'card_online';
-    const courseAmount = course.final_payment_amount ?? course.guest_estimated_price ?? getAcceptedDevis(course)?.amount ?? 0;
+    const courseAmount = course.final_payment_amount ?? course.guest_estimated_price ?? getAcceptedCourseQuote(course)?.amount ?? 0;
     const courseClientName = course.clients?.profiles?.full_name || course.guest_name || 'Client';
     
     let paymentResult = { success: false, status: '', error: '', alreadyPaid: false };
@@ -457,7 +471,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course, driverId, onCourseChange, restoreAvailability]);
 
-  const acceptedDevis = course ? getAcceptedDevis(course) : null;
+  const acceptedDevis = course ? getAcceptedCourseQuote(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
   const clientPhone = course?.clients?.profiles?.phone || course?.guest_phone;
   const clientPhoneHref = clientPhone?.replace(/\s+/g, '');

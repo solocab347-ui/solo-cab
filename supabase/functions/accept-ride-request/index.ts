@@ -153,6 +153,15 @@ serve(async (req) => {
       .update({ final_course_id: course.id })
       .eq("id", ride_request_id);
 
+    await supabaseClient
+      .from("drivers")
+      .update({
+        driver_status: "assigned",
+        is_available_now: false,
+        last_location_update: new Date().toISOString(),
+      })
+      .eq("id", driver.id);
+
     logStep("Course created", { courseId: course.id });
 
     // Auto devis
