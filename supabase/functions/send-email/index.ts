@@ -762,7 +762,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { to, driver_id, type, data = {} }: EmailRequest = await req.json();
+    const { to, driver_id, type, data = {} }: EmailRequest = body;
     
     // Resolve recipient email: either provided directly or looked up from driver_id
     let resolvedTo = to;
