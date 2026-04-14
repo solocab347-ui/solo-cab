@@ -23,10 +23,10 @@ export interface DriverPremiumStatus {
 
 /**
  * Hook centralisé pour vérifier le statut premium d'un chauffeur.
- * Modèle freemium : gratuit par défaut, premium à 9,99€/mois.
+ * Modèle freemium : gratuit par défaut, premium à 19,99€/mois.
  * 
- * Features GRATUITES : gestion clients, courses, réservations, QR code, facturation
- * Features PREMIUM : partenariats, échange courses, promotions, prospection
+ * Features GRATUITES : gestion clients, courses, réservations, QR code, facturation, calculatrice
+ * Features PREMIUM : planning, objectifs, encaissement spontané, rentabilité, partenariats, échange courses, campagnes, prospection
  */
 export function useDriverPremium(): DriverPremiumStatus {
   const { user } = useAuth();
