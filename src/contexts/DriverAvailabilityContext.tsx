@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
+import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
 
 /**
  * Driver status state machine (SoloCab intelligent):
@@ -109,35 +110,43 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           (result) => Number(result.count || 0) > 0
         );
 
-        // Also check for accepted courses (assigned state should persist)
-        const { count: acceptedCount } = await supabase
+        const { data: activeCourses } = await supabase
           .from('courses')
-          .select('id', { count: 'exact', head: true })
+          .select('id, status, scheduled_date, created_at, updated_at, devis(status, accepted_at, created_at)')
           .eq('driver_id', driverId)
-          .eq('status', 'accepted');
+          .in('status', ['pending', 'accepted', 'in_progress'])
+          .order('updated_at', { ascending: false })
+          .limit(10);
 
-        if (!hasPendingIncoming && !acceptedCount) {
+        const reconciledBusyStatus = deriveDriverStatusFromCourses((activeCourses ?? []) as any[]);
+
+        if (!hasPendingIncoming && !reconciledBusyStatus) {
           nextStatus = 'online';
           await supabase
             .from('drivers')
             .update({ driver_status: nextStatus, is_available_now: true })
             .eq('id', driverId);
+        } else if (reconciledBusyStatus && reconciledBusyStatus !== nextStatus) {
+          nextStatus = reconciledBusyStatus;
+          await supabase
+            .from('drivers')
+            .update({
+              driver_status: nextStatus,
+              is_available_now: false,
+            })
+            .eq('id', driverId);
         }
       } else if (nextStatus === 'in_ride') {
         const { data: activeCourses } = await supabase
           .from('courses')
-          .select('id, status, devis(status)')
+          .select('id, status, scheduled_date, created_at, updated_at, devis(status, accepted_at, created_at)')
           .eq('driver_id', driverId)
           .in('status', ['accepted', 'in_progress'])
           .order('updated_at', { ascending: false })
           .limit(5);
 
         const courses = (activeCourses ?? []) as any[];
-        const hasInProgress = courses.some((course) => course.status === 'in_progress');
-        const hasAccepted = courses.some(
-          (course) => course.status === 'accepted' || (course.devis ?? []).some((quote: any) => quote.status === 'accepted')
-        );
-        const reconciledStatus = hasInProgress ? 'in_ride' : hasAccepted ? 'assigned' : 'online';
+        const reconciledStatus = deriveDriverStatusFromCourses(courses) ?? 'online';
 
         if (reconciledStatus !== nextStatus) {
           nextStatus = reconciledStatus;
@@ -178,6 +187,18 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
               setDriverStatus(newData.driver_status);
             }
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'courses',
+          filter: `driver_id=eq.${driverId}`,
+        },
+        () => {
+          fetchStatus();
         }
       )
       .subscribe();

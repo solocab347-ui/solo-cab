@@ -14,6 +14,56 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[FINALIZE-COURSE-PAYMENT] ${step}${detailsStr}`);
 };
 
+const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; status?: string | null }) => {
+  if (course.status === "in_progress") return true;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  const scheduledDate = course.scheduled_date ? new Date(course.scheduled_date) : null;
+
+  if (scheduledDate && scheduledDate < todayStart) return false;
+
+  return !scheduledDate || scheduledDate < todayEnd;
+};
+
+const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<typeof createClient>, driverId: string) => {
+  const { data: activeCourses, error } = await supabaseClient
+    .from("courses")
+    .select("status, scheduled_date")
+    .eq("driver_id", driverId)
+    .in("status", ["accepted", "in_progress"])
+    .order("updated_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    logStep("Driver sync skipped: active course lookup failed", { driverId, error: error.message });
+    return;
+  }
+
+  const relevantCourses = (activeCourses || []).filter(isRelevantOperationalCourse);
+  const nextStatus = relevantCourses.some((course) => course.status === "in_progress")
+    ? "in_ride"
+    : relevantCourses.some((course) => course.status === "accepted")
+      ? "assigned"
+      : "online";
+
+  await supabaseClient
+    .from("drivers")
+    .update({
+      driver_status: nextStatus,
+      is_available_now: nextStatus === "online",
+      ...(nextStatus === "online" ? { last_location_update: new Date().toISOString() } : {}),
+    })
+    .eq("id", driverId);
+
+  logStep("Driver status synchronized after course finalization", {
+    driverId,
+    nextStatus,
+    relevantCourseCount: relevantCourses.length,
+  });
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -92,6 +142,8 @@ serve(async (req) => {
         } catch (e) {
           logStep("Facture creation failed (non-blocking)", { error: String(e) });
         }
+
+          await syncDriverStatusAfterFinalization(supabaseClient, lockResult.driver_id || course_id);
       }
 
       return new Response(
@@ -246,6 +298,8 @@ serve(async (req) => {
             });
           }
 
+          await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
+
           return new Response(
             JSON.stringify({
               success: true,
@@ -277,6 +331,8 @@ serve(async (req) => {
               payment_captured_at: new Date().toISOString(),
             })
             .eq("id", course_id);
+
+          await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
 
           return new Response(
             JSON.stringify({ success: true, already_paid: true, message: "Paiement déjà capturé" }),
@@ -383,6 +439,8 @@ serve(async (req) => {
             });
           }
 
+          await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
+
           return new Response(
             JSON.stringify({
               success: true, status: "succeeded", flow: "orphaned_pi_recovery",
@@ -470,6 +528,8 @@ serve(async (req) => {
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
+
+      await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
 
       return new Response(
         JSON.stringify({
@@ -600,6 +660,8 @@ serve(async (req) => {
           type: "info",
         });
       }
+
+      await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
 
       return new Response(
         JSON.stringify({

@@ -195,14 +195,8 @@ export function IncomingCourseOverlay({
           stopCurrentPlayback();
           if (navigator.vibrate) navigator.vibrate(0);
           
-          // Show message for 4 seconds then restore status
+          // Show message for 4 seconds then dismiss
           setTimeout(async () => {
-            if (driverId) {
-              const { data: d } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
-              if (!d?.driver_status || d.driver_status === 'assigned') {
-                await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
-              }
-            }
             onDismiss();
           }, 4000);
         }
@@ -245,17 +239,10 @@ export function IncomingCourseOverlay({
     if (!course || !driverId) { setTimeLeft(TIMEOUT_SECONDS); return; }
     setTimeLeft(TIMEOUT_SECONDS);
     setTakenByOther(false);
-    supabase.from('drivers').update({ driver_status: 'assigned', is_available_now: false }).eq('id', driverId).then(() => {
-      console.log('[IncomingCourseOverlay] Driver set to accepting');
-    });
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          // Timeout: restore to online (not offline!)
-          if (driverId) {
-            supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
-          }
           onDismiss();
           return 0;
         }
@@ -326,18 +313,19 @@ export function IncomingCourseOverlay({
           if (data?.already_taken) toast.error('Cette course a déjà été prise par un autre chauffeur');
           else if (data?.expired) toast.error('Cette demande a expiré');
           else toast.error(data?.error || "Erreur lors de l'acceptation");
-          await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
           onDismiss();
           return;
         }
         toast.success('Course acceptée !');
       }
-      await supabase.from('drivers').update({ driver_status: 'in_ride', is_available_now: false }).eq('id', driverId);
+      await supabase.from('drivers').update({
+        driver_status: 'assigned',
+        is_available_now: false,
+      }).eq('id', driverId);
       onAccepted();
     } catch (err: any) {
       console.error('Error accepting course:', err);
       toast.error(err.message || "Erreur lors de l'acceptation");
-      if (driverId) await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
     } finally {
       setAccepting(false);
     }
@@ -347,20 +335,11 @@ export function IncomingCourseOverlay({
     if (audioRef.current) clearInterval(audioRef.current);
     stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
-    if (driverId) {
-      // Only restore to online if driver is currently in 'assigned' state
-      // Don't override in_ride or other active states
-      const { data: currentDriver } = await supabase.from('drivers').select('driver_status').eq('id', driverId).maybeSingle();
-      const currentStatus = currentDriver?.driver_status;
-      if (!currentStatus || currentStatus === 'assigned') {
-        await supabase.from('drivers').update({ driver_status: 'online', is_available_now: true }).eq('id', driverId);
-      }
-    }
     if (course?.source === 'ride_request' && course.sourceId) {
       try { await supabase.from('ride_requests').update({ status: 'rejected' }).eq('id', course.sourceId); } catch (err) { console.error('Error rejecting ride request:', err); }
     }
     onDismiss();
-  }, [course, driverId, onDismiss]);
+  }, [course, onDismiss]);
 
   const isExclusive = course?.requestType === 'exclusive';
   const isMulti = course?.requestType === 'multi';
