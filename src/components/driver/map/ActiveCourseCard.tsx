@@ -322,6 +322,23 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
   }, [course?.distance_km]);
 
+  // Fetch ride_request_id for in-app chat
+  useEffect(() => {
+    if (!course?.id) {
+      setRideRequestId(null);
+      return;
+    }
+    supabase
+      .from('ride_requests')
+      .select('id')
+      .eq('final_course_id', course.id)
+      .limit(1)
+      .then(({ data }) => {
+        setRideRequestId(data?.[0]?.id || null);
+      });
+  }, [course?.id]);
+
+
   const handleArrived = useCallback(async () => {
     const next: CoursePhase = 'arrived';
     setPhase(next);
