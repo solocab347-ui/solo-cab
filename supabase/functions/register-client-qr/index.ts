@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
     await serviceClient
       .from('qr_codes')
       .update({ scans_count: (qrCode.scans_count || 0) + 1 })
-      .eq('id', qr_code_id);
+      .eq('id', qrCode.id);
 
     // Envoyer l'email de bienvenue au client AVEC RETRY
     try {
