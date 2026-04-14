@@ -67,20 +67,12 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     toast.success("Votre abonnement Pioneer est préservé ! 🏆");
   };
 
-  // NOUVEAU: Calcul synchrone du statut d'accès (évite le flickering)
+  // CALCUL SYNCHRONE du statut d'accès — modèle FREEMIUM (pas de trial)
   const calculateAccessStatus = () => {
     const driver = driverProfile?.driver;
-    if (!driver) return { hasFullAccess: false, isInTrialPeriod: false, trialDaysLeft: 0 };
+    if (!driver) return { hasFullAccess: false, hasAdminFreeAccess: false };
 
     const now = new Date();
-    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
-    
-    // Période d'essai de 14 jours pour tous les nouveaux inscrits (non-pionniers)
-    const trialPeriodEnd = createdAt ? new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) : null;
-    const isInTrialPeriod = trialPeriodEnd ? now < trialPeriodEnd : false;
-    const trialDaysLeft = trialPeriodEnd ? Math.max(0, Math.ceil((trialPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
-    const trialEndDate = trialPeriodEnd;
-
     const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
     const isPioneerTrialActive = driver.is_pioneer && 
       driver.free_access_type === "trial" && 
@@ -90,20 +82,20 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     // Accès gratuit accordé par admin (illimité ou avec période)
     const freeAccessWithPeriod = freeAccessEndDate && 
       freeAccessEndDate > now && 
-      driver.free_access_type !== "trial"; // Exclure les trials pioneers
+      driver.free_access_type !== "trial";
     
     const hasAdminFreeAccess = driver.free_access_granted === true || 
       driver.free_access_type === "unlimited" ||
+      driver.free_access_type === "administrative" ||
       freeAccessWithPeriod;
 
     const hasFullAccess = 
       driver.subscription_status === "active" ||
       driver.subscription_paid === true ||
-      (isInTrialPeriod && !driver.is_pioneer) || // Essai 14 jours pour non-pionniers
       isPioneerTrialActive ||
       hasAdminFreeAccess;
 
-    return { hasFullAccess, isInTrialPeriod, trialDaysLeft, trialEndDate, hasAdminFreeAccess };
+    return { hasFullAccess, hasAdminFreeAccess };
   };
 
   const localAccessStatus = calculateAccessStatus();
