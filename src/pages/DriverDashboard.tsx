@@ -117,6 +117,7 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [viewMode, setViewMode] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
     if (viewParam === "dashboard") return "dashboard";
