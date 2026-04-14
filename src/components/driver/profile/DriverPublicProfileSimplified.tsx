@@ -215,6 +215,21 @@ export const DriverPublicProfileSimplified = memo(({
 
         {/* Tab Identité - includes public profile link */}
         <TabsContent value="identity" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          {/* Lien profil public */}
+          {driverId && (
+            <Card className="p-3 sm:p-4 bg-primary/10 border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary font-medium">Profil public actif</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input value={publicProfileUrl} readOnly className="flex-1 text-xs h-8 bg-background/50" />
+                <Button variant="secondary" size="sm" onClick={handleCopyLink} className="gap-1 shrink-0 h-8">
+                  {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </Card>
+          )}
           {/* Photo unique - utilisée partout (profil et carte) */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
             <SingleProfilePhotoUpload
