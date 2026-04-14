@@ -334,38 +334,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Trial Period Alert - 14 jours pour nouveaux inscrits non-pionniers */}
-      {isInTrialPeriod && !isPioneer && (
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500">
-          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" />
-            <div className="flex-1 w-full">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-bold text-base sm:text-lg text-blue-600 dark:text-blue-400">
-                  🎉 Période d'Essai Gratuit
-                </h3>
-                <Badge className="bg-blue-500 text-white">
-                  {trialDaysLeft} jour{trialDaysLeft > 1 ? "s" : ""} restant{trialDaysLeft > 1 ? "s" : ""}
-                </Badge>
-              </div>
-              <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-                <p>
-                  Profitez de <strong>14 jours d'accès complet gratuit</strong> pour découvrir toutes les fonctionnalités de SoloCab.
-                </p>
-                {trialEndDate && (
-                  <p>
-                    <span className="font-medium">Fin de l'essai :</span>{" "}
-                    {format(new Date(trialEndDate), "d MMMM yyyy", { locale: fr })}
-                  </p>
-                )}
-                <p className="pt-2 text-blue-600 dark:text-blue-400 font-medium">
-                  💡 À la fin de l'essai : seulement 19,99€/mois pour continuer
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
+      {/* Trial info removed - freemium model, no trial period display */}
 
       {/* Admin Free Access Alert - Only for admin-granted free access (not trial) */}
       {hasAdminFreeAccess && !isPioneer && (
