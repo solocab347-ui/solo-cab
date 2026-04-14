@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search } from "lucide-react";
+import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search, ShieldAlert } from "lucide-react";
 import AdminFinanceKPIs from "../finance/AdminFinanceKPIs";
 import AdminWeeklySummary from "../finance/AdminWeeklySummary";
 import AdminDriversFinanceTable from "../finance/AdminDriversFinanceTable";
@@ -11,8 +11,9 @@ import AdminFinanceCharts from "../finance/AdminFinanceCharts";
 import AdminPeriodSummary from "../finance/AdminPeriodSummary";
 import AdminStripePayments from "../finance/AdminStripePayments";
 import AdminGlobalSearch from "../AdminGlobalSearch";
+import AdminStripeAnomalies from "../finance/AdminStripeAnomalies";
 
-type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "search";
+type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "anomalies" | "search";
 type Preset = "week" | "month" | "year" | "custom";
 
 const getPresetDates = (preset: Preset): { start: string; end: string } => {
@@ -75,6 +76,7 @@ const AdminFinancesHub = () => {
     { id: "dashboard" as Tab, label: "Dashboard", icon: LayoutDashboard },
     { id: "drivers" as Tab, label: "Chauffeurs", icon: Users },
     { id: "stripe" as Tab, label: "Stripe", icon: CreditCard },
+    { id: "anomalies" as Tab, label: "Anomalies", icon: ShieldAlert },
     { id: "audit" as Tab, label: "Audit", icon: FileSearch },
     { id: "charts" as Tab, label: "Graphiques", icon: BarChart3 },
     { id: "search" as Tab, label: "Recherche", icon: Search },
@@ -171,6 +173,7 @@ const AdminFinancesHub = () => {
       {activeTab === "audit" && <AdminPaymentAudit />}
       {activeTab === "charts" && <AdminFinanceCharts />}
       {activeTab === "stripe" && <AdminStripePayments />}
+      {activeTab === "anomalies" && <AdminStripeAnomalies />}
       {activeTab === "search" && <AdminGlobalSearch />}
     </div>
   );
