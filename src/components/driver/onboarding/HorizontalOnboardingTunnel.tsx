@@ -75,29 +75,26 @@ export function HorizontalOnboardingTunnel({
     ? ALL_STEPS.filter(step => step.id !== 'nfc')
     : ALL_STEPS;
 
-  // Reprendre là où le chauffeur s'est arrêté
-  const [currentStep, setCurrentStep] = useState(initialStep);
-  const [direction, setDirection] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Mettre à jour last_seen_at à chaque connexion au tunnel (sans reset de l'étape)
-  useEffect(() => {
-    const updateLastSeen = async () => {
-      try {
-        await supabase
-          .from('drivers')
-          .update({ last_seen_at: new Date().toISOString() })
-          .eq('id', driverId);
-      } catch (error) {
-        console.error('Erreur mise à jour last_seen_at:', error);
-      }
-    };
-    updateLastSeen();
-  }, [driverId]);
-  
-  const [stepData, setStepData] = useState({
+  const draftStorageKey = `solocab_onboarding_draft_${driverId}`;
+
+  const readStoredDraft = () => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const rawDraft = window.localStorage.getItem(draftStorageKey);
+      return rawDraft ? JSON.parse(rawDraft) : null;
+    } catch (error) {
+      console.error('Erreur lecture brouillon onboarding local:', error);
+      return null;
+    }
+  };
+
+  const storedDraftRef = useRef<any>(null);
+  if (storedDraftRef.current === null) {
+    storedDraftRef.current = readStoredDraft();
+  }
+
+  const defaultStepData = {
     settings: {
       baseFare: driverProfile?.driver?.base_fare?.toString() || '',
       perKmRate: driverProfile?.driver?.per_km_rate?.toString() || '',
@@ -137,7 +134,63 @@ export function HorizontalOnboardingTunnel({
       hasNfcPlate,
       wantsNfcPlate: false,
     }
+  };
+
+  const mergeDraftWithDefaults = (draftStepData: any) => ({
+    ...defaultStepData,
+    ...draftStepData,
+    settings: {
+      ...defaultStepData.settings,
+      ...(draftStepData?.settings || {}),
+    },
+    profile: {
+      ...defaultStepData.profile,
+      ...(draftStepData?.profile || {}),
+    },
+    documents: {
+      ...defaultStepData.documents,
+      ...(draftStepData?.documents || {}),
+    },
+    billing: {
+      ...defaultStepData.billing,
+      ...(draftStepData?.billing || {}),
+    },
+    nfc: {
+      ...defaultStepData.nfc,
+      ...(draftStepData?.nfc || {}),
+    },
   });
+
+  // Reprendre là où le chauffeur s'est arrêté
+  const [currentStep, setCurrentStep] = useState(() => {
+    const storedStep = storedDraftRef.current?.currentStep;
+    return typeof storedStep === 'number' && storedStep >= 0 && storedStep < STEPS.length
+      ? storedStep
+      : initialStep;
+  });
+  const [direction, setDirection] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasMountedStepSaveRef = useRef(false);
+  const autoSaveIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Mettre à jour last_seen_at à chaque connexion au tunnel (sans reset de l'étape)
+  useEffect(() => {
+    const updateLastSeen = async () => {
+      try {
+        await supabase
+          .from('drivers')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('id', driverId);
+      } catch (error) {
+        console.error('Erreur mise à jour last_seen_at:', error);
+      }
+    };
+    updateLastSeen();
+  }, [driverId]);
+  
+  const [stepData, setStepData] = useState(() => mergeDraftWithDefaults(storedDraftRef.current?.stepData));
 
   // Calculer les étapes complétées basées sur l'étape sauvegardée et les données réelles
   const getCompletedStepsFromSavedStep = () => {
@@ -176,6 +229,75 @@ export function HorizontalOnboardingTunnel({
   const [completedSteps, setCompletedSteps] = useState(getCompletedStepsFromSavedStep);
 
   const { autoSave, saveImmediately } = useOnboardingAutoSave(driverId, userId, currentStep);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify({
+        currentStep,
+        stepData,
+        updatedAt: new Date().toISOString(),
+      }));
+    } catch (error) {
+      console.error('Erreur sauvegarde brouillon onboarding local:', error);
+    }
+  }, [currentStep, stepData, draftStorageKey]);
+
+  useEffect(() => {
+    const currentStepId = STEPS[currentStep]?.id;
+    if (currentStepId !== 'settings' && currentStepId !== 'profile') {
+      setAutoSaveStatus('idle');
+      if (autoSaveIndicatorTimeoutRef.current) {
+        clearTimeout(autoSaveIndicatorTimeoutRef.current);
+        autoSaveIndicatorTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    setAutoSaveStatus('saving');
+    autoSave(stepData, currentStepId);
+
+    if (autoSaveIndicatorTimeoutRef.current) {
+      clearTimeout(autoSaveIndicatorTimeoutRef.current);
+    }
+
+    autoSaveIndicatorTimeoutRef.current = setTimeout(() => {
+      setAutoSaveStatus('saved');
+      autoSaveIndicatorTimeoutRef.current = setTimeout(() => {
+        setAutoSaveStatus('idle');
+        autoSaveIndicatorTimeoutRef.current = null;
+      }, 2000);
+    }, 2500);
+
+    return () => {
+      if (autoSaveIndicatorTimeoutRef.current) {
+        clearTimeout(autoSaveIndicatorTimeoutRef.current);
+        autoSaveIndicatorTimeoutRef.current = null;
+      }
+    };
+  }, [currentStep, stepData, STEPS, autoSave]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentStepId = STEPS[currentStep]?.id;
+
+      if (currentStepId === 'settings' || currentStepId === 'profile') {
+        saveImmediately(stepData, currentStepId);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(draftStorageKey, JSON.stringify({
+          currentStep,
+          stepData,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentStep, draftStorageKey, saveImmediately, stepData, STEPS]);
   
   // Sauvegarder l'étape courante dans la base à chaque changement
   const saveCurrentStep = useCallback(async (stepId: string) => {
@@ -193,10 +315,20 @@ export function HorizontalOnboardingTunnel({
   // Sauvegarder à chaque changement d'étape
   useEffect(() => {
     const currentStepId = STEPS[currentStep]?.id;
-    if (currentStepId) {
-      saveCurrentStep(currentStepId);
+    if (!currentStepId) return;
+
+    if (!hasMountedStepSaveRef.current) {
+      hasMountedStepSaveRef.current = true;
+
+      if (storedDraftRef.current?.currentStep !== undefined && storedDraftRef.current.currentStep !== initialStep) {
+        saveCurrentStep(currentStepId);
+      }
+
+      return;
     }
-  }, [currentStep, STEPS, saveCurrentStep]);
+
+    saveCurrentStep(currentStepId);
+  }, [currentStep, initialStep, STEPS, saveCurrentStep]);
 
   // Handle swipe gestures
   const handleDragEnd = useCallback((event: any, info: PanInfo) => {
@@ -441,6 +573,7 @@ export function HorizontalOnboardingTunnel({
         .eq('id', driverId);
 
       if (error) throw error;
+      window.localStorage.removeItem(draftStorageKey);
       toast.success('🎉 Bienvenue sur SoloCab !');
       onComplete();
     } catch (error: any) {
