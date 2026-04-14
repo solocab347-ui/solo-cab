@@ -31,7 +31,7 @@ import {
   Flame,
   Minus,
   Settings,
-  Compass,
+  Wallet,
   Wallet,
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
