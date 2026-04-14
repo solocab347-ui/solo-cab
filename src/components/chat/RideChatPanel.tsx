@@ -91,24 +91,26 @@ export function RideChatPanel({
 
   return (
     <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="relative gap-2 border-primary/30 hover:bg-primary/10"
-        >
-          <MessageCircle className="h-4 w-4" />
-          {triggerLabel}
-          {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] animate-pulse"
-            >
-              {unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </SheetTrigger>
+      {!isControlled && (
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative gap-2 border-primary/30 hover:bg-primary/10"
+          >
+            <MessageCircle className="h-4 w-4" />
+            {triggerLabel}
+            {unreadCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] animate-pulse"
+              >
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
+      )}
 
       <SheetContent
         side="bottom"
