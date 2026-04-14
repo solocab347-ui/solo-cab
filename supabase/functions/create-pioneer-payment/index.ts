@@ -129,7 +129,7 @@ serve(async (req) => {
       }
     }
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
 
     // Create checkout session WITHOUT trial (immediate payment for pioneers after 30 days)
     const session = await stripe.checkout.sessions.create({

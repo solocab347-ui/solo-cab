@@ -44,7 +44,7 @@ serve(async (req) => {
 
     let subject: string;
     let html: string;
-    const dashboardUrl = "https://solo-cab-to-lovable.lovable.app/driver-dashboard?tab=subscription";
+    const dashboardUrl = "https://solocab.fr/driver-dashboard?tab=subscription";
 
     if (reminder_type === "past_due") {
       // Adapter le message selon le nombre de tentatives

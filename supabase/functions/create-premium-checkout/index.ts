@@ -64,7 +64,7 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

@@ -102,7 +102,7 @@ serve(async (req) => {
       .eq("id", sharedCourse.course.client_id)
       .single();
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
 
     // Create a Stripe Checkout session with payment going to receiver's Connect account
     const session = await stripe.checkout.sessions.create({
