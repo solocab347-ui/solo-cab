@@ -45,6 +45,11 @@ export function SimplifiedOnboardingTunnel({
   const [direction, setDirection] = useState(0);
 
   // Profile state
+  // Profile state
+  const profileName = driverProfile?.profile?.full_name || '';
+  const nameParts = profileName.split(' ');
+  const [firstName, setFirstName] = useState(nameParts[0] || '');
+  const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') || '');
   const [companyName, setCompanyName] = useState(driverProfile?.driver?.company_name || '');
   const [siret, setSiret] = useState(driverProfile?.driver?.siret || '');
   const [companyAddress, setCompanyAddress] = useState(driverProfile?.driver?.company_address || '');
@@ -131,12 +136,16 @@ export function SimplifiedOnboardingTunnel({
 
   // Save handlers
   const saveProfile = async () => {
-    if (!companyName || !siret || siret.length !== 14 || !companyAddress) {
+    if (!firstName || !lastName || !companyName || !siret || siret.length !== 14 || !companyAddress) {
       toast.error('Veuillez remplir tous les champs correctement');
       return;
     }
     setSavingProfile(true);
     try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      // Update profile name
+      await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
+      // Update driver info
       const { error } = await supabase.from('drivers').update({
         company_name: companyName, siret, company_address: companyAddress,
       }).eq('id', driverId);
@@ -241,7 +250,7 @@ export function SimplifiedOnboardingTunnel({
   };
 
   // Computed
-  const isProfileComplete = companyName && siret.length === 14 && companyAddress;
+  const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
   const isVehicleComplete = vehicleBrand && vehicleModel && vehicleColor;
   const isPricingComplete = baseFare && perKmRate;
   const isDocsSubmitted = documentsStatus === 'submitted' || documentsStatus === 'validated';
@@ -349,7 +358,9 @@ export function SimplifiedOnboardingTunnel({
           >
             {currentStep === 0 && (
               <ProfileStep
+                firstName={firstName} lastName={lastName}
                 companyName={companyName} siret={siret} companyAddress={companyAddress}
+                onFirstNameChange={setFirstName} onLastNameChange={setLastName}
                 onCompanyNameChange={setCompanyName} onSiretChange={setSiret} onCompanyAddressChange={setCompanyAddress}
               />
             )}
