@@ -187,7 +187,7 @@ serve(async (req) => {
     });
 
     // Construire le lien de suivi — utiliser SITE_URL ou fallback sur le domaine publié
-    const siteUrl = Deno.env.get("SITE_URL") || "https://solo-cab-to-lovable.lovable.app";
+    const siteUrl = Deno.env.get("SITE_URL") || "https://solocab.fr";
     const trackingUrl = `${siteUrl}/reservation-suivi/${course.guest_tracking_token}`;
 
     console.log(`📧 Envoi email de suivi à ${course.guest_email} pour course ${course_id}`);

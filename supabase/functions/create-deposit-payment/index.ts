@@ -116,7 +116,7 @@ serve(async (req) => {
     const depositAmountCents = Math.round(depositAmount * 100);
     const remainingAmount = totalAmount - depositAmount;
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
 
     logStep("Creating deposit payment", { 
       totalAmount, 

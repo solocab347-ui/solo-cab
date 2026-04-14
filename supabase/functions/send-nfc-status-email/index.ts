@@ -53,7 +53,7 @@ serve(async (req) => {
     logStep("Order found", { order_number: order.order_number, email: order.email });
 
     // Générer le lien de suivi
-    const baseUrl = Deno.env.get("SITE_URL") || "https://solo-cab-to-lovable.lovable.app";
+    const baseUrl = Deno.env.get("SITE_URL") || "https://solocab.fr";
     const trackingLink = `${baseUrl}/suivi-plaque-nfc?token=${order.tracking_token}`;
 
     // Préparer le contenu de l'email selon le statut
@@ -197,7 +197,7 @@ serve(async (req) => {
             ` : ''}
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://solo-cab-to-lovable.lovable.app/driver-dashboard" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              <a href="https://solocab.fr/driver-dashboard" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                 Accéder à mon tableau de bord
               </a>
             </div>

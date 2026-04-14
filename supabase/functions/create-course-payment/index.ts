@@ -85,7 +85,7 @@ serve(async (req) => {
     }
 
     const amountCents = Math.round(amount * 100);
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
 
     // =============================================
     // STRIPE CUSTOMER MANAGEMENT

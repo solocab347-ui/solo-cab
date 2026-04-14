@@ -36,7 +36,7 @@ serve(async (req) => {
       throw new Error("No Stripe customer found");
     }
 
-    const origin = req.headers.get("origin") || "https://solo-cab-to-lovable.lovable.app";
+    const origin = req.headers.get("origin") || "https://solocab.fr";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/driver-dashboard`,
