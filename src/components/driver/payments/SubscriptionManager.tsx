@@ -614,7 +614,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           </div>
 
           {/* Bouton d'action - Souscrire */}
-          {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
+          {!isActive && !hasAdminFreeAccess && !isPioneer && (
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
@@ -654,7 +654,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       />
 
       {/* Comparison - Updated for pioneers */}
-      {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && !isPioneer && (
+      {!isActive && !hasAdminFreeAccess && !isPioneer && (
         <Card className="p-3 sm:p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 overflow-hidden">
           <h4 className="font-bold text-sm sm:text-lg text-foreground mb-2 sm:mb-4 text-center sm:text-left">
             💰 Modèle Freemium — Aucune commission
