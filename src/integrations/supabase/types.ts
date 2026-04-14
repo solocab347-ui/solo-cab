@@ -21275,7 +21275,12 @@ export type Database = {
       }
       gettransactionid: { Args: never; Returns: unknown }
       guest_submit_rating: {
-        Args: { _rating: number; _token: string }
+        Args: {
+          _rating: number
+          _reason?: string
+          _reason_detail?: string
+          _token: string
+        }
         Returns: boolean
       }
       has_role:
