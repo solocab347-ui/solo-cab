@@ -306,7 +306,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
               <div>
                 <h3 className="text-sm sm:text-base lg:text-xl font-bold text-foreground">Partenaires</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground/70 hidden sm:block">
-                  {isFree ? "9,99€/mois" : "Réseau de partage"}
+                  {isFree ? "19,99€/mois" : "Réseau de partage"}
                 </p>
               </div>
             </div>

@@ -12,8 +12,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-DRIVER-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Premium product ID
-const PREMIUM_PRODUCT_ID = "prod_UCdaZkBtD9tnjV";
+// Premium product IDs (new products)
+const PREMIUM_PRODUCT_IDS = [
+  "prod_UIyvxaQ5c7vZSH", // SoloCab Premium - Mensuel (19.99€/mois)
+  "prod_UIyvQp5D4JWxP5", // SoloCab Premium - Annuel (191.90€/an)
+  "prod_UCdaZkBtD9tnjV", // Legacy SoloCab Premium
+];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -68,7 +72,7 @@ serve(async (req) => {
     // ========================================
     // MODÈLE FREEMIUM:
     // Tous les chauffeurs ont un accès gratuit de base.
-    // Le premium (9,99€/mois) débloque des fonctionnalités avancées.
+    // Le premium (19,99€/mois) débloque des fonctionnalités avancées.
     // ========================================
 
     // Admin unlimited/administrative access = premium tier
