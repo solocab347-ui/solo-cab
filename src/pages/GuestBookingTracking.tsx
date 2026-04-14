@@ -148,34 +148,26 @@ const GuestBookingTracking = () => {
 
   const checkDriverPaymentAndStatus = async (bookingData: BookingInfo) => {
     try {
-      // Check if driver uses Stripe via the course's driver_id
-      const { data: courseData } = await supabase
-        .from('courses')
-        .select('driver_id, payment_status')
-        .eq('id', bookingData.id)
-        .single();
-
-      if (!courseData) return;
-
-      setPaymentStatus(courseData.payment_status);
-
-      const usesStripe = await checkDriverStripeStatus(courseData.driver_id);
-      setDriverUsesStripe(usesStripe);
-
-      // Check facture payment status
-      if (bookingData.status === 'completed') {
-        const { data: facture } = await supabase
-          .from('factures')
-          .select('payment_status, stripe_payment_id')
-          .eq('course_id', bookingData.id)
-          .maybeSingle();
-
-        if (facture?.payment_status === 'paid') {
+      // Use RPC to get payment info securely (no direct courses query for anon)
+      const { data: paymentInfo } = await supabase
+        .rpc('get_guest_course_payment_info' as any, { _token: token });
+      
+      if (paymentInfo && paymentInfo.length > 0) {
+        const info = paymentInfo[0];
+        setPaymentStatus(info.payment_status || null);
+        
+        if (info.driver_id) {
+          const usesStripe = await checkDriverStripeStatus(info.driver_id);
+          setDriverUsesStripe(usesStripe);
+        }
+        
+        if (info.facture_payment_status === 'paid') {
           setPaymentStatus('paid');
         }
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
+      // Fallback: use what we have from the booking data
     }
   };
 
@@ -219,15 +211,18 @@ const GuestBookingTracking = () => {
   };
 
   const handleSubmitRating = async () => {
-    if (!booking || rating === 0) return;
+    if (!booking || rating === 0 || !token) return;
     setIsSubmittingRating(true);
     try {
+      // Use RPC for guest rating (anon can't update courses directly)
       const { error } = await supabase
-        .from('courses')
-        .update({ client_rating: rating })
-        .eq('id', booking.id);
+        .rpc('guest_submit_rating' as any, { 
+          _token: token, 
+          _rating: rating 
+        });
       if (error) throw error;
       setRatingSubmitted(true);
+      setBooking(prev => prev ? { ...prev, client_rating: rating } : null);
       toast.success('Merci pour votre note !');
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');

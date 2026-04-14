@@ -519,12 +519,11 @@ export function UnifiedBookingPage() {
             onAccepted={(driverName, courseId) => {
               localStorage.removeItem('solocab_active_ride');
               toast.success(`${driverName} a accepté votre course ! 🎉`);
-              // Redirect to tracking page after a brief delay for UX
-              setTimeout(async () => {
+              // Navigate immediately - the 3D carousel already provided 3s of animation
+              const doNavigation = async () => {
                 // For guests (not authenticated), use the guest tracking page
                 if (!user && courseId) {
                   try {
-                    // Fetch the tracking token via RPC to avoid RLS issues
                     const { data: tokenData } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: courseId });
                     if (tokenData) {
                       navigate(`/reservation-suivi/${tokenData}`);
@@ -540,36 +539,33 @@ export function UnifiedBookingPage() {
                 } else {
                   // Fallback: poll ride_requests for course_id
                   const groupId = waitingGroupId || waitingRequestId;
-                  const poll = async () => {
-                    for (let i = 0; i < 10; i++) {
-                      const { data } = await supabase
-                        .from('ride_requests')
-                        .select('final_course_id')
-                        .eq('request_group_id', groupId)
-                        .eq('status', 'accepted')
-                        .not('final_course_id', 'is', null)
-                        .limit(1)
-                        .single();
-                      if (data?.final_course_id) {
-                        // For guests, try to get tracking token
-                        if (!user) {
-                          try {
-                            const { data: tk } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: data.final_course_id });
-                            if (tk) { navigate(`/reservation-suivi/${tk}`); return; }
-                          } catch (e) { console.error(e); }
-                        }
-                        navigate(`/suivi-course/${data.final_course_id}`);
-                        return;
+                  for (let i = 0; i < 10; i++) {
+                    const { data } = await supabase
+                      .from('ride_requests')
+                      .select('final_course_id')
+                      .eq('request_group_id', groupId)
+                      .eq('status', 'accepted')
+                      .not('final_course_id', 'is', null)
+                      .limit(1)
+                      .single();
+                    if (data?.final_course_id) {
+                      if (!user) {
+                        try {
+                          const { data: tk } = await supabase.rpc('get_guest_tracking_token' as any, { _course_id: data.final_course_id });
+                          if (tk) { navigate(`/reservation-suivi/${tk}`); return; }
+                        } catch (e) { console.error(e); }
                       }
-                      await new Promise(r => setTimeout(r, 1000));
+                      navigate(`/suivi-course/${data.final_course_id}`);
+                      return;
                     }
-                    // Ultimate fallback
-                    if (user) navigate('/client-dashboard');
-                    else navigate('/');
-                  };
-                  poll();
+                    await new Promise(r => setTimeout(r, 800));
+                  }
+                  if (user) navigate('/client-dashboard');
+                  else navigate('/');
                 }
-              }, 2000);
+              };
+              // Small delay for the toast to be visible
+              setTimeout(doNavigation, 500);
             }}
             onExpired={() => { localStorage.removeItem('solocab_active_ride'); toast.error('Aucun chauffeur disponible.'); setShowWaitingScreen(false); }}
           />

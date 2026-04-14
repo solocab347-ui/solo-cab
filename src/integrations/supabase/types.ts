@@ -21045,6 +21045,14 @@ export type Database = {
           vehicle_plate: string
         }[]
       }
+      get_guest_course_payment_info: {
+        Args: { _token: string }
+        Returns: {
+          driver_id: string
+          facture_payment_status: string
+          payment_status: string
+        }[]
+      }
       get_guest_tracking_token: {
         Args: { _course_id: string }
         Returns: string
@@ -21266,6 +21274,10 @@ export type Database = {
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
+      guest_submit_rating: {
+        Args: { _rating: number; _token: string }
+        Returns: boolean
+      }
       has_role:
         | {
             Args: {
