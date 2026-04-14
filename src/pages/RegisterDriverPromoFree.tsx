@@ -705,16 +705,10 @@ function PasswordStep({ value, onChange, showPassword, onToggleShow, error, onNe
       <Button 
         onClick={onNext}
         disabled={!value || loading}
-        className="w-full h-12 text-base font-semibold gap-2 bg-success hover:bg-success/90 text-success-foreground"
+        className="w-full h-12 text-base font-semibold gap-2"
       >
-        {loading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <>
-            <Rocket className="w-5 h-5" />
-            Créer mon compte
-          </>
-        )}
+        Continuer
+        <ChevronRight className="w-4 h-4" />
       </Button>
     </div>
   );
