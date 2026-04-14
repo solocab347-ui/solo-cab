@@ -31,27 +31,70 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearPremiumState = useCallback(() => {
+    setIsPremium(false);
+    setPlan(null);
+    setSubscriptionEnd(null);
+  }, []);
+
   const checkSubscription = useCallback(async () => {
+    setLoading(true);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setIsPremium(false);
-        setLoading(false);
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        clearPremiumState();
         return;
       }
-      const { data, error } = await supabase.functions.invoke("check-premium-subscription");
-      if (error) throw error;
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        console.warn("Skipping premium check because the auth session is invalid:", userError?.message);
+        clearPremiumState();
+
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          // Ignore cleanup failures here - the goal is only to stop the stale session loop.
+        }
+
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-premium-subscription`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          clearPremiumState();
+          return;
+        }
+
+        throw new Error(data?.error || "Unable to check premium subscription");
+      }
 
       setIsPremium(data?.subscribed || false);
       setPlan(data?.plan || null);
       setSubscriptionEnd(data?.subscription_end || null);
     } catch (err) {
       console.error("Error checking premium:", err);
-      setIsPremium(false);
+      clearPremiumState();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearPremiumState]);
 
   useEffect(() => {
     checkSubscription();

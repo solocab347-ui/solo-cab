@@ -12,19 +12,28 @@ const PRODUCT_IDS = {
   yearly: "prod_UIyvQp5D4JWxP5",
 };
 
+function jsonResponse(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
+
+function unauthenticatedResponse(error: string) {
+  return jsonResponse({
+    error,
+    subscribed: false,
+    plan: null,
+    subscription_end: null,
+  });
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("Authorization");
-
-  // User-context client for JWT validation
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: authHeader! } }, auth: { persistSession: false } }
-  );
 
   // Admin client for DB writes
   const adminClient = createClient(
@@ -38,55 +47,23 @@ serve(async (req: Request) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not set");
 
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+      return unauthenticatedResponse("No authorization header");
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Try local JWT validation first (no network call)
-    let userId: string;
-    let userEmail: string;
-    
-    try {
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-      if (!claimsError && claimsData?.claims?.sub) {
-        userId = claimsData.claims.sub as string;
-        userEmail = claimsData.claims.email as string;
-      } else {
-        // Fallback to getUser with admin client
-        const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
-        if (userError || !user) {
-          console.error("Auth error:", userError?.message || claimsError?.message);
-          return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 401,
-          });
-        }
-        userId = user.id;
-        userEmail = user.email!;
-      }
-    } catch {
-      // Last resort fallback
-      const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
-      if (userError || !user) {
-        console.error("Auth fallback error:", userError?.message);
-        return new Response(JSON.stringify({ error: "Invalid or expired token", subscribed: false }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        });
-      }
-      userId = user.id;
-      userEmail = user.email!;
+
+    const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
+
+    if (userError || !user) {
+      console.error("Auth error:", userError?.message);
+      return unauthenticatedResponse("Invalid or expired token");
     }
 
+    const userId = user.id;
+    const userEmail = user.email;
+
     if (!userEmail) {
-      return new Response(JSON.stringify({ error: "No email in token", subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+      return unauthenticatedResponse("No email in token");
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
@@ -94,10 +71,7 @@ serve(async (req: Request) => {
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
 
     if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return jsonResponse({ subscribed: false, plan: null, subscription_end: null });
     }
 
     const customerId = customers.data[0].id;
@@ -148,19 +122,13 @@ serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       subscribed: isPremium,
       plan,
       subscription_end: subscriptionEnd,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResponse({ error: msg }, 500);
   }
 });
