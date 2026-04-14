@@ -424,6 +424,78 @@ serve(async (req) => {
     }
 
     // ========================================
+    // STRIPE CONNECT: ACCOUNT UPDATED (scalable auto-sync)
+    // ========================================
+    if (event.type === "account.updated") {
+      const account = event.data.object as Stripe.Account;
+      const accountId = account.id;
+      
+      logStep("Connect account.updated received", { 
+        accountId,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+      });
+
+      // Find driver by stripe_connect_account_id
+      const { data: driver, error: driverError } = await supabaseClient
+        .from("drivers")
+        .select("id, user_id, stripe_connect_charges_enabled")
+        .eq("stripe_connect_account_id", accountId)
+        .maybeSingle();
+
+      if (driver) {
+        let connectStatus = "pending";
+        if (account.charges_enabled && account.payouts_enabled) {
+          connectStatus = "active";
+        } else if (account.details_submitted) {
+          connectStatus = "pending_verification";
+        }
+
+        const { error: updateError } = await supabaseClient
+          .from("drivers")
+          .update({
+            stripe_connect_status: connectStatus,
+            stripe_connect_charges_enabled: account.charges_enabled ?? false,
+            stripe_connect_payouts_enabled: account.payouts_enabled ?? false,
+            stripe_connect_onboarding_completed: account.details_submitted ?? false,
+            stripe_connect_details_submitted: account.details_submitted ?? false,
+            stripe_connect_updated_at: new Date().toISOString(),
+          })
+          .eq("id", driver.id);
+
+        if (updateError) {
+          logStep("ERROR updating driver Connect status", { error: updateError.message });
+        } else {
+          logStep("✅ Driver Connect status auto-synced", { 
+            driverId: driver.id, 
+            connectStatus,
+            chargesEnabled: account.charges_enabled,
+          });
+
+          // Notify driver when newly activated
+          if (account.charges_enabled && !driver.stripe_connect_charges_enabled && driver.user_id) {
+            await supabaseClient.from("notifications").insert({
+              user_id: driver.user_id,
+              type: "info",
+              title: "✅ Paiements activés",
+              message: "Votre compte Stripe Connect est maintenant actif. Vous pouvez recevoir des paiements par carte !",
+              priority: "high",
+              action_url: "/driver-dashboard",
+            });
+          }
+        }
+      } else {
+        logStep("No driver found for Connect account", { accountId });
+      }
+
+      return new Response(JSON.stringify({ received: true, processed: "account_updated" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // ========================================
     // CHECKOUT SESSION COMPLETED
     // ========================================
     if (event.type === "checkout.session.completed") {
