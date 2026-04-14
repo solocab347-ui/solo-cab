@@ -598,26 +598,40 @@ const getEmailTemplate = (type: string, data: any) => {
     },
 
     driver_registration: {
-      subject: "📝 Dossier d'inscription SoloCab reçu",
+      subject: "Dossier d'inscription reçu — SoloCab",
       html: `
         <!DOCTYPE html><html><head><style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #8B5E3C 0%, #A0522D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+          .success-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info-box { background: #FFF8F0; border-left: 4px solid #8B5E3C; padding: 15px; margin: 20px 0; border-radius: 5px; }
         </style></head><body>
           <div class="container">
-            <div class="header"><h1>📝 Inscription reçue</h1></div>
+            <div class="header"><h1>📋 Dossier reçu</h1></div>
             <div class="content">
               <p>Bonjour <strong>${data.driverName || "Chauffeur"}</strong>,</p>
-              <p>Nous avons bien reçu votre dossier d'inscription en tant que chauffeur VTC sur SoloCab.</p>
-              <h2>✅ Votre paiement a été validé</h2>
-              <p>Votre abonnement mensuel est maintenant actif.</p>
-              <h2>📋 Prochaines étapes</h2>
-              <p>Notre équipe va examiner votre dossier sous <strong>24 à 48 heures</strong>.</p>
-              <ul><li>✓ Informations personnelles et professionnelles</li><li>✓ Documents VTC</li><li>✓ Paiement validé</li></ul>
-              <p>À très bientôt !<br>L'équipe SoloCab</p>
+              <p>Nous avons bien reçu votre dossier d'inscription complet.</p>
+              
+              <div class="success-box">
+                <p><strong>✅ Éléments reçus :</strong></p>
+                <ul>
+                  <li>Informations personnelles et véhicule</li>
+                  <li>Configuration tarifaire</li>
+                  <li>Compte Stripe connecté</li>
+                  <li>Documents professionnels</li>
+                </ul>
+              </div>
+              
+              <div class="info-box">
+                <p><strong>⏳ Et maintenant ?</strong></p>
+                <p>Notre équipe va examiner votre dossier sous <strong>24 à 48 heures</strong>.</p>
+                <p>Vous recevrez un email dès que votre espace chauffeur sera activé.</p>
+              </div>
+              
+              <p>Merci de votre confiance !<br>L'équipe SoloCab</p>
             </div>
             <div class="footer"><p>SoloCab · www.solocab.fr</p></div>
           </div>
@@ -626,35 +640,39 @@ const getEmailTemplate = (type: string, data: any) => {
     },
 
     driver_welcome_new: {
-      subject: "🎉 Bienvenue sur SoloCab - Finalisez votre inscription",
+      subject: "Bienvenue sur SoloCab — Continuez votre inscription",
       html: `
         <!DOCTYPE html><html><head><style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #8B5E3C 0%, #A0522D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .button { display: inline-block; background: #8B5E3C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
-          .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .success-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info-box { background: #FFF8F0; border-left: 4px solid #8B5E3C; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .step { display: flex; align-items: flex-start; margin: 10px 0; }
+          .step-num { background: #8B5E3C; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold; flex-shrink: 0; }
         </style></head><body>
           <div class="container">
             <div class="header">
-              <h1>🎉 Bienvenue sur SoloCab !</h1>
-              <p>Félicitations ${data.driverName || "Chauffeur"} !</p>
+              <h1>Bienvenue sur SoloCab !</h1>
+              <p>${data.driverName || "Chauffeur"}, votre compte a été créé.</p>
             </div>
             <div class="content">
-              <p>Votre compte chauffeur a été créé avec succès !</p>
-              <div class="success-box">
-                <p><strong>✅ Vous pouvez dès maintenant :</strong></p>
-                <ul><li>Explorer votre tableau de bord</li><li>Configurer votre profil et vos tarifs</li><li>Découvrir toutes les fonctionnalités</li></ul>
+              <p>Votre adresse email a bien été confirmée et votre compte chauffeur est créé.</p>
+              
+              <div class="info-box">
+                <p><strong>📋 Pour finaliser votre inscription, il vous reste à :</strong></p>
+                <div class="step"><span class="step-num">1</span><span>Compléter vos informations personnelles et véhicule</span></div>
+                <div class="step"><span class="step-num">2</span><span>Configurer vos tarifs</span></div>
+                <div class="step"><span class="step-num">3</span><span>Connecter votre compte Stripe pour recevoir vos paiements</span></div>
+                <div class="step"><span class="step-num">4</span><span>Envoyer vos documents professionnels (carte VTC, assurance, etc.)</span></div>
               </div>
-              <div class="warning-box">
-                <p><strong>⚠️ IMPORTANT : Soumettez vos documents sous 7 jours</strong></p>
-                <p>Pour conserver votre accès et recevoir des courses.</p>
-              </div>
+              
+              <p>Une fois votre dossier complet, notre équipe le vérifiera sous <strong>24 à 48h</strong>. Vous recevrez un email de confirmation dès que votre espace sera activé.</p>
+              
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://solocab.fr/driver-dashboard" class="button">Accéder à mon espace chauffeur</a>
+                <a href="https://solocab.fr/driver-welcome" class="button">Continuer mon inscription</a>
               </div>
               <p>L'équipe SoloCab</p>
             </div>
