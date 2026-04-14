@@ -33,6 +33,7 @@ import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/vehicles/VehiclePhotosManager";
 import { DriverPublicProfileSimplified } from "@/components/driver/profile/DriverPublicProfileSimplified";
+import { ProfileCompletionWizard } from "@/components/driver/profile/ProfileCompletionWizard";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
 import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
@@ -116,6 +117,7 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [viewMode, setViewMode] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
     if (viewParam === "dashboard") return "dashboard";
@@ -189,6 +191,24 @@ const DriverDashboard = () => {
       navigate("/driver-welcome", { replace: true });
     }
   }, [driverProfile?.driver?.onboarding_completed, navigate]);
+
+  // Check if profile needs completion wizard
+  useEffect(() => {
+    if (driverProfile?.driver && driverProfile.driver.onboarding_completed) {
+      const driver = driverProfile.driver;
+      const isProfileComplete = !!(
+        ((driverProfile as any).profile_photo_url || (driver as any).profile_photo_url) &&
+        (driver.display_driver_name || driver.display_company_name) &&
+        driver.service_description && driver.service_description.length >= 20 &&
+        driver.working_sectors && driver.working_sectors.length > 0 &&
+        driver.services_offered && driver.services_offered.length > 0 &&
+        driver.vehicle_category && driver.vehicle_category.length > 0
+      );
+      if (!isProfileComplete && !driver.onboarding_profile_completed) {
+        setShowProfileWizard(true);
+      }
+    }
+  }, [driverProfile?.driver?.id]);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
@@ -644,6 +664,20 @@ const DriverDashboard = () => {
       </header>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+
+        {/* Profile Completion Wizard - Mandatory before accessing dashboard */}
+        {showProfileWizard && driverProfile && user && (
+          <ProfileCompletionWizard
+            driverProfile={driverProfile}
+            userId={user.id}
+            onComplete={() => {
+              setShowProfileWizard(false);
+              queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user.id] });
+            }}
+          />
+        )}
+
+        {!showProfileWizard && (<>
 
         {/* Pioneer Banner - Affichage pour les pionniers */}
         {driverProfile?.driver?.is_pioneer && (
@@ -1150,6 +1184,7 @@ const DriverDashboard = () => {
           {/* Company Payments Tab - supprimé, intégré dans UnifiedPartnershipHub */}
 
         </Tabs>
+        </>)}
       </div>
       
       {/* Floating Map button - only when disconnected, as connected drivers have it in the toggle */}

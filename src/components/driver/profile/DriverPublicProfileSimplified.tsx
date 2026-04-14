@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Globe, MapPin, User, Phone, Mail, Car, 
-  Eye, Copy, Check, ExternalLink, Camera, 
+  Copy, Check, ExternalLink, Camera, 
   Briefcase, CheckCircle2, Save, Loader2
 } from "lucide-react";
 import { SingleProfilePhotoUpload } from "../onboarding/SingleProfilePhotoUpload";
@@ -108,7 +108,7 @@ export const DriverPublicProfileSimplified = memo(({
   loading = false,
 }: DriverPublicProfileSimplifiedProps) => {
   const [linkCopied, setLinkCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState("visibility");
+  const [activeTab, setActiveTab] = useState("identity");
 
   // Guard contre les données manquantes
   if (!driverProfile || !userId) {
@@ -134,8 +134,6 @@ export const DriverPublicProfileSimplified = memo(({
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  // Indicateurs de complétion - profil toujours public donc visibilité toujours complète
-  const isVisibilityComplete = true;
   const isIdentityComplete = (displayDriverName || displayCompanyName) && (profilePhotoUrl || cardPhotoUrl);
   const isServicesComplete = workingSectors.length > 0 && servicesOffered.length > 0;
   const isContactComplete = (contactPhone && showPhone) || (contactEmail && showEmail);
@@ -184,14 +182,7 @@ export const DriverPublicProfileSimplified = memo(({
 
       {/* Tabs de navigation - Compact */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-muted/50">
-          <TabsTrigger 
-            value="visibility" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
-          >
-            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="truncate">Visibilité</span>
-          </TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-muted/50">
           <TabsTrigger 
             value="identity" 
             className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
@@ -222,72 +213,23 @@ export const DriverPublicProfileSimplified = memo(({
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Visibilité - Uniquement partenariats */}
-        <TabsContent value="visibility" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          {/* Info: Profil automatiquement public */}
-          <Card className="p-3 sm:p-6 bg-primary/10 border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span className="text-sm sm:text-base text-primary font-medium">
-                Profil public actif
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
-              Votre profil est automatiquement visible sur la vitrine SoloCab.
-            </p>
-            {/* Lien du profil */}
-            {driverId && (
+        {/* Tab Identité - includes public profile link */}
+        <TabsContent value="identity" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          {/* Lien profil public */}
+          {driverId && (
+            <Card className="p-3 sm:p-4 bg-primary/10 border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary font-medium">Profil public actif</span>
+              </div>
               <div className="flex items-center gap-2">
-                <Input
-                  value={publicProfileUrl}
-                  readOnly
-                  className="flex-1 text-xs h-8 sm:h-9 bg-background/50"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  className="gap-1 shrink-0 h-8"
-                >
+                <Input value={publicProfileUrl} readOnly className="flex-1 text-xs h-8 bg-background/50" />
+                <Button variant="secondary" size="sm" onClick={handleCopyLink} className="gap-1 shrink-0 h-8">
                   {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
-            )}
-          </Card>
-
-          {/* Visibilité partenaires */}
-          <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
-            <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-4">Partenariats chauffeurs</h3>
-            
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2">
-                <div className="p-1.5 sm:p-2 rounded-lg bg-secondary shrink-0">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-secondary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <Label className="font-medium text-sm">Visible aux chauffeurs</Label>
-                  <p className="text-xs text-muted-foreground truncate hidden sm:block">
-                    Recevoir des propositions de partenariat
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {visibleToDrivers && (
-                  <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
-                    Actif
-                  </Badge>
-                )}
-                <Switch
-                  checked={visibleToDrivers}
-                  onCheckedChange={onVisibleToDriversChange}
-                />
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Tab Identité */}
-        <TabsContent value="identity" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            </Card>
+          )}
           {/* Photo unique - utilisée partout (profil et carte) */}
           <Card className="p-3 sm:p-6 bg-card/50 backdrop-blur border-border/50">
             <SingleProfilePhotoUpload
