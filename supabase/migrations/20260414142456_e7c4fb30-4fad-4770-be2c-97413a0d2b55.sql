@@ -1,0 +1,1 @@
+ALTER TABLE public.drivers ADD COLUMN IF NOT EXISTS wizard_current_step integer DEFAULT 0;
