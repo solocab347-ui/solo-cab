@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,22 +40,32 @@ export function CourseCompletionScreen({
   const [retrying, setRetrying] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
+  const [localResult, setLocalResult] = useState(paymentResult);
+
+  // Sync with parent prop updates (e.g. from background finalization)
+  useEffect(() => {
+    setLocalResult(paymentResult);
+  }, [paymentResult]);
 
   const isCard = paymentMethod === "card" || paymentMethod === "stripe" || paymentMethod === "card_online";
   const isCash = !isCard;
-  const isSuccess = paymentResult.success || paymentResult.alreadyPaid;
+  const isSuccess = localResult.success || localResult.alreadyPaid;
 
   const handleRetryPayment = async () => {
     setRetrying(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
       const { data, error } = await supabase.functions.invoke("finalize-course-payment", {
         body: { course_id: courseId },
       });
+      clearTimeout(timeout);
+
       if (error) throw error;
       if (data?.status === "succeeded" || data?.success || data?.already_paid) {
         toast.success("Paiement encaissé avec succès !");
-        paymentResult.success = true;
-        paymentResult.status = "succeeded";
+        setLocalResult({ success: true, status: "succeeded" });
       } else {
         toast.error("Le paiement a échoué. Utilisez le lien de paiement.");
       }
