@@ -650,7 +650,7 @@ const ClientRideTracking = () => {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
-                      onClick={() => setRating(star)}
+                      onClick={() => handleStarClick(star)}
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
                       className="transition-transform hover:scale-110"
@@ -665,6 +665,41 @@ const ClientRideTracking = () => {
                     </button>
                   ))}
                 </div>
+                
+                {showReasonForm && rating <= 3 && rating > 0 && (
+                  <div className="space-y-3 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                    <div className="flex items-center gap-2 text-destructive text-sm font-medium">
+                      <XCircle className="w-4 h-4" />
+                      <span>Note basse — merci de préciser le motif</span>
+                    </div>
+                    <select
+                      value={ratingReason}
+                      onChange={(e) => setRatingReason(e.target.value)}
+                      className="w-full h-9 text-sm rounded-md border border-border bg-background px-3"
+                    >
+                      <option value="">Sélectionnez un motif</option>
+                      <option value="late">Retard chauffeur</option>
+                      <option value="dangerous_driving">Conduite dangereuse</option>
+                      <option value="bad_behavior">Mauvais comportement</option>
+                      <option value="dirty_vehicle">Véhicule sale</option>
+                      <option value="bad_communication">Mauvaise communication</option>
+                      <option value="bad_route">Mauvais itinéraire</option>
+                      <option value="payment_issue">Problème paiement</option>
+                      <option value="other">Autre</option>
+                    </select>
+                    <textarea
+                      value={ratingReasonDetail}
+                      onChange={(e) => setRatingReasonDetail(e.target.value)}
+                      placeholder="Décrivez la situation..."
+                      className="w-full text-sm min-h-[60px] rounded-md border border-border bg-background px-3 py-2 resize-none"
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Cette note sera examinée par notre système d'arbitrage. Le chauffeur pourra contester si nécessaire.
+                    </p>
+                  </div>
+                )}
+
                 {rating > 0 && (
                   <Button
                     onClick={handleSubmitRating}
