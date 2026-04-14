@@ -209,18 +209,17 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
       const { error } = await supabase
         .from("drivers")
         .update({
-          profile_photo_url: data.profilePhotoUrl,
           card_photo_url: data.profilePhotoUrl,
           display_driver_name: data.displayDriverName,
           display_company_name: data.displayCompanyName,
-          service_description: data.serviceDescription,
+          service_description: data.serviceDescription || null,
           working_sectors: data.workingSectors,
           services_offered: data.servicesOffered,
           vehicle_categories: data.vehicleCategories,
           vehicle_equipment: data.vehicleEquipment,
           public_profile_enabled: true,
           onboarding_profile_completed: true,
-          wizard_current_step: STEPS.length, // Mark as fully done
+          wizard_current_step: STEPS.length,
         })
         .eq("id", driver.id);
 
