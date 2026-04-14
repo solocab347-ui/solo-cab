@@ -32,7 +32,6 @@ import {
   Minus,
   Settings,
   Wallet,
-  Wallet,
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
