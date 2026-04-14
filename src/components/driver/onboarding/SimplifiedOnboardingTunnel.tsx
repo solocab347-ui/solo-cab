@@ -249,6 +249,55 @@ export function SimplifiedOnboardingTunnel({
     }
   };
 
+  // Auto-save with debounce
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save profile
+  useEffect(() => {
+    if (!firstName || !lastName || !companyName || siret.length !== 14 || !companyAddress) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
+      await supabase.from('drivers').update({
+        company_name: companyName, siret, company_address: companyAddress,
+      }).eq('id', driverId);
+      console.log('Auto-saved profile');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [firstName, lastName, companyName, siret, companyAddress, userId, driverId]);
+
+  // Auto-save vehicle
+  useEffect(() => {
+    if (!vehicleBrand || !vehicleModel || !vehicleColor) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await supabase.from('drivers').update({
+        vehicle_brand: vehicleBrand, vehicle_model: vehicleModel,
+        vehicle_year: parseInt(vehicleYear), vehicle_color: vehicleColor,
+        vehicle_seats: parseInt(vehicleSeats),
+      }).eq('id', driverId);
+      console.log('Auto-saved vehicle');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [vehicleBrand, vehicleModel, vehicleYear, vehicleColor, vehicleSeats, driverId]);
+
+  // Auto-save pricing
+  useEffect(() => {
+    if (!baseFare || !perKmRate) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await supabase.from('drivers').update({
+        base_fare: parseFloat(baseFare),
+        per_km_rate: parseFloat(perKmRate),
+        minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
+        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+      }).eq('id', driverId);
+      console.log('Auto-saved pricing');
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [baseFare, perKmRate, minimumPrice, hourlyRate, driverId]);
+
   // Computed
   const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
   const isVehicleComplete = vehicleBrand && vehicleModel && vehicleColor;
