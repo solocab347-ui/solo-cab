@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Globe, MapPin, User, Phone, Mail, Car, 
-  Eye, Copy, Check, ExternalLink, Camera, 
+  Copy, Check, ExternalLink, Camera, 
   Briefcase, CheckCircle2, Save, Loader2
 } from "lucide-react";
 import { SingleProfilePhotoUpload } from "../onboarding/SingleProfilePhotoUpload";
