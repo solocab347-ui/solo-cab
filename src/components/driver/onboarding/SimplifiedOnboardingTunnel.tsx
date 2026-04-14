@@ -486,10 +486,10 @@ export function SimplifiedOnboardingTunnel({
 
 function StripeStep({
   stripeStatus, stripeLoading, stripeStatusLoading,
-  onStartStripe, onCheckStatus, onSkipForNow,
+  onStartStripe, onCheckStatus,
 }: {
   stripeStatus: any; stripeLoading: boolean; stripeStatusLoading: boolean;
-  onStartStripe: () => void; onCheckStatus: () => void; onSkipForNow: () => void;
+  onStartStripe: () => void; onCheckStatus: () => void;
 }) {
   if (stripeStatus?.charges_enabled) {
     return (
