@@ -108,7 +108,7 @@ export const DriverPublicProfileSimplified = memo(({
   loading = false,
 }: DriverPublicProfileSimplifiedProps) => {
   const [linkCopied, setLinkCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState("visibility");
+  const [activeTab, setActiveTab] = useState("identity");
 
   // Guard contre les données manquantes
   if (!driverProfile || !userId) {
@@ -182,14 +182,7 @@ export const DriverPublicProfileSimplified = memo(({
 
       {/* Tabs de navigation - Compact */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-muted/50">
-          <TabsTrigger 
-            value="visibility" 
-            className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
-          >
-            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="truncate">Visibilité</span>
-          </TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-muted/50">
           <TabsTrigger 
             value="identity" 
             className="flex flex-col items-center gap-0.5 py-1.5 sm:py-2 px-0.5 text-[10px] sm:text-xs data-[state=active]:bg-background"
