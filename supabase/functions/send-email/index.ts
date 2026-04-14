@@ -57,7 +57,7 @@ async function resolveDriverEmail(driverId: string): Promise<{ email: string; fu
 const getEmailTemplate = (type: string, data: any) => {
   const templates = {
     driver_welcome: {
-      subject: "Bienvenue sur SoloCab - Votre inscription est en cours de validation",
+      subject: "Votre inscription est en cours de validation — SoloCab",
       html: `
         <!DOCTYPE html>
         <html>
@@ -65,44 +65,33 @@ const getEmailTemplate = (type: string, data: any) => {
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .header { background: linear-gradient(135deg, #8B5E3C 0%, #A0522D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
               .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-              .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .info-box { background: #FFF8F0; border-left: 4px solid #8B5E3C; padding: 15px; margin: 20px 0; border-radius: 5px; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1>🚗 Bienvenue sur SoloCab !</h1>
+                <h1>📋 Inscription en cours de validation</h1>
               </div>
               <div class="content">
                 <p>Bonjour <strong>${data.driverName || "Chauffeur"}</strong>,</p>
                 
-                <p>Félicitations ! Votre demande d'inscription en tant que chauffeur sur SoloCab a bien été reçue.</p>
+                <p>Votre dossier d'inscription a bien été finalisé. Notre équipe est en train de vérifier vos documents.</p>
                 
-                <p>📋 <strong>Prochaines étapes :</strong></p>
-                <ul>
-                  <li>Votre dossier est actuellement en cours de validation par notre équipe</li>
-                  <li>Nous examinerons vos documents dans les plus brefs délais</li>
-                  <li>Vous recevrez un email de confirmation dès que votre compte sera validé</li>
-                </ul>
+                <div class="info-box">
+                  <p><strong>⏳ Délai de traitement :</strong> 24 à 48 heures</p>
+                  <p>Vous recevrez un email de confirmation dès que votre espace chauffeur sera activé.</p>
+                </div>
                 
-                <p>Une fois votre compte validé, vous pourrez :</p>
-                <ul>
-                  <li>✅ Accéder à votre tableau de bord chauffeur</li>
-                  <li>✅ Recevoir des demandes de courses</li>
-                  <li>✅ Gérer vos clients et factures</li>
-                  <li>✅ Configurer votre profil public</li>
-                </ul>
-                
-                <p>Merci de votre confiance !</p>
+                <p>Merci de votre patience et bienvenue dans la communauté SoloCab !</p>
                 
                 <p>L'équipe SoloCab</p>
               </div>
               <div class="footer">
-                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
-                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                <p>SoloCab · www.solocab.fr</p>
               </div>
             </div>
           </body>
