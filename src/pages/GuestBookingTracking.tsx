@@ -529,6 +529,19 @@ const GuestBookingTracking = () => {
           </CardContent>
         </Card>
 
+        {/* ETA Dynamic Display */}
+        {(guestIsApproaching || guestIsInProgress) && guestEtaEnabled && (
+          <div className="mb-6">
+            <ETADisplay
+              eta={guestEta}
+              loading={guestEtaLoading}
+              onRefresh={refreshGuestETA}
+              phase={guestIsApproaching ? "approaching" : "in_progress"}
+              totalDistanceKm={booking.distance_km}
+            />
+          </div>
+        )}
+
         {/* Payment Section - When course is completed and driver uses Stripe */}
         {showPaymentSection && (
           <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
