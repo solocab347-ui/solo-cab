@@ -66,7 +66,7 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
   const latestDataRef = useRef<WizardData | null>(null);
 
   const [data, setData] = useState<WizardData>({
-    profilePhotoUrl: driver?.profile_photo_url || driverProfile?.profile_photo_url || null,
+    profilePhotoUrl: driver?.card_photo_url || driverProfile?.profile_photo_url || null,
     displayDriverName: driver?.display_driver_name ?? true,
     displayCompanyName: driver?.display_company_name ?? false,
     serviceDescription: driver?.service_description || "",
@@ -88,11 +88,10 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     setAutoSaving(true);
     try {
       const updatePayload: Record<string, any> = {
-        profile_photo_url: dataToSave.profilePhotoUrl,
         card_photo_url: dataToSave.profilePhotoUrl,
         display_driver_name: dataToSave.displayDriverName,
         display_company_name: dataToSave.displayCompanyName,
-        service_description: dataToSave.serviceDescription,
+        service_description: dataToSave.serviceDescription || null,
         working_sectors: dataToSave.workingSectors,
         services_offered: dataToSave.servicesOffered,
         vehicle_categories: dataToSave.vehicleCategories,
@@ -144,19 +143,6 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
     const handleBeforeUnload = () => {
       if (saveTimeoutRef.current && latestDataRef.current && driver?.id) {
         clearTimeout(saveTimeoutRef.current);
-        // Use sendBeacon for reliable save on page close
-        const payload = JSON.stringify({
-          profile_photo_url: latestDataRef.current.profilePhotoUrl,
-          card_photo_url: latestDataRef.current.profilePhotoUrl,
-          display_driver_name: latestDataRef.current.displayDriverName,
-          display_company_name: latestDataRef.current.displayCompanyName,
-          service_description: latestDataRef.current.serviceDescription,
-          working_sectors: latestDataRef.current.workingSectors,
-          services_offered: latestDataRef.current.servicesOffered,
-          vehicle_categories: latestDataRef.current.vehicleCategories,
-          vehicle_equipment: latestDataRef.current.vehicleEquipment,
-        });
-        // Fallback: trigger the save
         saveToDatabase(latestDataRef.current);
       }
     };
@@ -210,18 +196,17 @@ export function ProfileCompletionWizard({ driverProfile, userId, onComplete }: P
       const { error } = await supabase
         .from("drivers")
         .update({
-          profile_photo_url: data.profilePhotoUrl,
           card_photo_url: data.profilePhotoUrl,
           display_driver_name: data.displayDriverName,
           display_company_name: data.displayCompanyName,
-          service_description: data.serviceDescription,
+          service_description: data.serviceDescription || null,
           working_sectors: data.workingSectors,
           services_offered: data.servicesOffered,
           vehicle_categories: data.vehicleCategories,
           vehicle_equipment: data.vehicleEquipment,
           public_profile_enabled: true,
           onboarding_profile_completed: true,
-          wizard_current_step: STEPS.length, // Mark as fully done
+          wizard_current_step: STEPS.length,
         })
         .eq("id", driver.id);
 
