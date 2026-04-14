@@ -134,8 +134,6 @@ export const DriverPublicProfileSimplified = memo(({
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  // Indicateurs de complétion - profil toujours public donc visibilité toujours complète
-  const isVisibilityComplete = true;
   const isIdentityComplete = (displayDriverName || displayCompanyName) && (profilePhotoUrl || cardPhotoUrl);
   const isServicesComplete = workingSectors.length > 0 && servicesOffered.length > 0;
   const isContactComplete = (contactPhone && showPhone) || (contactEmail && showEmail);
