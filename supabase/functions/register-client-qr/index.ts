@@ -187,9 +187,10 @@ Deno.serve(async (req) => {
       .insert({
         user_id: user.id,
         driver_id: qrCode.driver_id,
-        driver_ids: [qrCode.driver_id], // Dual association
-        qr_code_id: qr_code_id,
+        driver_ids: [qrCode.driver_id],
+        qr_code_id: qrCode.id,
         is_exclusive: true,
+        favorite_driver_id: qrCode.driver_id,
       })
       .select()
       .single();
