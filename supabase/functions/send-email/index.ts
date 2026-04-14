@@ -711,21 +711,32 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // ⚠️ SÉCURITÉ: Vérifier l'authentification
-    // Option 1: JWT token (pour appels depuis le frontend)
-    // Option 2: Secret partagé (pour appels internes entre edge functions)
     const authHeader = req.headers.get('Authorization');
     const internalSecret = req.headers.get('X-Internal-Secret');
     
-    // Vérifier qu'au moins une méthode d'auth est présente
-    if (!authHeader && !internalSecret) {
+    // Lire le body pour déterminer le type d'email
+    const body = await req.json();
+    const emailTypeFromBody = body?.type;
+    
+    // Types autorisés sans authentification (post-inscription, pas de session valide)
+    const publicEmailTypes = ['driver_welcome_new', 'driver_registration'];
+    const isPublicType = publicEmailTypes.includes(emailTypeFromBody);
+    
+    if (isPublicType) {
+      // Pour les emails post-inscription, vérifier qu'un driver_id est fourni
+      if (!body?.driver_id) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Bad request: driver_id required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // Pas besoin de JWT, continuer
+    } else if (!authHeader && !internalSecret) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized: Missing authorization' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // Si secret interne fourni, le vérifier (pour appels inter-edge-functions)
-    if (internalSecret) {
+    } else if (internalSecret) {
       const expectedSecret = Deno.env.get('LOVABLE_API_KEY');
       if (internalSecret !== expectedSecret) {
         return new Response(
@@ -733,9 +744,7 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      // Secret valide, continuer
     } else if (authHeader) {
-      // Vérifier le JWT pour les appels externes
       const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
       const supabaseClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -753,7 +762,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { to, driver_id, type, data = {} }: EmailRequest = await req.json();
+    const { to, driver_id, type, data = {} }: EmailRequest = body;
     
     // Resolve recipient email: either provided directly or looked up from driver_id
     let resolvedTo = to;
