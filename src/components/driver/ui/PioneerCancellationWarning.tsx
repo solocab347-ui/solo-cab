@@ -85,7 +85,7 @@ const PioneerCancellationWarning = ({
                         <div>
                           <p className="font-medium text-destructive">Tarif Pionnier à vie</p>
                           <p className="text-sm text-muted-foreground">
-                            Vous perdrez votre tarif préférentiel Pioneer → Vous passerez au tarif standard <strong>9,99€/mois</strong>
+                            Vous perdrez votre tarif préférentiel Pioneer → Vous passerez au tarif standard <strong>19,99€/mois</strong>
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             Perte de l'avantage Pioneer exclusif

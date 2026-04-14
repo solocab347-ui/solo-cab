@@ -5,7 +5,7 @@
 | Tier | Prix | Détail |
 |------|------|--------|
 | **Gratuit** | 0€ | Accès complet aux fonctionnalités de base après validation documents |
-| **Premium** | 9,99€/mois | Partenariats, échange de courses, promotions, prospection |
+| **Premium** | 19,99€/mois | Partenariats, échange de courses, promotions, prospection, planning, objectifs, encaissements |
 | Plaque NFC Standard (Bois) | 14,99€ | Achat indépendant |
 | Plaque NFC Premium (Plastique) | 29,99€ | Achat indépendant |
 
@@ -24,7 +24,7 @@
 - Planning et objectifs
 - Statistiques
 
-### Premium (9,99€/mois)
+### Premium (19,99€/mois)
 - **Tout le gratuit** +
 - Partenariats entre chauffeurs
 - Échange et partage de courses (réseau)
@@ -46,7 +46,7 @@
 
 ### Souscription
 - Checkout Stripe via `create-premium-checkout`
-- Produit Stripe : `prod_UCdaZkBtD9tnjV` / Prix : `price_1TEEJnAdFPYTU471ZfCzkgJE`
+- Produit Stripe : `prod_UIyvxaQ5c7vZSH` / Prix : `price_1TKMxCAdFPYTU471ZinaFMmJ`
 - Pas d'essai gratuit — accès Premium immédiat après paiement
 
 ### Résiliation

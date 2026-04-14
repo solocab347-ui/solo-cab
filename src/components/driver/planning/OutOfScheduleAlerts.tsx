@@ -265,7 +265,7 @@ export function OutOfScheduleAlerts({ driverId }: OutOfScheduleAlertsProps) {
                     </TooltipTrigger>
                     {!isPremium && (
                       <TooltipContent>
-                        <p>Fonctionnalité Premium — Passez à 9,99€/mois pour partager vos courses</p>
+                        <p>Fonctionnalité Premium — Passez à 19,99€/mois pour partager vos courses</p>
                       </TooltipContent>
                     )}
                   </Tooltip>
