@@ -174,7 +174,7 @@ const RegisterDriverPromoFree = () => {
         password,
         options: {
           data: { full_name: fullName.trim() },
-          emailRedirectTo: `${window.location.origin}/driver-welcome`,
+          emailRedirectTo: `https://solocab.fr/driver-welcome`,
         },
       });
       if (signUpError) throw signUpError;
