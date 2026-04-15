@@ -167,10 +167,10 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   };
 
   const fetchCourseStats = async () => {
-    // All courses for this driver in period
+    // All courses for this driver in period - include financial fields for revenue sync
     const { data: courses } = await supabase
       .from('courses')
-      .select('id, status, distance_km, duration_minutes')
+      .select('id, status, distance_km, duration_minutes, final_payment_amount, final_payment_status, payment_method, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .gte('scheduled_date', dateRange.start.toISOString())
       .lte('scheduled_date', dateRange.end.toISOString());
@@ -192,8 +192,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const companyCourseIds = new Set(companyCourses?.map(cc => cc.course_id) || []);
 
-    // Get fleet courses - identify by checking if driver has fleet partnership
-    // and course was created by fleet (simplified approach)
+    // Get fleet courses
     let fleetCourseIds = new Set<string>();
     const { data: fleetPartnership } = await supabase
       .from('fleet_driver_partnerships')
@@ -202,7 +201,6 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       .eq('status', 'active')
       .maybeSingle();
 
-    // For fleet courses, we count commission records
     if (fleetPartnership) {
       const { data: fleetCommissions } = await supabase
         .from('partnership_course_commissions')
@@ -212,7 +210,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       fleetCourseIds = new Set(fleetCommissions?.map(fc => fc.course_id) || []);
     }
 
-    // Calculate stats - only count completed courses for meaningful metrics
+    // Calculate stats - only count completed courses
     const completedCourses = courses?.filter(c => c.status === 'completed') || [];
     const stats: CourseStats = {
       total: completedCourses.length,
@@ -227,10 +225,13 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     setCourseStats(stats);
 
-    // Distance and duration - only from completed courses
+    // Distance and duration
     const totalDistance = completedCourses.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0);
     const totalDuration = completedCourses.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0);
     setDistanceStats({ total: totalDistance, duration: totalDuration });
+
+    // Store completed courses for revenue sync
+    return completedCourses;
   };
 
   const fetchRevenueStats = async () => {
