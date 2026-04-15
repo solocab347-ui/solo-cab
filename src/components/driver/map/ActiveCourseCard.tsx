@@ -217,7 +217,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         devis(amount, status, accepted_at, created_at)
       `)
       .eq('driver_id', driverId)
-      .in('status', ['pending', 'accepted', 'in_progress'])
+      .in('status', ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress'] as any[])
       .or(`scheduled_date.is.null,scheduled_date.gte.${todayStart.toISOString()},status.eq.in_progress`)
       .order('updated_at', { ascending: false })
       .order('created_at', { ascending: false })
@@ -289,6 +289,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     if (newCourse) {
       let dbPhase: CoursePhase = 'approaching';
       if (newCourse.status === 'in_progress') dbPhase = 'in_progress';
+      else if (newCourse.status === 'driver_arrived') dbPhase = 'arrived';
+      else if (newCourse.status === 'driver_approaching') dbPhase = 'approaching';
 
       const persisted = loadPersistedPhase(newCourse.id);
       const baseline = persisted && PHASE_ORDER[persisted] > PHASE_ORDER[phase]
@@ -299,6 +301,18 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       if (nextPhase !== phase) {
         setPhase(nextPhase);
         persistPhase(newCourse.id, nextPhase);
+      }
+
+      // Auto-sync: when course is accepted, immediately update DB to driver_approaching
+      if (newCourse.status === 'accepted') {
+        supabase
+          .from('courses')
+          .update({ status: 'driver_approaching' as any, updated_at: new Date().toISOString() })
+          .eq('id', newCourse.id)
+          .eq('driver_id', driverId)
+          .then(() => {
+            console.log('[ActiveCourseCard] Auto-transitioned course to driver_approaching');
+          });
       }
     }
   }, [driverId, onCourseChange, onCourseActive, course, phase, dismissedCourseIds]);
@@ -354,9 +368,17 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
   const handleArrived = useCallback(async () => {
     const next: CoursePhase = 'arrived';
     setPhase(next);
-    if (course) persistPhase(course.id, next);
+    if (course) {
+      persistPhase(course.id, next);
+      // Sync to DB so client tracking pages see driver_arrived
+      await supabase
+        .from('courses')
+        .update({ status: 'driver_arrived' as any, updated_at: new Date().toISOString() })
+        .eq('id', course.id)
+        .eq('driver_id', driverId);
+    }
     toast.success('Vous êtes arrivé au point de prise en charge');
-  }, [course]);
+  }, [course, driverId]);
 
   const handleStartTrip = useCallback(async () => {
     if (!course) return;
