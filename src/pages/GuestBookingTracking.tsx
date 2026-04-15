@@ -447,6 +447,7 @@ const GuestBookingTracking = () => {
             <p className="text-muted-foreground text-sm">
               Votre demande a été envoyée. Le chauffeur va l'examiner et vous confirmer rapidement.
             </p>
+            {renderCancelSection()}
           </div>
         );
       
@@ -461,6 +462,7 @@ const GuestBookingTracking = () => {
               <p className="text-muted-foreground text-sm">Le chauffeur se prépare pour votre course.</p>
             </div>
             {renderDriverCard()}
+            {renderCancelSection()}
           </div>
         );
       
