@@ -266,7 +266,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       .select('course_id, commission_amount')
       .eq('receiver_driver_id', driverId)
       .eq('status', 'completed')
-      .in('course_id', [...courseIds]);
+      .in('course_id', Array.from(courseIds));
 
     const sharedRevenue = sharedCourses?.reduce((sum, sc) => {
       const course = completedCourses.find(c => c.id === sc.course_id);
