@@ -229,7 +229,7 @@ serve(async (req) => {
     logStep("Found nearby drivers", { count: nearbyDrivers.length });
 
     // Create new ride requests for each nearby driver
-    const timeout = new Date(Date.now() + 60 * 1000).toISOString();
+    const timeout = new Date(Date.now() + 300 * 1000).toISOString(); // 5min
     const maxAttempt = Math.max(...originalRequests.map(r => r.search_attempt || 1));
 
     const newRequests = nearbyDrivers.map((driver: any) => ({

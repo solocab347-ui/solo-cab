@@ -351,7 +351,7 @@ export function useDriverLocationTracker({
           .from('courses')
           .select('id')
           .eq('driver_id', driverId)
-          .in('status', ['driver_approaching', 'in_progress', 'waiting_client'])
+          .in('status', ['driver_approaching', 'in_progress', 'driver_arrived'] as any[])
           .limit(1)
           .maybeSingle();
 
