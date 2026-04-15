@@ -53,7 +53,9 @@ export const isCourseTodayOrImmediate = (course: DriverLifecycleCourseLike) => {
 };
 
 export const isOperationalCourse = (course: DriverLifecycleCourseLike) => {
-  if (course.status === 'in_progress' || course.status === 'accepted') return true;
+  if (['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(course.status || '')) {
+    return true;
+  }
   return Boolean(getAcceptedDevis(course));
 };
 
@@ -64,9 +66,11 @@ export const getDriverStatusFromCourse = (course: DriverLifecycleCourseLike): 'a
 };
 
 const getCoursePriority = (course: DriverLifecycleCourseLike) => {
-  if (course.status === 'in_progress') return 3;
-  if (course.status === 'accepted' || getAcceptedDevis(course)) return 2;
-  return 1;
+  if (course.status === 'in_progress') return 4;
+  if (course.status === 'driver_arrived') return 3;
+  if (course.status === 'driver_approaching') return 2;
+  if (course.status === 'accepted' || getAcceptedDevis(course)) return 1;
+  return 0;
 };
 
 export const pickRelevantOperationalCourse = <T extends DriverLifecycleCourseLike>(courses: T[]) => {
