@@ -14,6 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_manual_operations: {
+        Row: {
+          admin_id: string
+          amount: number
+          created_at: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          justification: string
+          notes: string | null
+          operation_type: string
+          reference_course_id: string | null
+          status: string
+          stripe_refund_id: string | null
+          stripe_transfer_id: string | null
+          target_client_id: string | null
+          target_driver_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          amount: number
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          justification: string
+          notes?: string | null
+          operation_type: string
+          reference_course_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          target_client_id?: string | null
+          target_driver_id?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          amount?: number
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          justification?: string
+          notes?: string | null
+          operation_type?: string
+          reference_course_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          stripe_transfer_id?: string | null
+          target_client_id?: string | null
+          target_driver_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_manual_operations_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_reference_course_id_fkey"
+            columns: ["reference_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_reference_course_id_fkey"
+            columns: ["reference_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_client_id_fkey"
+            columns: ["target_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_client_id_fkey"
+            columns: ["target_client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_client_id_fkey"
+            columns: ["target_client_id"]
+            isOneToOne: false
+            referencedRelation: "safe_client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_manual_operations_target_driver_id_fkey"
+            columns: ["target_driver_id"]
+            isOneToOne: false
+            referencedRelation: "safe_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_token_cache: {
         Row: {
           access_token: string
