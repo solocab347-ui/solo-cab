@@ -114,7 +114,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           .from('courses')
           .select('id, status, scheduled_date, created_at, updated_at, devis(status, accepted_at, created_at)')
           .eq('driver_id', driverId)
-          .in('status', ['pending', 'accepted', 'in_progress'])
+          .in('status', ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress'] as any[])
           .order('updated_at', { ascending: false })
           .limit(10);
 
@@ -141,7 +141,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
           .from('courses')
           .select('id, status, scheduled_date, created_at, updated_at, devis(status, accepted_at, created_at)')
           .eq('driver_id', driverId)
-          .in('status', ['accepted', 'in_progress'])
+          .in('status', ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'] as any[])
           .order('updated_at', { ascending: false })
           .limit(5);
 
