@@ -19,10 +19,13 @@ export interface StorefrontState {
   routeDurationMin: number | null;
   hasSearched: boolean;
   selectedDriverIds: string[];
+  currentStep: number;
   // Guest info
   guestName: string;
   guestPhone: string;
   guestEmail: string;
+  // Timestamp for staleness check
+  savedAt: number;
 }
 
 export function saveStorefrontState(state: StorefrontState): void {
