@@ -43,7 +43,7 @@ interface DriverPlanningProps {
 }
 
 type ViewMode = "day" | "week" | "month";
-type CourseStatus = "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "expired";
+type CourseStatus = "pending" | "accepted" | "driver_approaching" | "driver_arrived" | "in_progress" | "completed" | "cancelled" | "expired";
 
 interface EnrichedCourse {
   id: string;
