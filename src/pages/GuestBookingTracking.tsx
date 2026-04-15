@@ -319,6 +319,62 @@ const GuestBookingTracking = () => {
     }
   };
 
+  const handleCancelCourse = async () => {
+    if (!token) return;
+    setCancelLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_guest_course' as any, { _token: token });
+      if (error) throw error;
+      const result = data as any;
+      if (result?.success) {
+        toast.success('Votre réservation a été annulée.');
+        setBooking(prev => prev ? { ...prev, status: 'cancelled' } : null);
+        setShowCancelConfirm(false);
+      } else {
+        toast.error(result?.error || 'Impossible d\'annuler cette course.');
+      }
+    } catch {
+      toast.error('Erreur lors de l\'annulation.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = () => {
+    if (!booking || !booking.facture_number) return;
+    
+    // Use jsPDF-like approach inline (simple text-based PDF)
+    const invoiceContent = [
+      `FACTURE - ${booking.facture_number}`,
+      ``,
+      `Client: ${booking.guest_name}`,
+      `Date: ${format(new Date(booking.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
+      ``,
+      `Trajet:`,
+      `  Départ: ${booking.pickup_address}`,
+      `  Arrivée: ${booking.destination_address}`,
+      ``,
+      `Distance: ${booking.distance_km?.toFixed(1) || '-'} km`,
+      `Durée estimée: ${booking.duration_minutes || '-'} min`,
+      ``,
+      `Montant TTC: ${(booking.facture_amount || booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €`,
+      `Statut: ${booking.facture_payment_status === 'paid' ? 'Payée' : 'En attente'}`,
+      ``,
+      `Chauffeur: ${booking.driver_company || booking.driver_name || '-'}`,
+      ``,
+      `Merci d'avoir utilisé SoloCab !`,
+    ].join('\n');
+
+    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `facture-${booking.facture_number}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Facture téléchargée');
+  };
+
   // Status timeline
   const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
   const timelineSteps = [
