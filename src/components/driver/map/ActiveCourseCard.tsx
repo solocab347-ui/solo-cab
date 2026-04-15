@@ -217,7 +217,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         devis(amount, status, accepted_at, created_at)
       `)
       .eq('driver_id', driverId)
-      .in('status', ['pending', 'accepted', 'in_progress'])
+      .in('status', ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress'])
       .or(`scheduled_date.is.null,scheduled_date.gte.${todayStart.toISOString()},status.eq.in_progress`)
       .order('updated_at', { ascending: false })
       .order('created_at', { ascending: false })
