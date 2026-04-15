@@ -77,6 +77,8 @@ const GuestBookingTracking = () => {
   const [ratingReason, setRatingReason] = useState('');
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
