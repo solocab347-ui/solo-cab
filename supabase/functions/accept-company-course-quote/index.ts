@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
         scheduled_date: request.scheduled_date,
         passengers_count: request.passengers_count,
         notes: request.notes,
-        status: 'accepted',
+        status: 'driver_approaching',
         distance_km: quote.distance_km,
         duration_minutes: quote.duration_minutes,
         is_guest_booking: request.is_guest_employee,

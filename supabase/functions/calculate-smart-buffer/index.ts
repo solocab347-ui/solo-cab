@@ -88,7 +88,7 @@ serve(async (req) => {
       .from('courses')
       .select('id, scheduled_date, duration_minutes, destination_latitude, destination_longitude, pickup_latitude, pickup_longitude')
       .eq('driver_id', driver_id)
-      .in('status', ['accepted', 'in_progress'])
+      .in('status', ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'])
       .gte('scheduled_date', dayStart.toISOString())
       .lte('scheduled_date', dayEnd.toISOString())
       .order('scheduled_date', { ascending: true });

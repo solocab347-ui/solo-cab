@@ -285,7 +285,7 @@ export function IncomingCourseOverlay({
         await supabase.from('shared_courses').update({ status: 'accepted', accepted_at: new Date().toISOString() }).eq('id', course.sourceId);
         toast.success('Course partagée acceptée !');
       } else if (course.source === 'direct') {
-        await supabase.from('courses').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', course.sourceId);
+        await supabase.from('courses').update({ status: 'driver_approaching' as any, updated_at: new Date().toISOString() }).eq('id', course.sourceId);
         try {
           const { data: courseData } = await supabase.from('courses').select('payment_method_requested, client_id').eq('id', course.sourceId).maybeSingle();
           if (courseData?.payment_method_requested === 'card' && courseData?.client_id) {

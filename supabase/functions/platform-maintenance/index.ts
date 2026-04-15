@@ -100,7 +100,7 @@ serve(async (req) => {
     const { data: stuckCourses, error: stuckError } = await supabaseClient
       .from('courses')
       .select('id, status, updated_at, driver_id')
-      .in('status', ['accepted', 'in_progress'])
+      .in('status', ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'])
       .lt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .limit(20);
     
