@@ -92,7 +92,7 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
       const { error } = await supabase
         .from('courses')
         .update({ 
-          status: 'accepted',
+          status: 'driver_approaching' as any,
           guest_notified_at: new Date().toISOString()
         })
         .eq('id', booking.id);
@@ -181,8 +181,8 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
   };
 
   const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const acceptedBookings = bookings.filter(b => b.status === 'accepted');
-  const otherBookings = bookings.filter(b => !['pending', 'accepted'].includes(b.status));
+  const acceptedBookings = bookings.filter(b => ['accepted', 'driver_approaching', 'driver_arrived'].includes(b.status));
+  const otherBookings = bookings.filter(b => !['pending', 'accepted', 'driver_approaching', 'driver_arrived'].includes(b.status));
 
   if (loading) {
     return (
@@ -285,7 +285,7 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
                 </Button>
               </>
             )}
-            {booking.status === 'accepted' && (
+            {['accepted', 'driver_approaching', 'driver_arrived'].includes(booking.status) && (
               <>
                 <Button 
                   size="sm" 
