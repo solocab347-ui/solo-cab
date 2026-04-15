@@ -22652,6 +22652,10 @@ export type Database = {
           driver_name: string
           driver_phone: string
           duration_minutes: number
+          facture_amount: number
+          facture_id: string
+          facture_number: string
+          facture_payment_status: string
           final_payment_amount: number
           guest_estimated_price: number
           guest_name: string

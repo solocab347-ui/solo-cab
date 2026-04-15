@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation, Route, Timer, Gauge } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation, Route, Timer, Gauge, Download, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -54,6 +54,10 @@ interface BookingInfo {
   vehicle_model: string | null;
   vehicle_color: string | null;
   vehicle_plate: string | null;
+  facture_id: string | null;
+  facture_number: string | null;
+  facture_amount: number | null;
+  facture_payment_status: string | null;
 }
 
 const GuestBookingTracking = () => {
@@ -73,6 +77,8 @@ const GuestBookingTracking = () => {
   const [ratingReason, setRatingReason] = useState('');
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -148,6 +154,10 @@ const GuestBookingTracking = () => {
           vehicle_model: rawBooking.vehicle_model ?? null,
           vehicle_color: rawBooking.vehicle_color ?? null,
           vehicle_plate: rawBooking.vehicle_plate ?? null,
+          facture_id: rawBooking.facture_id ?? null,
+          facture_number: rawBooking.facture_number ?? null,
+          facture_amount: rawBooking.facture_amount ?? null,
+          facture_payment_status: rawBooking.facture_payment_status ?? null,
         };
         setBooking(parsedBooking);
         setLastRefresh(new Date());
@@ -309,6 +319,62 @@ const GuestBookingTracking = () => {
     }
   };
 
+  const handleCancelCourse = async () => {
+    if (!token) return;
+    setCancelLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_guest_course' as any, { _token: token });
+      if (error) throw error;
+      const result = data as any;
+      if (result?.success) {
+        toast.success('Votre réservation a été annulée.');
+        setBooking(prev => prev ? { ...prev, status: 'cancelled' } : null);
+        setShowCancelConfirm(false);
+      } else {
+        toast.error(result?.error || 'Impossible d\'annuler cette course.');
+      }
+    } catch {
+      toast.error('Erreur lors de l\'annulation.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = () => {
+    if (!booking || !booking.facture_number) return;
+    
+    // Use jsPDF-like approach inline (simple text-based PDF)
+    const invoiceContent = [
+      `FACTURE - ${booking.facture_number}`,
+      ``,
+      `Client: ${booking.guest_name}`,
+      `Date: ${format(new Date(booking.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
+      ``,
+      `Trajet:`,
+      `  Départ: ${booking.pickup_address}`,
+      `  Arrivée: ${booking.destination_address}`,
+      ``,
+      `Distance: ${booking.distance_km?.toFixed(1) || '-'} km`,
+      `Durée estimée: ${booking.duration_minutes || '-'} min`,
+      ``,
+      `Montant TTC: ${(booking.facture_amount || booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €`,
+      `Statut: ${booking.facture_payment_status === 'paid' ? 'Payée' : 'En attente'}`,
+      ``,
+      `Chauffeur: ${booking.driver_company || booking.driver_name || '-'}`,
+      ``,
+      `Merci d'avoir utilisé SoloCab !`,
+    ].join('\n');
+
+    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `facture-${booking.facture_number}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Facture téléchargée');
+  };
+
   // Status timeline
   const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
   const timelineSteps = [
@@ -368,6 +434,45 @@ const GuestBookingTracking = () => {
   const vehicleDescription = [booking.vehicle_brand, booking.vehicle_model].filter(Boolean).join(' ');
   const hasVehicleInfo = vehicleDescription || booking.vehicle_color || booking.vehicle_plate;
 
+  const renderCancelSection = () => {
+    if (!['pending', 'accepted', 'driver_approaching'].includes(booking.status)) return null;
+    
+    if (showCancelConfirm) {
+      return (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <p className="text-sm font-semibold text-destructive">Confirmer l'annulation ?</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Cette action est irréversible. Votre réservation sera annulée.</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCancelConfirm(false)} disabled={cancelLoading}>
+                Non, garder
+              </Button>
+              <Button variant="destructive" size="sm" className="flex-1" onClick={handleCancelCourse} disabled={cancelLoading}>
+                {cancelLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
+                Oui, annuler
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full text-destructive hover:bg-destructive/10 border border-destructive/20"
+        onClick={() => setShowCancelConfirm(true)}
+      >
+        <XCircle className="w-4 h-4 mr-2" />
+        Annuler ma réservation
+      </Button>
+    );
+  };
+
   // Status-specific contextual content
   const getPhaseContent = () => {
     switch (booking.status) {
@@ -381,6 +486,7 @@ const GuestBookingTracking = () => {
             <p className="text-muted-foreground text-sm">
               Votre demande a été envoyée. Le chauffeur va l'examiner et vous confirmer rapidement.
             </p>
+            {renderCancelSection()}
           </div>
         );
       
@@ -395,6 +501,7 @@ const GuestBookingTracking = () => {
               <p className="text-muted-foreground text-sm">Le chauffeur se prépare pour votre course.</p>
             </div>
             {renderDriverCard()}
+            {renderCancelSection()}
           </div>
         );
       
@@ -410,6 +517,7 @@ const GuestBookingTracking = () => {
             </div>
             {renderLiveTrackingInfo('approaching')}
             {renderDriverCard()}
+            {renderCancelSection()}
           </div>
         );
       
@@ -458,6 +566,25 @@ const GuestBookingTracking = () => {
                     : "Merci d'avoir utilisé SoloCab !"}
               </p>
             </div>
+            {/* Invoice download */}
+            {booking.facture_number && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Facture {booking.facture_number}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(booking.facture_amount || booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                      </p>
+                    </div>
+                    <Button onClick={handleDownloadInvoice} variant="outline" size="sm" className="gap-2">
+                      <Download className="w-4 h-4" />
+                      Télécharger
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
       

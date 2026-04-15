@@ -1,0 +1,1 @@
+UPDATE courses SET status = 'driver_approaching', updated_at = now() WHERE guest_tracking_token = '27fb6ea4-b5da-455a-bd1e-f46879e6e456' AND status = 'accepted';
