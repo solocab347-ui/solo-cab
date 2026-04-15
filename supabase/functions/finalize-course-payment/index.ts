@@ -501,9 +501,8 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      // Record in payments table — MUST use "succeeded" for cash so trigger fires
-      // For stripe manual (TPE), also use "succeeded" since driver collected payment
-      await supabaseClient.from("payments").insert({
+      // Record in payments table (idempotent — unique index prevents duplicates)
+      const { error: cashPayErr } = await supabaseClient.from("payments").insert({
         course_id,
         driver_id: course.driver_id,
         client_id: course.client_id,
@@ -522,6 +521,11 @@ serve(async (req) => {
           course_id,
         },
       });
+      if (cashPayErr?.code === "23505") {
+        logStep("Payment already recorded (duplicate prevented)", { course_id });
+      } else if (cashPayErr) {
+        logStep("Payment insert error (non-blocking)", { error: cashPayErr.message });
+      }
 
       // stripe_transactions, driver_balance_pending, and solo_admin_ledger
       // are automatically populated by the sync_financial_records_from_payment trigger on payments
