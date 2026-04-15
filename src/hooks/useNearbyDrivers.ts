@@ -213,7 +213,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             setDrivers(refinedDrivers);
           }).catch(() => { /* keep quick prices on error */ });
         }
-        setSearchRadius(Math.max(...(filteredDrivers.length > 0 ? filteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
+        setSearchRadius(Math.max(...(quickFiltered.length > 0 ? quickFiltered : quickDrivers).map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
         setError('Erreur de connexion');
