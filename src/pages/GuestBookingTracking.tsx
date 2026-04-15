@@ -434,6 +434,45 @@ const GuestBookingTracking = () => {
   const vehicleDescription = [booking.vehicle_brand, booking.vehicle_model].filter(Boolean).join(' ');
   const hasVehicleInfo = vehicleDescription || booking.vehicle_color || booking.vehicle_plate;
 
+  const renderCancelSection = () => {
+    if (!['pending', 'accepted', 'driver_approaching'].includes(booking.status)) return null;
+    
+    if (showCancelConfirm) {
+      return (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <p className="text-sm font-semibold text-destructive">Confirmer l'annulation ?</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Cette action est irréversible. Votre réservation sera annulée.</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCancelConfirm(false)} disabled={cancelLoading}>
+                Non, garder
+              </Button>
+              <Button variant="destructive" size="sm" className="flex-1" onClick={handleCancelCourse} disabled={cancelLoading}>
+                {cancelLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
+                Oui, annuler
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full text-destructive hover:bg-destructive/10 border border-destructive/20"
+        onClick={() => setShowCancelConfirm(true)}
+      >
+        <XCircle className="w-4 h-4 mr-2" />
+        Annuler ma réservation
+      </Button>
+    );
+  };
+
   // Status-specific contextual content
   const getPhaseContent = () => {
     switch (booking.status) {
