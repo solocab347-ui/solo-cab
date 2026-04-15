@@ -1016,7 +1016,7 @@ serve(async (req) => {
             deposit_paid_at: new Date().toISOString(),
             deposit_stripe_payment_intent_id: paymentIntentId,
             deposit_status: "paid",
-            status: "accepted",
+            status: "driver_approaching",
           })
           .eq("id", course_id);
 
