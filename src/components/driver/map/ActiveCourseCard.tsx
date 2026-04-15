@@ -399,8 +399,10 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     console.log('[ActiveCourseCard] Driver restored to online with fresh GPS timestamp');
   }, [driverId]);
 
+  const finalizingRef = useRef(false);
   const handleComplete = useCallback(async () => {
-    if (!course) return;
+    if (!course || finalizingRef.current) return;
+    finalizingRef.current = true;
     setLoading(true);
     
     const currentPaymentMethod = course.payment_method || course.payment_method_requested || 'cash';

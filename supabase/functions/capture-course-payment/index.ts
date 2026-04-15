@@ -241,8 +241,8 @@ serve(async (req) => {
       })
       .eq("id", course_id);
 
-    // Record in payments table
-    await supabaseClient.from("payments").insert({
+    // Record in payments table (idempotent — unique index prevents duplicates)
+    const { error: payErr } = await supabaseClient.from("payments").insert({
       course_id,
       driver_id: course.driver_id,
       client_id: course.client_id,
@@ -259,6 +259,9 @@ serve(async (req) => {
       payment_method: "card",
       captured_at: new Date().toISOString(),
     });
+    if (payErr?.code === "23505") {
+      logStep("Payment already recorded (duplicate prevented)", { course_id });
+    }
 
     // Create or update facture
     const { data: existingFacture } = await supabaseClient
