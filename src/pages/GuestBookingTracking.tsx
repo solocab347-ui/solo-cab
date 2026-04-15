@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation, Route, Timer, Gauge } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation, Route, Timer, Gauge, Download, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -54,6 +54,10 @@ interface BookingInfo {
   vehicle_model: string | null;
   vehicle_color: string | null;
   vehicle_plate: string | null;
+  facture_id: string | null;
+  facture_number: string | null;
+  facture_amount: number | null;
+  facture_payment_status: string | null;
 }
 
 const GuestBookingTracking = () => {
