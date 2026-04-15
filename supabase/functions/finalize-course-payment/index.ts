@@ -253,8 +253,8 @@ serve(async (req) => {
             })
             .eq("id", course_id);
 
-          // Record in unified payments table
-          await supabaseClient.from("payments").insert({
+          // Record in unified payments table (idempotent — unique index prevents duplicates)
+          const { error: payInsertErr } = await supabaseClient.from("payments").insert({
             course_id,
             driver_id: course.driver_id,
             client_id: course.client_id,
@@ -276,6 +276,11 @@ serve(async (req) => {
               flow: "authorize_then_capture",
             },
           });
+          if (payInsertErr?.code === "23505") {
+            logStep("Payment already recorded (duplicate prevented)", { course_id });
+          } else if (payInsertErr) {
+            logStep("Payment insert error (non-blocking)", { error: payInsertErr.message });
+          }
 
           // Créer la facture automatiquement
           try {
