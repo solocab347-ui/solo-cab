@@ -43,7 +43,7 @@ export function UpcomingReservationsBanner({ driverId, hasActiveCourse }: Upcomi
         devis(amount, status)
       `)
       .eq('driver_id', driverId)
-      .in('status', ['pending', 'accepted', 'driver_approaching'])
+      .in('status', ['pending', 'accepted', 'driver_approaching'] as any[])
       .not('scheduled_date', 'is', null)
       .gte('scheduled_date', todayStart.toISOString())
       .lt('scheduled_date', todayEnd.toISOString())
