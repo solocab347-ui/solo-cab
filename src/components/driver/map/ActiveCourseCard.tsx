@@ -68,9 +68,26 @@ function persistPhase(courseId: string, phase: CoursePhase) {
   } catch {}
 }
 
+function persistActiveCourseId(courseId: string | null) {
+  try {
+    if (courseId) localStorage.setItem('solocab_active_course_id', courseId);
+    else localStorage.removeItem('solocab_active_course_id');
+  } catch {}
+}
+
+function loadPersistedActiveCourseId() {
+  try {
+    return localStorage.getItem('solocab_active_course_id');
+  } catch {
+    return null;
+  }
+}
+
 function clearPersistedPhase(courseId: string) {
   try {
     localStorage.removeItem(`solocab_phase_${courseId}`);
+    const activeCourseId = localStorage.getItem('solocab_active_course_id');
+    if (activeCourseId === courseId) localStorage.removeItem('solocab_active_course_id');
   } catch {}
 }
 
@@ -229,9 +246,19 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     }
 
     const candidates = (data ?? []) as unknown as ActiveCourse[];
-    const nonDismissed = candidates.filter(c => !dismissedCourseIds.has(c.id));
-    const todayOnly = nonDismissed.filter(isCourseTodayOrImmediate);
-    const newCourse = pickRelevantOperationalCourse(todayOnly);
+    const todayOnly = candidates.filter(isCourseTodayOrImmediate);
+    const persistedActiveCourseId = loadPersistedActiveCourseId();
+
+    let newCourse = pickRelevantOperationalCourse(todayOnly);
+
+    if (!newCourse && persistedActiveCourseId) {
+      newCourse = todayOnly.find(c => c.id === persistedActiveCourseId) ?? null;
+    }
+
+    const nonDismissed = todayOnly.filter(c => !dismissedCourseIds.has(c.id) || c.id === persistedActiveCourseId);
+    if (!newCourse) {
+      newCourse = pickRelevantOperationalCourse(nonDismissed);
+    }
 
     const upcoming = todayOnly
       .filter(c => c.id !== newCourse?.id && c.scheduled_date)
@@ -241,6 +268,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     if (newCourse && newCourse.driver_id !== driverId) {
       console.warn('[ActiveCourseCard] driver_id mismatch, ignoring');
       setCourse(null);
+      persistActiveCourseId(null);
       onCourseActive?.(false);
       return;
     }
@@ -250,6 +278,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const nextBusyStatus = newCourse ? getDriverBusyStatus(newCourse) : null;
 
     setCourse(newCourse);
+    persistActiveCourseId(newCourse?.id || null);
     onCourseActive?.(!!newCourse);
 
     if (newCourse && nextBusyStatus) {
@@ -281,6 +310,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         driver_status: 'online',
         last_location_update: new Date().toISOString(),
       }).eq('id', driverId);
+      persistActiveCourseId(null);
       wasAvailableBeforeCourseRef.current = null;
       console.log('[ActiveCourseCard] Driver restored to online with fresh GPS');
       onCourseChange?.();
