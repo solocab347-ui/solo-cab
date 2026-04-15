@@ -152,54 +152,23 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           return;
         }
 
-        // Calculate estimated price for each driver using RPC for accurate surcharges
-        // OPTIMISATION: Batch toutes les requêtes RPC en parallèle (max 10 drivers)
-        const scheduledDateStr = scheduledDate ? scheduledDate.toISOString() : new Date().toISOString();
-        
-        const pricePromises = routeDistanceKm 
-          ? data.map((driver: NearbyDriverRpcRow) => 
-              supabase.rpc('calculate_course_price', {
-                _driver_id: driver.driver_id,
-                _distance_km: routeDistanceKm,
-                _duration_minutes: Math.round(routeDurationMinutes || 0),
-                _use_hourly_rate: false,
-                _scheduled_date: scheduledDateStr,
-                _pickup_address: pickupAddress || null,
-                _destination_address: destinationAddress || null,
-              }).then(res => ({ data: res.data, error: res.error, driver_id: driver.driver_id }))
-            )
-          : [];
-
-        const priceResults = await Promise.all(pricePromises);
-        const priceMap = new Map(priceResults.map(r => [r.driver_id, r]));
-
-        const driversWithPrices = data.map((driver: NearbyDriverRpcRow) => {
+        // PHASE 1: Show drivers IMMEDIATELY with basic estimated prices (no RPC delay)
+        const quickDrivers = data.map((driver: NearbyDriverRpcRow) => {
           const distanceKm = driver.distance_meters / 1000;
           let estimatedPrice = driver.base_fare;
-          let hasSurcharge = false;
-
           if (routeDistanceKm) {
-            const priceResult = priceMap.get(driver.driver_id);
-            if (priceResult && !priceResult.error && priceResult.data?.length > 0) {
-              estimatedPrice = priceResult.data[0].total_price;
-              hasSurcharge = (priceResult.data[0].surcharge_evening || 0) > 0 || 
-                             (priceResult.data[0].surcharge_weekend || 0) > 0 ||
-                             (priceResult.data[0].airport_fee || 0) > 0;
-            } else {
-              estimatedPrice = driver.base_fare + (driver.per_km_rate * routeDistanceKm);
-              estimatedPrice = Math.max(estimatedPrice, driver.minimum_price);
-            }
+            estimatedPrice = driver.base_fare + (driver.per_km_rate * routeDistanceKm);
+            estimatedPrice = Math.max(estimatedPrice, driver.minimum_price);
           } else {
             estimatedPrice = Math.max(estimatedPrice, driver.minimum_price);
           }
-
           return {
             ...driver,
             evening_surcharge: null,
             weekend_surcharge: null,
             distance_km: distanceKm,
             estimated_price: Math.round(estimatedPrice * 100) / 100,
-            has_surcharge: hasSurcharge,
+            has_surcharge: false,
             accepted_payment_methods: driver.accepted_payment_methods || ['cash', 'card'],
             stripe_connect_charges_enabled: driver.stripe_connect_charges_enabled || false,
             vehicle_brand: driver.vehicle_brand || null,
@@ -208,11 +177,43 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           };
         });
 
-        // Show all drivers - payment method availability is shown on their card
-        // Drivers without Stripe can still accept cash/transfer payments
-        const filteredDrivers = driversWithPrices.filter(d => d.estimated_price > 0 || d.base_fare > 0);
-        setDrivers(filteredDrivers);
-        setSearchRadius(Math.max(...(filteredDrivers.length > 0 ? filteredDrivers : driversWithPrices).map((driver) => driver.search_radius_used || 5), 5));
+        const quickFiltered = quickDrivers.filter(d => d.estimated_price > 0 || d.base_fare > 0);
+        setDrivers(quickFiltered);
+
+        // PHASE 2: Refine prices in background with accurate RPC (surcharges, airport fees)
+        if (routeDistanceKm) {
+          const scheduledDateStr = scheduledDate ? scheduledDate.toISOString() : new Date().toISOString();
+          const pricePromises = data.map((driver: NearbyDriverRpcRow) =>
+            supabase.rpc('calculate_course_price', {
+              _driver_id: driver.driver_id,
+              _distance_km: routeDistanceKm,
+              _duration_minutes: Math.round(routeDurationMinutes || 0),
+              _use_hourly_rate: false,
+              _scheduled_date: scheduledDateStr,
+              _pickup_address: pickupAddress || null,
+              _destination_address: destinationAddress || null,
+            }).then(res => ({ data: res.data, error: res.error, driver_id: driver.driver_id }))
+          );
+
+          Promise.all(pricePromises).then(priceResults => {
+            const priceMap = new Map(priceResults.map(r => [r.driver_id, r]));
+            const refinedDrivers = quickFiltered.map(driver => {
+              const priceResult = priceMap.get(driver.driver_id);
+              if (priceResult && !priceResult.error && priceResult.data?.length > 0) {
+                return {
+                  ...driver,
+                  estimated_price: Math.round(priceResult.data[0].total_price * 100) / 100,
+                  has_surcharge: (priceResult.data[0].surcharge_evening || 0) > 0 ||
+                                 (priceResult.data[0].surcharge_weekend || 0) > 0 ||
+                                 (priceResult.data[0].airport_fee || 0) > 0,
+                };
+              }
+              return driver;
+            });
+            setDrivers(refinedDrivers);
+          }).catch(() => { /* keep quick prices on error */ });
+        }
+        setSearchRadius(Math.max(...(quickFiltered.length > 0 ? quickFiltered : quickDrivers).map((driver) => driver.search_radius_used || 5), 5));
       } catch (err) {
         console.error('Search error:', err);
         setError('Erreur de connexion');

@@ -261,10 +261,7 @@ const GuestBookingTracking = () => {
         toast.error('Veuillez sélectionner un motif');
         return;
       }
-      if (!ratingReasonDetail.trim()) {
-        toast.error('Veuillez expliquer brièvement ce qui s\'est passé');
-        return;
-      }
+      // Detail is optional — don't block submission
     }
     
     setIsSubmittingRating(true);
@@ -502,9 +499,22 @@ const GuestBookingTracking = () => {
             
             {/* Timeline visualization */}
             {booking.status !== 'refused' && booking.status !== 'cancelled' && (
-              <div className="flex items-center justify-between px-4 py-3">
-                {timelineSteps.map((step, index) => (
-                  <div key={step.key} className="flex flex-col items-center flex-1">
+              <div className="relative flex items-start justify-between px-2 py-3">
+                {/* Connector line behind icons */}
+                <div className="absolute top-[calc(0.75rem+4px)] left-[calc(8.33%)] right-[calc(8.33%)] h-0.5 bg-muted z-0" />
+                {(() => {
+                  const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
+                  const currentIndex = statusOrder.indexOf(booking.status);
+                  const progressPercent = currentIndex > 0 ? (currentIndex / (timelineSteps.length - 1)) * 100 : 0;
+                  return (
+                    <div
+                      className="absolute top-[calc(0.75rem+4px)] left-[calc(8.33%)] h-0.5 bg-primary z-[1] transition-all duration-500"
+                      style={{ width: `${progressPercent * 0.8333}%` }}
+                    />
+                  );
+                })()}
+                {timelineSteps.map((step) => (
+                  <div key={step.key} className="flex flex-col items-center flex-1 relative z-[2]">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-colors ${
                       step.isActive 
                         ? step.isCurrent ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
@@ -512,12 +522,9 @@ const GuestBookingTracking = () => {
                     }`}>
                       <step.icon className="w-4 h-4" />
                     </div>
-                    <span className={`text-xs text-center ${step.isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                    <span className={`text-[10px] text-center leading-tight ${step.isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                       {step.label}
                     </span>
-                    {index < timelineSteps.length - 1 && (
-                      <div className={`absolute h-0.5 w-full ${step.isActive ? 'bg-primary/30' : 'bg-muted'}`} />
-                    )}
                   </div>
                 ))}
               </div>

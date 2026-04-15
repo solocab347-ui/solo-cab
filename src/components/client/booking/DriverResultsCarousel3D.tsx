@@ -92,7 +92,7 @@ export function DriverResultsCarousel3D({
   return (
     <div
       className="relative w-full overflow-hidden"
-      style={{ perspective: '900px' }}
+      style={{ perspective: '900px', willChange: 'transform' }}
       onPointerDown={() => setIsPaused(true)}
       onPointerUp={() => setIsPaused(false)}
       onPointerLeave={() => setIsPaused(false)}
