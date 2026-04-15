@@ -115,19 +115,56 @@ export function UnifiedBookingPage() {
   const pickupLock = useRef(false);
   const destLock = useRef(false);
 
-  // ── Persist state ──
+  // ── Persist state (includes currentStep for recovery) ──
   useEffect(() => {
     saveStorefrontState({
       pickupAddress, destinationAddress, pickupCoords, destCoords,
       mode, scheduledDate, scheduledTime, maxSearchRadiusKm,
       clientPaymentMethod, routeDistanceKm, routeDurationMin, hasSearched,
       selectedDriverIds: Array.from(selectedDriverIds),
+      currentStep,
       guestName, guestPhone, guestEmail,
+      savedAt: Date.now(),
     });
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode,
       scheduledDate, scheduledTime, maxSearchRadiusKm, clientPaymentMethod,
       routeDistanceKm, routeDurationMin, hasSearched, selectedDriverIds,
-      guestName, guestPhone, guestEmail]);
+      currentStep, guestName, guestPhone, guestEmail]);
+
+  // ── Visibility recovery: save state when tab goes hidden (iOS/Android suspend) ──
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        saveStorefrontState({
+          pickupAddress, destinationAddress, pickupCoords, destCoords,
+          mode, scheduledDate, scheduledTime, maxSearchRadiusKm,
+          clientPaymentMethod, routeDistanceKm, routeDurationMin, hasSearched,
+          selectedDriverIds: Array.from(selectedDriverIds),
+          currentStep,
+          guestName, guestPhone, guestEmail,
+          savedAt: Date.now(),
+        });
+      }
+    };
+    // Also save on pagehide (more reliable on iOS Safari)
+    const handlePageHide = () => {
+      saveStorefrontState({
+        pickupAddress, destinationAddress, pickupCoords, destCoords,
+        mode, scheduledDate, scheduledTime, maxSearchRadiusKm,
+        clientPaymentMethod, routeDistanceKm, routeDurationMin, hasSearched,
+        selectedDriverIds: Array.from(selectedDriverIds),
+        currentStep,
+        guestName, guestPhone, guestEmail,
+        savedAt: Date.now(),
+      });
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  });
 
   useEffect(() => {
     const modeParam = searchParams.get('mode');
