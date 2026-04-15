@@ -197,6 +197,21 @@ export function UnifiedBookingPage() {
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
+  // ── Auto-recover: if restored to step 2/3 but no drivers loaded, re-search ──
+  const recoveryDone = useRef(false);
+  useEffect(() => {
+    if (recoveryDone.current) return;
+    if (currentStep > 1 && drivers.length === 0 && pickupCoords && destCoords && !isLoading && !isGeocoding) {
+      recoveryDone.current = true;
+      const runRecovery = async () => {
+        let schedDate: Date | undefined;
+        if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+      };
+      runRecovery();
+    }
+  }, [currentStep, drivers.length, pickupCoords, destCoords, isLoading, isGeocoding]);
+
   const notifySelectedDrivers = useCallback(async (selected: NearbyDriver[]) => {
     try {
       const driverIds = selected.map((driver) => driver.driver_id).filter(Boolean);
