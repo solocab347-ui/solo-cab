@@ -19,7 +19,7 @@ interface CourseCompletionScreenProps {
   courseId: string;
   clientName: string;
   amount: number;
-  paymentMethod: string; // 'card' | 'cash' | 'stripe' | 'especes'
+  paymentMethod: string;
   paymentResult: {
     success: boolean;
     status?: string;
@@ -41,38 +41,55 @@ export function CourseCompletionScreen({
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
   const [localResult, setLocalResult] = useState(paymentResult);
+  const [switchedToCash, setSwitchedToCash] = useState(false);
 
-  // Sync with parent prop updates (e.g. from background finalization)
   useEffect(() => {
     setLocalResult(paymentResult);
   }, [paymentResult]);
 
-  const isCard = paymentMethod === "card" || paymentMethod === "stripe" || paymentMethod === "card_online";
-  const isCash = !isCard;
-  const isSuccess = localResult.success || localResult.alreadyPaid;
+  const isOriginallyCard = paymentMethod === "card" || paymentMethod === "stripe" || paymentMethod === "card_online";
+  const isCash = !isOriginallyCard || switchedToCash;
+  const isCard = isOriginallyCard && !switchedToCash;
+  const isProcessing = isCard && localResult.status === "processing";
+  const isSuccess = localResult.success || localResult.alreadyPaid || switchedToCash;
+  const isFailed = isCard && !isSuccess && !isProcessing;
 
   const handleRetryPayment = async () => {
     setRetrying(true);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-
       const { data, error } = await supabase.functions.invoke("finalize-course-payment", {
         body: { course_id: courseId },
       });
-      clearTimeout(timeout);
-
       if (error) throw error;
       if (data?.status === "succeeded" || data?.success || data?.already_paid) {
         toast.success("Paiement encaissé avec succès !");
         setLocalResult({ success: true, status: "succeeded" });
       } else {
-        toast.error("Le paiement a échoué. Utilisez le lien de paiement.");
+        toast.error("Le paiement a échoué. Utilisez le lien ou encaissez en espèces.");
+        setLocalResult({ success: false, status: "failed", error: data?.error || "Paiement refusé" });
       }
     } catch (err: any) {
       toast.error(err.message || "Erreur lors du paiement");
     } finally {
       setRetrying(false);
+    }
+  };
+
+  const handleSwitchToCash = async () => {
+    try {
+      // Update payment method in DB
+      await supabase
+        .from("courses")
+        .update({
+          payment_method: "cash",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", courseId);
+
+      setSwitchedToCash(true);
+      toast.success("Mode de paiement changé en espèces");
+    } catch {
+      toast.error("Erreur lors du changement");
     }
   };
 
@@ -88,10 +105,7 @@ export function CourseCompletionScreen({
       });
       if (error) throw error;
       if (data?.url) {
-        // Copy to clipboard and open share
         await navigator.clipboard.writeText(data.url).catch(() => {});
-        
-        // Try native share
         if (navigator.share) {
           await navigator.share({
             title: `Paiement de ${amount.toFixed(2)}€`,
@@ -99,7 +113,6 @@ export function CourseCompletionScreen({
             url: data.url,
           }).catch(() => {});
         }
-        
         setLinkSent(true);
         toast.success("Lien de paiement généré et copié !");
       }
@@ -115,36 +128,31 @@ export function CourseCompletionScreen({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[99999] bg-background flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-6 pb-4">
         <h2 className="text-lg font-bold text-foreground">Récapitulatif</h2>
-        <Button variant="ghost" size="icon" onClick={onDismiss} className="rounded-full">
-          <X className="w-5 h-5" />
-        </Button>
+        {!isProcessing && (
+          <Button variant="ghost" size="icon" onClick={onDismiss} className="rounded-full">
+            <X className="w-5 h-5" />
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 px-5 space-y-6 overflow-y-auto pb-8">
-        {/* Success / Fail Icon */}
+        {/* Status Icon */}
         <div className="flex flex-col items-center pt-4">
-          {isCard && isSuccess ? (
+          {isProcessing ? (
             <>
-              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
               </div>
-              <h3 className="text-2xl font-black text-emerald-600">Course terminée</h3>
-              <p className="text-base text-emerald-600/80 font-medium mt-1">Client débité par carte</p>
+              <h3 className="text-2xl font-black text-foreground">Finalisation...</h3>
+              <p className="text-base text-muted-foreground font-medium mt-1">Paiement carte en cours de traitement</p>
             </>
-          ) : isCard && !isSuccess ? (
-            <>
-              <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                <XCircle className="w-12 h-12 text-destructive" />
-              </div>
-              <h3 className="text-2xl font-black text-destructive">Échec du paiement</h3>
-              <p className="text-base text-destructive/80 font-medium mt-1">Le client n'a pas été débité</p>
-            </>
-          ) : (
+          ) : isCash && isSuccess ? (
             <>
               <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
                 <Banknote className="w-12 h-12 text-amber-500" />
@@ -152,10 +160,26 @@ export function CourseCompletionScreen({
               <h3 className="text-2xl font-black text-foreground">Course terminée</h3>
               <p className="text-base text-amber-600 font-medium mt-1">Paiement en espèces</p>
             </>
+          ) : isCard && isSuccess ? (
+            <>
+              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+              </div>
+              <h3 className="text-2xl font-black text-emerald-600">Course terminée</h3>
+              <p className="text-base text-emerald-600/80 font-medium mt-1">Client débité par carte</p>
+            </>
+          ) : (
+            <>
+              <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <XCircle className="w-12 h-12 text-destructive" />
+              </div>
+              <h3 className="text-2xl font-black text-destructive">Échec du paiement</h3>
+              <p className="text-base text-destructive/80 font-medium mt-1">Le client n'a pas été débité</p>
+            </>
           )}
         </div>
 
-        {/* Amount */}
+        {/* Amount Card */}
         <div className="bg-muted/50 border border-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-muted-foreground">Client</span>
@@ -168,14 +192,31 @@ export function CourseCompletionScreen({
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Moyen de paiement</span>
             <Badge variant="outline" className="text-sm gap-1.5">
-              {isCard ? <CreditCard className="w-3.5 h-3.5" /> : <Banknote className="w-3.5 h-3.5" />}
-              {isCard ? "Carte bancaire" : "Espèces"}
+              {isCash ? <Banknote className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
+              {isCash ? "Espèces" : "Carte bancaire"}
             </Badge>
           </div>
         </div>
 
-        {/* Instructions based on payment method */}
-        {isCash && (
+        {/* Processing state */}
+        {isProcessing && (
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5">
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-6 h-6 text-primary animate-spin mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-bold text-primary text-base">
+                  Traitement du paiement en cours...
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Le prélèvement sur la carte du client est en cours. Veuillez patienter quelques secondes.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cash instructions */}
+        {isCash && isSuccess && (
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-5">
             <div className="flex items-start gap-3">
               <Banknote className="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -192,6 +233,7 @@ export function CourseCompletionScreen({
           </div>
         )}
 
+        {/* Card success */}
         {isCard && isSuccess && (
           <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5">
             <div className="flex items-start gap-3">
@@ -202,14 +244,15 @@ export function CourseCompletionScreen({
                 </p>
                 <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-2">
                   Le client a été débité de <strong>{amount.toFixed(2)} €</strong> sur sa carte bancaire.
-                  Vous n'avez <strong>rien à faire</strong>. Le montant sera versé sur votre compte lors du prochain règlement.
+                  Vous n'avez <strong>rien à faire</strong>.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {isCard && !isSuccess && (
+        {/* Card failed - show recovery options */}
+        {isFailed && (
           <div className="space-y-4">
             <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
               <div className="flex items-start gap-3">
@@ -219,14 +262,14 @@ export function CourseCompletionScreen({
                     ⚠️ Le paiement par carte a échoué
                   </p>
                   <p className="text-sm text-destructive/80 mt-2">
-                    {paymentResult.error || "La capture de l'empreinte bancaire n'a pas abouti."}
-                    Vous pouvez réessayer ou envoyer un lien de paiement au client.
+                    {localResult.error || "La capture n'a pas abouti."}
+                    {" "}Choisissez une option ci-dessous.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Retry button */}
+            {/* Option 1: Retry card */}
             <Button
               onClick={handleRetryPayment}
               disabled={retrying}
@@ -238,10 +281,10 @@ export function CourseCompletionScreen({
               ) : (
                 <CreditCard className="w-5 h-5 mr-2" />
               )}
-              Réessayer le paiement
+              Réessayer le paiement carte
             </Button>
 
-            {/* Send payment link */}
+            {/* Option 2: Send payment link */}
             <Button
               onClick={handleSendPaymentLink}
               disabled={sendingLink || linkSent}
@@ -256,19 +299,30 @@ export function CourseCompletionScreen({
               )}
               {linkSent ? "Lien envoyé !" : "Envoyer un lien de paiement"}
             </Button>
+
+            {/* Option 3: Switch to cash */}
+            <Button
+              onClick={handleSwitchToCash}
+              className="w-full h-14 rounded-2xl font-bold text-base bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              <Banknote className="w-5 h-5 mr-2" />
+              Encaisser en espèces
+            </Button>
           </div>
         )}
       </div>
 
       {/* Bottom dismiss */}
-      <div className="px-5 pb-6 pt-3 border-t border-border bg-background">
-        <Button
-          onClick={onDismiss}
-          className="w-full h-14 rounded-2xl font-black text-base"
-        >
-          {isCash ? "J'ai encaissé, fermer" : "Fermer"}
-        </Button>
-      </div>
+      {!isProcessing && (
+        <div className="px-5 pb-6 pt-3 border-t border-border bg-background">
+          <Button
+            onClick={onDismiss}
+            className="w-full h-14 rounded-2xl font-black text-base"
+          >
+            {isCash ? "J'ai encaissé, fermer" : "Fermer"}
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 }
