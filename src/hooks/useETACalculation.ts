@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const MAPBOX_TOKEN = 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || "";
 const MIN_DISTANCE_CHANGE_M = 50; // Only recalculate if driver moved >50m
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
+const FALLBACK_AVERAGE_SPEED_KMH = 28;
 
 interface Coordinates {
   lat: number;
@@ -31,21 +32,37 @@ function haversineDistanceM(a: Coordinates, b: Coordinates): number {
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
+function buildFallbackETA(origin: Coordinates, dest: Coordinates): ETAData {
+  const distanceKmRaw = haversineDistanceM(origin, dest) / 1000;
+  const distanceKm = Math.max(0.1, Math.round(distanceKmRaw * 10) / 10);
+  const durationMin = Math.max(1, Math.round((distanceKm / FALLBACK_AVERAGE_SPEED_KMH) * 60));
+
+  return {
+    distanceKm,
+    durationMin,
+    lastUpdated: new Date(),
+  };
+}
+
 async function fetchDirections(origin: Coordinates, dest: Coordinates): Promise<ETAData | null> {
+  if (!MAPBOX_TOKEN) {
+    return buildFallbackETA(origin, dest);
+  }
+
   try {
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=false&access_token=${MAPBOX_TOKEN}`;
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) return buildFallbackETA(origin, dest);
     const data = await res.json();
     const route = data.routes?.[0];
-    if (!route) return null;
+    if (!route) return buildFallbackETA(origin, dest);
     return {
       distanceKm: Math.round((route.distance / 1000) * 10) / 10,
       durationMin: Math.round(route.duration / 60),
       lastUpdated: new Date(),
     };
   } catch {
-    return null;
+    return buildFallbackETA(origin, dest);
   }
 }
 
