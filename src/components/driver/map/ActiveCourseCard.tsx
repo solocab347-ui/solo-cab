@@ -307,7 +307,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       if (newCourse.status === 'accepted') {
         supabase
           .from('courses')
-          .update({ status: 'driver_approaching', updated_at: new Date().toISOString() })
+          .update({ status: 'driver_approaching' as any, updated_at: new Date().toISOString() })
           .eq('id', newCourse.id)
           .eq('driver_id', driverId)
           .then(() => {
@@ -373,7 +373,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       // Sync to DB so client tracking pages see driver_arrived
       await supabase
         .from('courses')
-        .update({ status: 'driver_arrived', updated_at: new Date().toISOString() })
+        .update({ status: 'driver_arrived' as any, updated_at: new Date().toISOString() })
         .eq('id', course.id)
         .eq('driver_id', driverId);
     }
