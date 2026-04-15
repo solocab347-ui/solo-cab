@@ -12,8 +12,9 @@ import AdminPeriodSummary from "../finance/AdminPeriodSummary";
 import AdminStripePayments from "../finance/AdminStripePayments";
 import AdminGlobalSearch from "../AdminGlobalSearch";
 import AdminStripeAnomalies from "../finance/AdminStripeAnomalies";
+import AdminManualOperations from "../finance/AdminManualOperations";
 
-type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "anomalies" | "search";
+type Tab = "dashboard" | "drivers" | "audit" | "charts" | "stripe" | "anomalies" | "operations" | "search";
 type Preset = "week" | "month" | "year" | "custom";
 
 const getPresetDates = (preset: Preset): { start: string; end: string } => {
