@@ -32,34 +32,34 @@ export function UnifiedBookingPage() {
   // ── Wizard step (restore from persisted state) ──
   const [currentStep, setCurrentStep] = useState(ssValid?.currentStep || 1);
 
-  const [mode, setMode] = useState<BookingMode>(ss?.mode || 'reservation');
+  const [mode, setMode] = useState<BookingMode>(ssValid?.mode || 'reservation');
   
   // Addresses
-  const [pickupAddress, setPickupAddress] = useState(ss?.pickupAddress || '');
-  const [destinationAddress, setDestinationAddress] = useState(ss?.destinationAddress || '');
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(ss?.pickupCoords || null);
-  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(ss?.destCoords || null);
+  const [pickupAddress, setPickupAddress] = useState(ssValid?.pickupAddress || '');
+  const [destinationAddress, setDestinationAddress] = useState(ssValid?.destinationAddress || '');
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(ssValid?.pickupCoords || null);
+  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(ssValid?.destCoords || null);
   
   // Schedule
-  const [scheduledDate, setScheduledDate] = useState(ss?.scheduledDate || '');
-  const [scheduledTime, setScheduledTime] = useState(ss?.scheduledTime || '');
+  const [scheduledDate, setScheduledDate] = useState(ssValid?.scheduledDate || '');
+  const [scheduledTime, setScheduledTime] = useState(ssValid?.scheduledTime || '');
   
   // Search state
-  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(ss?.routeDistanceKm ?? null);
-  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(ss?.routeDurationMin ?? null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(ssValid?.routeDistanceKm ?? null);
+  const [routeDurationMin, setRouteDurationMin] = useState<number | null>(ssValid?.routeDurationMin ?? null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(ss?.maxSearchRadiusKm || 20);
+  const [hasSearched, setHasSearched] = useState(ssValid?.hasSearched || false);
+  const [maxSearchRadiusKm, setMaxSearchRadiusKm] = useState(ssValid?.maxSearchRadiusKm || 20);
   
   // Driver selection
-  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set(ss?.selectedDriverIds || []));
+  const [selectedDriverIds, setSelectedDriverIds] = useState<Set<string>>(new Set(ssValid?.selectedDriverIds || []));
   
   // Guest info
-  const [guestName, setGuestName] = useState(ss?.guestName || '');
-  const [guestPhone, setGuestPhone] = useState(ss?.guestPhone || '');
-  const [guestEmail, setGuestEmail] = useState(ss?.guestEmail || '');
-  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ss?.clientPaymentMethod || null);
+  const [guestName, setGuestName] = useState(ssValid?.guestName || '');
+  const [guestPhone, setGuestPhone] = useState(ssValid?.guestPhone || '');
+  const [guestEmail, setGuestEmail] = useState(ssValid?.guestEmail || '');
+  const [clientPaymentMethod, setClientPaymentMethod] = useState<ClientPaymentMethod>(ssValid?.clientPaymentMethod || null);
   const [cardVerifiedForBooking, setCardVerifiedForBooking] = useState(false);
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string; paymentMethodId?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
