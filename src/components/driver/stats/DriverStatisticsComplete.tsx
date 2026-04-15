@@ -151,14 +151,16 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     setLoading(true);
 
     try {
-      await Promise.all([
+      // fetchCourseStats returns completed courses for revenue sync
+      const [completedCourses] = await Promise.all([
         fetchCourseStats(),
-        fetchRevenueStats(),
         fetchClientsStats(),
         fetchPartnerRankings(),
         fetchGrowthStats(),
         fetchDevisStats()
       ]);
+      // Revenue must use completed courses as primary source
+      await fetchRevenueStats(completedCourses || []);
     } catch (error) {
       console.error("Error fetching statistics:", error);
     } finally {
