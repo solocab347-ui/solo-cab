@@ -478,6 +478,7 @@ const GuestBookingTracking = () => {
             </div>
             {renderLiveTrackingInfo('approaching')}
             {renderDriverCard()}
+            {renderCancelSection()}
           </div>
         );
       
@@ -526,6 +527,25 @@ const GuestBookingTracking = () => {
                     : "Merci d'avoir utilisé SoloCab !"}
               </p>
             </div>
+            {/* Invoice download */}
+            {booking.facture_number && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Facture {booking.facture_number}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(booking.facture_amount || booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                      </p>
+                    </div>
+                    <Button onClick={handleDownloadInvoice} variant="outline" size="sm" className="gap-2">
+                      <Download className="w-4 h-4" />
+                      Télécharger
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
       
