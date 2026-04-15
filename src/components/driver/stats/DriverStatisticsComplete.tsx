@@ -452,22 +452,14 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   };
 
   const fetchGrowthStats = async () => {
-    // Current period
+    // Current period - use courses directly for revenue
     const { data: currentCourses } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, final_payment_amount, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', dateRange.start.toISOString())
       .lte('scheduled_date', dateRange.end.toISOString());
-
-    const { data: currentFactures } = await supabase
-      .from('factures')
-      .select('amount')
-      .eq('driver_id', driverId)
-      .eq('payment_status', 'paid')
-      .gte('paid_at', dateRange.start.toISOString())
-      .lte('paid_at', dateRange.end.toISOString());
 
     const { data: currentClients } = await supabase
       .from('clients')
@@ -479,19 +471,11 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Previous period
     const { data: prevCourses } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, final_payment_amount, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', previousDateRange.start.toISOString())
       .lte('scheduled_date', previousDateRange.end.toISOString());
-
-    const { data: prevFactures } = await supabase
-      .from('factures')
-      .select('amount')
-      .eq('driver_id', driverId)
-      .eq('payment_status', 'paid')
-      .gte('paid_at', previousDateRange.start.toISOString())
-      .lte('paid_at', previousDateRange.end.toISOString());
 
     const { data: prevClients } = await supabase
       .from('clients')
@@ -502,8 +486,8 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const currentCoursesCount = currentCourses?.length || 0;
     const prevCoursesCount = prevCourses?.length || 0;
-    const currentRevenue = currentFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-    const prevRevenue = prevFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const currentRevenue = currentCourses?.reduce((sum, c) => sum + (Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0), 0) || 0;
+    const prevRevenue = prevCourses?.reduce((sum, c) => sum + (Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0), 0) || 0;
     const currentClientsCount = currentClients?.length || 0;
     const prevClientsCount = prevClients?.length || 0;
 
