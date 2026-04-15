@@ -172,6 +172,7 @@ const AdminFinancesHub = () => {
           periodEnd={dateRange.end}
         />
       )}
+      {activeTab === "operations" && <AdminManualOperations />}
       {activeTab === "audit" && <AdminPaymentAudit />}
       {activeTab === "charts" && <AdminFinanceCharts />}
       {activeTab === "stripe" && <AdminStripePayments />}
