@@ -22664,6 +22664,10 @@ export type Database = {
           scheduled_date: string
           shared_drivers: Json
           status: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
         }[]
       }
       get_guest_course_by_token: {
