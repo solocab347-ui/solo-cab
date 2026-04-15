@@ -9,6 +9,7 @@ import { MessageCircle, Send, Lock, X, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface RideChatPanelProps {
   rideId: string;
@@ -81,10 +82,12 @@ export function RideChatPanel({
     if (!text.trim()) return;
     const success = await sendMessage(text);
     if (success) setText('');
+    else toast.error('Message non envoyé');
   };
 
   const handleQuickMessage = async (msg: string) => {
-    await sendMessage(msg);
+    const success = await sendMessage(msg);
+    if (!success) toast.error('Message non envoyé');
   };
 
   const quickMessages = senderType === 'driver' ? QUICK_MESSAGES_DRIVER : QUICK_MESSAGES_CLIENT;

@@ -604,7 +604,7 @@ const ClientRideTracking = () => {
                   <RideChatPanel
                     rideId={rideRequestId}
                     senderType="client"
-                    senderId={course.id}
+                    senderId={course.client_id || course.id}
                     otherName={driverName.split(' ')[0]}
                     triggerLabel="💬 Contacter le chauffeur"
                   />

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { playInfoChime } from '@/lib/notificationSounds';
+import { getRideChatClient } from '@/lib/rideChatClient';
 
 export interface RideMessage {
   id: string;
@@ -26,6 +27,7 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatClosed, setChatClosed] = useState(false);
   const isFirstLoad = useRef(true);
+  const chatClient = useMemo(() => getRideChatClient(senderType), [senderType]);
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -36,7 +38,7 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await chatClient
         .from('ride_messages')
         .select('*')
         .eq('ride_id', rideId)
@@ -56,32 +58,56 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
       setLoading(false);
       isFirstLoad.current = false;
     }
-  }, [rideId, enabled, senderType]);
+  }, [rideId, enabled, senderType, chatClient]);
 
   // Send message
   const sendMessage = useCallback(async (text: string) => {
     if (!rideId || !text.trim() || chatClosed) return false;
     setSending(true);
 
+    const trimmedMessage = text.trim();
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage: RideMessage = {
+      id: optimisticId,
+      ride_id: rideId,
+      sender_type: senderType,
+      sender_id: senderId,
+      message: trimmedMessage,
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
-      const { error } = await supabase
+      const { data, error } = await chatClient
         .from('ride_messages')
         .insert({
           ride_id: rideId,
           sender_type: senderType,
           sender_id: senderId,
-          message: text.trim(),
-        });
+          message: trimmedMessage,
+        })
+        .select('*')
+        .single();
 
       if (error) throw error;
+
+      if (data) {
+        setMessages(prev => prev.map(message => (
+          message.id === optimisticId ? (data as unknown as RideMessage) : message
+        )));
+      }
+
       return true;
     } catch (err) {
+      setMessages(prev => prev.filter(message => message.id !== optimisticId));
       console.error('[RideChat] Send error:', err);
       return false;
     } finally {
       setSending(false);
     }
-  }, [rideId, senderType, senderId, chatClosed]);
+  }, [rideId, senderType, senderId, chatClosed, chatClient]);
 
   // Mark messages as read
   const markAsRead = useCallback(async () => {
@@ -99,11 +125,11 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     ));
     setUnreadCount(0);
 
-    await supabase
+    await chatClient
       .from('ride_messages')
       .update({ is_read: true })
       .in('id', unreadIds);
-  }, [rideId, messages, senderType]);
+  }, [rideId, messages, senderType, chatClient]);
 
   // Initial fetch
   useEffect(() => {
@@ -114,7 +140,7 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
   useEffect(() => {
     if (!rideId || !enabled) return;
 
-    const channel = supabase
+    const channel = chatClient
       .channel(`ride-chat-${rideId}`)
       .on(
         'postgres_changes',
@@ -142,9 +168,9 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      chatClient.removeChannel(channel);
     };
-  }, [rideId, enabled, senderType]);
+  }, [rideId, enabled, senderType, chatClient]);
 
   // Check if ride is completed => chat becomes read-only
   useEffect(() => {

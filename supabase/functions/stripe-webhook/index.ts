@@ -695,7 +695,24 @@ serve(async (req) => {
         const driver_id = metadata.driver_id;
         const client_id = metadata.client_id;
 
+        const { data: existingCourse } = await supabaseClient
+          .from("courses")
+          .select("status, course_finalized_by_driver_at")
+          .eq("id", course_id)
+          .maybeSingle();
+
+        const isCourseClosed = ['completed', 'cancelled', 'refused'].includes(existingCourse?.status || '')
+          || Boolean(existingCourse?.course_finalized_by_driver_at);
+
         logStep("Course payment", { devisId: devis_id, courseId: course_id });
+
+        if (isCourseClosed) {
+          logStep("Ignoring late course payment webhook for closed course", { courseId: course_id, status: existingCourse?.status });
+          return new Response(JSON.stringify({ received: true, ignored: true, reason: "course_already_closed" }), {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
 
         // Update devis
         const { error: devisError } = await supabaseClient
@@ -802,6 +819,15 @@ serve(async (req) => {
         const devis_id = metadata.devis_id;
         const capture_method = metadata.capture_method || "automatic";
 
+        const { data: existingCourse } = await supabaseClient
+          .from("courses")
+          .select("status, course_finalized_by_driver_at")
+          .eq("id", course_id)
+          .maybeSingle();
+
+        const isCourseClosed = ['completed', 'cancelled', 'refused'].includes(existingCourse?.status || '')
+          || Boolean(existingCourse?.course_finalized_by_driver_at);
+
         logStep("Course payment (new flow)", { 
           courseId: course_id, 
           captureMethod: capture_method 
@@ -827,7 +853,9 @@ serve(async (req) => {
           // Automatic capture - payment is complete
           courseUpdate.payment_status = "paid";
           courseUpdate.payment_captured_at = new Date().toISOString();
-          courseUpdate.status = "driver_approaching";
+          if (!isCourseClosed) {
+            courseUpdate.status = "driver_approaching";
+          }
 
           // WEEKLY SETTLEMENT: Calculate SoloCab fee (always 0.50€ per course)
           const SOLOCAB_FEE = 0.50;
