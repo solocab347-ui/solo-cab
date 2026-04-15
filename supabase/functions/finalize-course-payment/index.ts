@@ -643,7 +643,7 @@ serve(async (req) => {
         })
         .eq("id", course_id);
 
-      await supabaseClient.from("payments").insert({
+      const { error: fbPayErr } = await supabaseClient.from("payments").insert({
         course_id,
         driver_id: course.driver_id,
         client_id: course.client_id,
@@ -660,6 +660,9 @@ serve(async (req) => {
         payment_method: "card",
         captured_at: new Date().toISOString(),
       });
+      if (fbPayErr?.code === "23505") {
+        logStep("Payment already recorded (duplicate prevented)", { course_id });
+      }
 
       try {
         await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
