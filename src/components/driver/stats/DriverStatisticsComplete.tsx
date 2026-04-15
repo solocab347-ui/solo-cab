@@ -236,8 +236,14 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     return completedCourses;
   };
 
-  const fetchRevenueStats = async () => {
-    // Get all paid invoices
+  const fetchRevenueStats = async (completedCourses: any[]) => {
+    // Primary source: courses.final_payment_amount for completed courses
+    const courseRevenue = completedCourses.reduce((sum, c) => {
+      const amount = Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0;
+      return sum + amount;
+    }, 0);
+
+    // Secondary source: paid invoices (may cover additional revenue)
     const { data: factures } = await supabase
       .from('factures')
       .select('amount, course_id')
@@ -246,9 +252,28 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       .gte('paid_at', dateRange.start.toISOString())
       .lte('paid_at', dateRange.end.toISOString());
 
-    const totalRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const factureRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
-    // Get commissions owed (to fleet/partners)
+    // Use whichever is higher (courses data is more reliable for cash payments)
+    const totalRevenue = Math.max(courseRevenue, factureRevenue);
+
+    // Breakdown by course type
+    const courseIds = new Set(completedCourses.map(c => c.id));
+    
+    // Get shared courses for this period
+    const { data: sharedCourses } = await supabase
+      .from('shared_courses')
+      .select('course_id, commission_amount')
+      .eq('receiver_driver_id', driverId)
+      .eq('status', 'completed')
+      .in('course_id', [...courseIds]);
+
+    const sharedRevenue = sharedCourses?.reduce((sum, sc) => {
+      const course = completedCourses.find(c => c.id === sc.course_id);
+      return sum + (Number(course?.final_payment_amount) || 0);
+    }, 0) || 0;
+
+    // Get commissions owed
     const { data: commissionsOwed } = await supabase
       .from('partnership_course_commissions')
       .select('commission_amount')
@@ -258,7 +283,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const totalCommissionsOwed = commissionsOwed?.reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
 
-    // Get commissions received (from shared courses where we are sender)
+    // Get commissions received
     const { data: sharedByMe } = await supabase
       .from('shared_courses')
       .select('commission_amount')
@@ -269,12 +294,14 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const totalCommissionsReceived = sharedByMe?.reduce((sum, s) => sum + Number(s.commission_amount || 0), 0) || 0;
 
+    const personalRevenue = totalRevenue - sharedRevenue;
+
     setRevenueStats({
       total: totalRevenue,
-      personal: totalRevenue * 0.6, // Estimation for now
-      partner: totalRevenue * 0.1,
-      fleet: totalRevenue * 0.2,
-      company: totalRevenue * 0.1,
+      personal: personalRevenue,
+      partner: sharedRevenue,
+      fleet: 0,
+      company: 0,
       netAfterCommissions: totalRevenue - totalCommissionsOwed + totalCommissionsReceived,
       commissionsOwed: totalCommissionsOwed,
       commissionsReceived: totalCommissionsReceived
