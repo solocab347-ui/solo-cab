@@ -152,6 +152,10 @@ const GuestBookingTracking = () => {
           vehicle_model: rawBooking.vehicle_model ?? null,
           vehicle_color: rawBooking.vehicle_color ?? null,
           vehicle_plate: rawBooking.vehicle_plate ?? null,
+          facture_id: rawBooking.facture_id ?? null,
+          facture_number: rawBooking.facture_number ?? null,
+          facture_amount: rawBooking.facture_amount ?? null,
+          facture_payment_status: rawBooking.facture_payment_status ?? null,
         };
         setBooking(parsedBooking);
         setLastRefresh(new Date());
