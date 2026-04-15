@@ -114,7 +114,7 @@ serve(async (req) => {
       destination_latitude: claimed.destination_latitude,
       destination_longitude: claimed.destination_longitude,
       scheduled_date: claimed.scheduled_date || new Date().toISOString(),
-      status: "accepted",
+      status: "driver_approaching",
       distance_km: claimed.distance_km,
       guest_estimated_price: serverPrice,
       is_guest_booking: !claimed.client_id,
