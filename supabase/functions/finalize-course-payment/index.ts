@@ -39,7 +39,7 @@ const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<type
     .from("courses")
     .select("status, scheduled_date, updated_at, created_at")
     .eq("driver_id", driverId)
-    .in("status", ["accepted", "in_progress"])
+    .in("status", ["accepted", "driver_approaching", "driver_arrived", "in_progress"])
     .order("updated_at", { ascending: false })
     .limit(10);
 
@@ -51,7 +51,7 @@ const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<type
   const relevantCourses = (activeCourses || []).filter(isRelevantOperationalCourse);
   const nextStatus = relevantCourses.some((course) => course.status === "in_progress")
     ? "in_ride"
-    : relevantCourses.some((course) => course.status === "accepted")
+    : relevantCourses.some((course) => ["accepted", "driver_approaching", "driver_arrived"].includes(course.status))
       ? "assigned"
       : "online";
 

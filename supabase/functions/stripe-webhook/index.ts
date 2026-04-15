@@ -708,7 +708,7 @@ serve(async (req) => {
         // Update course
         const { error: courseError } = await supabaseClient
           .from("courses")
-          .update({ status: "accepted" })
+          .update({ status: "driver_approaching" })
           .eq("id", course_id);
 
         if (courseError) throw courseError;
@@ -827,7 +827,7 @@ serve(async (req) => {
           // Automatic capture - payment is complete
           courseUpdate.payment_status = "paid";
           courseUpdate.payment_captured_at = new Date().toISOString();
-          courseUpdate.status = "accepted";
+          courseUpdate.status = "driver_approaching";
 
           // WEEKLY SETTLEMENT: Calculate SoloCab fee (always 0.50€ per course)
           const SOLOCAB_FEE = 0.50;
