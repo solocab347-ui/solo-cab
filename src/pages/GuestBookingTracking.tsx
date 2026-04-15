@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users, CreditCard, Loader2, Star, Navigation, Route, Timer, Gauge } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -16,7 +16,6 @@ import logo from "@/assets/logo-solocab.png";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
-import { ETADisplay } from "@/components/tracking/ETADisplay";
 
 interface SharedDriver {
   id: string;
@@ -51,6 +50,10 @@ interface BookingInfo {
   driver_latitude: number | null;
   driver_longitude: number | null;
   client_rating: number | null;
+  vehicle_brand: string | null;
+  vehicle_model: string | null;
+  vehicle_color: string | null;
+  vehicle_plate: string | null;
 }
 
 const GuestBookingTracking = () => {
@@ -58,7 +61,6 @@ const GuestBookingTracking = () => {
   const navigate = useNavigate();
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [driverUsesStripe, setDriverUsesStripe] = useState(false);
@@ -70,27 +72,29 @@ const GuestBookingTracking = () => {
   const [showReasonForm, setShowReasonForm] = useState(false);
   const [ratingReason, setRatingReason] = useState('');
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const guestId = `guest_${token?.substring(0, 8) || 'unknown'}`;
   const retryTimeoutRef = useRef<number | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ETA calculation
-  const guestIsApproaching = booking?.status === 'driver_approaching';
-  const guestIsInProgress = booking?.status === 'in_progress';
-  const guestEtaEnabled = (guestIsApproaching || guestIsInProgress) && !!booking?.driver_latitude && !!booking?.driver_longitude;
+  const isApproaching = booking?.status === 'driver_approaching';
+  const isInProgress = booking?.status === 'in_progress';
+  const etaEnabled = (isApproaching || isInProgress) && !!booking?.driver_latitude && !!booking?.driver_longitude;
 
-  const guestEtaTarget = guestIsApproaching
+  const etaTarget = isApproaching
     ? (booking?.pickup_latitude && booking?.pickup_longitude ? { lat: booking.pickup_latitude, lng: booking.pickup_longitude } : null)
     : (booking?.destination_latitude && booking?.destination_longitude ? { lat: booking.destination_latitude, lng: booking.destination_longitude } : null);
 
-  const { eta: guestEta, loading: guestEtaLoading, forceRefresh: refreshGuestETA } = useETACalculation({
+  const { eta, loading: etaLoading, forceRefresh: refreshETA } = useETACalculation({
     driverLocation: booking?.driver_latitude && booking?.driver_longitude
       ? { lat: booking.driver_latitude, lng: booking.driver_longitude }
       : null,
-    targetLocation: guestEtaTarget,
-    enabled: guestEtaEnabled,
+    targetLocation: etaTarget,
+    enabled: etaEnabled,
   });
 
-  const fetchBooking = async (attempt = 0) => {
+  const fetchBooking = useCallback(async (attempt = 0) => {
     if (!token) return;
 
     let shouldFinalize = true;
@@ -124,7 +128,7 @@ const GuestBookingTracking = () => {
           driver_name: rawBooking.driver_name,
           driver_company: rawBooking.driver_company,
           driver_phone: rawBooking.driver_phone,
-          driver_avatar_url: rawBooking.driver_avatar_url,
+          driver_avatar_url: rawBooking.driver_avatar ?? rawBooking.driver_avatar_url ?? null,
           created_at: rawBooking.created_at,
           is_shared_course: rawBooking.is_shared_course ?? false,
           shared_drivers: sharedDrivers,
@@ -140,8 +144,13 @@ const GuestBookingTracking = () => {
           driver_latitude: rawBooking.driver_latitude ?? null,
           driver_longitude: rawBooking.driver_longitude ?? null,
           client_rating: rawBooking.client_rating ?? null,
+          vehicle_brand: rawBooking.vehicle_brand ?? null,
+          vehicle_model: rawBooking.vehicle_model ?? null,
+          vehicle_color: rawBooking.vehicle_color ?? null,
+          vehicle_plate: rawBooking.vehicle_plate ?? null,
         };
         setBooking(parsedBooking);
+        setLastRefresh(new Date());
 
         if (parsedBooking.client_rating && parsedBooking.client_rating > 0) {
           setRating(parsedBooking.client_rating);
@@ -173,14 +182,12 @@ const GuestBookingTracking = () => {
     } finally {
       if (shouldFinalize) {
         setLoading(false);
-        setRefreshing(false);
       }
     }
-  };
+  }, [token]);
 
   const checkDriverPaymentAndStatus = async (bookingData: BookingInfo) => {
     try {
-      // Use RPC to get payment info securely (no direct courses query for anon)
       const { data: paymentInfo } = await supabase
         .rpc('get_guest_course_payment_info' as any, { _token: token });
       
@@ -199,20 +206,20 @@ const GuestBookingTracking = () => {
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
-      // Fallback: use what we have from the booking data
     }
   };
 
+  // Auto-refresh every 5 seconds
   useEffect(() => {
     fetchBooking(0);
     
-    const interval = setInterval(() => fetchBooking(0), 15000);
+    refreshIntervalRef.current = setInterval(() => fetchBooking(0), 5000);
     
     return () => {
-      clearInterval(interval);
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
       if (retryTimeoutRef.current) window.clearTimeout(retryTimeoutRef.current);
     };
-  }, [token]);
+  }, [fetchBooking]);
 
   // Realtime subscription for instant status updates
   useEffect(() => {
@@ -231,16 +238,13 @@ const GuestBookingTracking = () => {
         if (newPaymentStatus) {
           setPaymentStatus(newPaymentStatus);
         }
+        // Force a full refresh on status change for latest GPS data
+        fetchBooking(0);
       }
     );
 
     return cleanup;
-  }, [booking?.id]);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchBooking();
-  };
+  }, [booking?.id, fetchBooking]);
 
   const handleStarClick = (star: number) => {
     setRating(star);
@@ -256,12 +260,9 @@ const GuestBookingTracking = () => {
   const handleSubmitRating = async () => {
     if (!booking || rating === 0 || !token) return;
     
-    if (rating <= 3) {
-      if (!ratingReason) {
-        toast.error('Veuillez sélectionner un motif');
-        return;
-      }
-      // Detail is optional — don't block submission
+    if (rating <= 3 && !ratingReason) {
+      toast.error('Veuillez sélectionner un motif');
+      return;
     }
     
     setIsSubmittingRating(true);
@@ -276,11 +277,7 @@ const GuestBookingTracking = () => {
       if (error) throw error;
       setRatingSubmitted(true);
       setBooking(prev => prev ? { ...prev, client_rating: rating } : null);
-      if (rating >= 4) {
-        toast.success('Merci pour votre évaluation !');
-      } else {
-        toast.success('Votre note a été soumise et sera examinée par notre système d\'arbitrage.');
-      }
+      toast.success(rating >= 4 ? 'Merci pour votre évaluation !' : 'Votre note a été soumise et sera examinée.');
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');
     } finally {
@@ -293,7 +290,6 @@ const GuestBookingTracking = () => {
     
     setPaymentLoading(true);
     try {
-      // Check if there's a facture with a Stripe payment ID
       const { data: facture } = await supabase
         .from('factures')
         .select('stripe_payment_id, final_payment_amount')
@@ -301,138 +297,36 @@ const GuestBookingTracking = () => {
         .maybeSingle();
 
       if (facture?.stripe_payment_id) {
-        // Redirect to Stripe payment - the driver should have sent a payment link
-        toast.info("Veuillez utiliser le lien de paiement envoyé par votre chauffeur par SMS ou email.");
+        toast.info("Veuillez utiliser le lien de paiement envoyé par votre chauffeur.");
         return;
       }
-
-      // If no payment yet, inform the user
-      toast.info("Le chauffeur n'a pas encore finalisé la course. Vous recevrez un lien de paiement par email ou SMS.");
+      toast.info("Le chauffeur n'a pas encore finalisé la course. Vous recevrez un lien de paiement.");
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error("Erreur lors du paiement. Veuillez réessayer.");
+      toast.error("Erreur lors du paiement.");
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
-            <Clock3 className="w-3 h-3 mr-1" />
-            En attente de confirmation
-          </Badge>
-        );
-      case 'accepted':
-        return (
-          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Confirmée
-          </Badge>
-        );
-      case 'driver_approaching':
-        return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
-            <Navigation className="w-3 h-3 mr-1" />
-            Chauffeur en approche
-          </Badge>
-        );
-      case 'driver_arrived':
-        return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
-            <Car className="w-3 h-3 mr-1" />
-            Chauffeur arrivé
-          </Badge>
-        );
-      case 'in_progress':
-        return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
-            <Car className="w-3 h-3 mr-1" />
-            En cours
-          </Badge>
-        );
-      case 'refused':
-      case 'cancelled':
-        return (
-          <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30">
-            <XCircle className="w-3 h-3 mr-1" />
-            {status === 'refused' ? 'Refusée' : 'Annulée'}
-          </Badge>
-        );
-      case 'completed':
-        return (
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Terminée
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
-    }
-  };
-
-  const getStatusMessage = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return "Votre demande de réservation a été envoyée. Le chauffeur va l'examiner et vous confirmer la course.";
-      case 'accepted':
-        return "Votre réservation a été confirmée ! Le chauffeur se prépare.";
-      case 'driver_approaching':
-        return "Le chauffeur est en route vers votre point de prise en charge.";
-      case 'driver_arrived':
-        return "Le chauffeur est arrivé au point de rendez-vous !";
-      case 'in_progress':
-        return "Votre course est en cours. Bon trajet !";
-      case 'refused':
-        return "Nous sommes désolés, le chauffeur n'est pas disponible pour cette course. N'hésitez pas à contacter un autre chauffeur.";
-      case 'cancelled':
-        return "Cette réservation a été annulée.";
-      case 'completed':
-        if (paymentStatus === 'paid') {
-          return "Course terminée et payée. Merci d'avoir utilisé SoloCab !";
-        }
-        if (driverUsesStripe && paymentStatus !== 'paid') {
-          return "Votre course est terminée. Veuillez procéder au paiement ci-dessous.";
-        }
-        return "Cette course est terminée. Merci d'avoir utilisé SoloCab !";
-      default:
-        return "";
-    }
-  };
-
-  // Status timeline steps
-  const getTimelineSteps = (status: string) => {
-    const steps = [
-      { key: 'pending', label: 'Envoyée', icon: Clock3 },
-      { key: 'accepted', label: 'Confirmée', icon: CheckCircle },
-      { key: 'driver_approaching', label: 'En approche', icon: Navigation },
-      { key: 'driver_arrived', label: 'Arrivé', icon: Car },
-      { key: 'in_progress', label: 'En cours', icon: Car },
-      { key: 'completed', label: 'Terminée', icon: CheckCircle },
-    ];
-
-    const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
-    const currentIndex = statusOrder.indexOf(status);
-    const isCancelled = status === 'refused' || status === 'cancelled';
-
-    return steps.map((step, index) => ({
-      ...step,
-      isActive: !isCancelled && index <= currentIndex,
-      isCurrent: step.key === status,
-      isCancelled: isCancelled && index === 0,
-    }));
-  };
+  // Status timeline
+  const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
+  const timelineSteps = [
+    { key: 'pending', label: 'Envoyée', icon: Clock3 },
+    { key: 'accepted', label: 'Confirmée', icon: CheckCircle },
+    { key: 'driver_approaching', label: 'En approche', icon: Navigation },
+    { key: 'driver_arrived', label: 'Arrivé', icon: Car },
+    { key: 'in_progress', label: 'En cours', icon: Route },
+    { key: 'completed', label: 'Terminée', icon: CheckCircle },
+  ];
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground text-sm">Chargement du suivi...</p>
+        </div>
       </div>
     );
   }
@@ -465,286 +359,433 @@ const GuestBookingTracking = () => {
     if (parts.length > 1) return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`;
     return rawDriverName;
   })();
-  const timelineSteps = getTimelineSteps(booking.status);
+
+  const currentIndex = statusOrder.indexOf(booking.status);
+  const isCancelled = booking.status === 'refused' || booking.status === 'cancelled';
   const showPaymentSection = booking.status === 'completed' && driverUsesStripe && paymentStatus !== 'paid';
   const showPaymentSuccess = booking.status === 'completed' && paymentStatus === 'paid';
+
+  const vehicleDescription = [booking.vehicle_brand, booking.vehicle_model].filter(Boolean).join(' ');
+  const hasVehicleInfo = vehicleDescription || booking.vehicle_color || booking.vehicle_plate;
+
+  // Status-specific contextual content
+  const getPhaseContent = () => {
+    switch (booking.status) {
+      case 'pending':
+        return (
+          <div className="text-center space-y-3 py-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Clock3 className="w-8 h-8 text-amber-500 animate-pulse" />
+            </div>
+            <h3 className="font-semibold text-lg">En attente de confirmation</h3>
+            <p className="text-muted-foreground text-sm">
+              Votre demande a été envoyée. Le chauffeur va l'examiner et vous confirmer rapidement.
+            </p>
+          </div>
+        );
+      
+      case 'accepted':
+        return (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="font-semibold text-lg text-green-600">Course confirmée !</h3>
+              <p className="text-muted-foreground text-sm">Le chauffeur se prépare pour votre course.</p>
+            </div>
+            {renderDriverCard()}
+          </div>
+        );
+      
+      case 'driver_approaching':
+        return (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Navigation className="w-8 h-8 text-blue-500 animate-bounce" />
+              </div>
+              <h3 className="font-semibold text-lg text-blue-600">Chauffeur en route vers vous</h3>
+              <p className="text-muted-foreground text-sm">Il navigue vers votre point de prise en charge.</p>
+            </div>
+            {renderLiveTrackingInfo('approaching')}
+            {renderDriverCard()}
+          </div>
+        );
+      
+      case 'driver_arrived':
+        return (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
+                <Car className="w-8 h-8 text-emerald-500" />
+              </div>
+              <h3 className="font-semibold text-lg text-emerald-600">Votre chauffeur est arrivé !</h3>
+              <p className="text-muted-foreground text-sm">Il vous attend au point de rendez-vous.</p>
+            </div>
+            {renderDriverCard()}
+          </div>
+        );
+      
+      case 'in_progress':
+        return (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Route className="w-8 h-8 text-primary animate-pulse" />
+              </div>
+              <h3 className="font-semibold text-lg text-primary">Course en cours</h3>
+              <p className="text-muted-foreground text-sm">En navigation vers votre destination.</p>
+            </div>
+            {renderLiveTrackingInfo('in_progress')}
+            {renderDriverCard()}
+          </div>
+        );
+      
+      case 'completed':
+        return (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-emerald-500" />
+              </div>
+              <h3 className="font-semibold text-lg text-emerald-600">Course terminée</h3>
+              <p className="text-muted-foreground text-sm">
+                {paymentStatus === 'paid' 
+                  ? "Merci d'avoir utilisé SoloCab !" 
+                  : driverUsesStripe 
+                    ? "Veuillez procéder au paiement ci-dessous." 
+                    : "Merci d'avoir utilisé SoloCab !"}
+              </p>
+            </div>
+          </div>
+        );
+      
+      case 'refused':
+      case 'cancelled':
+        return (
+          <div className="text-center space-y-3 py-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="font-semibold text-lg text-red-600">
+              {booking.status === 'refused' ? 'Course refusée' : 'Course annulée'}
+            </h3>
+            <p className="text-muted-foreground text-sm">
+              {booking.status === 'refused' 
+                ? "Le chauffeur n'est pas disponible. N'hésitez pas à contacter un autre chauffeur."
+                : "Cette réservation a été annulée."}
+            </p>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  const renderLiveTrackingInfo = (phase: 'approaching' | 'in_progress') => {
+    return (
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-4 pb-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
+              <Gauge className="w-3 h-3" />
+              Suivi en direct
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              MàJ: {format(lastRefresh, 'HH:mm:ss')}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* ETA */}
+            <div className="bg-background rounded-lg p-3 text-center">
+              <Timer className="w-5 h-5 mx-auto text-primary mb-1" />
+              <p className="text-xs text-muted-foreground">
+                {phase === 'approaching' ? "Arrivée estimée" : "Temps restant"}
+              </p>
+              <p className="text-lg font-bold text-foreground">
+                {etaLoading ? '...' : eta?.duration_minutes 
+                  ? `${Math.ceil(eta.duration_minutes)} min` 
+                  : '—'}
+              </p>
+            </div>
+            {/* Distance */}
+            <div className="bg-background rounded-lg p-3 text-center">
+              <Route className="w-5 h-5 mx-auto text-primary mb-1" />
+              <p className="text-xs text-muted-foreground">
+                {phase === 'approaching' ? "Distance" : "Km restants"}
+              </p>
+              <p className="text-lg font-bold text-foreground">
+                {etaLoading ? '...' : eta?.distance_km 
+                  ? `${eta.distance_km.toFixed(1)} km` 
+                  : '—'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[11px] text-muted-foreground">
+              Position GPS mise à jour toutes les 5 secondes
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderDriverCard = () => {
+    return (
+      <Card className="border-muted">
+        <CardContent className="pt-4 pb-4 space-y-4">
+          {/* Driver identity */}
+          <div className="flex items-center gap-4">
+            <Avatar className="w-16 h-16 border-2 border-primary/20">
+              <AvatarImage src={booking.driver_avatar_url || undefined} alt={driverDisplayName} />
+              <AvatarFallback className="bg-primary/10 text-lg">
+                <User className="w-8 h-8 text-primary" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-base truncate">{driverDisplayName}</p>
+              {booking.driver_company && booking.driver_company !== driverDisplayName && (
+                <p className="text-xs text-muted-foreground truncate">{booking.driver_company}</p>
+              )}
+              <p className="text-xs text-primary mt-0.5">Votre chauffeur</p>
+            </div>
+            {/* Call button */}
+            {booking.driver_phone && ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
+              <a href={`tel:${booking.driver_phone}`}>
+                <Button variant="outline" size="icon" className="rounded-full h-11 w-11 border-green-500/30 text-green-500 hover:bg-green-500/10">
+                  <Phone className="w-5 h-5" />
+                </Button>
+              </a>
+            )}
+          </div>
+
+          {/* Vehicle info */}
+          {hasVehicleInfo && (
+            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Car className="w-3 h-3" />
+                Véhicule
+              </p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {vehicleDescription && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Modèle</span>
+                    <span className="text-sm font-medium">{vehicleDescription}</span>
+                  </div>
+                )}
+                {booking.vehicle_color && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Couleur</span>
+                    <span className="text-sm font-medium">{booking.vehicle_color}</span>
+                  </div>
+                )}
+                {booking.vehicle_plate && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Immatriculation</span>
+                    <Badge variant="outline" className="font-mono text-sm tracking-wider">
+                      {booking.vehicle_plate}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Chat */}
+          {rideRequestId && ['accepted', 'driver_approaching', 'in_progress', 'driver_arrived'].includes(booking.status) && (
+            <RideChatPanel
+              rideId={rideRequestId}
+              senderType="guest"
+              senderId={guestId}
+              otherName={driverDisplayName.split(' ')[0]}
+              triggerLabel="💬 Contacter le chauffeur"
+            />
+          )}
+
+          {/* Shared drivers */}
+          {booking.is_shared_course && booking.shared_drivers.length > 0 && (
+            <div className="pt-3 border-t">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4 text-amber-500" />
+                <p className="text-sm font-medium text-amber-700">Course partagée</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {booking.shared_drivers.map((driver) => (
+                  <div key={driver.id} className="flex items-center gap-1.5 bg-muted/50 rounded-full py-1 px-2.5">
+                    <Avatar className="w-5 h-5">
+                      <AvatarImage src={driver.avatar_url || undefined} alt={driver.name} />
+                      <AvatarFallback className="text-[10px]">
+                        {driver.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs">{driver.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <NavigationHeader />
       
-      <div className="container max-w-2xl mx-auto px-4 py-8">
+      <div className="container max-w-lg mx-auto px-4 py-6 space-y-5">
         {/* Header */}
-        <div className="text-center mb-6">
-          <img src={logo} alt="SoloCab" className="h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold">Suivi de votre réservation</h1>
-          <p className="text-muted-foreground">Bonjour {booking.guest_name}</p>
+        <div className="text-center">
+          <img src={logo} alt="SoloCab" className="h-10 mx-auto mb-3" />
+          <h1 className="text-xl font-bold">Suivi de votre réservation</h1>
+          <p className="text-muted-foreground text-sm">Bonjour {booking.guest_name}</p>
         </div>
 
-        {/* Status Timeline */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Statut de la réservation</CardTitle>
-              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={refreshing}>
-                <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-                Actualiser
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-center">
-              {getStatusBadge(booking.status)}
-            </div>
-            
-            {/* Timeline visualization */}
-            {booking.status !== 'refused' && booking.status !== 'cancelled' && (
-              <div className="relative flex items-start justify-between px-2 py-3">
-                {/* Connector line behind icons */}
-                <div className="absolute top-[calc(0.75rem+4px)] left-[calc(8.33%)] right-[calc(8.33%)] h-0.5 bg-muted z-0" />
-                {(() => {
-                  const statusOrder = ['pending', 'accepted', 'driver_approaching', 'driver_arrived', 'in_progress', 'completed'];
-                  const currentIndex = statusOrder.indexOf(booking.status);
-                  const progressPercent = currentIndex > 0 ? (currentIndex / (timelineSteps.length - 1)) * 100 : 0;
+        {/* Timeline (compact, always at top) */}
+        {!isCancelled && (
+          <Card className="overflow-hidden">
+            <CardContent className="pt-4 pb-4">
+              <div className="relative flex items-start justify-between">
+                {/* Background line */}
+                <div className="absolute top-4 left-[8.33%] right-[8.33%] h-0.5 bg-muted z-0" />
+                {/* Progress line */}
+                {currentIndex > 0 && (
+                  <div
+                    className="absolute top-4 left-[8.33%] h-0.5 bg-primary z-[1] transition-all duration-700"
+                    style={{ width: `${(currentIndex / (timelineSteps.length - 1)) * 83.33}%` }}
+                  />
+                )}
+                {timelineSteps.map((step, index) => {
+                  const isActive = index <= currentIndex;
+                  const isCurrent = step.key === booking.status;
                   return (
-                    <div
-                      className="absolute top-[calc(0.75rem+4px)] left-[calc(8.33%)] h-0.5 bg-primary z-[1] transition-all duration-500"
-                      style={{ width: `${progressPercent * 0.8333}%` }}
-                    />
-                  );
-                })()}
-                {timelineSteps.map((step) => (
-                  <div key={step.key} className="flex flex-col items-center flex-1 relative z-[2]">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-colors ${
-                      step.isActive 
-                        ? step.isCurrent ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      <step.icon className="w-4 h-4" />
+                    <div key={step.key} className="flex flex-col items-center flex-1 relative z-[2]">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all duration-500 ${
+                        isCurrent 
+                          ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' 
+                          : isActive 
+                            ? 'bg-primary/20 text-primary' 
+                            : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <step.icon className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] text-center leading-tight ${
+                        isCurrent ? 'text-primary font-bold' : isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                      }`}>
+                        {step.label}
+                      </span>
                     </div>
-                    <span className={`text-[10px] text-center leading-tight ${step.isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                      {step.label}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            )}
-
-            <p className="text-center text-muted-foreground text-sm">
-              {getStatusMessage(booking.status)}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* ETA Dynamic Display */}
-        {(guestIsApproaching || guestIsInProgress) && guestEtaEnabled && (
-          <div className="mb-6">
-            <ETADisplay
-              eta={guestEta}
-              loading={guestEtaLoading}
-              onRefresh={refreshGuestETA}
-              phase={guestIsApproaching ? "approaching" : "in_progress"}
-              totalDistanceKm={booking.distance_km}
-            />
-          </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Payment Section - When course is completed and driver uses Stripe */}
+        {/* Phase content (main dynamic area) */}
+        {getPhaseContent()}
+
+        {/* Payment Section */}
         {showPaymentSection && (
-          <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-700">
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-700">
                 <CreditCard className="h-5 w-5" />
                 Paiement de la course
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-background rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                   <span className="text-muted-foreground">Montant à régler</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
-                  </span>
-                </div>
+            <CardContent className="space-y-3">
+              <div className="bg-background rounded-lg p-3 flex justify-between items-center">
+                <span className="text-muted-foreground text-sm">Montant à régler</span>
+                <span className="text-xl font-bold text-primary">
+                  {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
+                </span>
               </div>
-              <Button 
-                onClick={handlePayment} 
-                className="w-full" 
-                size="lg"
-                disabled={paymentLoading}
-              >
-                {paymentLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Chargement...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Payer maintenant
-                  </>
-                )}
+              <Button onClick={handlePayment} className="w-full" disabled={paymentLoading}>
+                {paymentLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                {paymentLoading ? 'Chargement...' : 'Payer maintenant'}
               </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Paiement sécurisé par Stripe
-              </p>
             </CardContent>
           </Card>
         )}
 
-        {/* Payment Success */}
         {showPaymentSuccess && (
-          <Card className="mb-6 border-emerald-500/30 bg-emerald-500/5">
-            <CardContent className="pt-6 text-center">
-              <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-emerald-700 mb-1">Paiement confirmé</h3>
-              <p className="text-sm text-muted-foreground">
-                Votre paiement de {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} € a été traité avec succès.
+          <Card className="border-emerald-500/30 bg-emerald-500/5">
+            <CardContent className="pt-4 pb-4 text-center">
+              <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <h3 className="font-semibold text-emerald-700 text-sm">Paiement confirmé</h3>
+              <p className="text-xs text-muted-foreground">
+                {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} € traités avec succès.
               </p>
             </CardContent>
           </Card>
         )}
 
-        {/* Booking Details */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        {/* Course details */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
               Détails de la course
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <MapPin className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-muted-foreground">Départ</p>
-                <p className="font-medium">{booking.pickup_address}</p>
+                <p className="text-xs text-muted-foreground">Départ</p>
+                <p className="text-sm font-medium">{booking.pickup_address}</p>
               </div>
             </div>
-
             <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <MapPin className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-muted-foreground">Arrivée</p>
-                <p className="font-medium">{booking.destination_address}</p>
+                <p className="text-xs text-muted-foreground">Arrivée</p>
+                <p className="text-sm font-medium">{booking.destination_address}</p>
               </div>
             </div>
-
             <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <Clock className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-muted-foreground">Date et heure</p>
-                <p className="font-medium">
+                <p className="text-xs text-muted-foreground">Date et heure</p>
+                <p className="text-sm font-medium">
                   {format(new Date(booking.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
                 </p>
               </div>
             </div>
-
             {(booking.devis_amount || booking.guest_estimated_price) && (
-              <div className="bg-muted/50 rounded-lg p-4 mt-4">
+              <div className="bg-muted/50 rounded-lg p-3 mt-2">
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {booking.devis_amount ? "Prix du devis" : "Prix estimé"}
                     </span>
                     {booking.quote_number && (
-                      <p className="text-xs text-muted-foreground">
-                        Réf: {booking.quote_number}
-                      </p>
+                      <p className="text-[10px] text-muted-foreground">Réf: {booking.quote_number}</p>
                     )}
                   </div>
-                  <span className="text-xl font-bold text-primary">
+                  <span className="text-lg font-bold text-primary">
                     {(booking.devis_amount || booking.final_payment_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Driver Info */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Car className="h-5 w-5" />
-              {booking.is_shared_course ? "Vos chauffeurs" : "Votre chauffeur"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-14 h-14">
-                <AvatarImage src={booking.driver_avatar_url || undefined} alt={driverDisplayName} />
-                <AvatarFallback className="bg-primary/10">
-                  <User className="w-7 h-7 text-primary" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-semibold">{driverDisplayName}</p>
-                <p className="text-xs text-muted-foreground">Chauffeur principal</p>
-              </div>
-              {/* Quick call button */}
-              {booking.driver_phone && ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
-                <a href={`tel:${booking.driver_phone}`}>
-                  <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-green-500/30 text-green-500 hover:bg-green-500/10">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                </a>
-              )}
-            </div>
-
-            {/* Chat + Call actions for active rides */}
-            {rideRequestId && ['accepted', 'driver_approaching', 'in_progress', 'driver_arrived'].includes(booking.status) && (
-              <div className="mt-3">
-                <RideChatPanel
-                  rideId={rideRequestId}
-                  senderType="guest"
-                  senderId={guestId}
-                  otherName={driverDisplayName.split(' ')[0]}
-                  triggerLabel="💬 Contacter le chauffeur"
-                />
-              </div>
-            )}
-
-            {booking.is_shared_course && booking.shared_drivers && booking.shared_drivers.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-amber-500" />
-                  <p className="text-sm font-medium text-amber-700">Course partagée</p>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Cette course peut être assurée en partenariat avec les chauffeurs suivants :
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {booking.shared_drivers.map((driver) => (
-                    <div key={driver.id} className="flex items-center gap-2 bg-muted/50 rounded-full py-1 px-3">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={driver.avatar_url || undefined} alt={driver.name} />
-                        <AvatarFallback className="text-xs">
-                          {driver.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{driver.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {booking.status === 'pending' && (
-              <p className="text-sm text-muted-foreground mt-3">
-                Le chauffeur va examiner votre demande et vous confirmer la course rapidement.
-              </p>
             )}
           </CardContent>
         </Card>
 
         {/* Rating Section */}
         {booking.status === 'completed' && !ratingSubmitted && (
-          <Card className="mb-6 border-primary/20">
+          <Card className="border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-base text-center">Comment s'est passée votre course ?</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex justify-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -754,24 +795,15 @@ const GuestBookingTracking = () => {
                     onMouseLeave={() => setHoverRating(0)}
                     className="transition-transform hover:scale-110"
                   >
-                    <Star
-                      className={`h-10 w-10 transition-colors ${
-                        star <= (hoverRating || rating)
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-muted-foreground/30'
-                      }`}
-                    />
+                    <Star className={`h-9 w-9 transition-colors ${
+                      star <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'
+                    }`} />
                   </button>
                 ))}
               </div>
               
-              {/* Low rating reason form */}
               {showReasonForm && rating <= 3 && rating > 0 && (
-                <div className="space-y-3 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                  <div className="flex items-center gap-2 text-destructive text-sm font-medium">
-                    <XCircle className="w-4 h-4" />
-                    <span>Note basse — merci de préciser le motif</span>
-                  </div>
+                <div className="space-y-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
                   <select
                     value={ratingReason}
                     onChange={(e) => setRatingReason(e.target.value)}
@@ -794,18 +826,11 @@ const GuestBookingTracking = () => {
                     className="w-full text-sm min-h-[60px] rounded-md border border-border bg-background px-3 py-2 resize-none"
                     maxLength={500}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Cette note sera examinée par notre système d'arbitrage. Le chauffeur pourra contester si nécessaire.
-                  </p>
                 </div>
               )}
 
               {rating > 0 && (
-                <Button
-                  onClick={handleSubmitRating}
-                  className="w-full"
-                  disabled={isSubmittingRating}
-                >
+                <Button onClick={handleSubmitRating} className="w-full" disabled={isSubmittingRating}>
                   {isSubmittingRating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Envoyer ma note ({rating}/5)
                 </Button>
@@ -815,14 +840,14 @@ const GuestBookingTracking = () => {
         )}
 
         {booking.status === 'completed' && ratingSubmitted && (
-          <Card className="mb-6 border-green-500/20 bg-green-500/5">
-            <CardContent className="pt-4 pb-4 text-center">
-              <div className="flex justify-center gap-1 mb-2">
+          <Card className="border-green-500/20 bg-green-500/5">
+            <CardContent className="pt-3 pb-3 text-center">
+              <div className="flex justify-center gap-1 mb-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className={`h-6 w-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                  <Star key={star} className={`h-5 w-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">Merci pour votre évaluation !</p>
+              <p className="text-xs text-muted-foreground">Merci pour votre évaluation !</p>
             </CardContent>
           </Card>
         )}
@@ -830,28 +855,20 @@ const GuestBookingTracking = () => {
         {/* Registration CTA */}
         <Alert className="border-primary/50 bg-primary/5">
           <UserPlus className="h-4 w-4" />
-          <AlertDescription className="space-y-3">
-            <p>
-              <strong>Inscrivez-vous gratuitement</strong> pour bénéficier de tous les avantages SoloCab :
+          <AlertDescription className="space-y-2">
+            <p className="text-sm">
+              <strong>Inscrivez-vous gratuitement</strong> pour bénéficier de tous les avantages SoloCab.
             </p>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>Historique complet de vos courses</li>
-              <li>Réservation simplifiée</li>
-              <li>Devis et factures automatiques</li>
-              <li>Communication directe avec votre chauffeur</li>
-            </ul>
-            <Button 
-              onClick={() => navigate('/chauffeurs')}
-              className="w-full mt-2"
-            >
+            <Button onClick={() => navigate('/chauffeurs')} size="sm" className="w-full">
               S'inscrire maintenant
             </Button>
           </AlertDescription>
         </Alert>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          💡 Cette page se met à jour automatiquement
-        </p>
+        <div className="flex items-center justify-center gap-1.5 pb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-[11px] text-muted-foreground">Mise à jour automatique toutes les 5 secondes</p>
+        </div>
       </div>
     </div>
   );
