@@ -4226,7 +4226,7 @@ export type Database = {
           ai_analysis: Json | null
           ai_decision: string | null
           ai_justification: string | null
-          client_id: string
+          client_id: string | null
           client_response_deadline: string | null
           course_id: string
           created_at: string
@@ -4248,7 +4248,7 @@ export type Database = {
           ai_analysis?: Json | null
           ai_decision?: string | null
           ai_justification?: string | null
-          client_id: string
+          client_id?: string | null
           client_response_deadline?: string | null
           course_id: string
           created_at?: string
@@ -4270,7 +4270,7 @@ export type Database = {
           ai_analysis?: Json | null
           ai_decision?: string | null
           ai_justification?: string | null
-          client_id?: string
+          client_id?: string | null
           client_response_deadline?: string | null
           course_id?: string
           created_at?: string
