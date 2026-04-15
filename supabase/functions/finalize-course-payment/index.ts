@@ -409,7 +409,7 @@ serve(async (req) => {
             net_amount_to_driver: netToDriver,
           }).eq("id", course_id);
 
-          await supabaseClient.from("payments").insert({
+          const { error: orphanPayErr } = await supabaseClient.from("payments").insert({
             course_id,
             driver_id: course.driver_id,
             client_id: course.client_id,
@@ -427,6 +427,9 @@ serve(async (req) => {
             captured_at: new Date().toISOString(),
             metadata: { flow: "orphaned_pi_recovery" },
           });
+          if (orphanPayErr?.code === "23505") {
+            logStep("Payment already recorded (duplicate prevented)", { course_id });
+          }
 
           try {
             await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
