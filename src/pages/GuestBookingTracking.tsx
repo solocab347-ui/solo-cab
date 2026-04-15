@@ -506,8 +506,8 @@ const GuestBookingTracking = () => {
                 {phase === 'approaching' ? "Arrivée estimée" : "Temps restant"}
               </p>
               <p className="text-lg font-bold text-foreground">
-                {etaLoading ? '...' : eta?.duration_minutes 
-                  ? `${Math.ceil(eta.duration_minutes)} min` 
+                {etaLoading ? '...' : eta?.durationMin 
+                  ? `${Math.ceil(eta.durationMin)} min` 
                   : '—'}
               </p>
             </div>
@@ -518,8 +518,8 @@ const GuestBookingTracking = () => {
                 {phase === 'approaching' ? "Distance" : "Km restants"}
               </p>
               <p className="text-lg font-bold text-foreground">
-                {etaLoading ? '...' : eta?.distance_km 
-                  ? `${eta.distance_km.toFixed(1)} km` 
+                {etaLoading ? '...' : eta?.distanceKm 
+                  ? `${eta.distanceKm.toFixed(1)} km` 
                   : '—'}
               </p>
             </div>
