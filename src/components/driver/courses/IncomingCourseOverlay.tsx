@@ -35,7 +35,7 @@ interface IncomingCourseOverlayProps {
   driverId: string | null;
 }
 
-const TIMEOUT_SECONDS = 60;
+const TIMEOUT_SECONDS = 300;
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;

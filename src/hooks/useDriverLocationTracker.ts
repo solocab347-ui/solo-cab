@@ -346,6 +346,20 @@ export function useDriverLocationTracker({
     async (isAvailable: boolean) => {
       if (!driverId) return;
       try {
+        // Guard: never reset to online/offline if driver has an active course
+        const { data: activeCourse } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('driver_id', driverId)
+          .in('status', ['driver_approaching', 'in_progress', 'driver_arrived'] as any[])
+          .limit(1)
+          .maybeSingle();
+
+        if (activeCourse) {
+          console.warn('[GPS] Blocked availability toggle — active course exists');
+          return;
+        }
+
         await supabase
           .from('drivers')
           .update({
