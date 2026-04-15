@@ -26,9 +26,11 @@ export function UnifiedBookingPage() {
 
   const savedState = useRef(loadStorefrontState());
   const ss = savedState.current;
+  // Expire saved state after 30 min
+  const ssValid = ss && ss.savedAt && (Date.now() - ss.savedAt < 30 * 60 * 1000) ? ss : null;
 
-  // ── Wizard step ──
-  const [currentStep, setCurrentStep] = useState(1);
+  // ── Wizard step (restore from persisted state) ──
+  const [currentStep, setCurrentStep] = useState(ssValid?.currentStep || 1);
 
   const [mode, setMode] = useState<BookingMode>(ss?.mode || 'reservation');
   
