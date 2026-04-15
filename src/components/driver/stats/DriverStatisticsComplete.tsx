@@ -151,14 +151,16 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     setLoading(true);
 
     try {
-      await Promise.all([
+      // fetchCourseStats returns completed courses for revenue sync
+      const [completedCourses] = await Promise.all([
         fetchCourseStats(),
-        fetchRevenueStats(),
         fetchClientsStats(),
         fetchPartnerRankings(),
         fetchGrowthStats(),
         fetchDevisStats()
       ]);
+      // Revenue must use completed courses as primary source
+      await fetchRevenueStats(completedCourses || []);
     } catch (error) {
       console.error("Error fetching statistics:", error);
     } finally {
@@ -167,10 +169,10 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   };
 
   const fetchCourseStats = async () => {
-    // All courses for this driver in period
+    // All courses for this driver in period - include financial fields for revenue sync
     const { data: courses } = await supabase
       .from('courses')
-      .select('id, status, distance_km, duration_minutes')
+      .select('id, status, distance_km, duration_minutes, final_payment_amount, final_payment_status, payment_method, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .gte('scheduled_date', dateRange.start.toISOString())
       .lte('scheduled_date', dateRange.end.toISOString());
@@ -192,8 +194,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const companyCourseIds = new Set(companyCourses?.map(cc => cc.course_id) || []);
 
-    // Get fleet courses - identify by checking if driver has fleet partnership
-    // and course was created by fleet (simplified approach)
+    // Get fleet courses
     let fleetCourseIds = new Set<string>();
     const { data: fleetPartnership } = await supabase
       .from('fleet_driver_partnerships')
@@ -202,7 +203,6 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       .eq('status', 'active')
       .maybeSingle();
 
-    // For fleet courses, we count commission records
     if (fleetPartnership) {
       const { data: fleetCommissions } = await supabase
         .from('partnership_course_commissions')
@@ -212,7 +212,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       fleetCourseIds = new Set(fleetCommissions?.map(fc => fc.course_id) || []);
     }
 
-    // Calculate stats - only count completed courses for meaningful metrics
+    // Calculate stats - only count completed courses
     const completedCourses = courses?.filter(c => c.status === 'completed') || [];
     const stats: CourseStats = {
       total: completedCourses.length,
@@ -227,14 +227,23 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     setCourseStats(stats);
 
-    // Distance and duration - only from completed courses
+    // Distance and duration
     const totalDistance = completedCourses.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0);
     const totalDuration = completedCourses.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0);
     setDistanceStats({ total: totalDistance, duration: totalDuration });
+
+    // Store completed courses for revenue sync
+    return completedCourses;
   };
 
-  const fetchRevenueStats = async () => {
-    // Get all paid invoices
+  const fetchRevenueStats = async (completedCourses: any[]) => {
+    // Primary source: courses.final_payment_amount for completed courses
+    const courseRevenue = completedCourses.reduce((sum, c) => {
+      const amount = Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0;
+      return sum + amount;
+    }, 0);
+
+    // Secondary source: paid invoices (may cover additional revenue)
     const { data: factures } = await supabase
       .from('factures')
       .select('amount, course_id')
@@ -243,9 +252,28 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       .gte('paid_at', dateRange.start.toISOString())
       .lte('paid_at', dateRange.end.toISOString());
 
-    const totalRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const factureRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
-    // Get commissions owed (to fleet/partners)
+    // Use whichever is higher (courses data is more reliable for cash payments)
+    const totalRevenue = Math.max(courseRevenue, factureRevenue);
+
+    // Breakdown by course type
+    const courseIds = new Set(completedCourses.map(c => c.id));
+    
+    // Get shared courses for this period
+    const { data: sharedCourses } = await supabase
+      .from('shared_courses')
+      .select('course_id, commission_amount')
+      .eq('receiver_driver_id', driverId)
+      .eq('status', 'completed')
+      .in('course_id', Array.from(courseIds));
+
+    const sharedRevenue = sharedCourses?.reduce((sum, sc) => {
+      const course = completedCourses.find(c => c.id === sc.course_id);
+      return sum + (Number(course?.final_payment_amount) || 0);
+    }, 0) || 0;
+
+    // Get commissions owed
     const { data: commissionsOwed } = await supabase
       .from('partnership_course_commissions')
       .select('commission_amount')
@@ -255,7 +283,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const totalCommissionsOwed = commissionsOwed?.reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
 
-    // Get commissions received (from shared courses where we are sender)
+    // Get commissions received
     const { data: sharedByMe } = await supabase
       .from('shared_courses')
       .select('commission_amount')
@@ -266,12 +294,14 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const totalCommissionsReceived = sharedByMe?.reduce((sum, s) => sum + Number(s.commission_amount || 0), 0) || 0;
 
+    const personalRevenue = totalRevenue - sharedRevenue;
+
     setRevenueStats({
       total: totalRevenue,
-      personal: totalRevenue * 0.6, // Estimation for now
-      partner: totalRevenue * 0.1,
-      fleet: totalRevenue * 0.2,
-      company: totalRevenue * 0.1,
+      personal: personalRevenue,
+      partner: sharedRevenue,
+      fleet: 0,
+      company: 0,
       netAfterCommissions: totalRevenue - totalCommissionsOwed + totalCommissionsReceived,
       commissionsOwed: totalCommissionsOwed,
       commissionsReceived: totalCommissionsReceived
@@ -422,22 +452,14 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   };
 
   const fetchGrowthStats = async () => {
-    // Current period
+    // Current period - use courses directly for revenue
     const { data: currentCourses } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, final_payment_amount, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', dateRange.start.toISOString())
       .lte('scheduled_date', dateRange.end.toISOString());
-
-    const { data: currentFactures } = await supabase
-      .from('factures')
-      .select('amount')
-      .eq('driver_id', driverId)
-      .eq('payment_status', 'paid')
-      .gte('paid_at', dateRange.start.toISOString())
-      .lte('paid_at', dateRange.end.toISOString());
 
     const { data: currentClients } = await supabase
       .from('clients')
@@ -449,19 +471,11 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Previous period
     const { data: prevCourses } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, final_payment_amount, guest_estimated_price')
       .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
       .eq('status', 'completed')
       .gte('scheduled_date', previousDateRange.start.toISOString())
       .lte('scheduled_date', previousDateRange.end.toISOString());
-
-    const { data: prevFactures } = await supabase
-      .from('factures')
-      .select('amount')
-      .eq('driver_id', driverId)
-      .eq('payment_status', 'paid')
-      .gte('paid_at', previousDateRange.start.toISOString())
-      .lte('paid_at', previousDateRange.end.toISOString());
 
     const { data: prevClients } = await supabase
       .from('clients')
@@ -472,8 +486,8 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const currentCoursesCount = currentCourses?.length || 0;
     const prevCoursesCount = prevCourses?.length || 0;
-    const currentRevenue = currentFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-    const prevRevenue = prevFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const currentRevenue = currentCourses?.reduce((sum, c) => sum + (Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0), 0) || 0;
+    const prevRevenue = prevCourses?.reduce((sum, c) => sum + (Number(c.final_payment_amount) || Number(c.guest_estimated_price) || 0), 0) || 0;
     const currentClientsCount = currentClients?.length || 0;
     const prevClientsCount = prevClients?.length || 0;
 
