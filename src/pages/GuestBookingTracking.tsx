@@ -287,7 +287,11 @@ const GuestBookingTracking = () => {
       if (error) throw error;
       setRatingSubmitted(true);
       setBooking(prev => prev ? { ...prev, client_rating: rating } : null);
-      toast.success(rating >= 4 ? 'Merci pour votre évaluation !' : 'Votre note a été soumise et sera examinée.');
+      if (rating >= 4) {
+        toast.success('Merci pour votre évaluation !');
+      } else {
+        toast.success('Votre note a été enregistrée. Le chauffeur peut la contester sous 48h.');
+      }
     } catch {
       toast.error('Erreur lors de l\'envoi de votre note');
     } finally {
@@ -989,14 +993,30 @@ const GuestBookingTracking = () => {
         )}
 
         {booking.status === 'completed' && ratingSubmitted && (
-          <Card className="border-green-500/20 bg-green-500/5">
-            <CardContent className="pt-3 pb-3 text-center">
-              <div className="flex justify-center gap-1 mb-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className={`h-5 w-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
-                ))}
+          <Card className={rating <= 3 ? "border-blue-500/20 bg-blue-500/5" : "border-green-500/20 bg-green-500/5"}>
+            <CardContent className="pt-3 pb-3 space-y-3">
+              <div className="text-center">
+                <div className="flex justify-center gap-1 mb-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className={`h-5 w-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Merci pour votre évaluation !</p>
               </div>
-              <p className="text-xs text-muted-foreground">Merci pour votre évaluation !</p>
+              {rating <= 3 && (
+                <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs space-y-1.5">
+                  <p className="font-semibold text-blue-700 dark:text-blue-300">ℹ️ Suivi de votre note</p>
+                  <p className="text-muted-foreground">
+                    Votre note a bien été enregistrée. Le chauffeur peut la <strong>contester</strong> s'il estime qu'elle est injustifiée.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Si le chauffeur conteste, vous recevrez un <strong>e-mail</strong> pour donner votre version des faits sous <strong>48 heures</strong>.
+                  </p>
+                  <p className="text-muted-foreground">
+                    <strong>Sans réponse sous 48h, la note sera automatiquement annulée.</strong> Conservez ce lien pour suivre l'évolution.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

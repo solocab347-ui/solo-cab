@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
+import { RatingDisputeResponseCard } from "@/components/client/RatingDisputeResponseCard";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
 import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog";
@@ -337,13 +338,16 @@ const ClientDashboard = () => {
     switch (activeTab) {
       case "accueil":
         return (
-          <ClientHomeView
-            clientProfile={clientProfile}
-            stats={stats}
-            onNewReservation={handleNewReservation}
-            onNavigate={handleTabChange}
-            onViewFavoriteDriver={() => handleTabChange("chauffeurs")}
-          />
+          <div className="space-y-4">
+            <RatingDisputeResponseCard />
+            <ClientHomeView
+              clientProfile={clientProfile}
+              stats={stats}
+              onNewReservation={handleNewReservation}
+              onNavigate={handleTabChange}
+              onViewFavoriteDriver={() => handleTabChange("chauffeurs")}
+            />
+          </div>
         );
       case "courses":
         return clientProfile?.client?.id ? (
@@ -356,7 +360,12 @@ const ClientDashboard = () => {
       case "messages":
         return <MessagingInterface />;
       case "notes":
-        return <ClientNotes />;
+        return (
+          <div className="space-y-4">
+            <RatingDisputeResponseCard />
+            <ClientNotes />
+          </div>
+        );
       case "chauffeurs":
         const hasNoDrivers = !isExclusive && 
           (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0);

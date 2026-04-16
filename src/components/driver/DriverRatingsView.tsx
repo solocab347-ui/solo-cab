@@ -169,12 +169,12 @@ const DriverRatingsView = () => {
         resolution: "pending",
       });
 
-      // Trigger AI arbitration
-      await supabase.functions.invoke("ai-rating-arbitration", {
-        body: { ratingId: contestRating.id },
-      });
+      // Don't trigger AI immediately - wait for client response or 48h timeout
+      // The AI arbitration will be triggered when:
+      // 1. The client responds to the contestation
+      // 2. The 48h deadline passes (auto-cancel function handles this)
 
-      toast.success("Contestation envoyée — arbitrage IA en cours");
+      toast.success("Contestation envoyée — le client a 48h pour répondre");
       setContestRating(null);
       setContestReason("");
       fetchData();
@@ -401,9 +401,10 @@ const DriverRatingsView = () => {
             <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-700 dark:text-blue-300 space-y-1">
               <p className="font-semibold">ℹ️ Comment ça fonctionne :</p>
               <ul className="list-disc ml-4 space-y-0.5">
-                <li>Un arbitrage IA analyse automatiquement la situation</li>
-                <li>Le client devra se justifier sous 48h</li>
-                <li>Si le client ne répond pas, la note est automatiquement annulée</li>
+                <li>Le client sera <strong>notifié</strong> et aura <strong>48 heures</strong> pour donner sa version</li>
+                <li>Si le client ne répond pas dans les 48h, <strong>la note est automatiquement annulée</strong></li>
+                <li>Si le client répond, un arbitrage IA impartial analysera les deux versions</li>
+                <li>La décision finale sera juste et équilibrée, basée sur les faits</li>
                 <li>Vous êtes limité à 2 contestations par jour</li>
               </ul>
             </div>
