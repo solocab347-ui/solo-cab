@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import {
   Activity, AlertTriangle, CheckCircle, XCircle, RefreshCw,
   Users, Car, CreditCard, Shield, TrendingUp, Loader2,
-  Clock, Zap, UserPlus, Wallet, Download, Mail
+  Clock, Zap, UserPlus, Wallet, Download, Mail, QrCode,
+  ArrowRight, Ban, FileWarning, GitBranch
 } from "lucide-react";
 import jsPDF from "jspdf";
 
@@ -29,6 +30,23 @@ interface HealthData {
     active_drivers: number;
     courses_no_payment: number;
     disputes_open: number;
+    // NEW
+    qr_total: number;
+    qr_active: number;
+    qr_orphaned: number;
+    stripe_no_payouts: number;
+    stripe_no_details: number;
+    stripe_abnormal: number;
+    funnel_step_profile: number;
+    funnel_step_documents: number;
+    funnel_step_stripe: number;
+    funnel_step_review: number;
+    funnel_docs_submitted: number;
+    funnel_docs_rejected: number;
+    courses_cancelled_7d: number;
+    courses_stuck: number;
+    courses_completed_7d: number;
+    conversion_rate_7d: number;
   };
   anomalies: Array<{
     type: string;
@@ -108,7 +126,6 @@ const PlatformHealthDashboard = () => {
   const runHealthCheck = async () => {
     setRunning(true);
     try {
-      // Call edge function which sends notif + email
       const { data, error } = await supabase.functions.invoke("platform-health-check");
       if (error) throw error;
       setHealthData(data as HealthData);
@@ -155,7 +172,7 @@ const PlatformHealthDashboard = () => {
     doc.setFont("helvetica", "normal");
     doc.text(dateStr, 15, 28);
 
-    // Status
+    // Status bar
     const statusColors: Record<string, [number, number, number]> = {
       ok: [16, 185, 129],
       warning: [245, 158, 11],
@@ -174,6 +191,7 @@ const PlatformHealthDashboard = () => {
     doc.setTextColor(30, 41, 59);
 
     const addSection = (title: string, items: [string, string | number, boolean?][]) => {
+      if (y > 255) { doc.addPage(); y = 20; }
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text(title, 15, y);
@@ -184,6 +202,7 @@ const PlatformHealthDashboard = () => {
 
       doc.setFontSize(11);
       items.forEach(([label, value, isAlert]) => {
+        if (y > 275) { doc.addPage(); y = 20; }
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
         doc.text(label, 20, y);
@@ -212,16 +231,38 @@ const PlatformHealthDashboard = () => {
       ["Complétés / Total", `${d.onboarding_completed_7d} / ${d.onboarding_total_7d}`],
     ]);
 
+    addSection("Funnel Onboarding (30j)", [
+      ["Étape Profil", d.funnel_step_profile ?? 0],
+      ["Étape Documents", d.funnel_step_documents ?? 0],
+      ["Étape Stripe", d.funnel_step_stripe ?? 0],
+      ["En attente validation", d.funnel_step_review ?? 0],
+      ["Docs soumis", d.funnel_docs_submitted ?? 0],
+      ["Docs rejetés", d.funnel_docs_rejected ?? 0, (d.funnel_docs_rejected ?? 0) > 2],
+    ]);
+
     addSection("Courses", [
       ["Courses aujourd'hui", d.courses_today],
       ["Erreurs", d.courses_errors, d.courses_errors > 0],
       ["Sans paiement (7j)", d.courses_no_payment, d.courses_no_payment > 0],
+      ["Complétées (7j)", d.courses_completed_7d ?? 0],
+      ["Annulées (7j)", d.courses_cancelled_7d ?? 0],
+      ["Bloquées (+3h)", d.courses_stuck ?? 0, (d.courses_stuck ?? 0) > 0],
+      ["Taux conversion (7j)", `${d.conversion_rate_7d ?? 0}%`, (d.conversion_rate_7d ?? 0) < 50],
     ]);
 
-    addSection("Paiements", [
+    addSection("Paiements & Stripe", [
       ["Taux de succès (7j)", `${d.payment_success_rate}%`, d.payment_success_rate < 90],
       ["Paiements échoués (7j)", d.payments_failed_7d, d.payments_failed_7d > 0],
       ["Total paiements (7j)", d.payments_total_7d],
+      ["Stripe sans payouts", d.stripe_no_payouts ?? 0, (d.stripe_no_payouts ?? 0) > 0],
+      ["Stripe incomplet", d.stripe_no_details ?? 0, (d.stripe_no_details ?? 0) > 0],
+      ["Stripe anormal", d.stripe_abnormal ?? 0, (d.stripe_abnormal ?? 0) > 0],
+    ]);
+
+    addSection("QR Codes", [
+      ["Total QR", d.qr_total ?? 0],
+      ["QR actifs", d.qr_active ?? 0],
+      ["QR orphelins", d.qr_orphaned ?? 0, (d.qr_orphaned ?? 0) > 0],
     ]);
 
     addSection("Litiges", [
@@ -230,9 +271,11 @@ const PlatformHealthDashboard = () => {
 
     // Anomalies
     if (report.anomalies.length > 0) {
+      if (y > 240) { doc.addPage(); y = 20; }
       y += 3;
       doc.setFillColor(254, 242, 242);
-      doc.roundedRect(15, y - 5, 180, 10 + report.anomalies.length * 8, 3, 3, "F");
+      const boxH = 10 + report.anomalies.length * 8;
+      doc.roundedRect(15, y - 5, 180, boxH, 3, 3, "F");
       doc.setTextColor(153, 27, 27);
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
@@ -247,6 +290,7 @@ const PlatformHealthDashboard = () => {
         y += 8;
       });
     } else {
+      if (y > 260) { doc.addPage(); y = 20; }
       y += 3;
       doc.setFillColor(236, 253, 245);
       doc.roundedRect(15, y - 5, 180, 15, 3, 3, "F");
@@ -257,10 +301,14 @@ const PlatformHealthDashboard = () => {
     }
 
     // Footer
-    doc.setTextColor(156, 163, 175);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(`SoloCab — Rapport généré le ${dateStr}`, 105, 285, { align: "center" });
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setTextColor(156, 163, 175);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`SoloCab — Rapport généré le ${dateStr} — Page ${i}/${pageCount}`, 105, 285, { align: "center" });
+    }
 
     doc.save(`rapport-sante-solocab-${new Date().toISOString().split("T")[0]}.pdf`);
     toast.success("PDF téléchargé");
@@ -328,7 +376,7 @@ const PlatformHealthDashboard = () => {
 
       <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
         <Mail className="w-3.5 h-3.5 inline mr-1" />
-        Un rapport automatique est envoyé chaque matin par email + notification. Cliquez "Vérifier" pour un rapport manuel immédiat.
+        Rapport automatique chaque matin par email + notification. Cliquez "Vérifier" pour un rapport manuel immédiat.
       </p>
 
       {/* Alerts */}
@@ -343,7 +391,7 @@ const PlatformHealthDashboard = () => {
           <CardContent className="space-y-2">
             {unresolvedAlerts.map(alert => (
               <div key={alert.id} className="flex items-center justify-between bg-background/80 rounded-lg p-3 border border-red-500/10">
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{alert.message}</p>
                   <p className="text-xs text-muted-foreground">{new Date(alert.created_at).toLocaleString("fr-FR")}</p>
                 </div>
@@ -380,7 +428,7 @@ const PlatformHealthDashboard = () => {
         </Card>
       )}
 
-      {/* Metrics */}
+      {/* Core Metrics */}
       {d && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -389,16 +437,80 @@ const PlatformHealthDashboard = () => {
             <MetricCard label="Taux paiement OK" value={`${d.payment_success_rate}%`} sub={`${d.payments_failed_7d} échecs`} icon={CreditCard} alert={d.payments_total_7d > 5 && d.payment_success_rate < 90} color="text-violet-600" bg="bg-violet-500/10" />
             <MetricCard label="Courses aujourd'hui" value={d.courses_today} sub={`${d.courses_errors} erreurs`} icon={Car} alert={d.courses_errors > 0} color="text-indigo-600" bg="bg-indigo-500/10" />
           </div>
+
+          {/* Funnel Onboarding */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-purple-500" />
+                Funnel Onboarding (30j)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 flex-wrap text-xs">
+                <FunnelStep label="Profil" count={d.funnel_step_profile ?? 0} color="bg-blue-500" />
+                <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                <FunnelStep label="Documents" count={d.funnel_step_documents ?? 0} color="bg-amber-500" />
+                <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                <FunnelStep label="Stripe" count={d.funnel_step_stripe ?? 0} color="bg-violet-500" />
+                <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                <FunnelStep label="Validation" count={d.funnel_step_review ?? 0} color="bg-emerald-500" />
+              </div>
+              <div className="flex gap-3 mt-3 text-xs">
+                <span className="text-muted-foreground">
+                  📄 Docs soumis: <b>{d.funnel_docs_submitted ?? 0}</b>
+                </span>
+                <span className={`${(d.funnel_docs_rejected ?? 0) > 0 ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                  ❌ Docs rejetés: <b>{d.funnel_docs_rejected ?? 0}</b>
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stripe & QR detailed */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <MetricCard label="Chauffeurs actifs" value={d.active_drivers} icon={Users} color="text-emerald-600" bg="bg-emerald-500/10" />
             <MetricCard label="En attente" value={d.pending_drivers} icon={Clock} alert={d.pending_drivers > 5} color="text-amber-600" bg="bg-amber-500/10" />
+            <MetricCard label="Conversion courses" value={`${d.conversion_rate_7d ?? 0}%`} sub={`${d.courses_completed_7d ?? 0} OK / ${d.courses_cancelled_7d ?? 0} annul.`} icon={TrendingUp} alert={(d.conversion_rate_7d ?? 100) < 50} color="text-blue-600" bg="bg-blue-500/10" />
+            <MetricCard label="Courses bloquées" value={d.courses_stuck ?? 0} sub="+3h sans update" icon={Ban} alert={(d.courses_stuck ?? 0) > 0} color="text-red-600" bg="bg-red-500/10" />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <MetricCard label="Sans Stripe" value={d.drivers_no_stripe} icon={Wallet} alert={d.drivers_no_stripe > 3} color="text-red-600" bg="bg-red-500/10" />
+            <MetricCard label="Stripe sans payouts" value={d.stripe_no_payouts ?? 0} icon={FileWarning} alert={(d.stripe_no_payouts ?? 0) > 0} color="text-orange-600" bg="bg-orange-500/10" />
+            <MetricCard label="QR actifs" value={d.qr_active ?? 0} sub={`${d.qr_total ?? 0} total`} icon={QrCode} color="text-teal-600" bg="bg-teal-500/10" />
             <MetricCard label="Litiges ouverts" value={d.disputes_open} icon={Shield} alert={d.disputes_open > 0} color="text-orange-600" bg="bg-orange-500/10" />
           </div>
+
+          {/* Stripe/QR anomalies detail */}
+          {((d.qr_orphaned ?? 0) > 0 || (d.stripe_abnormal ?? 0) > 0 || (d.stripe_no_details ?? 0) > 0) && (
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="py-3 space-y-1.5">
+                {(d.qr_orphaned ?? 0) > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-amber-700">
+                    <QrCode className="w-4 h-4 shrink-0" />
+                    <span>{d.qr_orphaned} QR codes actifs liés à des chauffeurs inactifs</span>
+                  </div>
+                )}
+                {(d.stripe_abnormal ?? 0) > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    <span>{d.stripe_abnormal} chauffeurs avec statut Stripe anormal</span>
+                  </div>
+                )}
+                {(d.stripe_no_details ?? 0) > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-amber-700">
+                    <FileWarning className="w-4 h-4 shrink-0" />
+                    <span>{d.stripe_no_details} chauffeurs Stripe incomplet (détails non soumis)</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
-      {/* History with PDF download per entry */}
+      {/* History */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Historique des vérifications</CardTitle>
@@ -453,6 +565,14 @@ const PlatformHealthDashboard = () => {
     </div>
   );
 };
+
+const FunnelStep = ({ label, count, color }: { label: string; count: number; color: string }) => (
+  <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5">
+    <div className={`w-2 h-2 rounded-full ${color}`} />
+    <span className="font-medium">{label}</span>
+    <span className="text-muted-foreground">({count})</span>
+  </div>
+);
 
 const MetricCard = ({
   label, value, sub, icon: Icon, color, bg, alert

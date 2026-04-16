@@ -70,8 +70,12 @@ serve(async (req) => {
         `👨‍✈️ Chauffeurs: ${d.active_drivers} actifs, ${d.pending_drivers} en attente`,
         `📈 Inscriptions: ${d.inscriptions_today} aujourd'hui (moy: ${d.inscriptions_avg_30d}/j)`,
         `🎓 Onboarding: ${d.onboarding_rate}% (${d.onboarding_completed_7d}/${d.onboarding_total_7d})`,
-        `🚗 Courses: ${d.courses_today} aujourd'hui, ${d.courses_errors} erreurs`,
+        `📊 Funnel: Profil(${d.funnel_step_profile || 0}) → Docs(${d.funnel_step_documents || 0}) → Stripe(${d.funnel_step_stripe || 0}) → Valid.(${d.funnel_step_review || 0})`,
+        `🚗 Courses: ${d.courses_today} aujourd'hui, ${d.courses_errors} erreurs, ${d.courses_stuck || 0} bloquées`,
+        `📈 Conversion: ${d.conversion_rate_7d || 0}% (${d.courses_completed_7d || 0} OK / ${d.courses_cancelled_7d || 0} annul.)`,
         `💳 Paiements: ${d.payment_success_rate}% succès (${d.payments_failed_7d} échecs sur 7j)`,
+        `🔗 Stripe: ${d.stripe_no_payouts || 0} sans payouts, ${d.stripe_no_details || 0} incomplets, ${d.stripe_abnormal || 0} anormaux`,
+        `📱 QR Codes: ${d.qr_active || 0} actifs / ${d.qr_total || 0} total, ${d.qr_orphaned || 0} orphelins`,
         `⚠️ Sans Stripe: ${d.drivers_no_stripe} | Sans paiement: ${d.courses_no_payment}`,
         `📋 Litiges: ${d.disputes_open} ouverts`,
         anomalies.length > 0 ? `\n🔴 ${anomalies.length} anomalie(s) détectée(s):\n${anomalies.map((a: any) => `  • ${a.message}`).join("\n")}` : `\n✅ Aucune anomalie détectée`,
@@ -154,11 +158,27 @@ serve(async (req) => {
 
       <!-- Section Inscriptions -->
       <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">📈 Inscriptions & Onboarding</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Inscriptions aujourd'hui</td><td style="font-weight:600;text-align:right;">${d.inscriptions_today}</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Moyenne 30 jours</td><td style="font-weight:600;text-align:right;">${d.inscriptions_avg_30d}/jour</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux d'onboarding (7j)</td><td style="font-weight:600;text-align:right;${d.onboarding_rate < 50 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.onboarding_rate}%</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Complétés / Total</td><td style="font-weight:600;text-align:right;">${d.onboarding_completed_7d} / ${d.onboarding_total_7d}</td></tr>
+      </table>
+
+      <!-- Funnel Breakdown -->
+      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #a855f7;padding-bottom:6px;">🔀 Funnel Onboarding (30j)</h2>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Profil: ${d.funnel_step_profile || 0}</span>
+        <span style="color:#9ca3af;">→</span>
+        <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Docs: ${d.funnel_step_documents || 0}</span>
+        <span style="color:#9ca3af;">→</span>
+        <span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Stripe: ${d.funnel_step_stripe || 0}</span>
+        <span style="color:#9ca3af;">→</span>
+        <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Validation: ${d.funnel_step_review || 0}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Documents soumis</td><td style="font-weight:600;text-align:right;">${d.funnel_docs_submitted || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Documents rejetés</td><td style="font-weight:600;text-align:right;${(d.funnel_docs_rejected || 0) > 2 ? 'color:#ef4444;' : ''}">${d.funnel_docs_rejected || 0}</td></tr>
       </table>
 
       <!-- Section Courses -->
@@ -166,15 +186,29 @@ serve(async (req) => {
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Courses aujourd'hui</td><td style="font-weight:600;text-align:right;">${d.courses_today}</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Erreurs</td><td style="font-weight:600;text-align:right;${d.courses_errors > 0 ? 'color:#ef4444;' : ''}">${d.courses_errors}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Complétées (7j)</td><td style="font-weight:600;text-align:right;">${d.courses_completed_7d || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Annulées (7j)</td><td style="font-weight:600;text-align:right;">${d.courses_cancelled_7d || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Bloquées (+3h)</td><td style="font-weight:600;text-align:right;${(d.courses_stuck || 0) > 0 ? 'color:#ef4444;' : ''}">${d.courses_stuck || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux conversion (7j)</td><td style="font-weight:600;text-align:right;${(d.conversion_rate_7d || 0) < 50 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.conversion_rate_7d || 0}%</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Sans paiement (7j)</td><td style="font-weight:600;text-align:right;${d.courses_no_payment > 0 ? 'color:#f59e0b;' : ''}">${d.courses_no_payment}</td></tr>
       </table>
 
-      <!-- Section Paiements -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">💳 Paiements</h2>
+      <!-- Section Paiements & Stripe -->
+      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">💳 Paiements & Stripe Connect</h2>
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux de succès (7j)</td><td style="font-weight:600;text-align:right;${d.payment_success_rate < 90 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.payment_success_rate}%</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Paiements échoués</td><td style="font-weight:600;text-align:right;${d.payments_failed_7d > 0 ? 'color:#ef4444;' : ''}">${d.payments_failed_7d}</td></tr>
         <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Total paiements</td><td style="font-weight:600;text-align:right;">${d.payments_total_7d}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe sans payouts</td><td style="font-weight:600;text-align:right;${(d.stripe_no_payouts || 0) > 0 ? 'color:#ef4444;' : ''}">${d.stripe_no_payouts || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe incomplet</td><td style="font-weight:600;text-align:right;${(d.stripe_no_details || 0) > 0 ? 'color:#f59e0b;' : ''}">${d.stripe_no_details || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe anormal</td><td style="font-weight:600;text-align:right;${(d.stripe_abnormal || 0) > 0 ? 'color:#ef4444;' : ''}">${d.stripe_abnormal || 0}</td></tr>
+      </table>
+
+      <!-- QR Codes -->
+      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #0d9488;padding-bottom:6px;">📱 QR Codes</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">QR codes actifs</td><td style="font-weight:600;text-align:right;">${d.qr_active || 0} / ${d.qr_total || 0}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">QR orphelins</td><td style="font-weight:600;text-align:right;${(d.qr_orphaned || 0) > 0 ? 'color:#ef4444;' : ''}">${d.qr_orphaned || 0}</td></tr>
       </table>
 
       <!-- Section Litiges -->
