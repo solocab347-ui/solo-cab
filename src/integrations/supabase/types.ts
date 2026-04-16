@@ -16304,6 +16304,86 @@ export type Database = {
           },
         ]
       }
+      platform_health_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          is_resolved: boolean
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_health_alerts_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_health_logs: {
+        Row: {
+          anomalies: Json | null
+          check_type: string
+          checked_at: string
+          created_at: string
+          details: Json | null
+          id: string
+          status: string
+          triggered_by: string
+        }
+        Insert: {
+          anomalies?: Json | null
+          check_type: string
+          checked_at?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          status?: string
+          triggered_by?: string
+        }
+        Update: {
+          anomalies?: Json | null
+          check_type?: string
+          checked_at?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          status?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       podcast_segments: {
         Row: {
           created_at: string
@@ -23352,6 +23432,10 @@ export type Database = {
           issues_fixed: number
           issues_found: number
         }[]
+      }
+      run_platform_health_check: {
+        Args: { p_triggered_by?: string }
+        Returns: Json
       }
       schedule_trial_emails: {
         Args: { p_driver_id: string; p_trial_start: string }
