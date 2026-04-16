@@ -186,6 +186,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(null);
           setUserRole(null);
           setUserRoles([]);
+          // Reset driver session marker so next login defaults to map mode
+          try { sessionStorage.removeItem("solocab_driver_session_started"); } catch {}
           return;
         }
         
