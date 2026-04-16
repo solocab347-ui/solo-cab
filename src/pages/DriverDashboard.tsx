@@ -124,10 +124,18 @@ const DriverDashboard = () => {
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [viewMode, setViewModeState] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
+    // Explicit URL override always wins
     if (viewParam === "dashboard") return "dashboard";
     if (viewParam === "map") return "map";
-    // Fallback to last persisted preference (defaults to map for fast access to incoming courses)
+    // PRIORITY: After a fresh login, always default to map mode.
+    // We use sessionStorage to detect first dashboard mount per session.
     try {
+      const sessionMarker = sessionStorage.getItem("solocab_driver_session_started");
+      if (!sessionMarker) {
+        sessionStorage.setItem("solocab_driver_session_started", "1");
+        return "map";
+      }
+      // Subsequent mounts within the same session: respect last user choice
       const stored = localStorage.getItem("solocab_driver_view_mode");
       if (stored === "dashboard" || stored === "map") return stored;
     } catch {}
