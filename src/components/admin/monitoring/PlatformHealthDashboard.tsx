@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import {
   Activity, AlertTriangle, CheckCircle, XCircle, RefreshCw,
   Users, Car, CreditCard, Shield, TrendingUp, Loader2,
-  Clock, Zap, UserPlus, Wallet
+  Clock, Zap, UserPlus, Wallet, Download, Mail
 } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface HealthData {
   status: string;
@@ -51,6 +52,7 @@ interface HealthLog {
   id: string;
   check_type: string;
   status: string;
+  details: any;
   anomalies: any;
   checked_at: string;
   triggered_by: string;
@@ -86,7 +88,6 @@ const PlatformHealthDashboard = () => {
       if (alertsRes.data) setAlerts(alertsRes.data as HealthAlert[]);
       if (logsRes.data) {
         setLogs(logsRes.data as HealthLog[]);
-        // Use most recent log as current health data
         if (logsRes.data.length > 0) {
           const latest = logsRes.data[0] as any;
           setHealthData({
@@ -107,12 +108,11 @@ const PlatformHealthDashboard = () => {
   const runHealthCheck = async () => {
     setRunning(true);
     try {
-      const { data, error } = await supabase.rpc("run_platform_health_check", {
-        p_triggered_by: "admin_manual",
-      });
+      // Call edge function which sends notif + email
+      const { data, error } = await supabase.functions.invoke("platform-health-check");
       if (error) throw error;
-      setHealthData(data as unknown as HealthData);
-      toast.success("Vérification terminée");
+      setHealthData(data as HealthData);
+      toast.success("Vérification terminée — notification et email envoyés");
       await loadData();
     } catch (error: any) {
       toast.error("Erreur: " + error.message);
@@ -134,10 +134,136 @@ const PlatformHealthDashboard = () => {
     }
   };
 
-  const StatusIcon = ({ status }: { status: string }) => {
-    if (status === "ok") return <CheckCircle className="w-5 h-5 text-emerald-500" />;
-    if (status === "warning") return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-    return <XCircle className="w-5 h-5 text-red-500" />;
+  const generatePDF = (data?: HealthData) => {
+    const report = data || healthData;
+    if (!report) return;
+
+    const d = report.data;
+    const doc = new jsPDF();
+    const dateStr = new Date(report.checked_at).toLocaleDateString("fr-FR", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+
+    // Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, 210, 35, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Rapport Santé Plateforme SoloCab", 15, 18);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(dateStr, 15, 28);
+
+    // Status
+    const statusColors: Record<string, [number, number, number]> = {
+      ok: [16, 185, 129],
+      warning: [245, 158, 11],
+      critical: [239, 68, 68],
+    };
+    const sc = statusColors[report.status] || statusColors.warning;
+    doc.setFillColor(sc[0], sc[1], sc[2]);
+    doc.rect(0, 35, 210, 10, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    const statusText = report.status === "ok" ? "OPÉRATIONNEL" : report.status === "warning" ? "ATTENTION REQUISE" : "CRITIQUE";
+    doc.text(`Statut: ${statusText}`, 15, 42);
+
+    let y = 55;
+    doc.setTextColor(30, 41, 59);
+
+    const addSection = (title: string, items: [string, string | number, boolean?][]) => {
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, 15, y);
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(0.5);
+      doc.line(15, y + 2, 195, y + 2);
+      y += 10;
+
+      doc.setFontSize(11);
+      items.forEach(([label, value, isAlert]) => {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        doc.text(label, 20, y);
+        doc.setFont("helvetica", "bold");
+        if (isAlert) {
+          doc.setTextColor(239, 68, 68);
+        } else {
+          doc.setTextColor(30, 41, 59);
+        }
+        doc.text(String(value), 160, y, { align: "right" });
+        y += 7;
+      });
+      y += 5;
+    };
+
+    addSection("Chauffeurs", [
+      ["Chauffeurs actifs", d.active_drivers],
+      ["En attente de validation", d.pending_drivers, d.pending_drivers > 5],
+      ["Sans Stripe Connect", d.drivers_no_stripe, d.drivers_no_stripe > 3],
+    ]);
+
+    addSection("Inscriptions & Onboarding", [
+      ["Inscriptions aujourd'hui", d.inscriptions_today],
+      ["Moyenne 30 jours", `${d.inscriptions_avg_30d}/jour`],
+      ["Taux d'onboarding (7j)", `${d.onboarding_rate}%`, d.onboarding_rate < 50],
+      ["Complétés / Total", `${d.onboarding_completed_7d} / ${d.onboarding_total_7d}`],
+    ]);
+
+    addSection("Courses", [
+      ["Courses aujourd'hui", d.courses_today],
+      ["Erreurs", d.courses_errors, d.courses_errors > 0],
+      ["Sans paiement (7j)", d.courses_no_payment, d.courses_no_payment > 0],
+    ]);
+
+    addSection("Paiements", [
+      ["Taux de succès (7j)", `${d.payment_success_rate}%`, d.payment_success_rate < 90],
+      ["Paiements échoués (7j)", d.payments_failed_7d, d.payments_failed_7d > 0],
+      ["Total paiements (7j)", d.payments_total_7d],
+    ]);
+
+    addSection("Litiges", [
+      ["Litiges ouverts", d.disputes_open, d.disputes_open > 0],
+    ]);
+
+    // Anomalies
+    if (report.anomalies.length > 0) {
+      y += 3;
+      doc.setFillColor(254, 242, 242);
+      doc.roundedRect(15, y - 5, 180, 10 + report.anomalies.length * 8, 3, 3, "F");
+      doc.setTextColor(153, 27, 27);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Anomalies détectées (${report.anomalies.length})`, 20, y + 3);
+      y += 12;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      report.anomalies.forEach((a) => {
+        const icon = a.severity === "critical" ? "CRITIQUE" : "ATTENTION";
+        doc.text(`[${icon}] ${a.message}`, 25, y);
+        y += 8;
+      });
+    } else {
+      y += 3;
+      doc.setFillColor(236, 253, 245);
+      doc.roundedRect(15, y - 5, 180, 15, 3, 3, "F");
+      doc.setTextColor(6, 95, 70);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Aucune anomalie — Tout est opérationnel", 105, y + 4, { align: "center" });
+    }
+
+    // Footer
+    doc.setTextColor(156, 163, 175);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`SoloCab — Rapport généré le ${dateStr}`, 105, 285, { align: "center" });
+
+    doc.save(`rapport-sante-solocab-${new Date().toISOString().split("T")[0]}.pdf`);
+    toast.success("PDF téléchargé");
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -153,6 +279,12 @@ const PlatformHealthDashboard = () => {
     );
   };
 
+  const StatusIcon = ({ status }: { status: string }) => {
+    if (status === "ok") return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+    if (status === "warning") return <AlertTriangle className="w-5 h-5 text-amber-500" />;
+    return <XCircle className="w-5 h-5 text-red-500" />;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -166,7 +298,7 @@ const PlatformHealthDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header + Status */}
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
@@ -181,14 +313,23 @@ const PlatformHealthDashboard = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {healthData && <StatusBadge status={healthData.status} />}
-          <Button onClick={runHealthCheck} disabled={running} size="sm" className="gap-2">
+          <Button onClick={() => generatePDF()} disabled={!healthData} size="sm" variant="outline" className="gap-1.5">
+            <Download className="w-4 h-4" />
+            PDF
+          </Button>
+          <Button onClick={runHealthCheck} disabled={running} size="sm" className="gap-1.5">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Vérifier maintenant
+            Vérifier
           </Button>
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+        <Mail className="w-3.5 h-3.5 inline mr-1" />
+        Un rapport automatique est envoyé chaque matin par email + notification. Cliquez "Vérifier" pour un rapport manuel immédiat.
+      </p>
 
       {/* Alerts */}
       {unresolvedAlerts.length > 0 && (
@@ -215,7 +356,7 @@ const PlatformHealthDashboard = () => {
         </Card>
       )}
 
-      {/* Current anomalies */}
+      {/* Anomalies */}
       {healthData?.anomalies && healthData.anomalies.length > 0 && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardHeader className="pb-2">
@@ -239,77 +380,25 @@ const PlatformHealthDashboard = () => {
         </Card>
       )}
 
-      {/* Key metrics */}
+      {/* Metrics */}
       {d && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <MetricCard
-              label="Inscriptions aujourd'hui"
-              value={d.inscriptions_today}
-              sub={`Moy 30j: ${d.inscriptions_avg_30d}`}
-              icon={UserPlus}
-              alert={d.inscriptions_avg_30d > 0 && d.inscriptions_today < d.inscriptions_avg_30d * 0.7}
-              color="text-blue-600" bg="bg-blue-500/10"
-            />
-            <MetricCard
-              label="Taux onboarding (7j)"
-              value={`${d.onboarding_rate}%`}
-              sub={`${d.onboarding_completed_7d}/${d.onboarding_total_7d}`}
-              icon={TrendingUp}
-              alert={d.onboarding_total_7d > 2 && d.onboarding_rate < 50}
-              color="text-emerald-600" bg="bg-emerald-500/10"
-            />
-            <MetricCard
-              label="Taux paiement OK (7j)"
-              value={`${d.payment_success_rate}%`}
-              sub={`${d.payments_failed_7d} échecs`}
-              icon={CreditCard}
-              alert={d.payments_total_7d > 5 && d.payment_success_rate < 90}
-              color="text-violet-600" bg="bg-violet-500/10"
-            />
-            <MetricCard
-              label="Courses aujourd'hui"
-              value={d.courses_today}
-              sub={`${d.courses_errors} erreurs`}
-              icon={Car}
-              alert={d.courses_errors > 0}
-              color="text-indigo-600" bg="bg-indigo-500/10"
-            />
+            <MetricCard label="Inscriptions aujourd'hui" value={d.inscriptions_today} sub={`Moy: ${d.inscriptions_avg_30d}`} icon={UserPlus} alert={d.inscriptions_avg_30d > 0 && d.inscriptions_today < d.inscriptions_avg_30d * 0.7} color="text-blue-600" bg="bg-blue-500/10" />
+            <MetricCard label="Taux onboarding (7j)" value={`${d.onboarding_rate}%`} sub={`${d.onboarding_completed_7d}/${d.onboarding_total_7d}`} icon={TrendingUp} alert={d.onboarding_total_7d > 2 && d.onboarding_rate < 50} color="text-emerald-600" bg="bg-emerald-500/10" />
+            <MetricCard label="Taux paiement OK" value={`${d.payment_success_rate}%`} sub={`${d.payments_failed_7d} échecs`} icon={CreditCard} alert={d.payments_total_7d > 5 && d.payment_success_rate < 90} color="text-violet-600" bg="bg-violet-500/10" />
+            <MetricCard label="Courses aujourd'hui" value={d.courses_today} sub={`${d.courses_errors} erreurs`} icon={Car} alert={d.courses_errors > 0} color="text-indigo-600" bg="bg-indigo-500/10" />
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <MetricCard
-              label="Chauffeurs actifs"
-              value={d.active_drivers}
-              icon={Users}
-              color="text-emerald-600" bg="bg-emerald-500/10"
-            />
-            <MetricCard
-              label="En attente validation"
-              value={d.pending_drivers}
-              icon={Clock}
-              alert={d.pending_drivers > 5}
-              color="text-amber-600" bg="bg-amber-500/10"
-            />
-            <MetricCard
-              label="Sans Stripe"
-              value={d.drivers_no_stripe}
-              icon={Wallet}
-              alert={d.drivers_no_stripe > 3}
-              color="text-red-600" bg="bg-red-500/10"
-            />
-            <MetricCard
-              label="Litiges ouverts"
-              value={d.disputes_open}
-              icon={Shield}
-              alert={d.disputes_open > 0}
-              color="text-orange-600" bg="bg-orange-500/10"
-            />
+            <MetricCard label="Chauffeurs actifs" value={d.active_drivers} icon={Users} color="text-emerald-600" bg="bg-emerald-500/10" />
+            <MetricCard label="En attente" value={d.pending_drivers} icon={Clock} alert={d.pending_drivers > 5} color="text-amber-600" bg="bg-amber-500/10" />
+            <MetricCard label="Sans Stripe" value={d.drivers_no_stripe} icon={Wallet} alert={d.drivers_no_stripe > 3} color="text-red-600" bg="bg-red-500/10" />
+            <MetricCard label="Litiges ouverts" value={d.disputes_open} icon={Shield} alert={d.disputes_open > 0} color="text-orange-600" bg="bg-orange-500/10" />
           </div>
         </>
       )}
 
-      {/* History */}
+      {/* History with PDF download per entry */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Historique des vérifications</CardTitle>
@@ -317,7 +406,7 @@ const PlatformHealthDashboard = () => {
         <CardContent>
           {logs.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              Aucune vérification effectuée. Cliquez sur "Vérifier maintenant".
+              Aucune vérification. Cliquez "Vérifier" pour lancer.
             </p>
           ) : (
             <div className="space-y-2">
@@ -335,11 +424,26 @@ const PlatformHealthDashboard = () => {
                       {new Date(log.checked_at).toLocaleString("fr-FR")}
                     </p>
                   </div>
-                  {log.anomalies && Array.isArray(log.anomalies) && log.anomalies.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {log.anomalies.length} anomalie(s)
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {log.anomalies && Array.isArray(log.anomalies) && log.anomalies.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {log.anomalies.length} anomalie(s)
+                      </Badge>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => generatePDF({
+                        status: log.status,
+                        data: log.details,
+                        anomalies: log.anomalies || [],
+                        checked_at: log.checked_at,
+                      })}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
