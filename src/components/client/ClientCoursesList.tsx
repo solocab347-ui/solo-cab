@@ -163,12 +163,13 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
         .order("scheduled_date", { ascending: false })
         .range(from, to);
 
-      // Use OR filter to match both client_id and created_by_user_id
-      if (userId) {
-        query = query.or(`client_id.eq.${clientId},created_by_user_id.eq.${userId}`);
-      } else {
-        query = query.eq("client_id", clientId);
-      }
+      // Build comprehensive OR filter to match all possible course associations
+      const orParts: string[] = [`client_id.eq.${clientId}`];
+      if (userId) orParts.push(`created_by_user_id.eq.${userId}`);
+      if (exclusiveDriverId) orParts.push(`driver_id.eq.${exclusiveDriverId}`);
+      if (userEmail) orParts.push(`guest_email.ilike.${userEmail}`);
+      if (userPhone) orParts.push(`guest_phone.eq.${userPhone}`);
+      query = query.or(orParts.join(','));
 
       const { data, error } = await query;
 
