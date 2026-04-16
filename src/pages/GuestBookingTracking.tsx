@@ -612,6 +612,15 @@ const GuestBookingTracking = () => {
   };
 
   const renderLiveTrackingInfo = (phase: 'approaching' | 'in_progress') => {
+    const isRidePhase = phase === 'in_progress';
+    const targetLabel = isRidePhase ? "jusqu'à destination" : "avant arrivée du chauffeur";
+    const targetAddress = isRidePhase ? booking?.destination_address : booking?.pickup_address;
+    
+    // Shorten address for display
+    const shortAddress = targetAddress 
+      ? (targetAddress.length > 50 ? targetAddress.substring(0, 47) + '...' : targetAddress)
+      : null;
+
     return (
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-4 pb-4 space-y-3">
@@ -625,14 +634,27 @@ const GuestBookingTracking = () => {
             </span>
           </div>
 
+          {/* Contextual destination label */}
+          {shortAddress && (
+            <div className="flex items-start gap-2 bg-background/60 rounded-lg px-3 py-2">
+              <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {isRidePhase ? 'Destination' : 'Point de prise en charge'}
+                </p>
+                <p className="text-xs text-foreground font-medium truncate">{shortAddress}</p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             {/* ETA */}
             <div className="bg-background rounded-lg p-3 text-center">
               <Timer className="w-5 h-5 mx-auto text-primary mb-1" />
-              <p className="text-xs text-muted-foreground">
-                {phase === 'approaching' ? "Arrivée estimée" : "Temps restant"}
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {isRidePhase ? "Temps restant\njusqu'à destination" : "Arrivée estimée\ndu chauffeur"}
               </p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground mt-1">
                 {etaLoading ? '...' : eta?.durationMin 
                   ? `${Math.ceil(eta.durationMin)} min` 
                   : '—'}
@@ -641,10 +663,10 @@ const GuestBookingTracking = () => {
             {/* Distance */}
             <div className="bg-background rounded-lg p-3 text-center">
               <Route className="w-5 h-5 mx-auto text-primary mb-1" />
-              <p className="text-xs text-muted-foreground">
-                {phase === 'approaching' ? "Distance" : "Km restants"}
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {isRidePhase ? "Distance restante\njusqu'à destination" : "Distance\ndu chauffeur"}
               </p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground mt-1">
                 {etaLoading ? '...' : eta?.distanceKm 
                   ? `${eta.distanceKm.toFixed(1)} km` 
                   : '—'}
