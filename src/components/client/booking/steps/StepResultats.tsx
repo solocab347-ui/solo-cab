@@ -81,16 +81,54 @@ export function StepResultats({
         )}
       </div>
 
-      {/* Error states */}
-      {error && (
-        <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>
+      {/* Real error (network/server failure) */}
+      {isRealError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col gap-2">
+            <span>Connexion instable. Réessayez dans quelques instants.</span>
+            {onRetrySearch && (
+              <Button size="sm" variant="outline" className="self-start h-7 text-xs" onClick={onRetrySearch} disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                Réessayer
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
       )}
+
       {fallbackToReservation && mode === 'immediate' && filteredDrivers.length === 0 && (
         <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur en temps réel. Voici ceux sur réservation.</AlertDescription></Alert>
       )}
-      {noDriversFound && (
-        <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur dans {maxSearchRadiusKm} km.</AlertDescription></Alert>
+
+      {/* Empty result — friendly UX, not an error */}
+      {noDriversFound && !isRealError && (
+        <Alert className="border-primary/40 bg-primary/5">
+          <MapPinOff className="h-4 w-4 text-primary" />
+          <AlertDescription className="flex flex-col gap-2">
+            <span className="text-foreground">
+              Aucun chauffeur disponible dans un rayon de <b>{maxSearchRadiusKm} km</b>.
+              Essayez d'élargir la zone de recherche.
+            </span>
+            {setMaxSearchRadiusKm && (
+              <div className="flex flex-wrap gap-1.5">
+                {nextRadius <= 200 && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => expandRadius(nextRadius)} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                    Élargir à {nextRadius} km
+                  </Button>
+                )}
+                {maxSearchRadiusKm < 100 && (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => expandRadius(100)} disabled={isLoading}>
+                    100 km
+                  </Button>
+                )}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
       )}
+
       {clientPaymentMethod === 'cash' && filteredDrivers.length === 0 && drivers.length > 0 && (
         <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>Aucun chauffeur n'accepte les espèces ici.</AlertDescription></Alert>
       )}
