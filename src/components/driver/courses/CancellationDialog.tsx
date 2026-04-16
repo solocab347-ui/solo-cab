@@ -25,6 +25,7 @@ interface CancellationDialogProps {
   hasDeposit?: boolean;
   depositAmount?: number;
   hasCardHold?: boolean;
+  paymentMethod?: string;
   onSuccess?: () => void;
 }
 
