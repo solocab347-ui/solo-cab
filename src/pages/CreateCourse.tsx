@@ -85,7 +85,7 @@ const CreateCourse = () => {
     if (useAddressPickup && clientAddress) {
       setPickupAddress(clientAddress);
       geocodeAddress(clientAddress).then((result) => {
-        if (result?.coordinates) setPickupCoordinates({ latitude: result.coordinates.lat, longitude: result.coordinates.lng });
+        if (result?.coordinates) setPickupCoordinates(result.coordinates);
       });
     }
   }, [useAddressPickup, clientAddress]);
@@ -94,7 +94,7 @@ const CreateCourse = () => {
     if (useAddressDestination && clientAddress) {
       setDestinationAddress(clientAddress);
       geocodeAddress(clientAddress).then((result) => {
-        if (result?.coordinates) setDestinationCoordinates({ latitude: result.coordinates.lat, longitude: result.coordinates.lng });
+        if (result?.coordinates) setDestinationCoordinates(result.coordinates);
       });
     }
   }, [useAddressDestination, clientAddress]);
