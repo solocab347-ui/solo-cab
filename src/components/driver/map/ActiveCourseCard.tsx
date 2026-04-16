@@ -191,6 +191,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     clientName: string;
     amount: number;
     paymentMethod: string;
+    guestPhone?: string | null;
     paymentResult: { success: boolean; status?: string; error?: string; alreadyPaid?: boolean };
   } | null>(null);
   const [rideRequestId, setRideRequestId] = useState<string | null>(null);
