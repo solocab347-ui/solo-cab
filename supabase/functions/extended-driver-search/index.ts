@@ -41,12 +41,17 @@ serve(async (req) => {
   );
 
   try {
+    // Auth optional: guests don't have a session but still need extended search relaunches
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("Not authenticated");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await supabase.auth.getUser(token);
+      if (userData?.user) {
+        logStep("Authenticated user", { userId: userData.user.id });
+      }
+    } else {
+      logStep("Guest request (no auth)");
+    }
 
     const { request_group_id, radius_km = 5, search_phase = "nearby", relaunch_non_responders = false } = await req.json();
     if (!request_group_id) throw new Error("request_group_id required");
