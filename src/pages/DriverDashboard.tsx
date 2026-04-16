@@ -116,6 +116,7 @@ const DriverDashboard = () => {
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  const [financesSubTab, setFinancesSubTab] = useState<string>("overview");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
