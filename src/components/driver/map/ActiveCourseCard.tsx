@@ -483,6 +483,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       clientName: courseClientName,
       amount: courseAmount,
       paymentMethod: currentPaymentMethod,
+      guestPhone: course?.guest_phone || null,
       paymentResult: optimisticResult,
     });
     
