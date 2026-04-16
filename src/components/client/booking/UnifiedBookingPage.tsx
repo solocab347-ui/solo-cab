@@ -698,10 +698,10 @@ export function UnifiedBookingPage() {
                 fallbackToReservation={fallbackToReservation} mode={mode}
                 error={error} mapboxToken={mapboxToken} tokenLoading={isTokenLoading}
                 mapboxError={mapboxError} maxSearchRadiusKm={maxSearchRadiusKm}
-                setMaxSearchRadiusKm={(km) => { setMaxSearchRadiusKm(km); priceRangeFetched.current = null; }}
+                setMaxSearchRadiusKm={(km) => { setMaxSearchRadiusKm(km); priceRangeFetched.current = ''; }}
                 isLoading={isLoading}
                 onRetrySearch={() => {
-                  priceRangeFetched.current = null;
+                  priceRangeFetched.current = '';
                   if (pickupCoords) {
                     let schedDate: Date | undefined;
                     if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
