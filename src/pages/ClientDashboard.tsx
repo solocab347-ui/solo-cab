@@ -78,11 +78,23 @@ const ClientDashboard = () => {
   const [devisFacturesSubTab, setDevisFacturesSubTab] = useState<string | null>(null);
   const [showDriverSelection, setShowDriverSelection] = useState(false);
   const [blockedDriversCount, setBlockedDriversCount] = useState(0);
+  const [showTracker, setShowTracker] = useState(false);
   const [stats, setStats] = useState({
     upcomingCourses: 0,
     pendingDevis: 0,
     unpaidInvoices: 0,
   });
+
+  const { activeCourse } = useActiveClientCourse(clientProfile?.client?.id);
+
+  // Auto-open tracker when arriving with ?tab=active-course
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "active-course" && activeCourse) {
+      setShowTracker(true);
+      setSearchParams({});
+    }
+  }, [searchParams, activeCourse, setSearchParams]);
 
   useEffect(() => {
     let isMounted = true;
