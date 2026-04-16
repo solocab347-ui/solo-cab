@@ -466,9 +466,26 @@ const CreateCourse = () => {
                 <CardContent className="p-4 space-y-3">
                   {/* Pickup */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary shrink-0" />
-                      <Label className="text-sm font-medium">Point de départ</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-primary shrink-0" />
+                        <Label className="text-sm font-medium">Point de départ</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary"
+                        onClick={() => useMyLocationFor('pickup')}
+                        disabled={isGettingPickupLocation}
+                      >
+                        {isGettingPickupLocation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Navigation className="h-3.5 w-3.5" />
+                        )}
+                        Ma position
+                      </Button>
                     </div>
                     {clientAddress && (
                       <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
@@ -499,9 +516,26 @@ const CreateCourse = () => {
 
                   {/* Destination */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-sm bg-destructive shrink-0" style={{ transform: 'rotate(45deg)' }} />
-                      <Label className="text-sm font-medium">Point d'arrivée</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-destructive shrink-0" style={{ transform: 'rotate(45deg)' }} />
+                        <Label className="text-sm font-medium">Point d'arrivée</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary"
+                        onClick={() => useMyLocationFor('destination')}
+                        disabled={isGettingDestLocation}
+                      >
+                        {isGettingDestLocation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Navigation className="h-3.5 w-3.5" />
+                        )}
+                        Ma position
+                      </Button>
                     </div>
                     {clientAddress && (
                       <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
