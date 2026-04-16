@@ -190,11 +190,16 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
 
   const fetchTotalCounts = async () => {
     if (!clientId) return;
+    const orFilter = userId 
+      ? `client_id.eq.${clientId},created_by_user_id.eq.${userId}` 
+      : undefined;
+    const applyFilter = (q: any) => orFilter ? q.or(orFilter) : q.eq("client_id", clientId);
+    
     const [pendingRes, confirmedRes, completedRes, cancelledRes] = await Promise.all([
-      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "pending"),
-      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).in("status", ["accepted", "in_progress"]),
-      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "completed"),
-      supabase.from("courses").select("*", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "cancelled"),
+      applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending")),
+      applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).in("status", ["accepted", "in_progress"])),
+      applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "completed")),
+      applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "cancelled")),
     ]);
     setTotalCounts({
       pending: pendingRes.count || 0,
