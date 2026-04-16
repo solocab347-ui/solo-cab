@@ -513,54 +513,90 @@ export function StepConfirm({
           {subStep === 'review' && (
             <motion.div key="review" variants={variants} initial="enter" animate="center" exit="exit" transition={springTransition} style={{ transformStyle: 'preserve-3d' }}>
               <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-5 space-y-4">
-                  <motion.div className="text-center space-y-2" initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-                    <motion.div
-                      animate={{ rotate: [0, -5, 5, 0] }}
-                      transition={{ duration: 0.5, delay: 0.3 }}
-                      className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto"
-                    >
-                      <Send className="h-7 w-7 text-primary" />
-                    </motion.div>
-                    <h3 className="text-lg font-bold text-foreground">Tout est prêt !</h3>
-                    <p className="text-xs text-muted-foreground">Vérifiez et envoyez votre demande</p>
+                <CardContent className="p-4 space-y-3">
+                  {/* Compact header */}
+                  <motion.div className="text-center space-y-1" initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+                    <h3 className="text-base font-bold text-foreground flex items-center justify-center gap-2">
+                      <Send className="h-4 w-4 text-primary" />
+                      Tout est prêt !
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">Vérifiez et envoyez votre demande</p>
                   </motion.div>
 
-                  <div className="space-y-2">
-                    {[
-                      { icon: MapPin, label: 'Trajet', value: `${pickupAddress.split(',')[0]} → ${destinationAddress.split(',')[0]}`, extra: routeDistanceKm ? `${routeDistanceKm.toFixed(1)}km` : undefined },
-                      { icon: Users, label: 'Chauffeurs', value: `${selectedDrivers.length} chauffeur${selectedDrivers.length > 1 ? 's' : ''}` },
-                      { icon: clientPaymentMethod === 'card' ? CreditCard : Banknote, label: 'Paiement', value: clientPaymentMethod === 'card' ? 'Carte bancaire' : 'Espèces', check: clientPaymentMethod === 'card' && cardVerifiedForBooking },
-                      { icon: CheckCircle2, label: 'Contact', value: user ? (user.user_metadata?.full_name || user.email || 'Connecté') : registrationDone ? regName || guestName : guestName },
-                    ].map((item, i) => (
-                      <motion.div
-                        key={item.label}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.15 + i * 0.06 }}
-                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
-                      >
-                        <item.icon className="h-4 w-4 text-primary shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</p>
-                          <p className="text-sm font-medium text-foreground truncate">{item.value}</p>
-                        </div>
-                        {item.extra && <span className="text-xs font-bold text-foreground">{item.extra}</span>}
-                        {item.check && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
-                      </motion.div>
-                    ))}
+                  {/* 2-column grid layout for compact display */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Trajet - full width */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="col-span-2 flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl"
+                    >
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Trajet</p>
+                        <p className="text-xs font-medium text-foreground truncate">
+                          {pickupAddress.split(',')[0]} → {destinationAddress.split(',')[0]}
+                        </p>
+                      </div>
+                      {routeDistanceKm && <span className="text-xs font-bold text-foreground shrink-0">{routeDistanceKm.toFixed(1)}km</span>}
+                    </motion.div>
 
+                    {/* Chauffeurs */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl"
+                    >
+                      <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Chauffeurs</p>
+                        <p className="text-xs font-medium text-foreground">{selectedDrivers.length} chauffeur{selectedDrivers.length > 1 ? 's' : ''}</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Paiement */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl"
+                    >
+                      {clientPaymentMethod === 'card' ? <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" /> : <Banknote className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Paiement</p>
+                        <p className="text-xs font-medium text-foreground">{clientPaymentMethod === 'card' ? 'Carte' : 'Espèces'}</p>
+                      </div>
+                      {clientPaymentMethod === 'card' && cardVerifiedForBooking && <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />}
+                    </motion.div>
+
+                    {/* Contact */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Contact</p>
+                        <p className="text-xs font-medium text-foreground truncate">{user ? (user.user_metadata?.full_name || user.email || 'Connecté') : registrationDone ? regName || guestName : guestName}</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Estimation */}
                     {priceRange && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/20"
+                        transition={{ delay: 0.35 }}
+                        className="flex items-center gap-2 p-2.5 bg-primary/5 rounded-xl border border-primary/20"
                       >
-                        <span className="text-lg">💰</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Estimation</p>
-                          <p className="text-sm font-bold text-primary">
+                        <span className="text-sm">💰</span>
+                        <div className="min-w-0">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Estimation</p>
+                          <p className="text-xs font-bold text-primary">
                             {priceRange.min === priceRange.max
                               ? `${priceRange.min.toFixed(0)} €`
                               : `${priceRange.min.toFixed(0)} – ${priceRange.max.toFixed(0)} €`}
@@ -570,19 +606,22 @@ export function StepConfirm({
                     )}
                   </div>
 
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  {/* Big prominent CTA button */}
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
                     <Button
-                      className="w-full h-13 text-base font-bold gap-2 shadow-lg shadow-primary/20"
+                      className="w-full h-16 text-lg font-extrabold gap-3 shadow-xl shadow-primary/30 rounded-2xl"
                       onClick={onSubmit}
                       disabled={isSubmitting}
                       size="lg"
                     >
                       {isSubmitting ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-6 w-6 animate-spin" />
                       ) : (
-                        <Send className="h-5 w-5" />
+                        <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                          <Send className="h-6 w-6" />
+                        </motion.div>
                       )}
-                      Envoyer la demande
+                      {isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande'}
                     </Button>
                   </motion.div>
                 </CardContent>
