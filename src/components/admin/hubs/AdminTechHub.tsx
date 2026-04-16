@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FileText, Activity } from "lucide-react";
+import { Bug, Database, Shield, FileText, Activity, Gauge } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
 import AdminDocumentation from "../AdminDocumentation";
 import PlatformHealthDashboard from "../monitoring/PlatformHealthDashboard";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"health" | "errors" | "integrity" | "rls" | "docs">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "perf" | "errors" | "integrity" | "rls" | "docs">("health");
 
   return (
     <div className="space-y-4">
@@ -22,6 +25,16 @@ const AdminTechHub = () => {
           <Activity className="w-4 h-4" />
           <span className="hidden sm:inline">Santé</span>
           <span className="sm:hidden">🏥</span>
+        </Button>
+        <Button
+          variant={activeTab === "perf" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("perf")}
+          className="gap-2"
+        >
+          <Gauge className="w-4 h-4" />
+          <span className="hidden sm:inline">Performance</span>
+          <span className="sm:hidden">⚡</span>
         </Button>
         <Button
           variant={activeTab === "errors" ? "default" : "ghost"}
@@ -65,6 +78,11 @@ const AdminTechHub = () => {
       </div>
 
       {activeTab === "health" && <PlatformHealthDashboard />}
+      {activeTab === "perf" && (
+        <Suspense fallback={<div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
+          <PerformanceDashboard />
+        </Suspense>
+      )}
       {activeTab === "errors" && <AdminErrorReports />}
       {activeTab === "integrity" && <AdminDataIntegrity />}
       {activeTab === "rls" && <AdminRLSAudit />}
