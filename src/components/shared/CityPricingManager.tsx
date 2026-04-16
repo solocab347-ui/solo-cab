@@ -37,6 +37,8 @@ interface CityPricingManagerProps {
   driverId?: string;
   fleetManagerId?: string;
   onSave?: () => void;
+  globalEveningSurcharge?: number;
+  globalWeekendSurcharge?: number;
 }
 
 interface CityPricing {
