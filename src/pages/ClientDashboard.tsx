@@ -337,13 +337,16 @@ const ClientDashboard = () => {
     switch (activeTab) {
       case "accueil":
         return (
-          <ClientHomeView
-            clientProfile={clientProfile}
-            stats={stats}
-            onNewReservation={handleNewReservation}
-            onNavigate={handleTabChange}
-            onViewFavoriteDriver={() => handleTabChange("chauffeurs")}
-          />
+          <div className="space-y-4">
+            <RatingDisputeResponseCard />
+            <ClientHomeView
+              clientProfile={clientProfile}
+              stats={stats}
+              onNewReservation={handleNewReservation}
+              onNavigate={handleTabChange}
+              onViewFavoriteDriver={() => handleTabChange("chauffeurs")}
+            />
+          </div>
         );
       case "courses":
         return clientProfile?.client?.id ? (
