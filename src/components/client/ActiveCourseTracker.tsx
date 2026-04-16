@@ -280,7 +280,9 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   }, [driver?.id, open]);
 
   // Card recording prompt: payment is card AND no card held yet AND course is still pending/accepted
-  const needsCard = course?.payment_method === "card" && !course?.payment_method_id_held &&
+  const needsCard = course?.payment_method === "card" &&
+    !course?.stripe_payment_method_id &&
+    !course?.card_hold_status &&
     ["pending", "accepted"].includes(course?.status || "");
 
   useEffect(() => {
@@ -402,7 +404,15 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
               {/* ─── ETA ─── */}
               {etaEnabled && (
-                <ETADisplay eta={eta} loading={etaLoading} onRefresh={refreshETA} />
+                <ETADisplay
+                  eta={eta}
+                  loading={etaLoading}
+                  onRefresh={refreshETA}
+                  phase={isApproaching ? "approaching" : "in_progress"}
+                  totalDistanceKm={course.distance_km}
+                  pickupAddress={course.pickup_address}
+                  destinationAddress={course.destination_address}
+                />
               )}
 
               {/* ─── Driver info ─── */}
