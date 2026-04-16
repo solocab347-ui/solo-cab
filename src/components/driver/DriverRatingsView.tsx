@@ -169,12 +169,12 @@ const DriverRatingsView = () => {
         resolution: "pending",
       });
 
-      // Trigger AI arbitration
-      await supabase.functions.invoke("ai-rating-arbitration", {
-        body: { ratingId: contestRating.id },
-      });
+      // Don't trigger AI immediately - wait for client response or 48h timeout
+      // The AI arbitration will be triggered when:
+      // 1. The client responds to the contestation
+      // 2. The 48h deadline passes (auto-cancel function handles this)
 
-      toast.success("Contestation envoyée — arbitrage IA en cours");
+      toast.success("Contestation envoyée — le client a 48h pour répondre");
       setContestRating(null);
       setContestReason("");
       fetchData();
