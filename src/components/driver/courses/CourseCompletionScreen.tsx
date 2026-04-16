@@ -22,6 +22,9 @@ interface CourseCompletionScreenProps {
   clientName: string;
   amount: number;
   paymentMethod: string;
+  driverId?: string;
+  clientId?: string | null;
+  guestPhone?: string | null;
   paymentResult: {
     success: boolean;
     status?: string;
