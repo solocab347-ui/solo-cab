@@ -123,13 +123,22 @@ const CityPricingSummaryCard = ({
   onEdit,
   onDelete,
   saving,
+  globalEveningSurcharge = 0,
+  globalWeekendSurcharge = 0,
 }: {
   pricing: CityPricing;
   onEdit: () => void;
   onDelete: () => void;
   saving: boolean;
+  globalEveningSurcharge?: number;
+  globalWeekendSurcharge?: number;
 }) => {
   const hasMajorations = (pricing.evening_surcharge > 0 || pricing.weekend_surcharge > 0);
+  
+  // Detect conflicts between city and global surcharges
+  const eveningConflict = pricing.evening_surcharge > 0 && globalEveningSurcharge > 0;
+  const weekendConflict = pricing.weekend_surcharge > 0 && globalWeekendSurcharge > 0;
+  const hasConflict = eveningConflict || weekendConflict;
 
   return (
     <Card className={`border-primary/30 ${!pricing.is_active ? "opacity-50" : ""}`}>
