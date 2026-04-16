@@ -300,7 +300,12 @@ export function DriverSettingsSimplified({
           <CollapsibleSection
             title="Majorations"
             icon={<Percent className="w-5 h-5 text-primary" />}
-            description="Soir, weekend, aéroport"
+            description={
+              (parseFloat(eveningSurcharge) > 0 || parseFloat(weekendSurcharge) > 0 || parseFloat(airportSurcharge) > 0)
+                ? `${parseFloat(eveningSurcharge) > 0 ? `Soir +${eveningSurcharge}%` : ''}${parseFloat(weekendSurcharge) > 0 ? ` • WE +${weekendSurcharge}%` : ''}${parseFloat(airportSurcharge) > 0 ? ` • Aéro. +${airportSurcharge}€` : ''}`.replace(/^ • /, '')
+                : "Aucune majoration active"
+            }
+            isComplete={parseFloat(eveningSurcharge) > 0 || parseFloat(weekendSurcharge) > 0 || parseFloat(airportSurcharge) > 0}
             defaultOpen={false}
           >
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -350,8 +355,8 @@ export function DriverSettingsSimplified({
           <CollapsibleSection
             title="Tarification par ville"
             icon={<MapPin className="w-5 h-5 text-primary" />}
-            description="Optionnel - Tarifs spécifiques par ville"
-            defaultOpen={false}
+            description="Tarifs spécifiques par ville"
+            defaultOpen={true}
           >
             <CityPricingManager 
               driverId={driverId} 
