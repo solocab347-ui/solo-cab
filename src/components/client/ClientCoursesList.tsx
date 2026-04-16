@@ -46,6 +46,7 @@ import { GuestReservationWithCardHold } from "@/components/payment/GuestReservat
 
 interface ClientCoursesListProps {
   clientId: string;
+  userId?: string;
   defaultTab?: string | null;
 }
 
