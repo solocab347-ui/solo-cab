@@ -4407,7 +4407,9 @@ export type Database = {
           driver_response: string | null
           driver_response_at: string | null
           id: string
+          rated_by_user_id: string | null
           rating: number
+          rating_direction: string
           reason: string | null
           reason_detail: string | null
           status: string
@@ -4429,7 +4431,9 @@ export type Database = {
           driver_response?: string | null
           driver_response_at?: string | null
           id?: string
+          rated_by_user_id?: string | null
           rating: number
+          rating_direction?: string
           reason?: string | null
           reason_detail?: string | null
           status?: string
@@ -4451,7 +4455,9 @@ export type Database = {
           driver_response?: string | null
           driver_response_at?: string | null
           id?: string
+          rated_by_user_id?: string | null
           rating?: number
+          rating_direction?: string
           reason?: string | null
           reason_detail?: string | null
           status?: string

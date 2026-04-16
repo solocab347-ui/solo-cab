@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CourseIncidentReportDialog } from "./CourseIncidentReportDialog";
+import { DriverRateClient } from "./DriverRateClient";
 
 interface CourseCompletionScreenProps {
   courseId: string;
@@ -320,6 +321,18 @@ export function CourseCompletionScreen({
           </div>
         )}
       </div>
+
+      {/* Driver rates client */}
+      {!isProcessing && isSuccess && driverId && (
+        <div className="px-5 py-4 border-t border-border bg-muted/30">
+          <DriverRateClient
+            courseId={courseId}
+            driverId={driverId}
+            clientId={clientId}
+            clientName={clientName}
+          />
+        </div>
+      )}
 
       {/* Bottom actions */}
       {!isProcessing && (
