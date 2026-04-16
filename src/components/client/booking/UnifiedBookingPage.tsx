@@ -225,7 +225,7 @@ export function UnifiedBookingPage() {
       const runRecovery = async () => {
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       };
       runRecovery();
     }
@@ -439,7 +439,7 @@ export function UnifiedBookingPage() {
       setRouteDistanceKm(distance); setRouteDurationMin(duration);
 
       // Now search drivers WITH the actual distance for accurate pricing
-      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       setCurrentStep(2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
@@ -467,7 +467,7 @@ export function UnifiedBookingPage() {
         if (dist) { setRouteDistanceKm(dist); setRouteDurationMin(dur); }
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       } catch {} finally { setIsFetchingPrices(false); }
     };
     fetchPrices();
