@@ -141,7 +141,7 @@ const CityPricingSummaryCard = ({
               {pricing.pricing_type === "hourly" ? "Horaire" : "Au km"}
             </Badge>
             {pricing.tva_included && (
-              <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0 border-0">
+              <Badge className="bg-primary/20 text-primary text-[10px] px-1.5 py-0 border-0">
                 TTC
               </Badge>
             )}
