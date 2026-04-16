@@ -45,6 +45,7 @@ export const CourseRating = ({
   const [showReasonForm, setShowReasonForm] = useState(false);
   const [reason, setReason] = useState("");
   const [reasonDetail, setReasonDetail] = useState("");
+  const [showPostSubmitInfo, setShowPostSubmitInfo] = useState(false);
 
   const handleStarClick = (star: number) => {
     setRating(star);
@@ -129,10 +130,11 @@ export const CourseRating = ({
         toast.success("Merci pour votre évaluation !");
       } else {
         toast.success(
-          "Votre note a été soumise et sera examinée par notre système d'arbitrage."
+          "Votre note a été enregistrée. Le chauffeur pourra la contester sous 48h. Suivez l'évolution dans votre espace."
         );
       }
 
+      setShowPostSubmitInfo(rating <= 3);
       onRatingSubmitted?.();
     } catch (error: any) {
       console.error("Error submitting rating:", error);
@@ -146,22 +148,41 @@ export const CourseRating = ({
     }
   };
 
-  if (currentRating) {
+  if (currentRating || showPostSubmitInfo) {
     return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-5 h-5 ${
-              star <= currentRating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
-            }`}
-          />
-        ))}
-        <span className="text-sm text-muted-foreground ml-2">
-          Note attribuée
-        </span>
+      <div className="space-y-3">
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`w-5 h-5 ${
+                star <= (currentRating || rating)
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-gray-300"
+              }`}
+            />
+          ))}
+          <span className="text-sm text-muted-foreground ml-2">
+            Note attribuée
+          </span>
+        </div>
+        {(showPostSubmitInfo || (currentRating && currentRating <= 3)) && (
+          <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs space-y-1.5">
+            <p className="font-semibold text-blue-700 dark:text-blue-300">ℹ️ Suivi de votre note</p>
+            <p className="text-muted-foreground">
+              Votre note a bien été enregistrée. Le chauffeur peut la <strong>contester</strong> s'il estime qu'elle est injustifiée.
+            </p>
+            <p className="text-muted-foreground">
+              Si le chauffeur conteste, vous recevrez une <strong>notification</strong> et disposerez de <strong>48 heures</strong> pour donner votre version des faits.
+            </p>
+            <p className="text-muted-foreground">
+              <strong>Sans réponse de votre part sous 48h, la note sera automatiquement annulée.</strong>
+            </p>
+            <p className="text-muted-foreground">
+              Un arbitrage IA impartial prendra la décision finale en tenant compte des deux versions.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
