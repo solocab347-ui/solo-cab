@@ -737,136 +737,58 @@ const DriverDashboard = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          {/* Desktop TabsList - hidden on mobile, using MobileDriverNav instead */}
+          {/* Desktop TabsList - Restructured 12 tabs */}
           <TabsList className="hidden md:flex w-full bg-muted/30 backdrop-blur-sm flex-col gap-2 h-auto p-2 shadow-lg border border-border">
-            {/* Première ligne */}
             <div className="grid grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-success/80 data-[state=active]:text-white">
                 <Home className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.home')}</span>
+                <span>Accueil</span>
               </TabsTrigger>
-              <TabsTrigger value="clients" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
-                <Users className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.myClients')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="courses" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+              <TabsTrigger value="courses" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Car className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.myRides')}</span>
+                <span>Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <Users className="w-4 h-4" />
+                <span>Clients</span>
               </TabsTrigger>
               <TabsTrigger value="messages" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
                 <MessageSquare className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.messages')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="devis" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-primary data-[state=active]:text-white">
-                <FileText className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.quotes')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="factures" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-success/80 data-[state=active]:text-white">
-                <CreditCard className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.invoices')}</span>
+                <span>Messages</span>
               </TabsTrigger>
               <TabsTrigger value="finances" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
                 <Wallet className="w-4 h-4" />
                 <span>Finances</span>
               </TabsTrigger>
+              <TabsTrigger value="mon-profil" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
+                <UserCircle className="w-4 h-4" />
+                <span>Mon Profil</span>
+              </TabsTrigger>
             </div>
-            
-            {/* Deuxième ligne */}
-            <div className="grid grid-cols-7 gap-1 w-full">
-              {/* Documents - Onglet dédié */}
-              {!driverProfile?.driver?.is_fleet_driver && (
-                <TabsTrigger value="documents" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>{t('driverDashboard.menu.documents')}</span>
-                </TabsTrigger>
-              )}
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-secondary/50 hover:text-foreground flex-row touch-manipulation">
-                    <Wrench className="w-4 h-4" />
-                    <span>{t('driverDashboard.menu.tools')}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au planning — 19,99€/mois" }); } else { setActiveTab("planning"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Calendar className="w-4 h-4" />
-                    {t('driverDashboard.menu.planning')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à l'encaissement — 19,99€/mois" }); } else { setActiveTab("encaisser"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Zap className="w-4 h-4" />
-                    Encaisser
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Calculator className="w-4 h-4" />
-                    {t('driverDashboard.menu.calculator')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <QrCode className="w-4 h-4" />
-                    {t('driverDashboard.menu.myQRCode')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-secondary/50 hover:text-foreground flex-row touch-manipulation">
-                    <Wrench className="w-4 h-4" />
-                    <span>{t('driverDashboard.menu.development')}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux objectifs — 19,99€/mois" }); } else { setActiveTab("objectives"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Target className="w-4 h-4" />
-                    {t('driverDashboard.menu.objectives')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 19,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Megaphone className="w-4 h-4" />
-                    {t('driverDashboard.menu.campaign')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au calcul de rentabilité — 19,99€/mois" }); } else { setActiveTab("profitability"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <PieChart className="w-4 h-4" />
-                    {t('driverDashboard.menu.profitability')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 19,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Sparkles className="w-4 h-4" />
-                    {t('driverDashboard.menu.prospection')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <TabsTrigger value="feedback" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
-                <Lightbulb className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.feedback')}</span>
+            <div className="grid grid-cols-6 gap-1 w-full">
+              <TabsTrigger value="outils" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-primary data-[state=active]:text-white">
+                <Wrench className="w-4 h-4" />
+                <span>Outils</span>
               </TabsTrigger>
-              
-              <TabsTrigger value="subscription" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
-                <TrendingUp className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.subscription')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
-                <Globe className="w-4 h-4" />
-                <span>Profil SoloCab</span>
-              </TabsTrigger>
-              <TabsTrigger value="statistics" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
+              <TabsTrigger value="performance" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.statistics')}</span>
+                <span>Performance</span>
+              </TabsTrigger>
+              <TabsTrigger value="marketing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <Megaphone className="w-4 h-4" />
+                <span>Marketing</span>
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.partnerships')}</span>
+                <span>Partenariats</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
-                <Settings className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.settings')}</span>
+              <TabsTrigger value="subscription" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <TrendingUp className="w-4 h-4" />
+                <span>Abonnement</span>
+              </TabsTrigger>
+              <TabsTrigger value="aide" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
+                <HelpCircle className="w-4 h-4" />
+                <span>Aide</span>
               </TabsTrigger>
             </div>
           </TabsList>
