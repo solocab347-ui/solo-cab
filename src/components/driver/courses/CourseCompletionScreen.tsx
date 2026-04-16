@@ -39,6 +39,9 @@ export function CourseCompletionScreen({
   clientName,
   amount,
   paymentMethod,
+  driverId,
+  clientId,
+  guestPhone,
   paymentResult,
   onDismiss,
 }: CourseCompletionScreenProps) {
@@ -47,6 +50,7 @@ export function CourseCompletionScreen({
   const [linkSent, setLinkSent] = useState(false);
   const [localResult, setLocalResult] = useState(paymentResult);
   const [switchedToCash, setSwitchedToCash] = useState(false);
+  const [showIncidentDialog, setShowIncidentDialog] = useState(false);
 
   useEffect(() => {
     setLocalResult(paymentResult);
