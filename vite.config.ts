@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
           'vendor-query': ['@tanstack/react-query'],
-          'vendor-map': ['leaflet', 'react-leaflet'],
+          'vendor-map': ['leaflet'],
         },
       },
     },
