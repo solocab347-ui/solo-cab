@@ -13,10 +13,11 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   MapPin, Calendar, Users, ArrowLeft, ArrowRight, Tag, CreditCard, Check, FileText,
-  Loader2, Clock, Zap, CalendarClock, Car, Banknote
+  Loader2, Clock, Zap, CalendarClock, Car, Banknote, Navigation
 } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
