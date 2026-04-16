@@ -484,7 +484,7 @@ const CityPricingEditForm = ({
   );
 };
 
-export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPricingManagerProps) => {
+export const CityPricingManager = ({ driverId, fleetManagerId, onSave, globalEveningSurcharge = 0, globalWeekendSurcharge = 0 }: CityPricingManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricings, setPricings] = useState<CityPricing[]>([]);
