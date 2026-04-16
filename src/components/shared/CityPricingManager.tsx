@@ -673,6 +673,8 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave, globalEve
                 onEdit={() => setEditingId(pricing.id!)}
                 onDelete={() => deletePricing(pricing.id!)}
                 saving={saving}
+                globalEveningSurcharge={globalEveningSurcharge}
+                globalWeekendSurcharge={globalWeekendSurcharge}
               />
             )
           ))}
