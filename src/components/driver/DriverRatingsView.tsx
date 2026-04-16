@@ -13,6 +13,8 @@ import {
   XCircle,
   AlertTriangle,
   Loader2,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -20,10 +22,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface DriverRating {
   id: string;
+  course_id: string;
   rating: number;
   reason: string | null;
   reason_detail: string | null;
@@ -33,7 +37,24 @@ interface DriverRating {
   adjusted_rating: number | null;
   driver_response: string | null;
   created_at: string;
+  // Joined course data
+  course?: {
+    pickup_address: string;
+    destination_address: string;
+    scheduled_date: string;
+  } | null;
 }
+
+const REASON_LABELS: Record<string, string> = {
+  late: "Retard chauffeur",
+  dangerous_driving: "Conduite dangereuse",
+  bad_behavior: "Mauvais comportement",
+  dirty_vehicle: "Véhicule sale",
+  bad_communication: "Mauvaise communication",
+  bad_route: "Mauvais itinéraire",
+  payment_issue: "Problème paiement",
+  other: "Autre",
+};
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   validated: { label: "Validée", icon: <CheckCircle className="w-4 h-4" />, color: "bg-green-500/10 text-green-600" },
@@ -70,15 +91,23 @@ const DriverRatingsView = () => {
 
       setReliabilityScore(driverData.reliability_score || 80);
 
+      // Fetch ratings with course details (no client personal info)
       const { data, error } = await supabase
         .from("course_ratings")
-        .select("*")
+        .select(`
+          id, course_id, rating, reason, reason_detail, status,
+          ai_decision, ai_justification, adjusted_rating,
+          driver_response, created_at,
+          course:courses!course_ratings_course_id_fkey (
+            pickup_address, destination_address, scheduled_date
+          )
+        `)
         .eq("driver_id", driverData.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setRatings((data as DriverRating[]) || []);
+      setRatings((data as any[]) || []);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Erreur chargement des notes");
@@ -99,22 +128,12 @@ const DriverRatingsView = () => {
         })
         .eq("id", ratingId);
 
-      // Get the rating to apply it
       const rating = ratings.find((r) => r.id === ratingId);
       if (rating) {
-        // We need to get course_id - fetch from course_ratings
-        const { data: ratingData } = await supabase
-          .from("course_ratings")
-          .select("course_id, rating")
-          .eq("id", ratingId)
-          .single();
-
-        if (ratingData) {
-          await supabase
-            .from("courses")
-            .update({ client_rating: ratingData.rating })
-            .eq("id", ratingData.course_id);
-        }
+        await supabase
+          .from("courses")
+          .update({ client_rating: rating.rating })
+          .eq("id", rating.course_id);
       }
 
       toast.success("Note acceptée");
@@ -134,7 +153,6 @@ const DriverRatingsView = () => {
 
     setProcessing(true);
     try {
-      // Update rating status
       await supabase
         .from("course_ratings")
         .update({
@@ -144,7 +162,6 @@ const DriverRatingsView = () => {
         })
         .eq("id", contestRating.id);
 
-      // Create dispute
       await supabase.from("rating_disputes").insert({
         rating_id: contestRating.id,
         initiated_by: "driver",
@@ -189,6 +206,29 @@ const DriverRatingsView = () => {
     );
   }
 
+  const formatDate = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+  const CourseInfo = ({ course, date }: { course?: DriverRating["course"]; date: string }) => (
+    <div className="space-y-1.5 text-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Calendar className="w-3.5 h-3.5 shrink-0" />
+        <span>{formatDate(date)}</span>
+      </div>
+      {course && (
+        <>
+          <div className="flex items-start gap-1.5">
+            <MapPin className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+            <span className="truncate">{course.pickup_address}</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+            <span className="truncate">{course.destination_address}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -232,17 +272,31 @@ const DriverRatingsView = () => {
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(r.created_at).toLocaleDateString("fr-FR")}
-                    </span>
+                    <Badge className={statusConfig.pending_review.color} variant="secondary">
+                      {statusConfig.pending_review.icon}
+                      <span className="ml-1">{statusConfig.pending_review.label}</span>
+                    </Badge>
                   </div>
-                  {r.reason && <p className="text-sm font-medium">Motif : {r.reason}</p>}
-                  {r.reason_detail && <p className="text-sm text-muted-foreground">{r.reason_detail}</p>}
+
+                  {/* Course details - NO client personal info */}
+                  <CourseInfo course={r.course} date={r.created_at} />
+
+                  {/* What the client reported */}
+                  <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 space-y-1">
+                    <p className="text-xs font-semibold text-destructive">Ce qui vous est reproché :</p>
+                    {r.reason && (
+                      <p className="text-sm font-medium">{REASON_LABELS[r.reason] || r.reason}</p>
+                    )}
+                    {r.reason_detail && (
+                      <p className="text-sm text-muted-foreground italic">"{r.reason_detail}"</p>
+                    )}
+                  </div>
+
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => handleAccept(r.id)} disabled={processing}>
                       <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accepter
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => setContestRating(r)} disabled={processing}>
+                    <Button size="sm" variant="destructive" onClick={() => { setContestRating(r); setContestReason(""); }} disabled={processing}>
                       <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Contester
                     </Button>
                   </div>
@@ -263,7 +317,7 @@ const DriverRatingsView = () => {
           ratings.map((r) => {
             const config = statusConfig[r.status] || statusConfig.validated;
             return (
-              <Card key={r.id} className="p-3">
+              <Card key={r.id} className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-0.5">
@@ -283,11 +337,16 @@ const DriverRatingsView = () => {
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                    {formatDate(r.created_at)}
                   </span>
                 </div>
+                {r.reason && (
+                  <p className="text-xs text-muted-foreground">
+                    Motif : {REASON_LABELS[r.reason] || r.reason}
+                  </p>
+                )}
                 {r.ai_justification && (
-                  <p className="text-xs text-blue-600 mt-2">🤖 {r.ai_justification}</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">🤖 {r.ai_justification}</p>
                 )}
               </Card>
             );
@@ -297,26 +356,58 @@ const DriverRatingsView = () => {
 
       {/* Contest dialog */}
       <Dialog open={!!contestRating} onOpenChange={() => setContestRating(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Contester la note de {contestRating?.rating}★</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Contester la note de {contestRating?.rating}★
+            </DialogTitle>
+            <DialogDescription>
+              Le client ne sera pas identifié. Seules les circonstances de la course sont communiquées.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {contestRating?.reason_detail && (
-              <div className="p-3 bg-muted rounded text-sm">
-                <p className="font-medium mb-1">Le client dit :</p>
-                <p className="text-muted-foreground">{contestRating.reason_detail}</p>
+            {/* Course info */}
+            {contestRating?.course && (
+              <div className="p-3 bg-muted rounded-lg space-y-2">
+                <p className="text-xs font-semibold">Détails de la course</p>
+                <CourseInfo course={contestRating.course} date={contestRating.created_at} />
               </div>
             )}
-            <Textarea
-              value={contestReason}
-              onChange={(e) => setContestReason(e.target.value)}
-              placeholder="Expliquez pourquoi vous contestez cette note..."
-              maxLength={500}
-            />
-            <p className="text-xs text-muted-foreground">
-              Un arbitrage IA sera lancé automatiquement. Vous êtes limité à 2 contestations par jour.
-            </p>
+
+            {/* What was reported */}
+            <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg space-y-1">
+              <p className="text-xs font-semibold text-destructive">Reproche du client :</p>
+              {contestRating?.reason && (
+                <p className="text-sm font-medium">{REASON_LABELS[contestRating.reason] || contestRating.reason}</p>
+              )}
+              {contestRating?.reason_detail && (
+                <p className="text-sm text-muted-foreground italic">"{contestRating.reason_detail}"</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Votre explication :</p>
+              <Textarea
+                value={contestReason}
+                onChange={(e) => setContestReason(e.target.value)}
+                placeholder="Expliquez pourquoi cette note est injustifiée (ex: embouteillage sur la route, client en retard, GPS défaillant...)"
+                maxLength={500}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground text-right">{contestReason.length}/500</p>
+            </div>
+
+            <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-700 dark:text-blue-300 space-y-1">
+              <p className="font-semibold">ℹ️ Comment ça fonctionne :</p>
+              <ul className="list-disc ml-4 space-y-0.5">
+                <li>Un arbitrage IA analyse automatiquement la situation</li>
+                <li>Le client devra se justifier sous 48h</li>
+                <li>Si le client ne répond pas, la note est automatiquement annulée</li>
+                <li>Vous êtes limité à 2 contestations par jour</li>
+              </ul>
+            </div>
+
             <Button onClick={handleContest} disabled={processing || !contestReason.trim()} className="w-full">
               {processing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
               Envoyer la contestation
