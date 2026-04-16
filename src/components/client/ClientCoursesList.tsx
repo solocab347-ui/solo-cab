@@ -52,7 +52,7 @@ interface ClientCoursesListProps {
 
 const COURSES_PAGE_SIZE = 20;
 
-const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => {
+const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListProps) => {
   const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
