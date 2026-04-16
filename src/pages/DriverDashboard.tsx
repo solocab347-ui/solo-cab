@@ -348,7 +348,7 @@ const DriverDashboard = () => {
     setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
     setMinimumPrice((driver as any).minimum_price?.toString() || "0");
     setAirportSurcharge((driver as any).airport_surcharge?.toString() || "0");
-    setProfilePhotoUrl((driverProfile as any).profile_photo_url || driverProfile.avatar_url || null);
+    setProfilePhotoUrl(driver.card_photo_url || (driverProfile as any).profile_photo_url || driverProfile.avatar_url || null);
     setCardPhotoUrl(driver.card_photo_url || null);
     setVehiclePhotos(driver.vehicle_photos || []);
     setGalleryPhotos(driver.gallery_photos || []);

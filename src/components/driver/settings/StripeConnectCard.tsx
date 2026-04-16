@@ -131,7 +131,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
 
           <div className="bg-success/10 rounded-lg p-3 border border-success/20 mb-4">
             <p className="text-xs sm:text-sm text-success">
-              <strong>Virements automatiques sous 2 jours ouvrés</strong>
+              <strong>Virement chaque lundi</strong> — semaine de travail précédente
             </p>
           </div>
 
