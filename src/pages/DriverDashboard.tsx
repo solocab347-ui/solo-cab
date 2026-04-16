@@ -831,7 +831,6 @@ const DriverDashboard = () => {
                   </div>
                 </div>
               </div>
-              <FloatingMapButton onClick={() => setViewMode("map")} />
               {driverProfile?.driver?.id && (
                 <CoursesList driverId={driverProfile.driver.id} />
               )}
