@@ -219,6 +219,18 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   // Plus de loader - on affiche directement avec le statut calculé localement
 
+  // Conformité App Store / Play Store : aucune UI de paiement dans l'app native.
+  if (shouldHideInAppPayments()) {
+    return (
+      <div className="space-y-4 px-2 sm:px-0">
+        <PremiumMobileNotice feature="L'abonnement Premium" />
+        <p className="text-xs text-center text-muted-foreground">
+          Pour gérer votre abonnement, rendez-vous sur la version web de SoloCab depuis votre navigateur.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Pioneer Cancellation Warning Dialog */}
