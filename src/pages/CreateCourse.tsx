@@ -36,6 +36,9 @@ const CreateCourse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createCourse, loading } = useCourseCreation();
+  const { token: mapboxToken } = useMapboxToken();
+  const [isGettingPickupLocation, setIsGettingPickupLocation] = useState(false);
+  const [isGettingDestLocation, setIsGettingDestLocation] = useState(false);
 
   const driverId = searchParams.get("driver_id");
   const [driverName, setDriverName] = useState<string | null>(null);
