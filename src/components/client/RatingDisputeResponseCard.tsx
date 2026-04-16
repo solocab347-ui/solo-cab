@@ -18,10 +18,11 @@ import {
   Calendar,
 } from "lucide-react";
 
-interface PendingDispute {
-  id: string;
+interface PendingItem {
+  id: string; // dispute id or rating id
   rating_id: string;
-  dispute_reason: string;
+  type: "respond_to_contestation" | "driver_rated_you";
+  dispute_reason?: string;
   client_response_deadline: string;
   rating: number;
   reason: string | null;
@@ -31,22 +32,35 @@ interface PendingDispute {
   destination_address: string | null;
 }
 
+const REASON_LABELS: Record<string, string> = {
+  late: "Retard chauffeur",
+  dangerous_driving: "Conduite dangereuse",
+  bad_behavior: "Mauvais comportement",
+  dirty_vehicle: "Véhicule sale",
+  bad_communication: "Mauvaise communication",
+  bad_route: "Mauvais itinéraire",
+  payment_issue: "Problème paiement",
+  no_payment: "Non-paiement / refus de payer",
+  no_show: "Absent au point de prise en charge",
+  damage: "Dégradation du véhicule",
+  other: "Autre",
+};
+
 export function RatingDisputeResponseCard() {
   const { user } = useAuth();
-  const [disputes, setDisputes] = useState<PendingDispute[]>([]);
+  const [items, setItems] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [response, setResponse] = useState("");
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user) fetchPendingDisputes();
+    if (user) fetchPendingItems();
   }, [user]);
 
-  const fetchPendingDisputes = async () => {
+  const fetchPendingItems = async () => {
     if (!user) return;
     try {
-      // Get client id
       const { data: clientData } = await supabase
         .from("clients")
         .select("id")
@@ -55,69 +69,98 @@ export function RatingDisputeResponseCard() {
 
       if (!clientData) { setLoading(false); return; }
 
-      // Get contested ratings for this client where client hasn't responded
-      const { data: ratings } = await supabase
+      const pendingList: PendingItem[] = [];
+
+      // 1. Contested client_to_driver ratings (driver contested your rating, you must respond)
+      const { data: contestedRatings } = await supabase
         .from("course_ratings")
-        .select("id, rating, reason, reason_detail, course_id, status")
+        .select("id, rating, reason, reason_detail, course_id, status, rating_direction")
         .eq("client_id", clientData.id)
-        .eq("status", "contested");
+        .eq("status", "contested")
+        .eq("rating_direction", "client_to_driver");
 
-      if (!ratings || ratings.length === 0) { setLoading(false); return; }
+      if (contestedRatings) {
+        for (const r of contestedRatings) {
+          const { data: dispute } = await supabase
+            .from("rating_disputes")
+            .select("id, dispute_reason, client_response_deadline, client_response")
+            .eq("rating_id", r.id)
+            .eq("initiated_by", "driver")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
 
-      const pendingList: PendingDispute[] = [];
+          if (!dispute || dispute.client_response) continue;
 
-      for (const r of ratings) {
-        // Get dispute info
-        const { data: dispute } = await supabase
-          .from("rating_disputes")
-          .select("id, dispute_reason, client_response_deadline, client_response")
-          .eq("rating_id", r.id)
-          .eq("initiated_by", "driver")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+          const { data: course } = await supabase
+            .from("courses")
+            .select("scheduled_date, pickup_address, destination_address")
+            .eq("id", r.course_id)
+            .single();
 
-        if (!dispute || dispute.client_response) continue;
-
-        // Get course info
-        const { data: course } = await supabase
-          .from("courses")
-          .select("scheduled_date, pickup_address, destination_address")
-          .eq("id", r.course_id)
-          .single();
-
-        pendingList.push({
-          id: dispute.id,
-          rating_id: r.id,
-          dispute_reason: dispute.dispute_reason || "",
-          client_response_deadline: dispute.client_response_deadline || "",
-          rating: r.rating,
-          reason: r.reason,
-          reason_detail: r.reason_detail,
-          course_date: course?.scheduled_date || null,
-          pickup_address: course?.pickup_address || null,
-          destination_address: course?.destination_address || null,
-        });
+          pendingList.push({
+            id: dispute.id,
+            rating_id: r.id,
+            type: "respond_to_contestation",
+            dispute_reason: dispute.dispute_reason || "",
+            client_response_deadline: dispute.client_response_deadline || "",
+            rating: r.rating,
+            reason: r.reason,
+            reason_detail: r.reason_detail,
+            course_date: course?.scheduled_date || null,
+            pickup_address: course?.pickup_address || null,
+            destination_address: course?.destination_address || null,
+          });
+        }
       }
 
-      setDisputes(pendingList);
+      // 2. Driver-to-client pending ratings (driver rated you low, you can contest)
+      const { data: driverRatings } = await supabase
+        .from("course_ratings")
+        .select("id, rating, reason, reason_detail, course_id, status, rating_direction, client_response_deadline")
+        .eq("client_id", clientData.id)
+        .eq("status", "pending_review")
+        .eq("rating_direction", "driver_to_client");
+
+      if (driverRatings) {
+        for (const r of driverRatings) {
+          const { data: course } = await supabase
+            .from("courses")
+            .select("scheduled_date, pickup_address, destination_address")
+            .eq("id", r.course_id)
+            .single();
+
+          pendingList.push({
+            id: r.id,
+            rating_id: r.id,
+            type: "driver_rated_you",
+            client_response_deadline: r.client_response_deadline || new Date(Date.now() + 48 * 3600000).toISOString(),
+            rating: r.rating,
+            reason: r.reason,
+            reason_detail: r.reason_detail,
+            course_date: course?.scheduled_date || null,
+            pickup_address: course?.pickup_address || null,
+            destination_address: course?.destination_address || null,
+          });
+        }
+      }
+
+      setItems(pendingList);
     } catch (err) {
-      console.error("Error fetching disputes:", err);
+      console.error("Error fetching pending disputes:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmitResponse = async (disputeId: string, ratingId: string) => {
+  const handleRespondToContestation = async (disputeId: string, ratingId: string) => {
     if (!response.trim()) {
       toast.error("Veuillez expliquer votre position");
       return;
     }
-
     setSubmitting(true);
     try {
-      // Update dispute with client response
-      const { error: disputeErr } = await supabase
+      await supabase
         .from("rating_disputes")
         .update({
           client_response: response.trim(),
@@ -125,26 +168,78 @@ export function RatingDisputeResponseCard() {
         } as any)
         .eq("id", disputeId);
 
-      if (disputeErr) throw disputeErr;
-
-      // Now trigger AI arbitration with both sides
       await supabase.functions.invoke("ai-rating-arbitration", {
         body: { ratingId },
       });
 
-      toast.success("Votre réponse a été envoyée. L'arbitrage IA va analyser les deux versions.");
-      setDisputes(prev => prev.filter(d => d.id !== disputeId));
+      toast.success("Réponse envoyée. L'arbitrage IA va analyser les deux versions.");
+      setItems(prev => prev.filter(d => d.id !== disputeId));
       setRespondingId(null);
       setResponse("");
     } catch (err) {
-      console.error("Error submitting response:", err);
-      toast.error("Erreur lors de l'envoi de votre réponse");
+      console.error("Error:", err);
+      toast.error("Erreur lors de l'envoi");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading || disputes.length === 0) return null;
+  const handleAcceptDriverRating = async (ratingId: string) => {
+    setSubmitting(true);
+    try {
+      await supabase
+        .from("course_ratings")
+        .update({ status: "validated" } as any)
+        .eq("id", ratingId);
+
+      toast.success("Note acceptée");
+      setItems(prev => prev.filter(d => d.rating_id !== ratingId));
+    } catch (err) {
+      toast.error("Erreur");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleContestDriverRating = async (ratingId: string) => {
+    if (!response.trim()) {
+      toast.error("Veuillez expliquer votre contestation");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase
+        .from("course_ratings")
+        .update({
+          status: "contested",
+        } as any)
+        .eq("id", ratingId);
+
+      await supabase.from("rating_disputes").insert({
+        rating_id: ratingId,
+        initiated_by: "client",
+        dispute_reason: response.trim(),
+        resolution: "pending",
+      } as any);
+
+      // Trigger AI with client's contestation
+      await supabase.functions.invoke("ai-rating-arbitration", {
+        body: { ratingId },
+      });
+
+      toast.success("Contestation envoyée — arbitrage IA en cours");
+      setItems(prev => prev.filter(d => d.rating_id !== ratingId));
+      setRespondingId(null);
+      setResponse("");
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error("Erreur lors de la contestation");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading || items.length === 0) return null;
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -157,98 +252,96 @@ export function RatingDisputeResponseCard() {
     return `${hours}h restantes`;
   };
 
-  const REASON_LABELS: Record<string, string> = {
-    late: "Retard chauffeur",
-    dangerous_driving: "Conduite dangereuse",
-    bad_behavior: "Mauvais comportement",
-    dirty_vehicle: "Véhicule sale",
-    bad_communication: "Mauvaise communication",
-    bad_route: "Mauvais itinéraire",
-    payment_issue: "Problème paiement",
-    other: "Autre",
-  };
-
   return (
     <div className="space-y-4">
-      {disputes.map((dispute) => (
-        <Card key={dispute.id} className="border-orange-500/30 bg-orange-500/5">
+      {items.map((item) => (
+        <Card key={item.id} className="border-orange-500/30 bg-orange-500/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
-              Contestation en attente de votre réponse
+              {item.type === "respond_to_contestation"
+                ? "Le chauffeur conteste votre note"
+                : "Le chauffeur vous a noté"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* Timer */}
             <Badge variant="outline" className="gap-1.5 text-orange-600 border-orange-500/30">
               <Clock className="h-3 w-3" />
-              {getTimeRemaining(dispute.client_response_deadline)}
+              {getTimeRemaining(item.client_response_deadline)}
             </Badge>
 
             {/* Course context */}
             <div className="p-2.5 rounded-lg bg-muted/50 text-xs space-y-1">
-              {dispute.course_date && (
+              {item.course_date && (
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
-                  <span>{formatDate(dispute.course_date)}</span>
+                  <span>{formatDate(item.course_date)}</span>
                 </div>
               )}
-              {dispute.pickup_address && (
+              {item.pickup_address && (
                 <div className="flex items-start gap-1.5">
                   <MapPin className="h-3 w-3 mt-0.5 text-primary shrink-0" />
-                  <span className="truncate">{dispute.pickup_address}</span>
+                  <span className="truncate">{item.pickup_address}</span>
                 </div>
               )}
-              {dispute.destination_address && (
+              {item.destination_address && (
                 <div className="flex items-start gap-1.5">
                   <MapPin className="h-3 w-3 mt-0.5 text-destructive shrink-0" />
-                  <span className="truncate">{dispute.destination_address}</span>
+                  <span className="truncate">{item.destination_address}</span>
                 </div>
               )}
             </div>
 
-            {/* Your original rating */}
+            {/* Rating details */}
             <div className="p-2.5 rounded-lg bg-muted/30 border space-y-1">
-              <p className="text-xs font-semibold">Votre note :</p>
+              <p className="text-xs font-semibold">
+                {item.type === "respond_to_contestation" ? "Votre note initiale :" : "Note reçue :"}
+              </p>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className={`h-3.5 w-3.5 ${s <= dispute.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                  <Star key={s} className={`h-3.5 w-3.5 ${s <= item.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
                 ))}
-                <span className="text-xs ml-1">{dispute.rating}★</span>
+                <span className="text-xs ml-1">{item.rating}★</span>
               </div>
-              {dispute.reason && (
-                <p className="text-xs text-muted-foreground">Motif : {REASON_LABELS[dispute.reason] || dispute.reason}</p>
+              {item.reason && (
+                <p className="text-xs text-muted-foreground">Motif : {REASON_LABELS[item.reason] || item.reason}</p>
               )}
-              {dispute.reason_detail && (
-                <p className="text-xs text-muted-foreground italic">"{dispute.reason_detail}"</p>
+              {item.reason_detail && (
+                <p className="text-xs text-muted-foreground italic">"{item.reason_detail}"</p>
               )}
             </div>
 
-            {/* Driver's contestation */}
-            <div className="p-2.5 rounded-lg bg-destructive/5 border border-destructive/20 space-y-1">
-              <p className="text-xs font-semibold text-destructive">Réponse du chauffeur :</p>
-              <p className="text-xs text-muted-foreground italic">"{dispute.dispute_reason}"</p>
-            </div>
+            {/* Contestation details (if responding to driver's contest) */}
+            {item.type === "respond_to_contestation" && item.dispute_reason && (
+              <div className="p-2.5 rounded-lg bg-destructive/5 border border-destructive/20 space-y-1">
+                <p className="text-xs font-semibold text-destructive">Réponse du chauffeur :</p>
+                <p className="text-xs text-muted-foreground italic">"{item.dispute_reason}"</p>
+              </div>
+            )}
 
-            {/* Response form or button */}
-            {respondingId === dispute.id ? (
+            {/* Response form */}
+            {respondingId === item.id ? (
               <div className="space-y-2">
-                <p className="text-xs font-medium">Votre version des faits :</p>
+                <p className="text-xs font-medium">
+                  {item.type === "respond_to_contestation"
+                    ? "Votre version des faits :"
+                    : "Pourquoi contestez-vous cette note ?"}
+                </p>
                 <Textarea
                   value={response}
                   onChange={(e) => setResponse(e.target.value)}
-                  placeholder="Expliquez pourquoi vous maintenez votre note. Soyez factuel et précis..."
+                  placeholder="Soyez factuel et précis dans votre explication..."
                   maxLength={500}
                   rows={3}
                   className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground text-right">{response.length}/500</p>
-                
+
                 <div className="p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-muted-foreground">
                   <p className="flex items-center gap-1.5 font-semibold text-blue-700 dark:text-blue-300">
                     <Shield className="h-3 w-3" /> Arbitrage impartial
                   </p>
-                  <p>Un système d'analyse IA examinera les deux versions et prendra une décision juste et équilibrée.</p>
+                  <p>Un système IA analysera les deux versions et rendra un verdict juste.</p>
                 </div>
 
                 <div className="flex gap-2">
@@ -262,28 +355,62 @@ export function RatingDisputeResponseCard() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => handleSubmitResponse(dispute.id, dispute.rating_id)}
+                    onClick={() => {
+                      if (item.type === "respond_to_contestation") {
+                        handleRespondToContestation(item.id, item.rating_id);
+                      } else {
+                        handleContestDriverRating(item.rating_id);
+                      }
+                    }}
                     disabled={submitting || !response.trim()}
                     className="flex-1 gap-1.5"
                   >
                     {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    Envoyer ma réponse
+                    Envoyer
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Répondez pour maintenir votre note.</strong> Sans réponse dans les 48h, elle sera annulée automatiquement.
-                </p>
-                <Button
-                  size="sm"
-                  className="w-full gap-1.5"
-                  onClick={() => { setRespondingId(dispute.id); setResponse(""); }}
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  Donner ma version des faits
-                </Button>
+                {item.type === "respond_to_contestation" ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Répondez pour maintenir votre note.</strong> Sans réponse dans les 48h, elle sera annulée.
+                    </p>
+                    <Button size="sm" className="w-full gap-1.5" onClick={() => { setRespondingId(item.id); setResponse(""); }}>
+                      <Send className="h-3.5 w-3.5" />
+                      Donner ma version des faits
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Vous pouvez <strong>accepter</strong> cette note ou la <strong>contester</strong> sous 48h.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAcceptDriverRating(item.rating_id)}
+                        disabled={submitting}
+                        className="flex-1 gap-1.5"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Accepter
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => { setRespondingId(item.id); setResponse(""); }}
+                        disabled={submitting}
+                        className="flex-1 gap-1.5"
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Contester
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </CardContent>
