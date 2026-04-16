@@ -46,6 +46,9 @@ import { NoDriversBanner } from "@/components/client/NoDriversBanner";
 import ClientQRScannerInApp from "@/components/client/ClientQRScannerInApp";
 import { ClientCardManager } from "@/components/client/ClientCardManager";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
+import { ActiveCourseTracker } from "@/components/client/ActiveCourseTracker";
+import { ActiveCourseBanner } from "@/components/client/ActiveCourseBanner";
+import { useActiveClientCourse } from "@/hooks/useActiveClientCourse";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
@@ -75,11 +78,23 @@ const ClientDashboard = () => {
   const [devisFacturesSubTab, setDevisFacturesSubTab] = useState<string | null>(null);
   const [showDriverSelection, setShowDriverSelection] = useState(false);
   const [blockedDriversCount, setBlockedDriversCount] = useState(0);
+  const [showTracker, setShowTracker] = useState(false);
   const [stats, setStats] = useState({
     upcomingCourses: 0,
     pendingDevis: 0,
     unpaidInvoices: 0,
   });
+
+  const { activeCourse } = useActiveClientCourse(clientProfile?.client?.id);
+
+  // Auto-open tracker when arriving with ?tab=active-course
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "active-course" && activeCourse) {
+      setShowTracker(true);
+      setSearchParams({});
+    }
+  }, [searchParams, activeCourse, setSearchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -279,9 +294,10 @@ const ClientDashboard = () => {
 
   const isExclusive = clientProfile?.client?.is_exclusive;
 
-  // Bottom nav items for mobile
+  // Bottom nav items for mobile (insert "Course en cours" when active)
   const bottomNavItems = [
     { id: "accueil", label: "Accueil", icon: Home },
+    ...(activeCourse ? [{ id: "tracking", label: "En cours", icon: Navigation }] : []),
     { id: "courses", label: "Courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Chauffeur" : "Chauffeurs", icon: Users },
     { id: "messages", label: "Messages", icon: MessageSquare },
@@ -291,6 +307,7 @@ const ClientDashboard = () => {
   // Side menu items (desktop + mobile "more" sheet)
   const sideMenuItems = [
     { id: "accueil", label: "Accueil", icon: Home },
+    ...(activeCourse ? [{ id: "tracking", label: "Course en cours", icon: Navigation }] : []),
     { id: "courses", label: "Mes courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "factures", label: "Factures", icon: FileText },
@@ -339,6 +356,9 @@ const ClientDashboard = () => {
       case "accueil":
         return (
           <div className="space-y-4">
+            {activeCourse && (
+              <ActiveCourseBanner course={activeCourse} onOpen={() => setShowTracker(true)} />
+            )}
             <RatingDisputeResponseCard />
             <ClientHomeView
               clientProfile={clientProfile}
