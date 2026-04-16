@@ -36,7 +36,9 @@ interface CourseData {
   pickup_longitude: number | null;
   destination_latitude: number | null;
   destination_longitude: number | null;
-  payment_method_id_held: string | null;
+  stripe_payment_method_id: string | null;
+  card_hold_status: string | null;
+  distance_km: number | null;
 }
 
 interface DriverInfo {
@@ -176,7 +178,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
     if (!courseId) return;
     const { data, error } = await supabase
       .from("courses")
-      .select("id, status, pickup_address, destination_address, scheduled_date, guest_estimated_price, final_payment_amount, payment_method, driver_id, client_id, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude, payment_method_id_held")
+      .select("id, status, pickup_address, destination_address, scheduled_date, guest_estimated_price, final_payment_amount, payment_method, driver_id, client_id, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude, stripe_payment_method_id, card_hold_status, distance_km")
       .eq("id", courseId)
       .single();
 
