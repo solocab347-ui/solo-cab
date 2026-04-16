@@ -22341,9 +22341,9 @@ export type Database = {
       }
       get_applicable_pricing: {
         Args: {
-          p_destination_address?: string
+          p_destination_address: string
           p_driver_id: string
-          p_pickup_address?: string
+          p_pickup_address: string
         }
         Returns: {
           city_name: string
