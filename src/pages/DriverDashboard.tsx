@@ -117,6 +117,7 @@ const DriverDashboard = () => {
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [financesSubTab, setFinancesSubTab] = useState<string>("overview");
+  const [outilsSubTab, setOutilsSubTab] = useState<string>("calculator");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -597,11 +598,13 @@ const DriverDashboard = () => {
           onSwitchToDashboard={() => setViewMode("dashboard")}
           onNavigateTo={(tab: string) => {
             setViewMode("dashboard");
-            // Support "tab.subtab" syntax (e.g. "finances.encaisser")
+            // Support "tab.subtab" syntax (e.g. "finances.encaisser", "outils.qrcode")
             const [mainTab, subTab] = tab.split(".");
             setActiveTab(mainTab);
             if (mainTab === "finances" && subTab) {
               setFinancesSubTab(subTab);
+            } else if (mainTab === "outils" && subTab) {
+              setOutilsSubTab(subTab);
             }
           }}
         />
@@ -991,11 +994,13 @@ const DriverDashboard = () => {
           <TabsContent value="outils" className="space-y-6">
             {driverProfile?.driver?.id && (
               <UnifiedToolsHub
+                key={outilsSubTab}
                 driverProfile={driverProfile}
                 driverId={driverProfile.driver.id}
                 isPremium={isPremium}
                 qrCode={qrCode}
                 loadingQR={loadingQR}
+                defaultTab={outilsSubTab}
               />
             )}
           </TabsContent>
