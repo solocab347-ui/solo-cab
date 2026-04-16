@@ -75,7 +75,17 @@ export function CancellationDialog({
   
   const isWithinPenaltyWindow = hoursUntilPickup <= freeCancellationHours;
 
+  const isCashCourse = paymentMethod === 'cash' || paymentMethod === 'espèces';
+
   const getWarningMessage = () => {
+    // Courses en espèces → jamais de frais d'annulation
+    if (isCashCourse) {
+      return {
+        type: "info" as const,
+        message: "Course en espèces — aucun frais d'annulation ne sera appliqué.",
+      };
+    }
+
     if (cancelledBy === "driver") {
       // Le chauffeur annule → toujours remboursement client
       if (hasDeposit) {
