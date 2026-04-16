@@ -354,6 +354,9 @@ const ClientDashboard = () => {
       case "accueil":
         return (
           <div className="space-y-4">
+            {activeCourse && (
+              <ActiveCourseBanner course={activeCourse} onOpen={() => setShowTracker(true)} />
+            )}
             <RatingDisputeResponseCard />
             <ClientHomeView
               clientProfile={clientProfile}
