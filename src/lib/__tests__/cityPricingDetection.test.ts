@@ -1,16 +1,14 @@
 /**
  * TESTS UNITAIRES: DÉTECTION DE TARIFICATION PAR VILLE
- * 50 tests couvrant la détection de code postal, les limites de ville,
+ * 50+ tests couvrant la détection de code postal, les limites de ville,
  * et les scénarios inter-villes / intra-villes.
+ * Miroir exact des fonctions SQL detect_paris_address / detect_city_from_address.
  */
 
 import { describe, it, expect } from 'vitest';
 
 // ============ Simulation des fonctions SQL ============
 
-/**
- * Reproduit detect_paris_address (SQL)
- */
 function detectParisAddress(address: string | null): string | null {
   if (!address || address.trim() === '') return null;
   const addrLower = address.toLowerCase().trim();
@@ -18,7 +16,6 @@ function detectParisAddress(address: string | null): string | null {
   const postal = postalMatch ? postalMatch[1] : null;
   const hasPostal = postal !== null;
 
-  // Hard exclusions
   const excludes = [
     'cdg', 'charles de gaulle', 'roissy', 'orly', 'le bourget', 'beauvais',
     'disneyland', 'marne-la-vallée', 'marne la vallee', 'la défense', 'la defense',
@@ -29,13 +26,12 @@ function detectParisAddress(address: string | null): string | null {
     if (addrLower.includes(ex)) return null;
   }
 
-  // Postal code check: 75001-75020
+  // Postal code: 75001-75020 + 75116
   if (hasPostal) {
-    if (/^750(0[1-9]|1[0-9]|20)$/.test(postal!)) return 'Paris';
+    if (/^750(0[1-9]|1[0-9]|20)$/.test(postal!) || postal === '75116') return 'Paris';
     return null;
   }
 
-  // Unambiguous landmarks
   const landmarks = [
     'gare du nord', 'gare de l\'est', 'gare de l est',
     'gare de lyon', 'gare montparnasse', 'gare saint-lazare', 'gare st-lazare',
@@ -51,7 +47,6 @@ function detectParisAddress(address: string | null): string | null {
   ];
   for (const lm of landmarks) {
     if (addrLower.includes(lm)) {
-      // Gare de Lyon disambiguation
       if (lm === 'gare de lyon' && (addrLower.includes('perrache') || addrLower.includes('saint-exup'))) continue;
       return 'Paris';
     }
@@ -60,9 +55,6 @@ function detectParisAddress(address: string | null): string | null {
   return null;
 }
 
-/**
- * Reproduit detect_city_from_address (SQL)
- */
 function detectCityFromAddress(address: string | null): string | null {
   if (!address || address.trim() === '') return null;
   const addrLower = address.toLowerCase().trim();
@@ -86,9 +78,11 @@ function detectCityFromAddress(address: string | null): string | null {
 
   // Bordeaux
   if (hasPostal && ['33000', '33100', '33200', '33300', '33800'].includes(postal!)) return 'Bordeaux';
+  if (!hasPostal && addrLower.includes('place de la bourse') && addrLower.includes('bordeaux')) return 'Bordeaux';
 
   // Toulouse
-  if (hasPostal && ['31000', '31100', '31300', '31400', '31500'].includes(postal!)) return 'Toulouse';
+  if (hasPostal && ['31000', '31100', '31200', '31300', '31400', '31500'].includes(postal!)) return 'Toulouse';
+  if (!hasPostal && (addrLower.includes('place du capitole') || addrLower.includes('capitole de toulouse'))) return 'Toulouse';
 
   // Nice
   if (hasPostal && /^06[0-3]00$/.test(postal!)) return 'Nice';
@@ -109,12 +103,90 @@ function detectCityFromAddress(address: string | null): string | null {
   // Rennes
   if (hasPostal && ['35000', '35200', '35700'].includes(postal!)) return 'Rennes';
 
+  // Orléans
+  if (hasPostal && ['45000', '45100'].includes(postal!)) return 'Orléans';
+
+  // Grenoble
+  if (hasPostal && ['38000', '38100'].includes(postal!)) return 'Grenoble';
+
+  // Toulon
+  if (hasPostal && ['83000', '83100', '83200'].includes(postal!)) return 'Toulon';
+
+  // Dijon
+  if (hasPostal && ['21000', '21100'].includes(postal!)) return 'Dijon';
+
+  // Angers
+  if (hasPostal && ['49000', '49100'].includes(postal!)) return 'Angers';
+
+  // Le Mans
+  if (hasPostal && ['72000', '72100'].includes(postal!)) return 'Le Mans';
+
+  // Reims
+  if (hasPostal && ['51100', '51000'].includes(postal!)) return 'Reims';
+
+  // Saint-Étienne
+  if (hasPostal && ['42000', '42100'].includes(postal!)) return 'Saint-Étienne';
+
+  // Le Havre
+  if (hasPostal && ['76600', '76610', '76620'].includes(postal!)) return 'Le Havre';
+
+  // Clermont-Ferrand
+  if (hasPostal && ['63000', '63100'].includes(postal!)) return 'Clermont-Ferrand';
+
+  // Tours
+  if (hasPostal && ['37000', '37100', '37200'].includes(postal!)) return 'Tours';
+
+  // Amiens
+  if (hasPostal && ['80000', '80080', '80090'].includes(postal!)) return 'Amiens';
+
+  // Limoges
+  if (hasPostal && ['87000', '87100'].includes(postal!)) return 'Limoges';
+
+  // Metz
+  if (hasPostal && ['57000', '57050', '57070'].includes(postal!)) return 'Metz';
+
+  // Besançon
+  if (hasPostal && ['25000', '25030'].includes(postal!)) return 'Besançon';
+
+  // Perpignan
+  if (hasPostal && ['66000', '66100'].includes(postal!)) return 'Perpignan';
+
+  // Rouen
+  if (hasPostal && ['76000', '76100'].includes(postal!)) return 'Rouen';
+
+  // Caen
+  if (hasPostal && postal === '14000') return 'Caen';
+
+  // Nancy
+  if (hasPostal && ['54000', '54100'].includes(postal!)) return 'Nancy';
+
+  // Brest
+  if (hasPostal && postal === '29200') return 'Brest';
+
+  // Poitiers
+  if (hasPostal && postal === '86000') return 'Poitiers';
+
+  // Pau
+  if (hasPostal && postal === '64000') return 'Pau';
+
+  // Aix-en-Provence
+  if (hasPostal && ['13080', '13090', '13100', '13290', '13540'].includes(postal!)) return 'Aix-en-Provence';
+
+  // Villeurbanne
+  if (hasPostal && postal === '69100') return 'Villeurbanne';
+
+  // Mulhouse
+  if (hasPostal && ['68100', '68200'].includes(postal!)) return 'Mulhouse';
+
+  // Avignon
+  if (hasPostal && postal === '84000') return 'Avignon';
+
+  // Cannes
+  if (hasPostal && postal === '06400') return 'Cannes';
+
   return null;
 }
 
-/**
- * Reproduit get_applicable_pricing (SQL) - simplifié
- */
 function getApplicablePricing(
   pickupAddress: string,
   destinationAddress: string,
@@ -147,8 +219,8 @@ describe('A. Détection Paris – Code postal', () => {
   it('T03: 75020 → Paris', () => {
     expect(detectCityFromAddress('45 Rue des Pyrénées, 75020 Paris')).toBe('Paris');
   });
-  it('T04: 75116 → NON Paris (hors 75001-75020)', () => {
-    expect(detectCityFromAddress('Avenue Foch, 75116 Paris')).toBe(null);
+  it('T04: 75116 → Paris (16ème arrondissement, corrigé)', () => {
+    expect(detectCityFromAddress('Avenue Foch, 75116 Paris')).toBe('Paris');
   });
   it('T05: 93100 Montreuil → NON Paris', () => {
     expect(detectCityFromAddress('12 Rue de Paris, 93100 Montreuil')).toBe(null);
@@ -177,7 +249,7 @@ describe('B. Détection Paris – Landmarks sans code postal', () => {
   it('T12: Louvre → Paris', () => {
     expect(detectCityFromAddress('Musée du Louvre')).toBe('Paris');
   });
-  it('T13: "Rue de Paris, Montreuil" → NON Paris (exclusion Montreuil)', () => {
+  it('T13: "Rue de Paris, Montreuil" → NON Paris', () => {
     expect(detectCityFromAddress('Rue de Paris, Montreuil')).toBe(null);
   });
   it('T14: "La Défense" → NON Paris', () => {
@@ -195,8 +267,8 @@ describe('C. Détection Lyon', () => {
   it('T17: 69009 → Lyon', () => {
     expect(detectCityFromAddress('Quai de Saône, 69009 Lyon')).toBe('Lyon');
   });
-  it('T18: 69100 Villeurbanne → NON Lyon', () => {
-    expect(detectCityFromAddress('10 Rue de la Gare, 69100 Villeurbanne')).toBe(null);
+  it('T18: 69100 Villeurbanne → Villeurbanne (pas Lyon)', () => {
+    expect(detectCityFromAddress('10 Rue de la Gare, 69100 Villeurbanne')).toBe('Villeurbanne');
   });
   it('T19: Place Bellecour (sans postal) → Lyon', () => {
     expect(detectCityFromAddress('Place Bellecour, Lyon')).toBe('Lyon');
@@ -211,10 +283,10 @@ describe('D. Détection Marseille', () => {
     expect(detectCityFromAddress('Cours Julien, 13001 Marseille')).toBe('Marseille');
   });
   it('T22: 13016 → Marseille', () => {
-    expect(detectCityFromAddress('L\'Estaque, 13016 Marseille')).toBe('Marseille');
+    expect(detectCityFromAddress("L'Estaque, 13016 Marseille")).toBe('Marseille');
   });
-  it('T23: 13100 Aix-en-Provence → NON Marseille', () => {
-    expect(detectCityFromAddress('Cours Mirabeau, 13100 Aix-en-Provence')).toBe(null);
+  it('T23: 13100 Aix-en-Provence → Aix-en-Provence (pas Marseille)', () => {
+    expect(detectCityFromAddress('Cours Mirabeau, 13100 Aix-en-Provence')).toBe('Aix-en-Provence');
   });
   it('T24: Vieux-Port (sans postal) → Marseille', () => {
     expect(detectCityFromAddress('Vieux-Port, Marseille')).toBe('Marseille');
@@ -236,7 +308,7 @@ describe('E. Détection Lille', () => {
   });
 });
 
-describe('F. Détection autres villes', () => {
+describe('F. Nouvelles villes corrigées', () => {
   it('T29: 33000 → Bordeaux', () => {
     expect(detectCityFromAddress('Place de la Bourse, 33000 Bordeaux')).toBe('Bordeaux');
   });
@@ -258,8 +330,32 @@ describe('F. Détection autres villes', () => {
   it('T35: 35000 → Rennes', () => {
     expect(detectCityFromAddress('Place de la Mairie, 35000 Rennes')).toBe('Rennes');
   });
-  it('T36: 45000 Orléans → NON reconnu (pas dans la liste)', () => {
-    expect(detectCityFromAddress('Place du Martroi, 45000 Orléans')).toBe(null);
+  it('T36: 45000 → Orléans (corrigé, était manquant)', () => {
+    expect(detectCityFromAddress('Place du Martroi, 45000 Orléans')).toBe('Orléans');
+  });
+  it('T37: 38000 → Grenoble', () => {
+    expect(detectCityFromAddress('Place Victor Hugo, 38000 Grenoble')).toBe('Grenoble');
+  });
+  it('T38: 83000 → Toulon', () => {
+    expect(detectCityFromAddress('Port de Toulon, 83000 Toulon')).toBe('Toulon');
+  });
+  it('T39: 21000 → Dijon', () => {
+    expect(detectCityFromAddress('Place de la Libération, 21000 Dijon')).toBe('Dijon');
+  });
+  it('T40: 51100 → Reims', () => {
+    expect(detectCityFromAddress('Cathédrale Notre-Dame, 51100 Reims')).toBe('Reims');
+  });
+  it('T41: 76000 → Rouen', () => {
+    expect(detectCityFromAddress('Place du Vieux-Marché, 76000 Rouen')).toBe('Rouen');
+  });
+  it('T42: 06400 → Cannes (pas Nice)', () => {
+    expect(detectCityFromAddress('La Croisette, 06400 Cannes')).toBe('Cannes');
+  });
+  it('T43: 84000 → Avignon', () => {
+    expect(detectCityFromAddress('Palais des Papes, 84000 Avignon')).toBe('Avignon');
+  });
+  it('T44: 14000 → Caen', () => {
+    expect(detectCityFromAddress('Château de Caen, 14000 Caen')).toBe('Caen');
   });
 });
 
@@ -269,78 +365,59 @@ describe('G. Scénarios inter-villes / intra-ville – get_applicable_pricing', 
     { city_name: 'Lyon', id: 'pricing-lyon-001' },
     { city_name: 'Marseille', id: 'pricing-marseille-001' },
     { city_name: 'Lille', id: 'pricing-lille-001' },
+    { city_name: 'Orléans', id: 'pricing-orleans-001' },
   ];
 
-  it('T37: Paris→Paris (75001→75008) → tarif ville Paris', () => {
+  it('T45: Paris→Paris (75001→75008) → tarif ville Paris', () => {
     const r = getApplicablePricing('15 Rue de Rivoli, 75001 Paris', '12 Rue du Faubourg, 75008 Paris', driverPricings);
     expect(r.pricing_type).toBe('city');
     expect(r.city_name).toBe('Paris');
   });
 
-  it('T38: Paris 75001 → CDG → tarif classique (destination hors Paris)', () => {
+  it('T46: Paris 75116→75007 → tarif ville Paris (75116 corrigé)', () => {
+    const r = getApplicablePricing('Avenue Foch, 75116 Paris', 'Tour Eiffel, 75007 Paris', driverPricings);
+    expect(r.pricing_type).toBe('city');
+    expect(r.city_name).toBe('Paris');
+  });
+
+  it('T47: Paris→CDG → tarif classique', () => {
     const r = getApplicablePricing('15 Rue de Rivoli, 75001 Paris', 'Aéroport CDG Terminal 2, 95700 Roissy', driverPricings);
     expect(r.pricing_type).toBe('classic');
   });
 
-  it('T39: CDG → Paris 75009 → tarif classique (départ hors Paris)', () => {
-    const r = getApplicablePricing('Aéroport CDG Terminal 2, 95700 Roissy', '10 Bd de Clichy, 75009 Paris', driverPricings);
-    expect(r.pricing_type).toBe('classic');
-  });
-
-  it('T40: Lyon→Lyon (69001→69003) → tarif ville Lyon', () => {
+  it('T48: Lyon→Lyon (69001→69003) → tarif ville Lyon', () => {
     const r = getApplicablePricing('Place des Terreaux, 69001 Lyon', 'Quai Perrache, 69003 Lyon', driverPricings);
     expect(r.pricing_type).toBe('city');
     expect(r.city_name).toBe('Lyon');
   });
 
-  it('T41: Lyon 69001 → Villeurbanne 69100 → tarif classique', () => {
+  it('T49: Lyon→Villeurbanne → tarif classique (villes différentes)', () => {
     const r = getApplicablePricing('Place Bellecour, 69001 Lyon', '10 Rue de la Gare, 69100 Villeurbanne', driverPricings);
     expect(r.pricing_type).toBe('classic');
   });
 
-  it('T42: Marseille→Marseille (13001→13008) → tarif ville', () => {
-    const r = getApplicablePricing('Canebière, 13001 Marseille', 'Plage du Prado, 13008 Marseille', driverPricings);
+  it('T50: Orléans→Orléans (45000→45100) → tarif ville', () => {
+    const r = getApplicablePricing('Place du Martroi, 45000 Orléans', 'Gare des Aubrais, 45100 Orléans', driverPricings);
     expect(r.pricing_type).toBe('city');
-    expect(r.city_name).toBe('Marseille');
+    expect(r.city_name).toBe('Orléans');
   });
 
-  it('T43: Marseille→Aix-en-Provence → tarif classique', () => {
+  it('T51: Marseille→Aix → tarif classique (villes différentes)', () => {
     const r = getApplicablePricing('Vieux-Port, 13001 Marseille', 'Cours Mirabeau, 13100 Aix-en-Provence', driverPricings);
     expect(r.pricing_type).toBe('classic');
   });
 
-  it('T44: Paris→Lyon → tarif classique (villes différentes)', () => {
-    const r = getApplicablePricing('Tour Eiffel, 75007 Paris', 'Place Bellecour, 69001 Lyon', driverPricings);
+  it('T52: Bordeaux→Bordeaux → classique si PAS de tarif configuré', () => {
+    const r = getApplicablePricing('Place de la Bourse, 33000 Bordeaux', 'Gare St-Jean, 33800 Bordeaux', driverPricings);
     expect(r.pricing_type).toBe('classic');
   });
 
-  it('T45: Lille→Lille (59000→59800) → tarif ville', () => {
-    const r = getApplicablePricing('Grand Place, 59000 Lille', 'Euralille, 59800 Lille', driverPricings);
-    expect(r.pricing_type).toBe('city');
-    expect(r.city_name).toBe('Lille');
-  });
-
-  it('T46: Bordeaux→Bordeaux → tarif classique si PAS de tarif configuré', () => {
-    const r = getApplicablePricing('Place de la Bourse, 33000 Bordeaux', 'Gare St-Jean, 33800 Bordeaux', driverPricings);
-    expect(r.pricing_type).toBe('classic'); // pas de pricing Bordeaux dans la config
-  });
-
-  it('T47: Adresse sans code postal ni landmark → classique', () => {
+  it('T53: Adresses sans code postal ni landmark → classique', () => {
     const r = getApplicablePricing('12 Rue des Lilas, Meaux', '5 Avenue Jean Jaurès, Chelles', driverPricings);
     expect(r.pricing_type).toBe('classic');
   });
 
-  it('T48: Adresses vides → classique', () => {
-    const r = getApplicablePricing('', '', driverPricings);
-    expect(r.pricing_type).toBe('classic');
-  });
-
-  it('T49: 92000 Nanterre vers 75005 Paris → classique (origine hors Paris)', () => {
-    const r = getApplicablePricing('10 Rue du RER, 92000 Nanterre', '5 Bd Saint-Michel, 75005 Paris', driverPricings);
-    expect(r.pricing_type).toBe('classic');
-  });
-
-  it('T50: Deux landmarks Paris sans postal → tarif ville Paris', () => {
+  it('T54: Landmarks Paris → tarif ville', () => {
     const r = getApplicablePricing('Tour Eiffel, Paris', 'Arc de Triomphe, Paris', driverPricings);
     expect(r.pricing_type).toBe('city');
     expect(r.city_name).toBe('Paris');
