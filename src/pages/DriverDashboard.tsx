@@ -994,11 +994,13 @@ const DriverDashboard = () => {
           <TabsContent value="outils" className="space-y-6">
             {driverProfile?.driver?.id && (
               <UnifiedToolsHub
+                key={outilsSubTab}
                 driverProfile={driverProfile}
                 driverId={driverProfile.driver.id}
                 isPremium={isPremium}
                 qrCode={qrCode}
                 loadingQR={loadingQR}
+                defaultTab={outilsSubTab}
               />
             )}
           </TabsContent>
