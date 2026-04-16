@@ -321,16 +321,40 @@ export function CourseCompletionScreen({
         )}
       </div>
 
-      {/* Bottom dismiss */}
+      {/* Bottom actions */}
       {!isProcessing && (
-        <div className="px-5 pb-6 pt-3 border-t border-border bg-background">
+        <div className="px-5 pb-6 pt-3 border-t border-border bg-background space-y-3">
           <Button
             onClick={onDismiss}
             className="w-full h-14 rounded-2xl font-black text-base"
           >
             {isCash ? "J'ai encaissé, fermer" : "Fermer"}
           </Button>
+          
+          {driverId && (
+            <Button
+              variant="outline"
+              onClick={() => setShowIncidentDialog(true)}
+              className="w-full h-12 rounded-2xl text-sm gap-2 text-destructive border-destructive/30 hover:bg-destructive/5"
+            >
+              <Flag className="h-4 w-4" />
+              Signaler un problème avec ce client
+            </Button>
+          )}
         </div>
+      )}
+
+      {/* Incident Report Dialog */}
+      {driverId && (
+        <CourseIncidentReportDialog
+          open={showIncidentDialog}
+          onOpenChange={setShowIncidentDialog}
+          courseId={courseId}
+          driverId={driverId}
+          clientId={clientId}
+          clientName={clientName}
+          guestPhone={guestPhone}
+        />
       )}
     </motion.div>
   );
