@@ -175,6 +175,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             distance_km: distanceKm,
             estimated_price: Math.round(estimatedPrice * 100) / 100,
             has_surcharge: false,
+            is_favorite: favIds.includes(driver.driver_id),
             accepted_payment_methods: driver.accepted_payment_methods || ['cash', 'card'],
             stripe_connect_charges_enabled: driver.stripe_connect_charges_enabled || false,
             vehicle_brand: driver.vehicle_brand || null,
