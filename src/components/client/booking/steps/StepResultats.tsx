@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  AlertCircle, ArrowLeft, Car
+  AlertCircle, ArrowLeft, Car, MapPinOff, Loader2
 } from 'lucide-react';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { DriverResultsCarousel3D } from '../DriverResultsCarousel3D';
