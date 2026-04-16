@@ -18,12 +18,15 @@ Deno.serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_ANON_KEY")!
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) throw new Error("Invalid token");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !user) {
+      console.error("Auth error:", userError);
+      throw new Error("Invalid token");
+    }
 
     // Use service role client for DB queries
     const serviceClient = createClient(
