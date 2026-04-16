@@ -859,9 +859,11 @@ const DriverDashboard = () => {
           <TabsContent value="finances" className="space-y-6">
             {driverProfile?.driver?.id && (
               <UnifiedFinancesHub 
+                key={financesSubTab}
                 driverId={driverProfile.driver.id}
                 isPremium={isPremium}
                 stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled}
+                defaultTab={financesSubTab}
               />
             )}
           </TabsContent>
