@@ -698,6 +698,16 @@ export function UnifiedBookingPage() {
                 fallbackToReservation={fallbackToReservation} mode={mode}
                 error={error} mapboxToken={mapboxToken} tokenLoading={isTokenLoading}
                 mapboxError={mapboxError} maxSearchRadiusKm={maxSearchRadiusKm}
+                setMaxSearchRadiusKm={(km) => { setMaxSearchRadiusKm(km); priceRangeFetched.current = ''; }}
+                isLoading={isLoading}
+                onRetrySearch={() => {
+                  priceRangeFetched.current = '';
+                  if (pickupCoords) {
+                    let schedDate: Date | undefined;
+                    if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
+                    searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
+                  }
+                }}
                 clientPaymentMethod={clientPaymentMethod}
                 onBack={() => setCurrentStep(1)}
                 onNext={() => setCurrentStep(3)}
