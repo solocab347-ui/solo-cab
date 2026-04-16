@@ -127,6 +127,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   }, [driverProfile?.driver?.id]);
 
   const handleSubscribe = async () => {
+    if (shouldHideInAppPayments()) {
+      toast.info("L'abonnement Premium se gère depuis le site web.");
+      return;
+    }
     setLoading(true);
     try {
       toast.loading("Redirection vers le paiement...");
@@ -170,6 +174,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   
   // Réabonnement après résiliation
   const handleResubscribe = async (type: "monthly" | "annual") => {
+    if (shouldHideInAppPayments()) {
+      toast.info("Le réabonnement se gère depuis le site web.");
+      return;
+    }
     setResubscribing(true);
     try {
       toast.loading("Redirection vers le paiement...");
