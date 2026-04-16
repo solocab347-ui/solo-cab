@@ -26,6 +26,9 @@ interface StepResultatsProps {
   tokenLoading: boolean;
   mapboxError: string | null;
   maxSearchRadiusKm: number;
+  setMaxSearchRadiusKm?: (km: number) => void;
+  isLoading?: boolean;
+  onRetrySearch?: () => void;
   clientPaymentMethod: 'card' | 'cash' | null;
   onBack: () => void;
   onNext: () => void;
