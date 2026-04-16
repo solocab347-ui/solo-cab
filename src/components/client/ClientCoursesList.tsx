@@ -125,7 +125,8 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
       const from = pageNum * COURSES_PAGE_SIZE;
       const to = from + COURSES_PAGE_SIZE - 1;
 
-      const { data, error } = await supabase
+      // Query courses by client_id OR created_by_user_id for broader matching
+      let query = supabase
         .from("courses")
         .select(`
           *,
@@ -156,9 +157,17 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
             payment_method
           )
         `)
-        .eq("client_id", clientId)
         .order("scheduled_date", { ascending: false })
         .range(from, to);
+
+      // Use OR filter to match both client_id and created_by_user_id
+      if (userId) {
+        query = query.or(`client_id.eq.${clientId},created_by_user_id.eq.${userId}`);
+      } else {
+        query = query.eq("client_id", clientId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
