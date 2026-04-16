@@ -130,7 +130,7 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
         .from("courses")
         .select(`
           *,
-          drivers!inner(
+          drivers(
             company_name,
             company_address,
             siret,
