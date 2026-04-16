@@ -195,7 +195,6 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
     if (!clientId) return;
     const orParts: string[] = [`client_id.eq.${clientId}`];
     if (userId) orParts.push(`created_by_user_id.eq.${userId}`);
-    if (exclusiveDriverId) orParts.push(`driver_id.eq.${exclusiveDriverId}`);
     if (userEmail) orParts.push(`guest_email.ilike.${userEmail}`);
     if (userPhone) orParts.push(`guest_phone.eq.${userPhone}`);
     const orFilter = orParts.join(',');
