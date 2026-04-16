@@ -598,11 +598,13 @@ const DriverDashboard = () => {
           onSwitchToDashboard={() => setViewMode("dashboard")}
           onNavigateTo={(tab: string) => {
             setViewMode("dashboard");
-            // Support "tab.subtab" syntax (e.g. "finances.encaisser")
+            // Support "tab.subtab" syntax (e.g. "finances.encaisser", "outils.qrcode")
             const [mainTab, subTab] = tab.split(".");
             setActiveTab(mainTab);
             if (mainTab === "finances" && subTab) {
               setFinancesSubTab(subTab);
+            } else if (mainTab === "outils" && subTab) {
+              setOutilsSubTab(subTab);
             }
           }}
         />
