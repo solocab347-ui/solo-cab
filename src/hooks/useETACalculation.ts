@@ -70,12 +70,16 @@ export function useETACalculation({ driverLocation, targetLocation, enabled }: U
   const [eta, setEta] = useState<ETAData | null>(null);
   const [loading, setLoading] = useState(false);
   const lastDriverPos = useRef<Coordinates | null>(null);
+  const lastTargetPos = useRef<Coordinates | null>(null);
 
   const calculate = useCallback(async () => {
     if (!driverLocation || !targetLocation || !enabled) return;
 
-    // Skip if driver hasn't moved enough
-    if (lastDriverPos.current) {
+    const targetChanged = !lastTargetPos.current 
+      || haversineDistanceM(lastTargetPos.current, targetLocation) > 100;
+
+    // Skip if driver hasn't moved enough AND target hasn't changed
+    if (!targetChanged && lastDriverPos.current) {
       const moved = haversineDistanceM(lastDriverPos.current, driverLocation);
       if (moved < MIN_DISTANCE_CHANGE_M && eta) return;
     }
@@ -85,9 +89,16 @@ export function useETACalculation({ driverLocation, targetLocation, enabled }: U
     if (result) {
       setEta(result);
       lastDriverPos.current = driverLocation;
+      lastTargetPos.current = targetLocation;
     }
     setLoading(false);
   }, [driverLocation, targetLocation, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset cache when target changes (e.g., approaching → in_progress)
+  useEffect(() => {
+    lastDriverPos.current = null;
+    lastTargetPos.current = null;
+  }, [targetLocation?.lat, targetLocation?.lng]);
 
   // Initial calculation + polling
   useEffect(() => {
@@ -99,7 +110,8 @@ export function useETACalculation({ driverLocation, targetLocation, enabled }: U
   }, [calculate, enabled, driverLocation?.lat, driverLocation?.lng, targetLocation?.lat, targetLocation?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const forceRefresh = useCallback(() => {
-    lastDriverPos.current = null; // Reset threshold
+    lastDriverPos.current = null;
+    lastTargetPos.current = null;
     calculate();
   }, [calculate]);
 
