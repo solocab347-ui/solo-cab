@@ -9,13 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon, Zap } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon, Zap, UserCircle, HelpCircle } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/clients/DriverClientsList";
-import DriverDevisList from "@/components/driver/payments/DriverDevisList";
-import DriverFacturesList from "@/components/driver/payments/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/payments/SubscriptionManager";
 import { DriverHome } from "@/components/driver/DriverHomeMemoized";
@@ -84,6 +82,10 @@ import { DriverAvailabilityProvider } from "@/contexts/DriverAvailabilityContext
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
 import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
+// Hub components for merged tabs
+import { UnifiedFinancesHub } from "@/components/driver/hubs/UnifiedFinancesHub";
+import { UnifiedPerformanceHub } from "@/components/driver/hubs/UnifiedPerformanceHub";
+import { UnifiedToolsHub } from "@/components/driver/hubs/UnifiedToolsHub";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -735,136 +737,58 @@ const DriverDashboard = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          {/* Desktop TabsList - hidden on mobile, using MobileDriverNav instead */}
+          {/* Desktop TabsList - Restructured 12 tabs */}
           <TabsList className="hidden md:flex w-full bg-muted/30 backdrop-blur-sm flex-col gap-2 h-auto p-2 shadow-lg border border-border">
-            {/* Première ligne */}
             <div className="grid grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-success/80 data-[state=active]:text-white">
                 <Home className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.home')}</span>
+                <span>Accueil</span>
               </TabsTrigger>
-              <TabsTrigger value="clients" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
-                <Users className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.myClients')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="courses" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+              <TabsTrigger value="courses" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Car className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.myRides')}</span>
+                <span>Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <Users className="w-4 h-4" />
+                <span>Clients</span>
               </TabsTrigger>
               <TabsTrigger value="messages" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
                 <MessageSquare className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.messages')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="devis" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-primary data-[state=active]:text-white">
-                <FileText className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.quotes')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="factures" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-success/80 data-[state=active]:text-white">
-                <CreditCard className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.invoices')}</span>
+                <span>Messages</span>
               </TabsTrigger>
               <TabsTrigger value="finances" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
                 <Wallet className="w-4 h-4" />
                 <span>Finances</span>
               </TabsTrigger>
+              <TabsTrigger value="mon-profil" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
+                <UserCircle className="w-4 h-4" />
+                <span>Mon Profil</span>
+              </TabsTrigger>
             </div>
-            
-            {/* Deuxième ligne */}
-            <div className="grid grid-cols-7 gap-1 w-full">
-              {/* Documents - Onglet dédié */}
-              {!driverProfile?.driver?.is_fleet_driver && (
-                <TabsTrigger value="documents" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>{t('driverDashboard.menu.documents')}</span>
-                </TabsTrigger>
-              )}
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-secondary/50 hover:text-foreground flex-row touch-manipulation">
-                    <Wrench className="w-4 h-4" />
-                    <span>{t('driverDashboard.menu.tools')}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au planning — 19,99€/mois" }); } else { setActiveTab("planning"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Calendar className="w-4 h-4" />
-                    {t('driverDashboard.menu.planning')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à l'encaissement — 19,99€/mois" }); } else { setActiveTab("encaisser"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Zap className="w-4 h-4" />
-                    Encaisser
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Calculator className="w-4 h-4" />
-                    {t('driverDashboard.menu.calculator')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer hover:bg-muted">
-                    <QrCode className="w-4 h-4" />
-                    {t('driverDashboard.menu.myQRCode')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:bg-secondary/50 hover:text-foreground flex-row touch-manipulation">
-                    <Wrench className="w-4 h-4" />
-                    <span>{t('driverDashboard.menu.development')}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux objectifs — 19,99€/mois" }); } else { setActiveTab("objectives"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Target className="w-4 h-4" />
-                    {t('driverDashboard.menu.objectives')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder aux campagnes — 19,99€/mois" }); } else { setActiveTab("campaigns"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Megaphone className="w-4 h-4" />
-                    {t('driverDashboard.menu.campaign')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder au calcul de rentabilité — 19,99€/mois" }); } else { setActiveTab("profitability"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <PieChart className="w-4 h-4" />
-                    {t('driverDashboard.menu.profitability')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (!isPremium) { setActiveTab("subscription"); toast.info("Fonctionnalité Premium", { description: "Passez à Premium pour accéder à la prospection — 19,99€/mois" }); } else { setActiveTab("prospection"); } }} className="gap-2 cursor-pointer hover:bg-muted">
-                    <Sparkles className="w-4 h-4" />
-                    {t('driverDashboard.menu.prospection')}
-                    {!isPremium && <LockIcon className="w-3 h-3 ml-auto text-amber-500" />}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <TabsTrigger value="feedback" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-warning/80 data-[state=active]:text-white">
-                <Lightbulb className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.feedback')}</span>
+            <div className="grid grid-cols-6 gap-1 w-full">
+              <TabsTrigger value="outils" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-primary data-[state=active]:text-white">
+                <Wrench className="w-4 h-4" />
+                <span>Outils</span>
               </TabsTrigger>
-              
-              <TabsTrigger value="subscription" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
-                <TrendingUp className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.subscription')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
-                <Globe className="w-4 h-4" />
-                <span>Profil SoloCab</span>
-              </TabsTrigger>
-              <TabsTrigger value="statistics" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
+              <TabsTrigger value="performance" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.statistics')}</span>
+                <span>Performance</span>
+              </TabsTrigger>
+              <TabsTrigger value="marketing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <Megaphone className="w-4 h-4" />
+                <span>Marketing</span>
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.partnerships')}</span>
+                <span>Partenariats</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
-                <Settings className="w-4 h-4" />
-                <span>{t('driverDashboard.menu.settings')}</span>
+              <TabsTrigger value="subscription" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white">
+                <TrendingUp className="w-4 h-4" />
+                <span>Abonnement</span>
+              </TabsTrigger>
+              <TabsTrigger value="aide" className="gap-1 text-sm flex-row py-1.5 text-muted-foreground data-[state=active]:bg-gradient-to-r data-[state=active]:from-muted data-[state=active]:to-muted/80 data-[state=active]:text-white">
+                <HelpCircle className="w-4 h-4" />
+                <span>Aide</span>
               </TabsTrigger>
             </div>
           </TabsList>
@@ -874,87 +798,208 @@ const DriverDashboard = () => {
             <DriverHome driverProfile={driverProfile} onTabChange={handleTabChange} onSwitchToMap={() => setViewMode("map")} />
           </TabsContent>
 
-          {/* Planning Tab */}
-          <TabsContent value="planning">
-            {isPremium ? (
-              driverProfile?.driver?.id && (
-                <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-foreground">Planning des Courses</h2>
-                      <p className="text-sm text-muted-foreground">Visualisez et gérez votre planning</p>
-                    </div>
+          {/* Courses Tab */}
+          <TabsContent value="courses" className="space-y-6">
+            <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary" />
                   </div>
-                  <OutOfScheduleAlerts driverId={driverProfile.driver.id} />
-                  <DriverPlanning driverId={driverProfile.driver.id} />
-                </Card>
-              )
-            ) : (
-              <PremiumGate isPremium={false} featureName="Planning des courses" featureDescription="Visualisez et gérez votre planning de courses avec une vue jour, semaine et mois." />
-            )}
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Demandes de Réservation</h2>
+                    <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
+                  </div>
+                </div>
+              </div>
+              <FloatingMapButton onClick={() => setViewMode("map")} />
+              {driverProfile?.driver?.id && (
+                <CoursesList driverId={driverProfile.driver.id} />
+              )}
+            </Card>
           </TabsContent>
 
-          {/* Note: Queue feature moved to Planning integration */}
-
+          {/* Clients Tab */}
+          <TabsContent value="clients" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <DriverClientsList driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
 
           {/* Messages Tab */}
           <TabsContent value="messages">
             <MessagingInterface />
           </TabsContent>
 
-          {/* QR Code Tab */}
-          <TabsContent value="qrcode">
-            <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <QrCode className="w-5 h-5 text-primary" />
+          {/* FINANCES HUB */}
+          <TabsContent value="finances" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <UnifiedFinancesHub 
+                driverId={driverProfile.driver.id}
+                isPremium={isPremium}
+                stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled}
+              />
+            )}
+          </TabsContent>
+
+          {/* MON PROFIL HUB */}
+          <TabsContent value="mon-profil" className="space-y-4">
+            {driverProfile?.driver?.id && user ? (
+              <Tabs defaultValue="identity">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <UserCircle className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-foreground">Mon QR Code Personnel</h2>
-                    <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
+                    <h2 className="text-xl font-bold text-foreground">Mon Profil</h2>
+                    <p className="text-sm text-muted-foreground">Identité, tarification et documents</p>
                   </div>
                 </div>
-              </div>
-              <FloatingMapButton onClick={() => setViewMode("map")} />
-              <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
-            </Card>
-          </TabsContent>
-
-          {/* Calculator Tab */}
-          <TabsContent value="calculator">
-            {driverProfile?.driver?.id && (
-              <PriceCalculator driverProfile={driverProfile} />
-            )}
-          </TabsContent>
-
-          {/* Finances Tab */}
-          <TabsContent value="finances">
-            {driverProfile?.driver?.id && (
-              <DriverFinancePage driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Encaisser Tab */}
-          <TabsContent value="encaisser">
-            {isPremium ? (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-foreground">Encaisser un client</h2>
-                  <FloatingMapButton onClick={() => setViewMode("map")} />
-                </div>
-                {driverProfile?.driver?.id && (
-                  <SpontaneousPayment 
-                    driverId={driverProfile.driver.id} 
-                    stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled} 
+                <TabsList className={`w-full bg-muted/30 backdrop-blur-sm border border-border/50 ${driverProfile.driver.is_fleet_driver ? 'grid grid-cols-2' : 'grid grid-cols-3'}`}>
+                  <TabsTrigger value="identity" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <UserCircle className="w-3.5 h-3.5" />
+                    Identité
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Settings className="w-3.5 h-3.5" />
+                    Tarifs & Réglages
+                  </TabsTrigger>
+                  {!driverProfile.driver.is_fleet_driver && (
+                    <TabsTrigger value="documents" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Documents
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+                <TabsContent value="identity" className="mt-4">
+                  <DriverPublicProfileSimplified
+                    driverProfile={driverProfile}
+                    userId={user.id}
+                    visibleToDrivers={visibleToDrivers}
+                    displayDriverName={displayDriverName}
+                    displayCompanyName={displayCompanyName}
+                    companyName={companyName}
+                    profilePhotoUrl={profilePhotoUrl}
+                    cardPhotoUrl={cardPhotoUrl}
+                    serviceDescription={serviceDescription}
+                    workingSectors={workingSectors}
+                    vehicleEquipment={vehicleEquipment}
+                    servicesOffered={servicesOffered}
+                    vehicleCategories={vehicleCategories}
+                    showPhone={showPhone}
+                    showEmail={showEmail}
+                    contactPhone={contactPhone}
+                    contactEmail={contactEmail}
+                    showRatingPublic={showRatingPublic}
+                    onVisibleToDriversChange={setVisibleToDrivers}
+                    onDisplayDriverNameChange={setDisplayDriverName}
+                    onDisplayCompanyNameChange={setDisplayCompanyName}
+                    onPhotoUpdate={setProfilePhotoUrl}
+                    onCardPhotoUpdate={setCardPhotoUrl}
+                    onServiceDescriptionChange={setServiceDescription}
+                    onWorkingSectorsChange={setWorkingSectors}
+                    onVehicleEquipmentChange={setVehicleEquipment}
+                    onServicesOfferedChange={setServicesOffered}
+                    onVehicleCategoriesChange={setVehicleCategories}
+                    onShowPhoneChange={setShowPhone}
+                    onShowEmailChange={setShowEmail}
+                    onContactPhoneChange={setContactPhone}
+                    onContactEmailChange={setContactEmail}
+                    onShowRatingPublicChange={setShowRatingPublic}
+                    onSave={handleUpdateProfile}
+                    loading={loading || isUpdating}
                   />
+                </TabsContent>
+                <TabsContent value="settings" className="mt-4">
+                  <DriverSettingsSimplified
+                    driverId={driverProfile.driver.id}
+                    baseFare={baseFare}
+                    perKmRate={perKmRate}
+                    hourlyRate={hourlyRate}
+                    minimumPrice={minimumPrice}
+                    maxPassengers={maxPassengers}
+                    tvaIncluded={tvaIncluded}
+                    eveningSurcharge={eveningSurcharge}
+                    weekendSurcharge={weekendSurcharge}
+                    airportSurcharge={airportSurcharge}
+                    companyName={companyName}
+                    companyAddress={companyAddress}
+                    siret={siret}
+                    siren={siren}
+                    tvaNumber={tvaNumber}
+                    onBaseFareChange={setBaseFare}
+                    onPerKmRateChange={setPerKmRate}
+                    onHourlyRateChange={setHourlyRate}
+                    onMinimumPriceChange={setMinimumPrice}
+                    onMaxPassengersChange={setMaxPassengers}
+                    onTvaIncludedChange={setTvaIncluded}
+                    onEveningSurchargeChange={setEveningSurcharge}
+                    onWeekendSurchargeChange={setWeekendSurcharge}
+                    onAirportSurchargeChange={setAirportSurcharge}
+                    onCompanyNameChange={setCompanyName}
+                    onCompanyAddressChange={setCompanyAddress}
+                    onSiretChange={setSiret}
+                    onSirenChange={setSiren}
+                    onTvaNumberChange={setTvaNumber}
+                    onSave={handleUpdateProfile}
+                    loading={loading || isUpdating}
+                    onPaymentUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
+                  />
+                </TabsContent>
+                {!driverProfile.driver.is_fleet_driver && (
+                  <TabsContent value="documents" className="mt-4">
+                    <UnifiedDocumentsHub 
+                      driverId={driverProfile.driver.id} 
+                      userId={user.id}
+                      isFleetDriver={driverProfile.driver.is_fleet_driver || false}
+                    />
+                  </TabsContent>
                 )}
-              </>
+              </Tabs>
             ) : (
-              <PremiumGate isPremium={false} featureName="Encaissement spontané" featureDescription="Encaissez vos clients directement via Stripe Connect pour un paiement rapide et sécurisé." />
+              <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+            )}
+          </TabsContent>
+
+          {/* OUTILS HUB */}
+          <TabsContent value="outils" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <UnifiedToolsHub
+                driverProfile={driverProfile}
+                driverId={driverProfile.driver.id}
+                isPremium={isPremium}
+                qrCode={qrCode}
+                loadingQR={loadingQR}
+              />
+            )}
+          </TabsContent>
+
+          {/* PERFORMANCE HUB */}
+          <TabsContent value="performance" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <UnifiedPerformanceHub
+                driverProfile={driverProfile}
+                driverId={driverProfile.driver.id}
+                isPremium={isPremium}
+              />
+            )}
+          </TabsContent>
+
+          {/* Marketing Tab */}
+          <TabsContent value="marketing" className="space-y-6">
+            {isPremium ? (
+              <DriverCampaigns driverProfile={driverProfile} />
+            ) : (
+              <PremiumGate isPremium={false} featureName="Campagnes & Promotions" featureDescription="Créez des codes promo et des campagnes marketing pour fidéliser vos clients." />
+            )}
+          </TabsContent>
+
+          {/* Partenariats Tab */}
+          <TabsContent value="sharing" className="space-y-6">
+            {isPremium ? (
+              <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
+            ) : (
+              <PremiumGate featureName="Partenariats & Partage de courses" featureDescription="Accédez au réseau de partenaires et développez votre activité." />
             )}
           </TabsContent>
 
@@ -973,231 +1018,23 @@ const DriverDashboard = () => {
               <SubscriptionManager 
                 driverProfile={driverProfile} 
                 onSubscriptionUpdate={() => {
-                  // Force le rechargement du profil driver depuis la base de données
                   queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user?.id] });
                 }}
               />
             </Card>
           </TabsContent>
 
-          {/* Settings Tab - Version simplifiée */}
-          <TabsContent value="settings" className="space-y-4">
-            {driverProfile?.driver?.id && (
-              <DriverSettingsSimplified
-                driverId={driverProfile.driver.id}
-                baseFare={baseFare}
-                perKmRate={perKmRate}
-                hourlyRate={hourlyRate}
-                minimumPrice={minimumPrice}
-                maxPassengers={maxPassengers}
-                tvaIncluded={tvaIncluded}
-                eveningSurcharge={eveningSurcharge}
-                weekendSurcharge={weekendSurcharge}
-                airportSurcharge={airportSurcharge}
-                companyName={companyName}
-                companyAddress={companyAddress}
-                siret={siret}
-                siren={siren}
-                tvaNumber={tvaNumber}
-                onBaseFareChange={setBaseFare}
-                onPerKmRateChange={setPerKmRate}
-                onHourlyRateChange={setHourlyRate}
-                onMinimumPriceChange={setMinimumPrice}
-                onMaxPassengersChange={setMaxPassengers}
-                onTvaIncludedChange={setTvaIncluded}
-                onEveningSurchargeChange={setEveningSurcharge}
-                onWeekendSurchargeChange={setWeekendSurcharge}
-                onAirportSurchargeChange={setAirportSurcharge}
-                onCompanyNameChange={setCompanyName}
-                onCompanyAddressChange={setCompanyAddress}
-                onSiretChange={setSiret}
-                onSirenChange={setSiren}
-                onTvaNumberChange={setTvaNumber}
-                onSave={handleUpdateProfile}
-                loading={loading || isUpdating}
-                onPaymentUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile'] })}
-              />
-            )}
-          </TabsContent>
-
-
-          {/* Clients Tab */}
-          <TabsContent value="clients" className="space-y-6">
-            {driverProfile?.driver?.id && (
-              <DriverClientsList driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Courses Tab */}
-          <TabsContent value="courses" className="space-y-6">
-            <Card className="p-6 bg-card/80 backdrop-blur border border-border shadow-elegant">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">Demandes de Réservation</h2>
-                    <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
-                  </div>
-                </div>
-              </div>
-              <FloatingMapButton onClick={() => setViewMode("map")} />
-
-              {driverProfile?.driver?.id && (
-                <CoursesList driverId={driverProfile.driver.id} />
-              )}
-            </Card>
-          </TabsContent>
-
-          {/* Devis Tab */}
-          <TabsContent value="devis" className="space-y-6">
-            {driverProfile?.driver?.id && (
-              <DriverDevisList driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Factures Tab */}
-          <TabsContent value="factures" className="space-y-6">
-            {driverProfile?.driver?.id && (
-              <DriverFacturesList driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Profile Tab - Version simplifiée */}
-          <TabsContent value="profile" className="space-y-6">
-            {driverProfile && user ? (
-              <DriverPublicProfileSimplified
-                driverProfile={driverProfile}
-                userId={user.id}
-                visibleToDrivers={visibleToDrivers}
-                displayDriverName={displayDriverName}
-                displayCompanyName={displayCompanyName}
-                companyName={companyName}
-                profilePhotoUrl={profilePhotoUrl}
-                cardPhotoUrl={cardPhotoUrl}
-                serviceDescription={serviceDescription}
-                workingSectors={workingSectors}
-                vehicleEquipment={vehicleEquipment}
-                servicesOffered={servicesOffered}
-                vehicleCategories={vehicleCategories}
-                
-                showPhone={showPhone}
-                showEmail={showEmail}
-                contactPhone={contactPhone}
-                contactEmail={contactEmail}
-                showRatingPublic={showRatingPublic}
-                onVisibleToDriversChange={setVisibleToDrivers}
-                onDisplayDriverNameChange={setDisplayDriverName}
-                onDisplayCompanyNameChange={setDisplayCompanyName}
-                onPhotoUpdate={setProfilePhotoUrl}
-                onCardPhotoUpdate={setCardPhotoUrl}
-                onServiceDescriptionChange={setServiceDescription}
-                onWorkingSectorsChange={setWorkingSectors}
-                onVehicleEquipmentChange={setVehicleEquipment}
-                onServicesOfferedChange={setServicesOffered}
-                onVehicleCategoriesChange={setVehicleCategories}
-                onShowPhoneChange={setShowPhone}
-                onShowEmailChange={setShowEmail}
-                onContactPhoneChange={setContactPhone}
-                onContactEmailChange={setContactEmail}
-                onShowRatingPublicChange={setShowRatingPublic}
-                onSave={handleUpdateProfile}
-                loading={loading || isUpdating}
-              />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Chargement du profil...</p>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Statistics Tab */}
-          <TabsContent value="statistics" className="space-y-6">
-            <DriverStatisticsComplete driverProfile={driverProfile} />
-          </TabsContent>
-
-          {/* Campaigns Tab - PREMIUM */}
-          <TabsContent value="campaigns" className="space-y-6">
-            {isPremium ? (
-              <DriverCampaigns driverProfile={driverProfile} />
-            ) : (
-              <PremiumGate isPremium={false} featureName="Campagnes & Promotions" featureDescription="Créez des codes promo et des campagnes marketing pour fidéliser vos clients." />
-            )}
-          </TabsContent>
-
-          {/* Profitability Tab */}
-          <TabsContent value="profitability" className="space-y-6">
-            {isPremium ? (
-              <ProfitabilityCalculator />
-            ) : (
-              <PremiumGate isPremium={false} featureName="Calcul de rentabilité" featureDescription="Analysez la rentabilité de votre activité avec des outils de calcul avancés." />
-            )}
-          </TabsContent>
-
-          {/* Feedback Tab */}
-          <TabsContent value="feedback" className="space-y-6">
+          {/* Aide Tab */}
+          <TabsContent value="aide" className="space-y-6">
             <DriverFeedback />
           </TabsContent>
-
-          {/* Prospection Tab - PREMIUM */}
-          <TabsContent value="prospection" className="space-y-6">
-            {isPremium ? (
-              <DriverProspectionFlyer 
-                qrCode={qrCode} 
-                driverProfile={driverProfile} 
-              />
-            ) : (
-              <PremiumGate isPremium={false} featureName="Prospection avancée" featureDescription="Générez des flyers personnalisés et des outils de prospection pour développer votre clientèle." />
-            )}
-          </TabsContent>
-
-          {/* Partage & Partenariats Tab - PREMIUM */}
-          <TabsContent value="sharing" className="space-y-6">
-            {isPremium ? (
-              <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
-            ) : (
-              <PremiumGate featureName="Partenariats & Partage de courses" featureDescription="Accédez au réseau de partenaires, échangez des courses et développez votre activité avec d'autres chauffeurs." />
-            )}
-          </TabsContent>
-
-          {/* Documents Tab - Hub unifié */}
-          <TabsContent value="documents" className="space-y-6">
-            {driverProfile?.driver?.id && user?.id && (
-              <UnifiedDocumentsHub 
-                driverId={driverProfile.driver.id} 
-                userId={user.id}
-                isFleetDriver={driverProfile.driver.is_fleet_driver || false}
-              />
-            )}
-          </TabsContent>
-
-          {/* Objectives Tab */}
-          <TabsContent value="objectives">
-            {isPremium ? (
-              driverProfile?.driver?.id && (
-                <ObjectivesDashboard driverId={driverProfile.driver.id} />
-              )
-            ) : (
-              <PremiumGate isPremium={false} featureName="Objectifs & Coaching IA" featureDescription="Définissez vos objectifs de revenus et recevez un coaching IA personnalisé." />
-            )}
-          </TabsContent>
-
-          {/* Fleet Partnerships Tab - supprimé, intégré dans UnifiedPartnershipHub */}
-          {/* Fleet Commissions Tab - supprimé, intégré dans UnifiedPartnershipHub */}
-          {/* Company Agreements Tab - supprimé, intégré dans UnifiedPartnershipHub */}
-          {/* Company Payments Tab - supprimé, intégré dans UnifiedPartnershipHub */}
 
         </Tabs>
         </>)}
       </div>
       
-      {/* Floating Map button - only when disconnected, as connected drivers have it in the toggle */}
-
       {/* Assistant virtuel Max */}
       <DriverAssistant />
-
-      {/* Incoming Course Overlay + Permission Prompt are now global (GlobalRideOverlay in App.tsx) */}
 
     </div>
     </DriverAvailabilityProvider>
