@@ -58,6 +58,7 @@ export function CancellationDialog({
   hasDeposit = false,
   depositAmount = 0,
   hasCardHold = false,
+  paymentMethod,
   onSuccess,
 }: CancellationDialogProps) {
   const [loading, setLoading] = useState(false);
