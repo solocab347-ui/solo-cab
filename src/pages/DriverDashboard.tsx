@@ -9,13 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon, Zap } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Save, Loader2, Target, Clock, Wallet, Lock as LockIcon, Zap, UserCircle, HelpCircle } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/clients/DriverClientsList";
-import DriverDevisList from "@/components/driver/payments/DriverDevisList";
-import DriverFacturesList from "@/components/driver/payments/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/payments/SubscriptionManager";
 import { DriverHome } from "@/components/driver/DriverHomeMemoized";
@@ -84,6 +82,10 @@ import { DriverAvailabilityProvider } from "@/contexts/DriverAvailabilityContext
 import { DriverMapMode } from "@/components/driver/map/DriverMapMode";
 import { Map as MapIcon } from "lucide-react";
 import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
+// Hub components for merged tabs
+import { UnifiedFinancesHub } from "@/components/driver/hubs/UnifiedFinancesHub";
+import { UnifiedPerformanceHub } from "@/components/driver/hubs/UnifiedPerformanceHub";
+import { UnifiedToolsHub } from "@/components/driver/hubs/UnifiedToolsHub";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
