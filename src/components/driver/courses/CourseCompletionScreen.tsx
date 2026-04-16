@@ -11,9 +11,11 @@ import {
   Loader2,
   ExternalLink,
   X,
+  Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CourseIncidentReportDialog } from "./CourseIncidentReportDialog";
 
 interface CourseCompletionScreenProps {
   courseId: string;
