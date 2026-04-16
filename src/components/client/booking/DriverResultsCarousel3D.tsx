@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Check, Eye, Star } from 'lucide-react';
+import { Check, Eye, Heart, Star } from 'lucide-react';
 import { NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { formatDriverName } from '@/lib/formatDriverName';
 import { cn } from '@/lib/utils';
@@ -227,13 +227,20 @@ function ResultCard3D({
             : `0 4px 16px 2px hsl(${theme.from} / 0.15)`,
         }}
       >
-        {/* Rank + check */}
+        {/* Rank + favorite + check */}
         <div className="flex items-center justify-between px-2 pt-2">
-          <div
-            className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-            style={{ background: `linear-gradient(135deg, hsl(${theme.from}), hsl(${theme.to}))` }}
-          >
-            {rank}
+          <div className="flex items-center gap-1">
+            <div
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+              style={{ background: `linear-gradient(135deg, hsl(${theme.from}), hsl(${theme.to}))` }}
+            >
+              {rank}
+            </div>
+            {driver.is_favorite && (
+              <div className="w-5 h-5 rounded-full flex items-center justify-center bg-gradient-to-br from-red-500 to-rose-500">
+                <Heart className="h-2.5 w-2.5 text-white fill-white" />
+              </div>
+            )}
           </div>
           {isSelected && (
             <div
