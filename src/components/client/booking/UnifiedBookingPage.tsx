@@ -64,6 +64,9 @@ export function UnifiedBookingPage() {
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string; paymentMethodId?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Favorite driver
+  const [favoriteDriverIds, setFavoriteDriverIds] = useState<string[]>([]);
+
   // Registration
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -171,6 +174,22 @@ export function UnifiedBookingPage() {
     if (modeParam === 'immediate') setMode('immediate');
   }, [searchParams]);
 
+  // Fetch client favorite driver
+  useEffect(() => {
+    if (!user) return;
+    const fetchFavorites = async () => {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('favorite_driver_id, driver_ids')
+        .eq('user_id', user.id)
+        .single();
+      if (clientData?.favorite_driver_id) {
+        setFavoriteDriverIds([clientData.favorite_driver_id]);
+      }
+    };
+    fetchFavorites();
+  }, [user]);
+
   useEffect(() => {
     if (!user || clientPaymentMethod !== 'card') return;
     const checkSavedCard = async () => {
@@ -206,7 +225,7 @@ export function UnifiedBookingPage() {
       const runRecovery = async () => {
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       };
       runRecovery();
     }
@@ -420,7 +439,7 @@ export function UnifiedBookingPage() {
       setRouteDistanceKm(distance); setRouteDurationMin(duration);
 
       // Now search drivers WITH the actual distance for accurate pricing
-      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       setCurrentStep(2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
   }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
@@ -448,11 +467,26 @@ export function UnifiedBookingPage() {
         if (dist) { setRouteDistanceKm(dist); setRouteDurationMin(dur); }
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
       } catch {} finally { setIsFetchingPrices(false); }
     };
     fetchPrices();
   }, [pickupCoords, destCoords, mapboxToken, mode, scheduledDate, scheduledTime, pickupAddress, destinationAddress, maxSearchRadiusKm, searchNearbyDrivers]);
+
+  // Auto-select favorite drivers when they appear in results
+  const autoSelectedFavorites = useRef(false);
+  useEffect(() => {
+    if (autoSelectedFavorites.current || drivers.length === 0 || favoriteDriverIds.length === 0) return;
+    const favoritesInResults = drivers.filter(d => d.is_favorite);
+    if (favoritesInResults.length > 0) {
+      autoSelectedFavorites.current = true;
+      setSelectedDriverIds(prev => {
+        const next = new Set(prev);
+        favoritesInResults.forEach(d => next.add(d.driver_id));
+        return next;
+      });
+    }
+  }, [drivers, favoriteDriverIds]);
 
   // Filter drivers
   const filteredDrivers = useMemo(() => {

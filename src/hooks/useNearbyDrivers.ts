@@ -20,6 +20,7 @@ export interface NearbyDriver {
   estimated_price?: number;
   distance_km?: number;
   has_surcharge?: boolean;
+  is_favorite?: boolean;
   // Payment info
   accepted_payment_methods?: string[] | null;
   stripe_connect_charges_enabled?: boolean;
@@ -67,7 +68,8 @@ interface UseNearbyDriversResult {
     pickupAddress?: string,
     destinationAddress?: string,
     maxSearchRadiusKm?: number,
-    mode?: SearchMode
+    mode?: SearchMode,
+    favoriteDriverIds?: string[]
   ) => Promise<void>;
 }
 
@@ -89,12 +91,15 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       pickupAddress?: string,
       destinationAddress?: string,
       maxSearchRadiusKm: number = 20,
-      mode: SearchMode = 'reservation'
+      mode: SearchMode = 'reservation',
+      favoriteDriverIds?: string[]
     ) => {
       setIsLoading(true);
       setError(null);
       setNoDriversFound(false);
       setFallbackToReservation(false);
+
+      const favIds = favoriteDriverIds?.filter(Boolean) || [];
 
       try {
         const searchDrivers = async (searchMode: SearchMode) => supabase.rpc('find_nearby_drivers', {
@@ -103,6 +108,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           p_limit: 10,
           p_max_radius_km: maxSearchRadiusKm,
           p_mode: searchMode,
+          p_favorite_driver_ids: favIds,
         });
 
         let data: NearbyDriverRpcRow[] | null = null;
@@ -169,6 +175,7 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             distance_km: distanceKm,
             estimated_price: Math.round(estimatedPrice * 100) / 100,
             has_surcharge: false,
+            is_favorite: favIds.includes(driver.driver_id),
             accepted_payment_methods: driver.accepted_payment_methods || ['cash', 'card'],
             stripe_connect_charges_enabled: driver.stripe_connect_charges_enabled || false,
             vehicle_brand: driver.vehicle_brand || null,
