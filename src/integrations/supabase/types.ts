@@ -16750,6 +16750,8 @@ export type Database = {
           ai_verdict_detail: string | null
           client_responded_at: string | null
           client_response: string | null
+          client_response_at: string | null
+          client_response_deadline: string | null
           created_at: string
           dispute_reason: string | null
           id: string
@@ -16764,6 +16766,8 @@ export type Database = {
           ai_verdict_detail?: string | null
           client_responded_at?: string | null
           client_response?: string | null
+          client_response_at?: string | null
+          client_response_deadline?: string | null
           created_at?: string
           dispute_reason?: string | null
           id?: string
@@ -16778,6 +16782,8 @@ export type Database = {
           ai_verdict_detail?: string | null
           client_responded_at?: string | null
           client_response?: string | null
+          client_response_at?: string | null
+          client_response_deadline?: string | null
           created_at?: string
           dispute_reason?: string | null
           id?: string
@@ -21635,6 +21641,7 @@ export type Database = {
         Args: { p_course_id: string }
         Returns: boolean
       }
+      auto_cancel_expired_contested_ratings: { Args: never; Returns: number }
       auto_create_invoice_for_course: {
         Args: { p_course_id: string }
         Returns: boolean
