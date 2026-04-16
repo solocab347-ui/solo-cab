@@ -363,7 +363,7 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
                   { num: "1", text: "Client réserve en ligne" },
                   { num: "2", text: "Empreinte bancaire sécurisée" },
                   { num: "3", text: "Course terminée = paiement capturé" },
-                  { num: "€", text: "Virement en 2 jours ouvrés", green: true },
+                  { num: "€", text: "Virement chaque lundi", green: true },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className={cn(
