@@ -597,7 +597,12 @@ const DriverDashboard = () => {
           onSwitchToDashboard={() => setViewMode("dashboard")}
           onNavigateTo={(tab: string) => {
             setViewMode("dashboard");
-            setActiveTab(tab);
+            // Support "tab.subtab" syntax (e.g. "finances.encaisser")
+            const [mainTab, subTab] = tab.split(".");
+            setActiveTab(mainTab);
+            if (mainTab === "finances" && subTab) {
+              setFinancesSubTab(subTab);
+            }
           }}
         />
       </DriverAvailabilityProvider>
