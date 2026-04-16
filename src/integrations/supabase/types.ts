@@ -21957,6 +21957,10 @@ export type Database = {
       }
       cleanup_geocoding_cache: { Args: never; Returns: undefined }
       cleanup_old_security_logs: { Args: never; Returns: undefined }
+      client_can_view_course: {
+        Args: { course_row: Database["public"]["Tables"]["courses"]["Row"] }
+        Returns: boolean
+      }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string
