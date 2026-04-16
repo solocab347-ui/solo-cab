@@ -46,6 +46,9 @@ import { NoDriversBanner } from "@/components/client/NoDriversBanner";
 import ClientQRScannerInApp from "@/components/client/ClientQRScannerInApp";
 import { ClientCardManager } from "@/components/client/ClientCardManager";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
+import { ActiveCourseTracker } from "@/components/client/ActiveCourseTracker";
+import { ActiveCourseBanner } from "@/components/client/ActiveCourseBanner";
+import { useActiveClientCourse } from "@/hooks/useActiveClientCourse";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
