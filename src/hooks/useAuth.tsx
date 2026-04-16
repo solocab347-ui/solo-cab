@@ -408,6 +408,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      // Reset driver session marker so next login defaults to map mode
+      try { sessionStorage.removeItem("solocab_driver_session_started"); } catch {}
       // Utiliser le nouveau système de déconnexion instantanée
       await instantSignOut();
       
