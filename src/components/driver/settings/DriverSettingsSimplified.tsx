@@ -376,6 +376,8 @@ export function DriverSettingsSimplified({
             <CityPricingManager 
               driverId={driverId} 
               onSave={onSave}
+              globalEveningSurcharge={parseFloat(eveningSurcharge) || 0}
+              globalWeekendSurcharge={parseFloat(weekendSurcharge) || 0}
             />
           </CollapsibleSection>
         </TabsContent>
