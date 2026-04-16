@@ -165,20 +165,12 @@ export function ClientHomeView({
             onClick={() => onNavigate("courses", "confirmed")}
           />
           <StatCard
-            icon={FileText}
-            value={stats.pendingDevis}
-            label="Devis"
-            color="secondary"
-            pulse={stats.pendingDevis > 0}
-            onClick={() => onNavigate("devis-factures", "devis")}
-          />
-          <StatCard
             icon={CreditCard}
             value={stats.unpaidInvoices}
             label="Factures"
             color="destructive"
             pulse={stats.unpaidInvoices > 0}
-            onClick={() => onNavigate("devis-factures", "factures")}
+            onClick={() => onNavigate("factures")}
           />
         </div>
       )}
