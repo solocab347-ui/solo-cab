@@ -37,6 +37,8 @@ interface CityPricingManagerProps {
   driverId?: string;
   fleetManagerId?: string;
   onSave?: () => void;
+  globalEveningSurcharge?: number;
+  globalWeekendSurcharge?: number;
 }
 
 interface CityPricing {
@@ -121,13 +123,22 @@ const CityPricingSummaryCard = ({
   onEdit,
   onDelete,
   saving,
+  globalEveningSurcharge = 0,
+  globalWeekendSurcharge = 0,
 }: {
   pricing: CityPricing;
   onEdit: () => void;
   onDelete: () => void;
   saving: boolean;
+  globalEveningSurcharge?: number;
+  globalWeekendSurcharge?: number;
 }) => {
   const hasMajorations = (pricing.evening_surcharge > 0 || pricing.weekend_surcharge > 0);
+  
+  // Detect conflicts between city and global surcharges
+  const eveningConflict = pricing.evening_surcharge > 0 && globalEveningSurcharge > 0;
+  const weekendConflict = pricing.weekend_surcharge > 0 && globalWeekendSurcharge > 0;
+  const hasConflict = eveningConflict || weekendConflict;
 
   return (
     <Card className={`border-primary/30 ${!pricing.is_active ? "opacity-50" : ""}`}>
@@ -225,6 +236,24 @@ const CityPricingSummaryCard = ({
                 WE +{pricing.weekend_surcharge}%
               </Badge>
             )}
+          </div>
+        )}
+
+        {/* Conflict warning */}
+        {hasConflict && (
+          <div className="p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] text-amber-500 flex items-start gap-1.5">
+              <Info className="w-3 h-3 mt-0.5 shrink-0" />
+              <span>
+                {eveningConflict && (
+                  <>Soir : global {globalEveningSurcharge}% vs {pricing.city_name} {pricing.evening_surcharge}% → <strong>+{Math.max(globalEveningSurcharge, pricing.evening_surcharge)}% appliqué</strong>. </>
+                )}
+                {weekendConflict && (
+                  <>WE : global {globalWeekendSurcharge}% vs {pricing.city_name} {pricing.weekend_surcharge}% → <strong>+{Math.max(globalWeekendSurcharge, pricing.weekend_surcharge)}% appliqué</strong>. </>
+                )}
+                Pas de cumul.
+              </span>
+            </p>
           </div>
         )}
       </CardContent>
@@ -482,7 +511,7 @@ const CityPricingEditForm = ({
   );
 };
 
-export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPricingManagerProps) => {
+export const CityPricingManager = ({ driverId, fleetManagerId, onSave, globalEveningSurcharge = 0, globalWeekendSurcharge = 0 }: CityPricingManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricings, setPricings] = useState<CityPricing[]>([]);
@@ -644,6 +673,8 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
                 onEdit={() => setEditingId(pricing.id!)}
                 onDelete={() => deletePricing(pricing.id!)}
                 saving={saving}
+                globalEveningSurcharge={globalEveningSurcharge}
+                globalWeekendSurcharge={globalWeekendSurcharge}
               />
             )
           ))}
