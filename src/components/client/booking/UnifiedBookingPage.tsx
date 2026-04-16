@@ -473,6 +473,21 @@ export function UnifiedBookingPage() {
     fetchPrices();
   }, [pickupCoords, destCoords, mapboxToken, mode, scheduledDate, scheduledTime, pickupAddress, destinationAddress, maxSearchRadiusKm, searchNearbyDrivers]);
 
+  // Auto-select favorite drivers when they appear in results
+  const autoSelectedFavorites = useRef(false);
+  useEffect(() => {
+    if (autoSelectedFavorites.current || drivers.length === 0 || favoriteDriverIds.length === 0) return;
+    const favoritesInResults = drivers.filter(d => d.is_favorite);
+    if (favoritesInResults.length > 0) {
+      autoSelectedFavorites.current = true;
+      setSelectedDriverIds(prev => {
+        const next = new Set(prev);
+        favoritesInResults.forEach(d => next.add(d.driver_id));
+        return next;
+      });
+    }
+  }, [drivers, favoriteDriverIds]);
+
   // Filter drivers
   const filteredDrivers = useMemo(() => {
     if (clientPaymentMethod === 'cash') return drivers.filter(d => d.accepted_payment_methods?.includes('cash'));
