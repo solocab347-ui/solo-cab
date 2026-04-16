@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
+import { RatingDisputeResponseCard } from "@/components/client/RatingDisputeResponseCard";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
 import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog";
