@@ -84,8 +84,8 @@ const CreateCourse = () => {
   useEffect(() => {
     if (useAddressPickup && clientAddress) {
       setPickupAddress(clientAddress);
-      geocodeAddress(clientAddress).then((coords) => {
-        if (coords) setPickupCoordinates(coords);
+      geocodeAddress(clientAddress).then((result) => {
+        if (result?.coordinates) setPickupCoordinates({ latitude: result.coordinates.lat, longitude: result.coordinates.lng });
       });
     }
   }, [useAddressPickup, clientAddress]);
@@ -93,8 +93,8 @@ const CreateCourse = () => {
   useEffect(() => {
     if (useAddressDestination && clientAddress) {
       setDestinationAddress(clientAddress);
-      geocodeAddress(clientAddress).then((coords) => {
-        if (coords) setDestinationCoordinates(coords);
+      geocodeAddress(clientAddress).then((result) => {
+        if (result?.coordinates) setDestinationCoordinates({ latitude: result.coordinates.lat, longitude: result.coordinates.lng });
       });
     }
   }, [useAddressDestination, clientAddress]);
