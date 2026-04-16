@@ -401,7 +401,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
               className="pointer-events-auto grid grid-cols-4 gap-2"
             >
               <button
-                onClick={onSwitchToDashboard}
+                onClick={() => (onNavigateTo ? onNavigateTo('home') : onSwitchToDashboard())}
                 className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
               >
                 <LayoutGrid className="w-5 h-5 text-primary" />
