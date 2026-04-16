@@ -116,6 +116,7 @@ const DriverDashboard = () => {
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  const [financesSubTab, setFinancesSubTab] = useState<string>("overview");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -596,7 +597,12 @@ const DriverDashboard = () => {
           onSwitchToDashboard={() => setViewMode("dashboard")}
           onNavigateTo={(tab: string) => {
             setViewMode("dashboard");
-            setActiveTab(tab);
+            // Support "tab.subtab" syntax (e.g. "finances.encaisser")
+            const [mainTab, subTab] = tab.split(".");
+            setActiveTab(mainTab);
+            if (mainTab === "finances" && subTab) {
+              setFinancesSubTab(subTab);
+            }
           }}
         />
       </DriverAvailabilityProvider>
@@ -853,9 +859,11 @@ const DriverDashboard = () => {
           <TabsContent value="finances" className="space-y-6">
             {driverProfile?.driver?.id && (
               <UnifiedFinancesHub 
+                key={financesSubTab}
                 driverId={driverProfile.driver.id}
                 isPremium={isPremium}
                 stripeEnabled={!!driverProfile?.driver?.stripe_connect_charges_enabled}
+                defaultTab={financesSubTab}
               />
             )}
           </TabsContent>
