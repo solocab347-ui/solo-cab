@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Loader2, Save, Plus, Trash2, MapPin, Euro, Clock, 
-  Moon, Calendar, ChevronDown, ChevronUp, Info 
+  Moon, Calendar, ChevronDown, ChevronUp, Info, Edit2, X, Check
 } from "lucide-react";
 import {
   Select,
@@ -20,11 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import {
   AlertDialog,
@@ -61,7 +56,6 @@ interface CityPricing {
   evening_end: string | null;
   is_active: boolean;
   priority: number;
-  // Keep fields for DB compatibility but don't expose in UI
   peak_hours_enabled: boolean;
   peak_hours_start: string | null;
   peak_hours_end: string | null;
@@ -121,12 +115,378 @@ const defaultPricing: Omit<CityPricing, "id"> = {
   off_peak_discount: 0,
 };
 
+// Summary card for an existing city pricing (always visible)
+const CityPricingSummaryCard = ({
+  pricing,
+  onEdit,
+  onDelete,
+  saving,
+}: {
+  pricing: CityPricing;
+  onEdit: () => void;
+  onDelete: () => void;
+  saving: boolean;
+}) => {
+  const hasMajorations = (pricing.evening_surcharge > 0 || pricing.weekend_surcharge > 0);
+
+  return (
+    <Card className={`border-primary/30 ${!pricing.is_active ? "opacity-50" : ""}`}>
+      <CardContent className="p-3 space-y-2">
+        {/* Header: City + Type + Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="font-bold text-sm">{pricing.city_name}</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              {pricing.pricing_type === "hourly" ? "Horaire" : "Au km"}
+            </Badge>
+            {pricing.tva_included && (
+              <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0 border-0">
+                TTC
+              </Badge>
+            )}
+            {!pricing.is_active && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inactive</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 w-7 p-0">
+              <Edit2 className="w-3.5 h-3.5" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer la tarification {pricing.city_name} ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete}>Supprimer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {/* Key metrics - always visible */}
+        <div className="grid grid-cols-3 gap-2">
+          {pricing.pricing_type === "per_km" ? (
+            <>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Prise en charge</p>
+                <p className="font-bold text-sm">{pricing.base_fare}€</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Prix/km</p>
+                <p className="font-bold text-sm">{pricing.per_km_rate}€</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Minimum</p>
+                <p className="font-bold text-sm">{pricing.minimum_price}€</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Tarif/heure</p>
+                <p className="font-bold text-sm">{pricing.hourly_rate}€</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Minimum</p>
+                <p className="font-bold text-sm">{pricing.minimum_price}€</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">TVA</p>
+                <p className="font-bold text-sm">{pricing.tva_included ? "TTC" : "HT"}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Majorations summary */}
+        {hasMajorations && (
+          <div className="flex flex-wrap gap-1.5">
+            {pricing.evening_surcharge > 0 && (
+              <Badge variant="outline" className="text-[10px] gap-1">
+                <Moon className="w-3 h-3" />
+                Soir +{pricing.evening_surcharge}%
+              </Badge>
+            )}
+            {pricing.weekend_surcharge > 0 && (
+              <Badge variant="outline" className="text-[10px] gap-1">
+                <Calendar className="w-3 h-3" />
+                WE +{pricing.weekend_surcharge}%
+              </Badge>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Full edit form for a city pricing
+const CityPricingEditForm = ({
+  pricing,
+  onChange,
+  onSave,
+  onCancel,
+  saving,
+  usedCities,
+}: {
+  pricing: CityPricing;
+  onChange: (updates: Partial<CityPricing>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+  usedCities: string[];
+}) => {
+  const [citySearch, setCitySearch] = useState("");
+  const filteredCities = FRENCH_CITIES.filter(city =>
+    city.toLowerCase().includes(citySearch.toLowerCase())
+  );
+  const isNew = pricing.id?.startsWith("new-");
+
+  return (
+    <Card className="border-primary/50 ring-1 ring-primary/20">
+      <CardContent className="space-y-4 p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h4 className="font-semibold text-sm flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            {isNew ? "Nouvelle tarification" : `Modifier ${pricing.city_name}`}
+          </h4>
+          <Button variant="ghost" size="sm" onClick={onCancel} className="h-7 w-7 p-0">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* City + Type */}
+        <div className="grid gap-3 grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Ville</Label>
+            <Select
+              value={pricing.city_name}
+              onValueChange={(v) => onChange({ city_name: v })}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Choisir..." />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    placeholder="Rechercher..."
+                    value={citySearch}
+                    onChange={(e) => setCitySearch(e.target.value)}
+                    className="h-8 text-sm mb-2"
+                  />
+                </div>
+                {filteredCities.map((city) => (
+                  <SelectItem 
+                    key={city} 
+                    value={city}
+                    disabled={usedCities.includes(city) && pricing.city_name !== city}
+                  >
+                    {city} {usedCities.includes(city) && pricing.city_name !== city ? "(déjà configuré)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Type</Label>
+            <Select
+              value={pricing.pricing_type}
+              onValueChange={(v) => onChange({ pricing_type: v })}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="per_km">Au kilomètre</SelectItem>
+                <SelectItem value="hourly">Horaire</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Pricing fields */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5">
+            <Euro className="w-3.5 h-3.5" />
+            Tarifs
+          </h4>
+          
+          {pricing.pricing_type === "per_km" ? (
+            <div className="grid gap-3 grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Prise en charge (€)</Label>
+                <NumericInput
+                  value={pricing.base_fare}
+                  onChange={(v) => onChange({ base_fare: parseFloat(v) || 0 })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Prix / km (€)</Label>
+                <NumericInput
+                  value={pricing.per_km_rate}
+                  onChange={(v) => onChange({ per_km_rate: parseFloat(v) || 0 })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Tarif horaire (€/h)
+              </Label>
+              <NumericInput
+                value={pricing.hourly_rate}
+                onChange={(v) => onChange({ hourly_rate: parseFloat(v) || 0 })}
+                placeholder="0"
+              />
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <Label className="text-xs">Prix minimum (€)</Label>
+            <NumericInput
+              value={pricing.minimum_price}
+              onChange={(v) => onChange({ minimum_price: parseFloat(v) || 0 })}
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        {/* TVA */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Info className="w-3 h-3" />
+            TVA : 10% (au km) • 20% (horaire)
+          </p>
+          <TvaToggle
+            checked={pricing.tva_included}
+            onCheckedChange={(checked) => onChange({ tva_included: checked })}
+            variant="compact"
+          />
+        </div>
+
+        <Separator />
+
+        {/* Surcharges */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground">
+            Majorations
+          </h4>
+          <div className="p-2 rounded bg-muted/50 text-xs text-muted-foreground flex items-start gap-1.5">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+            <span>
+              Le système applique automatiquement la <strong>plus grande majoration</strong> entre 
+              vos tarifs classiques et ceux de cette ville. Pas de doublon.
+            </span>
+          </div>
+          
+          {/* Evening time slot */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1">
+              <Moon className="w-3.5 h-3.5" />
+              Créneau soirée
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Début</Label>
+                <Input
+                  type="time"
+                  value={pricing.evening_start || "20:00"}
+                  onChange={(e) => onChange({ evening_start: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Fin</Label>
+                <Input
+                  type="time"
+                  value={pricing.evening_end || "06:00"}
+                  onChange={(e) => onChange({ evening_end: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Majoration %</Label>
+                <NumericInput
+                  value={pricing.evening_surcharge}
+                  onChange={(v) => onChange({ evening_surcharge: parseFloat(v) || 0 })}
+                  placeholder="0"
+                  min={0}
+                  max={100}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Weekend surcharge */}
+          <div className="space-y-1">
+            <Label className="text-xs flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              Majoration week-end (%)
+            </Label>
+            <NumericInput
+              value={pricing.weekend_surcharge}
+              onChange={(v) => onChange({ weekend_surcharge: parseFloat(v) || 0 })}
+              placeholder="0"
+              min={0}
+              max={100}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={pricing.is_active}
+              onCheckedChange={(checked) => onChange({ is_active: checked })}
+            />
+            <Label className="text-xs">Active</Label>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onCancel} className="h-8 text-xs">
+              Annuler
+            </Button>
+            <Button 
+              onClick={onSave} 
+              disabled={saving}
+              size="sm"
+              className="gap-1 h-8 text-xs"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              {isNew ? "Créer" : "Enregistrer"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPricingManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricings, setPricings] = useState<CityPricing[]>([]);
-  const [expandedPricings, setExpandedPricings] = useState<Set<string>>(new Set());
-  const [citySearch, setCitySearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -162,7 +522,7 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
       id: `new-${Date.now()}`,
     };
     setPricings([newPricing, ...pricings]);
-    setExpandedPricings(new Set([...expandedPricings, newPricing.id!]));
+    setEditingId(newPricing.id!);
   };
 
   const updatePricing = (id: string, updates: Partial<CityPricing>) => {
@@ -172,12 +532,14 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
   const deletePricing = async (id: string) => {
     if (id.startsWith("new-")) {
       setPricings(pricings.filter(p => p.id !== id));
+      setEditingId(null);
       return;
     }
     try {
       const { error } = await supabase.from("city_pricing").delete().eq("id", id);
       if (error) throw error;
       setPricings(pricings.filter(p => p.id !== id));
+      setEditingId(null);
       toast.success("Tarification supprimée");
     } catch (error) {
       console.error("Error deleting pricing:", error);
@@ -208,6 +570,7 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
           .single();
         if (error) throw error;
         setPricings(pricings.map(p => p.id === id ? data : p));
+        setEditingId(data.id);
       } else {
         const { error } = await supabase
           .from("city_pricing")
@@ -216,6 +579,7 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
         if (error) throw error;
       }
 
+      setEditingId(null);
       toast.success("Tarification enregistrée ✅");
       onSave?.();
     } catch (error) {
@@ -226,19 +590,18 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
     }
   };
 
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedPricings);
-    if (newExpanded.has(id)) newExpanded.delete(id);
-    else newExpanded.add(id);
-    setExpandedPricings(newExpanded);
+  const cancelEdit = (id: string) => {
+    if (id.startsWith("new-")) {
+      setPricings(pricings.filter(p => p.id !== id));
+    }
+    setEditingId(null);
+    // Re-fetch to discard unsaved changes
+    if (!id.startsWith("new-")) {
+      fetchData();
+    }
   };
 
-  // Cities already used by this driver
   const usedCities = pricings.map(p => p.city_name).filter(Boolean);
-
-  const filteredCities = FRENCH_CITIES.filter(city =>
-    city.toLowerCase().includes(citySearch.toLowerCase())
-  );
 
   if (loading) {
     return (
@@ -250,300 +613,54 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
 
   return (
     <div className="space-y-4">
-      {/* Info banner */}
-      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-        <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-        <div className="text-sm text-muted-foreground">
-          <strong className="text-foreground">Optionnel :</strong> Définissez des tarifs spécifiques 
-          pour les courses intra-ville. Sans configuration, vos tarifs classiques s'appliquent.
+      {/* Existing pricings - always visible as summary cards */}
+      {pricings.length > 0 ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+              {pricings.filter(p => !p.id?.startsWith("new-")).length} tarification{pricings.filter(p => !p.id?.startsWith("new-")).length > 1 ? "s" : ""} configurée{pricings.filter(p => !p.id?.startsWith("new-")).length > 1 ? "s" : ""}
+            </h3>
+            <Button onClick={addNewPricing} size="sm" className="gap-1.5 h-8 text-xs" disabled={editingId !== null}>
+              <Plus className="w-3.5 h-3.5" />
+              Ajouter une ville
+            </Button>
+          </div>
+
+          {pricings.map((pricing) => (
+            editingId === pricing.id ? (
+              <CityPricingEditForm
+                key={pricing.id}
+                pricing={pricing}
+                onChange={(updates) => updatePricing(pricing.id!, updates)}
+                onSave={() => savePricing(pricing)}
+                onCancel={() => cancelEdit(pricing.id!)}
+                saving={saving}
+                usedCities={usedCities}
+              />
+            ) : (
+              <CityPricingSummaryCard
+                key={pricing.id}
+                pricing={pricing}
+                onEdit={() => setEditingId(pricing.id!)}
+                onDelete={() => deletePricing(pricing.id!)}
+                saving={saving}
+              />
+            )
+          ))}
         </div>
-      </div>
-
-      {/* Header + Add button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary" />
-          Tarifs par ville
-        </h3>
-        <Button onClick={addNewPricing} size="sm" className="gap-1.5">
-          <Plus className="w-4 h-4" />
-          Ajouter
-        </Button>
-      </div>
-
-      {pricings.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <MapPin className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">Aucune tarification ville configurée</p>
-            <p className="text-xs mt-1">Vos tarifs classiques s'appliquent partout</p>
-          </CardContent>
-        </Card>
       ) : (
         <div className="space-y-3">
-          {pricings.map((pricing) => (
-            <Card key={pricing.id} className={!pricing.is_active ? "opacity-50" : ""}>
-              <Collapsible
-                open={expandedPricings.has(pricing.id!)}
-                onOpenChange={() => toggleExpanded(pricing.id!)}
-              >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-sm">
-                          {pricing.city_name || "Nouvelle ville"}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {pricing.pricing_type === "hourly" ? "Horaire" : "Au km"}
-                        </Badge>
-                        {!pricing.is_active && <Badge variant="secondary" className="text-xs">Off</Badge>}
-                      </div>
-                      {expandedPricings.has(pricing.id!) ? (
-                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <CardContent className="space-y-4 pt-0 px-4 pb-4">
-                    {/* City + Type */}
-                    <div className="grid gap-3 grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Ville</Label>
-                        <Select
-                          value={pricing.city_name}
-                          onValueChange={(v) => updatePricing(pricing.id!, { city_name: v })}
-                        >
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Choisir..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <div className="p-2">
-                              <Input
-                                placeholder="Rechercher..."
-                                value={citySearch}
-                                onChange={(e) => setCitySearch(e.target.value)}
-                                className="h-8 text-sm mb-2"
-                              />
-                            </div>
-                            {filteredCities.map((city) => (
-                              <SelectItem 
-                                key={city} 
-                                value={city}
-                                disabled={usedCities.includes(city) && pricing.city_name !== city}
-                              >
-                                {city} {usedCities.includes(city) && pricing.city_name !== city ? "(déjà configuré)" : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Type</Label>
-                        <Select
-                          value={pricing.pricing_type}
-                          onValueChange={(v) => updatePricing(pricing.id!, { pricing_type: v })}
-                        >
-                          <SelectTrigger className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="per_km">Au kilomètre</SelectItem>
-                            <SelectItem value="hourly">Horaire</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Pricing fields */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5">
-                        <Euro className="w-3.5 h-3.5" />
-                        Tarifs
-                      </h4>
-                      
-                      {pricing.pricing_type === "per_km" ? (
-                        <div className="grid gap-3 grid-cols-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Prise en charge (€)</Label>
-                            <NumericInput
-                              value={pricing.base_fare}
-                              onChange={(v) => updatePricing(pricing.id!, { base_fare: parseFloat(v) || 0 })}
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Prix / km (€)</Label>
-                            <NumericInput
-                              value={pricing.per_km_rate}
-                              onChange={(v) => updatePricing(pricing.id!, { per_km_rate: parseFloat(v) || 0 })}
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            Tarif horaire (€/h)
-                          </Label>
-                          <NumericInput
-                            value={pricing.hourly_rate}
-                            onChange={(v) => updatePricing(pricing.id!, { hourly_rate: parseFloat(v) || 0 })}
-                            placeholder="0"
-                          />
-                        </div>
-                      )}
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Prix minimum (€)</Label>
-                        <NumericInput
-                          value={pricing.minimum_price}
-                          onChange={(v) => updatePricing(pricing.id!, { minimum_price: parseFloat(v) || 0 })}
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-
-                    {/* TVA */}
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Info className="w-3 h-3" />
-                        TVA : 10% (au km) • 20% (horaire)
-                      </p>
-                      <TvaToggle
-                        checked={pricing.tva_included}
-                        onCheckedChange={(checked) => updatePricing(pricing.id!, { tva_included: checked })}
-                        variant="compact"
-                      />
-                    </div>
-
-                    <Separator />
-
-                    {/* Surcharges */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase text-muted-foreground">
-                        Majorations
-                      </h4>
-                      <div className="p-2 rounded bg-muted/50 text-xs text-muted-foreground flex items-start gap-1.5">
-                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
-                        <span>
-                          Le système applique automatiquement la <strong>plus grande majoration</strong> entre 
-                          vos tarifs classiques et ceux de cette ville. Pas de doublon.
-                        </span>
-                      </div>
-                      
-                      {/* Evening time slot */}
-                      <div className="space-y-2">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Moon className="w-3.5 h-3.5" />
-                          Créneau soirée
-                        </Label>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Début</Label>
-                            <Input
-                              type="time"
-                              value={pricing.evening_start || "20:00"}
-                              onChange={(e) => updatePricing(pricing.id!, { evening_start: e.target.value })}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Fin</Label>
-                            <Input
-                              type="time"
-                              value={pricing.evening_end || "06:00"}
-                              onChange={(e) => updatePricing(pricing.id!, { evening_end: e.target.value })}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Majoration %</Label>
-                            <NumericInput
-                              value={pricing.evening_surcharge}
-                              onChange={(v) => updatePricing(pricing.id!, { evening_surcharge: parseFloat(v) || 0 })}
-                              placeholder="0"
-                              min={0}
-                              max={100}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Weekend surcharge */}
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          Majoration week-end (%)
-                        </Label>
-                        <NumericInput
-                          value={pricing.weekend_surcharge}
-                          onChange={(v) => updatePricing(pricing.id!, { weekend_surcharge: parseFloat(v) || 0 })}
-                          placeholder="0"
-                          min={0}
-                          max={100}
-                        />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={pricing.is_active}
-                          onCheckedChange={(checked) => updatePricing(pricing.id!, { is_active: checked })}
-                        />
-                        <Label className="text-xs">Active</Label>
-                      </div>
-                      <div className="flex gap-2">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-destructive gap-1 h-8 text-xs">
-                              <Trash2 className="w-3.5 h-3.5" />
-                              Supprimer
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer cette tarification ?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                La tarification pour {pricing.city_name || "cette ville"} sera définitivement supprimée.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deletePricing(pricing.id!)}>
-                                Supprimer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        <Button 
-                          onClick={() => savePricing(pricing)} 
-                          disabled={saving}
-                          size="sm"
-                          className="gap-1 h-8 text-xs"
-                        >
-                          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                          Enregistrer
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
+          <Card className="border-dashed">
+            <CardContent className="py-6 text-center text-muted-foreground">
+              <MapPin className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">Aucune tarification ville configurée</p>
+              <p className="text-xs mt-1">Vos tarifs classiques s'appliquent partout</p>
+            </CardContent>
+          </Card>
+          <Button onClick={addNewPricing} className="w-full gap-1.5" variant="outline">
+            <Plus className="w-4 h-4" />
+            Ajouter une tarification ville
+          </Button>
         </div>
       )}
     </div>
