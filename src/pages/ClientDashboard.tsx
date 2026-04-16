@@ -24,6 +24,7 @@ import {
   CreditCard,
   Settings,
   ChevronLeft,
+  Navigation as NavigationIcon,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
