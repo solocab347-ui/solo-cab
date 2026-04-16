@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Navigation, Clock, MapPin, RefreshCw, Loader2 } from "lucide-react";
+import { Navigation, Clock, MapPin, RefreshCw, Loader2, Target } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,15 +11,22 @@ interface ETADisplayProps {
   onRefresh: () => void;
   phase: "approaching" | "in_progress";
   totalDistanceKm?: number | null;
+  pickupAddress?: string | null;
+  destinationAddress?: string | null;
 }
 
-export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm }: ETADisplayProps) {
+export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm, pickupAddress, destinationAddress }: ETADisplayProps) {
   if (!eta && !loading) return null;
 
   const isApproaching = phase === "approaching";
   const progressPercent = totalDistanceKm && eta
     ? Math.max(0, Math.min(100, ((totalDistanceKm - eta.distanceKm) / totalDistanceKm) * 100))
     : 0;
+
+  const targetAddress = isApproaching ? pickupAddress : destinationAddress;
+  const shortTarget = targetAddress
+    ? (targetAddress.length > 55 ? targetAddress.substring(0, 52) + '...' : targetAddress)
+    : null;
 
   return (
     <motion.div
@@ -35,7 +42,7 @@ export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm }: 
                 <Navigation className={`w-4 h-4 ${isApproaching ? 'text-blue-500' : 'text-primary'}`} />
               </div>
               <span className="text-sm font-semibold text-foreground">
-                {isApproaching ? 'Chauffeur en approche' : 'Trajet en cours'}
+                {isApproaching ? 'Chauffeur en approche' : 'En route vers destination'}
               </span>
             </div>
             <Button
@@ -53,14 +60,27 @@ export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm }: 
             </Button>
           </div>
 
+          {/* Target address context */}
+          {shortTarget && (
+            <div className="flex items-start gap-2 mb-3 px-2.5 py-2 rounded-lg bg-background/60 border border-border/30">
+              <Target className={`w-4 h-4 mt-0.5 shrink-0 ${isApproaching ? 'text-blue-500' : 'text-primary'}`} />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {isApproaching ? 'Vers votre position' : 'Destination'}
+                </p>
+                <p className="text-xs text-foreground font-medium truncate">{shortTarget}</p>
+              </div>
+            </div>
+          )}
+
           {eta ? (
             <>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/80 border border-border/50">
                   <Clock className={`w-5 h-5 shrink-0 ${isApproaching ? 'text-blue-500' : 'text-primary'}`} />
                   <div>
-                    <p className="text-xs text-muted-foreground">
-                      {isApproaching ? 'Arrivée estimée' : 'Temps restant'}
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {isApproaching ? "Arrivée estimée\ndu chauffeur" : "Temps restant\njusqu'à destination"}
                     </p>
                     <p className="text-lg font-bold text-foreground">
                       {eta.durationMin} min
@@ -70,8 +90,8 @@ export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm }: 
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-background/80 border border-border/50">
                   <MapPin className={`w-5 h-5 shrink-0 ${isApproaching ? 'text-blue-500' : 'text-primary'}`} />
                   <div>
-                    <p className="text-xs text-muted-foreground">
-                      {isApproaching ? 'Distance' : 'Distance restante'}
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {isApproaching ? "Distance\ndu chauffeur" : "Distance restante\njusqu'à destination"}
                     </p>
                     <p className="text-lg font-bold text-foreground">
                       {eta.distanceKm < 1

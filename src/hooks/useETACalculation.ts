@@ -94,10 +94,11 @@ export function useETACalculation({ driverLocation, targetLocation, enabled }: U
     setLoading(false);
   }, [driverLocation, targetLocation, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset cache when target changes (e.g., approaching → in_progress)
+  // Reset cache AND clear stale ETA immediately when target changes
   useEffect(() => {
     lastDriverPos.current = null;
     lastTargetPos.current = null;
+    setEta(null); // Clear stale data instantly so UI shows loading
   }, [targetLocation?.lat, targetLocation?.lng]);
 
   // Initial calculation + polling

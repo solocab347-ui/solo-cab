@@ -489,6 +489,8 @@ const ClientRideTracking = () => {
             onRefresh={refreshETA}
             phase={isApproaching ? "approaching" : "in_progress"}
             totalDistanceKm={course.distance_km}
+            pickupAddress={course.pickup_address}
+            destinationAddress={course.destination_address}
           />
         )}
 
