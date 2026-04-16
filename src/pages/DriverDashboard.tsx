@@ -1042,9 +1042,6 @@ const DriverDashboard = () => {
 };
 
 export default DriverDashboard;
-
-
-          <TabsContent value="planning">
             {isPremium ? (
               driverProfile?.driver?.id && (
                 <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
