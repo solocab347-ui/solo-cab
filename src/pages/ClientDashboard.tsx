@@ -293,7 +293,7 @@ const ClientDashboard = () => {
     { id: "accueil", label: "Accueil", icon: Home },
     { id: "courses", label: "Mes courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
-    { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+    { id: "factures", label: "Factures", icon: FileText },
     { id: "paiement", label: "Paiement", icon: CreditCard },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
