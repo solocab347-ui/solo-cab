@@ -623,7 +623,11 @@ export function UnifiedBookingPage() {
                 }
                 
                 if (courseId) {
-                  navigate(`/suivi-course/${courseId}`);
+                  if (user) {
+                    navigate(`/client-dashboard?tab=active-course`);
+                  } else {
+                    navigate(`/suivi-course/${courseId}`);
+                  }
                 } else {
                   // Fallback: poll ride_requests for course_id
                   const groupId = waitingGroupId || waitingRequestId;
@@ -643,12 +647,12 @@ export function UnifiedBookingPage() {
                           if (tk) { navigate(`/reservation-suivi/${tk}`); return; }
                         } catch (e) { console.error(e); }
                       }
-                      navigate(`/suivi-course/${data.final_course_id}`);
+                      navigate(user ? `/client-dashboard?tab=active-course` : `/suivi-course/${data.final_course_id}`);
                       return;
                     }
                     await new Promise(r => setTimeout(r, 800));
                   }
-                  if (user) navigate('/client-dashboard');
+                  if (user) navigate('/client-dashboard?tab=active-course');
                   else navigate('/');
                 }
               };
