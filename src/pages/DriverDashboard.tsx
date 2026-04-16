@@ -120,16 +120,35 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
-  const [viewMode, setViewMode] = useState<"dashboard" | "map">(() => {
+  const [viewMode, setViewModeState] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
     if (viewParam === "dashboard") return "dashboard";
+    if (viewParam === "map") return "map";
+    // Fallback to last persisted preference (defaults to map for fast access to incoming courses)
+    try {
+      const stored = localStorage.getItem("solocab_driver_view_mode");
+      if (stored === "dashboard" || stored === "map") return stored;
+    } catch {}
     return "map";
   });
 
-  // React to ?view=map changes (e.g. after accepting a course from overlay)
+  // Wrapper that persists viewMode + syncs URL
+  const setViewMode = useCallback((mode: "dashboard" | "map") => {
+    setViewModeState(mode);
+    try { localStorage.setItem("solocab_driver_view_mode", mode); } catch {}
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("view") !== mode) {
+      params.set("view", mode);
+      navigate(`/driver-dashboard?${params.toString()}`, { replace: true });
+    }
+  }, [navigate]);
+
+  // React to external ?view= changes (e.g. after accepting a course from overlay)
   useEffect(() => {
-    if (searchParams.get("view") === "map") {
-      setViewMode("map");
+    const viewParam = searchParams.get("view");
+    if (viewParam === "map" || viewParam === "dashboard") {
+      setViewModeState(viewParam);
+      try { localStorage.setItem("solocab_driver_view_mode", viewParam); } catch {}
     }
   }, [searchParams]);
 
@@ -812,7 +831,6 @@ const DriverDashboard = () => {
                   </div>
                 </div>
               </div>
-              <FloatingMapButton onClick={() => setViewMode("map")} />
               {driverProfile?.driver?.id && (
                 <CoursesList driverId={driverProfile.driver.id} />
               )}
@@ -1035,6 +1053,9 @@ const DriverDashboard = () => {
       
       {/* Assistant virtuel Max */}
       <DriverAssistant />
+
+      {/* Global Floating Map Button — accessible from any dashboard tab */}
+      {driverIdForProvider && <FloatingMapButton onClick={() => setViewMode("map")} />}
 
     </div>
     </DriverAvailabilityProvider>
