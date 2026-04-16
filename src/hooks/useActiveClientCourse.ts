@@ -21,7 +21,7 @@ const ACTIVE_STATUSES = [
   "driver_approaching",
   "driver_arrived",
   "in_progress",
-];
+] as const;
 
 /**
  * Detects in real-time if the logged-in client has an "active" course
