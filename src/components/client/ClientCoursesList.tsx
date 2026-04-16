@@ -194,10 +194,13 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
 
   const fetchTotalCounts = async () => {
     if (!clientId) return;
-    const orFilter = userId 
-      ? `client_id.eq.${clientId},created_by_user_id.eq.${userId}` 
-      : undefined;
-    const applyFilter = (q: any) => orFilter ? q.or(orFilter) : q.eq("client_id", clientId);
+    const orParts: string[] = [`client_id.eq.${clientId}`];
+    if (userId) orParts.push(`created_by_user_id.eq.${userId}`);
+    if (exclusiveDriverId) orParts.push(`driver_id.eq.${exclusiveDriverId}`);
+    if (userEmail) orParts.push(`guest_email.ilike.${userEmail}`);
+    if (userPhone) orParts.push(`guest_phone.eq.${userPhone}`);
+    const orFilter = orParts.join(',');
+    const applyFilter = (q: any) => q.or(orFilter);
     
     const [pendingRes, confirmedRes, completedRes, cancelledRes] = await Promise.all([
       applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending")),
