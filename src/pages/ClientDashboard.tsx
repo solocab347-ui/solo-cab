@@ -36,7 +36,7 @@ import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
 import { RatingDisputeResponseCard } from "@/components/client/RatingDisputeResponseCard";
-import ClientDevisFactures from "@/components/client/ClientDevisFactures";
+import ClientFacturesList from "@/components/client/ClientFacturesList";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
 import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
@@ -115,9 +115,9 @@ const ClientDashboard = () => {
       
       if (tabParam) {
         const tabMapping: Record<string, string> = {
-          "finances": "devis-factures",
-          "devis": "devis-factures",
-          "factures": "devis-factures",
+          "finances": "factures",
+          "devis": "factures",
+          "factures": "factures",
           "courses": "courses",
           "messages": "messages",
         };
@@ -126,7 +126,7 @@ const ClientDashboard = () => {
         setActiveTab(mappedTab);
         
         if (subtabParam) {
-          if (mappedTab === "devis-factures") {
+          if (mappedTab === "factures") {
             setDevisFacturesSubTab(subtabParam);
           } else if (mappedTab === "courses") {
             setCoursesSubTab(subtabParam);
@@ -261,7 +261,7 @@ const ClientDashboard = () => {
     if (tab === "courses") {
       setCoursesSubTab(subTab || null);
     }
-    if (tab === "devis-factures") {
+    if (tab === "factures") {
       setDevisFacturesSubTab(subTab || null);
     }
   };
@@ -293,7 +293,7 @@ const ClientDashboard = () => {
     { id: "accueil", label: "Accueil", icon: Home },
     { id: "courses", label: "Mes courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
-    { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+    { id: "factures", label: "Factures", icon: FileText },
     { id: "paiement", label: "Paiement", icon: CreditCard },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
@@ -351,11 +351,18 @@ const ClientDashboard = () => {
         );
       case "courses":
         return clientProfile?.client?.id ? (
-          <ClientCoursesList clientId={clientProfile.client.id} userId={user?.id} defaultTab={coursesSubTab} />
+          <ClientCoursesList 
+            clientId={clientProfile.client.id} 
+            userId={user?.id}
+            exclusiveDriverId={clientProfile?.client?.is_exclusive ? clientProfile?.client?.driver_id : null}
+            userEmail={clientProfile?.email}
+            userPhone={clientProfile?.phone}
+            defaultTab={coursesSubTab} 
+          />
         ) : null;
-      case "devis-factures":
+      case "factures":
         return clientProfile?.client?.id ? (
-          <ClientDevisFactures clientId={clientProfile.client.id} defaultTab={devisFacturesSubTab} />
+          <ClientFacturesList clientId={clientProfile.client.id} />
         ) : null;
       case "messages":
         return <MessagingInterface />;
@@ -489,7 +496,7 @@ const ClientDashboard = () => {
             <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-6" />
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+                { id: "factures", label: "Factures", icon: FileText },
                 { id: "paiement", label: "Paiement", icon: CreditCard },
                 { id: "notes", label: "Notes", icon: StickyNote },
                 { id: "compte", label: "Mon compte", icon: User },

@@ -156,7 +156,7 @@ export function ClientHomeView({
 
       {/* Stats Row */}
       {hasDrivers && (
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
           <StatCard
             icon={Clock}
             value={stats.upcomingCourses}
@@ -165,20 +165,12 @@ export function ClientHomeView({
             onClick={() => onNavigate("courses", "confirmed")}
           />
           <StatCard
-            icon={FileText}
-            value={stats.pendingDevis}
-            label="Devis"
-            color="secondary"
-            pulse={stats.pendingDevis > 0}
-            onClick={() => onNavigate("devis-factures", "devis")}
-          />
-          <StatCard
             icon={CreditCard}
             value={stats.unpaidInvoices}
             label="Factures"
             color="destructive"
             pulse={stats.unpaidInvoices > 0}
-            onClick={() => onNavigate("devis-factures", "factures")}
+            onClick={() => onNavigate("factures")}
           />
         </div>
       )}

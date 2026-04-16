@@ -722,7 +722,7 @@ const CreateCourse = () => {
         open={showInfoDialog}
         onClose={() => {
           setShowInfoDialog(false);
-          navigate("/client-dashboard?tab=finances&subtab=devis");
+          navigate("/client-dashboard?tab=courses");
         }}
         pickupAddress={createdCourseInfo?.pickupAddress}
         destinationAddress={createdCourseInfo?.destinationAddress}

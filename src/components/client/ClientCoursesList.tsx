@@ -47,12 +47,15 @@ import { GuestReservationWithCardHold } from "@/components/payment/GuestReservat
 interface ClientCoursesListProps {
   clientId: string;
   userId?: string;
+  exclusiveDriverId?: string | null;
+  userEmail?: string | null;
+  userPhone?: string | null;
   defaultTab?: string | null;
 }
 
 const COURSES_PAGE_SIZE = 20;
 
-const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListProps) => {
+const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, userPhone, defaultTab }: ClientCoursesListProps) => {
   const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
@@ -160,12 +163,13 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
         .order("scheduled_date", { ascending: false })
         .range(from, to);
 
-      // Use OR filter to match both client_id and created_by_user_id
-      if (userId) {
-        query = query.or(`client_id.eq.${clientId},created_by_user_id.eq.${userId}`);
-      } else {
-        query = query.eq("client_id", clientId);
-      }
+      // Build comprehensive OR filter to match all possible course associations
+      const orParts: string[] = [`client_id.eq.${clientId}`];
+      if (userId) orParts.push(`created_by_user_id.eq.${userId}`);
+      if (exclusiveDriverId) orParts.push(`driver_id.eq.${exclusiveDriverId}`);
+      if (userEmail) orParts.push(`guest_email.ilike.${userEmail}`);
+      if (userPhone) orParts.push(`guest_phone.eq.${userPhone}`);
+      query = query.or(orParts.join(','));
 
       const { data, error } = await query;
 
@@ -190,10 +194,13 @@ const ClientCoursesList = ({ clientId, userId, defaultTab }: ClientCoursesListPr
 
   const fetchTotalCounts = async () => {
     if (!clientId) return;
-    const orFilter = userId 
-      ? `client_id.eq.${clientId},created_by_user_id.eq.${userId}` 
-      : undefined;
-    const applyFilter = (q: any) => orFilter ? q.or(orFilter) : q.eq("client_id", clientId);
+    const orParts: string[] = [`client_id.eq.${clientId}`];
+    if (userId) orParts.push(`created_by_user_id.eq.${userId}`);
+    if (exclusiveDriverId) orParts.push(`driver_id.eq.${exclusiveDriverId}`);
+    if (userEmail) orParts.push(`guest_email.ilike.${userEmail}`);
+    if (userPhone) orParts.push(`guest_phone.eq.${userPhone}`);
+    const orFilter = orParts.join(',');
+    const applyFilter = (q: any) => q.or(orFilter);
     
     const [pendingRes, confirmedRes, completedRes, cancelledRes] = await Promise.all([
       applyFilter(supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "pending")),
