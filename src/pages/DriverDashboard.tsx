@@ -1043,7 +1043,7 @@ const DriverDashboard = () => {
 
 export default DriverDashboard;
 
-          {/* Planning Tab */}
+
           <TabsContent value="planning">
             {isPremium ? (
               driverProfile?.driver?.id && (
