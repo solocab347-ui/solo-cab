@@ -408,7 +408,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
                 <span className="text-[10px] font-semibold text-foreground">Dashboard</span>
               </button>
               <button
-                onClick={() => onNavigateTo?.('finances')}
+                onClick={() => onNavigateTo?.('finances.encaisser')}
                 className="flex flex-col items-center gap-1 bg-card/95 backdrop-blur-xl rounded-2xl py-3 px-2 border border-border/50 shadow-xl active:scale-95 transition-transform"
               >
                 <Receipt className="w-5 h-5 text-emerald-500" />
