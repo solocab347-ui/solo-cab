@@ -85,6 +85,8 @@ project_id = "iyothopplhbwcfrpxryc"
     verify_jwt = false
   [functions.error-intelligence]
     verify_jwt = true
+  [functions.extended-driver-search]
+    verify_jwt = false
   [functions.finalize-course-payment]
     verify_jwt = true
   [functions.geocode-cached]
