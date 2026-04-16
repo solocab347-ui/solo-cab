@@ -5457,6 +5457,42 @@ export type Database = {
           },
         ]
       }
+      dispatch_metrics: {
+        Row: {
+          channel: string | null
+          course_id: string | null
+          created_at: string
+          driver_id: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          response_time_ms: number | null
+          ride_request_id: string | null
+        }
+        Insert: {
+          channel?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          response_time_ms?: number | null
+          ride_request_id?: string | null
+        }
+        Update: {
+          channel?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          response_time_ms?: number | null
+          ride_request_id?: string | null
+        }
+        Relationships: []
+      }
       disputes: {
         Row: {
           admin_id: string | null
@@ -19795,6 +19831,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dispatch_health_summary: {
+        Row: {
+          avg_response_ms: number | null
+          channel: string | null
+          event_count: number | null
+          event_type: string | null
+          hour: string | null
+          max_response_ms: number | null
+        }
+        Relationships: []
       }
       driver_data_isolation: {
         Row: {
