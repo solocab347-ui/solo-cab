@@ -9,6 +9,8 @@ import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import PioneerCancellationWarning from "../ui/PioneerCancellationWarning";
 import { SubscriptionManagementCard } from "@/components/subscription/SubscriptionManagementCard";
+import { shouldHideInAppPayments } from "@/lib/platform";
+import { PremiumMobileNotice } from "@/components/premium/PremiumMobileNotice";
 
 interface SubscriptionManagerProps {
   driverProfile: any;
