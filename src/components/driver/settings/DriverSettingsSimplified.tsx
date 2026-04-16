@@ -308,6 +308,24 @@ export function DriverSettingsSimplified({
             isComplete={parseFloat(eveningSurcharge) > 0 || parseFloat(weekendSurcharge) > 0 || parseFloat(airportSurcharge) > 0}
             defaultOpen={false}
           >
+            {/* Smart warning about MAX rule */}
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold text-amber-500">⚠️ Règle anti-doublon automatique</p>
+                  <p className="text-muted-foreground">
+                    Si une tarification par ville est active avec ses propres majorations, le système applique 
+                    automatiquement <strong className="text-foreground">la plus grande des deux</strong> (globale vs ville). 
+                    Les majorations ne se cumulent <strong className="text-foreground">jamais</strong>.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Ex : Soir global +15% et Paris soir +20% → seul +20% sera appliqué.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <div className="space-y-1 sm:space-y-2">
                 <Label className="text-xs sm:text-sm font-medium flex items-center gap-1">
@@ -346,9 +364,6 @@ export function DriverSettingsSimplified({
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Forfait</p>
               </div>
             </div>
-            <p className="text-[11px] sm:text-xs text-muted-foreground mt-3 p-2 bg-muted/50 rounded">
-              💡 Mettez 0 si vous ne souhaitez pas de majoration
-            </p>
           </CollapsibleSection>
 
           {/* City Pricing */}
