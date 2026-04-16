@@ -115,9 +115,9 @@ const ClientDashboard = () => {
       
       if (tabParam) {
         const tabMapping: Record<string, string> = {
-          "finances": "devis-factures",
-          "devis": "devis-factures",
-          "factures": "devis-factures",
+          "finances": "factures",
+          "devis": "factures",
+          "factures": "factures",
           "courses": "courses",
           "messages": "messages",
         };
@@ -126,7 +126,7 @@ const ClientDashboard = () => {
         setActiveTab(mappedTab);
         
         if (subtabParam) {
-          if (mappedTab === "devis-factures") {
+          if (mappedTab === "factures") {
             setDevisFacturesSubTab(subtabParam);
           } else if (mappedTab === "courses") {
             setCoursesSubTab(subtabParam);
@@ -261,7 +261,7 @@ const ClientDashboard = () => {
     if (tab === "courses") {
       setCoursesSubTab(subTab || null);
     }
-    if (tab === "devis-factures") {
+    if (tab === "factures") {
       setDevisFacturesSubTab(subTab || null);
     }
   };
@@ -360,9 +360,9 @@ const ClientDashboard = () => {
             defaultTab={coursesSubTab} 
           />
         ) : null;
-      case "devis-factures":
+      case "factures":
         return clientProfile?.client?.id ? (
-          <ClientDevisFactures clientId={clientProfile.client.id} defaultTab={devisFacturesSubTab} />
+          <ClientFacturesList clientId={clientProfile.client.id} />
         ) : null;
       case "messages":
         return <MessagingInterface />;
@@ -496,7 +496,7 @@ const ClientDashboard = () => {
             <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-6" />
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+                { id: "factures", label: "Factures", icon: FileText },
                 { id: "paiement", label: "Paiement", icon: CreditCard },
                 { id: "notes", label: "Notes", icon: StickyNote },
                 { id: "compte", label: "Mon compte", icon: User },
