@@ -294,9 +294,10 @@ const ClientDashboard = () => {
 
   const isExclusive = clientProfile?.client?.is_exclusive;
 
-  // Bottom nav items for mobile
+  // Bottom nav items for mobile (insert "Course en cours" when active)
   const bottomNavItems = [
     { id: "accueil", label: "Accueil", icon: Home },
+    ...(activeCourse ? [{ id: "tracking", label: "En cours", icon: Navigation }] : []),
     { id: "courses", label: "Courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Chauffeur" : "Chauffeurs", icon: Users },
     { id: "messages", label: "Messages", icon: MessageSquare },
@@ -306,6 +307,7 @@ const ClientDashboard = () => {
   // Side menu items (desktop + mobile "more" sheet)
   const sideMenuItems = [
     { id: "accueil", label: "Accueil", icon: Home },
+    ...(activeCourse ? [{ id: "tracking", label: "Course en cours", icon: Navigation }] : []),
     { id: "courses", label: "Mes courses", icon: Clock },
     { id: "chauffeurs", label: isExclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "factures", label: "Factures", icon: FileText },
