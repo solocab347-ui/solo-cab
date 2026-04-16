@@ -174,6 +174,22 @@ export function UnifiedBookingPage() {
     if (modeParam === 'immediate') setMode('immediate');
   }, [searchParams]);
 
+  // Fetch client favorite driver
+  useEffect(() => {
+    if (!user) return;
+    const fetchFavorites = async () => {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('favorite_driver_id, driver_ids')
+        .eq('user_id', user.id)
+        .single();
+      if (clientData?.favorite_driver_id) {
+        setFavoriteDriverIds([clientData.favorite_driver_id]);
+      }
+    };
+    fetchFavorites();
+  }, [user]);
+
   useEffect(() => {
     if (!user || clientPaymentMethod !== 'card') return;
     const checkSavedCard = async () => {
