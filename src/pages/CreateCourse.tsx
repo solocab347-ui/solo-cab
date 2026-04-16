@@ -99,6 +99,93 @@ const CreateCourse = () => {
     }
   }, [useAddressDestination, clientAddress]);
 
+  // Geolocate the user and reverse-geocode to fill an address field
+  const useMyLocationFor = useCallback(
+    async (target: 'pickup' | 'destination') => {
+      if (!navigator.geolocation) {
+        toast.error('Géolocalisation non disponible sur ce navigateur');
+        return;
+      }
+      if (navigator.permissions) {
+        try {
+          const permStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          if (permStatus.state === 'denied') {
+            toast.error('La localisation est bloquée. Activez-la dans les paramètres puis réessayez.');
+            return;
+          }
+        } catch {}
+      }
+
+      const setLoading = target === 'pickup' ? setIsGettingPickupLocation : setIsGettingDestLocation;
+      setLoading(true);
+
+      let resolved = false;
+      const apply = async (lat: number, lng: number) => {
+        if (resolved) return;
+        resolved = true;
+        const coords = { latitude: lat, longitude: lng };
+        if (target === 'pickup') {
+          setPickupCoordinates(coords);
+          setUseAddressPickup(false);
+        } else {
+          setDestinationCoordinates(coords);
+          setUseAddressDestination(false);
+        }
+        try {
+          if (mapboxToken) {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr&limit=1`
+            );
+            const data = await res.json();
+            const placeName = data?.features?.[0]?.place_name;
+            const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            if (target === 'pickup') setPickupAddress(placeName || fallback);
+            else setDestinationAddress(placeName || fallback);
+          } else {
+            const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            if (target === 'pickup') setPickupAddress(fallback);
+            else setDestinationAddress(fallback);
+          }
+          toast.success('Position détectée');
+        } catch {
+          const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          if (target === 'pickup') setPickupAddress(fallback);
+          else setDestinationAddress(fallback);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Fast (cached) attempt
+      navigator.geolocation.getCurrentPosition(
+        (pos) => apply(pos.coords.latitude, pos.coords.longitude),
+        () => {},
+        { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 }
+      );
+      // Accurate attempt
+      navigator.geolocation.getCurrentPosition(
+        (pos) => apply(pos.coords.latitude, pos.coords.longitude),
+        (err) => {
+          if (!resolved) {
+            toast.error(
+              err.code === 1
+                ? 'La localisation est bloquée. Activez-la dans les paramètres.'
+                : 'GPS indisponible, réessayez'
+            );
+            setLoading(false);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+      setTimeout(() => {
+        if (!resolved) {
+          setLoading(false);
+        }
+      }, 10000);
+    },
+    [mapboxToken]
+  );
+
   // Fetch driver info
   useEffect(() => {
     const fetchDriverInfo = async () => {
