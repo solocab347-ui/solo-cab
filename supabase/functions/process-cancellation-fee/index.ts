@@ -77,6 +77,12 @@ function calculateCancellationFee(
     return { feeAmount: 0, message: "Annulation par le chauffeur/système - aucun frais.", feeType: 'none' };
   }
 
+  // ═══ COURSE EN ESPÈCES → Aucun frais d'annulation (pas de moyen de prélèvement) ═══
+  const paymentMethod = course.payment_method || course.guest_payment_method || '';
+  if (paymentMethod === 'cash' || paymentMethod === 'espèces') {
+    return { feeAmount: 0, message: "Course en espèces - aucun frais d'annulation applicable.", feeType: 'none' };
+  }
+
   // ═══ ANNULATION PAR LE CLIENT ═══
 
   // CAS 1: Course déjà démarrée (status = in_progress) → prix réel km/temps

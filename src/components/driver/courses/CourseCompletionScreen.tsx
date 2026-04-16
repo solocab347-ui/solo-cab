@@ -11,15 +11,20 @@ import {
   Loader2,
   ExternalLink,
   X,
+  Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CourseIncidentReportDialog } from "./CourseIncidentReportDialog";
 
 interface CourseCompletionScreenProps {
   courseId: string;
   clientName: string;
   amount: number;
   paymentMethod: string;
+  driverId?: string;
+  clientId?: string | null;
+  guestPhone?: string | null;
   paymentResult: {
     success: boolean;
     status?: string;
@@ -34,6 +39,9 @@ export function CourseCompletionScreen({
   clientName,
   amount,
   paymentMethod,
+  driverId,
+  clientId,
+  guestPhone,
   paymentResult,
   onDismiss,
 }: CourseCompletionScreenProps) {
@@ -42,6 +50,7 @@ export function CourseCompletionScreen({
   const [linkSent, setLinkSent] = useState(false);
   const [localResult, setLocalResult] = useState(paymentResult);
   const [switchedToCash, setSwitchedToCash] = useState(false);
+  const [showIncidentDialog, setShowIncidentDialog] = useState(false);
 
   useEffect(() => {
     setLocalResult(paymentResult);
@@ -312,16 +321,40 @@ export function CourseCompletionScreen({
         )}
       </div>
 
-      {/* Bottom dismiss */}
+      {/* Bottom actions */}
       {!isProcessing && (
-        <div className="px-5 pb-6 pt-3 border-t border-border bg-background">
+        <div className="px-5 pb-6 pt-3 border-t border-border bg-background space-y-3">
           <Button
             onClick={onDismiss}
             className="w-full h-14 rounded-2xl font-black text-base"
           >
             {isCash ? "J'ai encaissé, fermer" : "Fermer"}
           </Button>
+          
+          {driverId && (
+            <Button
+              variant="outline"
+              onClick={() => setShowIncidentDialog(true)}
+              className="w-full h-12 rounded-2xl text-sm gap-2 text-destructive border-destructive/30 hover:bg-destructive/5"
+            >
+              <Flag className="h-4 w-4" />
+              Signaler un problème avec ce client
+            </Button>
+          )}
         </div>
+      )}
+
+      {/* Incident Report Dialog */}
+      {driverId && (
+        <CourseIncidentReportDialog
+          open={showIncidentDialog}
+          onOpenChange={setShowIncidentDialog}
+          courseId={courseId}
+          driverId={driverId}
+          clientId={clientId}
+          clientName={clientName}
+          guestPhone={guestPhone}
+        />
       )}
     </motion.div>
   );

@@ -191,6 +191,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     clientName: string;
     amount: number;
     paymentMethod: string;
+    guestPhone?: string | null;
     paymentResult: { success: boolean; status?: string; error?: string; alreadyPaid?: boolean };
   } | null>(null);
   const [rideRequestId, setRideRequestId] = useState<string | null>(null);
@@ -482,6 +483,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       clientName: courseClientName,
       amount: courseAmount,
       paymentMethod: currentPaymentMethod,
+      guestPhone: course?.guest_phone || null,
       paymentResult: optimisticResult,
     });
     
@@ -584,6 +586,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         clientName={completionData.clientName}
         amount={completionData.amount}
         paymentMethod={completionData.paymentMethod}
+        driverId={driverId}
+        guestPhone={completionData.guestPhone}
         paymentResult={completionData.paymentResult}
         onDismiss={handleDismissCompletion}
       />
