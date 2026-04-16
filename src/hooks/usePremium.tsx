@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { shouldHideInAppPayments } from "@/lib/platform";
 
 interface PremiumStatus {
   isPremium: boolean;
@@ -116,6 +117,11 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   }, [checkSubscription]);
 
   const openCheckout = useCallback(async (selectedPlan: "monthly" | "yearly" = "monthly") => {
+    // App Store / Play Store compliance: bloque tout paiement in-app.
+    if (shouldHideInAppPayments()) {
+      console.warn("[Premium] Checkout bloqué : indisponible dans l'app mobile.");
+      throw new Error("Unavailable in mobile app");
+    }
     try {
       const { data, error } = await supabase.functions.invoke("create-premium-checkout", {
         body: { plan: selectedPlan },

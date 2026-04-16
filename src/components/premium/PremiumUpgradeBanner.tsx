@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Loader2, ArrowRight, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { shouldHideInAppPayments } from "@/lib/platform";
+import { PremiumMobileNotice } from "./PremiumMobileNotice";
 
 interface PremiumUpgradeBannerProps {
   /** Contextual message to show */
@@ -23,6 +25,11 @@ export function PremiumUpgradeBanner({
   compact = false 
 }: PremiumUpgradeBannerProps) {
   const [loading, setLoading] = useState(false);
+
+  // App Store / Play Store compliance: aucune CTA de paiement dans l'app native.
+  if (shouldHideInAppPayments()) {
+    return <PremiumMobileNotice feature={message} compact={compact} />;
+  }
 
   const handleUpgrade = async () => {
     setLoading(true);
