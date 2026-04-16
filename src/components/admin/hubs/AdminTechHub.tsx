@@ -1,18 +1,28 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FileText } from "lucide-react";
+import { Bug, Database, Shield, FileText, Activity } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
 import AdminDocumentation from "../AdminDocumentation";
+import PlatformHealthDashboard from "../monitoring/PlatformHealthDashboard";
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"errors" | "integrity" | "rls" | "docs">("errors");
+  const [activeTab, setActiveTab] = useState<"health" | "errors" | "integrity" | "rls" | "docs">("health");
 
   return (
     <div className="space-y-4">
-      {/* Navigation simplifiée */}
       <div className="flex flex-wrap gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+        <Button
+          variant={activeTab === "health" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("health")}
+          className="gap-2"
+        >
+          <Activity className="w-4 h-4" />
+          <span className="hidden sm:inline">Santé</span>
+          <span className="sm:hidden">🏥</span>
+        </Button>
         <Button
           variant={activeTab === "errors" ? "default" : "ghost"}
           size="sm"
@@ -54,7 +64,7 @@ const AdminTechHub = () => {
         </Button>
       </div>
 
-      {/* Contenu */}
+      {activeTab === "health" && <PlatformHealthDashboard />}
       {activeTab === "errors" && <AdminErrorReports />}
       {activeTab === "integrity" && <AdminDataIntegrity />}
       {activeTab === "rls" && <AdminRLSAudit />}
