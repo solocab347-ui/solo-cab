@@ -13,10 +13,11 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   MapPin, Calendar, Users, ArrowLeft, ArrowRight, Tag, CreditCard, Check, FileText,
-  Loader2, Clock, Zap, CalendarClock, Car, Banknote
+  Loader2, Clock, Zap, CalendarClock, Car, Banknote, Navigation
 } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
@@ -35,6 +36,9 @@ const CreateCourse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createCourse, loading } = useCourseCreation();
+  const { token: mapboxToken } = useMapboxToken();
+  const [isGettingPickupLocation, setIsGettingPickupLocation] = useState(false);
+  const [isGettingDestLocation, setIsGettingDestLocation] = useState(false);
 
   const driverId = searchParams.get("driver_id");
   const [driverName, setDriverName] = useState<string | null>(null);
@@ -94,6 +98,93 @@ const CreateCourse = () => {
       });
     }
   }, [useAddressDestination, clientAddress]);
+
+  // Geolocate the user and reverse-geocode to fill an address field
+  const useMyLocationFor = useCallback(
+    async (target: 'pickup' | 'destination') => {
+      if (!navigator.geolocation) {
+        toast.error('Géolocalisation non disponible sur ce navigateur');
+        return;
+      }
+      if (navigator.permissions) {
+        try {
+          const permStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          if (permStatus.state === 'denied') {
+            toast.error('La localisation est bloquée. Activez-la dans les paramètres puis réessayez.');
+            return;
+          }
+        } catch {}
+      }
+
+      const setLoading = target === 'pickup' ? setIsGettingPickupLocation : setIsGettingDestLocation;
+      setLoading(true);
+
+      let resolved = false;
+      const apply = async (lat: number, lng: number) => {
+        if (resolved) return;
+        resolved = true;
+        const coords = { latitude: lat, longitude: lng };
+        if (target === 'pickup') {
+          setPickupCoordinates(coords);
+          setUseAddressPickup(false);
+        } else {
+          setDestinationCoordinates(coords);
+          setUseAddressDestination(false);
+        }
+        try {
+          if (mapboxToken) {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr&limit=1`
+            );
+            const data = await res.json();
+            const placeName = data?.features?.[0]?.place_name;
+            const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            if (target === 'pickup') setPickupAddress(placeName || fallback);
+            else setDestinationAddress(placeName || fallback);
+          } else {
+            const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            if (target === 'pickup') setPickupAddress(fallback);
+            else setDestinationAddress(fallback);
+          }
+          toast.success('Position détectée');
+        } catch {
+          const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          if (target === 'pickup') setPickupAddress(fallback);
+          else setDestinationAddress(fallback);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Fast (cached) attempt
+      navigator.geolocation.getCurrentPosition(
+        (pos) => apply(pos.coords.latitude, pos.coords.longitude),
+        () => {},
+        { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 }
+      );
+      // Accurate attempt
+      navigator.geolocation.getCurrentPosition(
+        (pos) => apply(pos.coords.latitude, pos.coords.longitude),
+        (err) => {
+          if (!resolved) {
+            toast.error(
+              err.code === 1
+                ? 'La localisation est bloquée. Activez-la dans les paramètres.'
+                : 'GPS indisponible, réessayez'
+            );
+            setLoading(false);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+      setTimeout(() => {
+        if (!resolved) {
+          setLoading(false);
+        }
+      }, 10000);
+    },
+    [mapboxToken]
+  );
 
   // Fetch driver info
   useEffect(() => {
@@ -375,9 +466,26 @@ const CreateCourse = () => {
                 <CardContent className="p-4 space-y-3">
                   {/* Pickup */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary shrink-0" />
-                      <Label className="text-sm font-medium">Point de départ</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-primary shrink-0" />
+                        <Label className="text-sm font-medium">Point de départ</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary"
+                        onClick={() => useMyLocationFor('pickup')}
+                        disabled={isGettingPickupLocation}
+                      >
+                        {isGettingPickupLocation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Navigation className="h-3.5 w-3.5" />
+                        )}
+                        Ma position
+                      </Button>
                     </div>
                     {clientAddress && (
                       <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
@@ -408,9 +516,26 @@ const CreateCourse = () => {
 
                   {/* Destination */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-sm bg-destructive shrink-0" style={{ transform: 'rotate(45deg)' }} />
-                      <Label className="text-sm font-medium">Point d'arrivée</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-destructive shrink-0" style={{ transform: 'rotate(45deg)' }} />
+                        <Label className="text-sm font-medium">Point d'arrivée</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary"
+                        onClick={() => useMyLocationFor('destination')}
+                        disabled={isGettingDestLocation}
+                      >
+                        {isGettingDestLocation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Navigation className="h-3.5 w-3.5" />
+                        )}
+                        Ma position
+                      </Button>
                     </div>
                     {clientAddress && (
                       <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
