@@ -25,7 +25,7 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch rating
+    // Fetch rating with direction
     const { data: rating, error: ratingErr } = await supabase
       .from("course_ratings")
       .select("*")
@@ -39,28 +39,15 @@ serve(async (req) => {
       });
     }
 
+    const direction = rating.rating_direction || "client_to_driver";
+    const isClientToDriver = direction === "client_to_driver";
+
     // Fetch course details
     const { data: course } = await supabase
       .from("courses")
-      .select("pickup_address, destination_address, scheduled_date, distance_km, estimated_price, final_price, payment_method, guest_payment_method")
+      .select("pickup_address, destination_address, scheduled_date, distance_km, estimated_price, final_price, final_payment_amount, payment_method, guest_payment_method, status, duration_minutes, driver_id, client_id")
       .eq("id", rating.course_id)
       .single();
-
-    // Fetch client rating history
-    const { data: clientRatings } = rating.client_id ? await supabase
-      .from("course_ratings")
-      .select("rating, status, ai_decision")
-      .eq("client_id", rating.client_id)
-      .order("created_at", { ascending: false })
-      .limit(20) : { data: [] };
-
-    // Fetch driver rating history
-    const { data: driverRatings } = await supabase
-      .from("course_ratings")
-      .select("rating, status, ai_decision")
-      .eq("driver_id", rating.driver_id)
-      .order("created_at", { ascending: false })
-      .limit(20);
 
     // Fetch dispute details
     const { data: dispute } = await supabase
@@ -71,15 +58,112 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    // Stats
-    const clientAvgRating = clientRatings?.length
-      ? clientRatings.reduce((s, r) => s + r.rating, 0) / clientRatings.length : 3;
-    const clientLowPct = clientRatings?.length
-      ? clientRatings.filter(r => r.rating <= 3).length / clientRatings.length : 0;
-    const driverAvgRating = driverRatings?.length
-      ? driverRatings.reduce((s, r) => s + r.rating, 0) / driverRatings.length : 4;
-    const cancelledByAI = clientRatings?.filter(r => r.ai_decision === "cancelled")?.length || 0;
+    // === DEEP HISTORICAL ANALYSIS ===
 
+    // Client history
+    let clientHistoryText = "Pas de données client";
+    if (rating.client_id) {
+      // All ratings given by this client (client_to_driver)
+      const { data: clientGivenRatings } = await supabase
+        .from("course_ratings")
+        .select("rating, status, ai_decision, rating_direction, created_at")
+        .eq("client_id", rating.client_id)
+        .eq("rating_direction", "client_to_driver")
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      // All ratings received by this client (driver_to_client)
+      const { data: clientReceivedRatings } = await supabase
+        .from("course_ratings")
+        .select("rating, status, ai_decision, rating_direction, created_at")
+        .eq("client_id", rating.client_id)
+        .eq("rating_direction", "driver_to_client")
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      // Incidents reported about this client
+      const { data: clientIncidents } = await supabase
+        .from("driver_course_incidents")
+        .select("incident_type, severity, created_at")
+        .eq("client_id", rating.client_id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      // Completed courses count
+      const { count: clientCourseCount } = await supabase
+        .from("courses")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", rating.client_id)
+        .eq("status", "completed");
+
+      // Risk score
+      const { data: riskScore } = await supabase
+        .from("client_risk_scores")
+        .select("score, failed_payments, no_shows, abusive_cancellations, is_blocked")
+        .eq("client_id", rating.client_id)
+        .single();
+
+      const givenRatings = clientGivenRatings || [];
+      const receivedRatings = clientReceivedRatings || [];
+      const avgGiven = givenRatings.length ? givenRatings.reduce((s, r) => s + r.rating, 0) / givenRatings.length : 0;
+      const avgReceived = receivedRatings.length ? receivedRatings.reduce((s, r) => s + r.rating, 0) / receivedRatings.length : 0;
+      const lowPct = givenRatings.length ? (givenRatings.filter(r => r.rating <= 3).length / givenRatings.length * 100).toFixed(0) : "0";
+      const cancelledByAI = givenRatings.filter(r => r.ai_decision === "cancelled").length;
+      const incidents = clientIncidents || [];
+
+      clientHistoryText = `PROFIL CLIENT :
+- Courses réalisées : ${clientCourseCount || 0}
+- Notes données (client→chauffeur) : ${givenRatings.length} notes, moyenne ${avgGiven.toFixed(1)}/5, ${lowPct}% notes ≤3★, ${cancelledByAI} annulées par IA
+- Notes reçues (chauffeur→client) : ${receivedRatings.length} notes, moyenne ${avgReceived > 0 ? avgReceived.toFixed(1) : "N/A"}/5
+- Incidents signalés : ${incidents.length > 0 ? incidents.map(i => `${i.incident_type} (${i.severity})`).join(", ") : "Aucun"}
+- Score de risque : ${riskScore ? `${riskScore.score}/100, ${riskScore.failed_payments} paiements échoués, ${riskScore.no_shows} no-shows, ${riskScore.abusive_cancellations} annulations abusives${riskScore.is_blocked ? " ⚠️ BLOQUÉ" : ""}` : "Non calculé"}`;
+    }
+
+    // Driver history
+    const { data: driverRatingsReceived } = await supabase
+      .from("course_ratings")
+      .select("rating, status, ai_decision, rating_direction, created_at")
+      .eq("driver_id", rating.driver_id)
+      .eq("rating_direction", "client_to_driver")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const { data: driverRatingsGiven } = await supabase
+      .from("course_ratings")
+      .select("rating, status, ai_decision, rating_direction, created_at")
+      .eq("driver_id", rating.driver_id)
+      .eq("rating_direction", "driver_to_client")
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    const { count: driverCourseCount } = await supabase
+      .from("courses")
+      .select("id", { count: "exact", head: true })
+      .eq("driver_id", rating.driver_id)
+      .eq("status", "completed");
+
+    const { data: driverData } = await supabase
+      .from("drivers")
+      .select("rating, reliability_score, total_rides")
+      .eq("id", rating.driver_id)
+      .single();
+
+    const driverReceived = driverRatingsReceived || [];
+    const driverGiven = driverRatingsGiven || [];
+    const driverAvgReceived = driverReceived.length ? driverReceived.reduce((s, r) => s + r.rating, 0) / driverReceived.length : 0;
+    const driverLowReceivedPct = driverReceived.length ? (driverReceived.filter(r => r.rating <= 3).length / driverReceived.length * 100).toFixed(0) : "0";
+    const driverCancelledByAI = driverReceived.filter(r => r.ai_decision === "cancelled").length;
+    const driverContested = driverReceived.filter(r => r.status === "contested" || r.ai_decision).length;
+
+    const driverHistoryText = `PROFIL CHAUFFEUR :
+- Courses réalisées : ${driverCourseCount || driverData?.total_rides || 0}
+- Note globale : ${driverData?.rating?.toFixed(1) || "N/A"}/5
+- Score de fiabilité : ${driverData?.reliability_score || "N/A"}/100
+- Notes reçues : ${driverReceived.length} notes, moyenne ${driverAvgReceived.toFixed(1)}/5, ${driverLowReceivedPct}% ≤3★
+- Notes contestées/arbitrées : ${driverContested}, dont ${driverCancelledByAI} annulées par IA
+- Notes données aux clients : ${driverGiven.length} (ratio notes données vs courses : ${driverCourseCount ? (driverGiven.length / (driverCourseCount as number) * 100).toFixed(1) : "0"}%)`;
+
+    // === AI CALL ===
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI not configured" }), {
@@ -88,38 +172,68 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Tu es un arbitre expert du secteur VTC en France. Tu connais parfaitement :
-- Les obligations des chauffeurs VTC (ponctualité, propreté, courtoisie, respect de l'itinéraire)
-- Les droits des clients (respect, ponctualité, paiement)
-- Les situations courantes (embouteillages, travaux, météo, GPS erroné)
-- Le comportement humain et les notes émotionnelles vs factuelles
+    const systemPrompt = `Tu es un arbitre expert et bienveillant du secteur VTC en France. Tu as une connaissance approfondie de :
 
-Règles d'arbitrage :
-1. Reproche hors du contrôle du chauffeur (trafic, travaux, déviation forcée) → ANNULER
-2. Reproche légitime et factuel (véhicule sale, comportement inapproprié) → MAINTENIR
-3. Reproche partiellement justifié → AJUSTER (remonter la note)
-4. Explication crédible du chauffeur vs reproches vagues du client → favoriser le chauffeur
-5. Notes émotionnelles sans faits concrets → ANNULER
-6. Client avec historique de notes abusives → ses notes comptent moins`;
+EXPERTISE MÉTIER :
+- Les obligations légales des chauffeurs VTC (ponctualité raisonnable, propreté du véhicule, courtoisie, respect de l'itinéraire optimal, tarification transparente)
+- Les droits et obligations des clients (être présent au point de rendez-vous, respecter le véhicule, communiquer clairement, payer le tarif convenu)
+- Les aléas courants : embouteillages, travaux, déviation GPS, météo défavorable, adresse incorrecte, retards de vol, zones d'accès complexes (aéroports, gares)
+- La pression du métier : horaires décalés, fatigue, stress de la circulation, gestion de clients parfois difficiles
 
-    const userPrompt = `COURSE :
+PHILOSOPHIE D'ARBITRAGE :
+Tu es JUSTE mais HUMAIN. Tu analyses les FAITS, pas les émotions.
+- Un chauffeur peut avoir un mauvais jour sans que ça définisse son professionnalisme
+- Un client peut être frustré sans que sa frustration soit justifiée
+- Les circonstances externes (trafic, météo, travaux) ne sont JAMAIS la faute du chauffeur
+- Un historique irréprochable pèse LOURD en faveur de la personne concernée
+- Des patterns récurrents d'abus (notes systématiquement basses, contestations fréquentes) doivent être détectés et sanctionnés
+- En cas de doute, tu favorises la personne avec le meilleur historique
+
+RÈGLES DE DÉCISION :
+1. Reproche manifestement hors du contrôle (trafic, travaux, GPS) → ANNULER
+2. Reproche légitime avec preuves factuelles → MAINTENIR  
+3. Reproche partiellement justifié → AJUSTER (remonter de 1-2 étoiles)
+4. Explication crédible vs reproches vagues → favoriser celui qui donne des détails précis
+5. Notes émotionnelles sans faits → ANNULER
+6. Historique d'abus détecté → poids réduit pour l'abuseur
+7. Premier incident sur un long historique positif → INDULGENCE (ajuster plutôt que maintenir)
+8. Pattern de notes basses systématiques → considérer un biais du notateur
+
+DIRECTION : "${direction}" signifie que ${isClientToDriver ? "le CLIENT a noté le CHAUFFEUR" : "le CHAUFFEUR a noté le CLIENT"}.`;
+
+    const userPrompt = `=== DONNÉES DE LA COURSE ===
 - Trajet : ${course?.pickup_address || "?"} → ${course?.destination_address || "?"}
 - Date : ${course?.scheduled_date || "N/A"}
 - Distance : ${course?.distance_km || "N/A"} km
-- Prix : ${course?.final_price || course?.estimated_price || "N/A"} €
+- Durée : ${course?.duration_minutes || "N/A"} min
+- Prix estimé : ${course?.estimated_price || "N/A"} €
+- Prix final : ${course?.final_payment_amount || course?.final_price || "N/A"} €
+- Paiement : ${course?.payment_method || course?.guest_payment_method || "N/A"}
 
-NOTE CLIENT : ${rating.rating}★/5
+=== NOTE SOUMISE ===
+Direction : ${isClientToDriver ? "Client → Chauffeur" : "Chauffeur → Client"}
+Note : ${rating.rating}★/5
 Motif : ${rating.reason || "Non précisé"}
-Détail : ${rating.reason_detail || "Aucun"}
+Détail : ${rating.reason_detail || "Aucun détail fourni"}
 
-PROFIL CLIENT : Moyenne notes données ${clientAvgRating.toFixed(1)}/5, ${(clientLowPct * 100).toFixed(0)}% notes basses, ${cancelledByAI} notes annulées par IA
+=== ${clientHistoryText} ===
 
-PROFIL CHAUFFEUR : Moyenne notes reçues ${driverAvgRating.toFixed(1)}/5
+=== ${driverHistoryText} ===
 
-CONTESTATION CHAUFFEUR : "${dispute?.dispute_reason || "Pas de détail"}"
-RÉPONSE CLIENT : "${dispute?.client_response || "Pas de réponse"}"
+=== CONTESTATION ===
+${dispute ? `Contestée par : ${dispute.initiated_by === "driver" ? "Le chauffeur" : "Le client"}
+Raison de contestation : "${dispute.dispute_reason || "Pas de détail"}"
+Réponse de l'autre partie : "${dispute.client_response || "Pas encore de réponse"}"` : "Pas de contestation formelle"}
 
-Analyse et rends ta décision.`;
+=== MISSION ===
+Analyse TOUTES ces données en profondeur. Considère :
+1. L'historique complet des deux parties (ratio bonnes/mauvaises notes, patterns)
+2. Les circonstances de la course (trajet, prix, durée)
+3. La crédibilité des explications de chaque partie
+4. Si un pattern d'abus est détectable
+5. Les circonstances atténuantes possibles
+
+Rends ton verdict avec humanité et fermeté.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -141,11 +255,13 @@ Analyse et rends ta décision.`;
             parameters: {
               type: "object",
               properties: {
-                decision: { type: "string", enum: ["maintained", "adjusted", "cancelled"] },
-                adjusted_rating: { type: "number", description: "Adjusted rating 1-5, required if decision is adjusted" },
-                justification: { type: "string", description: "Explanation in French, 2-3 sentences" },
+                decision: { type: "string", enum: ["maintained", "adjusted", "cancelled"], description: "maintained=note conservée, adjusted=note modifiée, cancelled=note annulée" },
+                adjusted_rating: { type: "number", description: "Nouvelle note 1-5, obligatoire si decision=adjusted" },
+                justification: { type: "string", description: "Explication détaillée en français, 3-5 phrases, empathique et factuelle" },
+                confidence: { type: "string", enum: ["high", "medium", "low"], description: "Niveau de confiance dans la décision" },
+                pattern_detected: { type: "string", description: "Pattern d'abus détecté le cas échéant, sinon 'none'" },
               },
-              required: ["decision", "justification"],
+              required: ["decision", "justification", "confidence"],
               additionalProperties: false,
             },
           },
@@ -172,13 +288,12 @@ Analyse et rends ta décision.`;
     }
 
     const aiData = await aiResponse.json();
-    let verdict: { decision: string; adjusted_rating?: number | null; justification: string };
+    let verdict: { decision: string; adjusted_rating?: number | null; justification: string; confidence?: string; pattern_detected?: string };
 
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       verdict = JSON.parse(toolCall.function.arguments);
     } else {
-      // Fallback: parse content
       const content = (aiData.choices?.[0]?.message?.content || "").replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -188,45 +303,72 @@ Analyse et rends ta décision.`;
       }
     }
 
+    console.log(`AI Verdict for ${ratingId}: ${verdict.decision} (confidence: ${verdict.confidence || "N/A"}, pattern: ${verdict.pattern_detected || "none"})`);
+
     // Apply verdict
     const updateData: Record<string, unknown> = {
       status: "ai_resolved",
       ai_decision: verdict.decision,
       ai_justification: verdict.justification,
+      ai_analysis: {
+        confidence: verdict.confidence || "medium",
+        pattern_detected: verdict.pattern_detected || "none",
+        direction,
+      },
     };
 
     if (verdict.decision === "adjusted" && verdict.adjusted_rating) {
       updateData.adjusted_rating = verdict.adjusted_rating;
-      await supabase.from("courses").update({ client_rating: verdict.adjusted_rating }).eq("id", rating.course_id);
+      if (isClientToDriver) {
+        await supabase.from("courses").update({ client_rating: verdict.adjusted_rating }).eq("id", rating.course_id);
+      }
     } else if (verdict.decision === "maintained") {
-      await supabase.from("courses").update({ client_rating: rating.rating }).eq("id", rating.course_id);
+      if (isClientToDriver) {
+        await supabase.from("courses").update({ client_rating: rating.rating }).eq("id", rating.course_id);
+      }
     }
-    // cancelled = no rating applied
 
     await supabase.from("course_ratings").update(updateData).eq("id", ratingId);
 
-    // Update dispute
+    // Update dispute resolution
     if (dispute) {
       await supabase.from("rating_disputes").update({
         resolution: verdict.decision === "cancelled" ? "cancelled" : verdict.decision === "adjusted" ? "adjusted" : "maintained",
         resolved_at: new Date().toISOString(),
+        ai_verdict: verdict.decision,
+        ai_verdict_detail: verdict.justification,
       }).eq("id", dispute.id);
     }
+
+    // Notify BOTH parties
+    const decisionLabel = verdict.decision === "cancelled" ? "annulée ✅"
+      : verdict.decision === "adjusted" ? `ajustée à ${verdict.adjusted_rating}★`
+      : "maintenue";
 
     // Notify driver
     const { data: driver } = await supabase.from("drivers").select("user_id").eq("id", rating.driver_id).single();
     if (driver) {
-      const decisionLabel = verdict.decision === "cancelled" ? "annulée ✅"
-        : verdict.decision === "adjusted" ? `ajustée à ${verdict.adjusted_rating}★`
-        : "maintenue";
-
       await supabase.from("notifications").insert({
         user_id: driver.user_id,
         title: "Résultat d'arbitrage IA",
-        message: `La note de ${rating.rating}★ a été ${decisionLabel}. ${verdict.justification}`,
+        message: `La note de ${rating.rating}★ ${isClientToDriver ? "reçue" : "donnée"} a été ${decisionLabel}. ${verdict.justification}`,
         type: "rating",
-        metadata: { rating_id: ratingId, decision: verdict.decision },
+        metadata: { rating_id: ratingId, decision: verdict.decision, direction },
       });
+    }
+
+    // Notify client (if registered)
+    if (rating.client_id) {
+      const { data: client } = await supabase.from("clients").select("user_id").eq("id", rating.client_id).single();
+      if (client) {
+        await supabase.from("notifications").insert({
+          user_id: client.user_id,
+          title: "Résultat d'arbitrage IA",
+          message: `La note de ${rating.rating}★ ${isClientToDriver ? "que vous avez donnée" : "que vous avez reçue"} a été ${decisionLabel}. ${verdict.justification}`,
+          type: "rating",
+          metadata: { rating_id: ratingId, decision: verdict.decision, direction },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ success: true, verdict }), {
