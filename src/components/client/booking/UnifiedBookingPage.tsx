@@ -64,6 +64,9 @@ export function UnifiedBookingPage() {
   const [savedCardInfo, setSavedCardInfo] = useState<{ customerId: string; paymentMethodId?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Favorite driver
+  const [favoriteDriverIds, setFavoriteDriverIds] = useState<string[]>([]);
+
   // Registration
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
