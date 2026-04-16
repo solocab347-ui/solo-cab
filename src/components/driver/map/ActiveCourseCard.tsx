@@ -584,9 +584,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
         clientName={completionData.clientName}
         amount={completionData.amount}
         paymentMethod={completionData.paymentMethod}
-        driverId={course?.driver_id}
-        clientId={course?.client_id}
-        guestPhone={course?.guest_phone}
+        driverId={driverId}
+        guestPhone={completionData.guestPhone}
         paymentResult={completionData.paymentResult}
         onDismiss={handleDismissCompletion}
       />
