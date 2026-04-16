@@ -6,6 +6,8 @@ import { usePremium } from "@/hooks/usePremium";
 import { useDriverPremium } from "@/hooks/useDriverPremium";
 import { Crown, Lock, Star, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { shouldHideInAppPayments } from "@/lib/platform";
+import { PremiumMobileNotice } from "./PremiumMobileNotice";
 
 interface PremiumGateProps {
   /** Feature name for display */
@@ -55,6 +57,11 @@ function PremiumLockCard({ feature, description }: { feature: string; descriptio
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
   const { openCheckout } = usePremium();
+
+  // Conformité App Store / Play Store : pas de paiement dans l'app native.
+  if (shouldHideInAppPayments()) {
+    return <PremiumMobileNotice feature={feature} />;
+  }
 
   const handleUpgrade = async () => {
     try {
