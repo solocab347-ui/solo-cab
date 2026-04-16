@@ -351,7 +351,7 @@ const ClientDashboard = () => {
         );
       case "courses":
         return clientProfile?.client?.id ? (
-          <ClientCoursesList clientId={clientProfile.client.id} defaultTab={coursesSubTab} />
+          <ClientCoursesList clientId={clientProfile.client.id} userId={user?.id} defaultTab={coursesSubTab} />
         ) : null;
       case "devis-factures":
         return clientProfile?.client?.id ? (
