@@ -360,7 +360,12 @@ const ClientDashboard = () => {
       case "messages":
         return <MessagingInterface />;
       case "notes":
-        return <ClientNotes />;
+        return (
+          <div className="space-y-4">
+            <RatingDisputeResponseCard />
+            <ClientNotes />
+          </div>
+        );
       case "chauffeurs":
         const hasNoDrivers = !isExclusive && 
           (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0);
