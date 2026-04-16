@@ -238,6 +238,24 @@ const CityPricingSummaryCard = ({
             )}
           </div>
         )}
+
+        {/* Conflict warning */}
+        {hasConflict && (
+          <div className="p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] text-amber-500 flex items-start gap-1.5">
+              <Info className="w-3 h-3 mt-0.5 shrink-0" />
+              <span>
+                {eveningConflict && (
+                  <>Soir : global {globalEveningSurcharge}% vs {pricing.city_name} {pricing.evening_surcharge}% → <strong>+{Math.max(globalEveningSurcharge, pricing.evening_surcharge)}% appliqué</strong>. </>
+                )}
+                {weekendConflict && (
+                  <>WE : global {globalWeekendSurcharge}% vs {pricing.city_name} {pricing.weekend_surcharge}% → <strong>+{Math.max(globalWeekendSurcharge, pricing.weekend_surcharge)}% appliqué</strong>. </>
+                )}
+                Pas de cumul.
+              </span>
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
