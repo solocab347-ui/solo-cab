@@ -427,10 +427,12 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                       <p className="font-bold text-sm truncate">{driverName}</p>
                       <p className="text-xs text-muted-foreground">Votre chauffeur</p>
                     </div>
-                    {rideRequestId && isActive && (
+                    {rideRequestId && isActive && course.client_id && (
                       <RideChatPanel
                         rideId={rideRequestId}
                         senderType="client"
+                        senderId={course.client_id}
+                        otherName={driverName}
                       />
                     )}
                   </CardContent>
