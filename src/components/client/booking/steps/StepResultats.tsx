@@ -41,10 +41,22 @@ export function StepResultats({
   searchRadius, noDriversFound, fallbackToReservation,
   mode, error,
   mapboxToken, tokenLoading, mapboxError,
-  maxSearchRadiusKm, clientPaymentMethod,
+  maxSearchRadiusKm, setMaxSearchRadiusKm, isLoading, onRetrySearch,
+  clientPaymentMethod,
   onBack, onNext,
 }: StepResultatsProps) {
   const navigate = useNavigate();
+
+  // A real error must come from a network/server failure, not from an empty result
+  const isRealError = !!error && !noDriversFound && filteredDrivers.length === 0 && drivers.length === 0;
+
+  const expandRadius = (km: number) => {
+    if (setMaxSearchRadiusKm) setMaxSearchRadiusKm(km);
+    if (onRetrySearch) setTimeout(onRetrySearch, 50);
+  };
+
+  // Suggest the next radius tier above current
+  const nextRadius = maxSearchRadiusKm < 50 ? 50 : maxSearchRadiusKm < 100 ? 100 : 200;
 
   return (
     <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300 pb-20">
