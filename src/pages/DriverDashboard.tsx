@@ -1054,6 +1054,9 @@ const DriverDashboard = () => {
       {/* Assistant virtuel Max */}
       <DriverAssistant />
 
+      {/* Global Floating Map Button — accessible from any dashboard tab */}
+      {driverIdForProvider && <FloatingMapButton onClick={() => setViewMode("map")} />}
+
     </div>
     </DriverAvailabilityProvider>
   );
