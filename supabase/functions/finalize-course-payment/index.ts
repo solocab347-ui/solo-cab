@@ -119,13 +119,17 @@ serve(async (req) => {
 
     if (!lockResult?.success) {
       logStep("Lock denied", { result: lockResult });
+      // Transient = double-click / concurrent attempt. Tell the UI to retry softly.
+      const isTransient = !!lockResult?.transient || !!lockResult?.locked;
       return new Response(
         JSON.stringify({ 
           success: false, 
+          transient: isTransient,
+          retry_in_sec: lockResult?.retry_in_sec ?? (isTransient ? 3 : null),
           error: lockResult?.error || "Finalisation impossible",
           status: lockResult?.status || "unknown",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: isTransient ? 202 : 409 }
       );
     }
 
