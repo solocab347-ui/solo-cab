@@ -721,6 +721,15 @@ const ClientDashboard = () => {
         onSelectDriver={handleDriverSelected}
       />
 
+      {/* Active Course Tracker (in-dashboard live tracking sheet) */}
+      {activeCourse && (
+        <ActiveCourseTracker
+          courseId={activeCourse.id}
+          open={showTracker}
+          onClose={() => setShowTracker(false)}
+        />
+      )}
+
       {/* Feedback Widget */}
       <FeedbackWidget 
         userType="client"
