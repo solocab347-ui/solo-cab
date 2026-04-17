@@ -17,10 +17,12 @@ interface UseRideChatOptions {
   rideId: string | null;
   senderType: 'client' | 'driver' | 'guest';
   senderId: string;
+  /** Required for guest senders — the guest_tracking_token from the URL */
+  guestToken?: string | null;
   enabled?: boolean;
 }
 
-export function useRideChat({ rideId, senderType, senderId, enabled = true }: UseRideChatOptions) {
+export function useRideChat({ rideId, senderType, senderId, guestToken, enabled = true }: UseRideChatOptions) {
   const [messages, setMessages] = useState<RideMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
