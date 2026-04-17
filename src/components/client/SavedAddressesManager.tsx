@@ -8,15 +8,95 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
-import { MapPin, Plus, Home, Briefcase, Star, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Plus, Home, Briefcase, Star, Trash2, Loader2, GripVertical } from 'lucide-react';
 import { useClientAddresses, type SavedAddress } from '@/hooks/useClientAddresses';
 import { toast } from 'sonner';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const TYPE_ICON = { home: Home, work: Briefcase, other: Star } as const;
 const TYPE_LABEL = { home: 'Maison', work: 'Travail', other: 'Autre' } as const;
 
+interface SortableRowProps {
+  addr: SavedAddress;
+  onDelete: (a: SavedAddress) => void;
+}
+
+function SortableRow({ addr, onDelete }: SortableRowProps) {
+  const Icon = TYPE_ICON[addr.address_type] || Star;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: addr.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-start gap-2 p-3 rounded-lg border border-border/60 bg-muted/30"
+    >
+      <button
+        type="button"
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -ml-1"
+        aria-label="Réordonner"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold truncate">{addr.label}</span>
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {TYPE_LABEL[addr.address_type]}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{addr.address}</p>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+        onClick={() => onDelete(addr)}
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </Button>
+    </li>
+  );
+}
+
 export function SavedAddressesManager() {
-  const { saved, loading, addSaved, removeSaved } = useClientAddresses();
+  const { saved, loading, addSaved, removeSaved, reorderSaved } = useClientAddresses();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -24,6 +104,12 @@ export function SavedAddressesManager() {
   const [address, setAddress] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [type, setType] = useState<'home' | 'work' | 'other'>('home');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const reset = () => {
     setLabel('');
@@ -70,6 +156,20 @@ export function SavedAddressesManager() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = saved.findIndex((a) => a.id === active.id);
+    const newIndex = saved.findIndex((a) => a.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const newOrder = arrayMove(saved, oldIndex, newIndex);
+    try {
+      await reorderSaved(newOrder.map((a) => a.id));
+    } catch (err: any) {
+      toast.error(err?.message || 'Impossible de réordonner');
+    }
+  };
+
   return (
     <Card className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -79,7 +179,7 @@ export function SavedAddressesManager() {
             Mes adresses favorites
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Pré-remplissez vos courses en un clic
+            Glissez pour réorganiser — la première sera utilisée par défaut
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
@@ -100,38 +200,15 @@ export function SavedAddressesManager() {
           </p>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {saved.map((a) => {
-            const Icon = TYPE_ICON[a.address_type] || Star;
-            return (
-              <li
-                key={a.id}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-muted/30"
-              >
-                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold truncate">{a.label}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {TYPE_LABEL[a.address_type]}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{a.address}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDelete(a)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={saved.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-2">
+              {saved.map((a) => (
+                <SortableRow key={a.id} addr={a} onDelete={handleDelete} />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>

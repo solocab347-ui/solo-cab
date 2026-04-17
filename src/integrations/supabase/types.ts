@@ -22862,6 +22862,16 @@ export type Database = {
           weekend_surcharge: number
         }[]
       }
+      get_client_frequent_addresses: {
+        Args: { _limit?: number; _min_count?: number }
+        Returns: {
+          address: string
+          last_used: string
+          latitude: number
+          longitude: number
+          usage_count: number
+        }[]
+      }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_client_recent_addresses: {
         Args: { _limit?: number }
