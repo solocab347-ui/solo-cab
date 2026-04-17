@@ -225,83 +225,62 @@ const RegisterClient = () => {
     setLoading(true);
 
     try {
-      // ===== GUEST → CLIENT FLOW =====
-      // No email validation required; account is auto-confirmed and the
-      // guest course is automatically attached to the new client record.
-      if (guestToken) {
-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke(
-          "register-from-guest-course",
-          {
-            body: {
-              email: formData.email,
-              password: formData.password,
-              full_name: formData.fullName,
-              phone: formData.phone,
-              guest_token: guestToken,
-            },
-          }
-        );
-
-        if (edgeError) throw edgeError;
-        if (!edgeData?.success) {
-          if (edgeData?.error === "course_not_found") {
-            toast.error("Course introuvable. Le lien de suivi est peut-être expiré.");
-          } else if (edgeData?.email_existed) {
-            toast.error("Cet email existe déjà. Connectez-vous pour récupérer votre course.");
-            navigate(`/auth?redirect=/client-dashboard?from_guest=1`);
-          } else {
-            toast.error(edgeData?.error || "Erreur lors de l'inscription");
-          }
-          return;
+      // ===== UNIFIED CLIENT SIGNUP =====
+      // Always go through the edge function: it auto-confirms the account
+      // (whether or not a guest_token is present) and auto-claims any
+      // matching guest courses by email/phone. This guarantees that users
+      // who book a guest ride and then sign up can log in immediately and
+      // see their ride in the dashboard.
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke(
+        "register-from-guest-course",
+        {
+          body: {
+            email: formData.email,
+            password: formData.password,
+            full_name: formData.fullName,
+            phone: formData.phone,
+            guest_token: guestToken || undefined,
+          },
         }
+      );
 
-        // Auto sign-in (account is auto-confirmed server-side)
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email.toLowerCase(),
-          password: formData.password,
-        });
-        if (signInError) {
-          // Account exists but sign-in failed — fall back to login page
-          toast.success("Compte créé ! Connectez-vous pour accéder à votre course.");
-          navigate("/auth?redirect=/client-dashboard");
-          return;
-        }
-
-        toast.success("Bienvenue ! Votre course est dans votre tableau de bord.");
-        navigate(`/client-dashboard?from_guest=1&course_id=${edgeData.course_id}`);
+      if (edgeError) throw edgeError;
+      if (!edgeData?.success) {
+        toast.error(edgeData?.error || "Erreur lors de l'inscription");
         return;
       }
 
-      // ===== STANDARD SIGNUP (email confirmation required) =====
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+      // Auto sign-in (account is auto-confirmed server-side)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email.toLowerCase(),
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-          },
-        },
       });
+      if (signInError) {
+        toast.success("Compte créé ! Connectez-vous pour accéder à votre espace.");
+        navigate("/auth?redirect=/client-dashboard");
+        return;
+      }
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Erreur de création du compte");
+      // Update locale preference
+      try {
+        await supabase
+          .from("profiles")
+          .update({ preferred_language: locale })
+          .eq("id", edgeData.user_id);
+      } catch { /* non-blocking */ }
 
-      await new Promise((r) => setTimeout(r, 500));
-
-      await supabase
-        .from("profiles")
-        .update({ phone: formData.phone, preferred_language: locale })
-        .eq("id", authData.user.id);
-
-      await createClientRecord(authData.user.id);
-
-      toast.success("Compte créé ! Enregistrez votre carte pour réserver.");
-      setStep("card");
-      await initializeCardForm();
+      if (edgeData.course_id) {
+        toast.success("Bienvenue ! Votre course est dans votre tableau de bord.");
+        navigate(`/client-dashboard?from_guest=1&course_id=${edgeData.course_id}`);
+      } else {
+        toast.success("Compte créé ! Enregistrez votre carte pour réserver.");
+        setStep("card");
+        await initializeCardForm();
+      }
     } catch (error: any) {
-      if (error.message?.includes("already registered")) {
-        toast.error("Cette adresse email est déjà utilisée");
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
+        toast.error("Cette adresse email est déjà utilisée. Connectez-vous.");
+        navigate("/auth?redirect=/client-dashboard");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
       }
