@@ -386,6 +386,15 @@ export function CourseCompletionScreen({
           guestPhone={guestPhone}
         />
       )}
+
+      {/* Anti-fraud cash confirmation (driver re-types the amount) */}
+      <CashConfirmationDialog
+        open={showCashDialog}
+        onOpenChange={setShowCashDialog}
+        courseId={courseId}
+        expectedAmount={amount}
+        onConfirmed={handleCashConfirmed}
+      />
     </motion.div>
   );
 }
