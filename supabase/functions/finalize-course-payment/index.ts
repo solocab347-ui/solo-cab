@@ -172,6 +172,11 @@ serve(async (req) => {
       );
     }
 
+    // Lock acquired — track for release on unexpected errors
+    if (lockResult.can_proceed) {
+      acquiredLockCourseId = course_id;
+    }
+
     // Already finalized (idempotent)
     if (lockResult.already_done) {
       logStep("Already finalized (idempotent return)", { status: lockResult.status });
