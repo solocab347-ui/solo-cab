@@ -40,16 +40,27 @@ export function useRideChat({ rideId, senderType, senderId, guestToken, enabled 
     }
 
     try {
-      const { data, error } = await chatClient
-        .from('ride_messages')
-        .select('*')
-        .eq('ride_id', rideId)
-        .order('created_at', { ascending: true });
+      let data: any[] | null = null;
 
-      if (error) throw error;
+      if (senderType === 'guest' && guestToken) {
+        const { data: rpcData, error } = await supabase.rpc(
+          'get_guest_ride_messages' as any,
+          { _token: guestToken }
+        );
+        if (error) throw error;
+        data = (rpcData as any[]) || [];
+      } else {
+        const { data: rows, error } = await chatClient
+          .from('ride_messages')
+          .select('*')
+          .eq('ride_id', rideId)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        data = rows || [];
+      }
+
       setMessages((data || []) as unknown as RideMessage[]);
 
-      // Count unread from others
       const unread = (data || []).filter(
         (m: any) => !m.is_read && m.sender_type !== senderType
       ).length;
@@ -60,7 +71,7 @@ export function useRideChat({ rideId, senderType, senderId, guestToken, enabled 
       setLoading(false);
       isFirstLoad.current = false;
     }
-  }, [rideId, enabled, senderType, chatClient]);
+  }, [rideId, enabled, senderType, guestToken, chatClient]);
 
   // Send message
   const sendMessage = useCallback(async (text: string) => {
