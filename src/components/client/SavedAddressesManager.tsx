@@ -32,9 +32,9 @@ export function SavedAddressesManager() {
     setType('home');
   };
 
-  const handleAddressSelect = (addr: string, lat?: number, lng?: number) => {
+  const handleAddressSelect = (addr: string, coordinates?: { latitude: number; longitude: number }) => {
     setAddress(addr);
-    if (lat != null && lng != null) setCoords({ lat, lng });
+    if (coordinates) setCoords({ lat: coordinates.latitude, lng: coordinates.longitude });
   };
 
   const handleSubmit = async () => {
@@ -157,7 +157,7 @@ export function SavedAddressesManager() {
               <Label>Adresse complète</Label>
               <AddressAutocomplete
                 value={address}
-                onChange={(addr, lat, lng) => handleAddressSelect(addr, lat as any, lng as any)}
+                onChange={handleAddressSelect}
                 placeholder="Tapez l'adresse…"
               />
             </div>
