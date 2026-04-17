@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CourseIncidentReportDialog } from "./CourseIncidentReportDialog";
 import { DriverRateClient } from "./DriverRateClient";
+import { CashConfirmationDialog } from "./CashConfirmationDialog";
 
 interface CourseCompletionScreenProps {
   courseId: string;
@@ -52,6 +53,7 @@ export function CourseCompletionScreen({
   const [localResult, setLocalResult] = useState(paymentResult);
   const [switchedToCash, setSwitchedToCash] = useState(false);
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
+  const [showCashDialog, setShowCashDialog] = useState(false);
 
   useEffect(() => {
     setLocalResult(paymentResult);
@@ -97,22 +99,14 @@ export function CourseCompletionScreen({
     }
   };
 
-  const handleSwitchToCash = async () => {
-    try {
-      // Update payment method in DB
-      await supabase
-        .from("courses")
-        .update({
-          payment_method: "cash",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", courseId);
+  // Cash switch is now gated by an anti-fraud confirmation dialog
+  // (montant à retaper) handled by CashConfirmationDialog.
+  const handleOpenCashDialog = () => setShowCashDialog(true);
 
-      setSwitchedToCash(true);
-      toast.success("Mode de paiement changé en espèces");
-    } catch {
-      toast.error("Erreur lors du changement");
-    }
+  const handleCashConfirmed = () => {
+    setSwitchedToCash(true);
+    setLocalResult({ success: true, status: "succeeded" });
+    toast.success("Course finalisée en espèces");
   };
 
   const handleSendPaymentLink = async () => {
@@ -153,10 +147,10 @@ export function CourseCompletionScreen({
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[99999] bg-background flex flex-col"
     >
-      {/* Header */}
+      {/* Header — close button is disabled if payment failed (no escape hatch) */}
       <div className="flex items-center justify-between px-5 pt-6 pb-4">
         <h2 className="text-lg font-bold text-foreground">Récapitulatif</h2>
-        {!isProcessing && (
+        {!isProcessing && !isFailed && (
           <Button variant="ghost" size="icon" onClick={onDismiss} className="rounded-full">
             <X className="w-5 h-5" />
           </Button>
@@ -322,9 +316,9 @@ export function CourseCompletionScreen({
               {linkSent ? "Lien envoyé !" : "Envoyer un lien de paiement"}
             </Button>
 
-            {/* Option 3: Switch to cash */}
+            {/* Option 3: Switch to cash (with anti-fraud amount re-entry) */}
             <Button
-              onClick={handleSwitchToCash}
+              onClick={handleOpenCashDialog}
               className="w-full h-14 rounded-2xl font-bold text-base bg-amber-500 hover:bg-amber-600 text-white"
             >
               <Banknote className="w-5 h-5 mr-2" />
@@ -346,17 +340,28 @@ export function CourseCompletionScreen({
         </div>
       )}
 
-      {/* Bottom actions */}
+      {/* Bottom actions: ZÉRO ZONE GRISE — pas de "Fermer" si paiement non validé */}
       {!isProcessing && (
         <div className="px-5 pb-6 pt-3 border-t border-border bg-background space-y-3">
-          <Button
-            onClick={onDismiss}
-            className="w-full h-14 rounded-2xl font-black text-base"
-          >
-            {isCash ? "J'ai encaissé, fermer" : "Fermer"}
-          </Button>
-          
-          {driverId && (
+          {isFailed ? (
+            <div className="rounded-2xl bg-destructive/10 border-2 border-destructive/30 p-4 text-center">
+              <p className="font-bold text-destructive text-sm">
+                ⛔ La course ne peut pas être terminée sans paiement
+              </p>
+              <p className="text-xs text-destructive/80 mt-1">
+                Choisissez l'une des 3 options ci-dessus pour continuer
+              </p>
+            </div>
+          ) : (
+            <Button
+              onClick={onDismiss}
+              className="w-full h-14 rounded-2xl font-black text-base"
+            >
+              {isCash ? "J'ai encaissé, fermer" : "Fermer"}
+            </Button>
+          )}
+
+          {driverId && !isFailed && (
             <Button
               variant="outline"
               onClick={() => setShowIncidentDialog(true)}
@@ -381,6 +386,15 @@ export function CourseCompletionScreen({
           guestPhone={guestPhone}
         />
       )}
+
+      {/* Anti-fraud cash confirmation (driver re-types the amount) */}
+      <CashConfirmationDialog
+        open={showCashDialog}
+        onOpenChange={setShowCashDialog}
+        courseId={courseId}
+        expectedAmount={amount}
+        onConfirmed={handleCashConfirmed}
+      />
     </motion.div>
   );
 }
