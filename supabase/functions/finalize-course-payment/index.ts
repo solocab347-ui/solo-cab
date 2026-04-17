@@ -398,8 +398,43 @@ serve(async (req) => {
           // Fall through to create new payment below
         }
       } catch (captureError: any) {
+        // CRITICAL: if the hold was actually captured but a side-effect failed,
+        // we must NOT fall through to creating a new PaymentIntent (would double-charge).
+        // Re-fetch the PI to check real status before deciding.
+        try {
+          const recheck = await stripe.paymentIntents.retrieve(holdPiId);
+          if (recheck.status === "succeeded") {
+            logStep("⚠️ Capture side-effect failed but PI is succeeded — finalizing safely", {
+              piId: recheck.id,
+              error: captureError.message,
+            });
+            await supabaseClient
+              .from("courses")
+              .update({
+                status: "completed",
+                payment_status: "paid",
+                final_payment_status: "succeeded",
+                payment_captured_at: new Date().toISOString(),
+                final_payment_intent_id: recheck.id,
+                final_payment_amount: totalAmount,
+                final_payment_at: new Date().toISOString(),
+              })
+              .eq("id", course_id);
+            await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
+            return new Response(
+              JSON.stringify({
+                success: true, already_paid: true,
+                message: "Paiement encaissé (récupération automatique après erreur post-capture)",
+                payment_intent_id: recheck.id,
+                amount_charged: totalAmount,
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+            );
+          }
+        } catch (_recheckErr) {
+          // Recheck failed too, fall through
+        }
         logStep("Capture failed, falling through to new payment", { error: captureError.message });
-        // Fall through to create new payment below
       }
     }
 
