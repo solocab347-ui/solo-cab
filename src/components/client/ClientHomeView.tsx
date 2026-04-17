@@ -81,42 +81,41 @@ export function ClientHomeView({
 
   return (
     <div className="space-y-5 max-w-lg mx-auto pb-24">
-      {/* Banner for clients without drivers */}
-      {!hasDrivers && <NoDriversBanner variant="full" />}
+      {/* Main CTA — always visible: book a ride (works with or without preassigned driver) */}
+      <button
+        onClick={onNewReservation}
+        className="w-full group relative overflow-hidden rounded-2xl p-5 text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] bg-gradient-to-br from-primary via-primary to-primary/80"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+        <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+        <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full blur-xl" />
 
-      {/* Main CTA - Book a ride */}
-      {hasDrivers && (
-        <button
-          onClick={onNewReservation}
-          className="w-full group relative overflow-hidden rounded-2xl p-5 text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] bg-gradient-to-br from-primary via-primary to-primary/80"
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-          <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full blur-xl" />
-          
-          <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-inner">
-              <CalendarPlus className="w-7 h-7" />
-            </div>
-            <div className="flex-1 text-left">
-              <h2 className="text-lg font-bold leading-tight">
-                {isExclusive && favoriteDriver
-                  ? `Réserver avec ${getDriverDisplayName(favoriteDriver, true).split(' ')[0]}`
-                  : "Réserver une course"}
-              </h2>
-              <p className="text-white/70 text-xs mt-0.5">
-                {isExclusive ? "Votre chauffeur privé" : "Choisissez votre chauffeur"}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
-              <ArrowUpRight className="w-5 h-5 opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </div>
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-inner">
+            <CalendarPlus className="w-7 h-7" />
           </div>
-        </button>
-      )}
+          <div className="flex-1 text-left">
+            <h2 className="text-lg font-bold leading-tight">
+              {isExclusive && favoriteDriver
+                ? `Réserver avec ${getDriverDisplayName(favoriteDriver, true).split(' ')[0]}`
+                : "Réserver une course"}
+            </h2>
+            <p className="text-white/70 text-xs mt-0.5">
+              {isExclusive
+                ? "Votre chauffeur privé"
+                : hasDrivers
+                  ? "Choisissez votre chauffeur"
+                  : "Trouvez le meilleur chauffeur près de vous"}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
+            <ArrowUpRight className="w-5 h-5 opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </div>
+        </div>
+      </button>
 
-      {/* Storefront access for free clients */}
-      {!isExclusive && hasDrivers && (
+      {/* Storefront access — secondary entry to browse all VTC drivers */}
+      {!isExclusive && (
         <button
           onClick={() => navigate("/chauffeurs")}
           className="w-full group relative overflow-hidden rounded-xl p-4 bg-card border border-border/60 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.99]"
@@ -126,54 +125,36 @@ export function ClientHomeView({
               <Search className="w-5 h-5 text-secondary" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-foreground">Trouver un chauffeur</p>
-              <p className="text-xs text-muted-foreground">Explorez le réseau VTC</p>
+              <p className="text-sm font-semibold text-foreground">
+                {hasDrivers ? "Trouver un autre chauffeur" : "Explorer le réseau VTC"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {hasDrivers ? "Élargissez votre carnet" : "Découvrez les chauffeurs disponibles"}
+              </p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
       )}
 
-      {/* Find a driver for clients without drivers */}
-      {!hasDrivers && (
-        <button
-          onClick={() => navigate("/chauffeurs")}
-          className="w-full group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-secondary via-secondary to-secondary/80 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98]"
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-          <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-              <Search className="w-7 h-7" />
-            </div>
-            <div className="flex-1 text-left">
-              <h2 className="text-lg font-bold">Trouver un chauffeur</h2>
-              <p className="text-white/70 text-xs mt-0.5">Explorez notre réseau VTC</p>
-            </div>
-            <ArrowUpRight className="w-5 h-5 opacity-70" />
-          </div>
-        </button>
-      )}
-
-      {/* Stats Row */}
-      {hasDrivers && (
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatCard
-            icon={Clock}
-            value={stats.upcomingCourses}
-            label="À venir"
-            color="primary"
-            onClick={() => onNavigate("courses", "confirmed")}
-          />
-          <StatCard
-            icon={CreditCard}
-            value={stats.unpaidInvoices}
-            label="Factures"
-            color="destructive"
-            pulse={stats.unpaidInvoices > 0}
-            onClick={() => onNavigate("factures")}
-          />
-        </div>
-      )}
+      {/* Stats Row — always visible (a guest course has stats too) */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <StatCard
+          icon={Clock}
+          value={stats.upcomingCourses}
+          label="À venir"
+          color="primary"
+          onClick={() => onNavigate("courses", "confirmed")}
+        />
+        <StatCard
+          icon={CreditCard}
+          value={stats.unpaidInvoices}
+          label="Factures"
+          color="destructive"
+          pulse={stats.unpaidInvoices > 0}
+          onClick={() => onNavigate("factures")}
+        />
+      </div>
 
       {/* Favorite Driver Card */}
       {hasDrivers && favoriteDriver && (

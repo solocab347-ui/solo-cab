@@ -295,9 +295,20 @@ const ClientDashboard = () => {
   };
 
   const handleTabChange = (tab: string, subTab?: string | null) => {
-    setActiveTab(tab);
     setMobileMenuOpen(false);
-    
+
+    // "tracking" is not a real tab — open the ActiveCourseTracker sheet
+    if (tab === "tracking") {
+      if (activeCourse) {
+        setShowTracker(true);
+      } else {
+        toast.info("Aucune course en cours actuellement");
+      }
+      return;
+    }
+
+    setActiveTab(tab);
+
     if (tab === "courses") {
       setCoursesSubTab(subTab || null);
     }
@@ -709,6 +720,15 @@ const ClientDashboard = () => {
         favoriteDriverId={clientProfile?.client?.favorite_driver_id}
         onSelectDriver={handleDriverSelected}
       />
+
+      {/* Active Course Tracker (in-dashboard live tracking sheet) */}
+      {activeCourse && (
+        <ActiveCourseTracker
+          courseId={activeCourse.id}
+          open={showTracker}
+          onClose={() => setShowTracker(false)}
+        />
+      )}
 
       {/* Feedback Widget */}
       <FeedbackWidget 
