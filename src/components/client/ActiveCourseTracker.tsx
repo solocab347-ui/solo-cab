@@ -93,10 +93,11 @@ function LiveMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
+  const { token: mapboxToken, isLoading: tokenLoading, error: tokenError } = useMapboxToken();
 
   useEffect(() => {
-    if (!mapContainer.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    if (!mapContainer.current || !mapboxToken) return;
+    mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] = driverLng && driverLat
       ? [driverLng, driverLat]
@@ -138,7 +139,7 @@ function LiveMap({
 
     return () => { map.current?.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mapboxToken]);
 
   useEffect(() => {
     if (!driverLat || !driverLng || !driverMarker.current) return;
