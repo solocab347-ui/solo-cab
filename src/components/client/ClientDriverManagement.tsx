@@ -95,7 +95,7 @@ export const ClientDriverManagement = ({ onViewProfile }: ClientDriverManagement
       // Get client info
       const { data: client } = await supabase
         .from("clients")
-        .select("id, driver_id, driver_ids, is_exclusive")
+        .select("id, driver_id, driver_ids, favorite_driver_id, is_exclusive")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -107,10 +107,27 @@ export const ClientDriverManagement = ({ onViewProfile }: ClientDriverManagement
       setClientId(client.id);
       setIsExclusive(client.is_exclusive);
 
-      // Fetch drivers
-      const driverIds = client.is_exclusive 
-        ? (client.driver_id ? [client.driver_id] : [])
-        : (client.driver_ids || []);
+      // Build driver list — include the favorite even if it was never added to driver_ids
+      let driverIds: string[];
+      if (client.is_exclusive) {
+        driverIds = client.driver_id ? [client.driver_id] : [];
+      } else {
+        const ids = new Set<string>(client.driver_ids || []);
+        if (client.favorite_driver_id) ids.add(client.favorite_driver_id);
+        driverIds = Array.from(ids);
+      }
+
+      // Self-heal: if favorite is missing from driver_ids, persist it now so RLS allows profile access
+      if (
+        !client.is_exclusive &&
+        client.favorite_driver_id &&
+        !(client.driver_ids || []).includes(client.favorite_driver_id)
+      ) {
+        await supabase
+          .from("clients")
+          .update({ driver_ids: driverIds })
+          .eq("id", client.id);
+      }
 
       if (driverIds.length > 0) {
         const { data: driversData } = await supabase
