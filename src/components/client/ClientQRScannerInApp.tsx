@@ -97,7 +97,50 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
   const startScanning = async () => {
     setCameraError(null);
     setSuccess(null);
+
+    // 1) Verify HTTPS context (camera API requires secure context)
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      const msg = "L'accès à la caméra nécessite une connexion HTTPS sécurisée.";
+      setCameraError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    // 2) Verify the browser supports getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const msg = "Votre navigateur ne supporte pas l'accès à la caméra. Essayez Chrome ou Safari récent.";
+      setCameraError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    // 3) Pre-request camera permission for clearer error messages
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+      });
+      // Release immediately — html5-qrcode will request its own stream
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (permErr: any) {
+      let errorMsg = "Impossible d'accéder à la caméra";
+      if (permErr.name === "NotAllowedError" || permErr.name === "PermissionDeniedError") {
+        errorMsg = "Autorisez l'accès à la caméra dans les réglages du navigateur";
+      } else if (permErr.name === "NotFoundError" || permErr.name === "DevicesNotFoundError") {
+        errorMsg = "Aucune caméra détectée sur cet appareil";
+      } else if (permErr.name === "NotReadableError") {
+        errorMsg = "La caméra est utilisée par une autre application";
+      } else if (permErr.name === "OverconstrainedError") {
+        errorMsg = "Aucune caméra compatible disponible";
+      }
+      setCameraError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
     setScanning(true);
+
+    // Wait for the qr-reader element to mount
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     try {
       const html5QrcodeScanner = new Html5QrcodeScanner(
@@ -124,12 +167,8 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
 
       setScanner(html5QrcodeScanner);
     } catch (error: any) {
-      let errorMsg = "Impossible d'initialiser le scanner";
-      if (error.name === "NotAllowedError") {
-        errorMsg = "Autorisez l'accès à la caméra pour scanner";
-      } else if (error.name === "NotFoundError") {
-        errorMsg = "Aucune caméra détectée";
-      }
+      console.error("Scanner init error:", error);
+      const errorMsg = "Impossible d'initialiser le scanner. Rechargez la page et réessayez.";
       setCameraError(errorMsg);
       toast.error(errorMsg);
       setScanning(false);
