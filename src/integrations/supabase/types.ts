@@ -5845,6 +5845,7 @@ export type Database = {
           source_payment_id: string | null
           status: string
           stripe_fee: number
+          updated_at: string
         }
         Insert: {
           course_id?: string | null
@@ -5860,6 +5861,7 @@ export type Database = {
           source_payment_id?: string | null
           status?: string
           stripe_fee?: number
+          updated_at?: string
         }
         Update: {
           course_id?: string | null
@@ -5875,6 +5877,7 @@ export type Database = {
           source_payment_id?: string | null
           status?: string
           stripe_fee?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -18262,6 +18265,7 @@ export type Database = {
           settlement_id: string | null
           source_payment_id: string | null
           status: string
+          updated_at: string
           week_start: string | null
         }
         Insert: {
@@ -18276,6 +18280,7 @@ export type Database = {
           settlement_id?: string | null
           source_payment_id?: string | null
           status?: string
+          updated_at?: string
           week_start?: string | null
         }
         Update: {
@@ -18290,6 +18295,7 @@ export type Database = {
           settlement_id?: string | null
           source_payment_id?: string | null
           status?: string
+          updated_at?: string
           week_start?: string | null
         }
         Relationships: [
