@@ -98,6 +98,29 @@ const ClientDashboard = () => {
     }
   }, [searchParams, activeCourse, setSearchParams]);
 
+  // Welcome banner for users arriving from guest-course signup
+  useEffect(() => {
+    const fromGuest = searchParams.get("from_guest");
+    const courseId = searchParams.get("course_id");
+    if (fromGuest !== "1" || !courseId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, scheduled_date, created_at")
+        .eq("id", courseId)
+        .maybeSingle();
+      setGuestWelcome({
+        courseId,
+        date: data?.scheduled_date || data?.created_at || null,
+      });
+      // Clear params but preserve other state
+      const sp = new URLSearchParams(searchParams);
+      sp.delete("from_guest");
+      sp.delete("course_id");
+      setSearchParams(sp);
+    })();
+  }, []); // run once on mount
+
   useEffect(() => {
     let isMounted = true;
     
