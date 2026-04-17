@@ -51,11 +51,14 @@ serve(async (req) => {
     if (existing) {
       userId = existing.id;
     } else {
+      const _phone = (phone || course.guest_phone || "").replace(/\s+/g, "");
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: email.toLowerCase(),
         password,
         email_confirm: true, // auto-confirm — user came from a real completed/in-progress course
-        user_metadata: { full_name: full_name || course.guest_name, phone: phone || course.guest_phone },
+        phone: _phone || undefined,
+        phone_confirm: _phone ? true : undefined, // auto-confirm phone too (already verified via the booking)
+        user_metadata: { full_name: full_name || course.guest_name, phone: _phone },
       });
       if (createErr || !created.user) {
         return new Response(JSON.stringify({ success: false, error: createErr?.message || "create_failed" }), {
