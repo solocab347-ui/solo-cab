@@ -1,9 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || "";
-const MIN_DISTANCE_CHANGE_M = 50; // Only refetch if driver moved >50m
-const POLL_INTERVAL_MS = 10_000; // 10 seconds
-const SMOOTH_TICK_MS = 1_000; // Smooth interpolation tick (1s)
+
+// ── Tuning ────────────────────────────────────────────────────────────
+// Real driver GPS pings hit the DB roughly every 8-20s (heartbeat).
+// We poll the parent loader for `driverLocation` updates; refresh the
+// ETA on every meaningful change (≥20 m moved) and at most every 5 s
+// to keep Mapbox usage bounded.
+const MIN_DISTANCE_CHANGE_M = 20;
+const POLL_INTERVAL_MS = 5_000;
+const MIN_FETCH_INTERVAL_MS = 4_000; // Hard floor between two Mapbox calls
+const STALE_AFTER_MS = 30_000; // Driver hasn't moved → ETA is "stalled" (do NOT fake decay)
 const FALLBACK_AVERAGE_SPEED_KMH = 28;
 
 interface Coordinates {
@@ -15,6 +22,8 @@ export interface ETAData {
   distanceKm: number;
   durationMin: number;
   lastUpdated: Date;
+  /** True when the driver hasn't moved for >STALE_AFTER_MS */
+  isStalled?: boolean;
 }
 
 interface UseETAOptions {
@@ -29,27 +38,29 @@ function haversineDistanceM(a: Coordinates, b: Coordinates): number {
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const sinDLat = Math.sin(dLat / 2);
   const sinDLng = Math.sin(dLng / 2);
-  const h = sinDLat * sinDLat + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * sinDLng * sinDLng;
+  const h =
+    sinDLat * sinDLat +
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      sinDLng * sinDLng;
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 function buildFallbackETA(origin: Coordinates, dest: Coordinates): ETAData {
   const distanceKmRaw = haversineDistanceM(origin, dest) / 1000;
   const distanceKm = Math.max(0.1, Math.round(distanceKmRaw * 10) / 10);
-  const durationMin = Math.max(1, Math.round((distanceKm / FALLBACK_AVERAGE_SPEED_KMH) * 60));
-
-  return {
-    distanceKm,
-    durationMin,
-    lastUpdated: new Date(),
-  };
+  const durationMin = Math.max(
+    1,
+    Math.round((distanceKm / FALLBACK_AVERAGE_SPEED_KMH) * 60)
+  );
+  return { distanceKm, durationMin, lastUpdated: new Date() };
 }
 
-async function fetchDirections(origin: Coordinates, dest: Coordinates): Promise<ETAData | null> {
-  if (!MAPBOX_TOKEN) {
-    return buildFallbackETA(origin, dest);
-  }
-
+async function fetchDirections(
+  origin: Coordinates,
+  dest: Coordinates
+): Promise<ETAData | null> {
+  if (!MAPBOX_TOKEN) return buildFallbackETA(origin, dest);
   try {
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=false&access_token=${MAPBOX_TOKEN}`;
     const res = await fetch(url);
@@ -59,7 +70,7 @@ async function fetchDirections(origin: Coordinates, dest: Coordinates): Promise<
     if (!route) return buildFallbackETA(origin, dest);
     return {
       distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-      durationMin: Math.round(route.duration / 60),
+      durationMin: Math.max(0, Math.round(route.duration / 60)),
       lastUpdated: new Date(),
     };
   } catch {
@@ -67,91 +78,105 @@ async function fetchDirections(origin: Coordinates, dest: Coordinates): Promise<
   }
 }
 
-export function useETACalculation({ driverLocation, targetLocation, enabled }: UseETAOptions) {
-  // The ETA actually shown to the UI (smoothly decremented every second)
+/**
+ * Returns the live ETA (distance + duration) between the driver and a target
+ * point (pickup OR destination). The ETA is updated ONLY from real GPS
+ * movement — there is NO artificial countdown between two GPS pings, so the
+ * progress bar truly reflects what the driver does on the road.
+ */
+export function useETACalculation({
+  driverLocation,
+  targetLocation,
+  enabled,
+}: UseETAOptions) {
   const [eta, setEta] = useState<ETAData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // The last "real" ETA returned from Mapbox — used as anchor for interpolation
-  const anchorEtaRef = useRef<ETAData | null>(null);
-  const anchorTimeRef = useRef<number>(0);
-
   const lastDriverPos = useRef<Coordinates | null>(null);
   const lastTargetPos = useRef<Coordinates | null>(null);
+  const lastFetchAtRef = useRef<number>(0);
+  const lastMovementAtRef = useRef<number>(Date.now());
+  const inFlightRef = useRef<boolean>(false);
 
-  const calculate = useCallback(async () => {
-    if (!driverLocation || !targetLocation || !enabled) return;
+  const calculate = useCallback(
+    async (force = false) => {
+      if (!driverLocation || !targetLocation || !enabled) return;
+      if (inFlightRef.current) return;
 
-    const targetChanged = !lastTargetPos.current 
-      || haversineDistanceM(lastTargetPos.current, targetLocation) > 100;
+      const now = Date.now();
+      const targetChanged =
+        !lastTargetPos.current ||
+        haversineDistanceM(lastTargetPos.current, targetLocation) > 100;
 
-    // Skip if driver hasn't moved enough AND target hasn't changed
-    if (!targetChanged && lastDriverPos.current) {
-      const moved = haversineDistanceM(lastDriverPos.current, driverLocation);
-      if (moved < MIN_DISTANCE_CHANGE_M && eta) return;
-    }
+      let driverMovedM = Number.POSITIVE_INFINITY;
+      if (lastDriverPos.current) {
+        driverMovedM = haversineDistanceM(lastDriverPos.current, driverLocation);
+      }
 
-    setLoading(true);
-    const result = await fetchDirections(driverLocation, targetLocation);
-    if (result) {
-      setEta(result);
-      anchorEtaRef.current = result;
-      anchorTimeRef.current = Date.now();
-      lastDriverPos.current = driverLocation;
-      lastTargetPos.current = targetLocation;
-    }
-    setLoading(false);
-  }, [driverLocation, targetLocation, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+      const significantMove = driverMovedM >= MIN_DISTANCE_CHANGE_M;
+      const fetchTooSoon = now - lastFetchAtRef.current < MIN_FETCH_INTERVAL_MS;
 
-  // Reset cache AND clear stale ETA immediately when target changes
+      // Decide whether to actually call Mapbox
+      const shouldFetch =
+        force || !eta || targetChanged || (significantMove && !fetchTooSoon);
+
+      // Track last real movement timestamp (used to flag "stalled" state)
+      if (significantMove) lastMovementAtRef.current = now;
+
+      if (!shouldFetch) {
+        // Just refresh stalled-flag without re-fetching
+        if (eta) {
+          const isStalled = now - lastMovementAtRef.current > STALE_AFTER_MS;
+          if ((eta.isStalled ?? false) !== isStalled) {
+            setEta({ ...eta, isStalled });
+          }
+        }
+        return;
+      }
+
+      inFlightRef.current = true;
+      setLoading(true);
+      const result = await fetchDirections(driverLocation, targetLocation);
+      inFlightRef.current = false;
+      setLoading(false);
+
+      if (result) {
+        const isStalled = now - lastMovementAtRef.current > STALE_AFTER_MS;
+        setEta({ ...result, isStalled });
+        lastDriverPos.current = driverLocation;
+        lastTargetPos.current = targetLocation;
+        lastFetchAtRef.current = now;
+      }
+    },
+    [driverLocation, targetLocation, enabled, eta]
+  );
+
+  // Reset cache + clear stale ETA when target changes (phase switch)
   useEffect(() => {
     lastDriverPos.current = null;
     lastTargetPos.current = null;
-    anchorEtaRef.current = null;
-    anchorTimeRef.current = 0;
+    lastFetchAtRef.current = 0;
+    lastMovementAtRef.current = Date.now();
     setEta(null);
   }, [targetLocation?.lat, targetLocation?.lng]);
 
-  // Initial calculation + polling (real fetch every 10s)
-  useEffect(() => {
-    if (!enabled || !driverLocation || !targetLocation) return;
-
-    calculate();
-    const interval = setInterval(calculate, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [calculate, enabled, driverLocation?.lat, driverLocation?.lng, targetLocation?.lat, targetLocation?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Smooth interpolation: every 1s, decrement ETA based on average speed of last anchor
-  // This avoids the "jumping" effect where 2km vanish at once when Mapbox returns.
+  // Reactive recompute whenever driver position changes
   useEffect(() => {
     if (!enabled) return;
-    const tick = setInterval(() => {
-      const anchor = anchorEtaRef.current;
-      if (!anchor) return;
-      const elapsedSec = (Date.now() - anchorTimeRef.current) / 1000;
-      if (elapsedSec < 1) return;
+    calculate(false);
+  }, [enabled, driverLocation?.lat, driverLocation?.lng, calculate]);
 
-      // Speed implied by anchor (km / min → km/h)
-      const anchorSpeedKmh = anchor.durationMin > 0 ? (anchor.distanceKm / anchor.durationMin) * 60 : FALLBACK_AVERAGE_SPEED_KMH;
-      const speed = Math.max(5, Math.min(110, anchorSpeedKmh)); // clamp to realistic VTC speed
-
-      const distanceTravelledKm = (speed * (elapsedSec / 3600));
-      const newDistance = Math.max(0, anchor.distanceKm - distanceTravelledKm);
-      const newDuration = Math.max(0, anchor.durationMin - (elapsedSec / 60));
-
-      setEta({
-        distanceKm: Math.round(newDistance * 100) / 100,
-        durationMin: Math.max(0, Math.round(newDuration)),
-        lastUpdated: anchor.lastUpdated,
-      });
-    }, SMOOTH_TICK_MS);
-    return () => clearInterval(tick);
-  }, [enabled]);
+  // Background safety poll: re-evaluates "stalled" flag, no extra Mapbox call
+  // unless the driver moved enough.
+  useEffect(() => {
+    if (!enabled) return;
+    const interval = setInterval(() => calculate(false), POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [enabled, calculate]);
 
   const forceRefresh = useCallback(() => {
-    lastDriverPos.current = null;
-    lastTargetPos.current = null;
-    calculate();
+    lastFetchAtRef.current = 0;
+    calculate(true);
   }, [calculate]);
 
   return { eta, loading, forceRefresh };
