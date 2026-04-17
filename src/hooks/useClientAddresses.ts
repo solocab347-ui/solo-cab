@@ -20,6 +20,14 @@ export interface RecentAddress {
   used_as: 'pickup' | 'destination';
 }
 
+export interface FrequentAddress {
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  usage_count: number;
+  last_used: string;
+}
+
 /**
  * Loads saved (favorite) addresses + recent ones (last 5 used) for the current client.
  * Used by the unified booking page to pre-fill / suggest addresses.
@@ -28,6 +36,7 @@ export function useClientAddresses() {
   const { user } = useAuth();
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [recent, setRecent] = useState<RecentAddress[]>([]);
+  const [frequent, setFrequent] = useState<FrequentAddress[]>([]);
   const [loading, setLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
 
@@ -35,6 +44,7 @@ export function useClientAddresses() {
     if (!user) {
       setSaved([]);
       setRecent([]);
+      setFrequent([]);
       setClientId(null);
       return;
     }
@@ -48,7 +58,7 @@ export function useClientAddresses() {
       const cid = c?.id || null;
       setClientId(cid);
 
-      const [savedRes, recentRes] = await Promise.all([
+      const [savedRes, recentRes, freqRes] = await Promise.all([
         cid
           ? supabase
               .from('client_saved_addresses')
@@ -58,10 +68,12 @@ export function useClientAddresses() {
               .order('created_at', { ascending: true })
           : Promise.resolve({ data: [], error: null } as any),
         supabase.rpc('get_client_recent_addresses' as any, { _limit: 5 }),
+        supabase.rpc('get_client_frequent_addresses' as any, { _min_count: 3, _limit: 5 }),
       ]);
 
       setSaved((savedRes.data || []) as SavedAddress[]);
       setRecent((recentRes.data || []) as RecentAddress[]);
+      setFrequent((freqRes.data || []) as FrequentAddress[]);
     } catch (err) {
       console.error('useClientAddresses error:', err);
     } finally {
@@ -114,5 +126,47 @@ export function useClientAddresses() {
     [reload]
   );
 
-  return { saved, recent, loading, clientId, reload, addSaved, removeSaved, updateSaved };
+  /**
+   * Reorder saved addresses. Provide the full list in the desired order;
+   * each item's `position` is updated accordingly.
+   */
+  const reorderSaved = useCallback(
+    async (orderedIds: string[]) => {
+      if (!clientId || orderedIds.length === 0) return;
+      // Optimistic local update
+      setSaved((prev) => {
+        const map = new Map(prev.map((a) => [a.id, a]));
+        return orderedIds
+          .map((id, idx) => {
+            const a = map.get(id);
+            return a ? { ...a, position: idx } : null;
+          })
+          .filter(Boolean) as SavedAddress[];
+      });
+      // Persist sequentially (small list, simpler than RPC)
+      const updates = orderedIds.map((id, idx) =>
+        supabase.from('client_saved_addresses').update({ position: idx }).eq('id', id)
+      );
+      const results = await Promise.all(updates);
+      const firstError = results.find((r) => r.error)?.error;
+      if (firstError) {
+        await reload();
+        throw firstError;
+      }
+    },
+    [clientId, reload]
+  );
+
+  return {
+    saved,
+    recent,
+    frequent,
+    loading,
+    clientId,
+    reload,
+    addSaved,
+    removeSaved,
+    updateSaved,
+    reorderSaved,
+  };
 }
