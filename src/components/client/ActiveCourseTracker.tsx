@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   MapPin, Clock, CheckCircle, XCircle, Car,
   Navigation, ArrowLeft, Loader2, CreditCard, X, ShieldCheck,
+  Star, Heart, Phone,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import { BookingCardStep } from "@/components/client/booking/BookingCardStep";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -51,6 +53,11 @@ interface DriverInfo {
   full_name: string | null;
   current_latitude: number | null;
   current_longitude: number | null;
+  rating: number | null;
+  total_rides: number | null;
+  vehicle_brand: string | null;
+  vehicle_model: string | null;
+  vehicle_color: string | null;
 }
 
 const PHASE_ORDER: CoursePhase[] = ["pending", "accepted", "driver_approaching", "driver_arrived", "in_progress", "completed"];
@@ -63,8 +70,6 @@ const PHASE_CONFIG: Record<string, { label: string; description: string }> = {
   in_progress: { label: "En cours", description: "Vous êtes en route vers votre destination" },
   completed: { label: "Terminée", description: "Votre course est terminée" },
 };
-
-const MAPBOX_TOKEN = "pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg";
 
 function getPrivacySafeName(fullName: string | null, companyName: string | null): string {
   if (companyName) return companyName;
@@ -88,10 +93,11 @@ function LiveMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
+  const { token: mapboxToken, isLoading: tokenLoading, error: tokenError } = useMapboxToken();
 
   useEffect(() => {
-    if (!mapContainer.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    if (!mapContainer.current || !mapboxToken) return;
+    mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] = driverLng && driverLat
       ? [driverLng, driverLat]
@@ -133,7 +139,7 @@ function LiveMap({
 
     return () => { map.current?.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mapboxToken]);
 
   useEffect(() => {
     if (!driverLat || !driverLng || !driverMarker.current) return;
@@ -142,6 +148,22 @@ function LiveMap({
       map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
     }
   }, [driverLat, driverLng, status]);
+
+  if (tokenLoading) {
+    return (
+      <div className="w-full h-56 rounded-xl border border-border flex items-center justify-center bg-muted/30">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (tokenError || !mapboxToken) {
+    return (
+      <div className="w-full h-56 rounded-xl border border-border flex flex-col items-center justify-center bg-muted/30 gap-2 p-4 text-center">
+        <MapPin className="h-8 w-8 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">Carte temporairement indisponible</p>
+      </div>
+    );
+  }
 
   return <div ref={mapContainer} className="w-full h-56 rounded-xl overflow-hidden border border-border" />;
 }
@@ -159,6 +181,8 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   const [rideRequestId, setRideRequestId] = useState<string | null>(null);
   const [showCardForm, setShowCardForm] = useState(false);
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; phone: string } | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteSaving, setFavoriteSaving] = useState(false);
 
   const isApproaching = course?.status === "driver_approaching";
   const isInProgress = course?.status === "in_progress";
@@ -192,7 +216,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
     const { data: driverData } = await supabase
       .from("drivers")
-      .select("id, company_name, contact_phone, show_phone, current_latitude, current_longitude, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
+      .select("id, company_name, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
       .eq("id", data.driver_id)
       .single();
 
@@ -207,6 +231,11 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
         full_name: profile?.full_name || null,
         current_latitude: driverData.current_latitude,
         current_longitude: driverData.current_longitude,
+        rating: (driverData as any).rating ?? null,
+        total_rides: (driverData as any).total_rides ?? null,
+        vehicle_brand: (driverData as any).vehicle_brand ?? null,
+        vehicle_model: (driverData as any).vehicle_model ?? null,
+        vehicle_color: (driverData as any).vehicle_color ?? null,
       });
     }
 
@@ -289,6 +318,39 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   useEffect(() => {
     if (needsCard) setShowCardForm(true);
   }, [needsCard]);
+
+  // Load favorite state for this client+driver
+  useEffect(() => {
+    if (!course?.client_id || !driver?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("favorite_driver_id")
+        .eq("id", course.client_id!)
+        .maybeSingle();
+      setIsFavorite(data?.favorite_driver_id === driver.id);
+    })();
+  }, [course?.client_id, driver?.id]);
+
+  const toggleFavorite = useCallback(async () => {
+    if (!course?.client_id || !driver?.id || favoriteSaving) return;
+    setFavoriteSaving(true);
+    try {
+      const newValue = isFavorite ? null : driver.id;
+      const { error } = await supabase
+        .from("clients")
+        .update({ favorite_driver_id: newValue, updated_at: new Date().toISOString() })
+        .eq("id", course.client_id);
+      if (error) throw error;
+      setIsFavorite(!isFavorite);
+      toast.success(isFavorite ? "Retiré de vos favoris" : "Ajouté à vos chauffeurs favoris ❤️");
+    } catch (err) {
+      console.error(err);
+      toast.error("Impossible de mettre à jour vos favoris");
+    } finally {
+      setFavoriteSaving(false);
+    }
+  }, [course?.client_id, driver?.id, isFavorite, favoriteSaving]);
 
   const driverName = getPrivacySafeName(driver?.full_name ?? null, driver?.company_name ?? null);
   const price = course?.final_payment_amount || course?.guest_estimated_price;
@@ -431,24 +493,75 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
               {/* ─── Driver info ─── */}
               {driver && (
-                <Card>
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <Avatar className="h-14 w-14">
-                      <AvatarImage src={driver.profile_photo_url || ""} />
-                      <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">{driverName}</p>
-                      <p className="text-xs text-muted-foreground">Votre chauffeur</p>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                        <AvatarImage src={driver.profile_photo_url || ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                          {driverName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-base truncate">{driverName}</p>
+                        {(driver.rating || driver.total_rides) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {driver.rating != null && driver.rating > 0 && (
+                              <div className="flex items-center gap-0.5 text-xs">
+                                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                <span className="font-semibold">{driver.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                            {driver.total_rides != null && driver.total_rides > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                · {driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {(driver.vehicle_brand || driver.vehicle_model) && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <Car className="h-3 w-3" />
+                            {[driver.vehicle_brand, driver.vehicle_model, driver.vehicle_color]
+                              .filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant={isFavorite ? "default" : "outline"}
+                        size="icon"
+                        onClick={toggleFavorite}
+                        disabled={favoriteSaving || !course.client_id}
+                        className="h-9 w-9 shrink-0"
+                        aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                      </Button>
                     </div>
-                    {rideRequestId && isActive && course.client_id && (
-                      <RideChatPanel
-                        rideId={rideRequestId}
-                        senderType="client"
-                        senderId={course.client_id}
-                        otherName={driverName}
-                      />
-                    )}
+                    <div className="flex gap-2">
+                      {driver.contact_phone && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          asChild
+                        >
+                          <a href={`tel:${driver.contact_phone}`}>
+                            <Phone className="h-4 w-4 mr-1.5" /> Appeler
+                          </a>
+                        </Button>
+                      )}
+                      {rideRequestId && isActive && course.client_id && (
+                        <div className="flex-1">
+                          <RideChatPanel
+                            rideId={rideRequestId}
+                            senderType="client"
+                            senderId={course.client_id}
+                            otherName={driverName}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
