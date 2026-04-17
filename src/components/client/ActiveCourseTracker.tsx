@@ -149,6 +149,22 @@ function LiveMap({
     }
   }, [driverLat, driverLng, status]);
 
+  if (tokenLoading) {
+    return (
+      <div className="w-full h-56 rounded-xl border border-border flex items-center justify-center bg-muted/30">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (tokenError || !mapboxToken) {
+    return (
+      <div className="w-full h-56 rounded-xl border border-border flex flex-col items-center justify-center bg-muted/30 gap-2 p-4 text-center">
+        <MapPin className="h-8 w-8 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">Carte temporairement indisponible</p>
+      </div>
+    );
+  }
+
   return <div ref={mapContainer} className="w-full h-56 rounded-xl overflow-hidden border border-border" />;
 }
 
@@ -198,7 +214,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
     const { data: driverData } = await supabase
       .from("drivers")
-      .select("id, company_name, contact_phone, show_phone, current_latitude, current_longitude, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
+      .select("id, company_name, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
       .eq("id", data.driver_id)
       .single();
 
@@ -213,6 +229,11 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
         full_name: profile?.full_name || null,
         current_latitude: driverData.current_latitude,
         current_longitude: driverData.current_longitude,
+        rating: (driverData as any).rating ?? null,
+        total_rides: (driverData as any).total_rides ?? null,
+        vehicle_brand: (driverData as any).vehicle_brand ?? null,
+        vehicle_model: (driverData as any).vehicle_model ?? null,
+        vehicle_color: (driverData as any).vehicle_color ?? null,
       });
     }
 
