@@ -319,6 +319,39 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
     if (needsCard) setShowCardForm(true);
   }, [needsCard]);
 
+  // Load favorite state for this client+driver
+  useEffect(() => {
+    if (!course?.client_id || !driver?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("favorite_driver_id")
+        .eq("id", course.client_id!)
+        .maybeSingle();
+      setIsFavorite(data?.favorite_driver_id === driver.id);
+    })();
+  }, [course?.client_id, driver?.id]);
+
+  const toggleFavorite = useCallback(async () => {
+    if (!course?.client_id || !driver?.id || favoriteSaving) return;
+    setFavoriteSaving(true);
+    try {
+      const newValue = isFavorite ? null : driver.id;
+      const { error } = await supabase
+        .from("clients")
+        .update({ favorite_driver_id: newValue, updated_at: new Date().toISOString() })
+        .eq("id", course.client_id);
+      if (error) throw error;
+      setIsFavorite(!isFavorite);
+      toast.success(isFavorite ? "Retiré de vos favoris" : "Ajouté à vos chauffeurs favoris ❤️");
+    } catch (err) {
+      console.error(err);
+      toast.error("Impossible de mettre à jour vos favoris");
+    } finally {
+      setFavoriteSaving(false);
+    }
+  }, [course?.client_id, driver?.id, isFavorite, favoriteSaving]);
+
   const driverName = getPrivacySafeName(driver?.full_name ?? null, driver?.company_name ?? null);
   const price = course?.final_payment_amount || course?.guest_estimated_price;
   const currentPhaseIndex = course ? PHASE_ORDER.indexOf(course.status as CoursePhase) : -1;
