@@ -34,6 +34,43 @@ const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; s
   return !scheduledDate || scheduledDate < todayEnd;
 };
 
+/**
+ * Release the finalization lock by resetting final_payment_status from 'processing' to 'failed'.
+ * Used when a Stripe operation fails so the next driver retry can proceed immediately
+ * instead of waiting 30s for the auto-recovery window.
+ */
+const releaseLock = async (
+  supabaseClient: ReturnType<typeof createClient>,
+  courseId: string,
+  errorMessage?: string,
+) => {
+  try {
+    // Try the RPC first (preferred — bumps retry counter)
+    const { error: rpcErr } = await supabaseClient.rpc("release_course_finalization_lock", {
+      p_course_id: courseId,
+      p_error_message: errorMessage ?? null,
+    });
+    if (rpcErr) {
+      // Fallback: direct UPDATE (works even if migration not yet applied)
+      await supabaseClient
+        .from("courses")
+        .update({
+          final_payment_status: "failed",
+          last_payment_error: errorMessage ?? null,
+        })
+        .eq("id", courseId)
+        .eq("final_payment_status", "processing");
+    }
+  } catch (_e) {
+    // Non-blocking — last resort direct update
+    await supabaseClient
+      .from("courses")
+      .update({ final_payment_status: "failed", last_payment_error: errorMessage ?? null })
+      .eq("id", courseId)
+      .eq("final_payment_status", "processing");
+  }
+};
+
 const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<typeof createClient>, driverId: string) => {
   const { data: activeCourses, error } = await supabaseClient
     .from("courses")
@@ -81,6 +118,8 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  let acquiredLockCourseId: string | null = null;
+
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
@@ -119,14 +158,23 @@ serve(async (req) => {
 
     if (!lockResult?.success) {
       logStep("Lock denied", { result: lockResult });
+      // Transient = double-click / concurrent attempt. Tell the UI to retry softly.
+      const isTransient = !!lockResult?.transient || !!lockResult?.locked;
       return new Response(
         JSON.stringify({ 
           success: false, 
+          transient: isTransient,
+          retry_in_sec: lockResult?.retry_in_sec ?? (isTransient ? 3 : null),
           error: lockResult?.error || "Finalisation impossible",
           status: lockResult?.status || "unknown",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: isTransient ? 202 : 409 }
       );
+    }
+
+    // Lock acquired — track for release on unexpected errors
+    if (lockResult.can_proceed) {
+      acquiredLockCourseId = course_id;
     }
 
     // Already finalized (idempotent)
@@ -357,8 +405,43 @@ serve(async (req) => {
           // Fall through to create new payment below
         }
       } catch (captureError: any) {
+        // CRITICAL: if the hold was actually captured but a side-effect failed,
+        // we must NOT fall through to creating a new PaymentIntent (would double-charge).
+        // Re-fetch the PI to check real status before deciding.
+        try {
+          const recheck = await stripe.paymentIntents.retrieve(holdPiId);
+          if (recheck.status === "succeeded") {
+            logStep("⚠️ Capture side-effect failed but PI is succeeded — finalizing safely", {
+              piId: recheck.id,
+              error: captureError.message,
+            });
+            await supabaseClient
+              .from("courses")
+              .update({
+                status: "completed",
+                payment_status: "paid",
+                final_payment_status: "succeeded",
+                payment_captured_at: new Date().toISOString(),
+                final_payment_intent_id: recheck.id,
+                final_payment_amount: totalAmount,
+                final_payment_at: new Date().toISOString(),
+              })
+              .eq("id", course_id);
+            await syncDriverStatusAfterFinalization(supabaseClient, course.driver_id);
+            return new Response(
+              JSON.stringify({
+                success: true, already_paid: true,
+                message: "Paiement encaissé (récupération automatique après erreur post-capture)",
+                payment_intent_id: recheck.id,
+                amount_charged: totalAmount,
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+            );
+          }
+        } catch (_recheckErr) {
+          // Recheck failed too, fall through
+        }
         logStep("Capture failed, falling through to new payment", { error: captureError.message });
-        // Fall through to create new payment below
       }
     }
 
@@ -746,8 +829,13 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
 
+    // Release the finalization lock so the next retry can proceed immediately
+    if (acquiredLockCourseId) {
+      await releaseLock(supabaseClient, acquiredLockCourseId, errorMessage);
+    }
+
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, transient: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

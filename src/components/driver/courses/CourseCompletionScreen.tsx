@@ -65,11 +65,23 @@ export function CourseCompletionScreen({
   const isFailed = isCard && !isSuccess && !isProcessing;
 
   const handleRetryPayment = async () => {
+    if (retrying) return; // Anti double-click
     setRetrying(true);
     try {
       const { data, error } = await supabase.functions.invoke("finalize-course-payment", {
         body: { course_id: courseId },
       });
+      // Transient = lock contention. Soft retry once after the suggested delay.
+      if (data?.transient && data?.retry_in_sec) {
+        toast.info(`Paiement déjà en cours, nouvelle tentative dans ${data.retry_in_sec}s...`);
+        await new Promise((r) => setTimeout(r, (data.retry_in_sec + 1) * 1000));
+        const retry = await supabase.functions.invoke("finalize-course-payment", { body: { course_id: courseId } });
+        if (retry.data?.success || retry.data?.already_paid || retry.data?.status === "succeeded") {
+          toast.success("Paiement encaissé avec succès !");
+          setLocalResult({ success: true, status: "succeeded" });
+          return;
+        }
+      }
       if (error) throw error;
       if (data?.status === "succeeded" || data?.success || data?.already_paid) {
         toast.success("Paiement encaissé avec succès !");

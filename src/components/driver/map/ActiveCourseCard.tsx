@@ -496,10 +496,18 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const finalizeWithTimeout = async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
+      const invokeOnce = () => supabase.functions.invoke('finalize-course-payment', {
+        body: { course_id: completingCourseId },
+      });
       try {
-        const { data, error } = await supabase.functions.invoke('finalize-course-payment', {
-          body: { course_id: completingCourseId },
-        });
+        let { data, error } = await invokeOnce();
+        // Soft retry on transient lock contention (double-click / concurrent finalize)
+        if (data?.transient && data?.retry_in_sec) {
+          await new Promise((r) => setTimeout(r, (data.retry_in_sec + 1) * 1000));
+          const retry = await invokeOnce();
+          data = retry.data;
+          error = retry.error;
+        }
         clearTimeout(timeout);
         if (error) {
           if (isCardPayment) {

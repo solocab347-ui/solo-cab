@@ -74,18 +74,30 @@ export function CourseFinalizationButton({
   }, [courseId, status, onSuccess]);
 
   const handleFinalize = async () => {
+    if (loading) return; // Anti double-click
     setLoading(true);
     setError(null);
 
+    const invokeOnce = () => supabase.functions.invoke('finalize-course-payment', {
+      body: { course_id: courseId }
+    });
+
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('finalize-course-payment', {
-        body: { course_id: courseId }
-      });
+      let { data, error: fnError } = await invokeOnce();
+
+      // Soft retry on transient lock contention
+      if (data?.transient && data?.retry_in_sec) {
+        toast.info(`Paiement déjà en cours, nouvelle tentative dans ${data.retry_in_sec}s...`);
+        await new Promise((r) => setTimeout(r, (data.retry_in_sec + 1) * 1000));
+        const retry = await invokeOnce();
+        data = retry.data;
+        fnError = retry.error;
+      }
 
       if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
+      if (data?.error && !data?.success && !data?.already_paid) throw new Error(data.error);
 
-      if (data.status === 'succeeded' || data.already_paid) {
+      if (data.status === 'succeeded' || data.already_paid || data.success) {
         setStatus('succeeded');
         toast.success('🎉 Paiement encaissé avec succès !');
         onSuccess?.();
