@@ -649,27 +649,31 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
     return (
       <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {course.drivers?.profiles?.profile_photo_url ? (
               <img
                 src={course.drivers.profiles.profile_photo_url}
-                alt={course.drivers.profiles.full_name}
-                className="w-12 h-12 rounded-full object-cover"
+                alt={course.drivers.profiles.full_name || "Chauffeur"}
+                className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0"
               />
             ) : (
-              <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary-foreground" />
+              <div className="w-14 h-14 bg-gradient-dark rounded-full flex items-center justify-center flex-shrink-0">
+                <Car className="w-7 h-7 text-primary-foreground" />
               </div>
             )}
-            <div>
-              <h3 className="font-bold">{(() => {
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-base truncate">{(() => {
                 const n = course.drivers?.profiles?.full_name || '';
                 const p = n.trim().split(/\s+/);
-                return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]?.toUpperCase()}.` : n;
+                return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]?.toUpperCase()}.` : (n || 'Chauffeur VTC');
               })()}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+              {course.drivers?.company_name && (
+                <p className="text-xs text-muted-foreground truncate font-medium">
+                  {course.drivers.company_name}
+                </p>
+              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-0.5">
                 {(() => {
-                  // Affichage: modèle/marque en premier, couleur à la fin
                   const brand = course.drivers?.vehicle_brand;
                   const model = course.drivers?.vehicle_model;
                   const color = course.drivers?.vehicle_color;
@@ -678,13 +682,15 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
                   if (model && model !== brand) vehicleParts.push(model);
                   if (color) vehicleParts.push(color);
                   const vehicleDisplay = vehicleParts.join(' ');
-                  return vehicleDisplay ? <span>{vehicleDisplay}</span> : null;
+                  return vehicleDisplay ? (
+                    <span className="flex items-center gap-1">
+                      <Car className="w-3 h-3" />
+                      {vehicleDisplay}
+                    </span>
+                  ) : null;
                 })()}
                 {course.course_number && (
-                  <>
-                    <span>•</span>
-                    <span className="text-premium font-medium">{course.course_number}</span>
-                  </>
+                  <span className="text-premium font-medium">{course.course_number}</span>
                 )}
               </div>
             </div>
