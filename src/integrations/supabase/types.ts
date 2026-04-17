@@ -1358,6 +1358,67 @@ export type Database = {
           },
         ]
       }
+      client_saved_addresses: {
+        Row: {
+          address: string
+          address_type: string
+          client_id: string
+          created_at: string
+          id: string
+          label: string
+          latitude: number | null
+          longitude: number | null
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          address_type?: string
+          client_id: string
+          created_at?: string
+          id?: string
+          label: string
+          latitude?: number | null
+          longitude?: number | null
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          address_type?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_saved_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_saved_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_saved_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "safe_client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           abusive_ratings_count: number | null
@@ -22802,6 +22863,16 @@ export type Database = {
         }[]
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
+      get_client_recent_addresses: {
+        Args: { _limit?: number }
+        Returns: {
+          address: string
+          last_used: string
+          latitude: number
+          longitude: number
+          used_as: string
+        }[]
+      }
       get_company_course_driver_profile: {
         Args: { driver_user_id: string }
         Returns: {

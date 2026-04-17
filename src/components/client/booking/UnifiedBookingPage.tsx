@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { useClientAddresses } from '@/hooks/useClientAddresses';
 import { RideWaitingScreen } from '@/components/client/immediate-ride/RideWaitingScreen';
 import { BookingStepIndicator } from './BookingStepIndicator';
 import { StepTrajet } from './steps/StepTrajet';
 import { StepResultats } from './steps/StepResultats';
 import { StepConfirm } from './steps/StepConfirm';
+import type { QuickAddress } from './AddressQuickPicks';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,6 +68,44 @@ export function UnifiedBookingPage() {
 
   // Favorite driver
   const [favoriteDriverIds, setFavoriteDriverIds] = useState<string[]>([]);
+
+  // Saved + recent addresses (for logged-in clients)
+  const { saved: savedAddresses, recent: recentAddresses } = useClientAddresses();
+  const prefilledFromSaved = useRef(false);
+
+  // Auto pre-fill pickup with the client's "home" saved address (only when nothing typed yet)
+  useEffect(() => {
+    if (prefilledFromSaved.current) return;
+    if (!user) return;
+    if (pickupAddress.trim() || pickupCoords) return;
+    if (savedAddresses.length === 0) return;
+    const home = savedAddresses.find((a) => a.address_type === 'home') || savedAddresses[0];
+    if (!home) return;
+    prefilledFromSaved.current = true;
+    setPickupAddress(home.address);
+    if (home.latitude != null && home.longitude != null) {
+      setPickupCoords({ lat: home.latitude, lng: home.longitude });
+    }
+  }, [user, savedAddresses, pickupAddress, pickupCoords]);
+
+  const handleQuickPickup = useCallback((a: QuickAddress) => {
+    setPickupAddress(a.address);
+    if (a.latitude != null && a.longitude != null) {
+      setPickupCoords({ lat: a.latitude, lng: a.longitude });
+    } else {
+      setPickupCoords(null);
+    }
+    setShowPickupSuggestions(false);
+  }, []);
+  const handleQuickDest = useCallback((a: QuickAddress) => {
+    setDestinationAddress(a.address);
+    if (a.latitude != null && a.longitude != null) {
+      setDestCoords({ lat: a.latitude, lng: a.longitude });
+    } else {
+      setDestCoords(null);
+    }
+    setShowDestSuggestions(false);
+  }, []);
 
   // Registration
   const [regName, setRegName] = useState('');
@@ -688,6 +728,10 @@ export function UnifiedBookingPage() {
                 routeDistanceKm={routeDistanceKm} routeDurationMin={routeDurationMin}
                 driversCount={drivers.length}
                 onNext={handleSearch}
+                savedAddresses={savedAddresses}
+                recentAddresses={recentAddresses}
+                onPickQuickPickup={handleQuickPickup}
+                onPickQuickDest={handleQuickDest}
               />
             )}
 

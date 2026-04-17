@@ -7,6 +7,8 @@ import {
   MapPin, Navigation, Loader2, Zap, CalendarClock, Calendar, Clock, Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AddressQuickPicks, type QuickAddress } from '../AddressQuickPicks';
+import type { SavedAddress, RecentAddress } from '@/hooks/useClientAddresses';
 
 interface StepTrajetProps {
   mode: 'reservation' | 'immediate';
@@ -41,6 +43,11 @@ interface StepTrajetProps {
   routeDurationMin: number | null;
   driversCount: number;
   onNext: () => void;
+  // Quick picks (optional, only shown for logged-in clients)
+  savedAddresses?: SavedAddress[];
+  recentAddresses?: RecentAddress[];
+  onPickQuickPickup?: (a: QuickAddress) => void;
+  onPickQuickDest?: (a: QuickAddress) => void;
 }
 
 export function StepTrajet({
@@ -61,6 +68,10 @@ export function StepTrajet({
   routeDistanceKm, routeDurationMin,
   driversCount,
   onNext,
+  savedAddresses = [],
+  recentAddresses = [],
+  onPickQuickPickup,
+  onPickQuickDest,
 }: StepTrajetProps) {
   const canProceed = (() => {
     if (!pickupAddress.trim() || !destinationAddress.trim()) return false;
@@ -136,6 +147,17 @@ export function StepTrajet({
                 {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
               </Button>
             </div>
+            {onPickQuickPickup && (savedAddresses.length > 0 || recentAddresses.length > 0) && (
+              <div className="mt-2 ml-5">
+                <AddressQuickPicks
+                  saved={savedAddresses}
+                  recent={recentAddresses}
+                  onSelect={onPickQuickPickup}
+                  excludeAddress={pickupAddress}
+                  title="Départ rapide"
+                />
+              </div>
+            )}
           </div>
 
           {/* Divider line */}
@@ -173,6 +195,17 @@ export function StepTrajet({
                 )}
               </div>
             </div>
+            {onPickQuickDest && (savedAddresses.length > 0 || recentAddresses.length > 0) && (
+              <div className="mt-2 ml-5">
+                <AddressQuickPicks
+                  saved={savedAddresses}
+                  recent={recentAddresses}
+                  onSelect={onPickQuickDest}
+                  excludeAddress={destinationAddress}
+                  title="Destination rapide"
+                />
+              </div>
+            )}
           </div>
 
           {/* Date/Time for reservations */}
