@@ -9,6 +9,7 @@ import { BookingStepIndicator } from './BookingStepIndicator';
 import { StepTrajet } from './steps/StepTrajet';
 import { StepResultats } from './steps/StepResultats';
 import { StepConfirm } from './steps/StepConfirm';
+import { FrequentAddressBanner } from './FrequentAddressBanner';
 import type { QuickAddress } from './AddressQuickPicks';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -706,6 +707,9 @@ export function UnifiedBookingPage() {
             {/* Step indicator */}
             <BookingStepIndicator currentStep={currentStep} totalSteps={3} />
 
+            {/* Suggest saving frequent address as favorite (only on step 1) */}
+            {currentStep === 1 && <FrequentAddressBanner />}
+
             {/* Step 1: Trajet */}
             {currentStep === 1 && (
               <StepTrajet
@@ -723,6 +727,7 @@ export function UnifiedBookingPage() {
                 setScheduledDate={setScheduledDate} setScheduledTime={setScheduledTime}
                 maxSearchRadiusKm={maxSearchRadiusKm} setMaxSearchRadiusKm={setMaxSearchRadiusKm}
                 isGettingLocation={isGettingLocation} getCurrentLocation={getCurrentLocation}
+                pickupCoords={pickupCoords} destCoords={destCoords}
                 isGeocoding={isGeocoding} isLoading={isLoading}
                 priceRange={priceRange} isFetchingPrices={isFetchingPrices}
                 routeDistanceKm={routeDistanceKm} routeDurationMin={routeDurationMin}
