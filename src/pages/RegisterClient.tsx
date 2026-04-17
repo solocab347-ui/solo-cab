@@ -225,6 +225,54 @@ const RegisterClient = () => {
     setLoading(true);
 
     try {
+      // ===== GUEST → CLIENT FLOW =====
+      // No email validation required; account is auto-confirmed and the
+      // guest course is automatically attached to the new client record.
+      if (guestToken) {
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke(
+          "register-from-guest-course",
+          {
+            body: {
+              email: formData.email,
+              password: formData.password,
+              full_name: formData.fullName,
+              phone: formData.phone,
+              guest_token: guestToken,
+            },
+          }
+        );
+
+        if (edgeError) throw edgeError;
+        if (!edgeData?.success) {
+          if (edgeData?.error === "course_not_found") {
+            toast.error("Course introuvable. Le lien de suivi est peut-être expiré.");
+          } else if (edgeData?.email_existed) {
+            toast.error("Cet email existe déjà. Connectez-vous pour récupérer votre course.");
+            navigate(`/auth?redirect=/client-dashboard?from_guest=1`);
+          } else {
+            toast.error(edgeData?.error || "Erreur lors de l'inscription");
+          }
+          return;
+        }
+
+        // Auto sign-in (account is auto-confirmed server-side)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email.toLowerCase(),
+          password: formData.password,
+        });
+        if (signInError) {
+          // Account exists but sign-in failed — fall back to login page
+          toast.success("Compte créé ! Connectez-vous pour accéder à votre course.");
+          navigate("/auth?redirect=/client-dashboard");
+          return;
+        }
+
+        toast.success("Bienvenue ! Votre course est dans votre tableau de bord.");
+        navigate(`/client-dashboard?from_guest=1&course_id=${edgeData.course_id}`);
+        return;
+      }
+
+      // ===== STANDARD SIGNUP (email confirmation required) =====
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
