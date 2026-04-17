@@ -16,6 +16,8 @@ interface RideChatPanelProps {
   senderType: 'client' | 'driver' | 'guest';
   senderId: string;
   otherName: string;
+  /** Required when senderType === 'guest' (the guest_tracking_token from the URL) */
+  guestToken?: string | null;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   triggerLabel?: string;
@@ -41,6 +43,7 @@ export function RideChatPanel({
   senderType,
   senderId,
   otherName,
+  guestToken,
   isOpen,
   onOpenChange,
   triggerLabel = "Contacter",
@@ -54,7 +57,7 @@ export function RideChatPanel({
     chatClosed,
     sendMessage,
     markAsRead,
-  } = useRideChat({ rideId, senderType, senderId });
+  } = useRideChat({ rideId, senderType, senderId, guestToken });
 
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
