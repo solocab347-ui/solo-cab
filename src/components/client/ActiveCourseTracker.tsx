@@ -79,7 +79,78 @@ function getPrivacySafeName(fullName: string | null, companyName: string | null)
   return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
 }
 
-// ── Live Map (lightweight, scoped to in-dashboard usage) ──
+// ── Realistic top-down car SVG (rotates with bearing) ──
+const CAR_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 128" width="44" height="88">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0" x2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="0.5" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#1e3a8a" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="carShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#carShadow)">
+    <!-- body -->
+    <rect x="8" y="6" width="48" height="116" rx="16" fill="url(#bodyGrad)" stroke="#0b1220" stroke-width="1"/>
+    <!-- hood lines -->
+    <rect x="14" y="14" width="36" height="2" rx="1" fill="#0b1220" opacity="0.6"/>
+    <!-- windshield (front) -->
+    <path d="M14 24 Q32 18 50 24 L48 42 Q32 38 16 42 Z" fill="url(#glassGrad)"/>
+    <!-- roof -->
+    <rect x="14" y="44" width="36" height="34" rx="6" fill="#0b1220" opacity="0.55"/>
+    <!-- rear window -->
+    <path d="M16 80 Q32 84 48 80 L50 98 Q32 104 14 98 Z" fill="url(#glassGrad)" opacity="0.85"/>
+    <!-- side mirrors -->
+    <rect x="3" y="38" width="6" height="6" rx="2" fill="#1f2937"/>
+    <rect x="55" y="38" width="6" height="6" rx="2" fill="#1f2937"/>
+    <!-- headlights (front = top of svg) -->
+    <rect x="13" y="7" width="9" height="4" rx="2" fill="#fef3c7"/>
+    <rect x="42" y="7" width="9" height="4" rx="2" fill="#fef3c7"/>
+    <!-- tail lights (rear = bottom) -->
+    <rect x="13" y="117" width="9" height="3" rx="1.5" fill="#dc2626"/>
+    <rect x="42" y="117" width="9" height="3" rx="1.5" fill="#dc2626"/>
+  </g>
+</svg>`;
+
+function buildDriverMarkerEl(): { el: HTMLDivElement; carEl: HTMLDivElement } {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:relative;width:48px;height:96px;display:flex;align-items:center;justify-content:center;";
+  // pulse ring
+  const pulse = document.createElement("div");
+  pulse.style.cssText = "position:absolute;width:60px;height:60px;border-radius:50%;background:hsl(217 91% 60% / 0.25);animation:pulseRing 2s ease-out infinite;";
+  wrap.appendChild(pulse);
+  // car (rotates)
+  const car = document.createElement("div");
+  car.style.cssText = "position:relative;width:44px;height:88px;transform-origin:center center;transition:transform 800ms ease-out;";
+  car.innerHTML = CAR_SVG;
+  wrap.appendChild(car);
+  // inject keyframes once
+  if (!document.getElementById("__driver-pulse-kf")) {
+    const style = document.createElement("style");
+    style.id = "__driver-pulse-kf";
+    style.textContent = `@keyframes pulseRing { 0% { transform:scale(0.6); opacity:0.7; } 100% { transform:scale(1.6); opacity:0; } }`;
+    document.head.appendChild(style);
+  }
+  return { el: wrap, carEl: car };
+}
+
+function bearingBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+// ── Live Map (with route tracing + realistic car marker) ──
 function LiveMap({
   driverLat, driverLng, driverPhoto, driverName,
   pickupLat, pickupLng, destLat, destLng, status,
@@ -93,7 +164,59 @@ function LiveMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
+  const driverCarEl = useRef<HTMLDivElement | null>(null);
+  const lastDriverPos = useRef<{ lat: number; lng: number } | null>(null);
+  const currentBearing = useRef<number>(0);
+  const lastRouteFetch = useRef<{ key: string; at: number }>({ key: "", at: 0 });
   const { token: mapboxToken, isLoading: tokenLoading, error: tokenError } = useMapboxToken();
+
+  // Determine route target based on phase
+  const routeTarget = (status === "driver_approaching")
+    ? (pickupLat && pickupLng ? { lat: pickupLat, lng: pickupLng } : null)
+    : (status === "in_progress" || status === "driver_arrived")
+      ? (destLat && destLng ? { lat: destLat, lng: destLng } : null)
+      : null;
+
+  // Fetch + draw route line
+  const refreshRoute = useCallback(async () => {
+    if (!map.current || !mapboxToken || !driverLat || !driverLng || !routeTarget) return;
+    const key = `${driverLat.toFixed(4)},${driverLng.toFixed(4)}->${routeTarget.lat.toFixed(4)},${routeTarget.lng.toFixed(4)}`;
+    const now = Date.now();
+    // Throttle: refetch only if key changed AND >8s since last fetch
+    if (key === lastRouteFetch.current.key && now - lastRouteFetch.current.at < 8000) return;
+    lastRouteFetch.current = { key, at: now };
+    try {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLng},${driverLat};${routeTarget.lng},${routeTarget.lat}?geometries=geojson&overview=full&access_token=${mapboxToken}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const geom = data.routes?.[0]?.geometry;
+      if (!geom || !map.current) return;
+      const src = map.current.getSource("route") as mapboxgl.GeoJSONSource | undefined;
+      const feature = { type: "Feature" as const, geometry: geom, properties: {} };
+      if (src) {
+        src.setData(feature as any);
+      } else {
+        map.current.addSource("route", { type: "geojson", data: feature as any });
+        map.current.addLayer({
+          id: "route-casing",
+          type: "line",
+          source: "route",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#1e40af", "line-width": 8, "line-opacity": 0.55 },
+        });
+        map.current.addLayer({
+          id: "route-line",
+          type: "line",
+          source: "route",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#3b82f6", "line-width": 4 },
+        });
+      }
+    } catch (e) {
+      console.warn("[LiveMap] route fetch error:", e);
+    }
+  }, [mapboxToken, driverLat, driverLng, routeTarget?.lat, routeTarget?.lng]);
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
@@ -106,28 +229,28 @@ function LiveMap({
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center, zoom: 13, attributionControl: false,
+      center, zoom: 14, attributionControl: false,
+    });
+
+    map.current.on("load", () => {
+      refreshRoute();
     });
 
     if (pickupLat && pickupLng) {
       const el = document.createElement("div");
-      el.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🧑</div>`;
+      el.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px;font-weight:bold;">A</div>`;
       new mapboxgl.Marker({ element: el }).setLngLat([pickupLng, pickupLat]).addTo(map.current);
     }
 
     if (destLat && destLng) {
       const el = document.createElement("div");
-      el.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🏁</div>`;
+      el.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px;font-weight:bold;">B</div>`;
       new mapboxgl.Marker({ element: el }).setLngLat([destLng, destLat]).addTo(map.current);
     }
 
-    const driverEl = document.createElement("div");
-    if (driverPhoto) {
-      driverEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;border:3px solid hsl(var(--primary));overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.4);"><img src="${driverPhoto}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
-    } else {
-      driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
-    }
-    driverMarker.current = new mapboxgl.Marker({ element: driverEl })
+    const { el: driverEl, carEl } = buildDriverMarkerEl();
+    driverCarEl.current = carEl;
+    driverMarker.current = new mapboxgl.Marker({ element: driverEl, anchor: "center" })
       .setLngLat(driverLng && driverLat ? [driverLng, driverLat] : center)
       .addTo(map.current);
 
@@ -135,37 +258,51 @@ function LiveMap({
     if (pickupLat && pickupLng) bounds.extend([pickupLng, pickupLat]);
     if (destLat && destLng) bounds.extend([destLng, destLat]);
     if (driverLat && driverLng) bounds.extend([driverLng, driverLat]);
-    if (!bounds.isEmpty()) map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+    if (!bounds.isEmpty()) map.current.fitBounds(bounds, { padding: 60, maxZoom: 15 });
 
     return () => { map.current?.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapboxToken]);
 
+  // Driver position updates: move marker, rotate car, refetch route, recenter
   useEffect(() => {
     if (!driverLat || !driverLng || !driverMarker.current) return;
     driverMarker.current.setLngLat([driverLng, driverLat]);
+
+    // Compute bearing from previous position so the car points where it goes
+    const prev = lastDriverPos.current;
+    if (prev && (prev.lat !== driverLat || prev.lng !== driverLng)) {
+      const b = bearingBetween(prev.lat, prev.lng, driverLat, driverLng);
+      currentBearing.current = b;
+      if (driverCarEl.current) {
+        driverCarEl.current.style.transform = `rotate(${b}deg)`;
+      }
+    }
+    lastDriverPos.current = { lat: driverLat, lng: driverLng };
+
     if ((status === "driver_approaching" || status === "in_progress") && map.current) {
       map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
     }
-  }, [driverLat, driverLng, status]);
+    refreshRoute();
+  }, [driverLat, driverLng, status, refreshRoute]);
 
   if (tokenLoading) {
     return (
-      <div className="w-full h-56 rounded-xl border border-border flex items-center justify-center bg-muted/30">
+      <div className="w-full h-72 rounded-xl border border-border flex items-center justify-center bg-muted/30">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
   if (tokenError || !mapboxToken) {
     return (
-      <div className="w-full h-56 rounded-xl border border-border flex flex-col items-center justify-center bg-muted/30 gap-2 p-4 text-center">
+      <div className="w-full h-72 rounded-xl border border-border flex flex-col items-center justify-center bg-muted/30 gap-2 p-4 text-center">
         <MapPin className="h-8 w-8 text-muted-foreground" />
         <p className="text-xs text-muted-foreground">Carte temporairement indisponible</p>
       </div>
     );
   }
 
-  return <div ref={mapContainer} className="w-full h-56 rounded-xl overflow-hidden border border-border" />;
+  return <div ref={mapContainer} className="w-full h-72 rounded-xl overflow-hidden border border-border" />;
 }
 
 interface ActiveCourseTrackerProps {
