@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   MapPin, Clock, CheckCircle, XCircle, Car,
   Navigation, ArrowLeft, Loader2, CreditCard, X, ShieldCheck,
+  Star, Heart, Phone,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import { BookingCardStep } from "@/components/client/booking/BookingCardStep";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -51,6 +53,11 @@ interface DriverInfo {
   full_name: string | null;
   current_latitude: number | null;
   current_longitude: number | null;
+  rating: number | null;
+  total_rides: number | null;
+  vehicle_brand: string | null;
+  vehicle_model: string | null;
+  vehicle_color: string | null;
 }
 
 const PHASE_ORDER: CoursePhase[] = ["pending", "accepted", "driver_approaching", "driver_arrived", "in_progress", "completed"];
@@ -63,8 +70,6 @@ const PHASE_CONFIG: Record<string, { label: string; description: string }> = {
   in_progress: { label: "En cours", description: "Vous êtes en route vers votre destination" },
   completed: { label: "Terminée", description: "Votre course est terminée" },
 };
-
-const MAPBOX_TOKEN = "pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg";
 
 function getPrivacySafeName(fullName: string | null, companyName: string | null): string {
   if (companyName) return companyName;
