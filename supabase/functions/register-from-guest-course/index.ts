@@ -16,7 +16,7 @@ serve(async (req) => {
 
     const { email, password, full_name, phone, guest_token } = await req.json();
 
-    if (!email || !password || !guest_token) {
+    if (!email || !password) {
       return new Response(JSON.stringify({ success: false, error: "missing_fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -27,19 +27,35 @@ serve(async (req) => {
       });
     }
 
-    // Check the guest course exists for this token
-    const { data: course } = await admin
-      .from("courses")
-      .select("id, guest_email, guest_phone, guest_name")
-      .eq("guest_tracking_token", guest_token)
-      .eq("is_guest_booking", true)
-      .maybeSingle();
-
-    if (!course) {
-      return new Response(JSON.stringify({ success: false, error: "course_not_found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Try to locate the guest course either by token, by email, or by phone
+    const _normPhone = (phone || "").replace(/\s+/g, "");
+    let course: any = null;
+    if (guest_token) {
+      const { data } = await admin
+        .from("courses")
+        .select("id, guest_email, guest_phone, guest_name")
+        .eq("guest_tracking_token", guest_token)
+        .eq("is_guest_booking", true)
+        .maybeSingle();
+      course = data;
     }
+    if (!course) {
+      // Fallback: find any unclaimed guest course matching email/phone
+      const { data } = await admin
+        .from("courses")
+        .select("id, guest_email, guest_phone, guest_name")
+        .eq("is_guest_booking", true)
+        .is("client_id", null)
+        .or(`guest_email.eq.${email.toLowerCase()},guest_phone.eq.${_normPhone}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      course = data;
+    }
+
+    // Course is OPTIONAL: if no guest course exists, we still create the
+    // account normally with auto-confirmation (user came from booking flow).
+    const hasGuestCourse = !!course;
 
     // Check if email already exists — if so, just claim the course (do not auto-login)
     const { data: list } = await admin.auth.admin.listUsers();
