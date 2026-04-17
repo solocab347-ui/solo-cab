@@ -108,7 +108,7 @@ const ClientDriversList = () => {
   };
 
   const handleBooking = (driverId: string) => {
-    navigate(`/create-course?driver_id=${driverId}`);
+    navigate(`/chauffeurs?select=${driverId}`);
   };
 
   // Get driver display name based on visibility settings

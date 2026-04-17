@@ -275,14 +275,14 @@ const ClientDashboard = () => {
 
   const handleNewReservation = () => {
     if (clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_id) {
-      navigate(`/create-course?driver_id=${clientProfile.client.driver_id}`);
+      navigate(`/chauffeurs?select=${clientProfile.client.driver_id}`);
       return;
     }
     
     const driverIds = clientProfile?.client?.driver_ids || [];
     
     if (driverIds.length === 1) {
-      navigate(`/create-course?driver_id=${driverIds[0]}`);
+      navigate(`/chauffeurs?select=${driverIds[0]}`);
     } else if (driverIds.length > 1) {
       setShowDriverSelection(true);
     } else {
@@ -291,7 +291,7 @@ const ClientDashboard = () => {
   };
 
   const handleDriverSelected = (driverId: string) => {
-    navigate(`/create-course?driver_id=${driverId}`);
+    navigate(`/chauffeurs?select=${driverId}`);
   };
 
   const handleTabChange = (tab: string, subTab?: string | null) => {

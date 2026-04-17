@@ -134,7 +134,7 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
   };
 
   const handleBooking = (driverId: string) => {
-    navigate(`/create-course?driver_id=${driverId}`);
+    navigate(`/chauffeurs?select=${driverId}`);
   };
 
   const handleViewPublicProfile = (driverId: string) => {
