@@ -315,6 +315,7 @@ const DriverDashboard = () => {
       return;
     }
     if (PERFORMANCE_SUBTABS.includes(tab)) {
+      setPerformanceSubTab(tab);
       setActiveTab("performance");
       setPartnershipInitialTab(undefined);
       return;
