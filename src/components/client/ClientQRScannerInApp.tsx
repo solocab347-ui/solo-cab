@@ -98,8 +98,9 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
 
       const driverName = data?.driver_name || data?.driverName || "le chauffeur";
       setSuccess({ driverName });
-      toast.success(`${driverName} ajouté à vos chauffeurs !`);
-      onDriverAdded?.();
+      toast.success(`${driverName} a bien été ajouté à vos chauffeurs favoris ❤️`);
+      // NOTE: onDriverAdded is intentionally NOT called here so the confirmation
+      // screen stays visible. It will be triggered when the user taps "Retour".
     } catch (error: any) {
       console.error("QR scan error:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
@@ -183,17 +184,32 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
 
   if (success) {
     return (
-      <Card className="p-8 text-center">
-        <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">Inscription réussie !</h3>
-        <p className="text-muted-foreground mb-4">
-          <strong>{success.driverName}</strong> a été ajouté à vos chauffeurs.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Button onClick={() => { setSuccess(null); onDriverAdded?.(); }}>
-            Retour
+      <Card className="p-8 text-center space-y-4">
+        <div className="mx-auto w-20 h-20 rounded-full bg-success/10 flex items-center justify-center animate-in zoom-in-50 duration-500">
+          <CheckCircle className="w-12 h-12 text-success" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-bold">Chauffeur ajouté ! 🎉</h3>
+          <p className="text-base">
+            <strong className="text-primary">{success.driverName}</strong> fait désormais partie de vos chauffeurs favoris ❤️
+          </p>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Vous pouvez maintenant lui commander une course directement, le retrouver dans <strong>Mes chauffeurs</strong>, et accéder à son profil complet.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <Button
+            onClick={() => { setSuccess(null); onDriverAdded?.(); }}
+            className="bg-gradient-premium hover:opacity-90"
+            size="lg"
+          >
+            Voir mes chauffeurs
           </Button>
-          <Button variant="outline" onClick={() => { setSuccess(null); void startScanning(); }}>
+          <Button
+            variant="outline"
+            onClick={() => { setSuccess(null); void startScanning(); }}
+            size="lg"
+          >
             <Camera className="w-4 h-4 mr-2" />
             Scanner un autre
           </Button>
