@@ -565,16 +565,21 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
       toast.success(`Course arrêtée: ${reason}`);
       dismissCourse(course.id);
+      clearPersistedPhase(course.id);
+      setCompletionData(null);
       setCourse(null);
-      if (course) clearPersistedPhase(course.id);
-      restoreAvailability();
+      setPhase('approaching');
+      await restoreAvailability();
+      onCourseActive?.(false);
       onCourseChange?.();
-    } catch {
-      toast.error("Impossible d'arrêter correctement la course");
+      fetchActive();
+    } catch (err: any) {
+      console.error('[ActiveCourseCard] Stop course failed:', err);
+      toast.error(err?.message || "Impossible d'arrêter correctement la course");
     } finally {
       setLoading(false);
     }
-  }, [course, driverId, onCourseChange, restoreAvailability]);
+  }, [course, onCourseActive, onCourseChange, restoreAvailability, fetchActive]);
 
   const acceptedDevis = course ? getAcceptedCourseQuote(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
