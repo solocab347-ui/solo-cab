@@ -152,6 +152,8 @@ const PlatformHealthDashboard = () => {
       setSendingReport(false);
     }
   };
+
+  const resolveAlert = async (alertId: string) => {
     const { error } = await supabase
       .from("platform_health_alerts")
       .update({ is_resolved: true, resolved_at: new Date().toISOString() })
