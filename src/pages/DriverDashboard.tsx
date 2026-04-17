@@ -278,17 +278,52 @@ const DriverDashboard = () => {
   }, [activeTab, markPartnershipNotificationsAsRead]);
 
   // Handle special tab navigation (e.g., partnerships-received)
+  // Also maps legacy / shortcut tab names from DriverHome to the real hub tabs.
   const handleTabChange = (tab: string) => {
     if (tab === "partnerships-received") {
       setPartnershipInitialTab('received');
       setActiveTab("sharing");
-    } else {
-      // Reset initial tab when navigating normally
-      if (tab !== "sharing") {
-        setPartnershipInitialTab(undefined);
-      }
-      setActiveTab(tab);
+      return;
     }
+
+    // Support "tab.subtab" syntax (e.g. "finances.encaisser", "outils.qrcode")
+    if (tab.includes(".")) {
+      const [mainTab, subTab] = tab.split(".");
+      setActiveTab(mainTab);
+      if (mainTab === "finances" && subTab) setFinancesSubTab(subTab);
+      else if (mainTab === "outils" && subTab) setOutilsSubTab(subTab);
+      if (mainTab !== "sharing") setPartnershipInitialTab(undefined);
+      return;
+    }
+
+    // Legacy shortcut names → map to real hub + subtab
+    const TOOLS_SUBTABS = ["calculator", "qrcode", "planning", "prospection"];
+    const FINANCES_SUBTABS = ["overview", "devis", "factures", "encaisser"];
+    const PERFORMANCE_SUBTABS = ["stats", "objectives", "profitability"];
+
+    if (TOOLS_SUBTABS.includes(tab)) {
+      setOutilsSubTab(tab);
+      setActiveTab("outils");
+      setPartnershipInitialTab(undefined);
+      return;
+    }
+    if (FINANCES_SUBTABS.includes(tab)) {
+      setFinancesSubTab(tab);
+      setActiveTab("finances");
+      setPartnershipInitialTab(undefined);
+      return;
+    }
+    if (PERFORMANCE_SUBTABS.includes(tab)) {
+      setActiveTab("performance");
+      setPartnershipInitialTab(undefined);
+      return;
+    }
+
+    // Reset initial tab when navigating normally
+    if (tab !== "sharing") {
+      setPartnershipInitialTab(undefined);
+    }
+    setActiveTab(tab);
   };
 
   // Form states - profil public toujours actif (plus de toggle)
