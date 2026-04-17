@@ -118,6 +118,7 @@ const DriverDashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [financesSubTab, setFinancesSubTab] = useState<string>("overview");
   const [outilsSubTab, setOutilsSubTab] = useState<string>("calculator");
+  const [performanceSubTab, setPerformanceSubTab] = useState<string>("stats");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
