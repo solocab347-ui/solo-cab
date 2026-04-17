@@ -34,7 +34,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Webhook secret not configured" }), { status: 500 });
     }
     
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // CRITICAL: must use ASYNC variant in Deno (SubtleCrypto is async)
+    const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     logStep("✓ Signature verified", { type: event.type });
 
     // ========================================
