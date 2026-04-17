@@ -1054,9 +1054,11 @@ const DriverDashboard = () => {
           <TabsContent value="performance" className="space-y-6">
             {driverProfile?.driver?.id && (
               <UnifiedPerformanceHub
+                key={performanceSubTab}
                 driverProfile={driverProfile}
                 driverId={driverProfile.driver.id}
                 isPremium={isPremium}
+                defaultTab={performanceSubTab}
               />
             )}
           </TabsContent>
