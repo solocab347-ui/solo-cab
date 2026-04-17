@@ -755,6 +755,7 @@ const GuestBookingTracking = () => {
               rideId={rideRequestId}
               senderType="guest"
               senderId={guestId}
+              guestToken={token}
               otherName={driverDisplayName.split(' ')[0]}
               triggerLabel="💬 Contacter le chauffeur"
             />
@@ -1020,14 +1021,18 @@ const GuestBookingTracking = () => {
           </Card>
         )}
 
-        {/* Registration CTA */}
+        {/* Registration CTA — pre-fills email/name and claims this course on signup */}
         <Alert className="border-primary/50 bg-primary/5">
           <UserPlus className="h-4 w-4" />
           <AlertDescription className="space-y-2">
             <p className="text-sm">
-              <strong>Inscrivez-vous gratuitement</strong> pour bénéficier de tous les avantages SoloCab.
+              <strong>Inscrivez-vous gratuitement</strong> pour retrouver cette course dans votre espace personnel.
             </p>
-            <Button onClick={() => navigate('/chauffeurs')} size="sm" className="w-full">
+            <Button
+              onClick={() => navigate(`/register-client?guest_token=${token}`)}
+              size="sm"
+              className="w-full"
+            >
               S'inscrire maintenant
             </Button>
           </AlertDescription>

@@ -17,10 +17,12 @@ interface UseRideChatOptions {
   rideId: string | null;
   senderType: 'client' | 'driver' | 'guest';
   senderId: string;
+  /** Required for guest senders — the guest_tracking_token from the URL */
+  guestToken?: string | null;
   enabled?: boolean;
 }
 
-export function useRideChat({ rideId, senderType, senderId, enabled = true }: UseRideChatOptions) {
+export function useRideChat({ rideId, senderType, senderId, guestToken, enabled = true }: UseRideChatOptions) {
   const [messages, setMessages] = useState<RideMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -38,16 +40,27 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     }
 
     try {
-      const { data, error } = await chatClient
-        .from('ride_messages')
-        .select('*')
-        .eq('ride_id', rideId)
-        .order('created_at', { ascending: true });
+      let data: any[] | null = null;
 
-      if (error) throw error;
+      if (senderType === 'guest' && guestToken) {
+        const { data: rpcData, error } = await supabase.rpc(
+          'get_guest_ride_messages' as any,
+          { _token: guestToken }
+        );
+        if (error) throw error;
+        data = (rpcData as any[]) || [];
+      } else {
+        const { data: rows, error } = await chatClient
+          .from('ride_messages')
+          .select('*')
+          .eq('ride_id', rideId)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        data = rows || [];
+      }
+
       setMessages((data || []) as unknown as RideMessage[]);
 
-      // Count unread from others
       const unread = (data || []).filter(
         (m: any) => !m.is_read && m.sender_type !== senderType
       ).length;
@@ -58,7 +71,7 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
       setLoading(false);
       isFirstLoad.current = false;
     }
-  }, [rideId, enabled, senderType, chatClient]);
+  }, [rideId, enabled, senderType, guestToken, chatClient]);
 
   // Send message
   const sendMessage = useCallback(async (text: string) => {
@@ -80,18 +93,41 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const { data, error } = await chatClient
-        .from('ride_messages')
-        .insert({
+      let data: any = null;
+
+      if (senderType === 'guest' && guestToken) {
+        const { data: rpcResult, error } = await supabase.rpc(
+          'send_guest_ride_message' as any,
+          { _token: guestToken, _message: trimmedMessage }
+        );
+        if (error) throw error;
+        if (!rpcResult || (rpcResult as any).success !== true) {
+          throw new Error((rpcResult as any)?.error || 'send_failed');
+        }
+        // Build a local representation; the realtime channel will reconcile id
+        data = {
+          id: (rpcResult as any).id,
           ride_id: rideId,
-          sender_type: senderType,
+          sender_type: 'guest',
           sender_id: senderId,
           message: trimmedMessage,
-        })
-        .select('*')
-        .single();
-
-      if (error) throw error;
+          is_read: false,
+          created_at: new Date().toISOString(),
+        };
+      } else {
+        const { data: row, error } = await chatClient
+          .from('ride_messages')
+          .insert({
+            ride_id: rideId,
+            sender_type: senderType,
+            sender_id: senderId,
+            message: trimmedMessage,
+          })
+          .select('*')
+          .single();
+        if (error) throw error;
+        data = row;
+      }
 
       if (data) {
         setMessages(prev => prev.map(message => (
@@ -107,12 +143,12 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     } finally {
       setSending(false);
     }
-  }, [rideId, senderType, senderId, chatClosed, chatClient]);
+  }, [rideId, senderType, senderId, chatClosed, chatClient, guestToken]);
 
   // Mark messages as read
   const markAsRead = useCallback(async () => {
     if (!rideId) return;
-    
+
     const unreadIds = messages
       .filter(m => !m.is_read && m.sender_type !== senderType)
       .map(m => m.id);
@@ -120,16 +156,20 @@ export function useRideChat({ rideId, senderType, senderId, enabled = true }: Us
     if (unreadIds.length === 0) return;
 
     // Optimistic update
-    setMessages(prev => prev.map(m => 
+    setMessages(prev => prev.map(m =>
       unreadIds.includes(m.id) ? { ...m, is_read: true } : m
     ));
     setUnreadCount(0);
 
-    await chatClient
-      .from('ride_messages')
-      .update({ is_read: true })
-      .in('id', unreadIds);
-  }, [rideId, messages, senderType, chatClient]);
+    if (senderType === 'guest' && guestToken) {
+      await supabase.rpc('mark_guest_ride_messages_read' as any, { _token: guestToken });
+    } else {
+      await chatClient
+        .from('ride_messages')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+    }
+  }, [rideId, messages, senderType, guestToken, chatClient]);
 
   // Initial fetch
   useEffect(() => {

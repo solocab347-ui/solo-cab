@@ -22044,6 +22044,10 @@ export type Database = {
         Args: { p_driver_id: string; p_quote_id: string }
         Returns: Json
       }
+      claim_guest_course_for_user: {
+        Args: { _token: string; _user_id: string }
+        Returns: Json
+      }
       claim_pool_course: {
         Args: { p_claimer_driver_id: string; p_shared_course_id: string }
         Returns: Json
@@ -23117,6 +23121,18 @@ export type Database = {
           payment_status: string
         }[]
       }
+      get_guest_ride_messages: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          ride_id: string
+          sender_id: string
+          sender_type: string
+        }[]
+      }
       get_guest_tracking_token: {
         Args: { _course_id: string }
         Returns: string
@@ -23449,6 +23465,7 @@ export type Database = {
         Args: { p_fleet_partner_course_ids: string[] }
         Returns: undefined
       }
+      mark_guest_ride_messages_read: { Args: { _token: string }; Returns: Json }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -23663,6 +23680,10 @@ export type Database = {
         }[]
       }
       send_graduated_payment_reminders: { Args: never; Returns: undefined }
+      send_guest_ride_message: {
+        Args: { _message: string; _token: string }
+        Returns: Json
+      }
       set_favorite_vehicle: {
         Args: { _driver_id: string; _vehicle_id: string }
         Returns: boolean
