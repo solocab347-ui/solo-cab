@@ -85,6 +85,7 @@ const ClientDashboard = () => {
     pendingDevis: 0,
     unpaidInvoices: 0,
   });
+  const [guestWelcome, setGuestWelcome] = useState<{ courseId: string; date: string | null } | null>(null);
 
   const { activeCourse } = useActiveClientCourse(clientProfile?.client?.id);
 
