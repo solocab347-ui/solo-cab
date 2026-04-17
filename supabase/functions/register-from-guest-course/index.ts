@@ -46,7 +46,7 @@ serve(async (req) => {
         .select("id, guest_email, guest_phone, guest_name")
         .eq("is_guest_booking", true)
         .is("client_id", null)
-        .or(`guest_email.eq.${email.toLowerCase()},guest_phone.eq.${_normPhone}`)
+        .or(`guest_email.eq.${email.toLowerCase()},guest_phone.eq.${_phone}`)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
