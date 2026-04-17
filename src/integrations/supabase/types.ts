@@ -4671,6 +4671,7 @@ export type Database = {
           final_payment_amount: number | null
           final_payment_at: string | null
           final_payment_intent_id: string | null
+          final_payment_locked_at: string | null
           final_payment_status: string | null
           final_payment_stripe_id: string | null
           fleet_manager_id: string | null
@@ -4764,6 +4765,7 @@ export type Database = {
           final_payment_amount?: number | null
           final_payment_at?: string | null
           final_payment_intent_id?: string | null
+          final_payment_locked_at?: string | null
           final_payment_status?: string | null
           final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
@@ -4857,6 +4859,7 @@ export type Database = {
           final_payment_amount?: number | null
           final_payment_at?: string | null
           final_payment_intent_id?: string | null
+          final_payment_locked_at?: string | null
           final_payment_status?: string | null
           final_payment_stripe_id?: string | null
           fleet_manager_id?: string | null
@@ -23543,10 +23546,9 @@ export type Database = {
         }
         Returns: string
       }
-      release_course_finalization_lock: {
-        Args: { p_course_id: string; p_reason?: string }
-        Returns: Json
-      }
+      release_course_finalization_lock:
+        | { Args: { p_course_id: string }; Returns: undefined }
+        | { Args: { p_course_id: string; p_reason?: string }; Returns: Json }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
