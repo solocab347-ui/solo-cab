@@ -73,7 +73,7 @@ const DriverCreateQuote = lazy(() => import("./pages/DriverCreateQuote"));
 const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const CreateCourse = lazy(() => import("./pages/CreateCourse"));
+
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
@@ -143,15 +143,8 @@ const App = () => (
               <Route path="/course-immediate" element={<Suspense fallback={<LoadingFallback />}><ImmediateRide /></Suspense>} />
               <Route path="/suivi-course/:courseId" element={<Suspense fallback={<LoadingFallback />}><ClientRideTracking /></Suspense>} />
               
-              <Route path="/create-course" element={
-                <ProtectedRoute allowedRoles={["client"]}>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ErrorBoundary>
-                      <CreateCourse />
-                    </ErrorBoundary>
-                  </Suspense>
-                </ProtectedRoute>
-              } />
+              {/* Legacy /create-course removed: registered clients now use the unified flow at /chauffeurs */}
+              <Route path="/create-course" element={<Navigate to="/chauffeurs" replace />} />
               <Route
                 path="/driver/create-course"
                 element={
