@@ -220,11 +220,11 @@ const GuestBookingTracking = () => {
     }
   };
 
-  // Auto-refresh every 5 seconds
+  // Auto-refresh every 3 seconds (faster reactivity if realtime is sluggish)
   useEffect(() => {
     fetchBooking(0);
     
-    refreshIntervalRef.current = setInterval(() => fetchBooking(0), 5000);
+    refreshIntervalRef.current = setInterval(() => fetchBooking(0), 3000);
     
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
@@ -233,6 +233,7 @@ const GuestBookingTracking = () => {
   }, [fetchBooking]);
 
   // Realtime subscription for instant status updates
+  const lastNotifiedStatusRef = useRef<string | null>(null);
   useEffect(() => {
     if (!booking?.id) return;
 
@@ -243,19 +244,43 @@ const GuestBookingTracking = () => {
         const newStatus = (payload.new as any).status;
         const newPaymentStatus = (payload.new as any).payment_status;
         
-        if (newStatus && booking) {
+        if (newStatus) {
           setBooking(prev => prev ? { ...prev, status: newStatus } : null);
         }
         if (newPaymentStatus) {
           setPaymentStatus(newPaymentStatus);
         }
-        // Force a full refresh on status change for latest GPS data
+        // Always re-fetch full data (GPS, vehicle, etc.) on any status change
         fetchBooking(0);
       }
     );
 
     return cleanup;
   }, [booking?.id, fetchBooking]);
+
+  // User-visible status notifications (driver arrived, in progress, completed)
+  useEffect(() => {
+    if (!booking?.status) return;
+    if (lastNotifiedStatusRef.current === booking.status) return;
+    
+    // Skip the very first render so we don't toast existing state
+    if (lastNotifiedStatusRef.current === null) {
+      lastNotifiedStatusRef.current = booking.status;
+      return;
+    }
+    
+    if (booking.status === 'driver_arrived') {
+      toast.success('🚗 Votre chauffeur est arrivé !', { duration: 6000 });
+    } else if (booking.status === 'in_progress') {
+      toast.success('🛣️ La course a démarré, bon voyage !', { duration: 5000 });
+    } else if (booking.status === 'completed') {
+      toast.success('✅ Course terminée. Merci !', { duration: 5000 });
+    } else if (booking.status === 'cancelled' || booking.status === 'refused') {
+      toast.error('❌ Course annulée');
+    }
+    
+    lastNotifiedStatusRef.current = booking.status;
+  }, [booking?.status]);
 
   const handleStarClick = (star: number) => {
     setRating(star);
