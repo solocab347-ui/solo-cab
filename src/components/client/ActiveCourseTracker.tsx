@@ -473,10 +473,37 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
     if (!course?.client_id || !driver?.id || favoriteSaving) return;
     setFavoriteSaving(true);
     try {
-      const newValue = isFavorite ? null : driver.id;
+      // Read current driver_ids to maintain "Mes chauffeurs" list (also required by RLS for profile photo access)
+      const { data: clientRow } = await supabase
+        .from("clients")
+        .select("driver_ids, is_exclusive")
+        .eq("id", course.client_id)
+        .maybeSingle();
+
+      const currentIds: string[] = clientRow?.driver_ids || [];
+      let newDriverIds = currentIds;
+
+      if (!isFavorite) {
+        // Adding as favorite → also add to driver_ids if not already present
+        if (!currentIds.includes(driver.id)) {
+          newDriverIds = [...currentIds, driver.id];
+        }
+      }
+      // Note: Removing favorite does NOT remove from driver_ids — the driver stays in "Mes chauffeurs".
+
+      const newFavorite = isFavorite ? null : driver.id;
+      const updates: Record<string, any> = {
+        favorite_driver_id: newFavorite,
+        updated_at: new Date().toISOString(),
+      };
+      // Only update driver_ids when adding (and only for non-exclusive clients)
+      if (!isFavorite && !clientRow?.is_exclusive && newDriverIds !== currentIds) {
+        updates.driver_ids = newDriverIds;
+      }
+
       const { error } = await supabase
         .from("clients")
-        .update({ favorite_driver_id: newValue, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq("id", course.client_id);
       if (error) throw error;
       setIsFavorite(!isFavorite);
