@@ -25,7 +25,11 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(console.error);
       }
-      scannerRef.current?.clear().catch(console.error);
+      try {
+        scannerRef.current?.clear();
+      } catch (error) {
+        console.error(error);
+      }
       scannerRef.current = null;
     };
   }, []);
