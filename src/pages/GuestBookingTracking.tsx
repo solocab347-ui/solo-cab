@@ -16,6 +16,7 @@ import logo from "@/assets/logo-solocab.png";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
+import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 
 interface SharedDriver {
   id: string;
@@ -626,66 +627,39 @@ const GuestBookingTracking = () => {
       : null;
 
     return (
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
-              <Gauge className="w-3 h-3" />
-              Suivi en direct
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              MàJ: {format(lastRefresh, 'HH:mm:ss')}
-            </span>
-          </div>
+      <div className="space-y-3">
+        {/* NEW: Smooth visual journey with photo / vehicle */}
+        <LiveJourneyProgress
+          phase={phase}
+          eta={eta}
+          totalDistanceKm={booking.distance_km}
+          driverPhotoUrl={booking.driver_avatar_url}
+          driverName={driverDisplayName}
+          fromLabel={isRidePhase ? booking.pickup_address?.split(",")[0] : "Position chauffeur"}
+          toLabel={(isRidePhase ? booking.destination_address : booking.pickup_address)?.split(",")[0]}
+        />
 
-          {/* Contextual destination label */}
-          {shortAddress && (
-            <div className="flex items-start gap-2 bg-background/60 rounded-lg px-3 py-2">
-              <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  {isRidePhase ? 'Destination' : 'Point de prise en charge'}
-                </p>
-                <p className="text-xs text-foreground font-medium truncate">{shortAddress}</p>
-              </div>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-3 pb-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
+                <Gauge className="w-3 h-3" />
+                Suivi en direct
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                MàJ: {format(lastRefresh, 'HH:mm:ss')}
+              </span>
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* ETA */}
-            <div className="bg-background rounded-lg p-3 text-center">
-              <Timer className="w-5 h-5 mx-auto text-primary mb-1" />
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                {isRidePhase ? "Temps restant\njusqu'à destination" : "Arrivée estimée\ndu chauffeur"}
-              </p>
-              <p className="text-lg font-bold text-foreground mt-1">
-                {etaLoading ? '...' : eta?.durationMin 
-                  ? `${Math.ceil(eta.durationMin)} min` 
-                  : '—'}
-              </p>
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[11px] text-muted-foreground">
+                Position GPS mise à jour toutes les 5 secondes
+              </span>
             </div>
-            {/* Distance */}
-            <div className="bg-background rounded-lg p-3 text-center">
-              <Route className="w-5 h-5 mx-auto text-primary mb-1" />
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                {isRidePhase ? "Distance restante\njusqu'à destination" : "Distance\ndu chauffeur"}
-              </p>
-              <p className="text-lg font-bold text-foreground mt-1">
-                {etaLoading ? '...' : eta?.distanceKm 
-                  ? `${eta.distanceKm.toFixed(1)} km` 
-                  : '—'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[11px] text-muted-foreground">
-              Position GPS mise à jour toutes les 5 secondes
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
 

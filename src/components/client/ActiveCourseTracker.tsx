@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
+import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import { BookingCardStep } from "@/components/client/booking/BookingCardStep";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -402,7 +403,20 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                 />
               )}
 
-              {/* ─── ETA ─── */}
+              {/* ─── NEW: Visual journey progress ─── */}
+              {etaEnabled && (
+                <LiveJourneyProgress
+                  phase={isApproaching ? "approaching" : "in_progress"}
+                  eta={eta}
+                  totalDistanceKm={course.distance_km}
+                  driverPhotoUrl={driver?.profile_photo_url}
+                  driverName={driverName}
+                  fromLabel={isApproaching ? "Position chauffeur" : course.pickup_address?.split(",")[0]}
+                  toLabel={(isApproaching ? course.pickup_address : course.destination_address)?.split(",")[0]}
+                />
+              )}
+
+              {/* ─── ETA (refresh + timestamp) ─── */}
               {etaEnabled && (
                 <ETADisplay
                   eta={eta}

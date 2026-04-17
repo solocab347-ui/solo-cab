@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
+import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import logo from "@/assets/logo-solocab.png";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -481,7 +482,20 @@ const ClientRideTracking = () => {
           />
         )}
 
-        {/* ETA Dynamic Display */}
+        {/* NEW: Smooth visual journey with photo / vehicle */}
+        {(isApproaching || isInProgress) && etaEnabled && (
+          <LiveJourneyProgress
+            phase={isApproaching ? "approaching" : "in_progress"}
+            eta={eta}
+            totalDistanceKm={course.distance_km}
+            driverPhotoUrl={driver?.profile_photo_url}
+            driverName={driverName}
+            fromLabel={isApproaching ? "Position chauffeur" : course.pickup_address?.split(",")[0]}
+            toLabel={(isApproaching ? course.pickup_address : course.destination_address)?.split(",")[0]}
+          />
+        )}
+
+        {/* ETA Dynamic Display (refresh + timestamp) */}
         {(isApproaching || isInProgress) && etaEnabled && (
           <ETADisplay
             eta={eta}
