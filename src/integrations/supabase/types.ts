@@ -4213,6 +4213,51 @@ export type Database = {
           },
         ]
       }
+      course_payment_audit: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          amount: number | null
+          course_id: string
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          payment_method: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          amount?: number | null
+          course_id: string
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          status: string
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          amount?: number | null
+          course_id?: string
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: []
+      }
       course_queue: {
         Row: {
           actual_gap_minutes: number | null
@@ -22014,6 +22059,14 @@ export type Database = {
         Args: { course_row: Database["public"]["Tables"]["courses"]["Row"] }
         Returns: boolean
       }
+      confirm_cash_payment: {
+        Args: {
+          p_amount_entered: number
+          p_course_id: string
+          p_driver_user_id: string
+        }
+        Returns: Json
+      }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string
@@ -23489,6 +23542,10 @@ export type Database = {
           p_severity?: string
         }
         Returns: string
+      }
+      release_course_finalization_lock: {
+        Args: { p_course_id: string; p_reason?: string }
+        Returns: Json
       }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
