@@ -728,6 +728,10 @@ export function UnifiedBookingPage() {
                 routeDistanceKm={routeDistanceKm} routeDurationMin={routeDurationMin}
                 driversCount={drivers.length}
                 onNext={handleSearch}
+                savedAddresses={savedAddresses}
+                recentAddresses={recentAddresses}
+                onPickQuickPickup={handleQuickPickup}
+                onPickQuickDest={handleQuickDest}
               />
             )}
 
