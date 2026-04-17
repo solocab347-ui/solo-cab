@@ -98,9 +98,9 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
 
       const driverName = data?.driver_name || data?.driverName || "le chauffeur";
       setSuccess({ driverName });
-      toast.success(`${driverName} ajouté à vos chauffeurs !`);
-      onDriverAdded?.();
-    } catch (error: any) {
+      toast.success(`${driverName} a bien été ajouté à vos chauffeurs favoris ❤️`);
+      // NOTE: onDriverAdded is intentionally NOT called here so the confirmation
+      // screen stays visible. It will be triggered when the user taps "Retour".
       console.error("QR scan error:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
     } finally {
