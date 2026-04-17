@@ -174,7 +174,7 @@ export function FavoriteDriverSection({
   };
 
   const handleBookCourse = (driverId: string) => {
-    navigate(`/create-course?driver_id=${driverId}`);
+    navigate(`/chauffeurs?select=${driverId}`);
   };
 
   const handleMessage = () => {

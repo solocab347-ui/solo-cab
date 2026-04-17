@@ -376,7 +376,7 @@ export const DriverProfileDialog = ({
                   </p>
                 </div>
                 <Button
-                  onClick={() => navigate(`/create-course?driver_id=${driverId}`)}
+                  onClick={() => navigate(`/chauffeurs?select=${driverId}`)}
                   size="lg"
                   className="w-full bg-gradient-premium hover:opacity-90"
                 >

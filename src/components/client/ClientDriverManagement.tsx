@@ -545,7 +545,7 @@ const DriverCard = ({ driver, displayName, navigate, onRemove, onBlock, isExclus
         </div>
 
         <div className="flex flex-wrap gap-2 mt-3">
-          <Button size="sm" onClick={() => navigate(`/create-course?driver_id=${driver.id}`)} className="gap-1">
+          <Button size="sm" onClick={() => navigate(`/chauffeurs?select=${driver.id}`)} className="gap-1">
             <CalendarPlus className="w-3 h-3" />
             Réserver
           </Button>

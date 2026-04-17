@@ -512,7 +512,7 @@ export function ClientDriversGrid({
             </div>
             <div className="flex flex-col gap-2">
               <Button
-                onClick={() => navigate(`/create-course?driver_id=${driver.id}`)}
+                onClick={() => navigate(`/chauffeurs?select=${driver.id}`)}
                 className="bg-gradient-to-r from-primary to-orange-500 hover:opacity-90"
               >
                 <CalendarPlus className="w-4 h-4 mr-2" />
@@ -591,7 +591,7 @@ export function ClientDriversGrid({
                   displayName={getDriverDisplayName(driver)}
                   isFavorite={driver.id === favoriteDriverId}
                   onSetFavorite={handleSetFavorite}
-                  onBook={(id) => navigate(`/create-course?driver_id=${id}`)}
+                  onBook={(id) => navigate(`/chauffeurs?select=${id}`)}
                   onMessage={() => navigate("/client-dashboard?tab=messages")}
                   onCall={(phone) => (window.location.href = `tel:${phone}`)}
                   onRemove={setDriverToRemove}
