@@ -85,6 +85,7 @@ const ClientDashboard = () => {
     pendingDevis: 0,
     unpaidInvoices: 0,
   });
+  const [guestWelcome, setGuestWelcome] = useState<{ courseId: string; date: string | null } | null>(null);
 
   const { activeCourse } = useActiveClientCourse(clientProfile?.client?.id);
 
@@ -96,6 +97,29 @@ const ClientDashboard = () => {
       setSearchParams({});
     }
   }, [searchParams, activeCourse, setSearchParams]);
+
+  // Welcome banner for users arriving from guest-course signup
+  useEffect(() => {
+    const fromGuest = searchParams.get("from_guest");
+    const courseId = searchParams.get("course_id");
+    if (fromGuest !== "1" || !courseId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, scheduled_date, created_at")
+        .eq("id", courseId)
+        .maybeSingle();
+      setGuestWelcome({
+        courseId,
+        date: data?.scheduled_date || data?.created_at || null,
+      });
+      // Clear params but preserve other state
+      const sp = new URLSearchParams(searchParams);
+      sp.delete("from_guest");
+      sp.delete("course_id");
+      setSearchParams(sp);
+    })();
+  }, []); // run once on mount
 
   useEffect(() => {
     let isMounted = true;
@@ -357,6 +381,47 @@ const ClientDashboard = () => {
       case "accueil":
         return (
           <div className="space-y-4">
+            {guestWelcome && (
+              <Card className="p-4 bg-primary/5 border-primary/30 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                  <Car className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">Bienvenue sur SoloCab !</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Votre course
+                    {guestWelcome.date
+                      ? ` du ${new Date(guestWelcome.date).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "long",
+                        })}`
+                      : ""}{" "}
+                    est dans <span className="font-medium text-foreground">Mes courses</span>.
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        handleTabChange("courses");
+                        setGuestWelcome(null);
+                      }}
+                    >
+                      Voir ma course
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      onClick={() => setGuestWelcome(null)}
+                    >
+                      Fermer
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
             {activeCourse && (
               <ActiveCourseBanner course={activeCourse} onOpen={() => setShowTracker(true)} />
             )}
