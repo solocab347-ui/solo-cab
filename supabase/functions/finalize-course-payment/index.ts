@@ -34,6 +34,43 @@ const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; s
   return !scheduledDate || scheduledDate < todayEnd;
 };
 
+/**
+ * Release the finalization lock by resetting final_payment_status from 'processing' to 'failed'.
+ * Used when a Stripe operation fails so the next driver retry can proceed immediately
+ * instead of waiting 30s for the auto-recovery window.
+ */
+const releaseLock = async (
+  supabaseClient: ReturnType<typeof createClient>,
+  courseId: string,
+  errorMessage?: string,
+) => {
+  try {
+    // Try the RPC first (preferred — bumps retry counter)
+    const { error: rpcErr } = await supabaseClient.rpc("release_course_finalization_lock", {
+      p_course_id: courseId,
+      p_error_message: errorMessage ?? null,
+    });
+    if (rpcErr) {
+      // Fallback: direct UPDATE (works even if migration not yet applied)
+      await supabaseClient
+        .from("courses")
+        .update({
+          final_payment_status: "failed",
+          last_payment_error: errorMessage ?? null,
+        })
+        .eq("id", courseId)
+        .eq("final_payment_status", "processing");
+    }
+  } catch (_e) {
+    // Non-blocking — last resort direct update
+    await supabaseClient
+      .from("courses")
+      .update({ final_payment_status: "failed", last_payment_error: errorMessage ?? null })
+      .eq("id", courseId)
+      .eq("final_payment_status", "processing");
+  }
+};
+
 const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<typeof createClient>, driverId: string) => {
   const { data: activeCourses, error } = await supabaseClient
     .from("courses")
