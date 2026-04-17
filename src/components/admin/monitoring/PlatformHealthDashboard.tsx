@@ -82,6 +82,7 @@ const PlatformHealthDashboard = () => {
   const [logs, setLogs] = useState<HealthLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -135,6 +136,20 @@ const PlatformHealthDashboard = () => {
       toast.error("Erreur: " + error.message);
     } finally {
       setRunning(false);
+    }
+  };
+
+  const sendDailyReport = async () => {
+    setSendingReport(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-daily-report");
+      if (error) throw error;
+      const count = (data as any)?.reports_sent ?? 0;
+      toast.success(`Rapport quotidien envoyé à ${count} chauffeur(s)`);
+    } catch (error: any) {
+      toast.error("Erreur rapport quotidien: " + error.message);
+    } finally {
+      setSendingReport(false);
     }
   };
 
@@ -367,6 +382,10 @@ const PlatformHealthDashboard = () => {
             <Download className="w-4 h-4" />
             PDF
           </Button>
+          <Button onClick={sendDailyReport} disabled={sendingReport} size="sm" variant="secondary" className="gap-1.5">
+            {sendingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            Rapport quotidien
+          </Button>
           <Button onClick={runHealthCheck} disabled={running} size="sm" className="gap-1.5">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Vérifier
@@ -376,7 +395,7 @@ const PlatformHealthDashboard = () => {
 
       <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
         <Mail className="w-3.5 h-3.5 inline mr-1" />
-        Rapport automatique chaque matin par email + notification. Cliquez "Vérifier" pour un rapport manuel immédiat.
+        Rapport automatique chaque matin 7h (Paris). Boutons "Vérifier" (santé) et "Rapport quotidien" pour déclenchement manuel immédiat.
       </p>
 
       {/* Alerts */}

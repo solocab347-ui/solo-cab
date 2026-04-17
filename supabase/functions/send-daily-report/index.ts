@@ -21,11 +21,11 @@ serve(async (req) => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    // Get all active drivers
+    // Get all active drivers (status 'validated' = active in our system)
     const { data: drivers, error: driversError } = await supabase
       .from('drivers')
       .select('id, user_id, business_name')
-      .eq('status', 'active');
+      .eq('status', 'validated');
 
     if (driversError) throw driversError;
 
