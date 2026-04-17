@@ -829,8 +829,13 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
 
+    // Release the finalization lock so the next retry can proceed immediately
+    if (acquiredLockCourseId) {
+      await releaseLock(supabaseClient, acquiredLockCourseId, errorMessage);
+    }
+
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, transient: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
