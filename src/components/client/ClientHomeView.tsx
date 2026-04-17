@@ -137,26 +137,24 @@ export function ClientHomeView({
         </button>
       )}
 
-      {/* Stats Row */}
-      {hasDrivers && (
-        <div className="grid grid-cols-2 gap-2.5">
-          <StatCard
-            icon={Clock}
-            value={stats.upcomingCourses}
-            label="À venir"
-            color="primary"
-            onClick={() => onNavigate("courses", "confirmed")}
-          />
-          <StatCard
-            icon={CreditCard}
-            value={stats.unpaidInvoices}
-            label="Factures"
-            color="destructive"
-            pulse={stats.unpaidInvoices > 0}
-            onClick={() => onNavigate("factures")}
-          />
-        </div>
-      )}
+      {/* Stats Row — always visible (a guest course has stats too) */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <StatCard
+          icon={Clock}
+          value={stats.upcomingCourses}
+          label="À venir"
+          color="primary"
+          onClick={() => onNavigate("courses", "confirmed")}
+        />
+        <StatCard
+          icon={CreditCard}
+          value={stats.unpaidInvoices}
+          label="Factures"
+          color="destructive"
+          pulse={stats.unpaidInvoices > 0}
+          onClick={() => onNavigate("factures")}
+        />
+      </div>
 
       {/* Favorite Driver Card */}
       {hasDrivers && favoriteDriver && (
