@@ -493,24 +493,75 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
               {/* ─── Driver info ─── */}
               {driver && (
-                <Card>
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <Avatar className="h-14 w-14">
-                      <AvatarImage src={driver.profile_photo_url || ""} />
-                      <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">{driverName}</p>
-                      <p className="text-xs text-muted-foreground">Votre chauffeur</p>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                        <AvatarImage src={driver.profile_photo_url || ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                          {driverName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-base truncate">{driverName}</p>
+                        {(driver.rating || driver.total_rides) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {driver.rating != null && driver.rating > 0 && (
+                              <div className="flex items-center gap-0.5 text-xs">
+                                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                <span className="font-semibold">{driver.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                            {driver.total_rides != null && driver.total_rides > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                · {driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {(driver.vehicle_brand || driver.vehicle_model) && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <Car className="h-3 w-3" />
+                            {[driver.vehicle_brand, driver.vehicle_model, driver.vehicle_color]
+                              .filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant={isFavorite ? "default" : "outline"}
+                        size="icon"
+                        onClick={toggleFavorite}
+                        disabled={favoriteSaving || !course.client_id}
+                        className="h-9 w-9 shrink-0"
+                        aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+                      </Button>
                     </div>
-                    {rideRequestId && isActive && course.client_id && (
-                      <RideChatPanel
-                        rideId={rideRequestId}
-                        senderType="client"
-                        senderId={course.client_id}
-                        otherName={driverName}
-                      />
-                    )}
+                    <div className="flex gap-2">
+                      {driver.contact_phone && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          asChild
+                        >
+                          <a href={`tel:${driver.contact_phone}`}>
+                            <Phone className="h-4 w-4 mr-1.5" /> Appeler
+                          </a>
+                        </Button>
+                      )}
+                      {rideRequestId && isActive && course.client_id && (
+                        <div className="flex-1">
+                          <RideChatPanel
+                            rideId={rideRequestId}
+                            senderType="client"
+                            senderId={course.client_id}
+                            otherName={driverName}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
