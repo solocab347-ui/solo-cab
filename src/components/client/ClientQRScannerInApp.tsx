@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect, useRef, useState } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,60 +11,75 @@ interface ClientQRScannerInAppProps {
   onDriverAdded?: () => void;
 }
 
+const SCANNER_ELEMENT_ID = "qr-reader-inapp";
+
 const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState<{ driverName: string } | null>(null);
 
   useEffect(() => {
     return () => {
-      if (scanner) {
-        scanner.clear().catch(console.error);
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.stop().catch(console.error);
       }
+      try {
+        scannerRef.current?.clear();
+      } catch (error) {
+        console.error(error);
+      }
+      scannerRef.current = null;
     };
-  }, [scanner]);
+  }, []);
+
+  const stopScanning = async () => {
+    setCameraError(null);
+    setScanning(false);
+
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+        await scannerRef.current.clear();
+      } catch (error) {
+        console.error("Stop scanner error:", error);
+      } finally {
+        scannerRef.current = null;
+      }
+    }
+  };
 
   const handleQRDetected = async (decodedText: string) => {
     if (processing) return;
     setProcessing(true);
 
     try {
-      // Extract QR code ID from URL — supports ?qr=ID or /qr/CODE formats
       let qrCodeId: string | null = null;
       let qrCode: string | null = null;
 
       try {
         const url = new URL(decodedText);
         qrCodeId = url.searchParams.get("qr");
-        // Also support /qr/<code> path format
         const pathMatch = url.pathname.match(/\/qr\/([^/]+)/);
         if (!qrCodeId && pathMatch) {
           qrCode = pathMatch[1];
         }
       } catch {
-        // If not a valid URL, treat as raw QR code value
         qrCode = decodedText.trim();
       }
 
       if (!qrCodeId && !qrCode) {
         toast.error("QR code invalide");
-        setProcessing(false);
         return;
       }
 
-      // Stop scanner
-      if (scanner) {
-        await scanner.clear().catch(console.error);
-        setScanner(null);
-      }
-      setScanning(false);
+      await stopScanning();
 
-      // Use register-client-qr edge function which handles QR lookup securely
-      // This bypasses RLS issues with qr_codes table
       const { data, error } = await supabase.functions.invoke("register-client-qr", {
-        body: { 
+        body: {
           qr_code_id: qrCodeId || undefined,
           qr_code: qrCode || undefined,
         },
@@ -78,7 +93,6 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
         } else {
           toast.error(data.error);
         }
-        setProcessing(false);
         return;
       }
 
@@ -98,39 +112,33 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
     setCameraError(null);
     setSuccess(null);
 
-    // 1) Verify HTTPS context (camera API requires secure context)
     if (typeof window !== "undefined" && !window.isSecureContext) {
-      const msg = "L'accès à la caméra nécessite une connexion HTTPS sécurisée.";
+      const msg = "La caméra nécessite une connexion HTTPS sécurisée.";
       setCameraError(msg);
       toast.error(msg);
       return;
     }
 
-    // 2) Verify the browser supports getUserMedia
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      const msg = "Votre navigateur ne supporte pas l'accès à la caméra. Essayez Chrome ou Safari récent.";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const msg = "Votre navigateur ne supporte pas l'accès caméra.";
       setCameraError(msg);
       toast.error(msg);
       return;
     }
 
-    // 3) Pre-request camera permission for clearer error messages
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
       });
-      // Release immediately — html5-qrcode will request its own stream
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((track) => track.stop());
     } catch (permErr: any) {
       let errorMsg = "Impossible d'accéder à la caméra";
       if (permErr.name === "NotAllowedError" || permErr.name === "PermissionDeniedError") {
-        errorMsg = "Autorisez l'accès à la caméra dans les réglages du navigateur";
+        errorMsg = "Autorisez l'accès à la caméra dans votre navigateur";
       } else if (permErr.name === "NotFoundError" || permErr.name === "DevicesNotFoundError") {
         errorMsg = "Aucune caméra détectée sur cet appareil";
       } else if (permErr.name === "NotReadableError") {
         errorMsg = "La caméra est utilisée par une autre application";
-      } else if (permErr.name === "OverconstrainedError") {
-        errorMsg = "Aucune caméra compatible disponible";
       }
       setCameraError(errorMsg);
       toast.error(errorMsg);
@@ -139,49 +147,38 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
 
     setScanning(true);
 
-    // Wait for the qr-reader element to mount
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
     try {
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader-inapp",
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
+        verbose: false,
+      });
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          showTorchButtonIfSupported: true,
-          useBarCodeDetectorIfSupported: true,
-          rememberLastUsedCamera: true,
+          qrbox: { width: 240, height: 240 },
+          aspectRatio: 1,
+          disableFlip: false,
         },
-        false
-      );
-
-      html5QrcodeScanner.render(
-        (decodedText) => handleQRDetected(decodedText),
+        (decodedText) => {
+          void handleQRDetected(decodedText);
+        },
         (errorMessage) => {
-          if (!errorMessage.includes("NotFoundException")) {
-            console.debug("Scan error:", errorMessage);
+          if (!errorMessage.includes("NotFoundException") && !errorMessage.includes("No MultiFormat Readers")) {
+            console.debug("Scan warning:", errorMessage);
           }
         }
       );
-
-      setScanner(html5QrcodeScanner);
     } catch (error: any) {
-      console.error("Scanner init error:", error);
-      const errorMsg = "Impossible d'initialiser le scanner. Rechargez la page et réessayez.";
+      console.error("Scanner start error:", error);
+      await stopScanning();
+      const errorMsg = "Le vrai scan caméra n'a pas pu démarrer. Réessayez après avoir autorisé la caméra.";
       setCameraError(errorMsg);
       toast.error(errorMsg);
-      setScanning(false);
     }
-  };
-
-  const stopScanning = () => {
-    if (scanner) {
-      scanner.clear().catch(console.error);
-      setScanner(null);
-    }
-    setScanning(false);
-    setCameraError(null);
   };
 
   if (success) {
@@ -191,13 +188,12 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
         <h3 className="text-xl font-bold mb-2">Inscription réussie !</h3>
         <p className="text-muted-foreground mb-4">
           <strong>{success.driverName}</strong> a été ajouté à vos chauffeurs.
-          Vous pouvez maintenant réserver avec lui.
         </p>
         <div className="flex gap-3 justify-center">
           <Button onClick={() => { setSuccess(null); onDriverAdded?.(); }}>
             Retour
           </Button>
-          <Button variant="outline" onClick={() => { setSuccess(null); startScanning(); }}>
+          <Button variant="outline" onClick={() => { setSuccess(null); void startScanning(); }}>
             <Camera className="w-4 h-4 mr-2" />
             Scanner un autre
           </Button>
@@ -210,7 +206,7 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
     return (
       <Card className="p-8 text-center">
         <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
-        <h3 className="text-lg font-semibold">Inscription en cours...</h3>
+        <h3 className="text-lg font-semibold">Lecture du QR code...</h3>
         <p className="text-muted-foreground text-sm">Veuillez patienter</p>
       </Card>
     );
@@ -238,27 +234,30 @@ const ClientQRScannerInApp = ({ onDriverAdded }: ClientQRScannerInAppProps) => {
       {!scanning ? (
         <Card className="p-6 text-center">
           <Camera className="w-12 h-12 text-primary mx-auto mb-3" />
-          <h3 className="text-lg font-bold mb-1">Scanner un QR Code</h3>
+          <h3 className="text-lg font-bold mb-1">Ouvrir le vrai scanner</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Le chauffeur sera ajouté à votre liste instantanément
+            La caméra s'ouvre directement et scanne en continu
           </p>
-          <Button onClick={startScanning} className="bg-gradient-premium hover:opacity-90">
+          <Button onClick={() => void startScanning()} className="bg-gradient-premium hover:opacity-90">
             <Camera className="w-5 h-5 mr-2" />
-            Ouvrir la caméra
+            Démarrer le scan
           </Button>
         </Card>
       ) : (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Scan en cours...</h3>
-            <Button variant="ghost" size="icon" onClick={stopScanning} className="text-destructive">
+            <h3 className="text-sm font-semibold">Scan caméra en direct</h3>
+            <Button variant="ghost" size="icon" onClick={() => void stopScanning()} className="text-destructive">
               <X className="w-5 h-5" />
             </Button>
           </div>
-          <div id="qr-reader-inapp" className="w-full" />
-          <div className="mt-3 p-3 bg-muted/50 rounded-lg flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Placez le QR code devant la caméra
+
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/20">
+            <div id={SCANNER_ELEMENT_ID} className="min-h-[320px] w-full" />
+            <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-2xl border-2 border-primary/80 shadow-[0_0_0_9999px_hsl(var(--background)/0.45)] h-60" />
+            <div className="pointer-events-none absolute inset-x-10 bottom-4 rounded-xl bg-background/85 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur-sm">
+              Cadrez le QR code dans le carré, la lecture est automatique
+            </div>
           </div>
         </Card>
       )}
