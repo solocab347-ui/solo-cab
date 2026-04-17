@@ -463,14 +463,77 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     const courseAmount = course.final_payment_amount ?? course.guest_estimated_price ?? getAcceptedCourseQuote(course)?.amount ?? 0;
     const courseClientName = course.clients?.profiles?.full_name || course.guest_name || 'Client';
     const completingCourseId = course.id;
-    
-    // Mark course as completed in DB FIRST to prevent it from reappearing
-    await supabase
+
+    // For CARD payments → finalize FIRST (capture money), then mark completed.
+    // For CASH → mark completed directly (the trigger auto-sets payment_status='paid').
+    // This guarantees the DB transition succeeds and the course never "comes back".
+    if (isCardPayment) {
+      // Show processing screen, finalize will run, then we mark completed.
+      setCompletionData({
+        courseId: completingCourseId,
+        clientName: courseClientName,
+        amount: courseAmount,
+        paymentMethod: currentPaymentMethod,
+        guestPhone: course?.guest_phone || null,
+        paymentResult: { success: true, status: 'processing', error: '', alreadyPaid: false },
+      });
+      setLoading(false);
+      restoreAvailability();
+
+      try {
+        const finalize = await Promise.race([
+          supabase.functions.invoke('finalize-course-payment', { body: { course_id: completingCourseId } }),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 25000)),
+        ]) as any;
+
+        const data = finalize?.data;
+        const fnError = finalize?.error;
+        const ok = !fnError && (data?.status === 'succeeded' || data?.success || data?.already_paid || data?.flow === 'manual');
+
+        if (ok) {
+          // Now safe to mark completed
+          const { error: completeErr } = await supabase
+            .from('courses')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('id', completingCourseId)
+            .eq('driver_id', driverId);
+          if (completeErr) {
+            console.error('[ActiveCourseCard] DB completion failed after capture:', completeErr);
+            setCompletionData(prev => prev ? { ...prev, paymentResult: { success: false, status: 'failed', error: completeErr.message, alreadyPaid: false } } : null);
+            finalizingRef.current = false;
+            return;
+          }
+          setCompletionData(prev => prev ? { ...prev, paymentResult: { success: true, status: 'succeeded', error: '', alreadyPaid: data?.already_paid || false } } : null);
+        } else {
+          setCompletionData(prev => prev ? {
+            ...prev,
+            paymentResult: { success: false, status: data?.status || 'failed', error: fnError?.message || data?.error || 'La finalisation n\'a pas abouti', alreadyPaid: false },
+          } : null);
+        }
+      } catch (err: any) {
+        const msg = err?.message === 'TIMEOUT' ? 'Délai dépassé — utilisez le lien de paiement ou cash' : (err?.message || 'Erreur réseau');
+        setCompletionData(prev => prev ? { ...prev, paymentResult: { success: false, status: 'failed', error: msg, alreadyPaid: false } } : null);
+      } finally {
+        finalizingRef.current = false;
+      }
+      return;
+    }
+
+    // CASH FLOW : trigger handles payment_status auto-set
+    const { error: cashCompleteErr } = await supabase
       .from('courses')
       .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', completingCourseId)
       .eq('driver_id', driverId);
-    
+
+    if (cashCompleteErr) {
+      console.error('[ActiveCourseCard] Cash completion failed:', cashCompleteErr);
+      toast.error('Impossible de terminer la course: ' + cashCompleteErr.message);
+      setLoading(false);
+      finalizingRef.current = false;
+      return;
+    }
+
     // ✅ INSTANT: Show completion screen IMMEDIATELY with optimistic result
     // For cash → always success (no payment to capture)
     // For card → show "processing" state, will update when finalize returns
