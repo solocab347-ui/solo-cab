@@ -90,8 +90,11 @@ function CardRegistrationForm({
 // ---------- Main Component ----------
 const RegisterClient = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { locale } = useLocale();
   const { user, loading: authLoading } = useAuth();
+
+  const guestToken = searchParams.get("guest_token");
 
   // Steps: 'form' | 'card' | 'done'
   const [step, setStep] = useState<"form" | "card" | "done">("form");
@@ -114,12 +117,35 @@ const RegisterClient = () => {
     return loadStripe(stripePublishableKey);
   }, [stripePublishableKey]);
 
+  // Prefill from guest course if token is present
+  useEffect(() => {
+    if (!guestToken) return;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc("get_guest_booking_by_token" as any, {
+          _token: guestToken,
+        });
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) {
+          setFormData((f) => ({
+            ...f,
+            email: f.email || row.guest_email || "",
+            fullName: f.fullName || row.guest_name || "",
+            phone: f.phone || row.guest_phone || "",
+          }));
+        }
+      } catch (e) {
+        console.warn("guest prefill failed", e);
+      }
+    })();
+  }, [guestToken]);
+
   // If already logged in and on form step, move to card step
   useEffect(() => {
-    if (!authLoading && user && step === "form") {
+    if (!authLoading && user && step === "form" && !guestToken) {
       checkAndCreateClient(user.id);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, guestToken]);
 
   const checkAndCreateClient = async (userId: string) => {
     try {
