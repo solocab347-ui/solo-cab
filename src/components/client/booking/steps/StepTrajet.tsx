@@ -151,17 +151,24 @@ export function StepTrajet({
                 {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
               </Button>
             </div>
-            {onPickQuickPickup && (savedAddresses.length > 0 || recentAddresses.length > 0) && (
-              <div className="mt-2 ml-5">
-                <AddressQuickPicks
-                  saved={savedAddresses}
-                  recent={recentAddresses}
-                  onSelect={onPickQuickPickup}
-                  excludeAddress={pickupAddress}
-                  title="Départ rapide"
+            {(onPickQuickPickup && (savedAddresses.length > 0 || recentAddresses.length > 0)) || pickupAddress.trim() ? (
+              <div className="mt-2 ml-5 flex items-start justify-between gap-2 flex-wrap">
+                {onPickQuickPickup && (savedAddresses.length > 0 || recentAddresses.length > 0) ? (
+                  <AddressQuickPicks
+                    saved={savedAddresses}
+                    recent={recentAddresses}
+                    onSelect={onPickQuickPickup}
+                    excludeAddress={pickupAddress}
+                    title="Départ rapide"
+                  />
+                ) : <span />}
+                <SaveAddressButton
+                  address={pickupAddress}
+                  coords={pickupCoords}
+                  defaultType="home"
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Divider line */}
@@ -199,17 +206,24 @@ export function StepTrajet({
                 )}
               </div>
             </div>
-            {onPickQuickDest && (savedAddresses.length > 0 || recentAddresses.length > 0) && (
-              <div className="mt-2 ml-5">
-                <AddressQuickPicks
-                  saved={savedAddresses}
-                  recent={recentAddresses}
-                  onSelect={onPickQuickDest}
-                  excludeAddress={destinationAddress}
-                  title="Destination rapide"
+            {(onPickQuickDest && (savedAddresses.length > 0 || recentAddresses.length > 0)) || destinationAddress.trim() ? (
+              <div className="mt-2 ml-5 flex items-start justify-between gap-2 flex-wrap">
+                {onPickQuickDest && (savedAddresses.length > 0 || recentAddresses.length > 0) ? (
+                  <AddressQuickPicks
+                    saved={savedAddresses}
+                    recent={recentAddresses}
+                    onSelect={onPickQuickDest}
+                    excludeAddress={destinationAddress}
+                    title="Destination rapide"
+                  />
+                ) : <span />}
+                <SaveAddressButton
+                  address={destinationAddress}
+                  coords={destCoords}
+                  defaultType="work"
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Date/Time for reservations */}
