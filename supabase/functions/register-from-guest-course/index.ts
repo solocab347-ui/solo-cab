@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     // Try to locate the guest course either by token, by email, or by phone
-    const _normPhone = (phone || "").replace(/\s+/g, "");
+    const _phone = (phone || "").replace(/\s+/g, "");
     let course: any = null;
     if (guest_token) {
       const { data } = await admin
