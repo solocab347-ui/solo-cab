@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AddressQuickPicks, type QuickAddress } from '../AddressQuickPicks';
+import { SaveAddressButton } from '../SaveAddressButton';
 import type { SavedAddress, RecentAddress } from '@/hooks/useClientAddresses';
 
 interface StepTrajetProps {
@@ -35,6 +36,8 @@ interface StepTrajetProps {
   setMaxSearchRadiusKm: (v: number) => void;
   isGettingLocation: boolean;
   getCurrentLocation: () => void;
+  pickupCoords?: { lat: number; lng: number } | null;
+  destCoords?: { lat: number; lng: number } | null;
   isGeocoding: boolean;
   isLoading: boolean;
   priceRange: { min: number; max: number } | null;
@@ -63,6 +66,7 @@ export function StepTrajet({
   setScheduledDate, setScheduledTime,
   maxSearchRadiusKm, setMaxSearchRadiusKm,
   isGettingLocation, getCurrentLocation,
+  pickupCoords, destCoords,
   isGeocoding, isLoading,
   priceRange, isFetchingPrices,
   routeDistanceKm, routeDurationMin,
