@@ -80,24 +80,39 @@ export const CourseRating = ({
       // Determine status: 4-5★ validated immediately, 1-3★ pending review
       const status = rating >= 4 ? "validated" : "pending_review";
 
-      // Get client_id and driver_id if not provided
-      let finalClientId = clientId;
+      // Get driver_id and resolve correct client_id (use connected user's client when possible)
       let finalDriverId = driverId;
 
-      if (!finalClientId || !finalDriverId) {
-        const { data: courseData } = await supabase
-          .from("courses")
-          .select("client_id, driver_id")
-          .eq("id", courseId)
-          .single();
+      const { data: courseData } = await supabase
+        .from("courses")
+        .select("client_id, driver_id, created_by_user_id, guest_email, guest_phone")
+        .eq("id", courseId)
+        .single();
 
-        if (courseData) {
-          finalClientId = finalClientId || courseData.client_id;
-          finalDriverId = finalDriverId || courseData.driver_id;
+      if (courseData) {
+        finalDriverId = finalDriverId || courseData.driver_id;
+      }
+
+      // Always prefer the connected user's own client_id if it exists
+      let finalClientId = clientId;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: myClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (myClient?.id) {
+          finalClientId = myClient.id;
         }
       }
 
-      if (!finalClientId || !finalDriverId) {
+      // Fallback to course client_id if we still don't have one
+      if (!finalClientId && courseData) {
+        finalClientId = courseData.client_id;
+      }
+
+      if (!finalDriverId) {
         toast.error("Impossible de récupérer les informations de la course");
         return;
       }
