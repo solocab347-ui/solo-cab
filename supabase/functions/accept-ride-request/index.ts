@@ -87,15 +87,17 @@ serve(async (req) => {
       const { data: priceData, error: priceError } = await supabaseClient.rpc("calculate_course_price", {
         _driver_id: driver.id,
         _distance_km: claimed.distance_km || 0,
+        _duration_minutes: 0,
         _scheduled_date: claimed.scheduled_date || new Date().toISOString(),
         _pickup_address: claimed.pickup_address || null,
         _destination_address: claimed.destination_address || null,
+        _use_hourly_rate: false,
       });
       if (!priceError && priceData && priceData.length > 0) {
         serverPrice = priceData[0].total_price;
         logStep("Server-side price calculated", { clientPrice: claimed.estimated_price, serverPrice });
-      } else {
-        logStep("Price RPC fallback to client price", { priceError });
+      } else if (priceError) {
+        logStep("Price RPC fallback to client price", { priceError: priceError.message });
       }
     } catch (priceCalcErr) {
       logStep("Price recalc error, using client price", { error: String(priceCalcErr) });
@@ -143,15 +145,26 @@ serve(async (req) => {
       .single();
 
     if (courseError || !course) {
-      logStep("Error creating course", { courseError });
-      throw new Error("Erreur lors de la création de la course");
+      logStep("Error creating course - REVERTING ride_request claim", { courseError });
+      // CRITICAL: revert claim so client/other drivers can retry
+      await supabaseClient
+        .from("ride_requests")
+        .update({ status: "pending", accepted_by_driver_id: null })
+        .eq("id", ride_request_id);
+      throw new Error(`Erreur lors de la création de la course: ${courseError?.message || 'unknown'}`);
     }
 
-    // Link course to ride request
-    await supabaseClient
+    // Link course to ride request - CRITICAL for client polling
+    const { error: linkError } = await supabaseClient
       .from("ride_requests")
       .update({ final_course_id: course.id })
       .eq("id", ride_request_id);
+
+    if (linkError) {
+      logStep("Warning: failed to link course to ride_request", { linkError });
+    } else {
+      logStep("Course linked to ride_request", { courseId: course.id, rideRequestId: ride_request_id });
+    }
 
     await supabaseClient
       .from("drivers")
