@@ -167,10 +167,10 @@ export function useETACalculation({
   }, [enabled, driverLocation?.lat, driverLocation?.lng, calculate]);
 
   // Background safety poll: re-evaluates "stalled" flag, no extra Mapbox call
-  // unless the driver moved enough.
+  // unless the driver moved enough. Doubled interval to reduce overall load.
   useEffect(() => {
     if (!enabled) return;
-    const interval = setInterval(() => calculate(false), POLL_INTERVAL_MS);
+    const interval = setInterval(() => calculate(false), POLL_INTERVAL_MS * 2);
     return () => clearInterval(interval);
   }, [enabled, calculate]);
 
