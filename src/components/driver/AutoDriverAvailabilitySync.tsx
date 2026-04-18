@@ -53,7 +53,7 @@ export function AutoDriverAvailabilitySync() {
     document.addEventListener('visibilitychange', handleVisibility);
     intervalRef.current = window.setInterval(() => {
       void syncHeartbeat();
-    }, 120000);
+    }, 300000); // was 120s → 5min (heartbeat is just a safety net)
 
     return () => {
       isCancelled = true;
