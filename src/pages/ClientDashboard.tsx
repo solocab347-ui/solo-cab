@@ -456,7 +456,11 @@ const ClientDashboard = () => {
         ) : null;
       case "factures":
         return clientProfile?.client?.id ? (
-          <ClientFacturesList clientId={clientProfile.client.id} />
+          <ClientFacturesList
+            clientId={clientProfile.client.id}
+            userEmail={clientProfile?.email}
+            userPhone={clientProfile?.phone}
+          />
         ) : null;
       case "messages":
         return <MessagingInterface />;

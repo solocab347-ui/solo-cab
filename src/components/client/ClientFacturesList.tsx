@@ -18,9 +18,11 @@ import {
 
 interface ClientFacturesListProps {
   clientId: string;
+  userEmail?: string | null;
+  userPhone?: string | null;
 }
 
-const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
+const ClientFacturesList = ({ clientId, userEmail, userPhone }: ClientFacturesListProps) => {
   const [factures, setFactures] = useState<any[]>([]);
   const [filteredFactures, setFilteredFactures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,43 +43,82 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
 
   const fetchFactures = async () => {
     try {
-      const { data, error } = await supabase
+      const factureSelect = `
+        *,
+        drivers(
+          id,
+          company_name,
+          siret,
+          company_address,
+          profiles:user_id(full_name, phone)
+        ),
+        courses!inner(
+          id,
+          pickup_address,
+          destination_address,
+          scheduled_date,
+          distance_km,
+          duration_minutes,
+          passengers_count,
+          guest_name,
+          guest_email,
+          guest_phone
+        ),
+        devis(
+          amount,
+          time_price,
+          distance_price,
+          tva_rate,
+          tva_amount,
+          airport_fee
+        ),
+        clients(
+          profiles:user_id(full_name, phone, email)
+        )
+      `;
+
+      const merged = new Map<string, any>();
+
+      const { data: clientFactures, error: clientError } = await supabase
         .from("factures")
-        .select(`
-          *,
-          drivers!inner(
-            id,
-            company_name,
-            siret,
-            company_address,
-            profiles:user_id(full_name, phone)
-          ),
-          courses!inner(
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes,
-            passengers_count
-          ),
-          devis(
-            amount,
-            time_price,
-            distance_price,
-            tva_rate,
-            tva_amount,
-            airport_fee
-          ),
-          clients!inner(
-            profiles:user_id(full_name, phone, email)
-          )
-        `)
+        .select(factureSelect)
         .eq("client_id", clientId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setFactures(data || []);
-      setFilteredFactures(data || []);
+      if (clientError) throw clientError;
+      (clientFactures || []).forEach((facture) => merged.set(facture.id, facture));
+
+      const guestCourseFilters: string[] = [];
+      if (userEmail) guestCourseFilters.push(`guest_email.ilike.${userEmail}`);
+      if (userPhone) guestCourseFilters.push(`guest_phone.eq.${userPhone}`);
+
+      if (guestCourseFilters.length > 0) {
+        const { data: guestCourses, error: guestCoursesError } = await supabase
+          .from("courses")
+          .select("id")
+          .or(guestCourseFilters.join(","));
+
+        if (guestCoursesError) throw guestCoursesError;
+
+        const guestCourseIds = (guestCourses || []).map((course) => course.id);
+        if (guestCourseIds.length > 0) {
+          const { data: guestFactures, error: guestFacturesError } = await supabase
+            .from("factures")
+            .select(factureSelect)
+            .in("course_id", guestCourseIds)
+            .order("created_at", { ascending: false });
+
+          if (guestFacturesError) throw guestFacturesError;
+          (guestFactures || []).forEach((facture) => merged.set(facture.id, facture));
+        }
+      }
+
+      const allFactures = Array.from(merged.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+
+      setFactures(allFactures);
+      setFilteredFactures(allFactures);
     } catch (error: any) {
       console.error("Error fetching factures:", error);
       toast.error("Erreur lors du chargement des factures");
@@ -137,15 +178,17 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
     
-    const clientName = facture.clients?.profiles?.full_name || "N/A";
+    const clientName = facture.clients?.profiles?.full_name || facture.courses?.guest_name || "Client";
     doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
     
-    if (facture.clients?.profiles?.email) {
-      doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+    const clientEmail = facture.clients?.profiles?.email || facture.courses?.guest_email;
+    if (clientEmail) {
+      doc.text(clientEmail, pageWidth - 20, 76, { align: 'right' });
     }
     
-    if (facture.clients?.profiles?.phone) {
-      doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    const clientPhone = facture.clients?.profiles?.phone || facture.courses?.guest_phone;
+    if (clientPhone) {
+      doc.text(`Tél: ${clientPhone}`, pageWidth - 20, 81, { align: 'right' });
     }
 
     // Service details box
