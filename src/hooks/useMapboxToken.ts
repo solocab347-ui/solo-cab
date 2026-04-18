@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Persistent localStorage cache to avoid repeated edge function calls (24h TTL)
+const STORAGE_KEY = 'sc_mapbox_token_v1';
+const TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
 let cachedToken: string | null = null;
 let tokenPromise: Promise<string | null> | null = null;
+
+// Hydrate from localStorage on module load
+try {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    if (parsed?.token && parsed?.ts && Date.now() - parsed.ts < TTL_MS) {
+      cachedToken = parsed.token;
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+} catch {}
 
 async function fetchToken(): Promise<string | null> {
   try {
@@ -13,6 +30,7 @@ async function fetchToken(): Promise<string | null> {
       return null;
     }
     cachedToken = data.token;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: data.token, ts: Date.now() })); } catch {}
     tokenPromise = null;
     return cachedToken;
   } catch (err) {

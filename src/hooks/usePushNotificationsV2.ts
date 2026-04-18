@@ -13,8 +13,23 @@ interface PushSubscriptionData {
   };
 }
 
-// Cache pour la clé VAPID
+// Cache pour la clé VAPID — persistent localStorage (7 jours, key change rarement)
+const VAPID_STORAGE_KEY = 'sc_vapid_pk_v1';
+const VAPID_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 let cachedVapidKey: string | null = null;
+
+// Hydrate from localStorage
+try {
+  const raw = localStorage.getItem(VAPID_STORAGE_KEY);
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    if (parsed?.key && parsed?.ts && Date.now() - parsed.ts < VAPID_TTL_MS) {
+      cachedVapidKey = parsed.key;
+    } else {
+      localStorage.removeItem(VAPID_STORAGE_KEY);
+    }
+  }
+} catch {}
 
 // Récupérer la clé VAPID depuis l'edge function
 async function getVapidPublicKey(): Promise<string | null> {
@@ -30,6 +45,7 @@ async function getVapidPublicKey(): Promise<string | null> {
     
     if (data?.publicKey) {
       cachedVapidKey = data.publicKey;
+      try { localStorage.setItem(VAPID_STORAGE_KEY, JSON.stringify({ key: data.publicKey, ts: Date.now() })); } catch {}
       logger.info('Clé VAPID récupérée avec succès');
       return data.publicKey;
     }

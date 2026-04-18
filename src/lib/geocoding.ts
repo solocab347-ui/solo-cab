@@ -27,8 +27,28 @@ export const geocodeAddress = async (address: string): Promise<GeocodeResult> =>
   try {
     console.log(`🗺️ GEOCODING: Début pour "${address}"`);
 
-    // Récupération sécurisée du token Mapbox
-    const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-mapbox-token");
+    // Récupération sécurisée du token Mapbox (avec cache localStorage 24h)
+    const STORAGE_KEY = 'sc_mapbox_token_v1';
+    const TTL_MS = 24 * 60 * 60 * 1000;
+    let token: string | null = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.token && parsed?.ts && Date.now() - parsed.ts < TTL_MS) token = parsed.token;
+      }
+    } catch {}
+    
+    let tokenData: { token?: string } | null = token ? { token } : null;
+    let tokenError: any = null;
+    if (!token) {
+      const resp = await supabase.functions.invoke("get-mapbox-token");
+      tokenData = resp.data;
+      tokenError = resp.error;
+      if (tokenData?.token) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: tokenData.token, ts: Date.now() })); } catch {}
+      }
+    }
     
     if (tokenError || !tokenData?.token) {
       console.error("❌ GEOCODING: Token Mapbox non disponible", tokenError);
