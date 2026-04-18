@@ -233,6 +233,8 @@ export function UnifiedBookingPage() {
       if (clientData?.is_exclusive && clientData?.driver_id) {
         setIsExclusiveClient(true);
         setExclusiveDriverId(clientData.driver_id);
+        // Exclusive clients can ONLY do reservations (their driver receives them as scheduled, no need to be online)
+        setMode('reservation');
       }
     };
     fetchFavorites();
