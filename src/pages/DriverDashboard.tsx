@@ -97,9 +97,6 @@ const DriverDashboard = () => {
   const queryClient = useQueryClient();
   const { isPremium } = useDriverPremium();
 
-  // Filet de sécurité: génère automatiquement les factures pour les courses qui passent à "completed"
-  useInvoiceAutoCreate(driverProfile?.driver?.id);
-
   // SÉCURITÉ: Double vérification du rôle pour éviter les mélanges de dashboard
   useEffect(() => {
     if (userRole && userRole !== "driver") {
@@ -113,6 +110,9 @@ const DriverDashboard = () => {
   }, [userRole, navigate]);
 
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating, accessStatus } = useOptimizedDriverProfile(user?.id);
+
+  // Filet de sécurité: génère automatiquement les factures pour les courses qui passent à "completed"
+  useInvoiceAutoCreate(driverProfile?.driver?.id);
   
   // Mettre à jour last_seen_at à chaque visite du dashboard
   useUpdateLastSeen(driverProfile?.driver?.id);
