@@ -87,15 +87,17 @@ serve(async (req) => {
       const { data: priceData, error: priceError } = await supabaseClient.rpc("calculate_course_price", {
         _driver_id: driver.id,
         _distance_km: claimed.distance_km || 0,
+        _duration_minutes: 0,
         _scheduled_date: claimed.scheduled_date || new Date().toISOString(),
         _pickup_address: claimed.pickup_address || null,
         _destination_address: claimed.destination_address || null,
+        _use_hourly_rate: false,
       });
       if (!priceError && priceData && priceData.length > 0) {
         serverPrice = priceData[0].total_price;
         logStep("Server-side price calculated", { clientPrice: claimed.estimated_price, serverPrice });
-      } else {
-        logStep("Price RPC fallback to client price", { priceError });
+      } else if (priceError) {
+        logStep("Price RPC fallback to client price", { priceError: priceError.message });
       }
     } catch (priceCalcErr) {
       logStep("Price recalc error, using client price", { error: String(priceCalcErr) });
