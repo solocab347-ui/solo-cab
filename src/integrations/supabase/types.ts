@@ -24351,6 +24351,10 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      trigger_ai_arbitration_for_pending_ratings: {
+        Args: never
+        Returns: undefined
+      }
       try_auto_place_queued_courses: {
         Args: never
         Returns: {
