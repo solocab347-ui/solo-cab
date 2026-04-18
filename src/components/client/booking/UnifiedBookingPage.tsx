@@ -277,7 +277,7 @@ export function UnifiedBookingPage() {
       const runRecovery = async () => {
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, prioritizeFavorites ? favoriteDriverIds : [], exclusiveDriverId);
       };
       runRecovery();
     }
@@ -497,7 +497,7 @@ export function UnifiedBookingPage() {
       setRouteDistanceKm(distance); setRouteDurationMin(duration);
 
       // Now search drivers WITH the actual distance for accurate pricing
-      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
+      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, prioritizeFavorites ? favoriteDriverIds : [], exclusiveDriverId);
       // Exclusive client: skip the driver-results step entirely, go straight to confirmation
       setCurrentStep(isExclusiveClient ? 3 : 2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
@@ -761,6 +761,9 @@ export function UnifiedBookingPage() {
                 recentAddresses={recentAddresses}
                 onPickQuickPickup={handleQuickPickup}
                 onPickQuickDest={handleQuickDest}
+                hasFavorites={!isExclusiveClient && favoriteDriverIds.length > 0}
+                prioritizeFavorites={prioritizeFavorites}
+                setPrioritizeFavorites={setPrioritizeFavorites}
               />
             )}
 
@@ -782,7 +785,7 @@ export function UnifiedBookingPage() {
                   if (pickupCoords) {
                     let schedDate: Date | undefined;
                     if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-                    searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
+                    searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, prioritizeFavorites ? favoriteDriverIds : [], exclusiveDriverId);
                   }
                 }}
                 clientPaymentMethod={clientPaymentMethod}
