@@ -106,7 +106,7 @@ const App = () => (
                 <GlobalRideOverlay />
                 <MaintenanceGuard>
                 <ErrorBoundary>
-                <Routes>
+                <AnimatedRoutes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><Login /></Suspense>} />
               <Route path="/signup" element={<Suspense fallback={<LoadingFallback />}><SignupChoice /></Suspense>} />
