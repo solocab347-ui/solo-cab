@@ -175,7 +175,7 @@ export function OnboardingTrialStartStep({
 
   const handleSkipAndWait = async () => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('drivers')
         .update({
           onboarding_completed: true,
@@ -183,6 +183,20 @@ export function OnboardingTrialStartStep({
           onboarding_step: 'complete',
         })
         .eq('id', driverId);
+
+      if (error) {
+        if (error.message?.includes('Stripe Connect')) {
+          toast.error('Configurez d\'abord votre compte de paiement Stripe Connect avant de finaliser.', {
+            duration: 6000,
+            action: {
+              label: 'Configurer',
+              onClick: () => window.location.href = '/driver-welcome?step=stripe',
+            },
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast.success('Inscription complète. Activez votre compte quand vous êtes prêt !');
       onComplete();
