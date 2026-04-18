@@ -572,7 +572,19 @@ export function HorizontalOnboardingTunnel({
         })
         .eq('id', driverId);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('Stripe Connect')) {
+          toast.error('Vous devez d\'abord activer votre compte Stripe Connect pour recevoir vos paiements.', {
+            duration: 6000,
+            action: {
+              label: 'Activer maintenant',
+              onClick: () => window.location.href = '/driver-welcome?step=stripe',
+            },
+          });
+          return;
+        }
+        throw error;
+      }
       window.localStorage.removeItem(draftStorageKey);
       toast.success('🎉 Bienvenue sur SoloCab !');
       onComplete();
