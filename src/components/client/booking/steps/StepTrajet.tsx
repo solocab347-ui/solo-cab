@@ -347,6 +347,31 @@ export function StepTrajet({
       )}
 
       {/* Next button */}
+      {/* Prioritize favorites toggle (only for logged-in clients with favorites) */}
+      {hasFavorites && setPrioritizeFavorites && (
+        <Card className="border-border/50 bg-muted/30">
+          <CardContent className="p-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={prioritizeFavorites}
+                onCheckedChange={(checked) => setPrioritizeFavorites(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <Heart className="h-3.5 w-3.5 text-primary fill-primary/20" />
+                  Prioriser mes chauffeurs favoris
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                  S'ils sont à proximité, la demande leur sera envoyée en priorité.
+                </p>
+              </div>
+            </label>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Next button */}
       <Button
         className="w-full h-12 text-base font-semibold gap-2"
         onClick={onNext}
