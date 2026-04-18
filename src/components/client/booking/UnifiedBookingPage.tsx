@@ -69,6 +69,8 @@ export function UnifiedBookingPage() {
 
   // Favorite driver
   const [favoriteDriverIds, setFavoriteDriverIds] = useState<string[]>([]);
+  // Whether to prioritize favorite drivers in dispatch (default OFF — focus is on finding ANY ride)
+  const [prioritizeFavorites, setPrioritizeFavorites] = useState<boolean>(false);
   // Exclusive client lock — restricts driver list to their assigned driver only
   const [exclusiveDriverId, setExclusiveDriverId] = useState<string | null>(null);
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
