@@ -14406,6 +14406,7 @@ export type Database = {
           is_read: boolean
           link: string | null
           message: string
+          metadata: Json | null
           push_sent: boolean | null
           push_sent_at: string | null
           title: string
@@ -14420,6 +14421,7 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message: string
+          metadata?: Json | null
           push_sent?: boolean | null
           push_sent_at?: string | null
           title: string
@@ -14434,6 +14436,7 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message?: string
+          metadata?: Json | null
           push_sent?: boolean | null
           push_sent_at?: string | null
           title?: string
@@ -21911,6 +21914,7 @@ export type Database = {
           total_issues_found: number
         }[]
       }
+      auto_validate_uncontested_ratings: { Args: never; Returns: number }
       calculate_cancellation_fee: {
         Args: { p_cancelled_by: string; p_course_id: string }
         Returns: Json
