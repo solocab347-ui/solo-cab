@@ -14,6 +14,8 @@ import type { SavedAddress, RecentAddress } from '@/hooks/useClientAddresses';
 interface StepTrajetProps {
   mode: 'reservation' | 'immediate';
   setMode: (m: 'reservation' | 'immediate') => void;
+  /** When true, hide the immediate/reservation toggle and force reservation. Used for exclusive clients. */
+  lockReservation?: boolean;
   pickupAddress: string;
   destinationAddress: string;
   onPickupChange: (val: string) => void;
@@ -55,6 +57,7 @@ interface StepTrajetProps {
 
 export function StepTrajet({
   mode, setMode,
+  lockReservation = false,
   pickupAddress, destinationAddress,
   onPickupChange, onDestChange,
   pickupSuggestions, destSuggestions,
@@ -85,33 +88,42 @@ export function StepTrajet({
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-      {/* Mode Toggle */}
-      <div className="flex gap-2 p-1 bg-muted/50 rounded-xl border border-border/50">
-        <button
-          onClick={() => setMode('immediate')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
-            mode === 'immediate'
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Zap className="h-4 w-4" />
-          Course immédiate
-        </button>
-        <button
-          onClick={() => setMode('reservation')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
-            mode === 'reservation'
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <CalendarClock className="h-4 w-4" />
-          Réservation
-        </button>
-      </div>
+      {/* Mode Toggle (hidden for exclusive clients — they can only book as reservation, sent directly to their driver) */}
+      {!lockReservation ? (
+        <div className="flex gap-2 p-1 bg-muted/50 rounded-xl border border-border/50">
+          <button
+            onClick={() => setMode('immediate')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
+              mode === 'immediate'
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Zap className="h-4 w-4" />
+            Course immédiate
+          </button>
+          <button
+            onClick={() => setMode('reservation')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all",
+              mode === 'reservation'
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <CalendarClock className="h-4 w-4" />
+            Réservation
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 p-3 rounded-xl border border-primary/30 bg-primary/5">
+          <CalendarClock className="h-4 w-4 text-primary shrink-0" />
+          <p className="text-xs text-foreground">
+            <span className="font-semibold">Réservation auprès de votre chauffeur</span> — il recevra votre demande même hors-ligne.
+          </p>
+        </div>
+      )}
 
       {/* Address Card */}
       <Card className="border-border/50">
