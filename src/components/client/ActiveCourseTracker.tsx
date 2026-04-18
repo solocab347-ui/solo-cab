@@ -472,9 +472,14 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
   const toggleFavorite = useCallback(async () => {
     if (!course?.client_id || !driver?.id || favoriteSaving) return;
+
+    // ⚡ Optimistic UI : flip immédiatement, rollback si erreur
+    const previousFavorite = isFavorite;
+    const nextFavorite = !previousFavorite;
+    setIsFavorite(nextFavorite);
     setFavoriteSaving(true);
+
     try {
-      // Read current driver_ids to maintain "Mes chauffeurs" list (also required by RLS for profile photo access)
       const { data: clientRow } = await supabase
         .from("clients")
         .select("driver_ids, is_exclusive")
@@ -484,21 +489,15 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
       const currentIds: string[] = clientRow?.driver_ids || [];
       let newDriverIds = currentIds;
 
-      if (!isFavorite) {
-        // Adding as favorite → also add to driver_ids if not already present
-        if (!currentIds.includes(driver.id)) {
-          newDriverIds = [...currentIds, driver.id];
-        }
+      if (nextFavorite && !currentIds.includes(driver.id)) {
+        newDriverIds = [...currentIds, driver.id];
       }
-      // Note: Removing favorite does NOT remove from driver_ids — the driver stays in "Mes chauffeurs".
 
-      const newFavorite = isFavorite ? null : driver.id;
       const updates: Record<string, any> = {
-        favorite_driver_id: newFavorite,
+        favorite_driver_id: nextFavorite ? driver.id : null,
         updated_at: new Date().toISOString(),
       };
-      // Only update driver_ids when adding (and only for non-exclusive clients)
-      if (!isFavorite && !clientRow?.is_exclusive && newDriverIds !== currentIds) {
+      if (nextFavorite && !clientRow?.is_exclusive && newDriverIds !== currentIds) {
         updates.driver_ids = newDriverIds;
       }
 
@@ -507,10 +506,11 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
         .update(updates)
         .eq("id", course.client_id);
       if (error) throw error;
-      setIsFavorite(!isFavorite);
-      toast.success(isFavorite ? "Retiré de vos favoris" : "Ajouté à vos chauffeurs favoris ❤️");
+
+      toast.success(nextFavorite ? "Ajouté à vos chauffeurs favoris ❤️" : "Retiré de vos favoris");
     } catch (err) {
       console.error(err);
+      setIsFavorite(previousFavorite); // rollback
       toast.error("Impossible de mettre à jour vos favoris");
     } finally {
       setFavoriteSaving(false);
