@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star, AlertTriangle, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,6 +46,41 @@ export const CourseRating = ({
   const [reason, setReason] = useState("");
   const [reasonDetail, setReasonDetail] = useState("");
   const [showPostSubmitInfo, setShowPostSubmitInfo] = useState(false);
+  const [persistedRating, setPersistedRating] = useState<{ rating: number; status: string | null } | null>(
+    currentRating ? { rating: currentRating, status: "validated" } : null,
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchExistingRating = async () => {
+      if (currentRating) {
+        setPersistedRating({ rating: currentRating, status: "validated" });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("course_ratings")
+        .select("rating, status")
+        .eq("course_id", courseId)
+        .eq("rating_direction", "client_to_driver")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!mounted || error || !data) return;
+
+      setPersistedRating({ rating: data.rating, status: data.status });
+      setRating(data.rating);
+      if (data.rating <= 3) setShowPostSubmitInfo(true);
+    };
+
+    void fetchExistingRating();
+
+    return () => {
+      mounted = false;
+    };
+  }, [courseId, currentRating]);
 
   const handleStarClick = (star: number) => {
     setRating(star);
@@ -149,6 +184,7 @@ export const CourseRating = ({
         );
       }
 
+      setPersistedRating({ rating, status });
       setShowPostSubmitInfo(rating <= 3);
       onRatingSubmitted?.();
     } catch (error: any) {
@@ -163,7 +199,9 @@ export const CourseRating = ({
     }
   };
 
-  if (currentRating || showPostSubmitInfo) {
+  const displayedRating = currentRating || persistedRating?.rating || rating;
+
+  if (displayedRating || showPostSubmitInfo) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-1">
@@ -171,7 +209,7 @@ export const CourseRating = ({
             <Star
               key={star}
               className={`w-5 h-5 ${
-                star <= (currentRating || rating)
+                star <= displayedRating
                   ? "fill-yellow-400 text-yellow-400"
                   : "text-gray-300"
               }`}
@@ -181,7 +219,7 @@ export const CourseRating = ({
             Note attribuée
           </span>
         </div>
-        {(showPostSubmitInfo || (currentRating && currentRating <= 3)) && (
+        {(showPostSubmitInfo || ((persistedRating?.rating || currentRating || 0) <= 3 && !!displayedRating)) && (
           <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs space-y-1.5">
             <p className="font-semibold text-blue-700 dark:text-blue-300">ℹ️ Suivi de votre note</p>
             <p className="text-muted-foreground">
