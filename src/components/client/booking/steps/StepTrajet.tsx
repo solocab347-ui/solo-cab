@@ -3,8 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  MapPin, Navigation, Loader2, Zap, CalendarClock, Calendar, Clock, Search
+  MapPin, Navigation, Loader2, Zap, CalendarClock, Calendar, Clock, Search, Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AddressQuickPicks, type QuickAddress } from '../AddressQuickPicks';
