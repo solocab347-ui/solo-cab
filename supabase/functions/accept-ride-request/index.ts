@@ -145,15 +145,26 @@ serve(async (req) => {
       .single();
 
     if (courseError || !course) {
-      logStep("Error creating course", { courseError });
-      throw new Error("Erreur lors de la création de la course");
+      logStep("Error creating course - REVERTING ride_request claim", { courseError });
+      // CRITICAL: revert claim so client/other drivers can retry
+      await supabaseClient
+        .from("ride_requests")
+        .update({ status: "pending", accepted_by_driver_id: null })
+        .eq("id", ride_request_id);
+      throw new Error(`Erreur lors de la création de la course: ${courseError?.message || 'unknown'}`);
     }
 
-    // Link course to ride request
-    await supabaseClient
+    // Link course to ride request - CRITICAL for client polling
+    const { error: linkError } = await supabaseClient
       .from("ride_requests")
       .update({ final_course_id: course.id })
       .eq("id", ride_request_id);
+
+    if (linkError) {
+      logStep("Warning: failed to link course to ride_request", { linkError });
+    } else {
+      logStep("Course linked to ride_request", { courseId: course.id, rideRequestId: ride_request_id });
+    }
 
     await supabaseClient
       .from("drivers")
