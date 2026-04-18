@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedUser } from "@/lib/cachedAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -193,7 +194,7 @@ export function ClientCardManager() {
 
   const handleSetDefault = async (cardId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (!user) return;
       await supabase.from("clients").update({ default_payment_method_id: cardId }).eq("user_id", user.id);
       setCards((prev) => prev.map((card) => ({ ...card, is_default: card.id === cardId })));

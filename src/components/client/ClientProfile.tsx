@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedUser } from "@/lib/cachedAuth";
 import { toast } from "sonner";
 import { User, MapPin, Phone, Mail, Camera } from "lucide-react";
 import { SavedAddressesManager } from "./SavedAddressesManager";
@@ -32,7 +33,7 @@ const ClientProfile = () => {
 
   const fetchProfileData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (!user) throw new Error("Non authentifié");
 
       // Fetch profile
@@ -107,7 +108,7 @@ const ClientProfile = () => {
   const uploadPhoto = async () => {
     if (!photoFile) return null;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCachedUser();
     if (!user) throw new Error("Non authentifié");
 
     setUploading(true);
@@ -151,7 +152,7 @@ const ClientProfile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (!user) throw new Error("Non authentifié");
 
       // Upload photo if selected
