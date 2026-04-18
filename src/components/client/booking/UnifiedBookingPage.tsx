@@ -275,7 +275,7 @@ export function UnifiedBookingPage() {
       const runRecovery = async () => {
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
       };
       runRecovery();
     }
@@ -495,10 +495,11 @@ export function UnifiedBookingPage() {
       setRouteDistanceKm(distance); setRouteDurationMin(duration);
 
       // Now search drivers WITH the actual distance for accurate pricing
-      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
-      setCurrentStep(2);
+      await searchNearbyDrivers(pickup.lat, pickup.lng, distance || undefined, duration ? Math.round(duration) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
+      // Exclusive client: skip the driver-results step entirely, go straight to confirmation
+      setCurrentStep(isExclusiveClient ? 3 : 2);
     } catch { toast.error('Erreur lors de la recherche'); } finally { setIsGeocoding(false); }
-  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm]);
+  }, [pickupAddress, destinationAddress, pickupCoords, destCoords, mode, scheduledDate, scheduledTime, searchNearbyDrivers, mapboxToken, maxSearchRadiusKm, favoriteDriverIds, exclusiveDriverId, isExclusiveClient]);
 
   // Price range from drivers
   useEffect(() => {
@@ -523,7 +524,7 @@ export function UnifiedBookingPage() {
         if (dist) { setRouteDistanceKm(dist); setRouteDurationMin(dur); }
         let schedDate: Date | undefined;
         if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
+        await searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, dist || undefined, dur || undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
       } catch {} finally { setIsFetchingPrices(false); }
     };
     fetchPrices();
@@ -778,7 +779,7 @@ export function UnifiedBookingPage() {
                   if (pickupCoords) {
                     let schedDate: Date | undefined;
                     if (mode === 'reservation' && scheduledDate && scheduledTime) schedDate = new Date(`${scheduledDate}T${scheduledTime}`);
-                    searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds);
+                    searchNearbyDrivers(pickupCoords.lat, pickupCoords.lng, routeDistanceKm || undefined, routeDurationMin ? Math.round(routeDurationMin) : undefined, schedDate, pickupAddress, destinationAddress, maxSearchRadiusKm, mode, favoriteDriverIds, exclusiveDriverId);
                   }
                 }}
                 clientPaymentMethod={clientPaymentMethod}
