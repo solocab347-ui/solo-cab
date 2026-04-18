@@ -1408,8 +1408,39 @@ serve(async (req) => {
             payment_status: "paid",
             payment_captured_at: new Date().toISOString(),
             final_payment_status: "succeeded",
+            stripe_payment_intent_id: paymentIntent.id,
           })
           .eq("id", metadata.course_id);
+
+        // ════════════════════════════════════════════════════════════
+        // PRÉVENTION BUG ORPHELIN : patch les payments existants 
+        // sans Stripe IDs liés à cette course (idempotent)
+        // ════════════════════════════════════════════════════════════
+        const { data: orphanedPayments } = await supabaseClient
+          .from("payments")
+          .select("id")
+          .eq("course_id", metadata.course_id)
+          .is("stripe_payment_intent_id", null)
+          .in("status", ["succeeded", "captured", "pending"]);
+
+        if (orphanedPayments && orphanedPayments.length > 0) {
+          await supabaseClient
+            .from("payments")
+            .update({
+              stripe_payment_intent_id: paymentIntent.id,
+              stripe_charge_id: (paymentIntent.latest_charge as string) || null,
+              status: "succeeded",
+              captured_at: new Date().toISOString(),
+            })
+            .eq("course_id", metadata.course_id)
+            .is("stripe_payment_intent_id", null);
+          
+          logStep("✅ Patched orphaned payments with Stripe IDs", { 
+            courseId: metadata.course_id,
+            patchedCount: orphanedPayments.length,
+            paymentIntentId: paymentIntent.id 
+          });
+        }
 
         // Generate invoice
         try {
