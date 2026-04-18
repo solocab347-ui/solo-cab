@@ -196,10 +196,12 @@ const ClientDashboard = () => {
 
       if (!client) return;
 
+      // Optimisation : remplacement des HEAD count:exact (qui provoquent HTTP 500
+      // sur factures avec RLS) par des SELECT id légers + count côté client
       const [upcomingResult, pendingDevisData, unpaidResult, blockedResult] = await Promise.all([
         supabase
           .from("courses")
-          .select("*", { count: "exact", head: true })
+          .select("id")
           .eq("client_id", client.id)
           .eq("status", "accepted")
           .gte("scheduled_date", new Date().toISOString()),
@@ -212,22 +214,22 @@ const ClientDashboard = () => {
           .neq("courses.status", "cancelled"),
         supabase
           .from("factures")
-          .select("*", { count: "exact", head: true })
+          .select("id")
           .eq("client_id", client.id)
           .eq("payment_status", "pending"),
         supabase
           .from("client_driver_blocks")
-          .select("id", { count: "exact", head: true })
+          .select("id")
           .eq("client_id", client.id)
           .eq("blocked_by", "client"),
       ]);
 
       setStats({
-        upcomingCourses: upcomingResult.count || 0,
+        upcomingCourses: upcomingResult.data?.length || 0,
         pendingDevis: pendingDevisData.data?.length || 0,
-        unpaidInvoices: unpaidResult.count || 0,
+        unpaidInvoices: unpaidResult.data?.length || 0,
       });
-      setBlockedDriversCount(blockedResult.count || 0);
+      setBlockedDriversCount(blockedResult.data?.length || 0);
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
