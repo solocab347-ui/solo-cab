@@ -43,10 +43,14 @@ serve(async (req) => {
       throw new Error("Stripe Connect non configuré. Activez-le dans vos paramètres d'encaissement.");
     }
 
-    // Parse body
-    const { amount, description, date } = await req.json();
+    // Parse body — `course_id` is OPTIONAL: when present, the resulting payment
+    // will be linked back to the course so the webhook can mark it as paid/completed.
+    const { amount, description, date, course_id } = await req.json();
     if (!amount || typeof amount !== "number" || amount < 1) {
       throw new Error("Montant invalide (minimum 1€)");
+    }
+    if (course_id !== undefined && (typeof course_id !== "string" || course_id.length < 10)) {
+      throw new Error("course_id invalide");
     }
     if (amount > 10000) {
       throw new Error("Montant maximum : 10 000€");
@@ -93,15 +97,36 @@ serve(async (req) => {
           solocab_fee: (platformFeeCents / 100).toFixed(2),
           description: description.trim().slice(0, 200),
           date: date || new Date().toISOString(),
+          ...(course_id ? { course_id, recovery_for_course: "true" } : {}),
         },
       },
-      success_url: `${req.headers.get("origin")}/driver-dashboard?tab=finances&payment=success`,
+      success_url: `${req.headers.get("origin")}/driver-dashboard?tab=finances&payment=success${course_id ? `&course_id=${course_id}` : ""}`,
       cancel_url: `${req.headers.get("origin")}/driver-dashboard?tab=finances&payment=cancelled`,
       metadata: {
         driver_id: driver.id,
         type: "spontaneous_payment",
+        ...(course_id ? { course_id, recovery_for_course: "true" } : {}),
       },
     });
+
+    // If this is a recovery link for a specific course, persist the session id
+    // so realtime listeners on the driver UI can detect "paid" without polling Stripe.
+    if (course_id) {
+      try {
+        await adminClient
+          .from("courses")
+          .update({
+            recovery_payment_session_id: session.id,
+            recovery_payment_url: session.url,
+            recovery_payment_amount: amount,
+            recovery_payment_created_at: new Date().toISOString(),
+          })
+          .eq("id", course_id);
+      } catch (e) {
+        // Non-blocking: columns may not exist yet, the webhook is the source of truth.
+        console.warn("[SPONTANEOUS] Could not persist recovery session id:", e);
+      }
+    }
 
     return new Response(
       JSON.stringify({ url: session.url, session_id: session.id }),

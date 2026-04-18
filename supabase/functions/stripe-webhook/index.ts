@@ -920,6 +920,111 @@ serve(async (req) => {
         });
       }
 
+      // CASE 4-bis: Spontaneous recovery payment LINKED TO A COURSE
+      // (driver generated a payment link from the completion screen after card capture failed)
+      if (metadata.type === "spontaneous_payment" && metadata.course_id && metadata.recovery_for_course === "true") {
+        const course_id = metadata.course_id;
+        const driver_id = metadata.driver_id;
+        const paymentIntentId = session.payment_intent as string;
+        const paymentIntent = paymentIntentId ? await stripe.paymentIntents.retrieve(paymentIntentId) : null;
+        const amountPaid = (session.amount_total || paymentIntent?.amount_received || 0) / 100;
+
+        logStep("✅ Recovery payment received — finalizing course", {
+          courseId: course_id,
+          amount: amountPaid,
+          sessionId: session.id,
+        });
+
+        // Compute fees consistent with finalize-course-payment
+        const STRIPE_PERCENTAGE = 0.015;
+        const STRIPE_FIXED_FEE = 0.25;
+        const SOLOCAB_FEE = 0.50;
+        const stripeFee = Math.round((amountPaid * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
+        const totalFees = SOLOCAB_FEE + stripeFee;
+        const netToDriver = Math.max(0, Math.round((amountPaid - totalFees) * 100) / 100);
+
+        await supabaseClient
+          .from("courses")
+          .update({
+            status: "completed",
+            payment_status: "paid",
+            final_payment_status: "succeeded",
+            final_payment_intent_id: paymentIntentId,
+            final_payment_amount: amountPaid,
+            final_payment_at: new Date().toISOString(),
+            payment_captured_at: new Date().toISOString(),
+            solocab_fee_amount: SOLOCAB_FEE,
+            stripe_fee_amount: stripeFee,
+            total_fees_amount: totalFees,
+            net_amount_to_driver: netToDriver,
+          })
+          .eq("id", course_id);
+
+        // Idempotent payments insert (unique index on stripe_payment_intent_id)
+        const { error: payErr } = await supabaseClient.from("payments").insert({
+          course_id,
+          driver_id,
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_charge_id: (paymentIntent?.latest_charge as string) || null,
+          amount: amountPaid,
+          captured_amount: amountPaid,
+          application_fee_amount: SOLOCAB_FEE,
+          stripe_fee_amount: stripeFee,
+          net_to_driver: netToDriver,
+          status: "succeeded",
+          payment_type: "course_recovery",
+          capture_method: "automatic",
+          payment_method: "card",
+          captured_at: new Date().toISOString(),
+          metadata: { flow: "spontaneous_recovery_link", session_id: session.id },
+        });
+        if (payErr?.code === "23505") {
+          logStep("Recovery payment already recorded (duplicate prevented)", { course_id });
+        } else if (payErr) {
+          logStep("Recovery payment insert error (non-blocking)", { error: payErr.message });
+        }
+
+        // Generate invoice
+        try {
+          await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
+        } catch (e) {
+          logStep("Facture creation failed (non-blocking)", { error: String(e) });
+        }
+
+        // Notify driver and client
+        const { data: courseRow } = await supabaseClient
+          .from("courses")
+          .select("client_id, drivers!courses_driver_id_fkey(user_id), clients!courses_client_id_fkey(user_id)")
+          .eq("id", course_id)
+          .maybeSingle();
+
+        const driverUserId = (courseRow as any)?.drivers?.user_id;
+        const clientUserId = (courseRow as any)?.clients?.user_id;
+
+        if (driverUserId) {
+          await supabaseClient.from("notifications").insert({
+            user_id: driverUserId,
+            title: "💰 Paiement de récupération reçu",
+            message: `${amountPaid.toFixed(2)}€ encaissé via le lien. Net: ${netToDriver.toFixed(2)}€`,
+            type: "info",
+            link: "/driver-dashboard?tab=courses",
+          });
+        }
+        if (clientUserId) {
+          await supabaseClient.from("notifications").insert({
+            user_id: clientUserId,
+            title: "✅ Paiement confirmé",
+            message: `Votre paiement de ${amountPaid.toFixed(2)}€ a été reçu. Merci !`,
+            type: "info",
+          });
+        }
+
+        return new Response(JSON.stringify({ received: true, type: "spontaneous_recovery", course_id }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
       // CASE 5: Shared course payment
       if (metadata.type === "shared_course_payment" && metadata.shared_course_id) {
         const sharedCourseId = metadata.shared_course_id;
