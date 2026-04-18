@@ -365,7 +365,7 @@ const App = () => (
               <Route path="/fleet-dashboard" element={<Navigate to="/" replace />} />
               
               <Route path="*" element={<NotFound />} />
-            </Routes>
+            </AnimatedRoutes>
             </ErrorBoundary>
             </MaintenanceGuard>
             
