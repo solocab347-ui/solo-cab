@@ -22441,6 +22441,7 @@ export type Database = {
           }
         | {
             Args: {
+              p_exclusive_driver_id?: string
               p_favorite_driver_ids?: string[]
               p_latitude: number
               p_limit?: number
