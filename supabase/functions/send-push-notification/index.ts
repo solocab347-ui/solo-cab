@@ -23,16 +23,23 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    const rawVapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const rawVapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    if (!vapidPublicKey || !vapidPrivateKey) {
+    if (!rawVapidPublicKey || !rawVapidPrivateKey) {
       console.error('⚠️ VAPID keys not configured');
       return new Response(
         JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Normalize to URL-safe base64 (web-push requires no padding, no +/)
+    const toUrlSafeBase64 = (s: string) =>
+      s.trim().replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const vapidPublicKey = toUrlSafeBase64(rawVapidPublicKey);
+    const vapidPrivateKey = toUrlSafeBase64(rawVapidPrivateKey);
 
     // Configure web-push with VAPID
     webpush.setVapidDetails(
