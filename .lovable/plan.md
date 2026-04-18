@@ -1,51 +1,103 @@
+# 🚀 Refonte Performances & UX SoloCab — Plan complet
 
+## Objectif
+Réduire le **Time-To-Interactive** de ~4s à <1s sur tous les dashboards (admin, chauffeur, client, guest), éliminer les HTTP 500 actuels, et offrir des transitions fluides type "app native premium".
 
-## Plan: Test E2E complet du tunnel `/chauffeurs` (Libre + Exclusif)
+---
 
-### Constat
+## 📦 PHASE 1 — Fondations DB & Cache (1 message)
+**Impact : élimine les timeouts SQL, divise par 3 les requêtes au boot**
 
-État actuel de la base :
-- Client de test `kanouteabdallah666@gmail.com` → **client libre** (`is_exclusive=false`), avec 2 favoris (dont Service Prestige).
-- Aucun chauffeur n'a un GPS frais (<5min) → la RPC `find_nearby_drivers` renvoie 0 résultat ⇒ impossible d'aller au-delà de l'étape 2.
-- Service Prestige : GPS = 2315s (~38min), donc trop ancien pour la fenêtre de 5min réservation et 30s immédiat.
+### 1.1 Indexes SQL critiques
+- `profiles(id)` — actuellement timeout HTTP 500
+- `factures(client_id, payment_status)` — timeout HTTP 500
+- `courses(client_id, status, scheduled_date)`
+- `notifications(user_id, created_at DESC)`
+- `course_ratings(client_id, status, rating_direction)`
+- `clients(user_id)`, `user_roles(user_id)`
+- `push_subscriptions(user_id, is_active)`
+- `client_driver_blocks(client_id, blocked_by)`
+- `devis(client_id, status, valid_until)`
 
-### Objectif
+### 1.2 Cache React Query global
+- `staleTime: 30s` sur queries quasi-statiques
+- `staleTime: 5min` sur metadata
+- Désactiver `refetchOnWindowFocus` partout sauf temps réel
 
-Valider end-to-end les 2 parcours sans toucher au code applicatif :
-1. **Client libre** (état actuel) → choix parmi favoris + chauffeurs proches.
-2. **Client exclusif** → driver imposé, carrousel masqué, flow direct.
+### 1.3 Auth context unifié
+- 1 seul `supabase.auth.getUser()` partagé via `useAuth()`
 
-### Étapes
+### 1.4 Parallélisation boot dashboard
+- `Promise.all` pour requêtes indépendantes
 
-**1. Préparer un chauffeur testable (GPS frais)**
-- `UPDATE drivers SET last_location_update = now(), last_seen_at = now(), current_latitude = 48.8566, current_longitude = 2.3522 WHERE id = 'd0f4960d-1f21-4844-8e91-4251c6ca106f'` (Service Prestige, déjà favori).
-- Vérifier que `find_nearby_drivers` le retourne sur Paris.
+---
 
-**2. Test scénario A — Client libre**
-- Login déjà actif dans le preview (`kanouteabdallah666`).
-- Naviguer `/chauffeurs` → étape 1 (Trajet) avec adresses Paris.
-- Étape 2 : vérifier Service Prestige visible avec badge favori + prix calculé serveur.
-- Étape 3 : vérifier prix affiché upfront, **aucun dialog devis**, écran d'attente actif.
+## 📦 PHASE 2 — Code Splitting & Bundle (2-3 messages)
 
-**3. Test scénario B — Client exclusif**
-- `UPDATE clients SET is_exclusive = true, driver_id = 'd0f4960d-1f21-4844-8e91-4251c6ca106f' WHERE id = 'b73da690-...'`.
-- Recharger `/chauffeurs` → vérifier :
-  - Carrousel masqué.
-  - Driver auto-sélectionné.
-  - Flow direct vers confirmation.
-- Restauration : `UPDATE clients SET is_exclusive = false, driver_id = NULL` après le test.
+### 2.1 Lazy-load par onglet
+- ClientDashboard, DriverDashboard, AdminDashboard
 
-**4. Audit final**
-- Vérifier l'absence de toute régression (pas de devis, pas d'ancien dialog `CourseCreatedInfoDialog`).
-- Confirmer que le bouton "Sauvegarder cette adresse" et la bannière fréquente sont visibles.
+### 2.2 Découpage des fichiers monstres
+- CoursesList (3576 l), PartnerPaymentsManager (1494 l), DriverPlanning (1412 l), DriverDevisList (1361 l), OnboardingGoalsStep (1244 l)
 
-### Aspects techniques
+### 2.3 Suspense + Skeletons
+- Remplacer "Chargement..." par `<Skeleton />`
 
-- Toutes les opérations DB sont des `UPDATE` ⇒ nécessitent des migrations Supabase (pas dispo en mode plan).
-- L'automation navigateur passera par `browser--navigate_to_sandbox` puis `observe`/`act` séquentiels.
-- Nettoyage : remettre `is_exclusive=false` à la fin pour ne pas polluer ton compte.
+### 2.4 Lazy-load Mapbox
 
-### Livrable
+---
 
-Un compte-rendu structuré : ce qui passe ✅ / ce qui bloque ⚠️ pour chacun des 2 scénarios, avec captures.
+## 📦 PHASE 3 — Transitions & UX premium (2 messages)
 
+### 3.1 Page transitions Framer Motion
+- Fade + translation 150-200ms entre routes
+- AnimatePresence sur modals/drawers
+
+### 3.2 Optimistic UI
+- Notes, favoris, annulations, notifications lues
+
+### 3.3 Préfetch intelligent
+- React Query `prefetchQuery` au login
+
+### 3.4 Skeletons contextuels par dashboard
+
+---
+
+## 📦 PHASE 4 — Realtime, GPS & Service Worker (1-2 messages)
+
+### 4.1 Centralisation Realtime
+- 1 `RealtimeProvider` global, déduplication channels
+
+### 4.2 GPS chauffeur optimisé
+- Throttle 5s min, pause si onglet caché, batch updates
+
+### 4.3 Virtualization listes longues
+- `react-window` sur listes >100 items
+
+### 4.4 Service Worker assets
+- Cache fonts/images/JS, stale-while-revalidate
+
+---
+
+## 📊 Résultats attendus
+
+| Métrique | Avant | Après |
+|---|---|---|
+| TTI mobile 4G | ~4s | <1s |
+| Bundle initial | ~1.2MB | ~700KB |
+| Requêtes boot | 15+ | 4-5 |
+| HTTP 500 | Présents | 0 |
+| Transitions | Saccadées | Fluides 150ms |
+
+---
+
+## 🗓️ Ordre d'exécution
+
+1. **Msg 1** : Phase 1 (indexes + cache + auth + parallélisation)
+2. **Msg 2** : Phase 2.1 + 2.3 (lazy tabs + skeletons)
+3. **Msg 3** : Phase 2.2 (découpage fichiers)
+4. **Msg 4** : Phase 3.1 + 3.4 (transitions + skeletons)
+5. **Msg 5** : Phase 3.2 + 3.3 (optimistic UI + préfetch)
+6. **Msg 6** : Phase 4 (realtime + GPS + virtualization + SW)
+
+Chaque phase est indépendante et réversible.
