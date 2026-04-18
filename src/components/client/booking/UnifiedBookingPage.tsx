@@ -735,6 +735,7 @@ export function UnifiedBookingPage() {
             {currentStep === 1 && (
               <StepTrajet
                 mode={mode} setMode={setMode}
+                lockReservation={isExclusiveClient}
                 pickupAddress={pickupAddress} destinationAddress={destinationAddress}
                 onPickupChange={handlePickupChange} onDestChange={handleDestChange}
                 pickupSuggestions={pickupSuggestions} destSuggestions={destSuggestions}
@@ -810,7 +811,7 @@ export function UnifiedBookingPage() {
                 regEmail={regEmail} setRegEmail={setRegEmail}
                 regPassword={regPassword} setRegPassword={setRegPassword}
                 registrationDone={registrationDone} setRegistrationDone={setRegistrationDone}
-                onBack={() => setCurrentStep(2)}
+                onBack={() => setCurrentStep(isExclusiveClient ? 1 : 2)}
                 onSubmit={handleSubmitRequest}
                 isSubmitting={isSubmitting}
               />
