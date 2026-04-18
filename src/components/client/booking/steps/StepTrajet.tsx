@@ -54,6 +54,10 @@ interface StepTrajetProps {
   recentAddresses?: RecentAddress[];
   onPickQuickPickup?: (a: QuickAddress) => void;
   onPickQuickDest?: (a: QuickAddress) => void;
+  // Favorites prioritization (only shown if the client has at least one favorite driver)
+  hasFavorites?: boolean;
+  prioritizeFavorites?: boolean;
+  setPrioritizeFavorites?: (v: boolean) => void;
 }
 
 export function StepTrajet({
@@ -80,6 +84,9 @@ export function StepTrajet({
   recentAddresses = [],
   onPickQuickPickup,
   onPickQuickDest,
+  hasFavorites = false,
+  prioritizeFavorites = false,
+  setPrioritizeFavorites,
 }: StepTrajetProps) {
   const canProceed = (() => {
     if (!pickupAddress.trim() || !destinationAddress.trim()) return false;
