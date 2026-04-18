@@ -82,11 +82,39 @@ export function useActiveClientCourse(clientId: string | null | undefined) {
     return cleanup;
   }, [clientId, fetchActive]);
 
-  // Polling fallback every 20s in case realtime drops
+  // Polling fallback every 60s — pauses when tab hidden (saves battery + requests)
   useEffect(() => {
     if (!clientId) return;
-    const id = setInterval(fetchActive, 20000);
-    return () => clearInterval(id);
+    let id: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (id) return;
+      id = setInterval(() => {
+        if (document.visibilityState === "visible") fetchActive();
+      }, 60000);
+    };
+    const stop = () => {
+      if (id) {
+        clearInterval(id);
+        id = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchActive(); // immediate refresh on focus
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [clientId, fetchActive]);
 
   return { activeCourse, loading, refresh: fetchActive };
