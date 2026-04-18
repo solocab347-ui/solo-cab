@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedUser } from "@/lib/cachedAuth";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -393,7 +394,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (!user) return;
       const { data: profile } = await supabase
         .from("profiles")

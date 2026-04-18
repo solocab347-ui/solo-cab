@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedUser } from "@/lib/cachedAuth";
 import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
@@ -94,7 +95,7 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
       );
       if (needsHold) {
         const autoOpen = async () => {
-          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { user } } = await getCachedUser();
           setCardHoldData({
             courseId: needsHold.id,
             driverId: needsHold.driver_id,
@@ -117,7 +118,7 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
   
   useEffect(() => {
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (user) setCurrentUserId(user.id);
     };
     getCurrentUser();
@@ -552,7 +553,7 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
   const handleAcceptDevis = async (devisId: string, courseId: string) => {
     try {
       // Récupérer l'utilisateur courant
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCachedUser();
       if (!user) {
         throw new Error("Vous devez être connecté pour accepter un devis");
       }
@@ -746,7 +747,7 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
           <div 
             className="p-3 bg-primary/10 border border-primary/30 rounded-lg mb-4 cursor-pointer hover:bg-primary/15 transition-colors"
             onClick={async () => {
-              const { data: { user } } = await supabase.auth.getUser();
+              const { data: { user } } = await getCachedUser();
               setCardHoldData({
                 courseId: course.id,
                 driverId: course.driver_id,
