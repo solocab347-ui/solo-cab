@@ -69,7 +69,8 @@ interface UseNearbyDriversResult {
     destinationAddress?: string,
     maxSearchRadiusKm?: number,
     mode?: SearchMode,
-    favoriteDriverIds?: string[]
+    favoriteDriverIds?: string[],
+    exclusiveDriverId?: string | null
   ) => Promise<void>;
 }
 
@@ -92,7 +93,8 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       destinationAddress?: string,
       maxSearchRadiusKm: number = 20,
       mode: SearchMode = 'reservation',
-      favoriteDriverIds?: string[]
+      favoriteDriverIds?: string[],
+      exclusiveDriverId?: string | null
     ) => {
       setIsLoading(true);
       setError(null);
@@ -100,6 +102,8 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       setFallbackToReservation(false);
 
       const favIds = favoriteDriverIds?.filter(Boolean) || [];
+      // Exclusive client: force reservation mode + bypass all online/GPS filters via the RPC param
+      const effectiveMode: SearchMode = exclusiveDriverId ? 'reservation' : mode;
 
       try {
         const searchDrivers = async (searchMode: SearchMode) => supabase.rpc('find_nearby_drivers', {
@@ -109,12 +113,18 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           p_max_radius_km: maxSearchRadiusKm,
           p_mode: searchMode,
           p_favorite_driver_ids: favIds,
-        });
+          p_exclusive_driver_id: exclusiveDriverId || null,
+        } as any);
 
         let data: NearbyDriverRpcRow[] | null = null;
         let rpcError: unknown = null;
 
-        if (mode === 'immediate') {
+        // Exclusive client: single RPC call, no fallback dance
+        if (exclusiveDriverId) {
+          const response = await searchDrivers('reservation');
+          data = (response.data ?? []) as NearbyDriverRpcRow[];
+          rpcError = response.error;
+        } else if (effectiveMode === 'immediate') {
           // ONLY search immediate — do NOT merge with reservation results
           // Offline drivers must NEVER appear in immediate mode
           const immediateResponse = await searchDrivers('immediate');
