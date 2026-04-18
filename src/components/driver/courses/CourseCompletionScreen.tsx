@@ -117,6 +117,7 @@ export function CourseCompletionScreen({
           amount,
           description: `Régularisation course - ${clientName}`,
           date: new Date().toISOString(),
+          course_id: courseId, // ← lie le paiement à la course pour clôture auto via webhook
         },
       });
       if (error) throw error;
@@ -130,7 +131,7 @@ export function CourseCompletionScreen({
           }).catch(() => {});
         }
         setLinkSent(true);
-        toast.success("Lien de paiement généré et copié !");
+        toast.success("Lien envoyé. La course sera finalisée dès que le client paie.");
       }
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la création du lien");
@@ -138,6 +139,29 @@ export function CourseCompletionScreen({
       setSendingLink(false);
     }
   };
+
+  // Realtime: when the recovery link is paid (webhook updates the course),
+  // mark the screen as success automatically — no manual refresh needed.
+  useEffect(() => {
+    if (!linkSent) return;
+    const channel = supabase
+      .channel(`course-recovery-${courseId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "courses", filter: `id=eq.${courseId}` },
+        (payload: any) => {
+          const next = payload.new || {};
+          if (next.payment_status === "paid" && next.final_payment_status === "succeeded") {
+            setLocalResult({ success: true, status: "succeeded" });
+            toast.success("🎉 Paiement reçu — course finalisée !");
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [linkSent, courseId]);
 
   return (
     <motion.div
