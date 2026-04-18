@@ -161,7 +161,8 @@ export function RideWaitingScreen({
       })));
     };
     fetchDrivers();
-    const interval = setInterval(fetchDrivers, 3000);
+    // Reduced from 3s → 8s to lower DB cost; Realtime via subscriptionManager handles instant updates
+    const interval = setInterval(fetchDrivers, 8000);
     return () => clearInterval(interval);
   }, [requestId, requestGroupId, phase, contactedDriversData]);
 

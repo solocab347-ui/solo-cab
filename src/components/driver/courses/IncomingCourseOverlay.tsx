@@ -205,10 +205,10 @@ export function IncomingCourseOverlay({
       }
     };
 
-    // Check every 2 seconds
-    const pollInterval = setInterval(checkStatus, 2000);
-    // Also check immediately after 1s
-    const initialCheck = setTimeout(checkStatus, 1000);
+    // Realtime is primary; poll every 6s as safety fallback (was 2s — DB cost optimization)
+    const pollInterval = setInterval(checkStatus, 6000);
+    // Initial check after 1.5s
+    const initialCheck = setTimeout(checkStatus, 1500);
 
     return () => {
       dismissed = true;

@@ -363,7 +363,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
 
   useEffect(() => {
     fetchActive();
-    const pollInterval = setInterval(fetchActive, 5000);
+    // Realtime channel below handles instant updates; poll every 15s as safety net (was 5s)
+    const pollInterval = setInterval(fetchActive, 15000);
     const channel = supabase
       .channel(`active-course-${driverId}`)
       .on('postgres_changes', {

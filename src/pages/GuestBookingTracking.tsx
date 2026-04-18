@@ -220,11 +220,11 @@ const GuestBookingTracking = () => {
     }
   };
 
-  // Auto-refresh every 3 seconds (faster reactivity if realtime is sluggish)
+  // Auto-refresh as fallback (Realtime is primary). Reduced from 3s → 8s for DB cost optimization
   useEffect(() => {
     fetchBooking(0);
     
-    refreshIntervalRef.current = setInterval(() => fetchBooking(0), 3000);
+    refreshIntervalRef.current = setInterval(() => fetchBooking(0), 8000);
     
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);

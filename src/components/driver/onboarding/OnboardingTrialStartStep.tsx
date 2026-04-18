@@ -72,8 +72,8 @@ export function OnboardingTrialStartStep({
     // Fetch immédiat au chargement - données fraîches dès le départ
     fetchStatus();
 
-    // Polling RAPIDE toutes les 2 secondes pour réactivité maximale
-    const interval = setInterval(fetchStatus, 2000);
+    // Polling toutes les 5s (réduit de 2s → 5s pour économiser la DB; Realtime gère l'instant)
+    const interval = setInterval(fetchStatus, 5000);
 
     // Écouter les changements en temps réel via centralized manager
     const cleanup = subscriptionManager.subscribe(
