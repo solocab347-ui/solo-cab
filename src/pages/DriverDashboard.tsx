@@ -64,6 +64,7 @@ import { MobileDriverNav } from "@/components/driver/ui/MobileDriverNav";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useDriverPremium } from "@/hooks/useDriverPremium";
+import { useInvoiceAutoCreate } from "@/hooks/useInvoiceAutoCreate";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { useLocale } from "@/hooks/useLocale";
 import { useUserLanguage } from "@/hooks/useUserLanguage";
@@ -109,6 +110,9 @@ const DriverDashboard = () => {
   }, [userRole, navigate]);
 
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating, accessStatus } = useOptimizedDriverProfile(user?.id);
+
+  // Filet de sécurité: génère automatiquement les factures pour les courses qui passent à "completed"
+  useInvoiceAutoCreate(driverProfile?.driver?.id);
   
   // Mettre à jour last_seen_at à chaque visite du dashboard
   useUpdateLastSeen(driverProfile?.driver?.id);
