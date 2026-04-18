@@ -155,51 +155,58 @@ export function DriverSelectionDialog({
                 <Card
                   key={driver.id}
                   className={cn(
-                    "p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
-                    isFavorite && "border-2 border-red-500/50 bg-red-50/50 dark:bg-red-950/10"
+                    "relative p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/50 bg-card",
+                    isFavorite && "border-2 border-primary/60 ring-1 ring-primary/20 shadow-md"
                   )}
                   onClick={() => handleSelectDriver(driver.id)}
                 >
+                  {isFavorite && (
+                    <Badge
+                      variant="default"
+                      className="absolute -top-2 left-4 gap-1 text-[10px] px-2 py-0.5 bg-primary text-primary-foreground shadow-sm"
+                    >
+                      <Heart className="w-3 h-3 fill-current" />
+                      Favori
+                    </Badge>
+                  )}
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-14 h-14 border-2 border-primary/20">
+                    <Avatar className="w-14 h-14 border-2 border-primary/30">
                       <AvatarImage
                         src={driver.profiles?.profile_photo_url || undefined}
                         alt={getDriverDisplayName(driver)}
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg">
+                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                         {getDriverDisplayName(driver).charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium truncate">
-                          {getDriverDisplayName(driver)}
-                        </p>
-                        {isFavorite && (
-                          <Badge variant="default" className="bg-red-500 gap-1 text-xs">
-                            <Heart className="w-3 h-3 fill-current" />
-                            Favori
-                          </Badge>
-                        )}
-                      </div>
+                      <p className="font-semibold text-foreground truncate leading-tight">
+                        {getDriverDisplayName(driver)}
+                      </p>
 
                       {driver.company_name && driver.display_company_name && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Building2 className="w-3 h-3" />
-                          {driver.company_name}
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                          <Building2 className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{driver.company_name}</span>
                         </p>
                       )}
 
-                      <div className="flex flex-wrap gap-2 mt-1.5">
+                      <div className="flex flex-wrap gap-1.5 mt-2">
                         {driver.vehicle_brand && driver.vehicle_model && (
-                          <Badge variant="secondary" className="gap-1 text-xs">
+                          <Badge
+                            variant="secondary"
+                            className="gap-1 text-[11px] font-normal py-0.5 px-2"
+                          >
                             <Car className="w-3 h-3" />
                             {driver.vehicle_brand} {driver.vehicle_model}
                           </Badge>
                         )}
                         {driver.rating && driver.rating > 0 && (
-                          <Badge variant="outline" className="gap-1 text-xs">
+                          <Badge
+                            variant="outline"
+                            className="gap-1 text-[11px] font-normal py-0.5 px-2"
+                          >
                             <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                             {driver.rating.toFixed(1)}
                           </Badge>
