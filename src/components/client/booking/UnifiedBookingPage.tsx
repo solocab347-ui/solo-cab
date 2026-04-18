@@ -69,6 +69,9 @@ export function UnifiedBookingPage() {
 
   // Favorite driver
   const [favoriteDriverIds, setFavoriteDriverIds] = useState<string[]>([]);
+  // Exclusive client lock — restricts driver list to their assigned driver only
+  const [exclusiveDriverId, setExclusiveDriverId] = useState<string | null>(null);
+  const [isExclusiveClient, setIsExclusiveClient] = useState(false);
 
   // Saved + recent addresses (for logged-in clients)
   const { saved: savedAddresses, recent: recentAddresses } = useClientAddresses();
@@ -215,17 +218,21 @@ export function UnifiedBookingPage() {
     if (modeParam === 'immediate') setMode('immediate');
   }, [searchParams]);
 
-  // Fetch client favorite driver
+  // Fetch client favorite driver + exclusive status
   useEffect(() => {
     if (!user) return;
     const fetchFavorites = async () => {
       const { data: clientData } = await supabase
         .from('clients')
-        .select('favorite_driver_id, driver_ids')
+        .select('favorite_driver_id, driver_ids, is_exclusive, driver_id')
         .eq('user_id', user.id)
         .single();
       if (clientData?.favorite_driver_id) {
         setFavoriteDriverIds([clientData.favorite_driver_id]);
+      }
+      if (clientData?.is_exclusive && clientData?.driver_id) {
+        setIsExclusiveClient(true);
+        setExclusiveDriverId(clientData.driver_id);
       }
     };
     fetchFavorites();
@@ -312,9 +319,15 @@ export function UnifiedBookingPage() {
     }
   }, [destinationAddress, mode, pickupAddress]);
 
-  // Auto-select top 10 drivers
+  // Auto-select top 10 drivers (or only the exclusive driver for exclusive clients)
   useEffect(() => {
     if (drivers.length === 0) return;
+    // Exclusive client: force selection to their assigned driver only
+    if (isExclusiveClient && exclusiveDriverId) {
+      const exists = drivers.some(d => d.driver_id === exclusiveDriverId);
+      if (exists) setSelectedDriverIds(new Set([exclusiveDriverId]));
+      return;
+    }
     const selectId = searchParams.get('select');
     if (selectId) {
       setSelectedDriverIds(prev => { const next = new Set(prev); next.add(selectId); return next; });
@@ -322,7 +335,7 @@ export function UnifiedBookingPage() {
       const top10 = drivers.slice(0, 10).map(d => d.driver_id);
       setSelectedDriverIds(new Set(top10));
     }
-  }, [searchParams, drivers]);
+  }, [searchParams, drivers, isExclusiveClient, exclusiveDriverId]);
 
   // ── Strategic places ──
   const STRATEGIC_PLACES = useMemo(() => [
@@ -531,10 +544,15 @@ export function UnifiedBookingPage() {
 
   // Filter drivers
   const filteredDrivers = useMemo(() => {
-    if (clientPaymentMethod === 'cash') return drivers.filter(d => d.accepted_payment_methods?.includes('cash'));
-    if (clientPaymentMethod === 'card') return [...drivers].sort((a, b) => (b.stripe_connect_charges_enabled ? 1 : 0) - (a.stripe_connect_charges_enabled ? 1 : 0));
-    return drivers;
-  }, [drivers, clientPaymentMethod]);
+    let base = drivers;
+    // Exclusive client lock: only their assigned driver is shown / selectable
+    if (isExclusiveClient && exclusiveDriverId) {
+      base = drivers.filter(d => d.driver_id === exclusiveDriverId);
+    }
+    if (clientPaymentMethod === 'cash') return base.filter(d => d.accepted_payment_methods?.includes('cash'));
+    if (clientPaymentMethod === 'card') return [...base].sort((a, b) => (b.stripe_connect_charges_enabled ? 1 : 0) - (a.stripe_connect_charges_enabled ? 1 : 0));
+    return base;
+  }, [drivers, clientPaymentMethod, isExclusiveClient, exclusiveDriverId]);
 
   // Submit
   const handleSubmitRequest = async () => {
