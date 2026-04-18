@@ -119,8 +119,12 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
           };
           // 5s in-memory cache: deduplicates identical back-to-back searches
           // (mounts, re-renders) → cuts ~30-40% of redundant PostGIS queries.
-          return getCachedNearbyDrivers(params, () =>
-            supabase.rpc('find_nearby_drivers', params as any)
+          return getCachedNearbyDrivers<{ data: NearbyDriverRpcRow[] | null; error: any }>(
+            params,
+            async () => {
+              const res = await supabase.rpc('find_nearby_drivers', params as any);
+              return { data: res.data as NearbyDriverRpcRow[] | null, error: res.error };
+            }
           );
         };
 
