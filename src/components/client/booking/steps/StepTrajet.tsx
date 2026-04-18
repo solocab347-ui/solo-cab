@@ -3,8 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  MapPin, Navigation, Loader2, Zap, CalendarClock, Calendar, Clock, Search
+  MapPin, Navigation, Loader2, Zap, CalendarClock, Calendar, Clock, Search, Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AddressQuickPicks, type QuickAddress } from '../AddressQuickPicks';
@@ -53,6 +54,10 @@ interface StepTrajetProps {
   recentAddresses?: RecentAddress[];
   onPickQuickPickup?: (a: QuickAddress) => void;
   onPickQuickDest?: (a: QuickAddress) => void;
+  // Favorites prioritization (only shown if the client has at least one favorite driver)
+  hasFavorites?: boolean;
+  prioritizeFavorites?: boolean;
+  setPrioritizeFavorites?: (v: boolean) => void;
 }
 
 export function StepTrajet({
@@ -79,6 +84,9 @@ export function StepTrajet({
   recentAddresses = [],
   onPickQuickPickup,
   onPickQuickDest,
+  hasFavorites = false,
+  prioritizeFavorites = false,
+  setPrioritizeFavorites,
 }: StepTrajetProps) {
   const canProceed = (() => {
     if (!pickupAddress.trim() || !destinationAddress.trim()) return false;
@@ -336,6 +344,31 @@ export function StepTrajet({
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           Estimation des prix...
         </div>
+      )}
+
+      {/* Next button */}
+      {/* Prioritize favorites toggle (only for logged-in clients with favorites) */}
+      {hasFavorites && setPrioritizeFavorites && (
+        <Card className="border-border/50 bg-muted/30">
+          <CardContent className="p-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={prioritizeFavorites}
+                onCheckedChange={(checked) => setPrioritizeFavorites(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <Heart className="h-3.5 w-3.5 text-primary fill-primary/20" />
+                  Prioriser mes chauffeurs favoris
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                  S'ils sont à proximité, la demande leur sera envoyée en priorité.
+                </p>
+              </div>
+            </label>
+          </CardContent>
+        </Card>
       )}
 
       {/* Next button */}

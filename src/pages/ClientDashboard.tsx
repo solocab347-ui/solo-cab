@@ -274,20 +274,15 @@ const ClientDashboard = () => {
   };
 
   const handleNewReservation = () => {
+    // Exclusive clients: locked to their assigned driver
     if (clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_id) {
       navigate(`/chauffeurs?select=${clientProfile.client.driver_id}`);
       return;
     }
-    
-    const driverIds = clientProfile?.client?.driver_ids || [];
-    
-    if (driverIds.length === 1) {
-      navigate(`/chauffeurs?select=${driverIds[0]}`);
-    } else if (driverIds.length > 1) {
-      setShowDriverSelection(true);
-    } else {
-      navigate("/chauffeurs");
-    }
+
+    // Free clients: go straight to the booking page (storefront)
+    // The "prioritize favorites" toggle is handled inside the booking flow
+    navigate("/chauffeurs");
   };
 
   const handleDriverSelected = (driverId: string) => {
