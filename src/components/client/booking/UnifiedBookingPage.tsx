@@ -319,9 +319,15 @@ export function UnifiedBookingPage() {
     }
   }, [destinationAddress, mode, pickupAddress]);
 
-  // Auto-select top 10 drivers
+  // Auto-select top 10 drivers (or only the exclusive driver for exclusive clients)
   useEffect(() => {
     if (drivers.length === 0) return;
+    // Exclusive client: force selection to their assigned driver only
+    if (isExclusiveClient && exclusiveDriverId) {
+      const exists = drivers.some(d => d.driver_id === exclusiveDriverId);
+      if (exists) setSelectedDriverIds(new Set([exclusiveDriverId]));
+      return;
+    }
     const selectId = searchParams.get('select');
     if (selectId) {
       setSelectedDriverIds(prev => { const next = new Set(prev); next.add(selectId); return next; });
@@ -329,7 +335,7 @@ export function UnifiedBookingPage() {
       const top10 = drivers.slice(0, 10).map(d => d.driver_id);
       setSelectedDriverIds(new Set(top10));
     }
-  }, [searchParams, drivers]);
+  }, [searchParams, drivers, isExclusiveClient, exclusiveDriverId]);
 
   // ── Strategic places ──
   const STRATEGIC_PLACES = useMemo(() => [
