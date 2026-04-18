@@ -59,12 +59,20 @@ export function CashConfirmationDialog({
         return;
       }
 
+      // Générer la facture (filet de sécurité côté client)
+      try {
+        await supabase.functions.invoke("create-facture-auto", {
+          body: { course_id: courseId, payment_method: "cash" },
+        });
+      } catch (factureErr) {
+        console.warn("[CashConfirmation] Facture invoke failed (DB trigger will handle it):", factureErr);
+      }
+
       toast.success(`✅ ${parsed.toFixed(2)} € encaissés en espèces`);
       onConfirmed();
       onOpenChange(false);
     } catch (err: any) {
-      // Fallback if RPC not yet deployed: direct update (still safer than nothing)
-      // This will trigger the audit later when migration runs.
+      // Fallback si RPC pas encore déployé: update direct
       try {
         await supabase
           .from("courses")
@@ -74,6 +82,16 @@ export function CashConfirmationDialog({
             status: "completed",
           } as any)
           .eq("id", courseId);
+
+        // Filet de sécurité: générer la facture
+        try {
+          await supabase.functions.invoke("create-facture-auto", {
+            body: { course_id: courseId, payment_method: "cash" },
+          });
+        } catch (factureErr) {
+          console.warn("[CashConfirmation] Facture invoke failed (DB trigger will handle it):", factureErr);
+        }
+
         toast.success(`✅ ${parsed.toFixed(2)} € encaissés en espèces`);
         onConfirmed();
         onOpenChange(false);
