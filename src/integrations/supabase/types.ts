@@ -22334,6 +22334,10 @@ export type Database = {
           issue_found: string
         }[]
       }
+      ensure_invoice_for_completed_course: {
+        Args: { _course_id: string }
+        Returns: string
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       expire_timed_out_ride_requests: { Args: never; Returns: number }
       find_available_fleet_driver:
