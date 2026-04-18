@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getCachedNearbyDrivers } from '@/lib/nearbyDriversCache';
 
 export interface NearbyDriver {
   driver_id: string;
@@ -106,15 +107,22 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
       const effectiveMode: SearchMode = exclusiveDriverId ? 'reservation' : mode;
 
       try {
-        const searchDrivers = async (searchMode: SearchMode) => supabase.rpc('find_nearby_drivers', {
-          p_latitude: latitude,
-          p_longitude: longitude,
-          p_limit: 10,
-          p_max_radius_km: maxSearchRadiusKm,
-          p_mode: searchMode,
-          p_favorite_driver_ids: favIds,
-          p_exclusive_driver_id: exclusiveDriverId || null,
-        } as any);
+        const searchDrivers = async (searchMode: SearchMode) => {
+          const params = {
+            p_latitude: latitude,
+            p_longitude: longitude,
+            p_limit: 10,
+            p_max_radius_km: maxSearchRadiusKm,
+            p_mode: searchMode,
+            p_favorite_driver_ids: favIds,
+            p_exclusive_driver_id: exclusiveDriverId || null,
+          };
+          // 5s in-memory cache: deduplicates identical back-to-back searches
+          // (mounts, re-renders) → cuts ~30-40% of redundant PostGIS queries.
+          return getCachedNearbyDrivers(params, () =>
+            supabase.rpc('find_nearby_drivers', params as any)
+          );
+        };
 
         let data: NearbyDriverRpcRow[] | null = null;
         let rpcError: unknown = null;

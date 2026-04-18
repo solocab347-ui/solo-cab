@@ -67,14 +67,14 @@ export function useDriverLocationTracker({
       }
 
       try {
-        const { error } = await supabase
-          .from('drivers')
-          .update({
-            current_latitude: latitude,
-            current_longitude: longitude,
-            last_location_update: new Date().toISOString(),
-          })
-          .eq('id', driverId);
+        // Use batched RPC: single call updates GPS + last_seen_at atomically.
+        // Reduces row-level locks vs. multiple parallel UPDATE statements.
+        const { error } = await supabase.rpc('update_driver_location_batch', {
+          p_driver_id: driverId,
+          p_latitude: latitude,
+          p_longitude: longitude,
+          p_accuracy: null,
+        });
 
         if (error) {
           // Silent retry — don't spam the UI with transient errors
