@@ -14,8 +14,9 @@ export const queryClient = new QueryClient({
       staleTime: CACHE.STANDARD_TTL, // 5 minutes
       gcTime: CACHE.STATIC_TTL, // 30 minutes
       
+      // Phase 1 perf : éviter les refetch redondants au mount si data fraîche
       refetchOnWindowFocus: false,
-      refetchOnMount: true,
+      refetchOnMount: false,
       refetchOnReconnect: true,
       
       retry: (failureCount, error) => {
