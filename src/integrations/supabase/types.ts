@@ -24377,6 +24377,15 @@ export type Database = {
         Returns: undefined
       }
       update_devis_tva: { Args: never; Returns: undefined }
+      update_driver_location_batch: {
+        Args: {
+          p_accuracy?: number
+          p_driver_id: string
+          p_latitude: number
+          p_longitude: number
+        }
+        Returns: undefined
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string
