@@ -83,6 +83,19 @@ function loadPersistedActiveCourseId() {
   }
 }
 
+async function ensureCourseInvoice(courseId: string, paymentMethod?: string | null) {
+  const { error } = await supabase.functions.invoke('create-facture-auto', {
+    body: {
+      course_id: courseId,
+      payment_method: paymentMethod || 'cash',
+    },
+  });
+
+  if (error) {
+    console.error('[ActiveCourseCard] Invoice generation failed:', error);
+  }
+}
+
 function clearPersistedPhase(courseId: string) {
   try {
     localStorage.removeItem(`solocab_phase_${courseId}`);
@@ -503,6 +516,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
             finalizingRef.current = false;
             return;
           }
+          void ensureCourseInvoice(completingCourseId, currentPaymentMethod);
           setCompletionData(prev => prev ? { ...prev, paymentResult: { success: true, status: 'succeeded', error: '', alreadyPaid: data?.already_paid || false } } : null);
         } else {
           setCompletionData(prev => prev ? {
@@ -533,6 +547,8 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
       finalizingRef.current = false;
       return;
     }
+
+    void ensureCourseInvoice(completingCourseId, currentPaymentMethod);
 
     // CASH path: completion succeeded → show confirmation screen
     setCompletionData({

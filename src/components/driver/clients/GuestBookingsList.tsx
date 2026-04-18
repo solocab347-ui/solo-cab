@@ -46,6 +46,7 @@ interface GuestBooking {
   guest_estimated_price: number | null;
   distance_km: number | null;
   duration_minutes: number | null;
+  payment_method?: string | null;
   created_at: string;
 }
 
@@ -143,6 +144,17 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
         .eq('id', booking.id);
 
       if (error) throw error;
+
+      const { error: factureError } = await supabase.functions.invoke('create-facture-auto', {
+        body: {
+          course_id: booking.id,
+          payment_method: booking.payment_method || 'cash',
+        }
+      });
+
+      if (factureError) {
+        console.error('Error creating invoice for guest booking:', factureError);
+      }
 
       toast.success("Course terminée !");
       fetchBookings();

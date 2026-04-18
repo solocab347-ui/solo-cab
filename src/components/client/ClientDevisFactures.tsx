@@ -8,9 +8,11 @@ import ClientFacturesList from "@/components/client/ClientFacturesList";
 interface ClientDevisFacturesProps {
   clientId: string;
   defaultTab?: string | null;
+  userEmail?: string | null;
+  userPhone?: string | null;
 }
 
-const ClientDevisFactures = ({ clientId, defaultTab }: ClientDevisFacturesProps) => {
+const ClientDevisFactures = ({ clientId, defaultTab, userEmail, userPhone }: ClientDevisFacturesProps) => {
   const [activeTab, setActiveTab] = useState<"devis" | "factures">("devis");
 
   useEffect(() => {
@@ -54,7 +56,7 @@ const ClientDevisFactures = ({ clientId, defaultTab }: ClientDevisFacturesProps)
         </TabsContent>
 
         <TabsContent value="factures" className="mt-6">
-          <ClientFacturesList clientId={clientId} />
+          <ClientFacturesList clientId={clientId} userEmail={userEmail} userPhone={userPhone} />
         </TabsContent>
       </Tabs>
     </div>
