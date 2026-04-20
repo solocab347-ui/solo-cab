@@ -49,8 +49,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
 
         // Reverse geocode to get address
         try {
+          if (!mapboxToken) return;
           const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}&language=fr`
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`
           );
           const data = await response.json();
           if (data.features?.[0]) {
@@ -75,8 +76,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
     if (!address.trim()) return null;
 
     try {
+      if (!mapboxToken) return null;
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}&country=fr&language=fr`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}&country=fr&language=fr`
       );
       const data = await response.json();
 
