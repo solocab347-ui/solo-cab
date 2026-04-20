@@ -4,12 +4,13 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, CreditCard, Wallet, Zap } from "lucide-react";
+import { FileText, CreditCard, Wallet, Zap, Building2 } from "lucide-react";
 import { PremiumGate } from "@/components/premium/PremiumGate";
 import DriverDevisList from "@/components/driver/payments/DriverDevisList";
 import DriverFacturesList from "@/components/driver/payments/DriverFacturesList";
 import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
 import { SpontaneousPayment } from "@/components/driver/finance/SpontaneousPayment";
+import { DriverBankAccountSection } from "@/components/driver/finance/DriverBankAccountSection";
 
 interface UnifiedFinancesHubProps {
   driverId: string;
@@ -34,10 +35,14 @@ export const UnifiedFinancesHub = ({ driverId, isPremium, stripeEnabled, default
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-4 bg-muted/30 backdrop-blur-sm border border-border/50">
+        <TabsList className="w-full grid grid-cols-5 bg-muted/30 backdrop-blur-sm border border-border/50">
           <TabsTrigger value="overview" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Wallet className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Vue</span> générale
+            <span className="hidden sm:inline">Vue</span>
+          </TabsTrigger>
+          <TabsTrigger value="bank" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Building2 className="w-3.5 h-3.5" />
+            RIB
           </TabsTrigger>
           <TabsTrigger value="devis" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <FileText className="w-3.5 h-3.5" />
@@ -55,6 +60,10 @@ export const UnifiedFinancesHub = ({ driverId, isPremium, stripeEnabled, default
 
         <TabsContent value="overview" className="mt-4">
           <DriverFinancePage driverId={driverId} />
+        </TabsContent>
+
+        <TabsContent value="bank" className="mt-4">
+          <DriverBankAccountSection driverId={driverId} />
         </TabsContent>
 
         <TabsContent value="devis" className="mt-4">

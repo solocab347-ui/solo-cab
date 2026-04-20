@@ -169,5 +169,11 @@ project_id = "iyothopplhbwcfrpxryc"
     verify_jwt = false
   [functions.track-nfc-order]
     verify_jwt = false
+  [functions.update-driver-bank-account]
+    verify_jwt = true
+  [functions.retry-failed-transfers]
+    verify_jwt = false
+  [functions.stripe-webhook-payouts]
+    verify_jwt = false
   [functions.validate-course-price]
     verify_jwt = true
