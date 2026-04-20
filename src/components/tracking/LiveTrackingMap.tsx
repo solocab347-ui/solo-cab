@@ -55,7 +55,11 @@ export function LiveTrackingMap({
       attributionControl: false,
     });
 
-    if (pickupLat && pickupLng) {
+    // Pickup marker — only relevant BEFORE the client is in the car.
+    // Once 'in_progress', client is with the driver, so hide the pickup pin
+    // to avoid the confusing "two people in different places" UI.
+    const showPickup = pickupLat && pickupLng && status !== 'in_progress';
+    if (showPickup) {
       const pickupEl = document.createElement('div');
       pickupEl.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🧑</div>`;
       pickupMarker.current = new mapboxgl.Marker({ element: pickupEl })
@@ -64,7 +68,10 @@ export function LiveTrackingMap({
         .addTo(map.current);
     }
 
-    if (destLat && destLng) {
+    // Destination marker — only relevant once the trip has started.
+    // During 'driver_approaching', the focus is the pickup point.
+    const showDest = destLat && destLng && (status === 'in_progress' || status === 'driver_arrived' || status === 'accepted');
+    if (showDest) {
       const destEl = document.createElement('div');
       destEl.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🏁</div>`;
       destMarker.current = new mapboxgl.Marker({ element: destEl })
