@@ -637,8 +637,6 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                   phase={isApproaching ? "approaching" : "in_progress"}
                   eta={eta}
                   totalDistanceKm={course.distance_km}
-                  driverPhotoUrl={driver?.profile_photo_url}
-                  driverName={driverName}
                   fromLabel={isApproaching ? "Position chauffeur" : course.pickup_address?.split(",")[0]}
                   toLabel={(isApproaching ? course.pickup_address : course.destination_address)?.split(",")[0]}
                 />

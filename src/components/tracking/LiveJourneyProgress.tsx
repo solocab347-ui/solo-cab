@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Flag, Car, User, Pause } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MapPin, Flag, Car, Pause } from "lucide-react";
 import type { ETAData } from "@/hooks/useETACalculation";
+import { useLiveRouteProgress } from "@/hooks/useLiveRouteProgress";
 
 interface LiveJourneyProgressProps {
   /** approaching = driver→client, in_progress = vehicle→destination */
@@ -15,8 +14,6 @@ interface LiveJourneyProgressProps {
    * the phase so progress starts at 0% honestly.
    */
   totalDistanceKm: number | null;
-  driverPhotoUrl?: string | null;
-  driverName?: string | null;
   fromLabel?: string;
   toLabel?: string;
 }
@@ -34,58 +31,15 @@ export function LiveJourneyProgress({
   phase,
   eta,
   totalDistanceKm,
-  driverPhotoUrl,
-  driverName,
   fromLabel,
   toLabel,
 }: LiveJourneyProgressProps) {
   const isApproaching = phase === "approaching";
-
-  // ── Anchor total to the first ETA distance of this phase ───────────────
-  // This avoids the "voiture au milieu dès le démarrage" issue: we use the
-  // first live remaining-distance reading as the reference 100% for THIS
-  // phase, instead of relying on the planned trip distance (which can be
-  // shorter than the real path the driver has to take).
-  const [phaseTotalKm, setPhaseTotalKm] = useState<number | null>(null);
-  const lastPhaseRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    // Reset when the phase changes
-    if (lastPhaseRef.current !== phase) {
-      lastPhaseRef.current = phase;
-      setPhaseTotalKm(null);
-    }
-  }, [phase]);
-
-  useEffect(() => {
-    if (!eta) return;
-    // Capture first non-zero ETA distance as the phase total
-    setPhaseTotalKm((current) => {
-      if (current && current > 0) {
-        // If we somehow get a larger reading later (e.g. driver took a
-        // detour), expand the total so the bar never goes backwards.
-        return Math.max(current, eta.distanceKm);
-      }
-      return eta.distanceKm > 0 ? eta.distanceKm : current;
-    });
-  }, [eta?.distanceKm, phase]);
-
-  // Final reference distance: prefer phase-anchored, fallback to planned
-  const referenceTotalKm =
-    phaseTotalKm && phaseTotalKm > 0 ? phaseTotalKm : totalDistanceKm;
-
-  // Compute progress %: (total - remaining) / total
-  let progressPct = 0;
-  if (eta && referenceTotalKm && referenceTotalKm > 0) {
-    progressPct = Math.max(
-      0,
-      Math.min(100, ((referenceTotalKm - eta.distanceKm) / referenceTotalKm) * 100)
-    );
-  } else if (eta && eta.distanceKm === 0) {
-    progressPct = 100;
-  }
-
-  const isStalled = eta?.isStalled === true && progressPct < 99;
+  const { progressPercent, isStalled } = useLiveRouteProgress({
+    phase,
+    eta,
+    fallbackTotalDistanceKm: totalDistanceKm,
+  });
 
   const accent = isApproaching ? "text-blue-500" : "text-primary";
   const accentBg = isApproaching ? "bg-blue-500" : "bg-primary";
@@ -100,18 +54,14 @@ export function LiveJourneyProgress({
       {/* Header label */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {isApproaching ? (
-            <User className={`w-4 h-4 ${accent}`} />
-          ) : (
-            <Car className={`w-4 h-4 ${accent}`} />
-          )}
+          <Car className={`w-4 h-4 ${accent}`} />
           <span className={`text-xs font-bold uppercase tracking-wider ${accent}`}>
             {isApproaching ? "Chauffeur en approche" : "En route vers destination"}
           </span>
         </div>
         {eta && (
           <span className="text-xs font-semibold text-foreground tabular-nums">
-            {Math.round(progressPct)}%
+            {Math.round(progressPercent)}%
           </span>
         )}
       </div>
@@ -135,7 +85,7 @@ export function LiveJourneyProgress({
           <motion.div
             className={`h-full rounded-full ${accentBg}`}
             initial={false}
-            animate={{ width: `${progressPct}%` }}
+            animate={{ width: `${progressPercent}%` }}
             transition={{ type: "tween", ease: "easeOut", duration: 1.4 }}
           />
         </div>
@@ -158,44 +108,24 @@ export function LiveJourneyProgress({
         <motion.div
           className="absolute top-1/2 z-20"
           initial={false}
-          animate={{ left: `${progressPct}%` }}
+          animate={{ left: `${progressPercent}%` }}
           transition={{ type: "tween", ease: "easeOut", duration: 1.4 }}
           style={{ transform: "translate(-50%, -50%)" }}
         >
-          {isApproaching ? (
-            <div className="relative">
-              <Avatar className={`w-10 h-10 border-[3px] border-background shadow-xl ring-2 ${isApproaching ? "ring-blue-500" : "ring-primary"}`}>
-                {driverPhotoUrl && <AvatarImage src={driverPhotoUrl} alt={driverName || "Chauffeur"} />}
-                <AvatarFallback className="bg-blue-500 text-white text-xs font-bold">
-                  {driverName ? driverName.charAt(0).toUpperCase() : "C"}
-                </AvatarFallback>
-              </Avatar>
-              <span
-                className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
-                  isStalled ? "bg-amber-500" : "bg-emerald-500"
-                }`}
-              >
-                {!isStalled && (
-                  <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />
-                )}
-              </span>
+          <div className="relative">
+            <div className={`w-10 h-10 rounded-full ${accentBg} border-[3px] border-background shadow-xl flex items-center justify-center`}>
+              <Car className="w-5 h-5 text-background" strokeWidth={2.5} />
             </div>
-          ) : (
-            <div className="relative">
-              <div className={`w-10 h-10 rounded-full ${accentBg} border-[3px] border-background shadow-xl flex items-center justify-center`}>
-                <Car className="w-5 h-5 text-background" strokeWidth={2.5} />
-              </div>
-              <span
-                className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
-                  isStalled ? "bg-amber-500" : "bg-emerald-500"
-                }`}
-              >
-                {!isStalled && (
-                  <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />
-                )}
-              </span>
-            </div>
-          )}
+            <span
+              className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
+                isStalled ? "bg-amber-500" : "bg-emerald-500"
+              }`}
+            >
+              {!isStalled && (
+                <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />
+              )}
+            </span>
+          </div>
         </motion.div>
       </div>
 

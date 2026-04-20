@@ -415,7 +415,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
   // Display label — prefer live ETA, fallback to static estimate based on planned distance
   useEffect(() => {
     if (liveEta) {
-      setEstimatedArrival(`${liveEta.durationMin} min · ${liveEta.distanceKm.toFixed(1)} km`);
+      setEstimatedArrival(`${liveEta.durationMin} min`);
       return;
     }
     if (!course) return;
@@ -826,10 +826,16 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
 
             {/* Distance & ETA */}
             <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
-              {course.distance_km != null && (
+              {(liveEta?.distanceKm != null || course.distance_km != null) && (
                 <div className="flex items-center gap-1.5">
                   <Route className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-bold text-foreground">{course.distance_km.toFixed(1)} km</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {liveEta?.distanceKm != null
+                      ? (liveEta.distanceKm < 1
+                          ? `${Math.round(liveEta.distanceKm * 1000)} m`
+                          : `${liveEta.distanceKm.toFixed(1)} km`)
+                      : `${course.distance_km!.toFixed(1)} km`}
+                  </span>
                 </div>
               )}
               {estimatedArrival && (

@@ -81,11 +81,7 @@ export function LiveTrackingMap({
     }
 
     const driverEl = document.createElement('div');
-    if (driverPhoto) {
-      driverEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;border:3px solid hsl(var(--primary));overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.4);"><img src="${driverPhoto}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
-    } else {
-      driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
-    }
+    driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
     driverMarker.current = new mapboxgl.Marker({ element: driverEl })
       .setLngLat(driverLng && driverLat ? [driverLng, driverLat] : center)
       .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(driverName))
