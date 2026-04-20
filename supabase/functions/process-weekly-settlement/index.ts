@@ -392,9 +392,17 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 4. FINALIZE SETTLEMENT
+    // 4. FINALIZE SETTLEMENT + ALERT GLOBALE
     // ═══════════════════════════════════════════════════════════
     const finalStatus = driverTransfersFailed > 0 ? "completed_with_errors" : "completed";
+
+    if (stripeAvailableEur < totalDriverTransferAmount && totalDriverTransferAmount > 0) {
+      await supabase.from("settlement_alerts").insert({
+        settlement_id: settlementId, alert_type: "insufficient_platform_balance", severity: "critical",
+        message: `Solde Stripe plateforme insuffisant : ${stripeAvailableEur.toFixed(2)}€ disponible, ${totalDriverTransferAmount.toFixed(2)}€ requis.`,
+        details: { stripe_available: stripeAvailableEur, total_required: totalDriverTransferAmount },
+      });
+    }
 
     await supabase.from("weekly_settlements")
       .update({
@@ -411,20 +419,47 @@ serve(async (req) => {
       })
       .eq("id", settlementId);
 
+    // Notifier admins (in-app + email) si erreurs ou alertes critiques
+    if (driverTransfersFailed > 0 || stripeAvailableEur < totalDriverTransferAmount) {
+      const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      if (admins && admins.length > 0) {
+        const notifs = admins.map((a: any) => ({
+          user_id: a.user_id,
+          title: "🚨 Règlement hebdo — incohérence",
+          message: `Settlement ${weekStart} : ${driverTransfersFailed} échec(s), ${driverTransfersExecuted} virement(s) OK. Solde Stripe ${stripeAvailableEur.toFixed(2)}€.`,
+          type: "warning",
+          link: "/admin/finance/settlements",
+        }));
+        await supabase.from("notifications").insert(notifs);
+
+        try {
+          const { data: adminProfiles } = await supabase.from("profiles").select("email").in("id", admins.map((a: any) => a.user_id));
+          for (const p of adminProfiles || []) {
+            if (p.email) {
+              await supabase.functions.invoke("send-transactional-email", {
+                body: {
+                  templateName: "settlement-alert", recipientEmail: p.email,
+                  idempotencyKey: `settlement-alert-${settlementId}`,
+                  templateData: {
+                    weekStart, driversPaid: driverTransfersExecuted, driversFailed: driverTransfersFailed,
+                    totalAmount: totalDriverTransferAmount.toFixed(2), stripeAvailable: stripeAvailableEur.toFixed(2),
+                  },
+                },
+              }).catch(() => {});
+            }
+          }
+        } catch (e) { log("Email admin skipped", { error: String(e) }); }
+      }
+    }
+
     const summary = {
-      settlement_id: settlementId,
-      status: finalStatus,
-      week: `${weekStart} → ${weekEnd}`,
+      settlement_id: settlementId, status: finalStatus, week: `${weekStart} → ${weekEnd}`,
+      stripe_platform_balance: stripeAvailableEur,
       driver_payouts: {
-        drivers_paid: driverTransfersExecuted,
-        drivers_failed: driverTransfersFailed,
-        total_amount: totalDriverTransferAmount,
-        total_courses: pendingBalances.length,
+        drivers_paid: driverTransfersExecuted, drivers_failed: driverTransfersFailed,
+        total_amount: totalDriverTransferAmount, total_courses: pendingBalances.length,
       },
-      admin_fees: {
-        total_fees: totalAdminFees,
-        entries_settled: pendingAdminFees.length,
-      },
+      admin_fees: { total_fees: totalAdminFees, entries_settled: pendingAdminFees.length },
       shared_courses_settled: sharedPayments?.length || 0,
     };
 
