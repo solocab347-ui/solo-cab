@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search, ShieldAlert, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, FileSearch, BarChart3, Calendar, CreditCard, Search, ShieldAlert, Wallet, AlertTriangle } from "lucide-react";
 import AdminFinanceKPIs from "../finance/AdminFinanceKPIs";
 import AdminWeeklySummary from "../finance/AdminWeeklySummary";
 import AdminDriversFinanceTable from "../finance/AdminDriversFinanceTable";
@@ -14,8 +14,9 @@ import AdminGlobalSearch from "../AdminGlobalSearch";
 import AdminStripeAnomalies from "../finance/AdminStripeAnomalies";
 import AdminManualOperations from "../finance/AdminManualOperations";
 import AdminSettlements from "../finance/AdminSettlements";
+import { AdminFailedTransfers } from "../finance/AdminFailedTransfers";
 
-type Tab = "dashboard" | "drivers" | "settlements" | "audit" | "charts" | "stripe" | "anomalies" | "operations" | "search";
+type Tab = "dashboard" | "drivers" | "settlements" | "failed_transfers" | "audit" | "charts" | "stripe" | "anomalies" | "operations" | "search";
 type Preset = "week" | "month" | "year" | "custom";
 
 const getPresetDates = (preset: Preset): { start: string; end: string } => {
@@ -77,6 +78,7 @@ const AdminFinancesHub = () => {
   const tabs = [
     { id: "dashboard" as Tab, label: "Dashboard", icon: LayoutDashboard },
     { id: "settlements" as Tab, label: "Règlements", icon: Wallet },
+    { id: "failed_transfers" as Tab, label: "Virements bloqués", icon: AlertTriangle },
     { id: "drivers" as Tab, label: "Chauffeurs", icon: Users },
     { id: "operations" as Tab, label: "Opérations", icon: CreditCard },
     { id: "stripe" as Tab, label: "Stripe", icon: CreditCard },
@@ -175,6 +177,7 @@ const AdminFinancesHub = () => {
         />
       )}
       {activeTab === "settlements" && <AdminSettlements />}
+      {activeTab === "failed_transfers" && <AdminFailedTransfers />}
       {activeTab === "operations" && <AdminManualOperations />}
       {activeTab === "audit" && <AdminPaymentAudit />}
       {activeTab === "charts" && <AdminFinanceCharts />}
