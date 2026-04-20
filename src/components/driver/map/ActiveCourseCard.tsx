@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route, MessageCircle, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CourseCompletionScreen } from '@/components/driver/courses/CourseCompletionScreen';
 import { RideChatPanel } from '@/components/chat/RideChatPanel';
+import { useETACalculation } from '@/hooks/useETACalculation';
 import {
   getAcceptedDevis as getAcceptedCourseQuote,
   getDriverStatusFromCourse as getDriverBusyStatus,
