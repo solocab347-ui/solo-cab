@@ -103,11 +103,22 @@ serve(async (req) => {
 
     log("Settlement record", { id: settlementId });
 
+    // ═══ PRE-FLIGHT: vérifier solde Stripe plateforme ═══
+    let stripeAvailableEur = 0;
+    try {
+      const balance = await stripe.balance.retrieve();
+      stripeAvailableEur = (balance.available.find((b: any) => b.currency === 'eur')?.amount || 0) / 100;
+      log("Stripe platform balance", { available_eur: stripeAvailableEur });
+    } catch (e: any) {
+      log("Failed to retrieve Stripe balance", { error: e.message });
+    }
+
     // ═══════════════════════════════════════════════════════════
     // 1. DRIVER PAYOUTS
     // ═══════════════════════════════════════════════════════════
     const pendingBalances = await fetchAllRows(supabase, "driver_balance_pending", "status", "pending");
     log("Pending driver balances found", { count: pendingBalances.length });
+
 
     // ═══ AGRÉGATION SÉPARÉE CASH vs CARD ═══
     // CASH = chauffeur a déjà l'argent → SoloCab DOIT collecter la commission (pas virer)
