@@ -24,6 +24,7 @@ export interface ETAData {
   lastUpdated: Date;
   /** True when the driver hasn't moved for >STALE_AFTER_MS */
   isStalled?: boolean;
+  routeGeometry?: GeoJSON.LineString | null;
 }
 
 interface UseETAOptions {
@@ -53,7 +54,7 @@ function buildFallbackETA(origin: Coordinates, dest: Coordinates): ETAData {
     1,
     Math.round((distanceKm / FALLBACK_AVERAGE_SPEED_KMH) * 60)
   );
-  return { distanceKm, durationMin, lastUpdated: new Date() };
+  return { distanceKm, durationMin, lastUpdated: new Date(), routeGeometry: null };
 }
 
 async function fetchDirections(
@@ -72,6 +73,7 @@ async function fetchDirections(
       distanceKm: Math.round((route.distance / 1000) * 10) / 10,
       durationMin: Math.max(0, Math.round(route.duration / 60)),
       lastUpdated: new Date(),
+      routeGeometry: route.geometry ?? null,
     };
   } catch {
     return buildFallbackETA(origin, dest);
