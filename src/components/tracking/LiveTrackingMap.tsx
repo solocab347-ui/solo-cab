@@ -103,7 +103,7 @@ export function LiveTrackingMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapboxToken]);
 
-  // Real-time driver position update
+  // Real-time driver position update + smooth follow
   useEffect(() => {
     if (!driverLat || !driverLng || !driverMarker.current) return;
     driverMarker.current.setLngLat([driverLng, driverLat]);
@@ -111,6 +111,37 @@ export function LiveTrackingMap({
       map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
     }
   }, [driverLat, driverLng, status]);
+
+  // Sync pickup/destination markers when phase changes
+  // (pickup hidden during in_progress, destination hidden during approach)
+  useEffect(() => {
+    if (!map.current) return;
+
+    const wantPickup = !!pickupLat && !!pickupLng && status !== 'in_progress';
+    const wantDest = !!destLat && !!destLng && (status === 'in_progress' || status === 'driver_arrived' || status === 'accepted');
+
+    if (wantPickup && !pickupMarker.current) {
+      const el = document.createElement('div');
+      el.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🧑</div>`;
+      pickupMarker.current = new mapboxgl.Marker({ element: el })
+        .setLngLat([pickupLng!, pickupLat!])
+        .addTo(map.current);
+    } else if (!wantPickup && pickupMarker.current) {
+      pickupMarker.current.remove();
+      pickupMarker.current = null;
+    }
+
+    if (wantDest && !destMarker.current) {
+      const el = document.createElement('div');
+      el.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🏁</div>`;
+      destMarker.current = new mapboxgl.Marker({ element: el })
+        .setLngLat([destLng!, destLat!])
+        .addTo(map.current);
+    } else if (!wantDest && destMarker.current) {
+      destMarker.current.remove();
+      destMarker.current = null;
+    }
+  }, [status, pickupLat, pickupLng, destLat, destLng]);
 
   return (
     <div ref={mapContainer} className={`w-full ${heightClass} rounded-xl overflow-hidden border border-border`} />
