@@ -8917,6 +8917,10 @@ export type Database = {
           ai_coaching_recommendations: string | null
           airport_surcharge: number | null
           auto_accept_from_partners: boolean | null
+          bank_account_bank_name: string | null
+          bank_account_country: string | null
+          bank_account_last4: string | null
+          bank_account_updated_at: string | null
           base_fare: number | null
           base_rate: number | null
           billing_type: string | null
@@ -8952,6 +8956,7 @@ export type Database = {
           driver_status: string
           equipment_received_at: string | null
           evening_surcharge: number | null
+          failed_transfers_count: number
           fees_balance_cents: number
           fleet_documents_deadline: string | null
           fleet_documents_status: string | null
@@ -8975,6 +8980,7 @@ export type Database = {
           is_fleet_driver: boolean | null
           is_legacy_stripe: boolean | null
           is_pioneer: boolean | null
+          last_failed_transfer_at: string | null
           last_location_update: string | null
           last_seen_at: string | null
           legacy_stripe_customer_id: string | null
@@ -9008,6 +9014,8 @@ export type Database = {
           payment_config_updated_at: string | null
           payment_failed_at: string | null
           payment_failed_reason: string | null
+          payouts_blocked_reason: string | null
+          payouts_blocked_until: string | null
           pending_plate_type: string | null
           pending_subscription_type: string | null
           pending_wants_plate: boolean | null
@@ -9105,6 +9113,10 @@ export type Database = {
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
+          bank_account_bank_name?: string | null
+          bank_account_country?: string | null
+          bank_account_last4?: string | null
+          bank_account_updated_at?: string | null
           base_fare?: number | null
           base_rate?: number | null
           billing_type?: string | null
@@ -9140,6 +9152,7 @@ export type Database = {
           driver_status?: string
           equipment_received_at?: string | null
           evening_surcharge?: number | null
+          failed_transfers_count?: number
           fees_balance_cents?: number
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
@@ -9163,6 +9176,7 @@ export type Database = {
           is_fleet_driver?: boolean | null
           is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
+          last_failed_transfer_at?: string | null
           last_location_update?: string | null
           last_seen_at?: string | null
           legacy_stripe_customer_id?: string | null
@@ -9196,6 +9210,8 @@ export type Database = {
           payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
+          payouts_blocked_reason?: string | null
+          payouts_blocked_until?: string | null
           pending_plate_type?: string | null
           pending_subscription_type?: string | null
           pending_wants_plate?: boolean | null
@@ -9293,6 +9309,10 @@ export type Database = {
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
           auto_accept_from_partners?: boolean | null
+          bank_account_bank_name?: string | null
+          bank_account_country?: string | null
+          bank_account_last4?: string | null
+          bank_account_updated_at?: string | null
           base_fare?: number | null
           base_rate?: number | null
           billing_type?: string | null
@@ -9328,6 +9348,7 @@ export type Database = {
           driver_status?: string
           equipment_received_at?: string | null
           evening_surcharge?: number | null
+          failed_transfers_count?: number
           fees_balance_cents?: number
           fleet_documents_deadline?: string | null
           fleet_documents_status?: string | null
@@ -9351,6 +9372,7 @@ export type Database = {
           is_fleet_driver?: boolean | null
           is_legacy_stripe?: boolean | null
           is_pioneer?: boolean | null
+          last_failed_transfer_at?: string | null
           last_location_update?: string | null
           last_seen_at?: string | null
           legacy_stripe_customer_id?: string | null
@@ -9384,6 +9406,8 @@ export type Database = {
           payment_config_updated_at?: string | null
           payment_failed_at?: string | null
           payment_failed_reason?: string | null
+          payouts_blocked_reason?: string | null
+          payouts_blocked_until?: string | null
           pending_plate_type?: string | null
           pending_subscription_type?: string | null
           pending_wants_plate?: boolean | null
@@ -10650,6 +10674,164 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "safe_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      failed_transfers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          driver_id: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          last_retry_at: string | null
+          metadata: Json | null
+          notes: string | null
+          original_settlement_id: string | null
+          resolution_method: string | null
+          resolved_at: string | null
+          retry_count: number
+          retry_settlement_id: string | null
+          status: string
+          stripe_payout_id: string | null
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          driver_id: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          original_settlement_id?: string | null
+          resolution_method?: string | null
+          resolved_at?: string | null
+          retry_count?: number
+          retry_settlement_id?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          driver_id?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          original_settlement_id?: string | null
+          resolution_method?: string | null
+          resolved_at?: string | null
+          retry_count?: number
+          retry_settlement_id?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_settlement_preview"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "safe_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_original_settlement_id_fkey"
+            columns: ["original_settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "failed_transfers_retry_settlement_id_fkey"
+            columns: ["retry_settlement_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_settlements"
             referencedColumns: ["id"]
           },
         ]
@@ -17811,6 +17993,147 @@ export type Database = {
           },
         ]
       }
+      rib_change_history: {
+        Row: {
+          change_method: string
+          changed_by_user_id: string | null
+          created_at: string
+          driver_id: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_bank_account_id: string | null
+          new_bank_name: string | null
+          new_country: string | null
+          new_fingerprint: string | null
+          new_last4: string | null
+          old_bank_account_id: string | null
+          old_fingerprint: string | null
+          old_last4: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          change_method: string
+          changed_by_user_id?: string | null
+          created_at?: string
+          driver_id: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_bank_account_id?: string | null
+          new_bank_name?: string | null
+          new_country?: string | null
+          new_fingerprint?: string | null
+          new_last4?: string | null
+          old_bank_account_id?: string | null
+          old_fingerprint?: string | null
+          old_last4?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          change_method?: string
+          changed_by_user_id?: string | null
+          created_at?: string
+          driver_id?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_bank_account_id?: string | null
+          new_bank_name?: string | null
+          new_country?: string | null
+          new_fingerprint?: string | null
+          new_last4?: string | null
+          old_bank_account_id?: string | null
+          old_fingerprint?: string | null
+          old_last4?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_settlement_preview"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_wallets"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rib_change_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "safe_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_messages: {
         Row: {
           created_at: string
@@ -23065,6 +23388,7 @@ export type Database = {
         Returns: Json
       }
       check_expired_free_access: { Args: never; Returns: undefined }
+      check_rib_change_allowed: { Args: { _driver_id: string }; Returns: Json }
       check_vehicle_documents_status: {
         Args: { _vehicle_id: string }
         Returns: boolean
