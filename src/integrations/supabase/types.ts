@@ -20397,9 +20397,12 @@ export type Database = {
           admin_stripe_transfer_id: string | null
           admin_transfer_status: string | null
           created_at: string
+          drivers_processed_count: number | null
           error_message: string | null
           id: string
+          last_heartbeat_at: string | null
           processed_at: string | null
+          processed_driver_ids: string[] | null
           status: string
           stripe_fees_saved_estimate: number | null
           total_admin_fees_collected: number | null
@@ -20417,9 +20420,12 @@ export type Database = {
           admin_stripe_transfer_id?: string | null
           admin_transfer_status?: string | null
           created_at?: string
+          drivers_processed_count?: number | null
           error_message?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           processed_at?: string | null
+          processed_driver_ids?: string[] | null
           status?: string
           stripe_fees_saved_estimate?: number | null
           total_admin_fees_collected?: number | null
@@ -20437,9 +20443,12 @@ export type Database = {
           admin_stripe_transfer_id?: string | null
           admin_transfer_status?: string | null
           created_at?: string
+          drivers_processed_count?: number | null
           error_message?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           processed_at?: string | null
+          processed_driver_ids?: string[] | null
           status?: string
           stripe_fees_saved_estimate?: number | null
           total_admin_fees_collected?: number | null
