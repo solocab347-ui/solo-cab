@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
+import { useETACalculation } from "@/hooks/useETACalculation";
 
 interface LiveTrackingMapProps {
   driverLat: number | null;
@@ -34,8 +35,67 @@ export function LiveTrackingMap({
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
   const pickupMarker = useRef<mapboxgl.Marker | null>(null);
   const destMarker = useRef<mapboxgl.Marker | null>(null);
+  const lastDriverPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const driverCarElRef = useRef<HTMLDivElement | null>(null);
 
   const { token: mapboxToken } = useMapboxToken();
+  const routeTarget = useMemo(() => {
+    if (status === "driver_approaching") {
+      return pickupLat && pickupLng ? { lat: pickupLat, lng: pickupLng } : null;
+    }
+    if (status === "driver_arrived" || status === "in_progress") {
+      return destLat && destLng ? { lat: destLat, lng: destLng } : null;
+    }
+    return null;
+  }, [status, pickupLat, pickupLng, destLat, destLng]);
+
+  const { eta } = useETACalculation({
+    driverLocation: driverLat && driverLng ? { lat: driverLat, lng: driverLng } : null,
+    targetLocation: routeTarget,
+    enabled: !!mapboxToken && !!driverLat && !!driverLng && !!routeTarget,
+  });
+
+  const computeBearing = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const lat1 = (from.lat * Math.PI) / 180;
+    const lat2 = (to.lat * Math.PI) / 180;
+    const dLng = ((to.lng - from.lng) * Math.PI) / 180;
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  };
+
+  const syncRouteLayer = (geometry: GeoJSON.LineString | null | undefined) => {
+    if (!map.current?.isStyleLoaded()) return;
+    const existing = map.current.getSource("live-route") as mapboxgl.GeoJSONSource | undefined;
+    if (!geometry) {
+      if (existing) {
+        existing.setData({ type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection);
+      }
+      return;
+    }
+
+    const feature = { type: "Feature", geometry, properties: {} } as GeoJSON.Feature<GeoJSON.LineString>;
+    if (existing) {
+      existing.setData(feature);
+      return;
+    }
+
+    map.current.addSource("live-route", { type: "geojson", data: feature });
+    map.current.addLayer({
+      id: "live-route-casing",
+      type: "line",
+      source: "live-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "hsl(221 83% 20%)", "line-width": 8, "line-opacity": 0.45 },
+    });
+    map.current.addLayer({
+      id: "live-route-line",
+      type: "line",
+      source: "live-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "hsl(var(--primary))", "line-width": 4 },
+    });
+  };
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
@@ -81,7 +141,14 @@ export function LiveTrackingMap({
     }
 
     const driverEl = document.createElement('div');
-    driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
+    driverEl.innerHTML = `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;inset:0;border-radius:9999px;background:hsl(var(--primary)/0.18);animation:pulse-driver 2s ease-out infinite;"></div><div data-driver-car style="position:relative;background:hsl(var(--primary));color:white;width:38px;height:38px;border-radius:9999px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;transition:transform .8s ease;">🚗</div></div>`;
+    if (!document.getElementById("live-tracking-driver-pulse")) {
+      const style = document.createElement("style");
+      style.id = "live-tracking-driver-pulse";
+      style.textContent = `@keyframes pulse-driver{0%{transform:scale(.7);opacity:.7}100%{transform:scale(1.5);opacity:0}}`;
+      document.head.appendChild(style);
+    }
+    driverCarElRef.current = driverEl.querySelector('[data-driver-car]') as HTMLDivElement | null;
     driverMarker.current = new mapboxgl.Marker({ element: driverEl })
       .setLngLat(driverLng && driverLat ? [driverLng, driverLat] : center)
       .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(driverName))
@@ -102,11 +169,21 @@ export function LiveTrackingMap({
   // Real-time driver position update + smooth follow
   useEffect(() => {
     if (!driverLat || !driverLng || !driverMarker.current) return;
+    const prev = lastDriverPosRef.current;
+    if (prev && driverCarElRef.current) {
+      const bearing = computeBearing(prev, { lat: driverLat, lng: driverLng });
+      driverCarElRef.current.style.transform = `rotate(${bearing + 90}deg)`;
+    }
+    lastDriverPosRef.current = { lat: driverLat, lng: driverLng };
     driverMarker.current.setLngLat([driverLng, driverLat]);
     if ((status === 'driver_approaching' || status === 'in_progress') && map.current) {
       map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
     }
   }, [driverLat, driverLng, status]);
+
+  useEffect(() => {
+    syncRouteLayer(eta?.routeGeometry);
+  }, [eta?.routeGeometry]);
 
   // Sync pickup/destination markers when phase changes
   // (pickup hidden during in_progress, destination hidden during approach)
