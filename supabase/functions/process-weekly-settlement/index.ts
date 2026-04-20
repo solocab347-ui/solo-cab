@@ -434,18 +434,31 @@ serve(async (req) => {
 
         try {
           const { data: adminProfiles } = await supabase.from("profiles").select("email").in("id", admins.map((a: any) => a.user_id));
-          for (const p of adminProfiles || []) {
-            if (p.email) {
-              await supabase.functions.invoke("send-transactional-email", {
+          const recipientEmails = (adminProfiles || []).map((p: any) => p.email).filter(Boolean);
+          if (recipientEmails.length > 0) {
+            const htmlBody = `
+              <h2 style="color:#dc2626">🚨 Règlement hebdomadaire — incohérence détectée</h2>
+              <p><strong>Semaine :</strong> ${weekStart} → ${weekEnd}</p>
+              <table style="border-collapse:collapse;width:100%;margin:16px 0">
+                <tr><td style="padding:8px;border:1px solid #ddd"><strong>Virements réussis</strong></td><td style="padding:8px;border:1px solid #ddd">${driverTransfersExecuted}</td></tr>
+                <tr><td style="padding:8px;border:1px solid #ddd"><strong>Virements échoués</strong></td><td style="padding:8px;border:1px solid #ddd;color:#dc2626">${driverTransfersFailed}</td></tr>
+                <tr><td style="padding:8px;border:1px solid #ddd"><strong>Montant total tenté</strong></td><td style="padding:8px;border:1px solid #ddd">${totalDriverTransferAmount.toFixed(2)} €</td></tr>
+                <tr><td style="padding:8px;border:1px solid #ddd"><strong>Solde Stripe disponible</strong></td><td style="padding:8px;border:1px solid #ddd">${stripeAvailableEur.toFixed(2)} €</td></tr>
+              </table>
+              <p>Consultez le <a href="https://solocab.fr/admin/finance/settlements">dashboard admin</a> pour les détails et la liste des alertes.</p>
+            `;
+            for (const email of recipientEmails) {
+              await supabase.functions.invoke("send-email", {
                 body: {
-                  templateName: "settlement-alert", recipientEmail: p.email,
-                  idempotencyKey: `settlement-alert-${settlementId}`,
-                  templateData: {
-                    weekStart, driversPaid: driverTransfersExecuted, driversFailed: driverTransfersFailed,
-                    totalAmount: totalDriverTransferAmount.toFixed(2), stripeAvailable: stripeAvailableEur.toFixed(2),
+                  emailType: "custom",
+                  to: email,
+                  data: {
+                    subject: `🚨 Règlement ${weekStart} : ${driverTransfersFailed} échec(s)`,
+                    headerTitle: "Alerte règlement hebdo",
+                    htmlBody,
                   },
                 },
-              }).catch(() => {});
+              }).catch((e: any) => log("Email admin failed", { email, error: String(e) }));
             }
           }
         } catch (e) { log("Email admin skipped", { error: String(e) }); }
