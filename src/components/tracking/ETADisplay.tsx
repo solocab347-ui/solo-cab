@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { ETAData } from "@/hooks/useETACalculation";
+import { useLiveRouteProgress } from "@/hooks/useLiveRouteProgress";
 
 interface ETADisplayProps {
   eta: ETAData | null;
@@ -19,9 +20,11 @@ export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm, pi
   if (!eta && !loading) return null;
 
   const isApproaching = phase === "approaching";
-  const progressPercent = totalDistanceKm && eta
-    ? Math.max(0, Math.min(100, ((totalDistanceKm - eta.distanceKm) / totalDistanceKm) * 100))
-    : 0;
+  const { progressPercent } = useLiveRouteProgress({
+    phase,
+    eta,
+    fallbackTotalDistanceKm: totalDistanceKm,
+  });
 
   const targetAddress = isApproaching ? pickupAddress : destinationAddress;
   const shortTarget = targetAddress
