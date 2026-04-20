@@ -18,10 +18,8 @@ import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
+import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
 import logo from "@/assets/logo-solocab.png";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
 
@@ -80,105 +78,8 @@ const PHASE_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; de
   completed: { label: 'Terminée', icon: CheckCircle, description: 'Votre course est terminée' },
 };
 
-// Mapbox token is fetched securely via useMapboxToken() inside the LiveTrackingMap component
+// LiveTrackingMap is imported from @/components/tracking/LiveTrackingMap (shared with guest tracking)
 
-// ── Live Map Component ──
-function LiveTrackingMap({
-  driverLat, driverLng, driverPhoto, driverName,
-  pickupLat, pickupLng,
-  destLat, destLng,
-  status,
-}: {
-  driverLat: number | null; driverLng: number | null;
-  driverPhoto: string | null; driverName: string;
-  pickupLat: number | null; pickupLng: number | null;
-  destLat: number | null; destLng: number | null;
-  status: string;
-}) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const driverMarker = useRef<mapboxgl.Marker | null>(null);
-  const pickupMarker = useRef<mapboxgl.Marker | null>(null);
-  const destMarker = useRef<mapboxgl.Marker | null>(null);
-
-  const { token: mapboxToken } = useMapboxToken();
-
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
-    mapboxgl.accessToken = mapboxToken;
-
-    const center: [number, number] = driverLng && driverLat
-      ? [driverLng, driverLat]
-      : pickupLng && pickupLat
-        ? [pickupLng, pickupLat]
-        : [2.3522, 48.8566];
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center,
-      zoom: 13,
-      attributionControl: false,
-    });
-
-    // Pickup marker (green person icon)
-    if (pickupLat && pickupLng) {
-      const pickupEl = document.createElement('div');
-      pickupEl.innerHTML = `<div style="background:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🧑</div>`;
-      pickupMarker.current = new mapboxgl.Marker({ element: pickupEl })
-        .setLngLat([pickupLng, pickupLat])
-        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Point de prise en charge'))
-        .addTo(map.current);
-    }
-
-    // Destination marker (red flag)
-    if (destLat && destLng) {
-      const destEl = document.createElement('div');
-      destEl.innerHTML = `<div style="background:#ef4444;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🏁</div>`;
-      destMarker.current = new mapboxgl.Marker({ element: destEl })
-        .setLngLat([destLng, destLat])
-        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText('Destination'))
-        .addTo(map.current);
-    }
-
-    // Driver marker (photo or car)
-    const driverEl = document.createElement('div');
-    if (driverPhoto) {
-      driverEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;border:3px solid hsl(var(--primary));overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.4);"><img src="${driverPhoto}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
-    } else {
-      driverEl.innerHTML = `<div style="background:hsl(var(--primary));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;">🚗</div>`;
-    }
-    driverMarker.current = new mapboxgl.Marker({ element: driverEl })
-      .setLngLat(driverLng && driverLat ? [driverLng, driverLat] : center)
-      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(driverName))
-      .addTo(map.current);
-
-    // Fit bounds to show all markers
-    const bounds = new mapboxgl.LngLatBounds();
-    if (pickupLat && pickupLng) bounds.extend([pickupLng, pickupLat]);
-    if (destLat && destLng) bounds.extend([destLng, destLat]);
-    if (driverLat && driverLng) bounds.extend([driverLng, driverLat]);
-    if (!bounds.isEmpty()) {
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
-    }
-
-    return () => { map.current?.remove(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Update driver position in real-time
-  useEffect(() => {
-    if (!driverLat || !driverLng || !driverMarker.current) return;
-    driverMarker.current.setLngLat([driverLng, driverLat]);
-    // Smoothly pan if driver is approaching
-    if ((status === 'driver_approaching' || status === 'in_progress') && map.current) {
-      map.current.easeTo({ center: [driverLng, driverLat], duration: 1000 });
-    }
-  }, [driverLat, driverLng, status]);
-
-  return (
-    <div ref={mapContainer} className="w-full h-48 rounded-xl overflow-hidden border border-border" />
-  );
-}
 
 const ClientRideTracking = () => {
   const { courseId } = useParams<{ courseId: string }>();

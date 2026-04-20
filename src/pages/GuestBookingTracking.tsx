@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
+import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
 
 interface SharedDriver {
   id: string;
@@ -839,6 +840,21 @@ const GuestBookingTracking = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Live tracking map — même expérience que les clients inscrits (approche → arrivée → en cours) */}
+        {['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'].includes(booking.status) && (
+          <LiveTrackingMap
+            driverLat={booking.driver_latitude}
+            driverLng={booking.driver_longitude}
+            driverPhoto={booking.driver_avatar_url}
+            driverName={driverDisplayName}
+            pickupLat={booking.pickup_latitude}
+            pickupLng={booking.pickup_longitude}
+            destLat={booking.destination_latitude}
+            destLng={booking.destination_longitude}
+            status={booking.status}
+          />
         )}
 
         {/* Phase content (main dynamic area) */}
