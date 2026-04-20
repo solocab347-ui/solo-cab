@@ -10,6 +10,7 @@ import { fr } from 'date-fns/locale';
 import { CourseCompletionScreen } from '@/components/driver/courses/CourseCompletionScreen';
 import { RideChatPanel } from '@/components/chat/RideChatPanel';
 import { useETACalculation } from '@/hooks/useETACalculation';
+import { useLiveRouteProgress } from '@/hooks/useLiveRouteProgress';
 import {
   getAcceptedDevis as getAcceptedCourseQuote,
   getDriverStatusFromCourse as getDriverBusyStatus,
@@ -410,6 +411,12 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
     driverLocation: etaDriverLoc,
     targetLocation: etaTarget,
     enabled: !!course && !!etaDriverLoc && !!etaTarget && course.status !== 'completed' && course.status !== 'cancelled',
+  });
+  const routePhase = course?.status === 'in_progress' ? 'in_progress' : 'approaching';
+  const { remainingDistanceKm, remainingDurationMin } = useLiveRouteProgress({
+    phase: routePhase,
+    eta: liveEta,
+    fallbackTotalDistanceKm: course?.distance_km ?? null,
   });
 
   // Display label — prefer live ETA, fallback to static estimate based on planned distance
@@ -826,22 +833,22 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
 
             {/* Distance & ETA */}
             <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
-              {(liveEta?.distanceKm != null || course.distance_km != null) && (
+              {(remainingDistanceKm != null || course.distance_km != null) && (
                 <div className="flex items-center gap-1.5">
                   <Route className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-bold text-foreground">
-                    {liveEta?.distanceKm != null
-                      ? (liveEta.distanceKm < 1
-                          ? `${Math.round(liveEta.distanceKm * 1000)} m`
-                          : `${liveEta.distanceKm.toFixed(1)} km`)
+                    {remainingDistanceKm != null
+                      ? (remainingDistanceKm < 1
+                          ? `${Math.round(remainingDistanceKm * 1000)} m`
+                          : `${remainingDistanceKm.toFixed(1)} km`)
                       : `${course.distance_km!.toFixed(1)} km`}
                   </span>
                 </div>
               )}
-              {estimatedArrival && (
+              {(remainingDurationMin != null || estimatedArrival) && (
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-bold text-foreground">{estimatedArrival}</span>
+                  <span className="text-sm font-bold text-foreground">{remainingDurationMin != null ? `${remainingDurationMin} min` : estimatedArrival}</span>
                 </div>
               )}
             </div>
