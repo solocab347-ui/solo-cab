@@ -19,7 +19,9 @@ import {
   ExternalLink,
   Users,
   Building2,
-  CreditCard
+  CreditCard,
+  X,
+  CheckCheck
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -151,6 +153,30 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
+  // ✅ NOUVEAU : Marquer toutes les notifs d'une catégorie comme lues
+  const markCategoryAsRead = async (category: string | null) => {
+    if (!user) return;
+    let q = supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false);
+    if (category) q = q.eq("category", category);
+    await q;
+    setNotifications(prev =>
+      prev.map(n =>
+        (!category || n.category === category) ? { ...n, is_read: true } : n
+      )
+    );
+  };
+
+  // ✅ NOUVEAU : Dismiss individuel (suppression d'une notif)
+  const dismissNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await supabase.from("notifications").delete().eq("id", notificationId);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  };
+
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     
@@ -229,12 +255,25 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
             <Badge variant="destructive">{unreadCount}</Badge>
           )}
         </CardTitle>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllAsRead}>
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Tout marquer comme lu
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {filter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => markCategoryAsRead(filter)}
+              title="Marquer cette catégorie comme lue"
+            >
+              <CheckCheck className="w-4 h-4 mr-1" />
+              Catégorie lue
+            </Button>
+          )}
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Tout marquer comme lu
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filter tabs */}
@@ -269,11 +308,20 @@ export const AdminNotificationCenter = ({ onNavigate }: AdminNotificationCenterP
                 <div
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 group ${
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 group relative ${
                     !notification.is_read ? 'bg-primary/5 border-primary/20' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  {/* ✅ NOUVEAU : Bouton dismiss individuel */}
+                  <button
+                    onClick={(e) => dismissNotification(notification.id, e)}
+                    className="absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+                    title="Supprimer cette notification"
+                    aria-label="Supprimer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex items-start gap-3 pr-6">
                     <div className={`p-2 rounded-full ${getCategoryColor(notification.category)}`}>
                       {getCategoryIcon(notification.category, notification.type)}
                     </div>
