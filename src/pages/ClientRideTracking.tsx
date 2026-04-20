@@ -21,6 +21,7 @@ import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import logo from "@/assets/logo-solocab.png";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
 
@@ -79,7 +80,7 @@ const PHASE_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; de
   completed: { label: 'Terminée', icon: CheckCircle, description: 'Votre course est terminée' },
 };
 
-const MAPBOX_TOKEN = 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg';
+// Mapbox token is fetched securely via useMapboxToken() inside the LiveTrackingMap component
 
 // ── Live Map Component ──
 function LiveTrackingMap({
@@ -100,9 +101,11 @@ function LiveTrackingMap({
   const pickupMarker = useRef<mapboxgl.Marker | null>(null);
   const destMarker = useRef<mapboxgl.Marker | null>(null);
 
+  const { token: mapboxToken } = useMapboxToken();
+
   useEffect(() => {
-    if (!mapContainer.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    if (!mapContainer.current || !mapboxToken) return;
+    mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] = driverLng && driverLat
       ? [driverLng, driverLat]

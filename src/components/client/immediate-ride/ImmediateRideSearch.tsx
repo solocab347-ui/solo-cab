@@ -8,6 +8,7 @@ import { useNearbyDrivers, NearbyDriver } from '@/hooks/useNearbyDrivers';
 import { NearbyDriverCard } from './NearbyDriverCard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 interface ImmediateRideSearchProps {
   onDriverSelected: (driver: NearbyDriver, pickupAddress: string, destinationAddress: string, distanceKm: number) => void;
@@ -22,6 +23,7 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
   const [selectedDriver, setSelectedDriver] = useState<NearbyDriver | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const { token: mapboxToken } = useMapboxToken();
 
   const {
     drivers,
@@ -47,8 +49,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
 
         // Reverse geocode to get address
         try {
+          if (!mapboxToken) return;
           const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}&language=fr`
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`
           );
           const data = await response.json();
           if (data.features?.[0]) {
@@ -73,8 +76,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
     if (!address.trim()) return null;
 
     try {
+      if (!mapboxToken) return null;
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}&country=fr&language=fr`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}&country=fr&language=fr`
       );
       const data = await response.json();
 
@@ -95,8 +99,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
     destination: { lat: number; lng: number }
   ): Promise<number | null> => {
     try {
+      if (!mapboxToken) return null;
       const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${destination.lng},${destination.lat}?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}`
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${destination.lng},${destination.lat}?access_token=${mapboxToken}`
       );
       const data = await response.json();
 
