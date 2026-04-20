@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, User, Clock, AlertTriangle, CheckCircle2, Play, Square, Flag, Euro, Route, MessageCircle, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CourseCompletionScreen } from '@/components/driver/courses/CourseCompletionScreen';
 import { RideChatPanel } from '@/components/chat/RideChatPanel';
+import { useETACalculation } from '@/hooks/useETACalculation';
 import {
   getAcceptedDevis as getAcceptedCourseQuote,
   getDriverStatusFromCourse as getDriverBusyStatus,
@@ -113,6 +114,9 @@ interface ActiveCourseCardProps {
   driverId: string;
   onCourseChange?: () => void;
   onCourseActive?: (active: boolean) => void;
+  /** Driver live GPS position — used to compute the SAME live ETA the client sees. */
+  driverLat?: number | null;
+  driverLng?: number | null;
 }
 
 const STOP_REASONS = [
@@ -191,7 +195,7 @@ const pickRelevantCourse = (courses: ActiveCourse[]) => {
   })[0] ?? null;
 };
 
-export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: ActiveCourseCardProps) {
+export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, driverLat, driverLng }: ActiveCourseCardProps) {
   const [course, setCourse] = useState<ActiveCourse | null>(null);
   const [phase, setPhase] = useState<CoursePhase>('approaching');
   const [loading, setLoading] = useState(false);
@@ -381,7 +385,39 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     };
   }, [driverId, fetchActive]);
 
+  // ── Live ETA — shared with client tracking page ──
+  // Uses the SAME hook & same Mapbox call as the client side, ensuring the
+  // distance/time displayed to the driver matches what the passenger sees.
+  const etaTarget = useMemo(() => {
+    if (!course) return null;
+    if (course.status === 'in_progress') {
+      return course.destination_latitude && course.destination_longitude
+        ? { lat: course.destination_latitude, lng: course.destination_longitude }
+        : null;
+    }
+    // approaching / accepted / arrived → target is pickup point
+    return course.pickup_latitude && course.pickup_longitude
+      ? { lat: course.pickup_latitude, lng: course.pickup_longitude }
+      : null;
+  }, [course?.id, course?.status, course?.pickup_latitude, course?.pickup_longitude, course?.destination_latitude, course?.destination_longitude]);
+
+  const etaDriverLoc = useMemo(
+    () => (driverLat && driverLng ? { lat: driverLat, lng: driverLng } : null),
+    [driverLat, driverLng]
+  );
+
+  const { eta: liveEta } = useETACalculation({
+    driverLocation: etaDriverLoc,
+    targetLocation: etaTarget,
+    enabled: !!course && !!etaDriverLoc && !!etaTarget && course.status !== 'completed' && course.status !== 'cancelled',
+  });
+
+  // Display label — prefer live ETA, fallback to static estimate based on planned distance
   useEffect(() => {
+    if (liveEta) {
+      setEstimatedArrival(`${liveEta.durationMin} min · ${liveEta.distanceKm.toFixed(1)} km`);
+      return;
+    }
     if (!course) return;
     const dist = course.distance_km;
     if (dist && dist > 0) {
@@ -391,7 +427,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     } else {
       setEstimatedArrival(null);
     }
-  }, [course?.distance_km]);
+  }, [liveEta?.durationMin, liveEta?.distanceKm, course?.distance_km]);
 
   // Fetch ride_request_id for in-app chat
   useEffect(() => {

@@ -260,8 +260,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     <div className="fixed inset-0 z-40 bg-background">
       <div ref={mapContainerRef} className="absolute inset-0" />
 
-      {/* Active course card */}
-      <ActiveCourseCard driverId={driverId} onCourseChange={() => { fetchRevenue(); setHasActiveCourse(false); }} onCourseActive={(active) => setHasActiveCourse(active)} />
+      {/* Active course card — receives driver GPS so the displayed ETA matches what the client sees */}
+      <ActiveCourseCard
+        driverId={driverId}
+        driverLat={latitude}
+        driverLng={longitude}
+        onCourseChange={() => { fetchRevenue(); setHasActiveCourse(false); }}
+        onCourseActive={(active) => setHasActiveCourse(active)}
+      />
 
       {/* Upcoming reservations carousel */}
       <UpcomingReservationsBanner driverId={driverId} hasActiveCourse={hasActiveCourse} />
