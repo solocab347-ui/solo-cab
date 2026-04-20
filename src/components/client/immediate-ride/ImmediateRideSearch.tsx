@@ -99,8 +99,9 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
     destination: { lat: number; lng: number }
   ): Promise<number | null> => {
     try {
+      if (!mapboxToken) return null;
       const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${destination.lng},${destination.lat}?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1Ijoic29sb2NhYiIsImEiOiJjbTdtOGdqaWEwNHh3MmpwcjZmeWFoYWkxIn0.u2lNBfdgcxvxrYGgAO2aeg'}`
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.lng},${pickup.lat};${destination.lng},${destination.lat}?access_token=${mapboxToken}`
       );
       const data = await response.json();
 
