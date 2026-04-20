@@ -67,7 +67,10 @@ export function LiveTrackingMap({
 
   const syncRouteLayer = (geometry: GeoJSON.LineString | null | undefined) => {
     if (!map.current?.isStyleLoaded()) return;
-    const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "217 91% 60%";
+    // Bright orange line — high contrast on every Mapbox base style and
+    // matches the requirement to clearly retrace the driver→target path.
+    const ROUTE_ORANGE = "#F97316";
+    const ROUTE_ORANGE_DARK = "#9A3412";
     const existing = map.current.getSource("live-route") as mapboxgl.GeoJSONSource | undefined;
     if (!geometry) {
       if (existing) {
@@ -92,14 +95,14 @@ export function LiveTrackingMap({
       type: "line",
       source: "live-route",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "hsl(221 83% 20%)", "line-width": 8, "line-opacity": 0.45 },
+      paint: { "line-color": ROUTE_ORANGE_DARK, "line-width": 9, "line-opacity": 0.55 },
     });
     map.current.addLayer({
       id: "live-route-line",
       type: "line",
       source: "live-route",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": `hsl(${primary})`, "line-width": 4 },
+      paint: { "line-color": ROUTE_ORANGE, "line-width": 5 },
     });
   };
 
