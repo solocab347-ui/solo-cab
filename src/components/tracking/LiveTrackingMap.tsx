@@ -183,7 +183,17 @@ export function LiveTrackingMap({
   }, [driverLat, driverLng, status]);
 
   useEffect(() => {
-    syncRouteLayer(eta?.routeGeometry);
+    if (map.current?.isStyleLoaded()) {
+      syncRouteLayer(eta?.routeGeometry);
+      return;
+    }
+    const instance = map.current;
+    if (!instance) return;
+    const onLoad = () => syncRouteLayer(eta?.routeGeometry);
+    instance.once("load", onLoad);
+    return () => {
+      instance.off("load", onLoad);
+    };
   }, [eta?.routeGeometry]);
 
   // Sync pickup/destination markers when phase changes
