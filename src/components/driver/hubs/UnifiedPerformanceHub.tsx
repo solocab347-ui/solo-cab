@@ -1,14 +1,15 @@
 /**
- * Hub Performance unifié - Regroupe Statistiques, Objectifs et Rentabilité
+ * Hub Performance unifié - Regroupe Statistiques, Objectifs, Rentabilité et Mes Notes
  */
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Target, PieChart } from "lucide-react";
+import { BarChart3, Target, PieChart, Star } from "lucide-react";
 import { PremiumGate } from "@/components/premium/PremiumGate";
 import { DriverStatisticsComplete } from "@/components/driver/stats/DriverStatisticsComplete";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
 import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
+import DriverRatingsView from "@/components/driver/DriverRatingsView";
 
 interface UnifiedPerformanceHubProps {
   driverProfile: any;
@@ -33,10 +34,14 @@ export const UnifiedPerformanceHub = ({ driverProfile, driverId, isPremium, defa
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-3 bg-muted/30 backdrop-blur-sm border border-border/50">
+        <TabsList className="w-full grid grid-cols-4 bg-muted/30 backdrop-blur-sm border border-border/50">
           <TabsTrigger value="stats" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <BarChart3 className="w-3.5 h-3.5" />
-            Statistiques
+            Stats
+          </TabsTrigger>
+          <TabsTrigger value="ratings" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Star className="w-3.5 h-3.5" />
+            Mes notes
           </TabsTrigger>
           <TabsTrigger value="objectives" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Target className="w-3.5 h-3.5" />
@@ -50,6 +55,10 @@ export const UnifiedPerformanceHub = ({ driverProfile, driverId, isPremium, defa
 
         <TabsContent value="stats" className="mt-4">
           <DriverStatisticsComplete driverProfile={driverProfile} />
+        </TabsContent>
+
+        <TabsContent value="ratings" className="mt-4">
+          <DriverRatingsView />
         </TabsContent>
 
         <TabsContent value="objectives" className="mt-4">

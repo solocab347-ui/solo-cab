@@ -252,7 +252,8 @@ const DriverDashboard = () => {
   // Handle URL parameters for tab navigation (from notifications)
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    const subtabParam = searchParams.get("subtab");
+    // Accept both "subtab" (legacy) and "sub" (shorter, used by notifications)
+    const subtabParam = searchParams.get("subtab") || searchParams.get("sub");
     
     if (tabParam === "partnerships") {
       setActiveTab("sharing");
@@ -270,6 +271,17 @@ const DriverDashboard = () => {
       } else if (subtabParam === "search") {
         setPartnershipInitialTab('search');
       }
+    } else if (tabParam === "performance") {
+      setActiveTab("performance");
+      if (subtabParam && ["stats", "ratings", "objectives", "profitability"].includes(subtabParam)) {
+        setPerformanceSubTab(subtabParam);
+      }
+    } else if (tabParam === "finances") {
+      setActiveTab("finances");
+      if (subtabParam) setFinancesSubTab(subtabParam);
+    } else if (tabParam === "outils") {
+      setActiveTab("outils");
+      if (subtabParam) setOutilsSubTab(subtabParam);
     } else if (tabParam) {
       setActiveTab(tabParam);
     }

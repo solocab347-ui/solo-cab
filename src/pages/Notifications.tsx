@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Bell, ArrowLeft, Check, Trash2, ExternalLink, Calendar, DollarSign, MessageSquare, Users, AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
+import { Bell, ArrowLeft, Check, Trash2, ExternalLink, Calendar, DollarSign, MessageSquare, Users, AlertTriangle, CheckCircle2, XCircle, Info, Star } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -153,6 +153,8 @@ const Notifications = () => {
         return <Users className="w-5 h-5 text-accent" />;
       case "message":
         return <MessageSquare className="w-5 h-5 text-accent" />;
+      case "rating":
+        return <Star className="w-5 h-5 text-yellow-500" />;
       default:
         return <Info className="w-5 h-5 text-primary" />;
     }
@@ -310,6 +312,7 @@ const Notifications = () => {
                             {notification.type === "partnership" && "Partenariat"}
                             {notification.type === "fleet" && "Flotte"}
                             {notification.type === "message" && "Message"}
+                            {notification.type === "rating" && "Note"}
                           </Badge>
                         </div>
 
