@@ -195,7 +195,7 @@ const pickRelevantCourse = (courses: ActiveCourse[]) => {
   })[0] ?? null;
 };
 
-export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: ActiveCourseCardProps) {
+export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, driverLat, driverLng }: ActiveCourseCardProps) {
   const [course, setCourse] = useState<ActiveCourse | null>(null);
   const [phase, setPhase] = useState<CoursePhase>('approaching');
   const [loading, setLoading] = useState(false);
@@ -385,7 +385,39 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     };
   }, [driverId, fetchActive]);
 
+  // ── Live ETA — shared with client tracking page ──
+  // Uses the SAME hook & same Mapbox call as the client side, ensuring the
+  // distance/time displayed to the driver matches what the passenger sees.
+  const etaTarget = useMemo(() => {
+    if (!course) return null;
+    if (course.status === 'in_progress') {
+      return course.destination_latitude && course.destination_longitude
+        ? { lat: course.destination_latitude, lng: course.destination_longitude }
+        : null;
+    }
+    // approaching / accepted / arrived → target is pickup point
+    return course.pickup_latitude && course.pickup_longitude
+      ? { lat: course.pickup_latitude, lng: course.pickup_longitude }
+      : null;
+  }, [course?.id, course?.status, course?.pickup_latitude, course?.pickup_longitude, course?.destination_latitude, course?.destination_longitude]);
+
+  const etaDriverLoc = useMemo(
+    () => (driverLat && driverLng ? { lat: driverLat, lng: driverLng } : null),
+    [driverLat, driverLng]
+  );
+
+  const { eta: liveEta } = useETACalculation({
+    driverLocation: etaDriverLoc,
+    targetLocation: etaTarget,
+    enabled: !!course && !!etaDriverLoc && !!etaTarget && course.status !== 'completed' && course.status !== 'cancelled',
+  });
+
+  // Display label — prefer live ETA, fallback to static estimate based on planned distance
   useEffect(() => {
+    if (liveEta) {
+      setEstimatedArrival(`${liveEta.durationMin} min · ${liveEta.distanceKm.toFixed(1)} km`);
+      return;
+    }
     if (!course) return;
     const dist = course.distance_km;
     if (dist && dist > 0) {
@@ -395,7 +427,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive }: A
     } else {
       setEstimatedArrival(null);
     }
-  }, [course?.distance_km]);
+  }, [liveEta?.durationMin, liveEta?.distanceKm, course?.distance_km]);
 
   // Fetch ride_request_id for in-app chat
   useEffect(() => {
