@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
+import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
 
 interface SharedDriver {
   id: string;
