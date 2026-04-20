@@ -7,6 +7,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const LOVABLE_PROJECT_URL = "https://lovable.dev/projects/bb7de2de-cc6d-441a-a380-0f8d244f90e4";
+const ADMIN_BASE_URL = "https://solocab.fr";
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+function buildAnomalyCard(a: any): string {
+  const sevColor = a.severity === "critical" ? "#ef4444" : "#f59e0b";
+  const sevBg = a.severity === "critical" ? "#fef2f2" : "#fffbeb";
+  const sevBorder = a.severity === "critical" ? "#fecaca" : "#fde68a";
+  const sevLabel = a.severity === "critical" ? "🔴 CRITIQUE" : "🟡 ATTENTION";
+  const promptText = a.lovable_prompt || "";
+  const lovableUrl = `${LOVABLE_PROJECT_URL}?prompt=${encodeURIComponent(promptText)}`;
+  const dashUrl = a.link ? `${ADMIN_BASE_URL}${a.link}` : "";
+
+  return `
+  <div style="background:${sevBg};border:1px solid ${sevBorder};border-left:4px solid ${sevColor};border-radius:8px;padding:16px;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="background:${sevColor};color:white;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.5px;">${sevLabel}</span>
+      <code style="font-size:11px;color:#6b7280;">${escapeHtml(a.type)}</code>
+    </div>
+    <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1f2937;">${escapeHtml(a.message || "")}</p>
+    ${a.cause ? `<p style="margin:0 0 6px;font-size:13px;color:#4b5563;"><strong>🔍 Cause :</strong> ${escapeHtml(a.cause)}</p>` : ""}
+    ${a.action ? `<p style="margin:0 0 10px;font-size:13px;color:#4b5563;"><strong>✅ Action :</strong> ${escapeHtml(a.action)}</p>` : ""}
+    ${promptText ? `
+      <div style="background:white;border:1px dashed #d1d5db;border-radius:6px;padding:10px;margin-top:8px;">
+        <p style="margin:0 0 6px;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">💬 Prompt Lovable (à copier-coller)</p>
+        <pre style="margin:0;font-size:12px;color:#1f2937;font-family:'SF Mono',Monaco,monospace;white-space:pre-wrap;word-wrap:break-word;">${escapeHtml(promptText)}</pre>
+      </div>
+    ` : ""}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+      ${promptText ? `<a href="${lovableUrl}" style="background:#3b82f6;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;">🚀 Résoudre dans Lovable</a>` : ""}
+      ${dashUrl ? `<a href="${dashUrl}" style="background:#1f2937;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;">📊 Voir dans Admin</a>` : ""}
+    </div>
+  </div>`;
+}
+
+function metricRow(label: string, value: any, alertCondition?: boolean): string {
+  const color = alertCondition ? "color:#ef4444;font-weight:700;" : "";
+  return `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">${label}</td><td style="text-align:right;font-weight:600;${color}">${value}</td></tr>`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -18,73 +61,60 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resendKey = Deno.env.get("RESEND_API_KEY");
 
-    // Determine trigger source
     const authHeader = req.headers.get("Authorization");
     let triggeredBy = "auto";
-    let adminUserId: string | null = null;
 
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user) {
         const { data: role } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        if (role) {
-          triggeredBy = `admin:${user.id}`;
-          adminUserId = user.id;
-        }
+          .from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+        if (role) triggeredBy = `admin:${user.id}`;
       }
     }
 
-    // Run the health check
     const { data: healthResult, error: rpcError } = await supabase.rpc("run_platform_health_check", {
       p_triggered_by: triggeredBy,
     });
-
     if (rpcError) throw rpcError;
 
     const result = healthResult as any;
     const d = result.data;
     const anomalies = result.anomalies || [];
     const status = result.status;
+    const criticalCount = anomalies.filter((a: any) => a.severity === "critical").length;
+    const warningCount = anomalies.filter((a: any) => a.severity === "warning").length;
 
-    // === 1. SEND NOTIFICATIONS TO ALL ADMINS ===
+    // === NOTIFICATIONS IN-APP ===
     const { data: adminUsers } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin");
+      .from("user_roles").select("user_id").eq("role", "admin");
 
     if (adminUsers && adminUsers.length > 0) {
       const statusEmoji = status === "ok" ? "✅" : status === "warning" ? "⚠️" : "🚨";
       const statusLabel = status === "ok" ? "Opérationnel" : status === "warning" ? "Attention requise" : "Critique";
       const triggerLabel = triggeredBy.startsWith("admin") ? "Manuel" : "Automatique";
 
-      const notifTitle = `${statusEmoji} Rapport santé plateforme — ${statusLabel}`;
-      const notifMessage = [
-        `📊 Rapport ${triggerLabel} — ${new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+      const notifTitle = `${statusEmoji} Rapport santé — ${statusLabel}`;
+      const summaryLines = [
+        `📊 Rapport ${triggerLabel} — ${new Date().toLocaleDateString("fr-FR")}`,
         ``,
-        `👨‍✈️ Chauffeurs: ${d.active_drivers} actifs, ${d.pending_drivers} en attente`,
+        `👨‍✈️ Chauffeurs: ${d.active_drivers} actifs (${d.drivers_online_total || 0} en ligne, GPS health ${d.drivers_gps_health_pct || 0}%)`,
         `📈 Inscriptions: ${d.inscriptions_today} aujourd'hui (moy: ${d.inscriptions_avg_30d}/j)`,
-        `🎓 Onboarding: ${d.onboarding_rate}% (${d.onboarding_completed_7d}/${d.onboarding_total_7d})`,
-        `📊 Funnel: Profil(${d.funnel_step_profile || 0}) → Docs(${d.funnel_step_documents || 0}) → Stripe(${d.funnel_step_stripe || 0}) → Valid.(${d.funnel_step_review || 0})`,
-        `🚗 Courses: ${d.courses_today} aujourd'hui, ${d.courses_errors} erreurs, ${d.courses_stuck || 0} bloquées`,
-        `📈 Conversion: ${d.conversion_rate_7d || 0}% (${d.courses_completed_7d || 0} OK / ${d.courses_cancelled_7d || 0} annul.)`,
-        `💳 Paiements: ${d.payment_success_rate}% succès (${d.payments_failed_7d} échecs sur 7j)`,
-        `🔗 Stripe: ${d.stripe_no_payouts || 0} sans payouts, ${d.stripe_no_details || 0} incomplets, ${d.stripe_abnormal || 0} anormaux`,
-        `📱 QR Codes: ${d.qr_active || 0} actifs / ${d.qr_total || 0} total, ${d.qr_orphaned || 0} orphelins`,
-        `⚠️ Sans Stripe: ${d.drivers_no_stripe} | Sans paiement: ${d.courses_no_payment}`,
-        `📋 Litiges: ${d.disputes_open} ouverts`,
-        anomalies.length > 0 ? `\n🔴 ${anomalies.length} anomalie(s) détectée(s):\n${anomalies.map((a: any) => `  • ${a.message}`).join("\n")}` : `\n✅ Aucune anomalie détectée`,
-      ].join("\n");
+        `🚗 Courses: ${d.courses_today} aujourd'hui, conv. ${d.conversion_rate_7d}%, ${d.courses_stuck} bloquées`,
+        `💳 Paiements: ${d.payment_success_rate}% succès, ${d.failed_transfers_pending} virements bloqués`,
+        `🛡️ Fraude: ${d.clients_blocked} bloqués, ${d.clients_high_risk} à risque, ${d.fraud_flags_open} signalements`,
+        `📧 Emails: ${d.email_dlq_24h} DLQ, ${d.email_failed_24h} échecs (24h)`,
+        `⚙️ Cron: ${d.cron_failed_recent} en échec récent`,
+        anomalies.length > 0
+          ? `\n🔴 ${anomalies.length} anomalie(s) (${criticalCount} crit / ${warningCount} warn)`
+          : `\n✅ Aucune anomalie détectée — Tout va bien`,
+      ];
 
       const notifications = adminUsers.map((admin: any) => ({
         user_id: admin.user_id,
         title: notifTitle,
-        message: notifMessage,
+        message: summaryLines.join("\n"),
         type: status === "ok" ? "success" : status === "warning" ? "warning" : "error",
         link: "/admin-dashboard?section=tech&tab=health",
         category: "platform_health",
@@ -95,18 +125,13 @@ serve(async (req) => {
       console.log(`📨 Notifications envoyées à ${adminUsers.length} admin(s)`);
     }
 
-    // === 2. SEND EMAIL TO ADMIN(S) ===
+    // === EMAIL ===
     if (resendKey) {
       const resend = new Resend(resendKey);
-
-      // Get admin emails
       const adminIds = adminUsers?.map((a: any) => a.user_id) || [];
       if (adminIds.length > 0) {
         const { data: adminProfiles } = await supabase
-          .from("profiles")
-          .select("email")
-          .in("id", adminIds);
-
+          .from("profiles").select("email").in("id", adminIds);
         const adminEmails = adminProfiles?.map((p: any) => p.email).filter(Boolean) || [];
 
         if (adminEmails.length > 0) {
@@ -117,145 +142,127 @@ serve(async (req) => {
             weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
           });
 
-          const anomalyRows = anomalies.map((a: any) => `
-            <tr>
-              <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;">
-                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${a.severity === 'critical' ? '#ef4444' : '#f59e0b'};margin-right:6px;"></span>
-                ${a.severity === 'critical' ? '🔴' : '🟡'} ${a.type}
-              </td>
-              <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;color:#374151;">${a.message}</td>
-            </tr>
-          `).join("");
+          const urgentBlock = anomalies.length > 0 ? `
+            <div style="background:#1f2937;color:white;padding:20px 28px;">
+              <h2 style="margin:0 0 8px;font-size:18px;">🚨 ${anomalies.length} action(s) requise(s)</h2>
+              <p style="margin:0;font-size:13px;opacity:0.85;">
+                ${criticalCount} critique${criticalCount > 1 ? "s" : ""} · ${warningCount} avertissement${warningCount > 1 ? "s" : ""}
+              </p>
+            </div>
+            <div style="background:white;padding:20px 28px;border-bottom:1px solid #e5e7eb;">
+              ${anomalies.map(buildAnomalyCard).join("")}
+            </div>
+          ` : `
+            <div style="background:#ecfdf5;padding:24px 28px;text-align:center;border-bottom:1px solid #a7f3d0;">
+              <h2 style="margin:0 0 6px;color:#065f46;font-size:18px;">✅ Tout est opérationnel</h2>
+              <p style="margin:0;color:#047857;font-size:13px;">Aucune anomalie détectée. Les ${Object.keys(d).length} métriques surveillées sont au vert.</p>
+            </div>
+          `;
 
-          const emailHtml = `
-<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+          const emailHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:640px;margin:0 auto;padding:20px;">
-    
-    <!-- Header -->
+  <div style="max-width:680px;margin:0 auto;padding:20px;">
     <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px 12px 0 0;padding:24px 28px;color:white;">
       <h1 style="margin:0;font-size:22px;font-weight:700;">🏥 Rapport Santé SoloCab</h1>
-      <p style="margin:6px 0 0;opacity:0.8;font-size:13px;">${dateStr} — ${triggerLabel}</p>
+      <p style="margin:6px 0 0;opacity:0.8;font-size:13px;">${dateStr} — Déclenchement ${triggerLabel}</p>
     </div>
-
-    <!-- Status Banner -->
-    <div style="background:${statusColor};padding:16px 28px;color:white;font-weight:600;font-size:16px;">
+    <div style="background:${statusColor};padding:14px 28px;color:white;font-weight:600;font-size:15px;">
       Statut global: ${statusLabel}
     </div>
 
-    <!-- Content -->
-    <div style="background:white;padding:28px;border:1px solid #e5e7eb;">
-      
-      <!-- Section Chauffeurs -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #3b82f6;padding-bottom:6px;">👨‍✈️ Chauffeurs</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Actifs</td><td style="font-weight:600;text-align:right;">${d.active_drivers}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">En attente validation</td><td style="font-weight:600;text-align:right;${d.pending_drivers > 5 ? 'color:#f59e0b;' : ''}">${d.pending_drivers}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Sans Stripe Connect</td><td style="font-weight:600;text-align:right;${d.drivers_no_stripe > 3 ? 'color:#ef4444;' : ''}">${d.drivers_no_stripe}</td></tr>
+    ${urgentBlock}
+
+    <div style="background:white;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;">
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #3b82f6;padding-bottom:6px;">👨‍✈️ Chauffeurs</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Validés", d.active_drivers)}
+        ${metricRow("En attente", d.pending_drivers, d.pending_drivers > 10)}
+        ${metricRow("En ligne (live)", d.drivers_online_total)}
+        ${metricRow("GPS health", `${d.drivers_gps_health_pct}%`, d.drivers_gps_health_pct < 70)}
+        ${metricRow("Sans Stripe Connect", d.drivers_no_stripe, d.drivers_no_stripe > 5)}
       </table>
 
-      <!-- Section Inscriptions -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">📈 Inscriptions & Onboarding</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Inscriptions aujourd'hui</td><td style="font-weight:600;text-align:right;">${d.inscriptions_today}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Moyenne 30 jours</td><td style="font-weight:600;text-align:right;">${d.inscriptions_avg_30d}/jour</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux d'onboarding (7j)</td><td style="font-weight:600;text-align:right;${d.onboarding_rate < 50 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.onboarding_rate}%</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Complétés / Total</td><td style="font-weight:600;text-align:right;">${d.onboarding_completed_7d} / ${d.onboarding_total_7d}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">📈 Inscriptions & Onboarding</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Inscriptions aujourd'hui", d.inscriptions_today)}
+        ${metricRow("Moyenne 30j", `${d.inscriptions_avg_30d}/j`)}
+        ${metricRow("Taux onboarding (7j)", `${d.onboarding_rate}%`, d.onboarding_rate < 50)}
       </table>
 
-      <!-- Funnel Breakdown -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #a855f7;padding-bottom:6px;">🔀 Funnel Onboarding (30j)</h2>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-        <span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Profil: ${d.funnel_step_profile || 0}</span>
-        <span style="color:#9ca3af;">→</span>
-        <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Docs: ${d.funnel_step_documents || 0}</span>
-        <span style="color:#9ca3af;">→</span>
-        <span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Stripe: ${d.funnel_step_stripe || 0}</span>
-        <span style="color:#9ca3af;">→</span>
-        <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">Validation: ${d.funnel_step_review || 0}</span>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Documents soumis</td><td style="font-weight:600;text-align:right;">${d.funnel_docs_submitted || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Documents rejetés</td><td style="font-weight:600;text-align:right;${(d.funnel_docs_rejected || 0) > 2 ? 'color:#ef4444;' : ''}">${d.funnel_docs_rejected || 0}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #a855f7;padding-bottom:6px;">📄 Documents (réel)</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("À valider", d.funnel_docs_pending, d.funnel_docs_pending > 20)}
+        ${metricRow("Validés", d.funnel_docs_validated)}
+        ${metricRow("Rejetés (30j)", d.funnel_docs_rejected, d.funnel_docs_rejected > 5)}
+        ${metricRow("Expirés (encore validés)", d.funnel_docs_expired, d.funnel_docs_expired > 0)}
       </table>
 
-      <!-- Section Courses -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #10b981;padding-bottom:6px;">🚗 Courses</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Courses aujourd'hui</td><td style="font-weight:600;text-align:right;">${d.courses_today}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Erreurs</td><td style="font-weight:600;text-align:right;${d.courses_errors > 0 ? 'color:#ef4444;' : ''}">${d.courses_errors}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Complétées (7j)</td><td style="font-weight:600;text-align:right;">${d.courses_completed_7d || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Annulées (7j)</td><td style="font-weight:600;text-align:right;">${d.courses_cancelled_7d || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Bloquées (+3h)</td><td style="font-weight:600;text-align:right;${(d.courses_stuck || 0) > 0 ? 'color:#ef4444;' : ''}">${d.courses_stuck || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux conversion (7j)</td><td style="font-weight:600;text-align:right;${(d.conversion_rate_7d || 0) < 50 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.conversion_rate_7d || 0}%</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Sans paiement (7j)</td><td style="font-weight:600;text-align:right;${d.courses_no_payment > 0 ? 'color:#f59e0b;' : ''}">${d.courses_no_payment}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #10b981;padding-bottom:6px;">🚗 Courses</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Aujourd'hui", d.courses_today)}
+        ${metricRow("Complétées (7j)", d.courses_completed_7d)}
+        ${metricRow("Annulées (7j)", d.courses_cancelled_7d)}
+        ${metricRow("Bloquées >24h", d.courses_stuck, d.courses_stuck > 0)}
+        ${metricRow("Taux conversion (7j)", `${d.conversion_rate_7d}%`, d.conversion_rate_7d < 50)}
+        ${metricRow("Demandes en attente >15min", d.ride_requests_stuck, d.ride_requests_stuck > 0)}
       </table>
 
-      <!-- Section Paiements & Stripe -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">💳 Paiements & Stripe Connect</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Taux de succès (7j)</td><td style="font-weight:600;text-align:right;${d.payment_success_rate < 90 ? 'color:#ef4444;' : 'color:#10b981;'}">${d.payment_success_rate}%</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Paiements échoués</td><td style="font-weight:600;text-align:right;${d.payments_failed_7d > 0 ? 'color:#ef4444;' : ''}">${d.payments_failed_7d}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Total paiements</td><td style="font-weight:600;text-align:right;">${d.payments_total_7d}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe sans payouts</td><td style="font-weight:600;text-align:right;${(d.stripe_no_payouts || 0) > 0 ? 'color:#ef4444;' : ''}">${d.stripe_no_payouts || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe incomplet</td><td style="font-weight:600;text-align:right;${(d.stripe_no_details || 0) > 0 ? 'color:#f59e0b;' : ''}">${d.stripe_no_details || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Stripe anormal</td><td style="font-weight:600;text-align:right;${(d.stripe_abnormal || 0) > 0 ? 'color:#ef4444;' : ''}">${d.stripe_abnormal || 0}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">💳 Paiements & Stripe</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Taux succès (7j)", `${d.payment_success_rate}%`, d.payment_success_rate < 90)}
+        ${metricRow("Échecs paiements (7j)", d.payments_failed_7d, d.payments_failed_7d > 0)}
+        ${metricRow("Stripe sans payouts", d.stripe_no_payouts, d.stripe_no_payouts > 0)}
+        ${metricRow("Stripe incomplet", d.stripe_no_details, d.stripe_no_details > 0)}
+        ${metricRow("Virements bloqués", d.failed_transfers_pending, d.failed_transfers_pending > 0)}
+        ${metricRow("Virements bloqués >7j", d.failed_transfers_critical, d.failed_transfers_critical > 0)}
       </table>
 
-      <!-- QR Codes -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #0d9488;padding-bottom:6px;">📱 QR Codes</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">QR codes actifs</td><td style="font-weight:600;text-align:right;">${d.qr_active || 0} / ${d.qr_total || 0}</td></tr>
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">QR orphelins</td><td style="font-weight:600;text-align:right;${(d.qr_orphaned || 0) > 0 ? 'color:#ef4444;' : ''}">${d.qr_orphaned || 0}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #ef4444;padding-bottom:6px;">🛡️ Sécurité & Fraude</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Clients bloqués", d.clients_blocked)}
+        ${metricRow("Clients à risque (score ≤ -3)", d.clients_high_risk, d.clients_high_risk > 5)}
+        ${metricRow("Signalements fraude ouverts", d.fraud_flags_open, d.fraud_flags_open > 10)}
+        ${metricRow("IPs bloquées actives", d.blocked_ips_active)}
+        ${metricRow("Litiges notation ouverts", d.disputes_open, d.disputes_open > 5)}
       </table>
 
-      <!-- Section Litiges -->
-      <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #ef4444;padding-bottom:6px;">📋 Litiges</h2>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-        <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Litiges ouverts</td><td style="font-weight:600;text-align:right;${d.disputes_open > 0 ? 'color:#ef4444;' : ''}">${d.disputes_open}</td></tr>
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #06b6d4;padding-bottom:6px;">📧 Communications</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Emails DLQ (24h)", d.email_dlq_24h, d.email_dlq_24h > 5)}
+        ${metricRow("Emails échoués (24h)", d.email_failed_24h, d.email_failed_24h > 10)}
+        ${metricRow("Adresses suppressed", d.suppressed_emails_total)}
+        ${metricRow("Push subscriptions", d.push_subscriptions_total)}
       </table>
 
-      ${anomalies.length > 0 ? `
-      <!-- Anomalies -->
-      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-top:12px;">
-        <h3 style="margin:0 0 10px;font-size:15px;color:#991b1b;">🔴 Anomalies détectées (${anomalies.length})</h3>
-        <table style="width:100%;border-collapse:collapse;">
-          ${anomalyRows}
-        </table>
-      </div>
-      ` : `
-      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:16px;margin-top:12px;text-align:center;">
-        <p style="margin:0;color:#065f46;font-weight:600;">✅ Aucune anomalie détectée — Tout est opérationnel</p>
-      </div>
-      `}
+      <h2 style="font-size:15px;color:#1e293b;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">⚙️ Système</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+        ${metricRow("Cron jobs en échec (24h)", d.cron_failed_recent, d.cron_failed_recent > 0)}
+        ${metricRow("Cron jobs inactifs", d.cron_inactive, d.cron_inactive > 0)}
+        ${metricRow("Abonnements actifs", d.subscriptions_active)}
+        ${metricRow("Abonnements échoués (7j)", d.subscriptions_expired_7d, d.subscriptions_expired_7d > 3)}
+        ${metricRow("QR codes orphelins", d.qr_orphaned, d.qr_orphaned > 0)}
+        ${metricRow("Taille base de données", `${d.db_size_mb} MB`)}
+      </table>
     </div>
 
-    <!-- Footer -->
     <div style="background:#f3f4f6;border-radius:0 0 12px 12px;padding:16px 28px;text-align:center;border:1px solid #e5e7eb;border-top:none;">
-      <p style="margin:0;font-size:12px;color:#9ca3af;">
-        SoloCab — Rapport généré automatiquement le ${dateStr}
-      </p>
-      <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">
-        Connectez-vous au dashboard admin pour voir les détails et agir.
-      </p>
+      <p style="margin:0;font-size:12px;color:#9ca3af;">SoloCab — ${dateStr}</p>
+      <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">Toutes les métriques sont mesurées en live à l'instant du rapport.</p>
     </div>
   </div>
-</body>
-</html>`;
+</body></html>`;
 
           for (const email of adminEmails) {
             try {
               await resend.emails.send({
                 from: "SoloCab <noreply@solocab.fr>",
                 to: email,
-                subject: `[SoloCab] Rapport santé ${statusLabel} — ${new Date().toLocaleDateString("fr-FR")}`,
+                subject: `[SoloCab] Rapport santé ${statusLabel} — ${anomalies.length > 0 ? `${anomalies.length} action(s)` : "RAS"}`,
                 html: emailHtml,
               });
-              console.log(`📧 Email rapport envoyé à ${email}`);
+              console.log(`📧 Email envoyé à ${email}`);
             } catch (emailErr: any) {
-              console.error(`❌ Erreur envoi email à ${email}:`, emailErr.message);
+              console.error(`❌ Erreur envoi à ${email}:`, emailErr.message);
             }
           }
         }
@@ -268,9 +275,8 @@ serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Health check error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500
+    });
   }
 });

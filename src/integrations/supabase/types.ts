@@ -24271,6 +24271,16 @@ export type Database = {
         Args: { p_is_hourly_rate?: boolean }
         Returns: number
       }
+      get_cron_jobs_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          last_run: string
+          last_status: string
+          schedule: string
+        }[]
+      }
       get_current_driver_id: { Args: never; Returns: string }
       get_daily_stats: { Args: never; Returns: Json }
       get_driver_clients_count: {
