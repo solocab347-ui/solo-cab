@@ -114,6 +114,9 @@ interface ActiveCourseCardProps {
   driverId: string;
   onCourseChange?: () => void;
   onCourseActive?: (active: boolean) => void;
+  /** Driver live GPS position — used to compute the SAME live ETA the client sees. */
+  driverLat?: number | null;
+  driverLng?: number | null;
 }
 
 const STOP_REASONS = [
