@@ -40,7 +40,7 @@ export function LiveTrackingMap({
 
   const { token: mapboxToken } = useMapboxToken();
   const routeTarget = useMemo(() => {
-    if (status === "driver_approaching") {
+    if (status === "accepted" || status === "driver_approaching") {
       return pickupLat && pickupLng ? { lat: pickupLat, lng: pickupLng } : null;
     }
     if (status === "driver_arrived" || status === "in_progress") {
@@ -66,6 +66,7 @@ export function LiveTrackingMap({
 
   const syncRouteLayer = (geometry: GeoJSON.LineString | null | undefined) => {
     if (!map.current?.isStyleLoaded()) return;
+    const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "217 91% 60%";
     const existing = map.current.getSource("live-route") as mapboxgl.GeoJSONSource | undefined;
     if (!geometry) {
       if (existing) {
@@ -93,7 +94,7 @@ export function LiveTrackingMap({
       type: "line",
       source: "live-route",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "hsl(var(--primary))", "line-width": 4 },
+      paint: { "line-color": `hsl(${primary})`, "line-width": 4 },
     });
   };
 
