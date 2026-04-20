@@ -103,29 +103,57 @@ serve(async (req) => {
 
     log("Settlement record", { id: settlementId });
 
+    // ═══ PRE-FLIGHT: vérifier solde Stripe plateforme ═══
+    let stripeAvailableEur = 0;
+    try {
+      const balance = await stripe.balance.retrieve();
+      stripeAvailableEur = (balance.available.find((b: any) => b.currency === 'eur')?.amount || 0) / 100;
+      log("Stripe platform balance", { available_eur: stripeAvailableEur });
+    } catch (e: any) {
+      log("Failed to retrieve Stripe balance", { error: e.message });
+    }
+
     // ═══════════════════════════════════════════════════════════
     // 1. DRIVER PAYOUTS
     // ═══════════════════════════════════════════════════════════
     const pendingBalances = await fetchAllRows(supabase, "driver_balance_pending", "status", "pending");
     log("Pending driver balances found", { count: pendingBalances.length });
 
-    // Aggregate per driver
+
+    // ═══ AGRÉGATION SÉPARÉE CASH vs CARD ═══
+    // CASH = chauffeur a déjà l'argent → SoloCab DOIT collecter la commission (pas virer)
+    // CARD = argent sur Stripe plateforme → SoloCab DOIT virer le net au chauffeur
     const driverTotals: Record<string, {
-      gross: number; solocab_fees: number; stripe_fees: number;
-      net: number; courses: number; balance_ids: string[];
+      // Card (à virer)
+      card_gross: number; card_solocab_fees: number; card_stripe_fees: number;
+      card_net: number; card_courses: number; card_balance_ids: string[];
+      // Cash (commission due à SoloCab par le chauffeur)
+      cash_gross: number; cash_fees_owed: number; cash_courses: number; cash_balance_ids: string[];
     }> = {};
 
     for (const bal of pendingBalances) {
       if (!driverTotals[bal.driver_id]) {
-        driverTotals[bal.driver_id] = { gross: 0, solocab_fees: 0, stripe_fees: 0, net: 0, courses: 0, balance_ids: [] };
+        driverTotals[bal.driver_id] = {
+          card_gross: 0, card_solocab_fees: 0, card_stripe_fees: 0,
+          card_net: 0, card_courses: 0, card_balance_ids: [],
+          cash_gross: 0, cash_fees_owed: 0, cash_courses: 0, cash_balance_ids: [],
+        };
       }
       const d = driverTotals[bal.driver_id];
-      d.gross += Number(bal.gross_amount || 0);
-      d.solocab_fees += Number(bal.solocab_fee || 0);
-      d.stripe_fees += Number(bal.stripe_fee || 0);
-      d.net += Number(bal.net_amount || 0);
-      d.courses++;
-      d.balance_ids.push(bal.id);
+      const isCash = bal.payment_type === 'cash';
+      if (isCash) {
+        d.cash_gross += Number(bal.gross_amount || 0);
+        d.cash_fees_owed += Number(bal.solocab_fee || 0);
+        d.cash_courses++;
+        d.cash_balance_ids.push(bal.id);
+      } else {
+        d.card_gross += Number(bal.gross_amount || 0);
+        d.card_solocab_fees += Number(bal.solocab_fee || 0);
+        d.card_stripe_fees += Number(bal.stripe_fee || 0);
+        d.card_net += Number(bal.net_amount || 0);
+        d.card_courses++;
+        d.card_balance_ids.push(bal.id);
+      }
     }
 
     let driverTransfersExecuted = 0;
@@ -133,38 +161,94 @@ serve(async (req) => {
     let totalDriverTransferAmount = 0;
     const driverBalanceInserts: any[] = [];
 
-    for (const [driverId, totals] of Object.entries(driverTotals)) {
+    // ═══ HELPER: créer une alerte settlement ═══
+    async function createAlert(driverId: string | null, type: string, severity: string, message: string, details: any) {
+      await supabase.from("settlement_alerts").insert({
+        settlement_id: settlementId, driver_id: driverId,
+        alert_type: type, severity, message, details,
+      });
+    }
+
+    for (const [driverId, t] of Object.entries(driverTotals)) {
       const { data: driver } = await supabase
         .from("drivers")
-        .select("stripe_connect_account_id, stripe_connect_charges_enabled, user_id")
+        .select("stripe_connect_account_id, stripe_connect_charges_enabled, user_id, cash_debt_pending, company_name")
         .eq("id", driverId)
         .single();
 
-      const netCents = Math.round(totals.net * 100);
+      // ═══ COMPENSATION CASH ═══
+      // Nouvelle dette cash de la semaine = commissions sur courses cash
+      // Dette existante (non recouvrée semaines précédentes) + nouvelle
+      const previousCashDebt = Number(driver?.cash_debt_pending || 0);
+      const newCashDebt = t.cash_fees_owed;
+      const totalCashDebt = previousCashDebt + newCashDebt;
 
-      // ── Driver without Stripe → keep pending (DON'T mark settled) ──
+      // Net réel à virer = card_net - dette cash totale
+      const realNet = t.card_net - totalCashDebt;
+      const realNetCents = Math.round(realNet * 100);
+
+      log("Driver settlement preview", {
+        driverId, company: driver?.company_name,
+        card_net: t.card_net, card_courses: t.card_courses,
+        cash_courses: t.cash_courses, cash_collected: t.cash_gross,
+        previous_cash_debt: previousCashDebt, new_cash_debt: newCashDebt,
+        total_cash_debt: totalCashDebt, real_net_to_transfer: realNet,
+      });
+
+      // ── Marquer cash balances comme settled (déjà encaissées par chauffeur) ──
+      // ne se traduit PAS par un virement
+      if (t.cash_balance_ids.length > 0) {
+        await supabase.from("driver_balance_pending")
+          .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
+          .in("id", t.cash_balance_ids);
+      }
+
+      // ── Driver sans Stripe → cash_debt accumule, card_balance reste pending ──
       if (!driver?.stripe_connect_account_id || !driver?.stripe_connect_charges_enabled) {
-        log("Driver skipped - no Stripe (balances stay pending)", { driverId });
+        log("Driver skipped - no Stripe", { driverId });
+        if (newCashDebt > 0) {
+          await supabase.from("drivers").update({ cash_debt_pending: totalCashDebt }).eq("id", driverId);
+        }
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross, total_solocab_fees: t.card_solocab_fees + newCashDebt,
+          net_amount: t.card_net, standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
           transfer_status: "skipped_no_stripe",
         });
+        if (t.card_courses > 0) {
+          await createAlert(driverId, "no_stripe_account", "warning",
+            `Chauffeur ${driver?.company_name || driverId} a ${t.card_net.toFixed(2)}€ carte en attente mais Stripe Connect non configuré.`,
+            { card_net: t.card_net, cash_debt: totalCashDebt });
+        }
         continue;
       }
 
-      // ── Below minimum (1€) → keep pending for next week ──
-      if (netCents < 100) {
-        log("Driver skipped - below minimum, kept pending", { driverId, netCents });
+      // ── Net réel ≤ 0 → pas de virement, dette cash réduite mais subsistante ──
+      if (realNetCents < 100) {
+        log("Driver skipped - real net below minimum", { driverId, realNet });
+        // Compensation : on retient ce qu'on peut sur le card, le reste reste en dette
+        const compensated = Math.min(t.card_net, totalCashDebt);
+        const remainingDebt = totalCashDebt - compensated;
+        await supabase.from("drivers").update({ cash_debt_pending: remainingDebt }).eq("id", driverId);
+        // Card balances marquées settled (compensées)
+        if (t.card_balance_ids.length > 0) {
+          await supabase.from("driver_balance_pending")
+            .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
+            .in("id", t.card_balance_ids);
+        }
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross, total_solocab_fees: t.card_solocab_fees + compensated,
+          net_amount: realNet, standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
-          transfer_status: "below_minimum",
+          transfer_status: realNet > 0 ? "below_minimum" : "compensated_cash",
         });
+        if (remainingDebt > 1) {
+          await createAlert(driverId, "cash_debt_remaining", "warning",
+            `Dette cash de ${remainingDebt.toFixed(2)}€ subsiste pour ${driver?.company_name} (compensation partielle ${compensated.toFixed(2)}€).`,
+            { previous_debt: previousCashDebt, new_debt: newCashDebt, compensated, remaining: remainingDebt });
+        }
         continue;
       }
 
@@ -173,7 +257,7 @@ serve(async (req) => {
 
       try {
         const transfer = await stripe.transfers.create({
-          amount: netCents,
+          amount: realNetCents,
           currency: "eur",
           destination: driver.stripe_connect_account_id,
           description: `Règlement hebdo SoloCab ${weekStart} → ${weekEnd}`,
@@ -181,61 +265,71 @@ serve(async (req) => {
             settlement_id: settlementId,
             driver_id: driverId,
             type: "weekly_driver_payout",
-            courses_count: totals.courses.toString(),
+            card_courses: t.card_courses.toString(),
+            cash_courses: t.cash_courses.toString(),
+            cash_debt_compensated: totalCashDebt.toFixed(2),
           },
-        }, {
-          idempotencyKey, // Prevents double transfer on retry
-        });
+        }, { idempotencyKey });
 
         driverTransfersExecuted++;
-        totalDriverTransferAmount += totals.net;
+        totalDriverTransferAmount += realNet;
 
-        // Mark balances as settled ONLY on success
-        await supabase.from("driver_balance_pending")
-          .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
-          .in("id", totals.balance_ids);
+        if (t.card_balance_ids.length > 0) {
+          await supabase.from("driver_balance_pending")
+            .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
+            .in("id", t.card_balance_ids);
+        }
+        if (totalCashDebt > 0) {
+          await supabase.from("drivers").update({ cash_debt_pending: 0 }).eq("id", driverId);
+        }
 
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross,
+          total_solocab_fees: t.card_solocab_fees + totalCashDebt,
+          net_amount: realNet,
+          standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
           transfer_status: "completed",
           stripe_transfer_id: transfer.id,
         });
 
-        log("Driver transfer completed", { driverId, amount: totals.net, transferId: transfer.id });
+        log("Driver transfer completed", { driverId, amount: realNet, transferId: transfer.id });
 
-        // Notify driver
         if (driver.user_id) {
+          const cashNote = totalCashDebt > 0 ? ` (après compensation ${totalCashDebt.toFixed(2)}€ commission cash)` : '';
           await supabase.from("notifications").insert({
             user_id: driver.user_id,
             title: "💰 Virement hebdomadaire",
-            message: `${totals.net.toFixed(2)}€ versé sur votre compte (${totals.courses} courses)`,
+            message: `${realNet.toFixed(2)}€ versé sur votre compte (${t.card_courses} courses carte${cashNote})`,
             type: "info",
             link: "/driver-dashboard?tab=finances",
           });
         }
       } catch (err: any) {
         driverTransfersFailed++;
-        log("Driver transfer FAILED — balances stay pending", { driverId, error: err.message });
+        log("Driver transfer FAILED — card balances stay pending", { driverId, error: err.message });
 
-        // DO NOT mark as settled → will be retried next week
+        await supabase.from("drivers").update({ cash_debt_pending: totalCashDebt }).eq("id", driverId);
+
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross, total_solocab_fees: t.card_solocab_fees,
+          net_amount: realNet, standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
           transfer_status: "failed",
           transfer_error: err.message?.substring(0, 500),
         });
 
-        // Notify admin
+        await createAlert(driverId, "transfer_failed", "critical",
+          `Échec virement ${realNet.toFixed(2)}€ pour ${driver?.company_name || driverId}: ${err.message?.substring(0, 200)}`,
+          { real_net: realNet, card_net: t.card_net, cash_debt: totalCashDebt, error: err.message });
+
         if (driver.user_id) {
           await supabase.from("notifications").insert({
             user_id: driver.user_id,
             title: "⚠️ Échec virement",
-            message: `Le virement de ${totals.net.toFixed(2)}€ a échoué. Nouvelle tentative lundi prochain.`,
+            message: `Le virement de ${realNet.toFixed(2)}€ a échoué. Nouvelle tentative lundi prochain.`,
             type: "warning",
             link: "/driver-dashboard?tab=finances",
           });
@@ -298,9 +392,17 @@ serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // 4. FINALIZE SETTLEMENT
+    // 4. FINALIZE SETTLEMENT + ALERT GLOBALE
     // ═══════════════════════════════════════════════════════════
     const finalStatus = driverTransfersFailed > 0 ? "completed_with_errors" : "completed";
+
+    if (stripeAvailableEur < totalDriverTransferAmount && totalDriverTransferAmount > 0) {
+      await supabase.from("settlement_alerts").insert({
+        settlement_id: settlementId, alert_type: "insufficient_platform_balance", severity: "critical",
+        message: `Solde Stripe plateforme insuffisant : ${stripeAvailableEur.toFixed(2)}€ disponible, ${totalDriverTransferAmount.toFixed(2)}€ requis.`,
+        details: { stripe_available: stripeAvailableEur, total_required: totalDriverTransferAmount },
+      });
+    }
 
     await supabase.from("weekly_settlements")
       .update({
@@ -317,20 +419,47 @@ serve(async (req) => {
       })
       .eq("id", settlementId);
 
+    // Notifier admins (in-app + email) si erreurs ou alertes critiques
+    if (driverTransfersFailed > 0 || stripeAvailableEur < totalDriverTransferAmount) {
+      const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      if (admins && admins.length > 0) {
+        const notifs = admins.map((a: any) => ({
+          user_id: a.user_id,
+          title: "🚨 Règlement hebdo — incohérence",
+          message: `Settlement ${weekStart} : ${driverTransfersFailed} échec(s), ${driverTransfersExecuted} virement(s) OK. Solde Stripe ${stripeAvailableEur.toFixed(2)}€.`,
+          type: "warning",
+          link: "/admin/finance/settlements",
+        }));
+        await supabase.from("notifications").insert(notifs);
+
+        try {
+          const { data: adminProfiles } = await supabase.from("profiles").select("email").in("id", admins.map((a: any) => a.user_id));
+          for (const p of adminProfiles || []) {
+            if (p.email) {
+              await supabase.functions.invoke("send-transactional-email", {
+                body: {
+                  templateName: "settlement-alert", recipientEmail: p.email,
+                  idempotencyKey: `settlement-alert-${settlementId}`,
+                  templateData: {
+                    weekStart, driversPaid: driverTransfersExecuted, driversFailed: driverTransfersFailed,
+                    totalAmount: totalDriverTransferAmount.toFixed(2), stripeAvailable: stripeAvailableEur.toFixed(2),
+                  },
+                },
+              }).catch(() => {});
+            }
+          }
+        } catch (e) { log("Email admin skipped", { error: String(e) }); }
+      }
+    }
+
     const summary = {
-      settlement_id: settlementId,
-      status: finalStatus,
-      week: `${weekStart} → ${weekEnd}`,
+      settlement_id: settlementId, status: finalStatus, week: `${weekStart} → ${weekEnd}`,
+      stripe_platform_balance: stripeAvailableEur,
       driver_payouts: {
-        drivers_paid: driverTransfersExecuted,
-        drivers_failed: driverTransfersFailed,
-        total_amount: totalDriverTransferAmount,
-        total_courses: pendingBalances.length,
+        drivers_paid: driverTransfersExecuted, drivers_failed: driverTransfersFailed,
+        total_amount: totalDriverTransferAmount, total_courses: pendingBalances.length,
       },
-      admin_fees: {
-        total_fees: totalAdminFees,
-        entries_settled: pendingAdminFees.length,
-      },
+      admin_fees: { total_fees: totalAdminFees, entries_settled: pendingAdminFees.length },
       shared_courses_settled: sharedPayments?.length || 0,
     };
 
