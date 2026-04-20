@@ -19,16 +19,16 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 60_000;
-const MIN_MOVEMENT_DEG = 0.0002; // ~22m (was 11m) — reduce DB writes when barely moving
-const MIN_SEND_INTERVAL_MS = 12_000; // was 8s — reduce DB load
-const HEARTBEAT_INTERVAL_MS = 60_000; // was 20s — heartbeat every minute is enough
+const STALE_THRESHOLD_MS = 30_000;
+const MIN_MOVEMENT_DEG = 0.0001; // ~11m — enough to stay realistic on road movement
+const MIN_SEND_INTERVAL_MS = 8_000;
+const HEARTBEAT_INTERVAL_MS = 20_000;
 const MAX_RETRY_ATTEMPTS = 2;
 
 export function useDriverLocationTracker({
   driverId,
   enabled,
-  updateIntervalMs = 15_000, // was 8s — keep-alive less aggressive
+  updateIntervalMs = 8_000,
 }: LocationTrackerOptions) {
   const [locationState, setLocationState] = useState<LocationState>({
     latitude: null,
