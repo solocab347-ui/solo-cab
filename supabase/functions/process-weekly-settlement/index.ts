@@ -246,7 +246,7 @@ serve(async (req) => {
 
       try {
         const transfer = await stripe.transfers.create({
-          amount: netCents,
+          amount: realNetCents,
           currency: "eur",
           destination: driver.stripe_connect_account_id,
           description: `Règlement hebdo SoloCab ${weekStart} → ${weekEnd}`,
@@ -254,61 +254,71 @@ serve(async (req) => {
             settlement_id: settlementId,
             driver_id: driverId,
             type: "weekly_driver_payout",
-            courses_count: totals.courses.toString(),
+            card_courses: t.card_courses.toString(),
+            cash_courses: t.cash_courses.toString(),
+            cash_debt_compensated: totalCashDebt.toFixed(2),
           },
-        }, {
-          idempotencyKey, // Prevents double transfer on retry
-        });
+        }, { idempotencyKey });
 
         driverTransfersExecuted++;
-        totalDriverTransferAmount += totals.net;
+        totalDriverTransferAmount += realNet;
 
-        // Mark balances as settled ONLY on success
-        await supabase.from("driver_balance_pending")
-          .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
-          .in("id", totals.balance_ids);
+        if (t.card_balance_ids.length > 0) {
+          await supabase.from("driver_balance_pending")
+            .update({ status: "settled", settlement_id: settlementId, settled_at: new Date().toISOString() })
+            .in("id", t.card_balance_ids);
+        }
+        if (totalCashDebt > 0) {
+          await supabase.from("drivers").update({ cash_debt_pending: 0 }).eq("id", driverId);
+        }
 
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross,
+          total_solocab_fees: t.card_solocab_fees + totalCashDebt,
+          net_amount: realNet,
+          standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
           transfer_status: "completed",
           stripe_transfer_id: transfer.id,
         });
 
-        log("Driver transfer completed", { driverId, amount: totals.net, transferId: transfer.id });
+        log("Driver transfer completed", { driverId, amount: realNet, transferId: transfer.id });
 
-        // Notify driver
         if (driver.user_id) {
+          const cashNote = totalCashDebt > 0 ? ` (après compensation ${totalCashDebt.toFixed(2)}€ commission cash)` : '';
           await supabase.from("notifications").insert({
             user_id: driver.user_id,
             title: "💰 Virement hebdomadaire",
-            message: `${totals.net.toFixed(2)}€ versé sur votre compte (${totals.courses} courses)`,
+            message: `${realNet.toFixed(2)}€ versé sur votre compte (${t.card_courses} courses carte${cashNote})`,
             type: "info",
             link: "/driver-dashboard?tab=finances",
           });
         }
       } catch (err: any) {
         driverTransfersFailed++;
-        log("Driver transfer FAILED — balances stay pending", { driverId, error: err.message });
+        log("Driver transfer FAILED — card balances stay pending", { driverId, error: err.message });
 
-        // DO NOT mark as settled → will be retried next week
+        await supabase.from("drivers").update({ cash_debt_pending: totalCashDebt }).eq("id", driverId);
+
         driverBalanceInserts.push({
           settlement_id: settlementId, driver_id: driverId,
-          total_commissions_earned: totals.gross, total_solocab_fees: totals.solocab_fees,
-          net_amount: totals.net, standard_courses_count: totals.courses,
+          total_commissions_earned: t.card_gross, total_solocab_fees: t.card_solocab_fees,
+          net_amount: realNet, standard_courses_count: t.card_courses + t.cash_courses,
           shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
           transfer_status: "failed",
           transfer_error: err.message?.substring(0, 500),
         });
 
-        // Notify admin
+        await createAlert(driverId, "transfer_failed", "critical",
+          `Échec virement ${realNet.toFixed(2)}€ pour ${driver?.company_name || driverId}: ${err.message?.substring(0, 200)}`,
+          { real_net: realNet, card_net: t.card_net, cash_debt: totalCashDebt, error: err.message });
+
         if (driver.user_id) {
           await supabase.from("notifications").insert({
             user_id: driver.user_id,
             title: "⚠️ Échec virement",
-            message: `Le virement de ${totals.net.toFixed(2)}€ a échoué. Nouvelle tentative lundi prochain.`,
+            message: `Le virement de ${realNet.toFixed(2)}€ a échoué. Nouvelle tentative lundi prochain.`,
             type: "warning",
             link: "/driver-dashboard?tab=finances",
           });
