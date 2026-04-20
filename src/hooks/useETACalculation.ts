@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || "";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Tuning ────────────────────────────────────────────────────────────
 // Real driver GPS pings hit the DB roughly every 8-20s (heartbeat).
@@ -61,19 +60,23 @@ async function fetchDirections(
   origin: Coordinates,
   dest: Coordinates
 ): Promise<ETAData | null> {
-  if (!MAPBOX_TOKEN) return buildFallbackETA(origin, dest);
   try {
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=false&access_token=${MAPBOX_TOKEN}`;
-    const res = await fetch(url);
-    if (!res.ok) return buildFallbackETA(origin, dest);
-    const data = await res.json();
-    const route = data.routes?.[0];
-    if (!route) return buildFallbackETA(origin, dest);
+    const { data, error } = await supabase.functions.invoke("calculate-mapbox-route", {
+      body: {
+        pickup_latitude: origin.lat,
+        pickup_longitude: origin.lng,
+        destination_latitude: dest.lat,
+        destination_longitude: dest.lng,
+      },
+    });
+
+    if (error || !data?.success) return buildFallbackETA(origin, dest);
+
     return {
-      distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-      durationMin: Math.max(0, Math.round(route.duration / 60)),
+      distanceKm: Number(data.distance_km ?? 0),
+      durationMin: Math.max(0, Number(data.duration_minutes ?? 0)),
       lastUpdated: new Date(),
-      routeGeometry: route.geometry ?? null,
+      routeGeometry: data.route_geometry ?? null,
     };
   } catch {
     return buildFallbackETA(origin, dest);
