@@ -101,9 +101,11 @@ function LiveTrackingMap({
   const pickupMarker = useRef<mapboxgl.Marker | null>(null);
   const destMarker = useRef<mapboxgl.Marker | null>(null);
 
+  const { token: mapboxToken } = useMapboxToken();
+
   useEffect(() => {
-    if (!mapContainer.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    if (!mapContainer.current || !mapboxToken) return;
+    mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] = driverLng && driverLat
       ? [driverLng, driverLat]
