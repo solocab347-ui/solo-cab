@@ -18,10 +18,8 @@ import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
+import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
 import logo from "@/assets/logo-solocab.png";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
 
