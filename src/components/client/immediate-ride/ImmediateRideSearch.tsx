@@ -23,6 +23,7 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
   const [selectedDriver, setSelectedDriver] = useState<NearbyDriver | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const { token: mapboxToken } = useMapboxToken();
 
   const {
     drivers,
