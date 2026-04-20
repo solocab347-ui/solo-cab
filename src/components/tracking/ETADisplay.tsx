@@ -17,14 +17,14 @@ interface ETADisplayProps {
 }
 
 export function ETADisplay({ eta, loading, onRefresh, phase, totalDistanceKm, pickupAddress, destinationAddress }: ETADisplayProps) {
-  if (!eta && !loading) return null;
-
   const isApproaching = phase === "approaching";
   const { progressPercent } = useLiveRouteProgress({
     phase,
     eta,
     fallbackTotalDistanceKm: totalDistanceKm,
   });
+
+  if (!eta && !loading) return null;
 
   const targetAddress = isApproaching ? pickupAddress : destinationAddress;
   const shortTarget = targetAddress

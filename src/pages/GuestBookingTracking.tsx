@@ -659,8 +659,6 @@ const GuestBookingTracking = () => {
           phase={phase}
           eta={eta}
           totalDistanceKm={booking.distance_km}
-          driverPhotoUrl={booking.driver_avatar_url}
-          driverName={driverDisplayName}
           fromLabel={isRidePhase ? booking.pickup_address?.split(",")[0] : "Position chauffeur"}
           toLabel={(isRidePhase ? booking.destination_address : booking.pickup_address)?.split(",")[0]}
         />
@@ -680,7 +678,7 @@ const GuestBookingTracking = () => {
             <div className="flex items-center justify-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-[11px] text-muted-foreground">
-                Position GPS mise à jour toutes les 5 secondes
+                Position GPS synchronisée en direct
               </span>
             </div>
           </CardContent>
