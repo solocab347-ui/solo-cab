@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useETACalculation } from "@/hooks/useETACalculation";
+import carTopView from "@/assets/car-top-view.png";
 
 interface LiveTrackingMapProps {
   driverLat: number | null;
@@ -70,7 +71,11 @@ export function LiveTrackingMap({
     const existing = map.current.getSource("live-route") as mapboxgl.GeoJSONSource | undefined;
     if (!geometry) {
       if (existing) {
-        existing.setData({ type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection);
+        existing.setData({
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: [] },
+          properties: {},
+        } as GeoJSON.Feature<GeoJSON.LineString>);
       }
       return;
     }
@@ -142,7 +147,7 @@ export function LiveTrackingMap({
     }
 
     const driverEl = document.createElement('div');
-    driverEl.innerHTML = `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;inset:0;border-radius:9999px;background:hsl(var(--primary)/0.18);animation:pulse-driver 2s ease-out infinite;"></div><div data-driver-car style="position:relative;background:hsl(var(--primary));color:white;width:38px;height:38px;border-radius:9999px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:18px;transition:transform .8s ease;">🚗</div></div>`;
+    driverEl.innerHTML = `<div style="position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;inset:4px;border-radius:9999px;background:hsl(var(--primary)/0.16);animation:pulse-driver 2s ease-out infinite;"></div><div data-driver-car style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center;transition:transform .8s ease;transform-origin:center center;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));"><img src="${carTopView}" alt="Véhicule" style="width:100%;height:100%;object-fit:contain;pointer-events:none;" /></div></div>`;
     if (!document.getElementById("live-tracking-driver-pulse")) {
       const style = document.createElement("style");
       style.id = "live-tracking-driver-pulse";
