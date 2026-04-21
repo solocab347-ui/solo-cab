@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: 'SoloCab',
   webDir: 'dist',
   server: {
-    url: 'https://solocab.fr',
-    cleartext: false,
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: false
   }
 };
 
