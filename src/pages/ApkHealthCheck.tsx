@@ -15,7 +15,8 @@ interface HealthCheckItem {
   status: CheckStatus;
 }
 
-const EXPECTED_HOST = "solocab.fr";
+const WEB_HOST = "solocab.fr";
+const LOCAL_APP_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 const CRITICAL_ROUTES = [
   { id: "login", label: "Login JWT", path: "/login" },
@@ -46,24 +47,32 @@ export default function ApkHealthCheck() {
 
   const runtimeChecks = useMemo<HealthCheckItem[]>(() => {
     const host = window.location.hostname;
-    const isExpectedHost = host === EXPECTED_HOST || host.endsWith(`.${EXPECTED_HOST}`);
+    const protocol = window.location.protocol;
+    const nativeRuntime = isMobileApp();
+    const isLocalBundle = LOCAL_APP_HOSTS.has(host) || protocol === "capacitor:";
+    const isRemoteWebsite = protocol.startsWith("http") && !LOCAL_APP_HOSTS.has(host);
+    const isWebHost = host === WEB_HOST || host.endsWith(`.${WEB_HOST}`);
 
     return [
       {
         id: "runtime-platform",
         label: "Environnement APK",
-        status: isMobileApp() ? "ok" : "warn",
-        details: isMobileApp()
+        status: nativeRuntime ? "ok" : "warn",
+        details: nativeRuntime
           ? `Capacitor détecté (${platform})`
           : `Mode web détecté (${platform}) — ouvrez cette page dans l'APK pour valider le conteneur natif`,
       },
       {
         id: "runtime-host",
-        label: "URL chargée par l'application",
-        status: isExpectedHost ? "ok" : "fail",
-        details: isExpectedHost
-          ? `L'APK charge bien ${window.location.origin}`
-          : `URL actuelle: ${window.location.origin}. Attendu: https://${EXPECTED_HOST}`,
+        label: "Bundle local de l'application",
+        status: nativeRuntime ? (isLocalBundle && !isRemoteWebsite ? "ok" : "fail") : isWebHost ? "warn" : "fail",
+        details: nativeRuntime
+          ? isLocalBundle && !isRemoteWebsite
+            ? `L'APK charge bien les fichiers locaux (${window.location.origin})`
+            : `L'APK pointe encore vers une URL distante: ${window.location.origin}. Attendu dans Android: https://localhost`
+          : isWebHost
+            ? `Mode navigateur sur ${window.location.origin} — normal hors APK`
+            : `URL web inattendue: ${window.location.origin}`,
       },
     ];
   }, [platform]);
@@ -184,7 +193,7 @@ export default function ApkHealthCheck() {
         </div>
 
         <Card className="p-4 border-warning/30 bg-warning/10 text-sm text-muted-foreground">
-          Si l'URL affichée n'est pas <strong className="text-foreground">https://solocab.fr</strong>, l'APK installé n'a pas été resynchronisé après le changement Capacitor : il faut relancer build + sync puis réinstaller l'application.
+          Dans l'APK Android, l'origine doit être <strong className="text-foreground">https://localhost</strong>. Si elle affiche <strong className="text-foreground">https://solocab.fr</strong> ou un ancien lien Lovable, supprimez l'ancien dossier Android local puis relancez build + sync avant de réinstaller l'application.
         </Card>
 
         <Button asChild variant="ghost" className="w-full">
