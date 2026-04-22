@@ -290,6 +290,16 @@ const App = () => (
                 }
               />
               <Route
+                path="/permissions"
+                element={
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Permissions />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/client-profile/:clientId"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
