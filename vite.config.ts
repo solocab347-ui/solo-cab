@@ -13,6 +13,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2020',
     rollupOptions: {
+      // Native-only Capacitor plugins (no web entry) — never resolve at build time
+      external: [
+        '@capacitor-community/background-geolocation',
+        '@capacitor-community/keep-awake',
+      ],
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
@@ -22,6 +27,12 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
+  },
+  optimizeDeps: {
+    exclude: [
+      '@capacitor-community/background-geolocation',
+      '@capacitor-community/keep-awake',
+    ],
   },
   esbuild: {
     drop: mode === 'production' ? ['console', 'debugger'] : [],

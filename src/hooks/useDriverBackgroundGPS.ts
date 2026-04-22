@@ -24,12 +24,17 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
 
     let cancelled = false;
 
+    // Dynamic imports via variable to prevent Vite from resolving at build time
+    // (these packages have no web entry point)
+    const loadBg = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'background-geolocation'));
+    const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
+
     const start = async () => {
       if (!enabled || watcherIdRef.current || cancelled) return;
       try {
-        const bgMod: any = await import('@capacitor-community/background-geolocation');
+        const bgMod: any = await loadBg();
         const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
-        const kaMod: any = await import('@capacitor-community/keep-awake');
+        const kaMod: any = await loadKa();
         const KeepAwake = kaMod.KeepAwake || kaMod.default;
 
         // Wake lock pour empêcher le CPU de dormir
@@ -85,7 +90,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const stop = async () => {
       if (watcherIdRef.current) {
         try {
-          const bgMod: any = await import('@capacitor-community/background-geolocation');
+          const bgMod: any = await loadBg();
           const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
           await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
           watcherIdRef.current = null;
@@ -95,7 +100,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       }
       if (keepAwakeActiveRef.current) {
         try {
-          const kaMod: any = await import('@capacitor-community/keep-awake');
+          const kaMod: any = await loadKa();
           const KeepAwake = kaMod.KeepAwake || kaMod.default;
           await KeepAwake.allowSleep();
           keepAwakeActiveRef.current = false;
