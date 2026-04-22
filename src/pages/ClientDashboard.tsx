@@ -50,6 +50,7 @@ import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { ActiveCourseTracker } from "@/components/client/ActiveCourseTracker";
 import { ActiveCourseBanner } from "@/components/client/ActiveCourseBanner";
 import { useActiveClientCourse } from "@/hooks/useActiveClientCourse";
+import { PermissionsWidget } from "@/components/permissions/PermissionsWidget";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
@@ -389,6 +390,7 @@ const ClientDashboard = () => {
       case "accueil":
         return (
           <div className="space-y-4">
+            <PermissionsWidget role="client" />
             {guestWelcome && (
               <Card className="p-4 bg-primary/5 border-primary/30 flex items-start gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">

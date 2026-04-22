@@ -6,8 +6,21 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    cleartext: false
-  }
+    cleartext: false,
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#FF6B00',
+      sound: 'ride_alert.wav',
+    },
+    Geolocation: {
+      permissions: ['location', 'coarseLocation'],
+    },
+  },
 };
 
 export default config;

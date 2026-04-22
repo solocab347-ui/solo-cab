@@ -45,6 +45,7 @@ import { HorizontalOnboardingTunnel } from "@/components/driver/onboarding";
 import { useDriverProfileCompletion } from "@/hooks/useDriverProfileCompletion";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/ui/DocumentWarningBanner";
+import { PermissionsWidget } from "@/components/permissions/PermissionsWidget";
 import { DocumentsBlockedOverlay } from "@/components/driver/ui/DocumentsBlockedOverlay";
 import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
@@ -798,6 +799,11 @@ const DriverDashboard = () => {
             onNavigateToDocuments={() => setActiveTab("documents")}
           />
         )}
+
+        {/* Centre d'autorisations natives — chauffeur */}
+        <div className="mb-4">
+          <PermissionsWidget role="driver" />
+        </div>
 
         {/* Premium Upgrade Banner - Pour les chauffeurs gratuits */}
         {driverProfile?.driver?.id && !isPremium && (

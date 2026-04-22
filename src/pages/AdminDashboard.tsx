@@ -30,6 +30,7 @@ import AdminCommunicationsHub from "@/components/admin/hubs/AdminCommunicationsH
 import AdminSettingsHub from "@/components/admin/hubs/AdminSettingsHub";
 import AdminDocumentsHub from "@/components/admin/hubs/AdminDocumentsHub";
 import AdminFinancesHub from "@/components/admin/hubs/AdminFinancesHub";
+import { PermissionsWidget } from "@/components/permissions/PermissionsWidget";
 
 
 const AdminDashboard = () => {
@@ -189,6 +190,11 @@ const AdminDashboard = () => {
         <main className="p-4 max-w-5xl mx-auto">
           {/* Statistiques principales visibles immédiatement */}
           <AdminDashboardStats />
+
+          {/* Centre d'autorisations natives */}
+          <div className="my-4">
+            <PermissionsWidget role="admin" alwaysShow />
+          </div>
 
           {/* Grille de navigation */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">

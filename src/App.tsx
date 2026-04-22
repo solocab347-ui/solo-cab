@@ -23,6 +23,7 @@ import { MaintenanceProvider } from "@/contexts/MaintenanceContext";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { AutoDriverAvailabilitySync } from "@/components/driver/AutoDriverAvailabilitySync";
 import { GlobalRideOverlay } from "@/components/GlobalRideOverlay";
+import { NativePushRegistrar } from "@/components/NativePushRegistrar";
 
 // Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
@@ -86,6 +87,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
+const Permissions = lazy(() => import("./pages/Permissions"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -107,6 +109,7 @@ const App = () => (
                 
                 <AutoDriverAvailabilitySync />
                 <GlobalRideOverlay />
+                <NativePushRegistrar />
                 <MaintenanceGuard>
                 <ErrorBoundary>
                 <AnimatedRoutes>
@@ -282,6 +285,16 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <NotificationSettings />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/permissions"
+                element={
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Permissions />
                     </Suspense>
                   </ProtectedRoute>
                 }
