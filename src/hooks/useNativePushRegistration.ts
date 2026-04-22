@@ -94,11 +94,24 @@ export function useNativePushRegistration() {
           }
         });
 
-        // 7. User tape sur la notification → router vers le dashboard
+        // 7. User tape sur la notification → router vers la page d'acceptation
         const actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           const data = action.notification.data || {};
           if (data.type === 'incoming_ride') {
-            window.location.href = '/driver-dashboard?view=map';
+            // Stocker l'id de la course pour que l'overlay s'ouvre automatiquement
+            if (data.ride_id) {
+              try { sessionStorage.setItem('solocab_pending_ride', String(data.ride_id)); } catch {/* ignore */}
+            }
+            window.location.href = '/driver-dashboard?incoming=' + encodeURIComponent(String(data.ride_id || ''));
+          }
+        });
+
+        // 8. App ouverte au cold-start via notif → broadcast event
+        const localActionHandle = await LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+          const data = action.notification.extra || {};
+          if (data.type === 'incoming_ride' && data.ride_id) {
+            try { sessionStorage.setItem('solocab_pending_ride', String(data.ride_id)); } catch {/* ignore */}
+            window.location.href = '/driver-dashboard?incoming=' + encodeURIComponent(String(data.ride_id));
           }
         });
 
