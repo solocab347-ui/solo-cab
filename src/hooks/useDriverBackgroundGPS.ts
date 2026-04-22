@@ -90,7 +90,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const stop = async () => {
       if (watcherIdRef.current) {
         try {
-          const bgMod: any = await import('@capacitor-community/background-geolocation');
+          const bgMod: any = await loadBg();
           const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
           await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
           watcherIdRef.current = null;
@@ -100,7 +100,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       }
       if (keepAwakeActiveRef.current) {
         try {
-          const kaMod: any = await import('@capacitor-community/keep-awake');
+          const kaMod: any = await loadKa();
           const KeepAwake = kaMod.KeepAwake || kaMod.default;
           await KeepAwake.allowSleep();
           keepAwakeActiveRef.current = false;
