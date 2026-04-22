@@ -25,13 +25,13 @@ export function DriverBackgroundGPS() {
     (async () => {
       const { data } = await supabase
         .from('drivers')
-        .select('id, status, is_available_now')
+        .select('id, is_available_now')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!data) return;
       setDriverId(data.id);
-      setEnabled(data.status === 'online' || data.status === 'assigned' || data.status === 'in_ride' || !!data.is_available_now);
+      setEnabled(!!data.is_available_now);
 
       // Écoute realtime du statut driver
       channel = supabase
@@ -42,13 +42,8 @@ export function DriverBackgroundGPS() {
           table: 'drivers',
           filter: `id=eq.${data.id}`,
         }, (payload) => {
-          const next = payload.new as { status?: string; is_available_now?: boolean };
-          setEnabled(
-            next.status === 'online' ||
-            next.status === 'assigned' ||
-            next.status === 'in_ride' ||
-            !!next.is_available_now
-          );
+          const next = payload.new as { is_available_now?: boolean };
+          setEnabled(!!next.is_available_now);
         })
         .subscribe();
     })();

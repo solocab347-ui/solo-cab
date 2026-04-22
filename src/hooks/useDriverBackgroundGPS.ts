@@ -27,8 +27,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const start = async () => {
       if (!enabled || watcherIdRef.current || cancelled) return;
       try {
-        const { BackgroundGeolocation } = await import('@capacitor-community/background-geolocation');
-        const { KeepAwake } = await import('@capacitor-community/keep-awake');
+        const bgMod: any = await import('@capacitor-community/background-geolocation');
+        const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
+        const kaMod: any = await import('@capacitor-community/keep-awake');
+        const KeepAwake = kaMod.KeepAwake || kaMod.default;
 
         // Wake lock pour empêcher le CPU de dormir
         try {
@@ -83,7 +85,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const stop = async () => {
       if (watcherIdRef.current) {
         try {
-          const { BackgroundGeolocation } = await import('@capacitor-community/background-geolocation');
+          const bgMod: any = await import('@capacitor-community/background-geolocation');
+          const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
           await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
           watcherIdRef.current = null;
         } catch (err) {
@@ -92,7 +95,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       }
       if (keepAwakeActiveRef.current) {
         try {
-          const { KeepAwake } = await import('@capacitor-community/keep-awake');
+          const kaMod: any = await import('@capacitor-community/keep-awake');
+          const KeepAwake = kaMod.KeepAwake || kaMod.default;
           await KeepAwake.allowSleep();
           keepAwakeActiveRef.current = false;
         } catch {/* ignore */}
