@@ -361,6 +361,7 @@ const Index = () => {
                 <li><Link to="/cgu" className="hover:text-foreground transition-colors">CGU</Link></li>
                 <li><Link to="/privacy-policy" className="hover:text-foreground transition-colors">Confidentialité</Link></li>
                 <li><Link to="/mentions-legales" className="hover:text-foreground transition-colors">Mentions légales</Link></li>
+                <li><Link to="/delete-account" className="hover:text-foreground transition-colors">Supprimer mon compte</Link></li>
               </ul>
             </div>
           </div>
