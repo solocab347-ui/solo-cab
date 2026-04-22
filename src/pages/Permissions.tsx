@@ -15,10 +15,11 @@ export default function Permissions() {
     if (meta) meta.setAttribute('content', 'Gérez les autorisations de localisation, notifications et superposition pour SoloCab.');
   }, []);
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) navigate('/login');
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">

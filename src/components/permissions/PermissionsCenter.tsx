@@ -12,11 +12,11 @@ interface PermissionsCenterProps {
 }
 
 const STATUS_META: Record<PermissionStatus, { color: string; bg: string; label: string; icon: typeof CheckCircle2 }> = {
-  granted:     { color: 'text-emerald-600', bg: 'bg-emerald-500/10', label: 'Activée',         icon: CheckCircle2 },
-  denied:      { color: 'text-red-600',     bg: 'bg-red-500/10',     label: 'Refusée',         icon: XCircle },
-  prompt:      { color: 'text-amber-600',   bg: 'bg-amber-500/10',   label: 'À activer',       icon: AlertCircle },
-  unsupported: { color: 'text-muted-foreground', bg: 'bg-muted',     label: 'Non disponible',  icon: AlertCircle },
-  unknown:     { color: 'text-muted-foreground', bg: 'bg-muted',     label: 'Inconnue',        icon: AlertCircle },
+  granted:     { color: 'text-primary',          bg: 'bg-primary/10',     label: 'Activée',        icon: CheckCircle2 },
+  denied:      { color: 'text-destructive',      bg: 'bg-destructive/10', label: 'Refusée',        icon: XCircle },
+  prompt:      { color: 'text-foreground',       bg: 'bg-accent',         label: 'À activer',      icon: AlertCircle },
+  unsupported: { color: 'text-muted-foreground', bg: 'bg-muted',          label: 'Non disponible', icon: AlertCircle },
+  unknown:     { color: 'text-muted-foreground', bg: 'bg-muted',          label: 'Inconnue',       icon: AlertCircle },
 };
 
 export function PermissionsCenter({ role, variant = 'page', onAllGranted }: PermissionsCenterProps) {
@@ -60,9 +60,9 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
 
       {/* Bandeau de complétion */}
       {missingRequired.length > 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
+        <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            <p className="text-sm font-medium text-destructive">
               ⚠️ {missingRequired.length} autorisation{missingRequired.length > 1 ? 's' : ''} essentielle{missingRequired.length > 1 ? 's' : ''} à activer
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -73,11 +73,11 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
       )}
 
       {allRequiredGranted && missingRequired.length === 0 && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
+        <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
             <div>
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Tout est prêt !</p>
+              <p className="text-sm font-medium text-primary">Tout est prêt !</p>
               <p className="text-xs text-muted-foreground">Vous recevrez les alertes en temps réel.</p>
             </div>
           </CardContent>
@@ -107,14 +107,14 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
   const Icon = meta.icon;
 
   return (
-    <Card className={cn('transition-all', perm.required && perm.status !== 'granted' && 'border-amber-500/40')}>
+    <Card className={cn('transition-all', perm.required && perm.status !== 'granted' && 'border-destructive/40')}>
       <CardContent className="p-4 flex items-start gap-3">
         <div className="text-2xl shrink-0">{perm.icon}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-medium text-sm">{perm.label}</h3>
             {perm.required && (
-              <Badge variant="outline" className="text-[10px] h-5 border-amber-500/40 text-amber-700 dark:text-amber-400">
+              <Badge variant="outline" className="text-[10px] h-5 border-destructive/40 text-destructive">
                 Obligatoire
               </Badge>
             )}
