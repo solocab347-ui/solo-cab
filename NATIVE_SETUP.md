@@ -1,7 +1,10 @@
 # Native Mobile Setup — SoloCab
 
-Ce document liste les étapes manuelles à effectuer **après** avoir téléchargé le projet
-en local et exécuté `npx cap sync` pour publier l'app sur le **Play Store** et l'**App Store**.
+Ce document décrit comment publier l'app sur le **Play Store** et l'**App Store**
+avec le mode "Uber/Bolt" complet (overlay full-screen, GPS background, push haute priorité).
+
+> ⚡ **Raccourci** : un script `scripts/patch-native.sh` automatise tout ce qui suit
+> pour Android **et** iOS. Voir la section "Patch automatique" plus bas.
 
 ---
 
@@ -10,8 +13,24 @@ en local et exécuté `npx cap sync` pour publier l'app sur le **Play Store** et
 Reproduire l'expérience Uber/Bolt :
 - L'app s'ouvre **par-dessus toutes les autres applications** quand une course arrive
 - Le téléphone **vibre + sonne** même verrouillé
-- Le GPS continue **en arrière-plan** sans drainer la batterie
-- Les notifications arrivent en **<2 secondes**
+- Le GPS continue **en arrière-plan** sans drainer la batterie (foreground service)
+- Les notifications arrivent en **<2 secondes** via FCM (Android) et APNS (iOS)
+
+---
+
+## 🚀 Patch automatique (recommandé)
+
+Après avoir cloné le repo et lancé `npx cap add android` / `npx cap add ios` :
+
+```bash
+chmod +x scripts/patch-native.sh
+./scripts/patch-native.sh
+npx cap sync
+```
+
+Le script ajoute toutes les permissions, les `<uses-permission>`, les modes background iOS,
+et les attributs `showWhenLocked`/`turnScreenOn` sur la MainActivity Android.
+Idempotent : peut être relancé sans dupliquer.
 
 ---
 
@@ -152,6 +171,25 @@ Vous devriez voir :
 - 🔋 Batterie : À activer (Android only)
 
 **Activez tout dans cet ordre** pour reproduire l'expérience Uber/Bolt.
+
+---
+
+## 🎙️ Push backend — comportement actuel
+
+L'edge function `send-push-fcm` est **déjà déployée** et fonctionne en 3 modes :
+
+| Configuration | Comportement |
+|--------------|--------------|
+| Aucune clé | Mode "fallback" : seule la couche realtime Supabase notifie l'app ouverte |
+| `FCM_SERVER_KEY` ajouté | Push haute-priorité Android (overlay déclenché automatiquement) |
+| `APNS_KEY_P8` + `APNS_KEY_ID` + `APNS_TEAM_ID` ajoutés | Push silencieux et alertes iOS via JWT signé |
+
+Déclencher un push :
+```ts
+supabase.functions.invoke('send-push-fcm', {
+  body: { user_ids, title, body, type: 'incoming_ride', data: { ride_id } }
+});
+```
 
 ---
 

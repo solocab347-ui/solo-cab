@@ -24,6 +24,7 @@ import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { AutoDriverAvailabilitySync } from "@/components/driver/AutoDriverAvailabilitySync";
 import { GlobalRideOverlay } from "@/components/GlobalRideOverlay";
 import { NativePushRegistrar } from "@/components/NativePushRegistrar";
+import { DriverBackgroundGPS } from "@/components/DriverBackgroundGPS";
 
 // Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
@@ -110,6 +111,7 @@ const App = () => (
                 <AutoDriverAvailabilitySync />
                 <GlobalRideOverlay />
                 <NativePushRegistrar />
+                <DriverBackgroundGPS />
                 <MaintenanceGuard>
                 <ErrorBoundary>
                 <AnimatedRoutes>
