@@ -1,10 +1,10 @@
 /**
  * Edge function: send-push-fcm
  * Envoie une notification push haute priorité aux appareils mobiles d'un utilisateur
- * - Android via FCM HTTP v1 (clé serveur Legacy)
+ * - Android via FCM HTTP v1 (OAuth2 signé avec service account JSON)
  * - iOS via APNS HTTP/2 (JWT signé avec p8)
  *
- * Mode dégradé : si FCM_SERVER_KEY ou APNS keys absents, la fonction continue
+ * Mode dégradé : si FCM_SERVICE_ACCOUNT_JSON ou APNS keys absents, la fonction continue
  * sans fail (le realtime Supabase prend le relais).
  *
  * Body :
@@ -33,6 +33,105 @@ interface PushPayload {
 }
 
 // =============================================================
+// Helpers — PEM (PKCS#8) → CryptoKey
+// =============================================================
+function pemToBinary(pem: string): Uint8Array {
+  const body = pem
+    .replace(/-----BEGIN [^-]+-----/g, '')
+    .replace(/-----END [^-]+-----/g, '')
+    .replace(/\s+/g, '');
+  return Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+}
+
+// =============================================================
+// FCM HTTP v1 — OAuth2 access token via service account JSON
+// =============================================================
+interface ServiceAccount {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+  token_uri: string;
+}
+
+async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToBinary(sa.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const jwt = await create(
+    { alg: 'RS256', typ: 'JWT' },
+    {
+      iss: sa.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: sa.token_uri,
+      iat: getNumericDate(0),
+      exp: getNumericDate(60 * 60),
+    },
+    cryptoKey
+  );
+
+  const res = await fetch(sa.token_uri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) throw new Error(`OAuth2 token error: ${await res.text()}`);
+  const json = await res.json();
+  return json.access_token;
+}
+
+async function sendFcmV1(
+  token: string,
+  payload: PushPayload,
+  accessToken: string,
+  projectId: string
+): Promise<boolean> {
+  const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+  const message = {
+    message: {
+      token,
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      android: {
+        priority: 'HIGH' as const,
+        notification: {
+          sound: 'ride_alert',
+          channel_id: 'solocab_rides',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+      },
+      data: {
+        type: payload.type || 'generic',
+        full_screen: payload.type === 'incoming_ride' ? 'true' : 'false',
+        ...(payload.data || {}),
+      },
+    },
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    console.error('[FCM v1] error', await res.text());
+    return false;
+  }
+  return true;
+}
+
+// =============================================================
 // APNS — JWT signé p8 (Apple Push Notification service HTTP/2)
 // =============================================================
 async function buildApnsJwt(): Promise<string | null> {
@@ -41,15 +140,9 @@ async function buildApnsJwt(): Promise<string | null> {
   const teamId = Deno.env.get('APNS_TEAM_ID');
   if (!keyP8 || !keyId || !teamId) return null;
 
-  // Convertir le PEM (PKCS#8) en CryptoKey
-  const pemBody = keyP8
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\s+/g, '');
-  const binary = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
-    binary,
+    pemToBinary(keyP8),
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
@@ -97,7 +190,7 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const FCM_KEY = Deno.env.get('FCM_SERVER_KEY');
+    const FCM_SA_JSON = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON');
     const APNS_BUNDLE = Deno.env.get('APNS_BUNDLE_ID') || 'app.lovable.bb7de2decc6d441aa3800f8d244f90e4';
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -131,35 +224,19 @@ Deno.serve(async (req) => {
     let sentIos = 0;
     const modes: string[] = [];
 
-    // ============= FCM (Android) =============
-    if (FCM_KEY && androidTokens.length > 0) {
-      modes.push('fcm');
-      const fcmRes = await fetch('https://fcm.googleapis.com/fcm/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `key=${FCM_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          registration_ids: androidTokens,
-          priority: 'high',
-          android: { priority: 'high' },
-          notification: {
-            title: payload.title,
-            body: payload.body,
-            sound: 'ride_alert',
-            android_channel_id: 'solocab_rides',
-            click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          },
-          data: {
-            type: payload.type || 'generic',
-            full_screen: payload.type === 'incoming_ride' ? 'true' : 'false',
-            ...(payload.data || {}),
-          },
-        }),
-      });
-      if (fcmRes.ok) sentAndroid = androidTokens.length;
-      else console.error('[FCM] error', await fcmRes.text());
+    // ============= FCM HTTP v1 (Android) =============
+    if (FCM_SA_JSON && androidTokens.length > 0) {
+      try {
+        const sa: ServiceAccount = JSON.parse(FCM_SA_JSON);
+        const accessToken = await getFcmAccessToken(sa);
+        modes.push('fcm-v1');
+        const results = await Promise.all(
+          androidTokens.map((t) => sendFcmV1(t, payload, accessToken, sa.project_id).catch(() => false))
+        );
+        sentAndroid = results.filter(Boolean).length;
+      } catch (err) {
+        console.error('[FCM v1] fatal', err);
+      }
     }
 
     // ============= APNS (iOS) =============
