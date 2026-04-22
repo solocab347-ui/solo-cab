@@ -11,6 +11,7 @@
         "@capacitor/cli": "^8.3.0",
         "@capacitor/core": "^8.3.0",
         "@capacitor/device": "^6.0.0",
+        "@capacitor/geolocation": "^6.0.0",
         "@capacitor/ios": "^8.3.0",
         "@capacitor/local-notifications": "^6.0.0",
         "@capacitor/push-notifications": "^6.0.0",
@@ -318,6 +319,8 @@
     "@capacitor/core": ["@capacitor/core@8.3.0", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-S4ajn4G/fS3VJj8salxqH/3LO5PPWv1VxGKQ27OCajnDcLJjEg9VXwgMPnlypgkIOqCJ2fmQLtk8GT+BlI9/rw=="],
 
     "@capacitor/device": ["@capacitor/device@6.0.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/device/-/device-6.0.3.tgz", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-AmPtVuWeW31Ui+UMIl5zgCzwMU4fL4hIvYYvbAhXXyKWjxi1nk+CAh9B3k4OYUQLJI5nan0PoJ4GiiJ7x6DT/A=="],
+
+    "@capacitor/geolocation": ["@capacitor/geolocation@6.1.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/geolocation/-/geolocation-6.1.1.tgz", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-zR24reZqkb9farg+qVqR0+DdDYs05SqkiqxCENoPofk/QWD6AobcHKDZutwifqO66jK2rM0ECo8MvbQv4MUTyA=="],
 
     "@capacitor/ios": ["@capacitor/ios@8.3.0", "", { "peerDependencies": { "@capacitor/core": "^8.3.0" } }, "sha512-5Rtwv8SITKlYTt8lAZG+khnVIdzPtqbocH3eP+JkEmX1vpSMwx4TOKtT8OBz8gpQ+pUJDRp7DBYOv3U6l/obCw=="],
 
