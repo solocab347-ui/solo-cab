@@ -19,6 +19,8 @@ const BYPASS_ROUTES = [
   "/privacy-policy",
   "/terms-of-service",
   "/politique-annulation",
+  "/delete-account",
+  "/supprimer-compte",
 ];
 
 interface MaintenanceContextType {
