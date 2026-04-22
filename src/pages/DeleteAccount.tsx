@@ -24,6 +24,9 @@ import {
   Star,
   Smartphone,
   UserX,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -98,7 +101,10 @@ const baseSchema = z.object({
     .min(1, "L'adresse e-mail est requise")
     .email("Adresse e-mail invalide")
     .max(255, "Adresse e-mail trop longue"),
-  confirmEmail: z.string().trim().min(1, "Veuillez confirmer votre e-mail"),
+  password: z
+    .string()
+    .min(1, "Mot de passe requis pour confirmer votre identité")
+    .max(128, "Mot de passe trop long"),
   reason: z.string().trim().max(1000, "Raison trop longue (1000 caractères maximum)").optional(),
   acknowledged: z.literal(true, {
     errorMap: () => ({ message: "Vous devez confirmer la suppression" }),
@@ -109,13 +115,15 @@ const DeleteAccount = () => {
   const [requestType, setRequestType] = useState<RequestType>("full");
   const [selectedCategories, setSelectedCategories] = useState<Set<DataCategoryKey>>(new Set());
   const [email, setEmail] = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [reason, setReason] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submittedType, setSubmittedType] = useState<RequestType>("full");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Supprimer mes données SoloCab | Demande de suppression";
@@ -130,6 +138,14 @@ const DeleteAccount = () => {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute("href", "https://solocab.fr/delete-account");
+
+    // Pré-remplir et verrouiller l'email si l'utilisateur est déjà connecté
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        setSessionEmail(session.user.email);
+        setEmail(session.user.email);
+      }
+    });
   }, []);
 
   const toggleCategory = (key: DataCategoryKey) => {
@@ -153,17 +169,12 @@ const DeleteAccount = () => {
     e.preventDefault();
     setErrors({});
 
-    const result = baseSchema
-      .refine((data) => data.email.toLowerCase() === data.confirmEmail.toLowerCase(), {
-        message: "Les adresses e-mail ne correspondent pas",
-        path: ["confirmEmail"],
-      })
-      .safeParse({
-        email,
-        confirmEmail,
-        reason: reason || undefined,
-        acknowledged,
-      });
+    const result = baseSchema.safeParse({
+      email,
+      password,
+      reason: reason || undefined,
+      acknowledged,
+    });
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -182,8 +193,27 @@ const DeleteAccount = () => {
 
     setLoading(true);
     try {
+      // 🔐 Étape 1 : Vérification d'identité par mot de passe
+      // Empêche n'importe qui de demander la suppression du compte d'un tiers.
+      const normalizedEmail = result.data.email.toLowerCase().trim();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: result.data.password,
+      });
+
+      if (authError) {
+        setErrors({
+          password:
+            "Identifiants invalides. Vérifiez votre adresse e-mail et votre mot de passe.",
+        });
+        toast.error("Vérification d'identité échouée");
+        setLoading(false);
+        return;
+      }
+
+      // 🗑️ Étape 2 : Enregistrement de la demande
       const { error } = await supabase.from("account_deletion_requests").insert({
-        email: result.data.email.toLowerCase(),
+        email: normalizedEmail,
         reason: result.data.reason ?? null,
         user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
         request_type: requestType,
@@ -200,6 +230,11 @@ const DeleteAccount = () => {
           ? "Demande de suppression complète envoyée."
           : "Demande de suppression partielle envoyée.",
       );
+
+      // Si suppression complète, déconnecter immédiatement
+      if (requestType === "full") {
+        await supabase.auth.signOut();
+      }
     } catch (err: any) {
       console.error("Deletion request error:", err);
       toast.error(err.message || "Erreur lors de l'envoi de la demande");
@@ -264,6 +299,15 @@ const DeleteAccount = () => {
               <AlertDescription>
                 <strong>Action irréversible.</strong> Les données supprimées ne pourront pas être
                 récupérées.
+              </AlertDescription>
+            </Alert>
+
+            <Alert className="mb-6 border-primary/30 bg-primary/5">
+              <Lock className="h-4 w-4 text-primary" />
+              <AlertDescription>
+                <strong>Vérification d'identité requise.</strong> Pour protéger votre compte, vous
+                devez confirmer votre <strong>mot de passe</strong> avant toute suppression.
+                Personne d'autre ne peut demander la suppression de votre compte.
               </AlertDescription>
             </Alert>
 
@@ -400,29 +444,53 @@ const DeleteAccount = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="vous@exemple.com"
-                    disabled={loading}
+                    disabled={loading || !!sessionEmail}
                     autoComplete="email"
+                    readOnly={!!sessionEmail}
                     required
                   />
+                  {sessionEmail && (
+                    <p className="text-xs text-muted-foreground">
+                      ✅ Connecté en tant que {sessionEmail}
+                    </p>
+                  )}
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
 
+                {/* Mot de passe — vérification d'identité */}
                 <div className="space-y-2">
-                  <Label htmlFor="confirmEmail">
-                    Confirmez votre adresse e-mail <span className="text-destructive">*</span>
+                  <Label htmlFor="password" className="flex items-center gap-2">
+                    <Lock className="h-3.5 w-3.5 text-primary" />
+                    Mot de passe <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="confirmEmail"
-                    type="email"
-                    value={confirmEmail}
-                    onChange={(e) => setConfirmEmail(e.target.value)}
-                    placeholder="vous@exemple.com"
-                    disabled={loading}
-                    autoComplete="email"
-                    required
-                  />
-                  {errors.confirmEmail && (
-                    <p className="text-sm text-destructive">{errors.confirmEmail}</p>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Votre mot de passe SoloCab"
+                      disabled={loading}
+                      autoComplete="current-password"
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                      tabIndex={-1}
+                      aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    🔐 Nous vérifions votre identité avant toute suppression. Aucune action n'est
+                    possible sans le mot de passe du compte.
+                  </p>
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
                   )}
                 </div>
 
@@ -488,14 +556,14 @@ const DeleteAccount = () => {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Envoi en cours...
+                      Vérification & envoi...
                     </>
                   ) : (
                     <>
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Lock className="mr-2 h-4 w-4" />
                       {requestType === "full"
-                        ? "Demander la suppression de mon compte"
-                        : `Demander la suppression de ${selectedCategories.size} catégorie${
+                        ? "Confirmer et supprimer mon compte"
+                        : `Confirmer la suppression de ${selectedCategories.size} catégorie${
                             selectedCategories.size > 1 ? "s" : ""
                           }`}
                     </>
