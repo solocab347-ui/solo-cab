@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,17 +78,23 @@ const DeleteAccount = () => {
     }
   };
 
+  useEffect(() => {
+    document.title = "Supprimer mon compte SoloCab | Demande de suppression";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    const desc =
+      "Demandez la suppression définitive de votre compte SoloCab et de toutes vos données personnelles. Conforme RGPD.";
+    if (metaDesc) metaDesc.setAttribute("content", desc);
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", "https://solocab.fr/delete-account");
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-12 px-4">
-      <Helmet>
-        <title>Supprimer mon compte SoloCab | Demande de suppression</title>
-        <meta
-          name="description"
-          content="Demandez la suppression définitive de votre compte SoloCab et de toutes vos données personnelles. Conforme RGPD."
-        />
-        <link rel="canonical" href="https://solocab.fr/delete-account" />
-      </Helmet>
-
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
@@ -103,8 +108,8 @@ const DeleteAccount = () => {
 
         {submitted ? (
           <Card className="p-8 text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mx-auto">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto">
+              <CheckCircle2 className="h-8 w-8 text-primary" />
             </div>
             <h2 className="text-2xl font-bold">Demande enregistrée</h2>
             <p className="text-muted-foreground">
