@@ -17817,6 +17817,48 @@ export type Database = {
           },
         ]
       }
+      push_tokens: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_id: string | null
+          device_model: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_model?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_model?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qr_codes: {
         Row: {
           code: string
@@ -20669,6 +20711,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_permissions_log: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          permission_key: string
+          platform: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          permission_key: string
+          platform?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          permission_key?: string
+          platform?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
