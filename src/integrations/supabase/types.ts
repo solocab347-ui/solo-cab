@@ -17,6 +17,7 @@ export type Database = {
       account_deletion_requests: {
         Row: {
           created_at: string
+          data_categories: string[] | null
           email: string
           id: string
           ip_address: string | null
@@ -24,12 +25,14 @@ export type Database = {
           processed_at: string | null
           processed_by: string | null
           reason: string | null
+          request_type: string
           status: string
           updated_at: string
           user_agent: string | null
         }
         Insert: {
           created_at?: string
+          data_categories?: string[] | null
           email: string
           id?: string
           ip_address?: string | null
@@ -37,12 +40,14 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           reason?: string | null
+          request_type?: string
           status?: string
           updated_at?: string
           user_agent?: string | null
         }
         Update: {
           created_at?: string
+          data_categories?: string[] | null
           email?: string
           id?: string
           ip_address?: string | null
@@ -50,6 +55,7 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           reason?: string | null
+          request_type?: string
           status?: string
           updated_at?: string
           user_agent?: string | null
