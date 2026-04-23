@@ -276,7 +276,7 @@ export const landingTranslations: Translations = {
     zh: '客户扫描您的二维码30秒内完成注册',
     ar: 'يقوم عملاؤك بمسح رمزك والتسجيل في 30 ثانية',
   },
-  'landing.driver.zeroFrais de transaction': {
+  'landing.driver.zeroCommission': {
     fr: '0% de Frais de transaction',
     en: '0% Frais de transaction',
     es: '0% de Comisión',
@@ -284,7 +284,7 @@ export const landingTranslations: Translations = {
     zh: '0%佣金',
     ar: '0% عمولة',
   },
-  'landing.driver.zeroFrais de transactionDesc': {
+  'landing.driver.zeroCommissionDesc': {
     fr: 'Gardez 100% de vos revenus. Plus de frais de transaction aux plateformes',
     en: 'Keep 100% of your earnings. No more platform frais de transaction',
     es: 'Conserve el 100% de sus ingresos. Sin comisiones de plataformas',

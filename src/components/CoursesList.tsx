@@ -23,7 +23,7 @@ import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
 import CourseReportDialog from "@/components/CourseReportDialog";
 import { ShareCourseWithPartnerDialog } from "@/components/driver/sharing/ShareCourseWithPartnerDialog";
-import { CourseCompletionCommissionDialog } from "@/components/driver/courses/CourseCompletionFrais de transactionDialog";
+import { CourseCompletionCommissionDialog } from "@/components/driver/courses/CourseCompletionCommissionDialog";
 import { CourseShareStatusIndicator } from "@/components/driver/sharing/CourseShareStatusIndicator";
 import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";

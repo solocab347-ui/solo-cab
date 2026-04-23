@@ -100,7 +100,7 @@ export const footerTranslations: Translations = {
     ar: 'انضم إلى مجتمع من السائقين المستقلين الذين يتحكمون في أعمالهم',
   },
   // Platform Overview Section
-  'platform.zeroFrais de transaction': {
+  'platform.zeroCommission': {
     fr: '✨ Zéro frais de transaction • Contrôle total',
     en: '✨ Zero frais de transaction • Full control',
     es: '✨ Cero comisión • Control total',

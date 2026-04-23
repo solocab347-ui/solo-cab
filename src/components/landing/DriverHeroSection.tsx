@@ -49,8 +49,8 @@ export const DriverHeroSection = () => {
     },
     {
       icon: DollarSign,
-      title: t('landing.driver.zeroFrais de transaction'),
-      description: t('landing.driver.zeroFrais de transactionDesc'),
+      title: t('landing.driver.zeroCommission'),
+      description: t('landing.driver.zeroCommissionDesc'),
       gradient: "from-green-500 to-emerald-600",
     },
     {
