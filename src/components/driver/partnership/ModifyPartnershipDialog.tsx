@@ -49,7 +49,7 @@ export function ModifyPartnershipDialog({
   const handleSubmitModification = async () => {
     const commission = parseFloat(newCommission);
     if (isNaN(commission) || commission < 5 || commission > 20) {
-      toast.error('Les frais de transaction doit être entre 5% et 20%');
+      toast.error('Les frais de transaction doivent être entre 5% et 20%');
       return;
     }
 
