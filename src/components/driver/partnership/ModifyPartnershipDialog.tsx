@@ -161,7 +161,7 @@ export function ModifyPartnershipDialog({
         await supabase.from('notifications').insert({
           user_id: proposerDriver.user_id,
           title: '✅ Modification acceptée',
-          message: `${myProfile?.full_name || 'Votre partenaire'} a accepté les nouvelles conditions: ${partnership.pending_new_frais de transaction}%`,
+          message: `${myProfile?.full_name || 'Votre partenaire'} a accepté les nouvelles conditions: ${partnership.pending_new_commission}%`,
           type: 'success',
           link: '/driver-dashboard?tab=sharing',
           is_read: false

@@ -205,7 +205,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     if (fleetPartnership) {
       const { data: fleetCommissions } = await supabase
-        .from('partnership_course_frais de transaction')
+        .from('partnership_course_commissions')
         .select('course_id')
         .in('course_id', courses?.map(c => c.id) || []);
       
@@ -275,7 +275,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     // Get commissions owed
     const { data: commissionsOwed } = await supabase
-      .from('partnership_course_frais de transaction')
+      .from('partnership_course_commissions')
       .select('commission_amount')
       .eq('payment_status', 'pending')
       .gte('created_at', dateRange.start.toISOString())
@@ -387,7 +387,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       if (fleet) {
         // Get courses count
         const { data: commissions } = await supabase
-          .from('partnership_course_frais de transaction')
+          .from('partnership_course_commissions')
           .select('id, course_amount')
           .eq('partnership_id', fp.id);
 

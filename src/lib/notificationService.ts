@@ -791,7 +791,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '🔄 Contre-proposition reçue',
-      message: `${senderName} propose ${newFrais de transaction} de rétribution`,
+      message: `${senderName} propose ${newCommission} de rétribution`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -801,7 +801,7 @@ export const notificationService = {
     return this.create({
       userId: fleetManagerUserId,
       title: '🔄 Contre-proposition du chauffeur',
-      message: `${driverName} propose ${newFrais de transaction} de rétribution`,
+      message: `${driverName} propose ${newCommission} de rétribution`,
       type: 'partnership',
       link: '/fleet-dashboard?tab=partnerships'
     });
