@@ -162,7 +162,7 @@ const CommentCaMarche = () => {
             SoloCab est une plateforme créée par un chauffeur VTC indépendant, pour offrir une alternative juste aux plateformes traditionnelles.
           </p>
           <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-            <strong className="text-foreground">Notre mission :</strong> garantir une rémunération juste pour les chauffeurs et un service de qualité pour les clients. Sans commission abusive, sans algorithme opaque.
+            <strong className="text-foreground">Notre mission :</strong> garantir une rémunération juste pour les chauffeurs et un service de qualité pour les clients. Sans frais de transaction abusifs, sans algorithme opaque.
           </p>
         </div>
       </section>

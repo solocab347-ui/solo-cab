@@ -88,7 +88,7 @@ const Tarifs = () => {
             <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Gratuit</span> pour les chauffeurs
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            SoloCab est gratuit. Zéro commission sur vos courses, 
+            SoloCab est gratuit. Zéro frais de transaction sur vos courses, 
             vous gardez 100% de vos revenus.
           </p>
         </div>
@@ -277,7 +277,7 @@ const Tarifs = () => {
                 💰 Économie annuelle : 15 000€
               </p>
               <p className="text-muted-foreground mt-2">
-                Par rapport aux plateformes classiques (25% commission) sur un CA de 5 000€/mois
+                Par rapport aux plateformes classiques (25% frais de transaction) sur un CA de 5 000€/mois
               </p>
             </Card>
           </div>
