@@ -15,7 +15,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *   (avec catch) dans useNativePushRegistration.
  */
 const config: CapacitorConfig = {
-  appId: 'app.lovable.bb7de2decc6d441aa3800f8d244f90e4',
+  appId: 'com.solocab.app',
   appName: 'SoloCab',
   webDir: 'dist',
   server: {

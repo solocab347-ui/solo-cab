@@ -137,7 +137,7 @@ Ajoutez ces clés dans `<dict>` :
 ## 🔔 Configuration FCM (Firebase Cloud Messaging) — Android
 
 1. Créez un projet sur https://console.firebase.google.com
-2. Ajoutez une **application Android** avec le package `app.lovable.bb7de2decc6d441aa3800f8d244f90e4`
+2. Ajoutez une **application Android** avec le package `com.solocab.app`
 3. Téléchargez `google-services.json` → placez-le dans `android/app/`
 4. Récupérez la **Server Key** dans Firebase → Settings → Cloud Messaging
 5. Dans Lovable, ajoutez le secret `FCM_SERVER_KEY` (Cloud → Secrets)
@@ -153,7 +153,7 @@ Ajoutez ces clés dans `<dict>` :
    - `APNS_KEY_P8` (contenu du .p8)
    - `APNS_KEY_ID`
    - `APNS_TEAM_ID`
-   - `APNS_BUNDLE_ID` = `app.lovable.bb7de2decc6d441aa3800f8d244f90e4`
+   - `APNS_BUNDLE_ID` = `com.solocab.app`
 
 ---
 
