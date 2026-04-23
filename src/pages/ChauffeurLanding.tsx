@@ -88,7 +88,7 @@ const ChauffeurLanding = () => {
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 sm:mb-10 px-1">
             <Card className="p-3 sm:p-5 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-400 mb-0.5 sm:mb-1">0%</div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Commission</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Frais</div>
             </Card>
             <Card className="p-3 sm:p-5 bg-gradient-to-br from-blue-500/20 to-blue-600/10 border-blue-500/30 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-400 mb-0.5 sm:mb-1">100%</div>

@@ -248,7 +248,7 @@ const TermsOfService = () => {
                 Ce système réduit considérablement les frais bancaires par rapport à un règlement par transaction.
               </p>
               <p>
-                SoloCab ne prélève <strong>aucune commission</strong> sur le montant des courses. 
+                SoloCab ne prélève <strong>aucuns frais de transaction</strong> sur le montant des courses. 
                 Les montants mentionnés ci-dessus sont exclusivement des frais de gestion et de transaction.
               </p>
             </section>
