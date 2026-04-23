@@ -193,7 +193,7 @@ export function PartnershipContractDialog({
       yPos += 5;
 
       addText('Article 5 - Durée et résiliation', 10, 'bold');
-      addText('Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis raisonnable et après régularisation de toutes les frais de transaction dues.', 10);
+      addText('Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis raisonnable et après régularisation de toutes les frais de transaction dus.', 10);
       yPos += 10;
 
       // Check if we need a new page

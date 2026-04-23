@@ -316,8 +316,8 @@ export const addPartie2 = (doc: jsPDF, startPage: number): number => {
     "Dans le transport, cette valeur correspond au service rendu au client : le trajet, l'expérience, la qualité de service, la disponibilité, la relation humaine.",
     "Cette valeur est produite concrètement par le chauffeur.",
     "La plateforme, elle, intervient comme intermédiaire technologique. Elle fournit l'interface, la visibilité, l'accès à la demande et l'organisation du flux.",
-    "En échange, elle prélève une frais de transaction sur chaque course.",
-    "Au départ, cette frais de transaction est souvent modérée. C'est une stratégie classique dans les modèles de plateforme :",
+    "En échange, elle prélève des frais de transaction sur chaque course.",
+    "Au départ, ces frais de transaction est souvent modérée. C'est une stratégie classique dans les modèles de plateforme :",
   ]);
 
   ctx.addBulletList([

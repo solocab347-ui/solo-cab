@@ -75,7 +75,7 @@ export const ClientHeroSection = () => {
 
   const benefits = [
     "Accès gratuit et sans engagement",
-    "Aucune frais de transaction sur vos trajets",
+    "Aucuns frais de transaction sur vos trajets",
     "Chauffeurs professionnels vérifiés",
     "Réservation simple et rapide",
   ];

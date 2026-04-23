@@ -198,7 +198,7 @@ export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
     id: 'partnership-benefits',
     type: 'education',
     title: 'Les partenariats entre chauffeurs',
-    message: '\'Vous êtes indisponible mais un client fidèle a besoin dune course ? Redirigez-le vers un partenaire de confiance et recevez une frais de transaction. Tout le monde gagne !',
+    message: '\'Vous êtes indisponible mais un client fidèle a besoin dune course ? Redirigez-le vers un partenaire de confiance et recevez des frais de transaction. Tout le monde gagne !',
     emoji: '🤝',
     actionLabel: 'Découvrir les partenariats',
     priority: 'medium'

@@ -56,7 +56,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
     {
       icon: <TrendingUp className="h-5 w-5 text-primary" />,
       title: 'Augmentez vos revenus',
-      description: 'Gagnez une frais de transaction de 15% à 20% sur chaque course que vous partagez avec un partenaire',
+      description: 'Gagnez des frais de transaction de 15% à 20% sur chaque course que vous partagez avec un partenaire',
     },
   ];
 

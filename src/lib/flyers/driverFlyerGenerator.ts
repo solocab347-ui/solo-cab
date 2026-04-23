@@ -60,7 +60,7 @@ export const generateDriverFlyer = async () => {
     {
       icon: "💰",
       title: "Zéro Frais de transaction sur vos Courses",
-      desc: "Gardez 100% de vos revenus. Aucune frais de transaction sur les courses que vous gérez directement avec vos clients."
+      desc: "Gardez 100% de vos revenus. Aucuns frais de transaction sur les courses que vous gérez directement avec vos clients."
     },
     {
       icon: "📱",

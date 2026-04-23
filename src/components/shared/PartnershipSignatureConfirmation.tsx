@@ -67,7 +67,7 @@ const DRIVER_OBLIGATIONS: Obligation[] = [
     id: 'payment_respect',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des paiements',
-    description: '\'Je mengage à verser les frais de transaction dues dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
+    description: '\'Je mengage à verser les frais de transaction dus dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
     critical: true,
   },
   {
@@ -109,7 +109,7 @@ const FLEET_DRIVER_OBLIGATIONS: Obligation[] = [
     id: 'payment_respect',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des paiements',
-    description: '\'Je mengage à verser les frais de transaction dues dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
+    description: '\'Je mengage à verser les frais de transaction dus dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
     critical: true,
   },
   {

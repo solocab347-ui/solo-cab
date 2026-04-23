@@ -243,7 +243,7 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
   doc.setFont(undefined, 'normal');
   doc.setTextColor(100, 100, 100);
   doc.text("Cette facture est émise dans le cadre d'un partenariat entre chauffeurs VTC.", pageWidth / 2, pageHeight - 16, { align: "center" });
-  doc.text("La frais de transaction est calculée automatiquement selon les termes du partenariat.", pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.text("Les frais de transaction est calculée automatiquement selon les termes du partenariat.", pageWidth / 2, pageHeight - 10, { align: "center" });
   doc.text("Document généré par SoloCab", pageWidth / 2, pageHeight - 4, { align: "center" });
 
   // Save

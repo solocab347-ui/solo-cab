@@ -58,7 +58,7 @@ export const guideChapters: GuideChapter[] = [
         heading: "Le modèle des plateformes : comprendre le système",
         paragraphs: [
           "Uber, Bolt, Heetch, Marcel... ces plateformes ne sont pas vos employeurs. Elles ne sont pas non plus vos partenaires. Elles sont des intermédiaires qui vendent votre temps et vos compétences à des clients qui ne savent même pas que vous existez en tant qu'individu.",
-          "Le modèle économique est simple : la plateforme fixe le prix, prend sa frais de transaction (entre 20 % et 30 %), et vous laisse assumer 100 % des charges. Essence, assurance, entretien du véhicule, cotisations sociales, URSSAF... tout est pour vous. Le bénéfice net, après déduction de toutes les charges, se situe souvent entre 5 € et 8 € de l'heure pour un chauffeur qui travaille exclusivement via ces plateformes.",
+          "Le modèle économique est simple : la plateforme fixe le prix, prend ses frais de transaction (entre 20 % et 30 %), et vous laisse assumer 100 % des charges. Essence, assurance, entretien du véhicule, cotisations sociales, URSSAF... tout est pour vous. Le bénéfice net, après déduction de toutes les charges, se situe souvent entre 5 € et 8 € de l'heure pour un chauffeur qui travaille exclusivement via ces plateformes.",
           "Ce n'est pas un accident. C'est le modèle. Les plateformes sont conçues pour maximiser le nombre de chauffeurs disponibles et minimiser le coût par course. Plus il y a de chauffeurs, plus les temps d'attente baissent pour les clients, et plus la plateforme est attractive. Votre rentabilité individuelle n'est tout simplement pas leur priorité.",
           "Comprenez bien : vous n'êtes pas un partenaire. Vous êtes une variable d'ajustement dans un algorithme d'optimisation."
         ],
@@ -80,7 +80,7 @@ export const guideChapters: GuideChapter[] = [
           "Faisons un calcul simple. Un chauffeur moyen sur plateforme réalise environ 15 à 20 courses par jour, pour un chiffre d'affaires brut de 200 à 280 € par journée de 10 à 12 heures.",
           "Sur ce chiffre d'affaires, retirez 25 % de frais de transaction plateforme. Retirez 20 à 30 € de carburant par jour. Retirez la part quotidienne de votre leasing ou crédit véhicule (15 à 25 €). Retirez l'assurance professionnelle quotidienne (5 à 8 €). Retirez les cotisations URSSAF (environ 22 % du net). Retirez l'usure du véhicule, les pneus, l'entretien.",
           "À la fin de la journée, le revenu réel net d'un chauffeur 100 % plateformes se situe entre 50 € et 80 € pour 10 à 12 heures de travail. Soit entre 5 € et 7,50 € de l'heure net.",
-          "Maintenant, comparons avec un chauffeur qui a constitué sa clientèle privée. Il fixe ses propres tarifs — généralement entre 2 € et 2,50 € du kilomètre. Il ne paie aucune frais de transaction. Sur une course de 30 km facturée 60 à 75 €, son bénéfice net est deux à trois fois supérieur à la même course via une plateforme.",
+          "Maintenant, comparons avec un chauffeur qui a constitué sa clientèle privée. Il fixe ses propres tarifs — généralement entre 2 € et 2,50 € du kilomètre. Il ne paie aucuns frais de transaction. Sur une course de 30 km facturée 60 à 75 €, son bénéfice net est deux à trois fois supérieur à la même course via une plateforme.",
           "Et surtout : il travaille moins d'heures pour gagner plus. Parce qu'il choisit ses courses, ses horaires et ses clients."
         ],
         highlight: "La question n'est pas « est-ce possible ? ». La question est « combien de temps allez-vous attendre avant de commencer ? »"
@@ -331,7 +331,7 @@ export const guideChapters: GuideChapter[] = [
           "Les hôtels 3 à 5 étoiles ont un besoin permanent de chauffeurs fiables pour leurs clients. Les concierges sont vos meilleurs alliés.",
           "La méthode : rendez-vous physiquement dans les hôtels de votre zone géographique. Demandez à parler au concierge ou au responsable de l'accueil. Présentez-vous brièvement et professionnellement. Laissez vos cartes de visite et une plaquette de vos services.",
           "Ce que vous proposez au concierge : un partenaire fiable, ponctuel, disponible, avec un véhicule haut de gamme. Proposez un numéro de téléphone dédié pour les réservations de l'hôtel. Répondez dans les 15 minutes maximum. Soyez disponible pour les urgences.",
-          "La frais de transaction concierge : c'est une pratique courante dans le secteur. Proposez 5 € à 10 € par course au concierge qui vous recommande. C'est un investissement — pas une dépense. Un bon concierge peut vous générer 5 à 15 courses par mois.",
+          "Les frais de transaction concierge : c'est une pratique courante dans le secteur. Proposez 5 € à 10 € par course au concierge qui vous recommande. C'est un investissement — pas une dépense. Un bon concierge peut vous générer 5 à 15 courses par mois.",
           "Ciblez les bons hôtels : commencez par les hôtels d'affaires (Marriott, Hilton, Accor, Best Western) qui ont un flux régulier de clients professionnels. Puis montez en gamme vers les boutique-hôtels et les palaces.",
           "Le timing : visitez les hôtels en dehors des heures d'affluence (entre 10h et 12h ou entre 14h et 16h). Les concierges sont plus disponibles et réceptifs."
         ],
@@ -616,7 +616,7 @@ export const guideChapters: GuideChapter[] = [
         paragraphs: [
           "Vous ne pouvez pas être partout. Mais votre réseau peut l'être.",
           "Quand un client régulier vous appelle et que vous n'êtes pas disponible, deux options : lui dire non (et il va sur une plateforme) ou lui recommander un chauffeur partenaire de confiance.",
-          "Constituez un réseau de 3 à 5 chauffeurs de confiance dans votre zone. Mêmes standards de qualité, même type de véhicule. Quand vous redirigez un client vers un partenaire, vous gardez la relation client et vous percevez une frais de transaction d'apport (5 à 10 € par course).",
+          "Constituez un réseau de 3 à 5 chauffeurs de confiance dans votre zone. Mêmes standards de qualité, même type de véhicule. Quand vous redirigez un client vers un partenaire, vous gardez la relation client et vous percevez des frais de transaction d'apport (5 à 10 € par course).",
           "L'avantage pour le client : il a toujours un chauffeur de qualité disponible, même quand vous ne l'êtes pas. L'avantage pour vous : vous ne perdez jamais un client et vous générez un revenu passif.",
           "Attention : ne recommandez que des chauffeurs dont vous connaissez le niveau de service. Votre réputation est en jeu à chaque recommandation."
         ]
