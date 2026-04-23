@@ -215,7 +215,7 @@ Lovable (Dev) → GitHub (Sync) → Build local → Stores
 ## 🛠 Configuration Capacitor déjà préparée
 
 Le fichier `capacitor.config.ts` est prêt avec :
-- **appId** : `app.lovable.bb7de2decc6d441aa3800f8d244f90e4`
+- **appId** : `com.solocab.app`
 - **appName** : `solo-cab-to-lovable`
 - **Hot reload** activé pour le développement
 

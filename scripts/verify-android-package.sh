@@ -43,8 +43,32 @@ if [ -z "$MAIN_ACTIVITY_FILE" ]; then
 fi
 
 MAIN_ACTIVITY_PACKAGE="$(grep -E '^package ' "$MAIN_ACTIVITY_FILE" | sed -E 's/package ([^;]+);?/\1/' | head -n 1)"
-APPLICATION_ID="$(grep -REho 'applicationId[[:space:]]+["'\'''][^"'\''']+["'\''']' "$ANDROID_DIR/app" 2>/dev/null | sed -E 's/applicationId[[:space:]]+["'\''']([^"'\''']+)["'\''']/\1/' | head -n 1 || true)"
-NAMESPACE="$(grep -REho 'namespace[[:space:]]*[= ]+["'\'''][^"'\''']+["'\''']' "$ANDROID_DIR/app" 2>/dev/null | sed -E 's/namespace[[:space:]]*[= ]+["'\''']([^"'\''']+)["'\''']/\1/' | head -n 1 || true)"
+APPLICATION_ID="$(python3 - <<PY
+from pathlib import Path
+import re
+for path in Path('$ANDROID_DIR/app').rglob('*'):
+    if path.suffix not in {'.gradle', '.kts'}:
+        continue
+    text = path.read_text(encoding='utf-8', errors='ignore')
+    m = re.search(r'applicationId\s+["\']([^"\']+)["\']', text)
+    if m:
+        print(m.group(1))
+        break
+PY
+)"
+NAMESPACE="$(python3 - <<PY
+from pathlib import Path
+import re
+for path in Path('$ANDROID_DIR/app').rglob('*'):
+    if path.suffix not in {'.gradle', '.kts'}:
+        continue
+    text = path.read_text(encoding='utf-8', errors='ignore')
+    m = re.search(r'namespace\s*[= ]+?["\']([^"\']+)["\']', text)
+    if m:
+        print(m.group(1))
+        break
+PY
+)"
 
 echo "Capacitor appId        : $APP_ID"
 echo "MainActivity package   : $MAIN_ACTIVITY_PACKAGE"
