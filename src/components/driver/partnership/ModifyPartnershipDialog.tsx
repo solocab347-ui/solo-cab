@@ -360,8 +360,8 @@ export function ModifyPartnershipDialog({
                     <SelectValue placeholder="Sélectionner un motif..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Frais de transaction trop élevée">Commission trop élevée</SelectItem>
-                    <SelectItem value="Frais de transaction trop basse">Commission trop basse</SelectItem>
+                    <SelectItem value="Commission trop élevée">Frais de transaction trop élevés</SelectItem>
+                    <SelectItem value="Commission trop basse">Frais de transaction trop bas</SelectItem>
                     <SelectItem value="Fréquence de paiement inadaptée">Fréquence de paiement inadaptée</SelectItem>
                     <SelectItem value="Besoin de discuter avant">Besoin de discuter avant</SelectItem>
                     <SelectItem value="other">Autre motif (personnalisé)</SelectItem>
@@ -425,10 +425,10 @@ export function ModifyPartnershipDialog({
         {!hasPendingModification && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="frais de transaction">Nouvelle commission (%)</Label>
+              <Label htmlFor="commission-input">Nouveaux frais de transaction (%)</Label>
               <div className="relative">
                 <Input
-                  id="frais de transaction"
+                  id="commission-input"
                   type="number"
                   min={5}
                   max={20}
