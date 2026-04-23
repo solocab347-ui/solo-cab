@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+import { generateUnifiedInvoicePDFBuffer } from "../_shared/invoicePdf.ts";
+
+const APP_BASE_URL = Deno.env.get("APP_BASE_URL") || "https://solocab.fr";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
