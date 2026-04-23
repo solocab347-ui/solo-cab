@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const FCM_SA_JSON = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON');
-    const APNS_BUNDLE = Deno.env.get('APNS_BUNDLE_ID') || 'app.lovable.bb7de2decc6d441aa3800f8d244f90e4';
+    const APNS_BUNDLE = Deno.env.get('APNS_BUNDLE_ID') || 'com.solocab.app';
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
     const payload: PushPayload = await req.json();
