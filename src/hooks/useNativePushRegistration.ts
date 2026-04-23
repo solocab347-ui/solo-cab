@@ -25,18 +25,21 @@ export function useNativePushRegistration() {
         const { LocalNotifications } = await import('@capacitor/local-notifications');
 
         // 1. Créer le canal Android haute priorité
+        // NOTE: pas de `sound` custom ici — un fichier ride_alert.wav absent dans
+        // res/raw provoque un crash MediaPlayer au boot. Le son par défaut est utilisé.
         if (Capacitor.getPlatform() === 'android') {
-          await LocalNotifications.createChannel({
-            id: 'solocab_rides',
-            name: 'Nouvelles courses',
-            description: 'Alertes de courses entrantes (réveil immédiat)',
-            importance: 5, // IMPORTANCE_HIGH
-            visibility: 1,
-            sound: 'ride_alert.wav',
-            vibration: true,
-            lights: true,
-            lightColor: '#FF6B00',
-          }).catch(() => {/* déjà créé */});
+          try {
+            await LocalNotifications.createChannel({
+              id: 'solocab_rides',
+              name: 'Nouvelles courses',
+              description: 'Alertes de courses entrantes (réveil immédiat)',
+              importance: 5, // IMPORTANCE_HIGH
+              visibility: 1,
+              vibration: true,
+              lights: true,
+              lightColor: '#FF6B00',
+            });
+          } catch {/* déjà créé ou plateforme non supportée */}
         }
 
         // 2. Vérifier permission, sinon demander
@@ -79,18 +82,21 @@ export function useNativePushRegistration() {
         const recvHandle = await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
           const data = notification.data || {};
           if (data.type === 'incoming_ride') {
-            await LocalNotifications.schedule({
-              notifications: [{
-                id: Date.now() % 100000,
-                title: notification.title || '🚖 Nouvelle course !',
-                body: notification.body || 'Course disponible',
-                channelId: 'solocab_rides',
-                sound: 'ride_alert.wav',
-                ongoing: false,
-                autoCancel: true,
-                extra: data,
-              }],
-            });
+            try {
+              await LocalNotifications.schedule({
+                notifications: [{
+                  id: Date.now() % 100000,
+                  title: notification.title || '🚖 Nouvelle course !',
+                  body: notification.body || 'Course disponible',
+                  channelId: 'solocab_rides',
+                  ongoing: false,
+                  autoCancel: true,
+                  extra: data,
+                }],
+              });
+            } catch (e) {
+              console.warn('[NativePush] schedule fail', e);
+            }
           }
         });
 
