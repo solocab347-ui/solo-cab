@@ -266,7 +266,7 @@ export function PartnershipContractDialog({
       doc.text('Document généré par SoloCab - Plateforme VTC', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
       // Download
-      const filename = `\scontrat-partenariat-${contract.partnerName.replace(/+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      const filename = `contrat-partenariat-${contract.partnerName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       doc.save(filename);
       toast.success('Contrat téléchargé avec succès');
     } catch (error) {
