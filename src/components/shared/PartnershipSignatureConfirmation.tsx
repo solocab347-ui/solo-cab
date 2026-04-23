@@ -349,7 +349,7 @@ export function PartnershipSignatureConfirmation({
           {/* Summary */}
           <div className="mb-4 p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Commission</span>
+              <span className="text-muted-foreground">Frais de transaction</span>
               <Badge variant="secondary" className="font-semibold">
                 {commissionPercentage ? `${commissionPercentage}%` : 'À définir'}
               </Badge>
