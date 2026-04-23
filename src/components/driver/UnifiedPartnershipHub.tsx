@@ -103,7 +103,7 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
       <PremiumGate 
         isPremium={false} 
         featureName="Partenariats & Partage de courses" 
-        featureDescription="Échangez des courses avec d'autres chauffeurs, gérez vos partenariats et gagnez des commissions."
+        featureDescription="Échangez des courses avec d'autres chauffeurs, gérez vos partenariats et gagnez des frais de transaction."
       />
     );
   }

@@ -60,7 +60,7 @@ const SOLOCAB_FEATURES = [
     actionLabel: "Commencer la visite",
     benefits: [
       "Clientèle 100% privée et fidèle",
-      "Aucune commission sur vos courses",
+      "Aucune frais de transaction sur vos courses",
       "Outils professionnels complets",
       "QR Code personnel pour l'acquisition"
     ],
@@ -173,7 +173,7 @@ const SOLOCAB_FEATURES = [
   {
     id: "partnerships",
     title: "Partenariats Chauffeurs",
-    description: "Débordé ? Partagez vos courses avec d'autres chauffeurs de confiance. Définissez votre commission et gérez les paiements.",
+    description: "Débordé ? Partagez vos courses avec d'autres chauffeurs de confiance. Définissez votre frais de transaction et gérez les paiements.",
     icon: <Handshake className="w-6 h-6" />,
     navigateTo: "sharing",
     actionType: "discover" as FeatureActionType,
@@ -181,7 +181,7 @@ const SOLOCAB_FEATURES = [
     benefits: [
       "Trouver des partenaires",
       "Partager des courses",
-      "Commission configurable",
+      "Frais de transaction configurable",
       "Suivi des paiements"
     ],
   },

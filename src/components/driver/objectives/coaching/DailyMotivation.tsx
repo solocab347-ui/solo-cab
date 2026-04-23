@@ -36,12 +36,12 @@ const QUICK_TIPS = [
   {
     icon: '💡',
     title: 'Astuce QR Code',
-    tip: 'Proposez votre QR Code après chaque course réussie. C\'est le moyen le plus efficace de fidéliser !'
+    tip: '\'Proposez votre QR Code après chaque course réussie. Cest le moyen le plus efficace de fidéliser !'
   },
   {
     icon: '🎯',
     title: 'Indépendance',
-    tip: 'Chaque client direct = 0% de commission. Construisez votre liberté course après course.'
+    tip: 'Chaque client direct = 0% de frais de transaction. Construisez votre liberté course après course.'
   },
   {
     icon: '⭐',
@@ -51,12 +51,12 @@ const QUICK_TIPS = [
   {
     icon: '🤝',
     title: 'Partenariats',
-    tip: 'Associez-vous à d\'autres chauffeurs pour ne jamais perdre un client indisponible.'
+    tip: '\'Associez-vous à dautres chauffeurs pour ne jamais perdre un client indisponible.'
   },
   {
     icon: '💰',
     title: 'Vos tarifs',
-    tip: 'Chez SoloCab, c\'est VOUS qui fixez vos prix. Valorisez votre service !'
+    tip: '\'Chez SoloCab, cest VOUS qui fixez vos prix. Valorisez votre service !'
   },
   {
     icon: '🔄',

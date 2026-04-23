@@ -81,7 +81,7 @@ export function StripeConnectSetup({ driverId, onStatusChange }: StripeConnectSe
       }
     } catch (error: any) {
       console.error('Error starting onboarding:', error);
-      toast.error(error.message || 'Erreur lors du démarrage de l\'inscription');
+      toast.error(error.message || '\'Erreur lors du démarrage de linscription');
     } finally {
       setOnboardingLoading(false);
     }

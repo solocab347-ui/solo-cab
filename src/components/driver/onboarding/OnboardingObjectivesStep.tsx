@@ -44,11 +44,11 @@ const VISION_STEPS = [
   { id: 'problem', title: 'Le problème' },
   { id: 'solution', title: 'La solution' },
   { id: 'motivation', title: 'Ton profil' },
-  { id: 'commitment', title: 'C\'est parti' },
+  { id: 'commitment', title: '\'Cest parti' },
 ];
 
 const PLATFORM_PROBLEMS = [
-  { icon: PiggyBank, text: 'Commissions de 18% à 45%, parfois plus !' },
+  { icon: PiggyBank, text: 'Frais de transaction de 18% à 45%, parfois plus !' },
   { icon: XCircle, text: 'Clients qui ne te rappellent jamais' },
   { icon: Clock, text: 'Dépendance totale aux algorithmes' },
   { icon: Ban, text: 'Aucune visibilité sur ton avenir' },
@@ -57,7 +57,7 @@ const PLATFORM_PROBLEMS = [
 const SOLOCAB_SOLUTIONS = [
   { 
     icon: Crown, 
-    title: '0% de commission', 
+    title: '0% de frais de transaction', 
     desc: 'Tu gardes 100% de ce que tu gagnes'
   },
   { 
@@ -95,8 +95,8 @@ const DRIVER_PROFILES = [
   { 
     id: 'explorer', 
     emoji: '🔍', 
-    title: 'L\'Explorateur', 
-    desc: 'Je découvre et j\'apprends',
+    title: '\'LExplorateur', 
+    desc: '\'Je découvre et japprends',
     motivation: 'low'
   },
 ];

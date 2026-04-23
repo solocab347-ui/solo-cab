@@ -316,8 +316,8 @@ export const addPartie2 = (doc: jsPDF, startPage: number): number => {
     "Dans le transport, cette valeur correspond au service rendu au client : le trajet, l'expérience, la qualité de service, la disponibilité, la relation humaine.",
     "Cette valeur est produite concrètement par le chauffeur.",
     "La plateforme, elle, intervient comme intermédiaire technologique. Elle fournit l'interface, la visibilité, l'accès à la demande et l'organisation du flux.",
-    "En échange, elle prélève une commission sur chaque course.",
-    "Au départ, cette commission est souvent modérée. C'est une stratégie classique dans les modèles de plateforme :",
+    "En échange, elle prélève une frais de transaction sur chaque course.",
+    "Au départ, cette frais de transaction est souvent modérée. C'est une stratégie classique dans les modèles de plateforme :",
   ]);
 
   ctx.addBulletList([
@@ -336,7 +336,7 @@ export const addPartie2 = (doc: jsPDF, startPage: number): number => {
   ctx.addParagraphs([
     "Une fois cette masse critique atteinte, la dynamique évolue.",
     "La priorité d'une entreprise en phase de maturité devient naturellement l'optimisation de sa rentabilité.",
-    "Les commissions peuvent évoluer. Les conditions peuvent changer. Les règles peuvent être ajustées.",
+    "Les frais de transaction peuvent évoluer. Les conditions peuvent changer. Les règles peuvent être ajustées.",
     "Ces évolutions ne sont pas nécessairement perçues immédiatement comme problématiques. Elles s'inscrivent dans la logique économique d'une entreprise qui cherche à améliorer ses performances financières.",
     "Mais du point de vue du professionnel, la perception peut être différente.",
     "Car la valeur produite reste la même — le service rendu au client — tandis que la part captée par l'intermédiaire peut augmenter.",
@@ -532,7 +532,7 @@ export const addPartie6 = (doc: jsPDF, startPage: number): number => {
   ]);
 
   ctx.addBulletList([
-    "L'augmentation des commissions.",
+    "L'augmentation des frais de transaction.",
     "L'évolution des tarifs.",
     "La hausse des coûts opérationnels.",
     "La pression concurrentielle.",
@@ -591,7 +591,7 @@ export const addPartie7 = (doc: jsPDF, startPage: number): number => {
     "Dans les premières années, l'objectif principal est de conquérir le marché. Pour y parvenir, les plateformes mettent en place des conditions attractives.",
   ]);
   ctx.addBulletList([
-    "Les commissions sont souvent modérées.",
+    "Les frais de transaction sont souvent modérées.",
     "Les incitations financières sont nombreuses.",
     "Les conditions d'entrée sont facilitées.",
   ]);
@@ -1250,7 +1250,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setFontSize(10);
   doc.setTextColor(...c.grayText);
   doc.text("Plateforme 100% dédiée aux chauffeurs VTC indépendants", w / 2, fy + 18, { align: "center" });
-  doc.text("Sans commission sur vos courses directes", w / 2, fy + 26, { align: "center" });
+  doc.text("Sans frais de transaction sur vos courses directes", w / 2, fy + 26, { align: "center" });
 
   // Add a second clickable text link below for redundancy — use textWithLink
   doc.setFont("helvetica", "bold");

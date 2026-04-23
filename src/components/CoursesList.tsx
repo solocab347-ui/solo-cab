@@ -23,7 +23,7 @@ import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
 import CourseReportDialog from "@/components/CourseReportDialog";
 import { ShareCourseWithPartnerDialog } from "@/components/driver/sharing/ShareCourseWithPartnerDialog";
-import { CourseCompletionCommissionDialog } from "@/components/driver/courses/CourseCompletionCommissionDialog";
+import { CourseCompletionCommissionDialog } from "@/components/driver/courses/CourseCompletionFrais de transactionDialog";
 import { CourseShareStatusIndicator } from "@/components/driver/sharing/CourseShareStatusIndicator";
 import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
@@ -1146,7 +1146,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           ? { 
               ...c, 
               status: "cancelled" as const,
-              notes: `Motif de refus: ${finalReason}\n\n${c.notes || ''}`
+              notes: `\n\nMotif de refus: ${finalReason}${c.notes || ''}`
             } 
           : c
       ));
@@ -1158,7 +1158,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           cancelled_by: "driver",
           cancelled_at: new Date().toISOString(),
           cancellation_reason: finalReason,
-          notes: `Motif de refus: ${finalReason}\n\n${courses.find(c => c.id === courseToReject)?.notes || ''}`
+          notes: `\n\nMotif de refus: ${finalReason}${courses.find(c => c.id === courseToReject)?.notes || ''}`
         })
         .eq("id", courseToReject);
 
@@ -1210,7 +1210,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           ? { 
               ...c, 
               status: "cancelled" as const,
-              notes: `Annulé par le chauffeur - ${finalReason}\n\n${c.notes || ''}`
+              notes: `\n\nAnnulé par le chauffeur - ${finalReason}${c.notes || ''}`
             } 
           : c
       ));
@@ -1223,7 +1223,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           cancelled_by: "driver",
           cancelled_at: new Date().toISOString(),
           cancellation_reason: finalReason,
-          notes: `Annulé par le chauffeur - ${finalReason}\n\n${course?.notes || ''}`
+          notes: `\n\nAnnulé par le chauffeur - ${finalReason}${course?.notes || ''}`
         })
         .eq("id", courseToCancelPending);
 
@@ -1275,10 +1275,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       ? (course.guest_name || "Client invité")
       : course.clients.profiles.full_name;
 
-    const message = `Devis ${devis.quote_number} - ${shareClientName}\n` +
-                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
-                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
-                   `Montant: ${devis.amount.toFixed(2)}€\n` +
+    const message = `\nDevis ${devis.quote_number} - ${shareClientName}` +
+                   `\nTrajet: ${course.pickup_address} → ${course.destination_address}` +
+                   `\nDate: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}` +
+                   `\nMontant: ${devis.amount.toFixed(2)}€` +
                    `Valable jusqu'au: ${format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}`;
 
     const encodedMessage = encodeURIComponent(message);
@@ -2005,10 +2005,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       ? (course.guest_name || "Client invité")
       : course.clients.profiles.full_name;
 
-    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number} - ${shareClientName}\n` +
-                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
-                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
-                   `Montant: ${facture.amount.toFixed(2)}€\n` +
+    const message = `\nFacture ${facture.invoice_number_generated || facture.invoice_number} - ${shareClientName}` +
+                   `\nTrajet: ${course.pickup_address} → ${course.destination_address}` +
+                   `\nDate: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}` +
+                   `\nMontant: ${facture.amount.toFixed(2)}€` +
                    `Statut: ${facture.payment_status === 'paid' ? 'Payée' : 'En attente'}`;
 
     const encodedMessage = encodeURIComponent(message);

@@ -45,7 +45,7 @@ export function StripeConnectRequiredAlert({ context, onComplete }: StripeConnec
         return {
           icon: Share2,
           title: "Stripe Connect requis pour le partage",
-          description: "Pour partager des courses avec vos partenaires et recevoir des commissions automatiques, vous devez connecter votre compte Stripe.",
+          description: "Pour partager des courses avec vos partenaires et recevoir des frais de transaction automatiques, vous devez connecter votre compte Stripe.",
           buttonText: "Configurer Stripe Connect",
         };
       case "online_payment":

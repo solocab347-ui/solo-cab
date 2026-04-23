@@ -136,7 +136,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
       return true;
     } catch (error) {
       console.error('Error forcing course:', error);
-      toast.error('Erreur lors de l\'acceptation forcée');
+      toast.error('\'Erreur lors de lacceptation forcée');
       return false;
     }
   };
@@ -147,7 +147,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
       // First, get the partnership
       const { data: partnerships } = await supabase
         .from('driver_partnerships')
-        .select('id, commission_percentage')
+        .select('id, frais de transaction_percentage')
         .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
         .or(`driver_a_id.eq.${partnerId},driver_b_id.eq.${partnerId}`)
         .eq('status', 'accepted')

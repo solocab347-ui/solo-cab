@@ -272,7 +272,7 @@ export function ShareCourseWithPartnerDialog({
         toast.success(`Course envoyée à ${stripeReadyFavorites.length} favori(s) !`);
       } else if (shareMode === 'specific' && selectedFavorite) {
         if (!selectedFavorite.has_stripe_connect) {
-          toast.error('Ce chauffeur n\'a pas Stripe Connect actif');
+          toast.error('\'Ce chauffeur na pas Stripe Connect actif');
           setSending(false);
           return;
         }

@@ -53,7 +53,7 @@ const BENEFITS = [
   },
   {
     icon: BadgePercent,
-    title: 'Commissions automatiques',
+    title: 'Frais de transaction automatiques',
     description: 'Tu touches 15% (courses < 30€) ou 20% (≥ 30€) sur chaque course partagée et acceptée par un partenaire.',
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10',
@@ -61,7 +61,7 @@ const BENEFITS = [
   {
     icon: Shield,
     title: 'Réseau sécurisé Stripe',
-    description: 'Tous les paiements et commissions passent par Stripe Connect. Aucun argent perdu, tout est traçable.',
+    description: 'Tous les paiements et frais de transaction passent par Stripe Connect. Aucun argent perdu, tout est traçable.',
     color: 'text-purple-500',
     bg: 'bg-purple-500/10',
   },

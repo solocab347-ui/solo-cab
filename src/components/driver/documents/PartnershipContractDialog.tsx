@@ -172,28 +172,28 @@ export function PartnershipContractDialog({
       addText('Le présent contrat établit les conditions de partenariat entre les deux parties pour le partage de courses VTC et la collaboration professionnelle dans le cadre de leur activité de transport.', 10);
       yPos += 5;
 
-      addText('Article 2 - Commission', 10, 'bold');
+      addText('Article 2 - Frais de transaction', 10, 'bold');
       if (contract.commission_percentage) {
-        addText(`Le taux de commission convenu entre les parties est de ${contract.commission_percentage}% du montant total de chaque course partagée.`, 10);
+        addText(`Le taux de frais de transaction convenu entre les parties est de ${contract.frais de transaction_percentage}% du montant total de chaque course partagée.`, 10);
       } else if (contract.commission_fixed_amount) {
-        addText(`Le montant de commission fixe convenu est de ${contract.commission_fixed_amount}€ par course partagée.`, 10);
+        addText(`Le montant de frais de transaction fixe convenu est de ${contract.frais de transaction_fixed_amount}€ par course partagée.`, 10);
       }
       yPos += 5;
 
       addText('Article 3 - Modalités de paiement', 10, 'bold');
-      addText(`Les règlements des commissions seront effectués selon la fréquence suivante: ${getPaymentScheduleLabel(contract.payment_schedule || contract.payment_frequency)}.`, 10);
+      addText(`Les règlements des frais de transaction seront effectués selon la fréquence suivante: ${getPaymentScheduleLabel(contract.payment_schedule || contract.payment_frequency)}.`, 10);
       yPos += 5;
 
       addText('Article 4 - Obligations des parties', 10, 'bold');
-      addText('Chaque partie s\'engage à:', 10);
+      addText('\'Chaque partie sengage à:', 10);
       addText('• Respecter les termes du présent contrat', 10);
       addText('• Fournir un service de qualité aux clients', 10);
-      addText('• Effectuer les paiements des commissions dans les délais convenus', 10);
+      addText('• Effectuer les paiements des frais de transaction dans les délais convenus', 10);
       addText('• Respecter la confidentialité des informations commerciales', 10);
       yPos += 5;
 
       addText('Article 5 - Durée et résiliation', 10, 'bold');
-      addText('Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis raisonnable et après régularisation de toutes les commissions dues.', 10);
+      addText('Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis raisonnable et après régularisation de toutes les frais de transaction dues.', 10);
       yPos += 10;
 
       // Check if we need a new page
@@ -210,7 +210,7 @@ export function PartnershipContractDialog({
       yPos += 3;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      const legalText = 'En cas de non-respect des termes du présent contrat par l\'une des parties, ce document pourra être utilisé comme preuve pour faire valoir les droits de la partie lésée auprès des juridictions compétentes. La signature électronique de ce contrat via la plateforme SoloCab a valeur de signature manuscrite conformément à la réglementation en vigueur.';
+      const legalText = '\'En cas de non-respect des termes du présent contrat par lune des parties, ce document pourra être utilisé comme preuve pour faire valoir les droits de la partie lésée auprès des juridictions compétentes. La signature électronique de ce contrat via la plateforme SoloCab a valeur de signature manuscrite conformément à la réglementation en vigueur.';
       const legalLines = doc.splitTextToSize(legalText, contentWidth);
       doc.text(legalLines, margin, yPos);
       yPos += legalLines.length * 4 + 10;
@@ -266,7 +266,7 @@ export function PartnershipContractDialog({
       doc.text('Document généré par SoloCab - Plateforme VTC', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
       // Download
-      const filename = `contrat-partenariat-${contract.partnerName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      const filename = `\scontrat-partenariat-${contract.partnerName.replace(/+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       doc.save(filename);
       toast.success('Contrat téléchargé avec succès');
     } catch (error) {
@@ -326,9 +326,9 @@ export function PartnershipContractDialog({
                   </div>
                   <span className="font-medium">
                     {contract.commission_percentage 
-                      ? `${contract.commission_percentage}%`
+                      ? `${contract.frais de transaction_percentage}%`
                       : contract.commission_fixed_amount 
-                        ? `${contract.commission_fixed_amount}€`
+                        ? `${contract.frais de transaction_fixed_amount}€`
                         : 'Non définie'
                     }
                   </span>

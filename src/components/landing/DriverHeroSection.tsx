@@ -49,8 +49,8 @@ export const DriverHeroSection = () => {
     },
     {
       icon: DollarSign,
-      title: t('landing.driver.zeroCommission'),
-      description: t('landing.driver.zeroCommissionDesc'),
+      title: t('landing.driver.zeroFrais de transaction'),
+      description: t('landing.driver.zeroFrais de transactionDesc'),
       gradient: "from-green-500 to-emerald-600",
     },
     {
@@ -81,7 +81,7 @@ export const DriverHeroSection = () => {
 
   const benefits = [
     "Inscription gratuite en 5 minutes",
-    "0% de commission sur vos courses",
+    "0% de frais de transaction sur vos courses",
     "Coach IA personnalisé inclus",
     "Suivi d'objectifs intelligent",
   ];

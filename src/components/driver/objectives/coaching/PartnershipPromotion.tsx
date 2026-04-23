@@ -24,7 +24,7 @@ const BENEFITS = [
   {
     icon: TrendingUp,
     title: "Augmentez vos revenus",
-    description: "Recevez des courses de vos partenaires et des commissions sur les partages"
+    description: "Recevez des courses de vos partenaires et des frais de transaction sur les partages"
   },
   {
     icon: Shield,
@@ -34,7 +34,7 @@ const BENEFITS = [
   {
     icon: Gift,
     title: "Avantages mutuels",
-    description: "Commission réduite sur la première course d'un nouveau client partagé"
+    description: "Frais de transaction réduite sur la première course d'un nouveau client partagé"
   }
 ];
 

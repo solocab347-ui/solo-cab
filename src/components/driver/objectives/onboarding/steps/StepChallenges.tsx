@@ -34,13 +34,13 @@ const CHALLENGES = [
   {
     id: 'platform_dependency',
     title: 'Dépendance aux plateformes',
-    description: 'Trop de commissions, peu de liberté',
+    description: 'Trop de frais de transaction, peu de liberté',
     icon: Smartphone
   },
   {
     id: 'revenue_stability',
     title: 'Revenus irréguliers',
-    description: 'CA variable d\'un mois à l\'autre',
+    description: '\'\'CA variable dun mois à lautre',
     icon: TrendingUp
   },
   {
@@ -64,7 +64,7 @@ const CHALLENGES = [
   {
     id: 'motivation',
     title: 'Rester motivé',
-    description: 'Garder l\'énergie au quotidien',
+    description: '\'Garder lénergie au quotidien',
     icon: Brain
   }
 ];

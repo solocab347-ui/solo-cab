@@ -72,7 +72,7 @@ const CommentCaMarche = () => {
     {
       icon: Scale,
       title: "Rémunération juste",
-      description: "Les chauffeurs fixent leurs propres tarifs et reçoivent l'intégralité du montant de la course. Pas de commission abusive, pas d'algorithme opaque.",
+      description: "Les chauffeurs fixent leurs propres tarifs et reçoivent l'intégralité du montant de la course. Pas de frais de transaction abusive, pas d'algorithme opaque.",
     },
     {
       icon: Shield,
@@ -108,7 +108,7 @@ const CommentCaMarche = () => {
   ];
 
   const forDrivers = [
-    "Zéro commission sur les courses",
+    "Zéro frais de transaction sur les courses",
     "Fixez vos propres tarifs",
     "Encaissement direct sur votre compte",
     "Développez votre propre clientèle",

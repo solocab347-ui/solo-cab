@@ -74,7 +74,7 @@ const Index = () => {
   ];
 
   const driverArguments = [
-    { icon: DollarSign, text: "0 commission sur les courses" },
+    { icon: DollarSign, text: "0 frais de transaction sur les courses" },
     { icon: Users, text: "Développez votre clientèle privée" },
     { icon: Wallet, text: "Encaissement direct" },
     { icon: Zap, text: "Plateforme gratuite" },
@@ -88,7 +88,7 @@ const Index = () => {
     "Respecter les chauffeurs",
     "Garantir un service de qualité",
     "Créer une relation directe",
-    "Supprimer les commissions abusives",
+    "Supprimer les frais de transaction abusives",
     "Construire une plateforme équitable",
   ];
 

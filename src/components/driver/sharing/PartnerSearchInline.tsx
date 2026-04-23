@@ -242,7 +242,7 @@ export function PartnerSearchInline({ driverId }: Props) {
       if (error.code === '23505') {
         toast.error('Un partenariat existe déjà avec ce chauffeur');
       } else {
-        toast.error('Erreur lors de l\'envoi de la demande');
+        toast.error('\'Erreur lors de lenvoi de la demande');
       }
     } finally {
       setSubmitting(false);

@@ -24,7 +24,7 @@ const DECLINE_REASONS = [
   { id: 'unavailable', label: 'Je ne suis pas disponible à cette date/heure' },
   { id: 'too_far', label: 'La destination est trop éloignée' },
   { id: 'price_too_low', label: 'Le prix proposé est trop bas' },
-  { id: 'commission_too_high', label: 'La commission est trop élevée' },
+  { id: 'frais de transaction_too_high', label: 'La frais de transaction est trop élevée' },
   { id: 'client_issue', label: 'Problème avec le client' },
   { id: 'vehicle_issue', label: 'Problème avec mon véhicule' },
   { id: 'other', label: 'Autre raison' },

@@ -69,7 +69,7 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
   doc.setFontSize(10);
   doc.setFont(undefined, 'bold');
   const typeLabel = isSender 
-    ? "COMMISSION À RECEVOIR - Vous êtes l'expéditeur de la course"
+    ? "FRAIS DE TRANSACTION À RECEVOIR - Vous êtes l'expéditeur de la course"
     : "GAIN NET - Vous avez réalisé cette course";
   doc.text(typeLabel, pageWidth / 2, yPos + 8, { align: "center" });
   
@@ -159,8 +159,8 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
   yPos += 7;
 
   // Commission
-  doc.text(`Commission partenariat (${invoice.commission_percentage}%)`, 25, yPos + 5);
-  doc.text(`${invoice.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+  doc.text(`Frais de transaction partenariat (${invoice.frais de transaction_percentage}%)`, 25, yPos + 5);
+  doc.text(`${invoice.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
   yPos += 7;
 
   if (isSender) {
@@ -168,12 +168,12 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
     doc.setFillColor(245, 245, 245);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.text("Gain net du partenaire (course réalisée)", 25, yPos + 5);
-    doc.text(`${(invoice.course_amount - invoice.commission_amount).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`${(invoice.course_amount - invoice.frais de transaction_amount).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
     // TVA
     if (invoice.tva_rate > 0) {
-      doc.text(`TVA sur commission (${invoice.tva_rate}%)`, 25, yPos + 5);
+      doc.text(`TVA sur frais de transaction (${invoice.tva_rate}%)`, 25, yPos + 5);
       doc.text(`${invoice.tva_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       yPos += 9;
     }
@@ -184,15 +184,15 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(11);
-    doc.text("COMMISSION À RECEVOIR", 25, yPos + 7);
+    doc.text("FRAIS DE TRANSACTION À RECEVOIR", 25, yPos + 7);
     doc.text(`${invoice.invoice_amount.toFixed(2)} €`, 175, yPos + 7, { align: 'right' });
   } else {
     // Receiver invoice: net amount they keep
     doc.setFillColor(245, 245, 245);
     doc.rect(20, yPos, 170, 7, 'F');
-    doc.text("Commission due à l'expéditeur", 25, yPos + 5);
+    doc.text("Frais de transaction due à l'expéditeur", 25, yPos + 5);
     doc.setTextColor(200, 0, 0);
-    doc.text(`-${invoice.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`-${invoice.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     doc.setTextColor(0, 0, 0);
     yPos += 9;
 
@@ -243,10 +243,10 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
   doc.setFont(undefined, 'normal');
   doc.setTextColor(100, 100, 100);
   doc.text("Cette facture est émise dans le cadre d'un partenariat entre chauffeurs VTC.", pageWidth / 2, pageHeight - 16, { align: "center" });
-  doc.text("La commission est calculée automatiquement selon les termes du partenariat.", pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.text("La frais de transaction est calculée automatiquement selon les termes du partenariat.", pageWidth / 2, pageHeight - 10, { align: "center" });
   doc.text("Document généré par SoloCab", pageWidth / 2, pageHeight - 4, { align: "center" });
 
   // Save
-  const typePrefix = isSender ? 'commission' : 'gain-net';
+  const typePrefix = isSender ? 'frais de transaction' : 'gain-net';
   doc.save(`${invoice.invoice_number}-${typePrefix}.pdf`);
 }

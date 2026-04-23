@@ -196,7 +196,7 @@ export function CarouselSettingsFlow({
             <div className="flex-1 flex flex-col items-center justify-center space-y-8">
               <CoachSpeech
                 title="Ton objectif avec SoloCab ?"
-                message="Ici, pas de commission prélevée sur tes courses. TU fixes tes prix, TU gères tes clients."
+                message="Ici, pas de frais de transaction prélevée sur tes courses. TU fixes tes prix, TU gères tes clients."
                 highlight="C'est ça l'indépendance."
               />
               

@@ -286,7 +286,7 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
     },
     {
       title: "Dialogue avec les Organisations Syndicales",
-      text: "SoloCab s'engage à maintenir un dialogue permanent avec les organisations syndicales représentant les travailleurs indépendants du VTC. En concertation avec eux, nous garantissons des prix de course minimum dignes et des commissions de partage plafonnées, pour ne jamais reproduire les dérives des grandes plateformes.",
+      text: "SoloCab s'engage à maintenir un dialogue permanent avec les organisations syndicales représentant les travailleurs indépendants du VTC. En concertation avec eux, nous garantissons des prix de course minimum dignes et des frais de transaction de partage plafonnées, pour ne jamais reproduire les dérives des grandes plateformes.",
     },
     {
       title: "Protection des Indépendants",

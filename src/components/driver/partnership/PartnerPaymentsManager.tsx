@@ -697,7 +697,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
       loadInvoices();
     } catch (error) {
       console.error('Error sending reminder:', error);
-      toast.error('Erreur lors de l\'envoi du rappel');
+      toast.error('\'Erreur lors de lenvoi du rappel');
     } finally {
       setSubmitting(false);
     }

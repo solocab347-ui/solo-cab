@@ -545,7 +545,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
         toast.success(result.message || 'Course acceptée !');
         loadSharedCourses();
       } else {
-        toast.error(result?.error || result?.message || 'Cette course n\'est plus disponible');
+        toast.error(result?.error || result?.message || '\'Cette course nest plus disponible');
         loadSharedCourses();
       }
     } catch (error: any) {
@@ -611,7 +611,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
         toast.success(result.message);
         loadPooledCourses();
       } else {
-        toast.error(result?.message || 'Cette course n\'est plus disponible');
+        toast.error(result?.message || '\'Cette course nest plus disponible');
         loadPooledCourses();
       }
     } catch (error: any) {

@@ -46,17 +46,17 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
     {
       icon: <CreditCard className="h-5 w-5 text-primary" />,
       title: 'Répartition automatique des gains',
-      description: 'Les commissions sont automatiquement réparties via Stripe Connect entre vous et vos partenaires',
+      description: 'Les frais de transaction sont automatiquement réparties via Stripe Connect entre vous et vos partenaires',
     },
     {
       icon: <Shield className="h-5 w-5 text-primary" />,
       title: 'Transparence totale',
-      description: 'Visualisez les montants, commissions et reversements pour chaque course partagée',
+      description: 'Visualisez les montants, frais de transaction et reversements pour chaque course partagée',
     },
     {
       icon: <TrendingUp className="h-5 w-5 text-primary" />,
       title: 'Augmentez vos revenus',
-      description: 'Gagnez une commission de 15% à 20% sur chaque course que vous partagez avec un partenaire',
+      description: 'Gagnez une frais de transaction de 15% à 20% sur chaque course que vous partagez avec un partenaire',
     },
   ];
 

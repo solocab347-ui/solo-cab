@@ -211,7 +211,7 @@ export function CourseCompletionCommissionDialog({
 
         const { data: fleetDriver } = await supabase
           .from('fleet_manager_drivers')
-          .select('commission_percentage')
+          .select('frais de transaction_percentage')
           .eq('fleet_manager_id', driver.fleet_manager_id)
           .eq('driver_id', driverId)
           .eq('status', 'active')
@@ -235,7 +235,7 @@ export function CourseCompletionCommissionDialog({
 
       setCommissionInfo(null);
     } catch (error) {
-      console.error('Error loading commission info:', error);
+      console.error('Error loading frais de transaction info:', error);
       setCommissionInfo(null);
     } finally {
       setLoading(false);
@@ -494,9 +494,9 @@ export function CourseCompletionCommissionDialog({
             {stripeInfo.isStripePayment 
               ? 'Clôturer et encaisser automatiquement' 
               : stripeInfo.paymentMethod === 'card' 
-                ? 'J\'ai encaissé avec mon TPE' 
+                ? '\'Jai encaissé avec mon TPE' 
                 : stripeInfo.paymentMethod === 'cash' 
-                  ? 'J\'ai encaissé en espèces' 
+                  ? '\'Jai encaissé en espèces' 
                   : 'Confirmer la clôture'}
           </Button>
         </DialogFooter>

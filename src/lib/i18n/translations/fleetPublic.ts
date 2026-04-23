@@ -82,7 +82,7 @@ export const fleetPublicTranslations: Translations = {
     zh: '合作条款',
     ar: 'شروط الشراكة'
   },
-  'fleetPublic.commission': {
+  'fleetPublic.frais de transaction': {
     fr: 'Rétribution',
     en: 'Earnings',
     es: 'Retribución',
@@ -267,7 +267,7 @@ export const fleetPublicTranslations: Translations = {
     ar: 'حجز ضيف'
   },
   'fleetPublic.guestInfoNote': {
-    fr: 'Vos informations seront enregistrées. Vous pourrez créer un compte ultérieurement pour accéder à l\'historique de vos réservations.',
+    fr: '\'Vos informations seront enregistrées. Vous pourrez créer un compte ultérieurement pour accéder à lhistorique de vos réservations.',
     en: 'Your information will be saved. You can create an account later to access your booking history.',
     es: 'Su información será guardada. Podrá crear una cuenta más tarde para acceder a su historial de reservas.',
     it: 'Le tue informazioni saranno salvate. Potrai creare un account in seguito per accedere allo storico delle prenotazioni.',

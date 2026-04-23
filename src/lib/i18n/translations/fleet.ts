@@ -90,11 +90,11 @@ export const fleetTranslations: Translations = {
     zh: '未分配',
     ar: 'غير معين',
   },
-  'fleet.commissions': {
-    fr: 'Commissions',
-    en: 'Commissions',
+  'fleet.frais de transaction': {
+    fr: 'Frais de transaction',
+    en: 'Frais de transaction',
     es: 'Comisiones',
-    it: 'Commissioni',
+    it: 'Frais de transactioni',
     zh: '佣金',
     ar: 'العمولات',
   },
