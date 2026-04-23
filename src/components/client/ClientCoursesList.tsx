@@ -405,99 +405,37 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
     toast.success("Devis téléchargé");
   };
 
-  const handleDownloadFacture = (facture: any, course: any) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    
-    // En-tête vert pour facture payée, gris pour impayée
-    const isPaid = facture.payment_status === 'paid';
-    if (isPaid) {
-      doc.setFillColor(34, 197, 94); // green
-    } else {
-      doc.setFillColor(148, 163, 184); // grey
+  const handleDownloadFacture = async (facture: any, course: any) => {
+    const { generateUnifiedInvoicePDF } = await import(
+      "@/lib/invoice/generateUnifiedInvoicePDF"
+    );
+
+    try {
+      await generateUnifiedInvoicePDF(
+        {
+          facture,
+          course: {
+            pickup_address: course.pickup_address,
+            destination_address: course.destination_address,
+            scheduled_date: course.scheduled_date,
+            passengers_count: course.passengers_count,
+            distance_km: course.distance_km,
+            duration_minutes: course.duration_minutes,
+            guest_name: course.guest_name,
+            guest_email: course.guest_email,
+            guest_phone: course.guest_phone,
+          },
+          driver: course.drivers || {},
+          client: course.clients,
+          variant: "client",
+        },
+        { download: true }
+      );
+      toast.success("Facture téléchargée");
+    } catch (e) {
+      console.error("Erreur génération facture", e);
+      toast.error("Erreur lors de la génération de la facture");
     }
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
-    doc.setFontSize(28);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text("FACTURE", pageWidth / 2, 18, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Numéro: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 26, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-    
-    let yPos = 50;
-    
-    // Info chauffeur
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 20, yPos);
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 5;
-    
-    const rawDriverName2 = course.drivers?.profiles?.full_name || "N/A";
-    const driverName2Parts = rawDriverName2.trim().split(/\s+/);
-    const driverName = driverName2Parts.length > 1 ? `${driverName2Parts[0]} ${driverName2Parts[driverName2Parts.length - 1][0]?.toUpperCase()}.` : rawDriverName2;
-    doc.text(driverName, 20, yPos);
-    yPos += 4;
-    
-    if (course.drivers?.company_name) {
-      doc.text(course.drivers.company_name, 20, yPos);
-      yPos += 4;
-    }
-    
-    // Détails course
-    yPos = 95;
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.5);
-    doc.rect(15, yPos, pageWidth - 30, 40);
-    
-    yPos += 7;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("DÉTAILS DE LA PRESTATION", 20, yPos);
-    
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 6;
-    
-    doc.text("Départ:", 20, yPos);
-    doc.text(course.pickup_address, 45, yPos);
-    yPos += 4;
-    
-    doc.text("Arrivée:", 20, yPos);
-    doc.text(course.destination_address, 45, yPos);
-    yPos += 4;
-    
-    doc.text("Date:", 20, yPos);
-    doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
-    
-    // Montant
-    yPos = 155;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("MONTANT", 20, yPos);
-    
-    yPos += 8;
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    if (isPaid) {
-      doc.setFillColor(34, 197, 94);
-    } else {
-      doc.setFillColor(148, 163, 184);
-    }
-    doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.text("TOTAL TTC", 20, yPos + 2);
-    doc.text(`${facture.amount.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-    
-    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}.pdf`);
-    toast.success("Facture téléchargée");
   };
 
   const handleShareDevis = (devis: any, course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
