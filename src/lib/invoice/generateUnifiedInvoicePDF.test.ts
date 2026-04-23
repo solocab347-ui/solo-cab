@@ -14,47 +14,54 @@ import {
   type UnifiedInvoiceInput,
 } from "./generateUnifiedInvoicePDF";
 
-// Mock jsPDF — on ne veut pas tester le rendu PDF (lourd, binaire),
-// on veut tester que les bonnes données sont injectées et que les calculs sont corrects.
+// Mock jsPDF — on capture toutes les données injectées sans générer un vrai PDF binaire.
+// Stocké au niveau module pour être inspecté après chaque appel.
+const lastInstance: { current: any } = { current: null };
+
 vi.mock("jspdf", () => {
-  const calls: Array<{ method: string; args: any[] }> = [];
-  const mockDoc = {
-    _calls: calls,
-    internal: { pageSize: { width: 210, height: 297 } },
-    setFillColor: vi.fn((...args) => calls.push({ method: "setFillColor", args })),
-    setTextColor: vi.fn((...args) => calls.push({ method: "setTextColor", args })),
-    setFontSize: vi.fn((...args) => calls.push({ method: "setFontSize", args })),
-    setFont: vi.fn((...args) => calls.push({ method: "setFont", args })),
-    setDrawColor: vi.fn((...args) => calls.push({ method: "setDrawColor", args })),
-    rect: vi.fn((...args) => calls.push({ method: "rect", args })),
-    text: vi.fn((...args) => calls.push({ method: "text", args })),
-    splitTextToSize: vi.fn((str: string) => [str]),
-    save: vi.fn((...args) => calls.push({ method: "save", args })),
-    output: vi.fn((type: string) => {
+  class MockJsPDF {
+    _calls: Array<{ method: string; args: any[] }> = [];
+    internal = { pageSize: { width: 210, height: 297 } };
+
+    constructor() {
+      lastInstance.current = this;
+    }
+
+    private push(method: string, args: any[]) {
+      this._calls.push({ method, args });
+    }
+
+    setFillColor(...args: any[]) { this.push("setFillColor", args); }
+    setTextColor(...args: any[]) { this.push("setTextColor", args); }
+    setFontSize(...args: any[]) { this.push("setFontSize", args); }
+    setFont(...args: any[]) { this.push("setFont", args); }
+    setDrawColor(...args: any[]) { this.push("setDrawColor", args); }
+    rect(...args: any[]) { this.push("rect", args); }
+    text(...args: any[]) { this.push("text", args); }
+    splitTextToSize(str: string) { return [str]; }
+    save(...args: any[]) { this.push("save", args); }
+    output(type: string) {
       if (type === "blob") return new Blob(["fake-pdf"], { type: "application/pdf" });
       if (type === "datauristring") return "data:application/pdf;base64,ZmFrZS1wZGY=";
       return "";
-    }),
-  };
-  return {
-    default: vi.fn(() => {
-      // reset calls per instance
-      mockDoc._calls.length = 0;
-      return mockDoc;
-    }),
-  };
+    }
+  }
+
+  return { default: MockJsPDF };
 });
 
 // Helper : récupère tous les textes injectés dans le PDF (concaténés).
 function getAllTexts(): string {
-  // @ts-ignore — accès au mock
-  const jsPDF = require("jspdf").default;
-  const instance = jsPDF.mock.results[jsPDF.mock.results.length - 1]?.value;
-  if (!instance) return "";
-  return instance._calls
+  const inst = lastInstance.current;
+  if (!inst) return "";
+  return inst._calls
     .filter((c: any) => c.method === "text")
     .map((c: any) => (Array.isArray(c.args[0]) ? c.args[0].join(" ") : String(c.args[0])))
     .join("\n");
+}
+
+function getLastInstance() {
+  return lastInstance.current;
 }
 
 const baseFacture: UnifiedInvoiceInput["facture"] = {
