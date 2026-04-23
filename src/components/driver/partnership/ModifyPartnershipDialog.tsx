@@ -360,8 +360,8 @@ export function ModifyPartnershipDialog({
                     <SelectValue placeholder="Sélectionner un motif..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Commission trop élevée">Frais de transaction trop élevés</SelectItem>
-                    <SelectItem value="Commission trop basse">Frais de transaction trop bas</SelectItem>
+                    <SelectItem value="Frais de transaction trop élevés">Frais de transaction trop élevés</SelectItem>
+                    <SelectItem value="Frais de transaction trop bas">Frais de transaction trop bas</SelectItem>
                     <SelectItem value="Fréquence de paiement inadaptée">Fréquence de paiement inadaptée</SelectItem>
                     <SelectItem value="Besoin de discuter avant">Besoin de discuter avant</SelectItem>
                     <SelectItem value="other">Autre motif (personnalisé)</SelectItem>
