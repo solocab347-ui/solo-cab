@@ -128,22 +128,22 @@ describe("generateUnifiedInvoicePDF — contrat de sortie", () => {
   });
 
   it("ne déclenche save() que si options.download est true", async () => {
-    const jsPDFModule = await import("jspdf");
-    const jsPDF = jsPDFModule.default as any;
-
     await generateUnifiedInvoicePDF(
       { facture: baseFacture, course: baseCourse, driver: baseDriver, variant: "client" },
       { download: false }
     );
-    const inst1 = jsPDF.mock.results[jsPDF.mock.results.length - 1].value;
-    expect(inst1.save).not.toHaveBeenCalled();
+    const inst1 = getLastInstance();
+    const saved1 = inst1._calls.some((c: any) => c.method === "save");
+    expect(saved1).toBe(false);
 
     await generateUnifiedInvoicePDF(
       { facture: baseFacture, course: baseCourse, driver: baseDriver, variant: "client" },
       { download: true }
     );
-    const inst2 = jsPDF.mock.results[jsPDF.mock.results.length - 1].value;
-    expect(inst2.save).toHaveBeenCalledWith("facture-INV-001-client.pdf");
+    const inst2 = getLastInstance();
+    const saveCall = inst2._calls.find((c: any) => c.method === "save");
+    expect(saveCall).toBeTruthy();
+    expect(saveCall.args[0]).toBe("facture-INV-001-client.pdf");
   });
 });
 
