@@ -231,13 +231,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
           // On ouvre les paramètres natifs Android (action manuelle requise par Google).
           // Plugin custom à intégrer côté Android. Pour l'instant on guide l'utilisateur.
           if (isNative && platform === 'android') {
-            try {
-              const { App } = await import('@capacitor/app');
-              // Sur Android, l'utilisateur est redirigé vers les Paramètres "Affichage par-dessus".
-              // L'intent exact est lancé via plugin natif si disponible. Sinon ouvrir paramètres app.
-              await App.exitApp; // placeholder: nécessite plugin custom dédié
-            } catch {/* ignore */}
-            // L'utilisateur devra revenir et confirmer manuellement
+            // Note : pas de App.exitApp() ici — fermerait l'app instantanément.
+            // L'overlay nécessite un plugin natif custom (intent ACTION_MANAGE_OVERLAY_PERMISSION).
+            // Pour l'instant, on marque comme granted après confirmation manuelle de l'utilisateur.
             localStorage.setItem('solocab_native_overlay_granted', 'true');
             result = 'granted';
           } else {
