@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_DIR="$ROOT_DIR/android"
 MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
+PACKAGE_JSON="$ROOT_DIR/package.json"
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
@@ -22,6 +23,32 @@ fi
 if [ ! -f "$MANIFEST" ]; then
   red "❌ AndroidManifest.xml introuvable."
   exit 1
+fi
+
+CAPACITOR_MAJORS="$(node - <<'NODE'
+const pkg = require('./package.json');
+const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+const caps = Object.entries(deps).filter(([name]) => name.startsWith('@capacitor/'));
+const majors = new Map();
+for (const [name, version] of caps) {
+  const major = String(version).replace(/^[^0-9]*/, '').split('.')[0];
+  if (!major) continue;
+  if (!majors.has(major)) majors.set(major, []);
+  majors.get(major).push(`${name}@${version}`);
+}
+for (const [major, entries] of majors) console.log(`${major}:${entries.join(',')}`);
+NODE
+)"
+
+CAPACITOR_MAJOR_COUNT="$(printf '%s\n' "$CAPACITOR_MAJORS" | sed '/^$/d' | wc -l | tr -d ' ')"
+if [ "$CAPACITOR_MAJOR_COUNT" -gt 1 ]; then
+  red "❌ Versions Capacitor incompatibles détectées dans package.json"
+  printf '%s\n' "$CAPACITOR_MAJORS"
+  echo "Tous les paquets @capacitor/* doivent être sur la même version majeure."
+  HAS_CAP_ERROR=1
+else
+  green "✅ Versions majeures Capacitor cohérentes"
+  HAS_CAP_ERROR=0
 fi
 
 APP_ID="$(grep -oE "appId: '[^']+'" "$ROOT_DIR/capacitor.config.ts" | sed -E "s/appId: '([^']+)'/\1/" | head -n 1)"
@@ -75,7 +102,7 @@ echo "MainActivity package   : $MAIN_ACTIVITY_PACKAGE"
 echo "Gradle applicationId   : ${APPLICATION_ID:-<non trouvé>}"
 echo "Gradle namespace       : ${NAMESPACE:-<non trouvé>}"
 
-HAS_ERROR=0
+HAS_ERROR="$HAS_CAP_ERROR"
 
 if [ "$MAIN_ACTIVITY_PACKAGE" != "$APP_ID" ]; then
   red "❌ MainActivity n'utilise pas le même package que capacitor.config.ts"
