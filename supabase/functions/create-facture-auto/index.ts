@@ -508,6 +508,127 @@ serve(async (req) => {
       }
     }
 
+    // ===== ENVOI EMAIL FACTURE UNIFIÉE (client inscrit OU guest) =====
+    // Utilise le générateur PDF unifié partagé avec l'app frontend.
+    try {
+      const recipientEmail =
+        course.guest_email ||
+        (course.client_id
+          ? (await supabase
+              .from("clients")
+              .select("profiles:user_id(email, full_name, phone)")
+              .eq("id", course.client_id)
+              .maybeSingle()
+            ).data?.profiles
+          : null) as any;
+
+      const guestEmail = course.guest_email as string | undefined;
+      const clientProfile = !guestEmail && course.client_id
+        ? (await supabase
+            .from("clients")
+            .select("profiles:user_id(email, full_name, phone)")
+            .eq("id", course.client_id)
+            .maybeSingle()
+          ).data?.profiles as any
+        : null;
+
+      const targetEmail: string | undefined = guestEmail || clientProfile?.email;
+
+      if (targetEmail && !isCompanyCourse) {
+        // Récupérer infos chauffeur complètes
+        const { data: driverFull } = await supabase
+          .from("drivers")
+          .select(`
+            company_name, company_address, siret, siren, tva_number,
+            profiles:user_id(full_name, phone, email)
+          `)
+          .eq("id", course.driver_id)
+          .maybeSingle();
+
+        const clientForPdf = clientProfile
+          ? { profiles: clientProfile }
+          : null;
+
+        const pdf = generateUnifiedInvoicePDFBuffer({
+          facture: { ...facture, devis: acceptedDevis },
+          course,
+          driver: driverFull,
+          client: clientForPdf,
+          variant: "client",
+        });
+
+        // Lien de suivi guest (si applicable) ou lien dashboard client
+        const trackingLink = course.guest_tracking_token
+          ? `${APP_BASE_URL}/reservation-suivi?token=${course.guest_tracking_token}`
+          : `${APP_BASE_URL}/client-dashboard`;
+
+        const recipientName = guestEmail
+          ? course.guest_name || "Client"
+          : clientProfile?.full_name || "Client";
+
+        const driverDisplayName =
+          driverFull?.company_name ||
+          (driverFull?.profiles as any)?.full_name ||
+          "Votre chauffeur";
+
+        const html = `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head><meta charset="utf-8" /></head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #2d3748; background: #f7fafc; margin: 0; padding: 24px;">
+            <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+              <div style="background: #2ecc71; color: #ffffff; padding: 32px 24px; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">Votre facture est prête</h1>
+                <p style="margin: 8px 0 0; opacity: 0.95;">Facture ${invoiceNumber}</p>
+              </div>
+              <div style="padding: 32px 24px;">
+                <p>Bonjour ${recipientName},</p>
+                <p>Merci d'avoir voyagé avec <strong>${driverDisplayName}</strong>. Vous trouverez ci-joint votre facture au format PDF.</p>
+                <div style="background: #f0fdf4; border-left: 4px solid #2ecc71; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                  <p style="margin: 0;"><strong>Trajet :</strong> ${course.pickup_address} → ${course.destination_address}</p>
+                  <p style="margin: 8px 0 0;"><strong>Montant :</strong> ${Number(facture.amount).toFixed(2)} €</p>
+                </div>
+                <div style="text-align: center; margin: 32px 0;">
+                  <a href="${trackingLink}"
+                     style="background: #2ecc71; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                    Voir ma course
+                  </a>
+                </div>
+                <p style="color: #718096; font-size: 13px; text-align: center; margin-top: 32px;">
+                  Cet email a été envoyé automatiquement par SoloCab après la fin de votre course.
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const resendKey = Deno.env.get("RESEND_API_KEY");
+        if (resendKey) {
+          const resend = new Resend(resendKey);
+          await resend.emails.send({
+            from: "SoloCab <noreply@solocab.fr>",
+            to: [targetEmail],
+            subject: `Facture ${invoiceNumber} — ${driverDisplayName}`,
+            html,
+            attachments: [
+              {
+                filename: pdf.fileName,
+                content: pdf.base64,
+              },
+            ],
+          });
+          console.log("[CREATE-FACTURE-AUTO] ✅ Invoice email sent to", targetEmail);
+        } else {
+          console.warn("[CREATE-FACTURE-AUTO] ⚠️ RESEND_API_KEY missing, skipping email");
+        }
+      }
+    } catch (emailErr: any) {
+      // Ne jamais bloquer la création de facture si l'email échoue
+      console.error("[CREATE-FACTURE-AUTO] ⚠️ Email send failed:", emailErr?.message || emailErr);
+    }
+
+
     return new Response(
       JSON.stringify({ 
         facture,
