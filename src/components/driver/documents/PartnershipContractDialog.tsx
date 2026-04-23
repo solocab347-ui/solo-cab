@@ -174,9 +174,9 @@ export function PartnershipContractDialog({
 
       addText('Article 2 - Frais de transaction', 10, 'bold');
       if (contract.commission_percentage) {
-        addText(`Le taux de frais de transaction convenu entre les parties est de ${contract.frais de transaction_percentage}% du montant total de chaque course partagée.`, 10);
+        addText(`Le taux de frais de transaction convenu entre les parties est de ${contract.commission_percentage}% du montant total de chaque course partagée.`, 10);
       } else if (contract.commission_fixed_amount) {
-        addText(`Le montant de frais de transaction fixe convenu est de ${contract.frais de transaction_fixed_amount}€ par course partagée.`, 10);
+        addText(`Le montant de frais de transaction fixe convenu est de ${contract.commission_fixed_amount}€ par course partagée.`, 10);
       }
       yPos += 5;
 
@@ -326,9 +326,9 @@ export function PartnershipContractDialog({
                   </div>
                   <span className="font-medium">
                     {contract.commission_percentage 
-                      ? `${contract.frais de transaction_percentage}%`
+                      ? `${contract.commission_percentage}%`
                       : contract.commission_fixed_amount 
-                        ? `${contract.frais de transaction_fixed_amount}€`
+                        ? `${contract.commission_fixed_amount}€`
                         : 'Non définie'
                     }
                   </span>

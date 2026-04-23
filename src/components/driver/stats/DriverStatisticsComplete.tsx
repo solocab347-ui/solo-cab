@@ -263,7 +263,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Get shared courses for this period
     const { data: sharedCourses } = await supabase
       .from('shared_courses')
-      .select('course_id, frais de transaction_amount')
+      .select('course_id, commission_amount')
       .eq('receiver_driver_id', driverId)
       .eq('status', 'completed')
       .in('course_id', Array.from(courseIds));
@@ -276,7 +276,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Get commissions owed
     const { data: commissionsOwed } = await supabase
       .from('partnership_course_frais de transaction')
-      .select('frais de transaction_amount')
+      .select('commission_amount')
       .eq('payment_status', 'pending')
       .gte('created_at', dateRange.start.toISOString())
       .lte('created_at', dateRange.end.toISOString());
@@ -286,7 +286,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Get commissions received
     const { data: sharedByMe } = await supabase
       .from('shared_courses')
-      .select('frais de transaction_amount')
+      .select('commission_amount')
       .eq('sender_driver_id', driverId)
       .eq('status', 'completed')
       .gte('created_at', dateRange.start.toISOString())
@@ -323,7 +323,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Driver partnerships
     const { data: driverPartnerships } = await supabase
       .from('driver_partnerships')
-      .select('id, driver_a_id, driver_b_id, frais de transaction_percentage')
+      .select('id, driver_a_id, driver_b_id, commission_percentage')
       .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
       .eq('status', 'active');
 
@@ -372,7 +372,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Fleet partnerships
     const { data: fleetPartnerships } = await supabase
       .from('fleet_driver_partnerships')
-      .select('id, fleet_manager_id, frais de transaction_percentage, total_owed, total_paid')
+      .select('id, fleet_manager_id, commission_percentage, total_owed, total_paid')
       .eq('driver_id', driverId)
       .eq('status', 'active');
 

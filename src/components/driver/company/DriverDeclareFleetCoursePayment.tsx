@@ -169,7 +169,7 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
       const result = data as { success: boolean; commission_amount?: number; message?: string; error?: string };
       
       if (result.success) {
-        toast.success(`Paiement déclaré ! Frais de transaction à reverser : ${result.frais de transaction_amount?.toFixed(2)} €`);
+        toast.success(`Paiement déclaré ! Frais de transaction à reverser : ${result.commission_amount?.toFixed(2)} €`);
         setDeclareDialog(null);
         fetchCourses();
       } else {

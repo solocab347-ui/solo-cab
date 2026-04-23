@@ -607,7 +607,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '🤝 Nouvelle demande de partenariat',
-      message: `${senderName} souhaite devenir votre partenaire (${frais de transaction}% de rétribution)`,
+      message: `${senderName} souhaite devenir votre partenaire (${commission}% de rétribution)`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -652,7 +652,7 @@ export const notificationService = {
     return this.create({
       userId: receiverUserId,
       title: '📤 Course proposée par un partenaire',
-      message: `${senderName} vous propose une course le ${courseDate} (${frais de transaction}€ de rétribution)`,
+      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de rétribution)`,
       type: 'course',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -682,7 +682,7 @@ export const notificationService = {
     return this.create({
       userId: senderUserId,
       title: '🏁 Course partenaire terminée',
-      message: `${partnerName} a effectué votre course (${amount}€, rétribution: ${frais de transaction}€)`,
+      message: `${partnerName} a effectué votre course (${amount}€, rétribution: ${commission}€)`,
       type: 'success',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -738,7 +738,7 @@ export const notificationService = {
     return this.create({
       userId: driverUserId,
       title: '🚐 Proposition de partenariat flotte',
-      message: `${fleetName} vous propose un partenariat (${frais de transaction})`,
+      message: `${fleetName} vous propose un partenariat (${commission})`,
       type: 'partnership',
       link: '/driver-dashboard?tab=partnerships'
     });
@@ -768,7 +768,7 @@ export const notificationService = {
     return this.create({
       userId: fleetManagerUserId,
       title: '🏁 Course partenaire terminée',
-      message: `${driverName} a terminé une course (${amount}€, rétribution: ${frais de transaction}€)`,
+      message: `${driverName} a terminé une course (${amount}€, rétribution: ${commission}€)`,
       type: 'success',
       link: '/fleet-dashboard?tab=partnerships'
     });

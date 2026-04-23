@@ -159,8 +159,8 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
   yPos += 7;
 
   // Commission
-  doc.text(`Frais de transaction partenariat (${invoice.frais de transaction_percentage}%)`, 25, yPos + 5);
-  doc.text(`${invoice.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+  doc.text(`Frais de transaction partenariat (${invoice.commission_percentage}%)`, 25, yPos + 5);
+  doc.text(`${invoice.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
   yPos += 7;
 
   if (isSender) {
@@ -168,7 +168,7 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
     doc.setFillColor(245, 245, 245);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.text("Gain net du partenaire (course réalisée)", 25, yPos + 5);
-    doc.text(`${(invoice.course_amount - invoice.frais de transaction_amount).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`${(invoice.course_amount - invoice.commission_amount).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
     // TVA
@@ -192,7 +192,7 @@ export async function generatePartnerInvoicePDF(invoice: PartnerInvoice): Promis
     doc.rect(20, yPos, 170, 7, 'F');
     doc.text("Frais de transaction due à l'expéditeur", 25, yPos + 5);
     doc.setTextColor(200, 0, 0);
-    doc.text(`-${invoice.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`-${invoice.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     doc.setTextColor(0, 0, 0);
     yPos += 9;
 

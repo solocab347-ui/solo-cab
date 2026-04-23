@@ -183,8 +183,8 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setFillColor(255, 235, 235);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.setTextColor(...dangerColor);
-    doc.text(`Rétribution à verser (${data.frais de transaction_percentage}%)`, 25, yPos + 5);
-    doc.text(`-${data.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`Rétribution à verser (${data.commission_percentage}%)`, 25, yPos + 5);
+    doc.text(`-${data.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
     // Net earnings for receiver
@@ -200,8 +200,8 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setFillColor(235, 255, 235);
     doc.rect(20, yPos, 170, 7, 'F');
     doc.setTextColor(...successColor);
-    doc.text(`Rétribution à recevoir (${data.frais de transaction_percentage}%)`, 25, yPos + 5);
-    doc.text(`+${data.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+    doc.text(`Rétribution à recevoir (${data.commission_percentage}%)`, 25, yPos + 5);
+    doc.text(`+${data.commission_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     yPos += 9;
     
     // Commission due for sender
@@ -211,7 +211,7 @@ export async function generatePartnerOrderDocumentPDF(
     doc.setFont(undefined, 'bold');
     doc.setFontSize(11);
     doc.text("RÉTRIBUTION À RECEVOIR", 25, yPos + 6);
-    doc.text(`${data.frais de transaction_amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
+    doc.text(`${data.commission_amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
   }
 
   yPos += 20;

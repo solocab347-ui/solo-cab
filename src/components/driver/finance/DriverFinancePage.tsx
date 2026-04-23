@@ -110,7 +110,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .limit(20),
         supabase
           .from("shared_course_payments")
-          .select("id, course_amount, frais de transaction_amount, sender_frais de transaction_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
+          .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
           .eq("status", "completed")
           .is("settlement_id", null)
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)

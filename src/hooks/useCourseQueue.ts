@@ -147,7 +147,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
       // First, get the partnership
       const { data: partnerships } = await supabase
         .from('driver_partnerships')
-        .select('id, frais de transaction_percentage')
+        .select('id, commission_percentage')
         .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
         .or(`driver_a_id.eq.${partnerId},driver_b_id.eq.${partnerId}`)
         .eq('status', 'accepted')

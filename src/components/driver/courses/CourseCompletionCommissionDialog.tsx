@@ -211,7 +211,7 @@ export function CourseCompletionCommissionDialog({
 
         const { data: fleetDriver } = await supabase
           .from('fleet_manager_drivers')
-          .select('frais de transaction_percentage')
+          .select('commission_percentage')
           .eq('fleet_manager_id', driver.fleet_manager_id)
           .eq('driver_id', driverId)
           .eq('status', 'active')

@@ -96,7 +96,7 @@ export function ModifyPartnershipDialog({
           await supabase.from('notifications').insert({
             user_id: partnerDriver.user_id,
             title: '📝 Demande de modification',
-            message: `${myProfile?.full_name || 'Un partenaire'} propose de modifier le contrat: ${frais de transaction}% - ${newPaymentSchedule === 'per_course' ? 'Par course' : newPaymentSchedule === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}`,
+            message: `${myProfile?.full_name || 'Un partenaire'} propose de modifier le contrat: ${commission}% - ${newPaymentSchedule === 'per_course' ? 'Par course' : newPaymentSchedule === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}`,
             type: 'partnership',
             link: '/driver-dashboard?tab=sharing',
             is_read: false

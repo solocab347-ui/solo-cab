@@ -161,7 +161,7 @@ const FLEET_MANAGER_OBLIGATIONS: Obligation[] = [
     description: '\'\'Je mengage à envoyer des clients qui respectent le travail du chauffeur, son véhicule et son matériel professionnel. En cas de comportement inapproprié signalé, je mengage à prendre les mesures nécessaires.',
   },
   {
-    id: 'frais de transaction_respect',
+    id: 'commission_respect',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des frais de transaction convenues',
     description: '\'\'\'Je mengage à respecter le taux de frais de transaction convenu contractuellement et à ne pas le modifier unilatéralement. Toute modification devra faire lobjet dun accord mutuel préalable.',
@@ -351,7 +351,7 @@ export function PartnershipSignatureConfirmation({
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Commission</span>
               <Badge variant="secondary" className="font-semibold">
-                {commissionPercentage ? `${frais de transactionPercentage}%` : 'À définir'}
+                {commissionPercentage ? `${commissionPercentage}%` : 'À définir'}
               </Badge>
             </div>
             <Separator className="my-2" />

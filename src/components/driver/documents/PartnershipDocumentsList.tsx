@@ -420,7 +420,7 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
       if (partnershipType === 'driver') {
         const { data } = await supabase
           .from('driver_partnerships')
-          .select('id, status, frais de transaction_percentage, payment_schedule, created_at, driver_a_id, driver_b_id')
+          .select('id, status, commission_percentage, payment_schedule, created_at, driver_a_id, driver_b_id')
           .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
           .in('status', ['active', 'pending']);
 
@@ -463,7 +463,7 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
       } else if (partnershipType === 'fleet') {
         const { data } = await supabase
           .from('fleet_driver_partnerships')
-          .select('id, status, frais de transaction_percentage, payment_schedule, created_at, fleet_manager_id')
+          .select('id, status, commission_percentage, payment_schedule, created_at, fleet_manager_id')
           .eq('driver_id', driverId)
           .in('status', ['accepted', 'pending']);
 
