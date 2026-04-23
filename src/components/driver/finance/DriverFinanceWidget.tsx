@@ -146,7 +146,7 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
           {summary.cashCollectedWeek.toFixed(2)}€
         </p>
         <p className="text-[11px] text-muted-foreground">
-          {summary.cashCoursesWeek} courses · commission SoloCab due : {summary.cashFeesOwedWeek.toFixed(2)}€
+          {summary.cashCoursesWeek} courses · frais de transaction SoloCab dus : {summary.cashFeesOwedWeek.toFixed(2)}€
         </p>
       </div>
 
@@ -168,7 +168,7 @@ export function DriverFinanceWidget({ driverId, onViewDetails }: DriverFinanceWi
         <p className="text-[11px] text-muted-foreground">
           {summary.cardCoursesWeek} courses carte · brut {summary.cardToTransfer.toFixed(2)}€
           {willCompensate && (
-            <span className="text-amber-600"> − {totalCashDebt.toFixed(2)}€ commission cash</span>
+            <span className="text-amber-600"> − {totalCashDebt.toFixed(2)}€ frais de transaction cash</span>
           )}
         </p>
       </div>

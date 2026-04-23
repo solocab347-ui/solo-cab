@@ -511,7 +511,7 @@ export function OnboardingNfcStep({ hasNfcPlate, driverId, onSkip }: OnboardingN
         </div>
         <div className="p-2 bg-blue-500/10 rounded-lg">
           <p className="text-lg font-bold text-blue-600">0%</p>
-          <p className="text-[9px] text-muted-foreground">Commission</p>
+          <p className="text-[9px] text-muted-foreground">Frais</p>
         </div>
         <div className="p-2 bg-amber-500/10 rounded-lg">
           <p className="text-lg font-bold text-amber-600">500+</p>

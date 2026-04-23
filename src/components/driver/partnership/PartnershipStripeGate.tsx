@@ -128,7 +128,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <span>La commission du partenaire est automatiquement reversée (15% à 20%)</span>
+                <span>Les frais de transaction du partenaire sont automatiquement reversés (15% à 20%)</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -140,7 +140,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <span><strong>Versement hebdomadaire</strong> : les commissions sont agrégées et versées chaque lundi pour minimiser les frais bancaires</span>
+                <span><strong>Versement hebdomadaire</strong> : les frais de transaction sont agrégés et versés chaque lundi pour minimiser les frais bancaires</span>
               </li>
             </ul>
           </div>

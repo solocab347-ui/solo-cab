@@ -322,7 +322,7 @@ export function PartnershipContractDialog({
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Euro className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Commission</span>
+                    <span className="text-sm">Frais de transaction</span>
                   </div>
                   <span className="font-medium">
                     {contract.commission_percentage 

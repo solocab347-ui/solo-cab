@@ -256,7 +256,7 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
         <Info className="h-4 w-4" />
         <AlertTitle>Gestion des paiements de flotte</AlertTitle>
         <AlertDescription className="space-y-2 mt-2">
-          <p><strong>Paiement sur place :</strong> Déclarez le paiement reçu et reversez la commission au gestionnaire.</p>
+          <p><strong>Paiement sur place :</strong> Déclarez le paiement reçu et reversez les frais de transaction au gestionnaire.</p>
           <p><strong>Paiement via gestionnaire :</strong> Confirmez la réception du versement du gestionnaire.</p>
         </AlertDescription>
       </Alert>
@@ -298,7 +298,7 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
                 <Euro className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Commissions dues</p>
+                <p className="text-sm text-muted-foreground">Frais de transaction dus</p>
                 <p className="text-2xl font-bold">
                   {commissionsDue.reduce((sum, c) => sum + (c.driver_commission_to_fleet || 0), 0).toFixed(2)} €
                 </p>
@@ -402,7 +402,7 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
                             <Alert>
                               <Euro className="h-4 w-4" />
                               <AlertDescription>
-                                <p className="font-medium">Commission à reverser au gestionnaire :</p>
+                                <p className="font-medium">Frais de transaction à reverser au gestionnaire :</p>
                                 <p className="text-2xl font-bold text-primary mt-1">
                                   {((course.course_amount || 0) * (course.commission_percentage || 0) / 100).toFixed(2)} €
                                 </p>
@@ -485,10 +485,10 @@ export const DriverDeclareFleetCoursePayment = ({ driverId }: DriverDeclareFleet
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Euro className="w-5 h-5 text-primary" />
-              Commissions à reverser
+              Frais de transaction à reverser
             </CardTitle>
             <CardDescription>
-              Ces commissions doivent être reversées à vos gestionnaires
+              Ces frais de transaction doivent être reversés à vos gestionnaires
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

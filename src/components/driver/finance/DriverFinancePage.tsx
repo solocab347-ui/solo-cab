@@ -344,7 +344,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             <Card className="p-4 bg-success/5 border-success/20">
               <div className="flex items-center gap-2 text-success text-sm mb-1">
                 <ArrowUpRight className="w-4 h-4" />
-                Commissions partage
+                Frais de transaction partage
               </div>
               <p className="text-2xl font-bold text-success">+{totalPendingCommissions.toFixed(2)}€</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -551,7 +551,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <span className="text-muted-foreground">Commissions</span>
+                    <span className="text-muted-foreground">Frais de transaction</span>
                     <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
                   </div>
                   <div>

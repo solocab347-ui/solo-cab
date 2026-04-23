@@ -593,7 +593,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                <span className="text-gray-200">0% de commission</span>
+                <span className="text-gray-200">0% de frais de transaction</span>
               </li>
             </ul>
             

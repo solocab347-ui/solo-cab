@@ -2823,7 +2823,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground mt-1">
-                            Le partenaire gère cette course. Vous recevrez votre commission à la fin.
+                            Le partenaire gère cette course. Vous recevrez vos frais de transaction à la fin.
                           </p>
                         </div>
                       </div>

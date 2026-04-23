@@ -80,7 +80,7 @@ export function StripeConnectRequiredAlert({ context, onComplete }: StripeConnec
           <p>✓ Vérification d'identité sécurisée par Stripe</p>
           <p>✓ Virements directs sur votre compte bancaire</p>
           {context === "sharing" && (
-            <p>✓ Commissions automatiques entre partenaires</p>
+            <p>✓ Frais de transaction automatiques entre partenaires</p>
           )}
         </div>
 
