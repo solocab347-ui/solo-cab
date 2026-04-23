@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { FileText, Search, Download, Euro, CheckCircle, CreditCard, Share2, MessageSquare, Mail, Send, Facebook, Building2, Phone, User } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
-import jsPDF from "jspdf";
+import { generateUnifiedInvoicePDF } from "@/lib/invoice/generateUnifiedInvoicePDF";
 import { generateFactureShareMessage } from "@/lib/courseMessageGenerator";
 
 interface DriverFacturesListProps {
@@ -329,385 +329,44 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       toast.error("Informations chauffeur manquantes");
       return;
     }
-    
+
     if (!driverInfo.company_name || (!driverInfo.siret && !driverInfo.siren)) {
-      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)");
+      toast.error(
+        "Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)"
+      );
       return;
     }
 
-    const jsPDF = (await import("jspdf")).default;
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-
-    // Green color for invoices
-    const headerColor: [number, number, number] = [46, 204, 113]; // Green
-
-    // Header
-    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.rect(0, 0, pageWidth, 50, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(28);
-    doc.text("FACTURE", pageWidth / 2, 25, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.text(`N°: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 35, { align: "center" });
-    doc.text(`Date: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
-
-    // Driver info (left side)
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 20, 65);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
-    doc.text(driverName, 20, 71);
-    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
-      doc.text(driverInfo.company_name, 20, 76);
+    try {
+      await generateUnifiedInvoicePDF(
+        {
+          facture: {
+            ...facture,
+            companyInfo: facture.companyInfo,
+            employeeName: facture.employeeName,
+            employeePhone: facture.employeePhone,
+          },
+          course: {
+            pickup_address: facture.courses?.pickup_address || "",
+            destination_address: facture.courses?.destination_address || "",
+            scheduled_date: facture.courses?.scheduled_date || facture.created_at,
+            passengers_count: facture.courses?.passengers_count,
+            distance_km: facture.courses?.distance_km,
+            duration_minutes: facture.courses?.duration_minutes,
+            guest_name: facture.courses?.guest_name,
+            guest_phone: facture.courses?.guest_phone,
+          },
+          driver: driverInfo,
+          client: facture.clients,
+          variant: forClient ? "client" : "driver",
+        },
+        { download: true }
+      );
+      toast.success("Facture téléchargée");
+    } catch (e) {
+      console.error("Erreur génération facture", e);
+      toast.error("Erreur lors de la génération de la facture");
     }
-    let infoY = 81;
-    if (driverInfo.siret) {
-      doc.text(`SIRET: ${driverInfo.siret}`, 20, infoY);
-      infoY += 5;
-    } else if (driverInfo.siren) {
-      doc.text(`SIREN: ${driverInfo.siren}`, 20, infoY);
-      infoY += 5;
-    }
-    if (driverInfo.tva_number) {
-      doc.text(`TVA: ${driverInfo.tva_number}`, 20, infoY);
-      infoY += 5;
-    }
-    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, infoY);
-    
-    if (driverInfo.company_address) {
-      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
-      doc.text(addressLines, 20, infoY + 5);
-    }
-
-    // Client/Company info (right side)
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    
-    const isCompanyCourse = !!facture.companyInfo;
-    
-    if (isCompanyCourse) {
-      // Display company information
-      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      
-      doc.text(facture.companyInfo.company_name || "N/A", pageWidth - 20, 71, { align: 'right' });
-      
-      let companyInfoY = 76;
-      
-      if (facture.companyInfo.siret) {
-        doc.text(`SIRET: ${facture.companyInfo.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      } else if (facture.companyInfo.siren) {
-        doc.text(`SIREN: ${facture.companyInfo.siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      if (facture.companyInfo.tva_number) {
-        doc.text(`TVA: ${facture.companyInfo.tva_number}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      const companyAddress = facture.companyInfo.billing_address || facture.companyInfo.address;
-      if (companyAddress) {
-        const addressLines = doc.splitTextToSize(companyAddress, 75);
-        addressLines.forEach((line: string, index: number) => {
-          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
-        });
-        companyInfoY += addressLines.length * 4;
-      }
-      
-      if (facture.companyInfo.contact_email) {
-        doc.text(facture.companyInfo.contact_email, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      if (facture.companyInfo.contact_phone) {
-        doc.text(`Tél: ${facture.companyInfo.contact_phone}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      // Display collaborator info
-      if (facture.employeeName) {
-        companyInfoY += 2;
-        doc.setFont(undefined, 'bold');
-        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
-        doc.setFont(undefined, 'normal');
-        companyInfoY += 5;
-        doc.text(facture.employeeName, pageWidth - 20, companyInfoY, { align: 'right' });
-        if (facture.employeePhone) {
-          companyInfoY += 4;
-          doc.text(`Tél: ${facture.employeePhone}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        }
-      }
-    } else {
-      // Regular client
-      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      
-      const clientName = facture.clients?.profiles?.full_name || "N/A";
-      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
-      
-      if (facture.clients?.profiles?.email) {
-        doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
-      }
-      
-      if (facture.clients?.profiles?.phone) {
-        doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
-      }
-    }
-
-    // Service details box
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, 110, 170, 55);
-    
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("DÉTAILS DE LA PRESTATION", 25, 118);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    
-    const pickupLines = doc.splitTextToSize(facture.courses.pickup_address, 140);
-    const destLines = doc.splitTextToSize(facture.courses.destination_address, 140);
-    
-    doc.text("Départ:", 25, 126);
-    doc.text(pickupLines, 50, 126);
-    
-    let currentY = 126 + (pickupLines.length * 5);
-    doc.text("Arrivée:", 25, currentY);
-    doc.text(destLines, 50, currentY);
-    
-    currentY += (destLines.length * 5);
-    doc.text(`Date: ${format(new Date(facture.courses.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
-    doc.text(`Passagers: ${facture.courses.passengers_count}`, 25, currentY + 5);
-    doc.text(`Distance: ${facture.courses.distance_km} km`, 105, currentY + 5);
-
-    // Payment info
-    let yPos = 175;
-    doc.text(`Mode de paiement: ${facture.payment_method || 'N/A'}`, 20, yPos);
-
-    // Pricing table
-    yPos += 5;
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("TARIFICATION", 20, yPos);
-    yPos += 8;
-
-    // Calculate TVA - priorité: valeurs stockées > détection automatique
-    const amount = facture.amount;
-    const isMiseADisposition = facture.devis?.time_price && facture.devis.time_price > 0 && (!facture.devis?.distance_price || facture.devis.distance_price === 0);
-    const tvaRate = facture.tva_rate || facture.devis?.tva_rate || (isMiseADisposition ? 20 : 10);
-    const subtotalHT = amount / (1 + tvaRate / 100);
-    const tvaAmount = facture.tva_amount || facture.devis?.tva_amount || (amount - subtotalHT);
-    const airportFee = facture.airport_fee || facture.devis?.airport_fee || 0;
-
-    if (!forClient) {
-      // Version chauffeur - Afficher la source de tarification si c'est une tarification par ville
-      if (facture.devis?.pricing_source === 'city' && facture.devis?.city_pricing_name) {
-        doc.setFillColor(230, 245, 255);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(41, 128, 185);
-        doc.setFontSize(8);
-        doc.text(`📍 Tarification appliquée: ${facture.devis.city_pricing_name}`, 25, yPos + 5);
-        yPos += 9;
-      }
-      
-      // Driver version - detailed breakdown
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text("Description", 25, yPos + 5.5);
-      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
-      
-      yPos += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      
-      // Afficher les composantes de prix depuis le devis
-      const isMiseADisposition = facture.devis?.time_price && facture.devis.time_price > 0 && (!facture.devis?.distance_price || facture.devis.distance_price === 0);
-      
-      if (isMiseADisposition) {
-        // Mise à disposition - afficher durée et tarif horaire
-        const hours = facture.courses.duration_minutes / 60;
-        const hourlyRate = facture.devis.time_price / hours;
-        
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text(`Mise à disposition (${hours.toFixed(1)}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
-        doc.text(`${facture.devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 9;
-      } else if (facture.devis) {
-        // Course classique - afficher base + distance
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text("Forfait de base", 25, yPos + 5);
-        doc.text(`${(facture.devis.base_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 7;
-        // Calculer le prix/km pour afficher le détail
-        const distanceKm = facture.distance_km || 0;
-        const perKmRate = distanceKm > 0 ? ((facture.devis.distance_price || 0) / distanceKm) : 0;
-        const priceLabel = distanceKm > 0 && perKmRate > 0 
-          ? `Prix au kilomètre (${distanceKm.toFixed(2)} km × ${perKmRate.toFixed(2)} €/km)`
-          : "Prix au kilomètre";
-        doc.text(priceLabel, 25, yPos + 5);
-        doc.text(`${(facture.devis.distance_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 9;
-      } else {
-        // Fallback si pas de devis
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text("Sous-total HT", 25, yPos + 5);
-        doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 9;
-      }
-      
-      // Afficher les augmentations heures de pointe/soir/weekend si présentes (version chauffeur uniquement)
-      if (facture.devis?.peak_hours_surcharge_amount && facture.devis.peak_hours_surcharge_amount > 0) {
-        doc.setFillColor(255, 240, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Heures de pointe", 25, yPos + 5);
-        doc.text(`+${facture.devis.peak_hours_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      if (facture.devis?.evening_surcharge_amount && facture.devis.evening_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Soir", 25, yPos + 5);
-        doc.text(`+${facture.devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      if (facture.devis?.weekend_surcharge_amount && facture.devis.weekend_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Weekend", 25, yPos + 5);
-        doc.text(`+${facture.devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      // Afficher frais aéroport si présents
-      if (airportFee > 0) {
-        doc.setFillColor(240, 248, 255);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(30, 144, 255);
-        doc.text("Forfait Aéroport", 25, yPos + 5);
-        doc.text(`+${airportFee.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      doc.setFillColor(240, 240, 240);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.setFont(undefined, 'bold');
-      doc.text("Sous-total HT", 25, yPos + 5);
-      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 7;
-      
-      // Afficher la réduction si code promo appliqué
-      if ((facture.promo_code || facture.devis?.promo_code) && (facture.discount_amount > 0 || facture.devis?.discount_amount > 0)) {
-        doc.setFont(undefined, 'normal');
-        const discountAmount = facture.discount_amount || facture.devis?.discount_amount || 0;
-        const promoCode = facture.promo_code || facture.devis?.promo_code || '';
-        doc.setTextColor(46, 125, 50); // Vert pour la réduction
-        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
-        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      doc.setFont(undefined, 'normal');
-      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
-      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 9;
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 9, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text("TOTAL TTC", 25, yPos + 6);
-      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
-      
-      yPos += 15;
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'italic');
-      const noteLines = doc.splitTextToSize("Note: Le client reçoit une version simplifiée.", 170);
-      doc.text(noteLines, 20, yPos);
-    } else {
-      // Client version - simplified
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text("Description", 25, yPos + 5.5);
-      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
-      
-      yPos += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFillColor(245, 245, 245);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.text("Sous-total HT", 25, yPos + 5);
-      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 7;
-      
-      // Afficher la réduction si code promo appliqué (version client)
-      if ((facture.promo_code || facture.devis?.promo_code) && (facture.discount_amount > 0 || facture.devis?.discount_amount > 0)) {
-        const discountAmount = facture.discount_amount || facture.devis?.discount_amount || 0;
-        const promoCode = facture.promo_code || facture.devis?.promo_code || '';
-        doc.setTextColor(46, 125, 50); // Vert pour la réduction
-        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
-        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
-      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 9;
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 9, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text("TOTAL TTC", 25, yPos + 6);
-      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
-    }
-
-    // Footer
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'normal');
-    doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
-
-    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}${forClient ? '-client' : ''}.pdf`);
-    toast.success("Facture téléchargée");
   };
 
   const getStatusBadge = (status: string) => {

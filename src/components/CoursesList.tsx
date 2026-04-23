@@ -1622,375 +1622,69 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const handleDownloadFacture = async (course: any, forClient: boolean = false) => {
     const facture = course.factures?.[0];
     const devis = course.devis?.[0];
-    
+
     if (!facture) {
       toast.error("Aucune facture disponible pour cette course");
       return;
     }
-    
+
     if (!driverInfo || !driverInfo.company_name || (!driverInfo.siret && !driverInfo.siren)) {
-      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)");
+      toast.error(
+        "Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)"
+      );
       return;
     }
-    
-    // Vérifier si c'est une course entreprise et récupérer les infos
+
     const companyInfo = getCompanyCourseInfo(course.id);
-    const isCompanyCourse = !!companyInfo;
-    
-    // Récupérer le nom du client (enregistré ou invité) - seulement si pas une course entreprise
-    const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name 
-      ? (course.guest_name || "Client invité") 
-      : course.clients.profiles.full_name;
-
-    const jsPDF = (await import("jspdf")).default;
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-
-    // Green color for invoices
-    const headerColor: [number, number, number] = [46, 204, 113]; // Green
-
-    // Header
-    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.rect(0, 0, pageWidth, 50, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(28);
-    doc.text("FACTURE", pageWidth / 2, 25, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.text(`N°: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 35, { align: "center" });
-    doc.text(`Date: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
-
-    // Driver info (left side)
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 20, 65);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
-    doc.text(driverName, 20, 71);
-    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
-      doc.text(driverInfo.company_name, 20, 76);
-    }
-    if (driverInfo.siret) {
-      doc.text(`SIRET: ${driverInfo.siret}`, 20, 81);
-    } else if (driverInfo.siren) {
-      doc.text(`SIREN: ${driverInfo.siren}`, 20, 81);
-    }
-    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
-    
-    if (driverInfo.company_address) {
-      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
-      doc.text(addressLines, 20, 91);
-    }
-
-    // Client/Company info (right side) - adapté selon le type de course
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    
-    if (isCompanyCourse) {
-      // Afficher les informations de l'entreprise
-      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      
-      doc.text(companyInfo.companyName || "N/A", pageWidth - 20, 71, { align: 'right' });
-      
-      let companyInfoY = 76;
-      
-      if (companyInfo.siret) {
-        doc.text(`SIRET: ${companyInfo.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      } else if (companyInfo.siren) {
-        doc.text(`SIREN: ${companyInfo.siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      if (companyInfo.tvaNumber) {
-        doc.text(`TVA: ${companyInfo.tvaNumber}`, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      const companyAddress = companyInfo.billingAddress || companyInfo.address;
-      if (companyAddress) {
-        const addressLines = doc.splitTextToSize(companyAddress, 75);
-        addressLines.forEach((line: string, index: number) => {
-          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
-        });
-        companyInfoY += addressLines.length * 4;
-      }
-      
-      if (companyInfo.contactEmail) {
-        doc.text(companyInfo.contactEmail, pageWidth - 20, companyInfoY, { align: 'right' });
-        companyInfoY += 5;
-      }
-      
-      // Afficher le collaborateur
-      if (companyInfo.employeeName) {
-        companyInfoY += 2;
-        doc.setFont(undefined, 'bold');
-        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
-        doc.setFont(undefined, 'normal');
-        companyInfoY += 5;
-        doc.text(companyInfo.employeeName, pageWidth - 20, companyInfoY, { align: 'right' });
-        if (companyInfo.employeePhone) {
-          companyInfoY += 4;
-          doc.text(`Tél: ${companyInfo.employeePhone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+    const companyInfoForFacture = companyInfo
+      ? {
+          company_name: companyInfo.companyName,
+          siret: companyInfo.siret,
+          siren: companyInfo.siren,
+          tva_number: companyInfo.tvaNumber,
+          address: companyInfo.address,
+          billing_address: companyInfo.billingAddress,
+          contact_email: companyInfo.contactEmail,
+          contact_phone: companyInfo.contactPhone,
         }
-      }
-    } else {
-      // Client classique
-      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
-      
-      if (course.clients?.profiles?.email) {
-        doc.text(course.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
-      }
-      
-      if (course.clients?.profiles?.phone) {
-        doc.text(`Tél: ${course.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
-      }
+      : null;
+
+    const { generateUnifiedInvoicePDF } = await import(
+      "@/lib/invoice/generateUnifiedInvoicePDF"
+    );
+
+    try {
+      await generateUnifiedInvoicePDF(
+        {
+          facture: {
+            ...facture,
+            devis,
+            companyInfo: companyInfoForFacture,
+            employeeName: companyInfo?.employeeName,
+            employeePhone: companyInfo?.employeePhone,
+          },
+          course: {
+            pickup_address: course.pickup_address,
+            destination_address: course.destination_address,
+            scheduled_date: course.scheduled_date,
+            passengers_count: course.passengers_count,
+            distance_km: course.distance_km,
+            duration_minutes: course.duration_minutes,
+            guest_name: course.guest_name,
+            guest_email: course.guest_email,
+            guest_phone: course.guest_phone,
+          },
+          driver: driverInfo,
+          client: course.clients,
+          variant: forClient ? "client" : "driver",
+        },
+        { download: true }
+      );
+      toast.success("Facture téléchargée");
+    } catch (e) {
+      console.error("Erreur génération facture", e);
+      toast.error("Erreur lors de la génération de la facture");
     }
-
-    // Service details box
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, 110, 170, 55);
-    
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("DÉTAILS DE LA PRESTATION", 25, 118);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    
-    const pickupLines = doc.splitTextToSize(course.pickup_address, 140);
-    const destLines = doc.splitTextToSize(course.destination_address, 140);
-    
-    doc.text("Départ:", 25, 126);
-    doc.text(pickupLines, 50, 126);
-    
-    let currentY = 126 + (pickupLines.length * 5);
-    doc.text("Arrivée:", 25, currentY);
-    doc.text(destLines, 50, currentY);
-    
-    currentY += (destLines.length * 5);
-    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
-    doc.text(`Passagers: ${course.passengers_count}`, 25, currentY + 5);
-    doc.text(`Distance: ${course.distance_km} km`, 105, currentY + 5);
-
-    // Payment info
-    let yPos = 175;
-    doc.text(`Mode de paiement: ${facture.payment_method || 'N/A'}`, 20, yPos);
-
-    // Pricing table
-    yPos += 5;
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("TARIFICATION", 20, yPos);
-    yPos += 8;
-
-    // Calculate TVA - use devis time_price if available, otherwise default to 10%
-    const amount = facture.amount;
-    const tvaRate = devis?.time_price && devis.time_price > 0 ? 20 : 10;
-    const subtotalHT = amount / (1 + tvaRate / 100);
-    const tvaAmount = amount - subtotalHT;
-
-    if (!forClient) {
-      // Driver version - with payment details
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text("Description", 25, yPos + 5.5);
-      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
-      
-      yPos += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      
-      // Afficher les composantes de prix depuis le devis (version détaillée chauffeur)
-      const isMiseADisposition = devis?.time_price && devis.time_price > 0 && (!devis?.distance_price || devis.distance_price === 0);
-      
-      if (isMiseADisposition && devis) {
-        // Mise à disposition - afficher durée et tarif horaire
-        const hours = course.duration_minutes / 60;
-        const hourlyRate = devis.time_price / hours;
-        
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text(`Mise à disposition (${hours.toFixed(1)}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
-        doc.text(`${devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 9;
-      } else if (devis) {
-        // Course classique - afficher base + distance
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text("Forfait de base", 25, yPos + 5);
-        doc.text(`${(devis.base_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 7;
-        // Calculer le prix/km pour afficher le détail
-        const distanceKm2 = course.distance_km || 0;
-        const perKmRate2 = distanceKm2 > 0 ? ((devis.distance_price || 0) / distanceKm2) : 0;
-        const priceLabel2 = distanceKm2 > 0 && perKmRate2 > 0 
-          ? `Prix au kilomètre (${distanceKm2.toFixed(2)} km × ${perKmRate2.toFixed(2)} €/km)`
-          : "Prix au kilomètre";
-        doc.text(priceLabel2, 25, yPos + 5);
-        doc.text(`${(devis.distance_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        
-        yPos += 9;
-      } else {
-        // Fallback sans devis
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.text("Montant HT", 25, yPos + 5);
-        doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 9;
-      }
-      
-      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
-      if (devis?.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Soir", 25, yPos + 5);
-        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      if (devis?.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Weekend", 25, yPos + 5);
-        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      // Afficher la réduction si code promo appliqué
-      if ((facture.promo_code || devis?.promo_code) && (facture.discount_amount > 0 || devis?.discount_amount > 0)) {
-        const discountAmount = facture.discount_amount || devis?.discount_amount || 0;
-        const promoCode = facture.promo_code || devis?.promo_code || '';
-        doc.setTextColor(46, 125, 50);
-        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
-        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      doc.setFillColor(240, 240, 240);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.setFont(undefined, 'bold');
-      doc.text("Sous-total HT", 25, yPos + 5);
-      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 7;
-      doc.setFont(undefined, 'normal');
-      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 9;
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 9, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text("TOTAL TTC", 25, yPos + 6);
-      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
-      
-      yPos += 15;
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'italic');
-      const noteLines = doc.splitTextToSize("Note: Le client reçoit une version simplifiée.", 170);
-      doc.text(noteLines, 20, yPos);
-    } else {
-      // Client version - simplified
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text("Description", 25, yPos + 5.5);
-      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
-      
-      yPos += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFillColor(245, 245, 245);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.text("Sous-total HT", 25, yPos + 5);
-      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 7;
-      
-      // Afficher la réduction si code promo appliqué
-      if ((facture.promo_code || devis?.promo_code) && (facture.discount_amount > 0 || devis?.discount_amount > 0)) {
-        const discountAmount = facture.discount_amount || devis?.discount_amount || 0;
-        const promoCode = facture.promo_code || devis?.promo_code || '';
-        doc.setTextColor(46, 125, 50);
-        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
-        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      // Afficher les augmentations soir/weekend si présentes
-      if (devis?.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Soir", 25, yPos + 5);
-        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      if (devis?.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Weekend", 25, yPos + 5);
-        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      doc.setFillColor(240, 240, 240);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.setFont(undefined, 'bold');
-      doc.text("Sous-total HT", 25, yPos + 5);
-      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 7;
-      doc.setFont(undefined, 'normal');
-      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-      
-      yPos += 9;
-      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(20, yPos, 170, 9, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text("TOTAL TTC", 25, yPos + 6);
-      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
-    }
-
-    // Footer
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'normal');
-    doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
-
-    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}${forClient ? '-client' : ''}.pdf`);
-    toast.success("Facture téléchargée");
   };
 
   const handleShareFacture = (course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
