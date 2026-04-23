@@ -313,7 +313,7 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
                       +{doc.commission_amount.toFixed(2)} €
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      Commission à recevoir
+                      Frais de transaction à recevoir
                     </p>
                   </>
                 ) : (

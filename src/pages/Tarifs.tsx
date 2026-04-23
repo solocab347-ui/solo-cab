@@ -88,7 +88,7 @@ const Tarifs = () => {
             <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Gratuit</span> pour les chauffeurs
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            SoloCab est gratuit. Zéro commission sur vos courses, 
+            SoloCab est gratuit. Zéro frais de transaction sur vos courses, 
             vous gardez 100% de vos revenus.
           </p>
         </div>
@@ -230,14 +230,14 @@ const Tarifs = () => {
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <Card className="p-8 bg-red-500/10 border-red-500/30">
               <h3 className="text-xl font-bold text-foreground mb-4">Plateformes classiques</h3>
-              <p className="text-muted-foreground mb-4">Uber, Bolt, etc. - Commission 20-25%</p>
+              <p className="text-muted-foreground mb-4">Uber, Bolt, etc. - Frais de transaction 20-25%</p>
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CA mensuel</span>
                   <span className="text-foreground font-semibold">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Commission (~25%)</span>
+                  <span className="text-muted-foreground">Frais de transaction (~25%)</span>
                   <span className="text-red-400 font-semibold">-1 250€</span>
                 </div>
                 <div className="border-t border-border pt-4">
@@ -251,7 +251,7 @@ const Tarifs = () => {
 
             <Card className="p-8 bg-green-500/10 border-green-500/30">
               <h3 className="text-xl font-bold text-foreground mb-4">Avec SoloCab</h3>
-              <p className="text-muted-foreground mb-4">Gratuit - 0% commission</p>
+              <p className="text-muted-foreground mb-4">Gratuit - 0% frais de transaction</p>
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CA mensuel</span>
@@ -277,7 +277,7 @@ const Tarifs = () => {
                 💰 Économie annuelle : 15 000€
               </p>
               <p className="text-muted-foreground mt-2">
-                Par rapport aux plateformes classiques (25% commission) sur un CA de 5 000€/mois
+                Par rapport aux plateformes classiques (25% frais de transaction) sur un CA de 5 000€/mois
               </p>
             </Card>
           </div>

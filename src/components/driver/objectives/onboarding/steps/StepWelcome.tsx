@@ -29,7 +29,7 @@ export function StepWelcome({ onSkip }: StepWelcomeProps) {
     {
       icon: Shield,
       title: 'Votre indépendance',
-      description: 'Libérez-vous des plateformes qui prennent vos commissions'
+      description: 'Libérez-vous des plateformes qui prennent vos frais de transaction'
     },
     {
       icon: Users,

@@ -72,7 +72,7 @@ const CommentCaMarche = () => {
     {
       icon: Scale,
       title: "Rémunération juste",
-      description: "Les chauffeurs fixent leurs propres tarifs et reçoivent l'intégralité du montant de la course. Pas de commission abusive, pas d'algorithme opaque.",
+      description: "Les chauffeurs fixent leurs propres tarifs et reçoivent l'intégralité du montant de la course. Pas de frais de transaction abusive, pas d'algorithme opaque.",
     },
     {
       icon: Shield,
@@ -108,7 +108,7 @@ const CommentCaMarche = () => {
   ];
 
   const forDrivers = [
-    "Zéro commission sur les courses",
+    "Zéro frais de transaction sur les courses",
     "Fixez vos propres tarifs",
     "Encaissement direct sur votre compte",
     "Développez votre propre clientèle",
@@ -162,7 +162,7 @@ const CommentCaMarche = () => {
             SoloCab est une plateforme créée par un chauffeur VTC indépendant, pour offrir une alternative juste aux plateformes traditionnelles.
           </p>
           <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-            <strong className="text-foreground">Notre mission :</strong> garantir une rémunération juste pour les chauffeurs et un service de qualité pour les clients. Sans commission abusive, sans algorithme opaque.
+            <strong className="text-foreground">Notre mission :</strong> garantir une rémunération juste pour les chauffeurs et un service de qualité pour les clients. Sans frais de transaction abusifs, sans algorithme opaque.
           </p>
         </div>
       </section>

@@ -147,7 +147,7 @@ export const fleetDashboardTranslations: Translations = {
     zh: '合作伙伴',
     ar: 'الشراكات',
   },
-  'fleetDashboard.tabs.commissions': {
+  'fleetDashboard.tabs.frais de transaction': {
     fr: 'Rétributions',
     en: 'Earnings',
     es: 'Retribuciones',
@@ -173,10 +173,10 @@ export const fleetDashboardTranslations: Translations = {
     ar: 'الحساب مقيد مؤقتاً',
   },
   'fleetDashboard.submitDocuments': {
-    fr: 'Le délai de 7 jours pour soumettre vos documents est dépassé. Veuillez envoyer vos documents ci-dessous pour débloquer l\'accès complet à votre espace gestionnaire.',
+    fr: '\'Le délai de 7 jours pour soumettre vos documents est dépassé. Veuillez envoyer vos documents ci-dessous pour débloquer laccès complet à votre espace gestionnaire.',
     en: 'The 7-day deadline to submit your documents has passed. Please submit your documents below to unlock full access to your manager dashboard.',
     es: 'El plazo de 7 días para enviar sus documentos ha expirado. Por favor envíe sus documentos a continuación para desbloquear el acceso completo a su panel de gestor.',
-    it: 'Il termine di 7 giorni per inviare i tuoi documenti è scaduto. Invia i tuoi documenti qui sotto per sbloccare l\'accesso completo alla tua area gestore.',
+    it: '\'Il termine di 7 giorni per inviare i tuoi documenti è scaduto. Invia i tuoi documenti qui sotto per sbloccare laccesso completo alla tua area gestore.',
     zh: '提交文件的7天期限已过。请在下方提交您的文件以解锁管理员仪表板的完整访问权限。',
     ar: 'انتهت مهلة 7 أيام لتقديم مستنداتك. يرجى تقديم مستنداتك أدناه لفتح الوصول الكامل إلى لوحة المدير.',
   },
@@ -189,7 +189,7 @@ export const fleetDashboardTranslations: Translations = {
     ar: 'الملف الشخصي غير موجود',
   },
   'fleetDashboard.accessFeatureError': {
-    fr: 'Veuillez d\'abord soumettre vos documents pour accéder à cette fonctionnalité',
+    fr: '\'Veuillez dabord soumettre vos documents pour accéder à cette fonctionnalité',
     en: 'Please submit your documents first to access this feature',
     es: 'Por favor, envíe primero sus documentos para acceder a esta función',
     it: 'Per favore invia prima i tuoi documenti per accedere a questa funzione',

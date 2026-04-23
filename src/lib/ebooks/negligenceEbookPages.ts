@@ -275,7 +275,7 @@ export const addPartie1 = (doc: jsPDF, startPage: number): number => {
     "Au depart, la plateforme a besoin des chauffeurs pour creer l'offre et des clients pour valider l'utilite.",
     "Elle propose :",
   ]);
-  ctx.addBulletList(["Bonus eleves", "Commissions incitatives", "Communication valorisant l'independance"]);
+  ctx.addBulletList(["Bonus eleves", "Frais de transaction incitatives", "Communication valorisant l'independance"]);
   ctx.addQuote("Le chauffeur est presente comme partenaire.");
 
   ctx.addSeparator();
@@ -442,7 +442,7 @@ export const addPartie5 = (doc: jsPDF, startPage: number): number => {
   ctx.addSeparator();
 
   ctx.addTitle("5.2 Decisions sans consultation");
-  ctx.addBulletList(["Ajustement des commissions", "Changements d'algorithme", "Revision des conditions d'acceptation"]);
+  ctx.addBulletList(["Ajustement des frais de transaction", "Changements d'algorithme", "Revision des conditions d'acceptation"]);
   ctx.addParagraphs(["Sans consultation collective reelle."]);
   ctx.addQuote("La masse remplace le dialogue.");
 
@@ -769,7 +769,7 @@ export const addClosingPages = (doc: jsPDF, startPage: number): number => {
   doc.setFontSize(10);
   doc.setTextColor(...c.grayText);
   doc.text("Plateforme 100% dediee aux chauffeurs VTC independants", w / 2, fy + 18, { align: "center" });
-  doc.text("Sans commission sur vos courses directes", w / 2, fy + 26, { align: "center" });
+  doc.text("Sans frais de transaction sur vos courses directes", w / 2, fy + 26, { align: "center" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);

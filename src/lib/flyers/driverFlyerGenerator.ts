@@ -59,8 +59,8 @@ export const generateDriverFlyer = async () => {
   const benefits = [
     {
       icon: "💰",
-      title: "Zéro Commission sur vos Courses",
-      desc: "Gardez 100% de vos revenus. Aucune commission sur les courses que vous gérez directement avec vos clients."
+      title: "Zéro Frais de transaction sur vos Courses",
+      desc: "Gardez 100% de vos revenus. Aucuns frais de transaction sur les courses que vous gérez directement avec vos clients."
     },
     {
       icon: "📱",
@@ -169,7 +169,7 @@ export const generateDriverFlyer = async () => {
   yPos += 10;
 
   const comparisons = [
-    { feature: "Commission sur courses", others: "15-25%", solocab: "0%" },
+    { feature: "Frais de transaction sur courses", others: "15-25%", solocab: "0%" },
     { feature: "Vos clients restent vos clients", others: "❌", solocab: "✓" },
     { feature: "Tarifs personnalisables", others: "❌", solocab: "✓" },
     { feature: "Contrats B2B directs", others: "❌", solocab: "✓" },

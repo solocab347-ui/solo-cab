@@ -772,11 +772,11 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
                     <span className="font-bold text-green-500">{revenueStats.total.toFixed(2)} €</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-red-500/10 rounded-lg">
-                    <span>Commissions à reverser</span>
+                    <span>Frais de transaction à reverser</span>
                     <span className="font-bold text-red-500">-{revenueStats.commissionsOwed.toFixed(2)} €</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg">
-                    <span>Commissions reçues</span>
+                    <span>Frais de transaction reçus</span>
                     <span className="font-bold text-blue-500">+{revenueStats.commissionsReceived.toFixed(2)} €</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border-2 border-primary/30">

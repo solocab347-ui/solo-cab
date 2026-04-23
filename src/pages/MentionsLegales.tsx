@@ -86,7 +86,7 @@ const MentionsLegales = () => {
               </p>
               <p>
                 La plateforme SoloCab est un service de mise en relation entre des chauffeurs VTC 
-                indépendants et des clients particuliers ou professionnels, sans commission sur les courses.
+                indépendants et des clients particuliers ou professionnels, sans frais de transaction sur les courses.
               </p>
             </section>
 

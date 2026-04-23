@@ -67,7 +67,7 @@ const ChauffeurLanding = () => {
           </h1>
 
           <p className="text-sm sm:text-lg md:text-xl text-muted-foreground text-center mb-6 sm:mb-8 max-w-2xl mx-auto px-2">
-            0% de commission. Accès gratuit. Vos clients vous appartiennent.
+            0% de frais de transaction. Accès gratuit. Vos clients vous appartiennent.
           </p>
 
           {/* CTA Principal */}
@@ -88,7 +88,7 @@ const ChauffeurLanding = () => {
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 sm:mb-10 px-1">
             <Card className="p-3 sm:p-5 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-400 mb-0.5 sm:mb-1">0%</div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Commission</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Frais</div>
             </Card>
             <Card className="p-3 sm:p-5 bg-gradient-to-br from-blue-500/20 to-blue-600/10 border-blue-500/30 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-400 mb-0.5 sm:mb-1">100%</div>
@@ -176,7 +176,7 @@ const ChauffeurLanding = () => {
             <div className="mt-5 sm:mt-8 space-y-2 sm:space-y-3 text-left">
               <p className="text-sm sm:text-base flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
-                0% de commission sur toutes vos courses
+                0% de frais de transaction sur toutes vos courses
               </p>
               <p className="text-sm sm:text-base flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
@@ -208,7 +208,7 @@ const ChauffeurLanding = () => {
               <div className="text-center mb-4">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1">Uber</h3>
                 <Badge className="bg-red-500/20 text-red-400 border-red-500/50 text-xs">
-                  Commission 25%
+                  Frais de transaction 25%
                 </Badge>
               </div>
               <div className="space-y-2 sm:space-y-3 text-sm">
@@ -217,7 +217,7 @@ const ChauffeurLanding = () => {
                   <span className="text-foreground font-medium">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Commission</span>
+                  <span className="text-muted-foreground">Frais de transaction</span>
                   <span className="text-red-400 font-medium">-1 250€</span>
                 </div>
                 <div className="border-t border-border pt-2 sm:pt-3">
@@ -248,7 +248,7 @@ const ChauffeurLanding = () => {
               <div className="text-center mb-4">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1">Bolt</h3>
                 <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/50 text-xs">
-                  Commission 20%
+                  Frais de transaction 20%
                 </Badge>
               </div>
               <div className="space-y-2 sm:space-y-3 text-sm">
@@ -257,7 +257,7 @@ const ChauffeurLanding = () => {
                   <span className="text-foreground font-medium">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Commission</span>
+                  <span className="text-muted-foreground">Frais de transaction</span>
                   <span className="text-orange-400 font-medium">-1 000€</span>
                 </div>
                 <div className="border-t border-border pt-2 sm:pt-3">
@@ -293,7 +293,7 @@ const ChauffeurLanding = () => {
               <div className="text-center mb-4 pt-2">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1">SoloCab</h3>
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/50 text-xs">
-                  0% commission
+                  0% frais de transaction
                 </Badge>
               </div>
               <div className="space-y-2 sm:space-y-3 text-sm">
@@ -302,7 +302,7 @@ const ChauffeurLanding = () => {
                   <span className="text-foreground font-medium">5 000€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Commission</span>
+                  <span className="text-muted-foreground">Frais de transaction</span>
                   <span className="text-green-400 font-medium">0€</span>
                 </div>
                 <div className="border-t border-border pt-2 sm:pt-3">
@@ -335,7 +335,7 @@ const ChauffeurLanding = () => {
               💰 Économie annuelle : {(1250 * 12).toLocaleString()}€
             </p>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              Par rapport à Uber (25% de commission) sur un CA de 5 000€/mois
+              Par rapport à Uber (25% de frais de transaction) sur un CA de 5 000€/mois
             </p>
           </Card>
         </div>

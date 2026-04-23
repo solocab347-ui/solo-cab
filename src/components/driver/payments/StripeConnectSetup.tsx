@@ -81,7 +81,7 @@ export function StripeConnectSetup({ driverId, onStatusChange }: StripeConnectSe
       }
     } catch (error: any) {
       console.error('Error starting onboarding:', error);
-      toast.error(error.message || 'Erreur lors du démarrage de l\'inscription');
+      toast.error(error.message || '\'Erreur lors du démarrage de linscription');
     } finally {
       setOnboardingLoading(false);
     }
@@ -140,7 +140,7 @@ export function StripeConnectSetup({ driverId, onStatusChange }: StripeConnectSe
           <AlertTitle className="text-indigo-400">Pourquoi Stripe Connect ?</AlertTitle>
           <AlertDescription className="text-sm text-muted-foreground">
             Pour partager des courses avec d'autres chauffeurs, vous devez configurer un compte Stripe Connect. 
-            Cela permet d'encaisser les paiements clients automatiquement et de redistribuer les commissions entre partenaires.
+            Cela permet d'encaisser les paiements clients automatiquement et de redistribuer les frais de transaction entre partenaires.
           </AlertDescription>
         </Alert>
 
@@ -156,7 +156,7 @@ export function StripeConnectSetup({ driverId, onStatusChange }: StripeConnectSe
           </div>
           <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
             <Handshake className="h-5 w-5 text-purple-500" />
-            <span className="text-sm">Commissions partenaires</span>
+            <span className="text-sm">Frais de transaction partenaires</span>
           </div>
         </div>
 

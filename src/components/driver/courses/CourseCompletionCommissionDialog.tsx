@@ -235,7 +235,7 @@ export function CourseCompletionCommissionDialog({
 
       setCommissionInfo(null);
     } catch (error) {
-      console.error('Error loading commission info:', error);
+      console.error('Error loading frais de transaction info:', error);
       setCommissionInfo(null);
     } finally {
       setLoading(false);
@@ -494,9 +494,9 @@ export function CourseCompletionCommissionDialog({
             {stripeInfo.isStripePayment 
               ? 'Clôturer et encaisser automatiquement' 
               : stripeInfo.paymentMethod === 'card' 
-                ? 'J\'ai encaissé avec mon TPE' 
+                ? '\'Jai encaissé avec mon TPE' 
                 : stripeInfo.paymentMethod === 'cash' 
-                  ? 'J\'ai encaissé en espèces' 
+                  ? '\'Jai encaissé en espèces' 
                   : 'Confirmer la clôture'}
           </Button>
         </DialogFooter>

@@ -53,7 +53,7 @@ const BENEFITS = [
   },
   {
     icon: BadgePercent,
-    title: 'Commissions automatiques',
+    title: 'Frais de transaction automatiques',
     description: 'Tu touches 15% (courses < 30€) ou 20% (≥ 30€) sur chaque course partagée et acceptée par un partenaire.',
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10',
@@ -61,7 +61,7 @@ const BENEFITS = [
   {
     icon: Shield,
     title: 'Réseau sécurisé Stripe',
-    description: 'Tous les paiements et commissions passent par Stripe Connect. Aucun argent perdu, tout est traçable.',
+    description: 'Tous les paiements et frais de transaction passent par Stripe Connect. Aucun argent perdu, tout est traçable.',
     color: 'text-purple-500',
     bg: 'bg-purple-500/10',
   },
@@ -235,7 +235,7 @@ export function OnboardingWorkScheduleStep({ driverId, onComplete }: OnboardingW
               <p className="text-sm font-medium text-foreground mb-1">Exemple concret</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Tu travailles de 8h à 20h. Un client demande une course à 22h → elle est automatiquement proposée au réseau. 
-                Un partenaire l'accepte pour 45€ → <span className="font-semibold text-emerald-500">tu touches 9€ de commission</span> sans avoir conduit !
+                Un partenaire l'accepte pour 45€ → <span className="font-semibold text-emerald-500">tu touches 9€ de frais de transaction</span> sans avoir conduit !
               </p>
             </div>
           </div>
@@ -340,7 +340,7 @@ export function OnboardingWorkScheduleStep({ driverId, onComplete }: OnboardingW
             <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               <span className="font-medium text-foreground">{activeDays} jour{activeDays > 1 ? 's' : ''} actif{activeDays > 1 ? 's' : ''}</span> — 
-              Les courses demandées en dehors de ces créneaux seront signalées et pourront être partagées avec le réseau pour te générer des commissions.
+              Les courses demandées en dehors de ces créneaux seront signalées et pourront être partagées avec le réseau pour te générer des frais de transaction.
             </p>
           </div>
         </div>

@@ -60,39 +60,39 @@ const DRIVER_OBLIGATIONS: Obligation[] = [
     id: 'client_protection',
     icon: <UserX className="h-5 w-5" />,
     title: 'Protection de la clientèle',
-    description: 'Je m\'engage à NE PAS solliciter, démarcher ou détourner les clients de mon partenaire. Chaque client appartient exclusivement au chauffeur qui l\'a acquis. Toute tentative de détournement est une faute grave pouvant entraîner la résiliation immédiate du partenariat et des poursuites judiciaires.',
+    description: '\'\'Je mengage à NE PAS solliciter, démarcher ou détourner les clients de mon partenaire. Chaque client appartient exclusivement au chauffeur qui la acquis. Toute tentative de détournement est une faute grave pouvant entraîner la résiliation immédiate du partenariat et des poursuites judiciaires.',
     critical: true,
   },
   {
     id: 'payment_respect',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des paiements',
-    description: 'Je m\'engage à verser les commissions dues dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
+    description: '\'Je mengage à verser les frais de transaction dus dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
     critical: true,
   },
   {
     id: 'deadline_respect',
     icon: <Clock className="h-5 w-5" />,
     title: 'Respect des délais',
-    description: 'Je m\'engage à respecter scrupuleusement les horaires de prise en charge convenus avec les clients. Toute annulation tardive ou non-présentation porte atteinte à la réputation de mon partenaire.',
+    description: '\'Je mengage à respecter scrupuleusement les horaires de prise en charge convenus avec les clients. Toute annulation tardive ou non-présentation porte atteinte à la réputation de mon partenaire.',
   },
   {
     id: 'service_quality',
     icon: <Handshake className="h-5 w-5" />,
     title: 'Qualité de service',
-    description: 'Je m\'engage à fournir un service irréprochable aux clients de mon partenaire, avec le même professionnalisme que pour mes propres clients. La satisfaction client est notre priorité commune.',
+    description: '\'Je mengage à fournir un service irréprochable aux clients de mon partenaire, avec le même professionnalisme que pour mes propres clients. La satisfaction client est notre priorité commune.',
   },
   {
     id: 'confidentiality',
     icon: <Shield className="h-5 w-5" />,
     title: 'Confidentialité des informations',
-    description: 'Je m\'engage à préserver la confidentialité des informations commerciales partagées (coordonnées clients, tarifs, etc.) et à ne pas les utiliser en dehors du cadre de notre partenariat.',
+    description: '\'Je mengage à préserver la confidentialité des informations commerciales partagées (coordonnées clients, tarifs, etc.) et à ne pas les utiliser en dehors du cadre de notre partenariat.',
   },
   {
     id: 'legal_compliance',
     icon: <Scale className="h-5 w-5" />,
     title: 'Conformité légale',
-    description: 'Je confirme être en possession de toutes les autorisations nécessaires à l\'exercice de mon activité (carte VTC, assurance professionnelle, immatriculation) et m\'engage à les maintenir valides.',
+    description: '\'\'Je confirme être en possession de toutes les autorisations nécessaires à lexercice de mon activité (carte VTC, assurance professionnelle, immatriculation) et mengage à les maintenir valides.',
   },
 ];
 
@@ -102,39 +102,39 @@ const FLEET_DRIVER_OBLIGATIONS: Obligation[] = [
     id: 'client_protection_fleet',
     icon: <UserX className="h-5 w-5" />,
     title: 'Protection de la clientèle du gestionnaire',
-    description: 'Je m\'engage à NE PAS solliciter, démarcher ou détourner les clients du gestionnaire de flotte. Les clients qui me sont confiés via ce partenariat restent exclusivement liés au gestionnaire. Toute tentative de détournement entraînera la résiliation immédiate et des poursuites judiciaires.',
+    description: '\'Je mengage à NE PAS solliciter, démarcher ou détourner les clients du gestionnaire de flotte. Les clients qui me sont confiés via ce partenariat restent exclusivement liés au gestionnaire. Toute tentative de détournement entraînera la résiliation immédiate et des poursuites judiciaires.',
     critical: true,
   },
   {
     id: 'payment_respect',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des paiements',
-    description: 'Je m\'engage à verser les commissions dues dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
+    description: '\'Je mengage à verser les frais de transaction dus dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
     critical: true,
   },
   {
     id: 'deadline_respect',
     icon: <Clock className="h-5 w-5" />,
     title: 'Respect des délais',
-    description: 'Je m\'engage à respecter scrupuleusement les horaires de prise en charge convenus. Toute annulation tardive ou non-présentation porte atteinte à la réputation du gestionnaire de flotte.',
+    description: '\'Je mengage à respecter scrupuleusement les horaires de prise en charge convenus. Toute annulation tardive ou non-présentation porte atteinte à la réputation du gestionnaire de flotte.',
   },
   {
     id: 'service_quality',
     icon: <Handshake className="h-5 w-5" />,
     title: 'Qualité de service',
-    description: 'Je m\'engage à fournir un service irréprochable aux clients qui me sont confiés, représentant dignement l\'image du gestionnaire de flotte. La satisfaction client est primordiale.',
+    description: '\'\'Je mengage à fournir un service irréprochable aux clients qui me sont confiés, représentant dignement limage du gestionnaire de flotte. La satisfaction client est primordiale.',
   },
   {
     id: 'confidentiality',
     icon: <Shield className="h-5 w-5" />,
     title: 'Confidentialité des informations',
-    description: 'Je m\'engage à préserver la confidentialité de toutes les informations commerciales (coordonnées clients, tarifs, stratégies) et à ne pas les utiliser en dehors du cadre de ce partenariat.',
+    description: '\'Je mengage à préserver la confidentialité de toutes les informations commerciales (coordonnées clients, tarifs, stratégies) et à ne pas les utiliser en dehors du cadre de ce partenariat.',
   },
   {
     id: 'legal_compliance',
     icon: <Scale className="h-5 w-5" />,
     title: 'Conformité légale',
-    description: 'Je confirme être en possession de toutes les autorisations nécessaires à l\'exercice de mon activité (carte VTC, assurance professionnelle, immatriculation) et m\'engage à les maintenir valides.',
+    description: '\'\'Je confirme être en possession de toutes les autorisations nécessaires à lexercice de mon activité (carte VTC, assurance professionnelle, immatriculation) et mengage à les maintenir valides.',
   },
 ];
 
@@ -144,40 +144,40 @@ const FLEET_MANAGER_OBLIGATIONS: Obligation[] = [
     id: 'course_provision',
     icon: <Users className="h-5 w-5" />,
     title: 'Fourniture de missions',
-    description: 'Je m\'engage à proposer des courses au chauffeur partenaire dans le cadre de notre collaboration, sans obligation de volume minimum ou maximum. Les missions seront attribuées selon les besoins et disponibilités.',
+    description: '\'Je mengage à proposer des courses au chauffeur partenaire dans le cadre de notre collaboration, sans obligation de volume minimum ou maximum. Les missions seront attribuées selon les besoins et disponibilités.',
     critical: true,
   },
   {
     id: 'timely_communication',
     icon: <Clock className="h-5 w-5" />,
     title: 'Transmission rapide des missions',
-    description: 'Je m\'engage à transmettre les demandes de courses au chauffeur dans les meilleurs délais possibles, afin de lui permettre de s\'organiser efficacement et d\'assurer un service de qualité.',
+    description: '\'\'\'Je mengage à transmettre les demandes de courses au chauffeur dans les meilleurs délais possibles, afin de lui permettre de sorganiser efficacement et dassurer un service de qualité.',
     critical: true,
   },
   {
     id: 'respectful_clients',
     icon: <Handshake className="h-5 w-5" />,
     title: 'Clients respectueux',
-    description: 'Je m\'engage à envoyer des clients qui respectent le travail du chauffeur, son véhicule et son matériel professionnel. En cas de comportement inapproprié signalé, je m\'engage à prendre les mesures nécessaires.',
+    description: '\'\'Je mengage à envoyer des clients qui respectent le travail du chauffeur, son véhicule et son matériel professionnel. En cas de comportement inapproprié signalé, je mengage à prendre les mesures nécessaires.',
   },
   {
     id: 'commission_respect',
     icon: <Euro className="h-5 w-5" />,
-    title: 'Respect des commissions convenues',
-    description: 'Je m\'engage à respecter le taux de commission convenu contractuellement et à ne pas le modifier unilatéralement. Toute modification devra faire l\'objet d\'un accord mutuel préalable.',
+    title: 'Respect des frais de transaction convenues',
+    description: '\'\'\'Je mengage à respecter le taux de frais de transaction convenu contractuellement et à ne pas le modifier unilatéralement. Toute modification devra faire lobjet dun accord mutuel préalable.',
     critical: true,
   },
   {
     id: 'fair_treatment',
     icon: <Scale className="h-5 w-5" />,
     title: 'Traitement équitable',
-    description: 'Je m\'engage à traiter le chauffeur partenaire de manière équitable et professionnelle, en respectant son statut d\'indépendant et en maintenant une communication transparente.',
+    description: '\'\'Je mengage à traiter le chauffeur partenaire de manière équitable et professionnelle, en respectant son statut dindépendant et en maintenant une communication transparente.',
   },
   {
     id: 'payment_transparency',
     icon: <Shield className="h-5 w-5" />,
     title: 'Transparence financière',
-    description: 'Je m\'engage à fournir au chauffeur toutes les informations nécessaires concernant les courses effectuées, les montants et les commissions, permettant un suivi clair de notre collaboration.',
+    description: '\'Je mengage à fournir au chauffeur toutes les informations nécessaires concernant les courses effectuées, les montants et les frais de transaction, permettant un suivi clair de notre collaboration.',
   },
 ];
 
@@ -187,40 +187,40 @@ const COMPANY_OBLIGATIONS: Obligation[] = [
     id: 'timely_payment',
     icon: <Euro className="h-5 w-5" />,
     title: 'Respect des délais de paiement',
-    description: 'Je m\'engage à régler les factures dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités et la suspension des services.',
+    description: '\'Je mengage à régler les factures dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités et la suspension des services.',
     critical: true,
   },
   {
     id: 'accurate_booking',
     icon: <Clock className="h-5 w-5" />,
     title: 'Informations de réservation exactes',
-    description: 'Je m\'engage à fournir des informations précises et complètes pour chaque réservation (adresses, horaires, nombre de passagers) afin de garantir la qualité du service.',
+    description: '\'Je mengage à fournir des informations précises et complètes pour chaque réservation (adresses, horaires, nombre de passagers) afin de garantir la qualité du service.',
     critical: true,
   },
   {
     id: 'respectful_employees',
     icon: <Handshake className="h-5 w-5" />,
     title: 'Comportement respectueux des passagers',
-    description: 'Je m\'engage à informer mes collaborateurs des règles de bonne conduite à adopter dans les véhicules et à prendre les mesures nécessaires en cas de comportement inapproprié signalé.',
+    description: '\'Je mengage à informer mes collaborateurs des règles de bonne conduite à adopter dans les véhicules et à prendre les mesures nécessaires en cas de comportement inapproprié signalé.',
   },
   {
     id: 'timely_cancellation',
     icon: <Users className="h-5 w-5" />,
     title: 'Annulations dans les délais',
-    description: 'Je m\'engage à prévenir le gestionnaire de flotte au plus tôt en cas d\'annulation d\'une course. Les annulations tardives (moins de 2h avant) pourront être facturées.',
+    description: '\'\'\'Je mengage à prévenir le gestionnaire de flotte au plus tôt en cas dannulation dune course. Les annulations tardives (moins de 2h avant) pourront être facturées.',
   },
   {
     id: 'partnership_terms',
     icon: <Scale className="h-5 w-5" />,
     title: 'Respect des termes du partenariat',
-    description: 'Je m\'engage à respecter les conditions tarifaires et les modalités de facturation convenues. Toute modification nécessitera un accord mutuel préalable.',
+    description: '\'Je mengage à respecter les conditions tarifaires et les modalités de facturation convenues. Toute modification nécessitera un accord mutuel préalable.',
     critical: true,
   },
   {
     id: 'data_confidentiality',
     icon: <Shield className="h-5 w-5" />,
     title: 'Confidentialité',
-    description: 'Je m\'engage à préserver la confidentialité des informations partagées dans le cadre de ce partenariat (tarifs, conditions commerciales, coordonnées des chauffeurs).',
+    description: '\'Je mengage à préserver la confidentialité des informations partagées dans le cadre de ce partenariat (tarifs, conditions commerciales, coordonnées des chauffeurs).',
   },
 ];
 
@@ -230,34 +230,34 @@ const FLEET_TO_COMPANY_OBLIGATIONS: Obligation[] = [
     id: 'service_quality',
     icon: <Handshake className="h-5 w-5" />,
     title: 'Qualité de service garantie',
-    description: 'Je m\'engage à fournir des chauffeurs professionnels et des véhicules en parfait état pour chaque course. La satisfaction de vos collaborateurs est notre priorité.',
+    description: '\'Je mengage à fournir des chauffeurs professionnels et des véhicules en parfait état pour chaque course. La satisfaction de vos collaborateurs est notre priorité.',
     critical: true,
   },
   {
     id: 'availability',
     icon: <Clock className="h-5 w-5" />,
     title: 'Disponibilité et réactivité',
-    description: 'Je m\'engage à répondre rapidement aux demandes de réservation et à assurer une disponibilité optimale pour vos besoins de transport.',
+    description: '\'Je mengage à répondre rapidement aux demandes de réservation et à assurer une disponibilité optimale pour vos besoins de transport.',
     critical: true,
   },
   {
     id: 'punctuality',
     icon: <Users className="h-5 w-5" />,
     title: 'Ponctualité',
-    description: 'Je m\'engage à ce que les chauffeurs soient présents à l\'heure convenue. En cas de retard exceptionnel, vous serez informé immédiatement.',
+    description: '\'\'Je mengage à ce que les chauffeurs soient présents à lheure convenue. En cas de retard exceptionnel, vous serez informé immédiatement.',
   },
   {
     id: 'transparent_billing',
     icon: <Euro className="h-5 w-5" />,
     title: 'Facturation transparente',
-    description: 'Je m\'engage à fournir des factures claires et détaillées selon la périodicité convenue, respectant les tarifs et conditions du partenariat.',
+    description: '\'Je mengage à fournir des factures claires et détaillées selon la périodicité convenue, respectant les tarifs et conditions du partenariat.',
     critical: true,
   },
   {
     id: 'confidentiality',
     icon: <Shield className="h-5 w-5" />,
     title: 'Confidentialité des informations',
-    description: 'Je m\'engage à préserver la confidentialité des informations concernant votre entreprise et vos collaborateurs (destinations, horaires, contacts).',
+    description: '\'Je mengage à préserver la confidentialité des informations concernant votre entreprise et vos collaborateurs (destinations, horaires, contacts).',
   },
   {
     id: 'professionalism',
@@ -349,7 +349,7 @@ export function PartnershipSignatureConfirmation({
           {/* Summary */}
           <div className="mb-4 p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Commission</span>
+              <span className="text-muted-foreground">Frais de transaction</span>
               <Badge variant="secondary" className="font-semibold">
                 {commissionPercentage ? `${commissionPercentage}%` : 'À définir'}
               </Badge>

@@ -251,7 +251,7 @@ export function SentPartnerCourses({ driverId }: Props) {
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-3 text-center">
             <TrendingUp className="h-5 w-5 text-green-600 mx-auto mb-1" />
-            <p className="text-xs text-green-600 font-medium">Commission gagnée</p>
+            <p className="text-xs text-green-600 font-medium">Frais de transaction gagnés</p>
             <p className="text-lg font-bold text-green-600">{totalCommission.toFixed(2)} €</p>
           </CardContent>
         </Card>
@@ -325,7 +325,7 @@ export function SentPartnerCourses({ driverId }: Props) {
                       <p className="font-semibold">{course.course_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Votre commission</p>
+                      <p className="text-xs text-muted-foreground">Vos frais de transaction</p>
                       <p className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-right">
@@ -372,7 +372,7 @@ export function SentPartnerCourses({ driverId }: Props) {
                 </div>
                 <div className="p-3 border-t bg-green-500/5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Commission reçue</span>
+                    <span className="text-sm text-muted-foreground">Frais de transaction reçus</span>
                     <span className="font-bold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
                   </div>
                 </div>

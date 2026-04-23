@@ -101,10 +101,10 @@ export const footerTranslations: Translations = {
   },
   // Platform Overview Section
   'platform.zeroCommission': {
-    fr: '✨ Zéro commission • Contrôle total',
-    en: '✨ Zero commission • Full control',
+    fr: '✨ Zéro frais de transaction • Contrôle total',
+    en: '✨ Zero frais de transaction • Full control',
     es: '✨ Cero comisión • Control total',
-    it: '✨ Zero commissioni • Controllo totale',
+    it: '✨ Zero frais de transactioni • Controllo totale',
     zh: '✨ 零佣金 • 完全控制',
     ar: '✨ صفر عمولة • تحكم كامل',
   },
@@ -141,10 +141,10 @@ export const footerTranslations: Translations = {
     ar: 'العملاء الملتزمين',
   },
   'platform.description': {
-    fr: 'Une communauté où les chauffeurs VTC reprennent leur indépendance et où les clients trouvent des professionnels de confiance. Sans intermédiaire, sans commission.',
-    en: 'A community where VTC drivers regain their independence and clients find trusted professionals. No intermediaries, no commission.',
+    fr: 'Une communauté où les chauffeurs VTC reprennent leur indépendance et où les clients trouvent des professionnels de confiance. Sans intermédiaire, sans frais de transaction.',
+    en: 'A community where VTC drivers regain their independence and clients find trusted professionals. No intermediaries, no frais de transaction.',
     es: 'Una comunidad donde los conductores VTC recuperan su independencia y los clientes encuentran profesionales de confianza. Sin intermediarios, sin comisión.',
-    it: 'Una community dove gli autisti VTC riacquistano la loro indipendenza e i clienti trovano professionisti di fiducia. Senza intermediari, senza commissioni.',
+    it: 'Una community dove gli autisti VTC riacquistano la loro indipendenza e i clienti trovano professionisti di fiducia. Senza intermediari, senza frais de transactioni.',
     zh: '一个VTC司机重获独立、客户找到值得信赖的专业人员的社区。无中介，无佣金。',
     ar: 'مجتمع حيث يستعيد سائقو VTC استقلالهم ويجد العملاء محترفين موثوقين. بدون وسطاء، بدون عمولة.',
   },

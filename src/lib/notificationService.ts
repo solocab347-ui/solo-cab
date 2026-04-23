@@ -1074,7 +1074,7 @@ export const notificationService = {
       userId,
       title: '🎁 Accès gratuit accordé',
       message: type === 'unlimited' 
-        ? 'Vous bénéficiez d\'un accès gratuit illimité'
+        ? '\'Vous bénéficiez dun accès gratuit illimité'
         : `Accès gratuit jusqu'au ${endDate}`,
       type: 'success',
       category: 'subscription'

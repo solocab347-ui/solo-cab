@@ -49,7 +49,7 @@ export function ModifyPartnershipDialog({
   const handleSubmitModification = async () => {
     const commission = parseFloat(newCommission);
     if (isNaN(commission) || commission < 5 || commission > 20) {
-      toast.error('La commission doit être entre 5% et 20%');
+      toast.error('Les frais de transaction doivent être entre 5% et 20%');
       return;
     }
 
@@ -109,7 +109,7 @@ export function ModifyPartnershipDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Error proposing modification:', error);
-      toast.error('Erreur lors de l\'envoi de la proposition');
+      toast.error('\'Erreur lors de lenvoi de la proposition');
     } finally {
       setLoading(false);
     }
@@ -173,7 +173,7 @@ export function ModifyPartnershipDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Error accepting modification:', error);
-      toast.error('Erreur lors de l\'acceptation');
+      toast.error('\'Erreur lors de lacceptation');
     } finally {
       setLoading(false);
     }
@@ -268,7 +268,7 @@ export function ModifyPartnershipDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Error cancelling modification:', error);
-      toast.error('Erreur lors de l\'annulation');
+      toast.error('\'Erreur lors de lannulation');
     } finally {
       setLoading(false);
     }
@@ -360,8 +360,8 @@ export function ModifyPartnershipDialog({
                     <SelectValue placeholder="Sélectionner un motif..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Commission trop élevée">Commission trop élevée</SelectItem>
-                    <SelectItem value="Commission trop basse">Commission trop basse</SelectItem>
+                    <SelectItem value="Frais de transaction trop élevés">Frais de transaction trop élevés</SelectItem>
+                    <SelectItem value="Frais de transaction trop bas">Frais de transaction trop bas</SelectItem>
                     <SelectItem value="Fréquence de paiement inadaptée">Fréquence de paiement inadaptée</SelectItem>
                     <SelectItem value="Besoin de discuter avant">Besoin de discuter avant</SelectItem>
                     <SelectItem value="other">Autre motif (personnalisé)</SelectItem>
@@ -425,10 +425,10 @@ export function ModifyPartnershipDialog({
         {!hasPendingModification && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="commission">Nouvelle commission (%)</Label>
+              <Label htmlFor="commission-input">Nouveaux frais de transaction (%)</Label>
               <div className="relative">
                 <Input
-                  id="commission"
+                  id="commission-input"
                   type="number"
                   min={5}
                   max={20}

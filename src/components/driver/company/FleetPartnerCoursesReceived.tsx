@@ -123,7 +123,7 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
       fetchCourses();
     } catch (error: any) {
       console.error('Error accepting course:', error);
-      toast.error('Erreur lors de l\'acceptation');
+      toast.error('\'Erreur lors de lacceptation');
     } finally {
       setActionLoading(null);
     }

@@ -111,11 +111,11 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
         loadSharingStatus();
         onCancelSuccess?.();
       } else {
-        toast.error(result.error || 'Erreur lors de l\'annulation');
+        toast.error(result.error || '\'Erreur lors de lannulation');
       }
     } catch (error) {
       console.error('Error cancelling share:', error);
-      toast.error('Erreur lors de l\'annulation');
+      toast.error('\'Erreur lors de lannulation');
     } finally {
       setCancelling(false);
       setShowDetails(false);
@@ -144,11 +144,11 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
         loadSharingStatus();
         onCancelSuccess?.();
       } else {
-        toast.error(result.error || 'Erreur lors de l\'annulation');
+        toast.error(result.error || '\'Erreur lors de lannulation');
       }
     } catch (error) {
       console.error('Error cancelling share:', error);
-      toast.error('Erreur lors de l\'annulation');
+      toast.error('\'Erreur lors de lannulation');
     } finally {
       setCancelling(false);
     }

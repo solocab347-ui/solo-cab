@@ -177,7 +177,7 @@ export function PendingPartnerCoursesInCoursesList({
       onCourseAccepted?.();
     } catch (error) {
       console.error('Error accepting partner course:', error);
-      toast.error('Erreur lors de l\'acceptation');
+      toast.error('\'Erreur lors de lacceptation');
     } finally {
       setActionLoading(null);
     }

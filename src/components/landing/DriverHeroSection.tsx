@@ -81,7 +81,7 @@ export const DriverHeroSection = () => {
 
   const benefits = [
     "Inscription gratuite en 5 minutes",
-    "0% de commission sur vos courses",
+    "0% de frais de transaction sur vos courses",
     "Coach IA personnalisé inclus",
     "Suivi d'objectifs intelligent",
   ];
@@ -213,7 +213,7 @@ export const DriverHeroSection = () => {
             <div className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center font-bold mb-3 mx-auto">
               <DollarSign className="w-5 h-5" />
             </div>
-            <h4 className="font-semibold text-foreground mb-2">0% Commission</h4>
+            <h4 className="font-semibold text-foreground mb-2">0% Frais de transaction</h4>
             <p className="text-sm text-muted-foreground">Gardez 100% de vos revenus, aucun frais sur vos courses</p>
           </Card>
           <Card className="p-4 bg-muted/30 border-border">

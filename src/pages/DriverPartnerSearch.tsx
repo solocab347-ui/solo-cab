@@ -292,7 +292,7 @@ export default function DriverPartnerSearch() {
       refreshStatuses();
     } catch (error: any) {
       console.error('Error proposing partnership:', error);
-      toast.error('Erreur lors de l\'envoi');
+      toast.error('\'Erreur lors de lenvoi');
     } finally {
       setSubmitting(false);
     }

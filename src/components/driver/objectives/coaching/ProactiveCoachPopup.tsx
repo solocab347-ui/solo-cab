@@ -180,8 +180,8 @@ export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
   {
     id: 'independence-goal',
     type: 'education',
-    title: 'Votre objectif : l\'indépendance',
-    message: 'Chaque client direct que vous fidélisez, c\'est une course sans commission à 25% ! En développant votre clientèle privée, vous gardez 100% de vos revenus.',
+    title: '\'Votre objectif : lindépendance',
+    message: '\'Chaque client direct que vous fidélisez, cest une course sans frais de transaction à 25% ! En développant votre clientèle privée, vous gardez 100% de vos revenus.',
     emoji: '💰',
     priority: 'high'
   },
@@ -189,7 +189,7 @@ export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
     id: 'qr-code-power',
     type: 'tip',
     title: 'Le pouvoir du QR Code',
-    message: 'Votre QR Code est votre meilleur outil ! Après chaque course, proposez-le à vos clients satisfaits. C\'est simple : ils scannent, ils réservent directement avec vous.',
+    message: '\'Votre QR Code est votre meilleur outil ! Après chaque course, proposez-le à vos clients satisfaits. Cest simple : ils scannent, ils réservent directement avec vous.',
     emoji: '📱',
     actionLabel: 'Voir mon QR Code',
     priority: 'medium'
@@ -198,7 +198,7 @@ export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
     id: 'partnership-benefits',
     type: 'education',
     title: 'Les partenariats entre chauffeurs',
-    message: 'Vous êtes indisponible mais un client fidèle a besoin d\'une course ? Redirigez-le vers un partenaire de confiance et recevez une commission. Tout le monde gagne !',
+    message: '\'Vous êtes indisponible mais un client fidèle a besoin dune course ? Redirigez-le vers un partenaire de confiance et recevez des frais de transaction. Tout le monde gagne !',
     emoji: '🤝',
     actionLabel: 'Découvrir les partenariats',
     priority: 'medium'
@@ -215,7 +215,7 @@ export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
     id: 'pricing-freedom',
     type: 'education',
     title: 'Vous fixez vos tarifs',
-    message: 'Contrairement aux plateformes, c\'est VOUS qui décidez de vos prix. Un service premium mérite une tarification juste. N\'ayez pas peur de valoriser votre travail !',
+    message: '\'\'Contrairement aux plateformes, cest VOUS qui décidez de vos prix. Un service premium mérite une tarification juste. Nayez pas peur de valoriser votre travail !',
     emoji: '💎',
     actionLabel: 'Configurer mes tarifs',
     priority: 'high'
@@ -265,7 +265,7 @@ export function generateContextualMessage(
       id: 'first-client',
       type: 'celebration',
       title: '🎉 Votre premier client direct !',
-      message: 'C\'est le début de votre indépendance ! Ce client, c\'est une course sans commission. Continuez à fidéliser, et bientôt vous n\'aurez plus besoin des plateformes.',
+      message: '\'\'\'Cest le début de votre indépendance ! Ce client, cest une course sans frais de transaction. Continuez à fidéliser, et bientôt vous naurez plus besoin des plateformes.',
       emoji: '🏆',
       priority: 'high'
     };
@@ -289,7 +289,7 @@ export function generateContextualMessage(
       id: 'suggest-partnership',
       type: 'tip',
       title: 'Développez votre réseau !',
-      message: `Avec ${stats.totalClients} clients fidèles, pensez aux partenariats ! Si vous êtes indisponible, un partenaire peut prendre vos courses et vous reversez une petite commission.`,
+      message: `Avec ${stats.totalClients} clients fidèles, pensez aux partenariats ! Si vous êtes indisponible, un partenaire peut prendre vos courses et vous reversez une petite frais de transaction.`,
       emoji: '🤝',
       actionLabel: 'Découvrir les partenariats',
       priority: 'medium'
@@ -302,7 +302,7 @@ export function generateContextualMessage(
       id: 'morning-boost',
       type: 'reminder',
       title: `${name}Prêt pour une nouvelle journée ?`,
-      message: 'Chaque course est une opportunité de fidéliser un nouveau client. N\'oubliez pas votre QR Code !',
+      message: '\'Chaque course est une opportunité de fidéliser un nouveau client. Noubliez pas votre QR Code !',
       emoji: '☀️',
       priority: 'low'
     };
@@ -313,7 +313,7 @@ export function generateContextualMessage(
     return {
       id: 'independence-progress',
       type: 'milestone',
-      title: 'Vous progressez vers l\'indépendance !',
+      title: '\'Vous progressez vers lindépendance !',
       message: `${stats.soloCabPercentage.toFixed(0)}% de vos revenus viennent de clients directs. Encore un effort et vous réduirez drastiquement votre dépendance aux plateformes !`,
       emoji: '📈',
       priority: 'medium'

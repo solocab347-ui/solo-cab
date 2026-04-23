@@ -69,7 +69,7 @@ const STEP_TIPS: Record<number, string> = {
   0: `💡 **Conseil tarifs** : Sur SoloCab, vous êtes maître de vos prix ! Commencez par les tarifs moyens de votre zone, puis ajustez selon la qualité de votre service. Des tarifs transparents = des clients qui reviennent.`,
   1: `📸 **Un profil complet = +40% de réservations** ! Les clients SoloCab recherchent des chauffeurs de confiance. Photo pro, description soignée et zones d'activité précises vous démarquent des plateformes anonymes.`,
   2: `📋 **Documents validés = accès complet** à votre espace SoloCab. Votre carte VTC, permis et pièce d'identité sont vérifiés manuellement pour garantir la confiance de vos futurs clients.`,
-  3: `🏷️ **La plaque NFC** transforme chaque course en opportunité de fidélisation. Vos clients scannent et réservent directement — sans commission plateforme. C'est votre atout indépendance !`,
+  3: `🏷️ **La plaque NFC** transforme chaque course en opportunité de fidélisation. Vos clients scannent et réservent directement — sans frais de transaction plateforme. C'est votre atout indépendance !`,
 };
 
 const STEP_BENEFITS: Record<number, string[]> = {
@@ -79,7 +79,7 @@ const STEP_BENEFITS: Record<number, string[]> = {
     '📊 Statistiques de revenus précises',
   ],
   1: [
-    '🔍 Visible dans l\'annuaire SoloCab',
+    '\'🔍 Visible dans lannuaire SoloCab',
     '⭐ Confiance accrue des clients',
     '📱 Profil partageable par lien/QR',
     '🤝 Accès aux partenariats entreprises',
@@ -90,7 +90,7 @@ const STEP_BENEFITS: Record<number, string[]> = {
     '📋 Conformité réglementaire garantie',
   ],
   3: [
-    '🚀 Réservations directes sans commission',
+    '🚀 Réservations directes sans frais de transaction',
     '💳 Paiements sécurisés intégrés',
     '📈 Fidélisation client automatique',
   ],

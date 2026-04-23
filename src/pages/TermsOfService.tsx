@@ -243,12 +243,12 @@ const TermsOfService = () => {
               </ul>
               <p>
                 <strong>Règlement hebdomadaire</strong> : afin de minimiser les frais de transaction pour les chauffeurs,
-                SoloCab agrège l'ensemble des commissions et frais sur une semaine civile (lundi à dimanche). 
+                SoloCab agrège l'ensemble des frais de transaction et frais sur une semaine civile (lundi à dimanche). 
                 Un versement net unique est effectué chaque lundi sur le compte Stripe Connect du chauffeur. 
                 Ce système réduit considérablement les frais bancaires par rapport à un règlement par transaction.
               </p>
               <p>
-                SoloCab ne prélève <strong>aucune commission</strong> sur le montant des courses. 
+                SoloCab ne prélève <strong>aucuns frais de transaction</strong> sur le montant des courses. 
                 Les montants mentionnés ci-dessus sont exclusivement des frais de gestion et de transaction.
               </p>
             </section>

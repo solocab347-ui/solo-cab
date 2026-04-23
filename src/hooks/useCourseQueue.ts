@@ -136,7 +136,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
       return true;
     } catch (error) {
       console.error('Error forcing course:', error);
-      toast.error('Erreur lors de l\'acceptation forcée');
+      toast.error('\'Erreur lors de lacceptation forcée');
       return false;
     }
   };

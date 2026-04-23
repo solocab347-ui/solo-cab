@@ -179,7 +179,7 @@ export const generateEcosystemFlyer = async () => {
         "Gestion des chauffeurs salariés et partenaires",
         "Contrats B2B avec entreprises",
         "Tableau de bord analytique",
-        "Commission transparente",
+        "Frais de transaction transparente",
       ]
     },
     {

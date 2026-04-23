@@ -46,17 +46,17 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
     {
       icon: <CreditCard className="h-5 w-5 text-primary" />,
       title: 'Répartition automatique des gains',
-      description: 'Les commissions sont automatiquement réparties via Stripe Connect entre vous et vos partenaires',
+      description: 'Les frais de transaction sont automatiquement réparties via Stripe Connect entre vous et vos partenaires',
     },
     {
       icon: <Shield className="h-5 w-5 text-primary" />,
       title: 'Transparence totale',
-      description: 'Visualisez les montants, commissions et reversements pour chaque course partagée',
+      description: 'Visualisez les montants, frais de transaction et reversements pour chaque course partagée',
     },
     {
       icon: <TrendingUp className="h-5 w-5 text-primary" />,
       title: 'Augmentez vos revenus',
-      description: 'Gagnez une commission de 15% à 20% sur chaque course que vous partagez avec un partenaire',
+      description: 'Gagnez des frais de transaction de 15% à 20% sur chaque course que vous partagez avec un partenaire',
     },
   ];
 
@@ -128,7 +128,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <span>La commission du partenaire est automatiquement reversée (15% à 20%)</span>
+                <span>Les frais de transaction du partenaire sont automatiquement reversés (15% à 20%)</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -140,7 +140,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <span><strong>Versement hebdomadaire</strong> : les commissions sont agrégées et versées chaque lundi pour minimiser les frais bancaires</span>
+                <span><strong>Versement hebdomadaire</strong> : les frais de transaction sont agrégés et versés chaque lundi pour minimiser les frais bancaires</span>
               </li>
             </ul>
           </div>
