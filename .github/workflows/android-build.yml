@@ -44,6 +44,18 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Diagnose Android toolchain
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            echo "JAVA_HOME=${JAVA_HOME:-<unset>}"
+            java -version
+            echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
+            echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
+            sdkmanager --list_installed || true
+          } 2>&1 | tee logs/android-toolchain.log
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -90,6 +102,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          npm run android:doctor 2>&1 | tee logs/android-doctor.log
           npm run android:verify 2>&1 | tee logs/android-verify.log
 
       - name: Build debug APK
