@@ -298,6 +298,16 @@ const App = () => (
                 }
               />
               <Route
+                path="/diagnostic-gps"
+                element={
+                  <ProtectedRoute allowedRoles={["driver", "admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <GpsDiagnostic />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/client-profile/:clientId"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
