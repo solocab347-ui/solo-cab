@@ -252,7 +252,16 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             const r = await PushNotifications.requestPermissions();
             result = mapCapacitorState(r.receive);
             if (result === 'granted') {
-              await PushNotifications.register();
+              try {
+                await PushNotifications.register();
+              } catch (regErr: any) {
+                const msg = String(regErr?.message || regErr || '');
+                if (msg.includes('Firebase')) {
+                  console.warn('[Permissions] Firebase non configuré, register() ignoré.');
+                } else {
+                  console.warn('[Permissions] register() a échoué:', regErr);
+                }
+              }
             }
           } else if ('Notification' in window) {
             const r = await Notification.requestPermission();
