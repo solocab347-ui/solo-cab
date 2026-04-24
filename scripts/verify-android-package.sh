@@ -162,6 +162,31 @@ if [ -n "$NAMESPACE" ] && [ "$NAMESPACE" != "$APP_ID" ]; then
   HAS_ERROR=1
 fi
 
+if [ "${MIN_SDK:-}" != "$EXPECTED_MIN_SDK" ]; then
+  red "❌ minSdkVersion invalide pour Play Store : ${MIN_SDK:-<non trouvé>} (attendu : $EXPECTED_MIN_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ "${COMPILE_SDK:-}" != "$EXPECTED_COMPILE_SDK" ]; then
+  red "❌ compileSdkVersion invalide : ${COMPILE_SDK:-<non trouvé>} (attendu : $EXPECTED_COMPILE_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ "${TARGET_SDK:-}" != "$EXPECTED_TARGET_SDK" ]; then
+  red "❌ targetSdkVersion invalide pour Play Store : ${TARGET_SDK:-<non trouvé>} (attendu : $EXPECTED_TARGET_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ -n "$MANIFEST_PACKAGE_ATTR" ]; then
+  red "❌ AndroidManifest.xml ne doit plus définir package= avec AGP moderne ; utilisez namespace/applicationId Gradle."
+  HAS_ERROR=1
+fi
+
+if [ "$LAUNCH_MODE_COUNT" -gt 1 ]; then
+  red "❌ AndroidManifest.xml contient android:launchMode plusieurs fois sur MainActivity."
+  HAS_ERROR=1
+fi
+
 if [ "$HAS_ERROR" -eq 1 ]; then
   yellow "⚠️ Cause probable du crash 'ClassNotFoundException MainActivity'."
   echo "Réparation recommandée :"
