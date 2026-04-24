@@ -86,6 +86,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 const Permissions = lazy(() => import("./pages/Permissions"));
+const GpsDiagnostic = lazy(() => import("./pages/GpsDiagnostic"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
