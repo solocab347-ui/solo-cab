@@ -34,6 +34,8 @@ export type PermissionKey =
   | 'battery'
   | 'microphone';
 
+export type PermissionTestAction = PermissionKey | 'app_details';
+
 interface UsePermissionsCenterOptions {
   role: 'driver' | 'client' | 'admin' | null;
 }
@@ -314,9 +316,44 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     return result;
   }, [isNative, platform, checkLocation, refreshAll]);
 
+  const openPermissionTestAction = useCallback(async (action: PermissionTestAction): Promise<void> => {
+    if (action === 'app_details') {
+      if (isNative && platform === 'android') {
+        await SoloCabPermissions.openAppDetailsSettings();
+      }
+      await refreshAll();
+      return;
+    }
+
+    await requestPermission(action);
+  }, [isNative, platform, refreshAll, requestPermission]);
+
   useEffect(() => {
     refreshAll();
   }, [refreshAll]);
+
+  useEffect(() => {
+    const onFocus = () => void refreshAll();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+
+    let appStateHandle: { remove: () => Promise<void> } | undefined;
+    if (isNative) {
+      void import('@capacitor/app').then(({ App }) => {
+        void App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) void refreshAll();
+        }).then((handle) => {
+          appStateHandle = handle;
+        });
+      });
+    }
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+      void appStateHandle?.remove();
+    };
+  }, [isNative, refreshAll]);
 
   const allRequiredGranted = permissions
     .filter((p) => p.required)
@@ -329,6 +366,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     loading,
     refreshAll,
     requestPermission,
+    openPermissionTestAction,
     allRequiredGranted,
     missingRequired,
     isNative,
