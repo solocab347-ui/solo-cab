@@ -13,6 +13,9 @@ concurrency:
   group: android-build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+
 jobs:
   build-android:
     name: Build Android APK
@@ -46,6 +49,13 @@ jobs:
         run: |
           set -o pipefail
           npm install --legacy-peer-deps 2>&1 | tee logs/npm-install.log
+
+      - name: Diagnose dependency alignment
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ls @stripe/react-stripe-js @stripe/stripe-js 2>&1 | tee logs/stripe-deps.log || true
+          npm ls @capacitor/core @capacitor/android @capacitor/cli 2>&1 | tee logs/capacitor-deps.log || true
 
       - name: Build web bundle
         shell: bash
