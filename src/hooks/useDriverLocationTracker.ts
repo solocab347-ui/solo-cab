@@ -447,5 +447,9 @@ export function useDriverLocationTracker({
     startTracking: startWebTracking,
     stopTracking: stopWebTracking,
     updateAvailability,
+    /** Current adaptive stale threshold in ms (depends on speed + accuracy) */
+    staleThresholdMs: computeStaleThreshold(lastSpeedRef.current, locationState.accuracy),
+    /** Last computed speed in m/s (0 if stationary or unknown) */
+    speedMs: lastSpeedRef.current,
   };
 }
