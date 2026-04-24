@@ -50,7 +50,23 @@ export function useNativePushRegistration() {
         }
 
         // 3. S'enregistrer auprès de FCM/APNS
-        await PushNotifications.register();
+        // IMPORTANT: register() peut lever une IllegalStateException synchrone côté
+        // Java si Firebase (google-services.json) n'est pas configuré. On isole
+        // l'appel dans son propre try/catch pour ne JAMAIS crasher l'app.
+        try {
+          await PushNotifications.register();
+        } catch (registerErr: any) {
+          const msg = String(registerErr?.message || registerErr || '');
+          if (msg.includes('FirebaseApp') || msg.includes('Firebase')) {
+            console.warn(
+              '[NativePush] Firebase non configuré (google-services.json manquant). ' +
+              'Les notifications push distantes sont désactivées. L\'app continue normalement.'
+            );
+          } else {
+            console.warn('[NativePush] register() a échoué:', registerErr);
+          }
+          return; // on n'enregistre pas les listeners si register() a échoué
+        }
 
         // 4. Récupérer le token et le persister
         const tokenHandle = await PushNotifications.addListener('registration', async (token) => {
