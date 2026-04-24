@@ -19,7 +19,7 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 30_000;
+const STALE_THRESHOLD_MS = 60_000;
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m — enough to stay realistic on road movement
 const MIN_SEND_INTERVAL_MS = 8_000;
 const HEARTBEAT_INTERVAL_MS = 20_000;
