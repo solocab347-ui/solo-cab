@@ -1,4 +1,3 @@
-/// <reference lib="webworker" />
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -94,9 +93,7 @@ export const usePushNotificationsV2 = () => {
   // Vérifier si les notifications sont supportées et charger la clé VAPID
   useEffect(() => {
     const init = async () => {
-      const supported = 'Notification' in window && 
-                        'serviceWorker' in navigator && 
-                        'PushManager' in window;
+      const supported = false;
       setIsSupported(supported);
       
       if (supported) {
@@ -159,7 +156,7 @@ export const usePushNotificationsV2 = () => {
   // Demander la permission et s'inscrire avec vraies clés VAPID
   const requestPermissionAndSubscribe = useCallback(async () => {
     if (!isSupported || !user) {
-      toast.error("Notifications non supportées sur cet appareil");
+      toast.error("Notifications web désactivées : l'application utilise maintenant les notifications natives Android.");
       return false;
     }
 
@@ -177,17 +174,6 @@ export const usePushNotificationsV2 = () => {
         return false;
       }
 
-      // Enregistrer/récupérer le service worker
-      let registration = await navigator.serviceWorker.getRegistration('/sw.js');
-      if (!registration) {
-        logger.info('Enregistrement du service worker...');
-        registration = await navigator.serviceWorker.register('/sw.js');
-      }
-      
-      // Attendre que le SW soit prêt
-      await navigator.serviceWorker.ready;
-      logger.info('Service Worker prêt');
-
       let subscription: PushSubscriptionData | null = null;
       let isRealSubscription = false;
 
@@ -198,34 +184,7 @@ export const usePushNotificationsV2 = () => {
         try {
           const applicationServerKey = urlBase64ToUint8Array(currentVapidKey);
           
-          // Vérifier s'il existe déjà une subscription
-          let pushSubscription = await registration.pushManager.getSubscription();
-          
-          // Si pas de subscription ou endpoint différent, en créer une nouvelle
-          if (!pushSubscription) {
-            logger.info('Création nouvelle subscription Push...');
-            pushSubscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: applicationServerKey.buffer as ArrayBuffer
-            });
-            logger.info('Subscription Push créée');
-          }
-
-          const subscriptionJson = pushSubscription.toJSON();
-          
-          if (subscriptionJson.endpoint && subscriptionJson.keys?.p256dh && subscriptionJson.keys?.auth) {
-            subscription = {
-              endpoint: subscriptionJson.endpoint,
-              keys: {
-                p256dh: subscriptionJson.keys.p256dh,
-                auth: subscriptionJson.keys.auth
-              }
-            };
-            isRealSubscription = true;
-            logger.info('Subscription VAPID réelle créée:', { 
-              endpoint: subscriptionJson.endpoint.substring(0, 50) 
-            });
-          }
+          logger.info('Web Push désactivé pour build natif Android', { hasVapidKey: !!applicationServerKey });
         } catch (vapidError) {
           logger.error('Erreur création subscription VAPID:', vapidError);
           toast.error("Erreur technique. Les notifications fonctionneront dans l'application.");
@@ -315,16 +274,15 @@ export const usePushNotificationsV2 = () => {
 
       const options: NotificationOptions = {
         body,
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png',
+        icon: '/app-icon-1024.png',
+        badge: '/app-icon-1024.png',
         tag: `solocab-${Date.now()}`,
         data: { url: link || '/notifications' },
         requireInteraction: false,
         vibrate: [100, 50, 200, 80, 150] as any
       } as NotificationOptions;
 
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(title, options);
+      new Notification(title, options);
       logger.info('Notification locale affichée:', { title });
     } catch (error) {
       logger.error('Erreur affichage notification:', { error });
@@ -332,7 +290,7 @@ export const usePushNotificationsV2 = () => {
       if (Notification.permission === 'granted') {
         new Notification(title, {
           body,
-          icon: '/pwa-192x192.png'
+          icon: '/app-icon-1024.png'
         });
       }
     }
@@ -370,16 +328,6 @@ export const usePushNotificationsV2 = () => {
     setIsLoading(true);
 
     try {
-      // Unsubscribe de la Push API si possible
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await subscription.unsubscribe();
-          logger.info('Unsubscribed from Push API');
-        }
-      }
-
       // Désactiver dans la base de données
       await supabase
         .from('push_subscriptions')

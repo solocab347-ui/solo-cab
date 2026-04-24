@@ -16,19 +16,6 @@ export const PushNotificationListener = () => {
   const lastNotificationRef = useRef<string | null>(null);
   const [isListening, setIsListening] = useState(false);
 
-  // Listen for PLAY_RIDE_SOUND messages from the service worker
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'PLAY_RIDE_SOUND') {
-        playSoloCabSound(1.0).catch(() => {});
-        if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
-      }
-    };
-    navigator.serviceWorker.addEventListener('message', handler);
-    return () => navigator.serviceWorker.removeEventListener('message', handler);
-  }, []);
-
   const showBrowserNotification = useCallback(async (title: string, body: string, link?: string, notificationId?: string, notificationType?: string) => {
     // Jouer le son adapté au type de notification
     await playNotificationSoundByType(notificationType, title);
@@ -71,41 +58,21 @@ export const PushNotificationListener = () => {
 
       const options: NotificationOptions = {
         body,
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png',
+        icon: '/app-icon-1024.png',
+        badge: '/app-icon-1024.png',
         tag,
         data: { url: link || '/notifications' },
         requireInteraction: false,
         silent: false // Permettre le son système aussi
       };
 
-      // Essayer via Service Worker d'abord (requis pour notifications mobiles)
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          await registration.showNotification(title, options);
-          logger.info('Notification push affichée via SW', { title, body });
-        } catch (swError) {
-          logger.warn('SW notification échouée, fallback API', { error: swError });
-          // Fallback vers Notification API standard avec gestionnaire de clic
-          const notification = new Notification(title, { body, icon: '/pwa-192x192.png', tag });
-          notification.onclick = () => {
-            window.focus();
-            if (link) window.location.href = link;
-            notification.close();
-          };
-          logger.info('Notification affichée via API standard', { title });
-        }
-      } else {
-        // Fallback vers Notification API standard avec gestionnaire de clic
-        const notification = new Notification(title, { body, icon: '/pwa-192x192.png', tag });
-        notification.onclick = () => {
-          window.focus();
-          if (link) window.location.href = link;
-          notification.close();
-        };
-        logger.info('Notification affichée via API standard', { title });
-      }
+      const notification = new Notification(title, options);
+      notification.onclick = () => {
+        window.focus();
+        if (link) window.location.href = link;
+        notification.close();
+      };
+      logger.info('Notification affichée via API standard', { title });
 
       // Reset après 5 secondes pour permettre de nouvelles notifications
       setTimeout(() => {

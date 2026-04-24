@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ChevronUp, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePWABanner } from "@/contexts/PWABannerContext";
 
 interface SmartOnboardingButtonProps {
   onClick: () => void;
@@ -19,13 +18,11 @@ export const SmartOnboardingButton = ({
   profileCompletion,
   className 
 }: SmartOnboardingButtonProps) => {
-  const { isBannerVisible } = usePWABanner();
   const [isHovered, setIsHovered] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   
-  // Position dynamique selon la bannière PWA
-  const bottomPosition = isBannerVisible ? "bottom-32" : "bottom-24";
+  const bottomPosition = "bottom-24";
   
   // Check if profile is incomplete and show reminder
   useEffect(() => {

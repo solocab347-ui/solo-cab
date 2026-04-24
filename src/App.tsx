@@ -12,8 +12,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
 import { LoadingFallback } from "@/components/LoadingFallback";
-import { PWAInstallBanner } from "@/components/PWAInstallBanner";
-import { PWABannerProvider } from "@/contexts/PWABannerContext";
 import { PushNotificationListener } from "@/components/PushNotificationListener";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
@@ -82,7 +80,6 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
 const RGPDData = lazy(() => import("./pages/RGPDData"));
-const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const ApkHealthCheck = lazy(() => import("./pages/ApkHealthCheck"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -97,12 +94,10 @@ const App = () => (
         <AuthProvider>
           <PremiumProvider>
           <MaintenanceProvider>
-            <PWABannerProvider>
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
                 
-                <PWAInstallBanner />
                 <PushNotificationListener />
                 <NotificationPermissionPrompt />
                 <EmergencyReset />
@@ -322,11 +317,6 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="/install" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <InstallPWA />
-                </Suspense>
-              } />
               <Route path="/apk-health" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <ApkHealthCheck />
@@ -395,7 +385,6 @@ const App = () => (
             </MaintenanceGuard>
             
           </TooltipProvider>
-          </PWABannerProvider>
           </MaintenanceProvider>
           </PremiumProvider>
         </AuthProvider>

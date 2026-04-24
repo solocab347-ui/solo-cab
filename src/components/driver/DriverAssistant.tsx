@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Bot, X, Send, Minimize2, Maximize2, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { usePWABanner } from '@/contexts/PWABannerContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,7 +13,6 @@ interface Message {
 }
 
 export const DriverAssistant = () => {
-  const { isBannerVisible } = usePWABanner();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -205,8 +203,7 @@ export const DriverAssistant = () => {
     }
   };
 
-  // Position dynamique selon la bannière PWA
-  const bottomClass = isBannerVisible ? "bottom-24" : "bottom-6";
+  const bottomClass = "bottom-6";
 
   if (!isOpen) {
     return (
