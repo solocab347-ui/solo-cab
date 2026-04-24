@@ -54,7 +54,7 @@ interface PermissionRow {
 function StateBadge({ state }: { state: PermState }) {
   if (state === 'granted') {
     return (
-      <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/15">
+      <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/15">
         <CheckCircle2 className="h-3 w-3 mr-1" /> OK
       </Badge>
     );
@@ -68,7 +68,7 @@ function StateBadge({ state }: { state: PermState }) {
   }
   if (state === 'prompt') {
     return (
-      <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 hover:bg-amber-500/15">
+      <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
         <AlertTriangle className="h-3 w-3 mr-1" /> À activer
       </Badge>
     );
@@ -336,10 +336,10 @@ export default function GpsDiagnostic() {
               return (
                 <div key={row.key} className="py-3 flex items-start gap-3 first:pt-0 last:pb-0">
                   <div className={`p-2 rounded-lg shrink-0 ${
-                    row.state === 'granted' ? 'bg-emerald-500/15' : 'bg-muted'
+                    row.state === 'granted' ? 'bg-success/15' : 'bg-muted'
                   }`}>
                     <Icon className={`h-4 w-4 ${
-                      row.state === 'granted' ? 'text-emerald-600' : 'text-muted-foreground'
+                      row.state === 'granted' ? 'text-success' : 'text-muted-foreground'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -423,8 +423,8 @@ function Stat({
   tone: 'good' | 'warn' | 'bad' | 'neutral';
 }) {
   const toneClass = {
-    good: 'text-emerald-600',
-    warn: 'text-amber-600',
+    good: 'text-success',
+    warn: 'text-warning',
     bad: 'text-destructive',
     neutral: 'text-foreground',
   }[tone];
