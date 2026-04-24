@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield } from 'lucide-react';
-import { usePermissionsCenter, type PermissionState, type PermissionStatus } from '@/hooks/usePermissionsCenter';
+import { useState } from 'react';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Wrench, RefreshCw } from 'lucide-react';
+import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionTestAction } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
 
 interface PermissionsCenterProps {
@@ -20,8 +21,9 @@ const STATUS_META: Record<PermissionStatus, { color: string; bg: string; label: 
 };
 
 export function PermissionsCenter({ role, variant = 'page', onAllGranted }: PermissionsCenterProps) {
-  const { permissions, loading, requestPermission, allRequiredGranted, missingRequired, isNative, platform } =
+  const { permissions, loading, refreshAll, requestPermission, openPermissionTestAction, allRequiredGranted, missingRequired, isNative, platform } =
     usePermissionsCenter({ role });
+  const [testingAction, setTestingAction] = useState<PermissionTestAction | null>(null);
 
   if (loading) {
     return (
@@ -93,11 +95,82 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
         ))}
       </div>
 
+      {variant === 'page' && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-primary/15">
+                <Wrench className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Test des boutons système</CardTitle>
+                <CardDescription>Ouvrez chaque réglage puis revenez ici : l'état se met à jour automatiquement.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              { action: 'overlay' as const, label: 'Tester overlay', perm: permissions.find((p) => p.key === 'overlay') },
+              { action: 'battery' as const, label: 'Tester batterie', perm: permissions.find((p) => p.key === 'battery') },
+              { action: 'microphone' as const, label: 'Tester micro', perm: permissions.find((p) => p.key === 'microphone') },
+              { action: 'app_details' as const, label: 'Tester détails appli', perm: undefined },
+            ].map(({ action, label, perm }) => (
+              <TestRow
+                key={action}
+                action={action}
+                label={label}
+                status={perm?.status ?? 'unknown'}
+                disabled={!isNative || platform !== 'android' || testingAction !== null}
+                loading={testingAction === action}
+                onClick={async () => {
+                  setTestingAction(action);
+                  try {
+                    await openPermissionTestAction(action);
+                  } finally {
+                    setTestingAction(null);
+                  }
+                }}
+              />
+            ))}
+            <Button variant="outline" className="w-full gap-2" onClick={refreshAll} disabled={testingAction !== null}>
+              <RefreshCw className="h-4 w-4" /> Rafraîchir l'état
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {!isNative && (
         <p className="text-xs text-muted-foreground text-center pt-2">
           💡 Pour bénéficier des alertes même téléphone verrouillé, installez l'application mobile.
         </p>
       )}
+    </div>
+  );
+}
+
+function TestRow({ action, label, status, disabled, loading, onClick }: {
+  action: PermissionTestAction;
+  label: string;
+  status: PermissionStatus;
+  disabled: boolean;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  const meta = STATUS_META[status];
+  const Icon = meta.icon;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <div className={cn('inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs', meta.bg, meta.color)}>
+          <Icon className="h-3 w-3" />
+          <span>{action === 'app_details' ? 'Retour attendu' : meta.label}</span>
+        </div>
+      </div>
+      <Button size="sm" variant="outline" onClick={onClick} disabled={disabled}>
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ouvrir'}
+      </Button>
     </div>
   );
 }
