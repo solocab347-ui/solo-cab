@@ -81,7 +81,7 @@ public class SoloCabPermissionsPlugin extends Plugin {
         if (call == null) return;
         boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
         resolve(call, granted);
-        releaseCall(call);
+        freeSavedCall();
     }
 
     @ActivityCallback
