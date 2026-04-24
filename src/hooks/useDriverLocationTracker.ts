@@ -50,6 +50,9 @@ export function useDriverLocationTracker({
   const staleCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSentRef = useRef<{ lat: number; lon: number; time: number } | null>(null);
   const lastCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
+  // Last fix used to compute speed (m/s) → drives adaptive stale threshold
+  const lastFixRef = useRef<{ lat: number; lon: number; time: number; accuracy: number | null } | null>(null);
+  const lastSpeedRef = useRef<number>(0); // m/s — most recent computed speed
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const mountedRef = useRef(true);
   const trackingRef = useRef(false);
