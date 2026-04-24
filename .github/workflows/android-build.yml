@@ -116,6 +116,13 @@ jobs:
           npm run android:verify 2>&1 | tee logs/android-verify.log
           npm run android:no-pwa 2>&1 | tee -a logs/android-no-pwa.log
 
+      - name: Verify release keystore before Gradle release builds
+        shell: bash
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -o pipefail
+          npm run android:keystore 2>&1 | tee logs/android-keystore.log
+
       - name: Build debug APK
         shell: bash
         run: |
