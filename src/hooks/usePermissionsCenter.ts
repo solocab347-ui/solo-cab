@@ -155,19 +155,35 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
 
   const checkOverlay = useCallback(async (): Promise<PermissionStatus> => {
     if (platform !== 'android') return 'unsupported';
-    // Sera vérifié via plugin natif custom dans une future itération.
-    // Pour l'instant on lit le storage local : l'utilisateur déclare avoir activé.
-    const stored = localStorage.getItem('solocab_native_overlay_granted');
-    return stored === 'true' ? 'granted' : 'prompt';
-  }, [platform]);
+    if (!isNative) return 'unsupported';
+    try {
+      const r = await SoloCabPermissions.checkSpecialPermissions();
+      return r.overlay ? 'granted' : 'prompt';
+    } catch {
+      return 'unknown';
+    }
+  }, [isNative, platform]);
 
   const checkBattery = useCallback(async (): Promise<PermissionStatus> => {
     if (platform !== 'android') return 'unsupported';
-    const stored = localStorage.getItem('solocab_battery_optim_disabled');
-    return stored === 'true' ? 'granted' : 'prompt';
-  }, [platform]);
+    if (!isNative) return 'unsupported';
+    try {
+      const r = await SoloCabPermissions.checkSpecialPermissions();
+      return r.battery ? 'granted' : 'prompt';
+    } catch {
+      return 'unknown';
+    }
+  }, [isNative, platform]);
 
   const checkMicrophone = useCallback(async (): Promise<PermissionStatus> => {
+    if (isNative && platform === 'android') {
+      try {
+        const r = await SoloCabPermissions.checkSpecialPermissions();
+        return r.microphone ? 'granted' : 'prompt';
+      } catch {
+        return 'unknown';
+      }
+    }
     if (!navigator.permissions) return 'unsupported';
     try {
       const r = await navigator.permissions.query({ name: 'microphone' as PermissionName });
@@ -175,7 +191,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     } catch {
       return 'unknown';
     }
-  }, []);
+  }, [isNative, platform]);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
