@@ -17776,6 +17776,99 @@ export type Database = {
           },
         ]
       }
+      push_delivery_logs: {
+        Row: {
+          body: string | null
+          channel: string
+          created_at: string
+          error_reason: string | null
+          id: string
+          metadata: Json | null
+          notification_type: string | null
+          request_id: string | null
+          status_code: number | null
+          success: boolean
+          title: string | null
+          token_preview: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          channel: string
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          success?: boolean
+          title?: string | null
+          token_preview?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          success?: boolean
+          title?: string | null
+          token_preview?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      push_pending_queue: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          data: Json | null
+          delivered_at: string | null
+          expires_at: string
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          notification_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          created_at?: string
+          data?: Json | null
+          delivered_at?: string | null
+          expires_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          notification_type?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          data?: Json | null
+          delivered_at?: string | null
+          expires_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          notification_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           created_at: string
@@ -21057,6 +21150,23 @@ export type Database = {
       }
     }
     Views: {
+      admin_push_tokens_view: {
+        Row: {
+          app_version: string | null
+          created_at: string | null
+          device_model: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_active: boolean | null
+          last_used_at: string | null
+          platform: string | null
+          seconds_since_used: number | null
+          token_preview: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       available_partner_courses: {
         Row: {
           commission_percentage: number | null

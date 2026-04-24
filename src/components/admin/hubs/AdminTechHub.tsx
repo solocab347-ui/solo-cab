@@ -1,17 +1,18 @@
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FileText, Activity, Gauge } from "lucide-react";
+import { Bug, Database, Shield, FileText, Activity, Gauge, Bell } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
 import AdminDocumentation from "../AdminDocumentation";
 import PlatformHealthDashboard from "../monitoring/PlatformHealthDashboard";
+import AdminPushCenter from "../AdminPushCenter";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"health" | "perf" | "errors" | "integrity" | "rls" | "docs">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
 
   return (
     <div className="space-y-4">
@@ -35,6 +36,16 @@ const AdminTechHub = () => {
           <Gauge className="w-4 h-4" />
           <span className="hidden sm:inline">Performance</span>
           <span className="sm:hidden">⚡</span>
+        </Button>
+        <Button
+          variant={activeTab === "push" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("push")}
+          className="gap-2"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="hidden sm:inline">Push</span>
+          <span className="sm:hidden">🔔</span>
         </Button>
         <Button
           variant={activeTab === "errors" ? "default" : "ghost"}
@@ -83,6 +94,7 @@ const AdminTechHub = () => {
           <PerformanceDashboard />
         </Suspense>
       )}
+      {activeTab === "push" && <AdminPushCenter />}
       {activeTab === "errors" && <AdminErrorReports />}
       {activeTab === "integrity" && <AdminDataIntegrity />}
       {activeTab === "rls" && <AdminRLSAudit />}

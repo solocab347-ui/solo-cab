@@ -101,6 +101,17 @@ serve(async (req) => {
         try {
           console.log('Sending push to:', subData.endpoint.substring(0, 80));
 
+          await supabase.from('push_delivery_logs').insert({
+            user_id: payload.user_id,
+            channel: 'web',
+            notification_type: payload.tag || 'generic',
+            title: payload.title,
+            body: payload.message,
+            token_preview: subData.endpoint.substring(0, 24) + '…',
+            success: true,
+            metadata: { endpoint_host: new URL(subData.endpoint).host },
+          }).then(() => {}, () => {});
+
           await webpush.sendNotification(
             {
               endpoint: subData.endpoint,
@@ -126,6 +137,18 @@ serve(async (req) => {
 
         } catch (pushError: any) {
           console.error('❌ Push failed:', pushError.statusCode, pushError.body || pushError.message);
+
+          await supabase.from('push_delivery_logs').insert({
+            user_id: payload.user_id,
+            channel: 'web',
+            notification_type: payload.tag || 'generic',
+            title: payload.title,
+            body: payload.message,
+            token_preview: subData.endpoint.substring(0, 24) + '…',
+            success: false,
+            status_code: pushError.statusCode || null,
+            error_reason: (pushError.body || pushError.message || String(pushError)).slice(0, 500),
+          }).then(() => {}, () => {});
 
           pushFailedCount++;
           pushResults.push({
