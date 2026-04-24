@@ -200,9 +200,21 @@ export function useDriverLocationTracker({
   // ── Web GPS handler — optimized to avoid re-renders ──
   const handlePositionUpdate = useCallback(
     (position: GeolocationPosition) => {
-      const { latitude, longitude, accuracy } = position.coords;
+      const { latitude, longitude, accuracy, speed } = position.coords;
       lastCoordsRef.current = { lat: latitude, lon: longitude };
       const now = new Date();
+
+      // Use browser-provided speed if available, otherwise compute from delta
+      if (typeof speed === 'number' && !isNaN(speed) && speed >= 0) {
+        lastSpeedRef.current = speed;
+      } else if (lastFixRef.current) {
+        const dt = (now.getTime() - lastFixRef.current.time) / 1000;
+        if (dt > 0.5) {
+          const dist = distanceMeters(lastFixRef.current.lat, lastFixRef.current.lon, latitude, longitude);
+          lastSpeedRef.current = dist / dt;
+        }
+      }
+      lastFixRef.current = { lat: latitude, lon: longitude, time: now.getTime(), accuracy };
 
       // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
