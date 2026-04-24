@@ -48,6 +48,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          source scripts/android-java-home.sh || true
           {
             echo "JAVA_HOME=${JAVA_HOME:-<unset>}"
             java -version
@@ -109,6 +110,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          source scripts/android-java-home.sh
           chmod +x android/gradlew
           (cd android && ./gradlew assembleDebug --stacktrace --info) 2>&1 | tee logs/gradle-assemble-debug.log
 

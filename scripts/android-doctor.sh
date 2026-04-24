@@ -3,6 +3,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+JAVA_DETECTED=0
+
+if source "$ROOT_DIR/scripts/android-java-home.sh" >/dev/null 2>&1; then
+  JAVA_DETECTED=1
+fi
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
@@ -13,11 +18,11 @@ HAS_ERROR=0
 echo "SoloCab Android Doctor"
 echo
 
-if command -v java >/dev/null 2>&1; then
+if [ "$JAVA_DETECTED" -eq 1 ] && command -v java >/dev/null 2>&1; then
   green "✅ Java détecté"
   java -version 2>&1 | head -n 3
 else
-  red "❌ Java introuvable dans PATH"
+  red "❌ Java JDK 17/21 introuvable dans PATH ou emplacements Android Studio connus"
   HAS_ERROR=1
 fi
 
