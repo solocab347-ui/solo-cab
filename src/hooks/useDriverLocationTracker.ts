@@ -19,11 +19,36 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 60_000;
+// Adaptive stale thresholds — depend on motion + accuracy
+const STALE_MOVING_MS = 20_000;        // moving → expect frequent fixes
+const STALE_STATIONARY_GOOD_MS = 90_000; // still + accurate → tolerate long gaps
+const STALE_STATIONARY_POOR_MS = 45_000; // still + poor signal → middle ground
+const ACCURACY_GOOD_M = 20;            // ≤20m → high-quality fix
+const MOVEMENT_SPEED_THRESHOLD_MS = 1.5; // m/s ≈ 5.4 km/h → considered "moving"
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m — enough to stay realistic on road movement
 const MIN_SEND_INTERVAL_MS = 8_000;
 const HEARTBEAT_INTERVAL_MS = 20_000;
 const MAX_RETRY_ATTEMPTS = 2;
+
+// Haversine distance in meters between two GPS points
+function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Compute adaptive stale threshold based on last known speed + accuracy
+function computeStaleThreshold(speedMs: number, accuracy: number | null): number {
+  if (speedMs >= MOVEMENT_SPEED_THRESHOLD_MS) return STALE_MOVING_MS;
+  // Stationary
+  if (accuracy != null && accuracy <= ACCURACY_GOOD_M) return STALE_STATIONARY_GOOD_MS;
+  return STALE_STATIONARY_POOR_MS;
+}
 
 export function useDriverLocationTracker({
   driverId,
@@ -45,6 +70,9 @@ export function useDriverLocationTracker({
   const staleCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSentRef = useRef<{ lat: number; lon: number; time: number } | null>(null);
   const lastCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
+  // Last fix used to compute speed (m/s) → drives adaptive stale threshold
+  const lastFixRef = useRef<{ lat: number; lon: number; time: number; accuracy: number | null } | null>(null);
+  const lastSpeedRef = useRef<number>(0); // m/s — most recent computed speed
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const mountedRef = useRef(true);
   const trackingRef = useRef(false);
@@ -126,6 +154,15 @@ export function useDriverLocationTracker({
     (lat: number, lng: number, _accuracy: number) => {
       lastCoordsRef.current = { lat, lon: lng };
       const now = new Date();
+      // Compute speed from previous fix → drives adaptive stale threshold
+      if (lastFixRef.current) {
+        const dt = (now.getTime() - lastFixRef.current.time) / 1000;
+        if (dt > 0.5) {
+          const dist = distanceMeters(lastFixRef.current.lat, lastFixRef.current.lon, lat, lng);
+          lastSpeedRef.current = dist / dt;
+        }
+      }
+      lastFixRef.current = { lat, lon: lng, time: now.getTime(), accuracy: _accuracy };
       // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
         const latChanged = !prev.latitude || Math.abs(lat - prev.latitude) > MIN_MOVEMENT_DEG;
@@ -163,9 +200,21 @@ export function useDriverLocationTracker({
   // ── Web GPS handler — optimized to avoid re-renders ──
   const handlePositionUpdate = useCallback(
     (position: GeolocationPosition) => {
-      const { latitude, longitude, accuracy } = position.coords;
+      const { latitude, longitude, accuracy, speed } = position.coords;
       lastCoordsRef.current = { lat: latitude, lon: longitude };
       const now = new Date();
+
+      // Use browser-provided speed if available, otherwise compute from delta
+      if (typeof speed === 'number' && !isNaN(speed) && speed >= 0) {
+        lastSpeedRef.current = speed;
+      } else if (lastFixRef.current) {
+        const dt = (now.getTime() - lastFixRef.current.time) / 1000;
+        if (dt > 0.5) {
+          const dist = distanceMeters(lastFixRef.current.lat, lastFixRef.current.lon, latitude, longitude);
+          lastSpeedRef.current = dist / dt;
+        }
+      }
+      lastFixRef.current = { lat: latitude, lon: longitude, time: now.getTime(), accuracy };
 
       // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
@@ -309,7 +358,7 @@ export function useDriverLocationTracker({
     }
   }, [releaseWakeLock]);
 
-  // ── Stale position checker ──
+  // ── Stale position checker (adaptive) ──
   useEffect(() => {
     if (!enabled) return;
 
@@ -318,10 +367,11 @@ export function useDriverLocationTracker({
       setLocationState((prev) => {
         if (!prev.lastUpdate) return prev;
         const age = Date.now() - prev.lastUpdate.getTime();
-        const isStale = age > STALE_THRESHOLD_MS;
+        const threshold = computeStaleThreshold(lastSpeedRef.current, prev.accuracy);
+        const isStale = age > threshold;
         return isStale !== prev.isStale ? { ...prev, isStale } : prev;
       });
-    }, 15_000);
+    }, 10_000);
 
     return () => {
       if (staleCheckRef.current) clearInterval(staleCheckRef.current);
@@ -397,5 +447,9 @@ export function useDriverLocationTracker({
     startTracking: startWebTracking,
     stopTracking: stopWebTracking,
     updateAvailability,
+    /** Current adaptive stale threshold in ms (depends on speed + accuracy) */
+    staleThresholdMs: computeStaleThreshold(lastSpeedRef.current, locationState.accuracy),
+    /** Last computed speed in m/s (0 if stationary or unknown) */
+    speedMs: lastSpeedRef.current,
   };
 }
