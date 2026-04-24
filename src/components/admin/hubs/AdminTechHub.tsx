@@ -38,6 +38,16 @@ const AdminTechHub = () => {
           <span className="sm:hidden">⚡</span>
         </Button>
         <Button
+          variant={activeTab === "push" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("push")}
+          className="gap-2"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="hidden sm:inline">Push</span>
+          <span className="sm:hidden">🔔</span>
+        </Button>
+        <Button
           variant={activeTab === "errors" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("errors")}
