@@ -19,7 +19,7 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 30_000;
+const STALE_THRESHOLD_MS = 60_000;
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m — enough to stay realistic on road movement
 const MIN_SEND_INTERVAL_MS = 8_000;
 const HEARTBEAT_INTERVAL_MS = 20_000;
@@ -125,20 +125,30 @@ export function useDriverLocationTracker({
   const handleNativeLocation = useCallback(
     (lat: number, lng: number, _accuracy: number) => {
       lastCoordsRef.current = { lat, lon: lng };
-      // Only re-render if coordinates actually changed significantly
+      const now = new Date();
+      // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
         const latChanged = !prev.latitude || Math.abs(lat - prev.latitude) > MIN_MOVEMENT_DEG;
         const lonChanged = !prev.longitude || Math.abs(lng - prev.longitude) > MIN_MOVEMENT_DEG;
-        if (!latChanged && !lonChanged && prev.isTracking) return prev; // No re-render
-        return {
-          ...prev,
-          latitude: lat,
-          longitude: lng,
-          accuracy: _accuracy,
-          isTracking: true,
-          error: null,
-          isStale: false,
-        };
+        const wasStale = prev.isStale;
+        // Position significantly changed → full update
+        if (latChanged || lonChanged || !prev.isTracking || wasStale) {
+          return {
+            ...prev,
+            latitude: lat,
+            longitude: lng,
+            accuracy: _accuracy,
+            isTracking: true,
+            error: null,
+            isStale: false,
+            lastUpdate: now,
+          };
+        }
+        // Stationary but GPS still alive → only refresh lastUpdate every 5s to avoid re-renders
+        if (!prev.lastUpdate || now.getTime() - prev.lastUpdate.getTime() > 5000) {
+          return { ...prev, lastUpdate: now, isStale: false };
+        }
+        return prev;
       });
       sendLocationToServer(lat, lng);
     },
@@ -155,22 +165,30 @@ export function useDriverLocationTracker({
     (position: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = position.coords;
       lastCoordsRef.current = { lat: latitude, lon: longitude };
+      const now = new Date();
 
-      // Only re-render state if position changed meaningfully or tracking just started
+      // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
         const latChanged = !prev.latitude || Math.abs(latitude - prev.latitude) > MIN_MOVEMENT_DEG;
         const lonChanged = !prev.longitude || Math.abs(longitude - prev.longitude) > MIN_MOVEMENT_DEG;
-        const needsUpdate = !prev.isTracking || latChanged || lonChanged || prev.error;
-        if (!needsUpdate) return prev; // No re-render — position barely changed
-        return {
-          ...prev,
-          latitude,
-          longitude,
-          accuracy,
-          isTracking: true,
-          error: null,
-          isStale: false,
-        };
+        const wasStale = prev.isStale;
+        if (!prev.isTracking || latChanged || lonChanged || prev.error || wasStale) {
+          return {
+            ...prev,
+            latitude,
+            longitude,
+            accuracy,
+            isTracking: true,
+            error: null,
+            isStale: false,
+            lastUpdate: now,
+          };
+        }
+        // Stationary but GPS still alive → refresh lastUpdate every 5s
+        if (!prev.lastUpdate || now.getTime() - prev.lastUpdate.getTime() > 5000) {
+          return { ...prev, lastUpdate: now, isStale: false };
+        }
+        return prev;
       });
 
       // Always send to server (server-side dedup handles frequency)
