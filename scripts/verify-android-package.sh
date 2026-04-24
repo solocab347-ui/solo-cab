@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_DIR="$ROOT_DIR/android"
 MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
 PACKAGE_JSON="$ROOT_DIR/package.json"
+REQUIRE_WEB_ASSETS="${ANDROID_VERIFY_REQUIRE_WEB_ASSETS:-0}"
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
@@ -56,6 +57,24 @@ if [ -z "$APP_ID" ]; then
   exit 1
 fi
 
+WEB_DIR="$(grep -oE "webDir: '[^']+'" "$ROOT_DIR/capacitor.config.ts" | sed -E "s/webDir: '([^']+)'/\1/" | head -n 1)"
+if [ -z "$WEB_DIR" ]; then
+  red "❌ Impossible de lire webDir depuis capacitor.config.ts"
+  exit 1
+fi
+
+if ! (cd "$ROOT_DIR" && npx cap config >/dev/null 2>&1); then
+  red "❌ Capacitor CLI ne parvient pas à lire capacitor.config.ts"
+  echo "Lancez : npm install --legacy-peer-deps"
+  exit 1
+fi
+
+if [ "$REQUIRE_WEB_ASSETS" = "1" ] && [ ! -f "$ROOT_DIR/$WEB_DIR/index.html" ]; then
+  red "❌ Dossier web introuvable avant sync Capacitor : $WEB_DIR"
+  echo "Lancez d'abord : npm run build"
+  exit 1
+fi
+
 MAIN_ACTIVITY_FILE="$(grep -Rsl --include='MainActivity.java' --include='MainActivity.kt' '^package ' "$ANDROID_DIR/app/src/main/java" 2>/dev/null | head -n 1 || true)"
 
 if [ -z "$MAIN_ACTIVITY_FILE" ]; then
@@ -98,6 +117,7 @@ PY
 )"
 
 echo "Capacitor appId        : $APP_ID"
+echo "Capacitor webDir       : $WEB_DIR"
 echo "MainActivity package   : $MAIN_ACTIVITY_PACKAGE"
 echo "Gradle applicationId   : ${APPLICATION_ID:-<non trouvé>}"
 echo "Gradle namespace       : ${NAMESPACE:-<non trouvé>}"

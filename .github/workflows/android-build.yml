@@ -95,8 +95,11 @@ jobs:
 
       - name: Sync Capacitor Android
         shell: bash
+        env:
+          ANDROID_VERIFY_REQUIRE_WEB_ASSETS: "1"
         run: |
           set -o pipefail
+          npm run android:verify 2>&1 | tee logs/android-verify-presync.log
           npx cap sync android 2>&1 | tee logs/cap-sync-android.log
 
       - name: Verify Android package consistency
