@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "npm run android:verify && vite build",
     "build:dev": "vite build --mode development",
+    "android:doctor": "bash scripts/android-doctor.sh",
     "android:verify": "bash scripts/verify-android-package.sh",
     "lint": "eslint .",
     "preview": "vite preview"
