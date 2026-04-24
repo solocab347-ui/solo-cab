@@ -148,6 +148,32 @@ serve(async (req) => {
       console.log(`📬 Push results - sent: ${pushSentCount}, failed: ${pushFailedCount}`);
     }
 
+    // ============= NATIVE PUSH (FCM Android + APNS iOS) — fire & forget =============
+    // On invoque send-push-fcm en parallèle pour atteindre les apps natives installées.
+    // Aucun fail si pas de token natif enregistré (la fonction tolère 0 destinataire).
+    try {
+      const isRideRequest = (payload.tag || '').includes('course') || (payload.tag || '').includes('ride');
+      fetch(`${supabaseUrl}/functions/v1/send-push-fcm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          user_ids: [payload.user_id],
+          title: payload.title,
+          body: payload.message,
+          type: isRideRequest ? 'incoming_ride' : 'generic',
+          data: {
+            link: payload.link || '/',
+            tag: payload.tag || 'solocab',
+          },
+        }),
+      }).catch((e) => console.warn('[FCM relay] error', e));
+    } catch (e) {
+      console.warn('[FCM relay] sync error', e);
+    }
+
     // Always create DB notification (backup for realtime)
     const { error: notifError } = await supabase
       .from('notifications')
