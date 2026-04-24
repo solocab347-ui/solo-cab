@@ -30,6 +30,26 @@ const MIN_SEND_INTERVAL_MS = 8_000;
 const HEARTBEAT_INTERVAL_MS = 20_000;
 const MAX_RETRY_ATTEMPTS = 2;
 
+// Haversine distance in meters between two GPS points
+function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Compute adaptive stale threshold based on last known speed + accuracy
+function computeStaleThreshold(speedMs: number, accuracy: number | null): number {
+  if (speedMs >= MOVEMENT_SPEED_THRESHOLD_MS) return STALE_MOVING_MS;
+  // Stationary
+  if (accuracy != null && accuracy <= ACCURACY_GOOD_M) return STALE_STATIONARY_GOOD_MS;
+  return STALE_STATIONARY_POOR_MS;
+}
+
 export function useDriverLocationTracker({
   driverId,
   enabled,
