@@ -152,12 +152,18 @@ if [ "$MAIN_ACTIVITY_PACKAGE" != "$APP_ID" ]; then
   HAS_ERROR=1
 fi
 
-if [ -n "$APPLICATION_ID" ] && [ "$APPLICATION_ID" != "$APP_ID" ]; then
+if [ -z "$APPLICATION_ID" ]; then
+  red "❌ applicationId Gradle introuvable : l'identifiant Play Store doit être défini dans android/app/build.gradle, pas dans AndroidManifest.xml."
+  HAS_ERROR=1
+elif [ "$APPLICATION_ID" != "$APP_ID" ]; then
   red "❌ applicationId Gradle ne correspond pas à appId"
   HAS_ERROR=1
 fi
 
-if [ -n "$NAMESPACE" ] && [ "$NAMESPACE" != "$APP_ID" ]; then
+if [ -z "$NAMESPACE" ]; then
+  red "❌ namespace Gradle introuvable : AGP moderne exige un namespace explicite dans android/app/build.gradle."
+  HAS_ERROR=1
+elif [ "$NAMESPACE" != "$APP_ID" ]; then
   red "❌ namespace Gradle ne correspond pas à appId"
   HAS_ERROR=1
 fi
@@ -178,7 +184,7 @@ if [ "${TARGET_SDK:-}" != "$EXPECTED_TARGET_SDK" ]; then
 fi
 
 if [ -n "$MANIFEST_PACKAGE_ATTR" ]; then
-  red "❌ AndroidManifest.xml ne doit plus définir package= avec AGP moderne ; utilisez namespace/applicationId Gradle."
+  red "❌ AndroidManifest.xml définit encore package= : Gradle doit utiliser applicationId comme identifiant Play Store."
   HAS_ERROR=1
 fi
 
