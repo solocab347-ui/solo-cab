@@ -19,7 +19,12 @@ interface LocationState {
   isStale: boolean;
 }
 
-const STALE_THRESHOLD_MS = 60_000;
+// Adaptive stale thresholds — depend on motion + accuracy
+const STALE_MOVING_MS = 20_000;        // moving → expect frequent fixes
+const STALE_STATIONARY_GOOD_MS = 90_000; // still + accurate → tolerate long gaps
+const STALE_STATIONARY_POOR_MS = 45_000; // still + poor signal → middle ground
+const ACCURACY_GOOD_M = 20;            // ≤20m → high-quality fix
+const MOVEMENT_SPEED_THRESHOLD_MS = 1.5; // m/s ≈ 5.4 km/h → considered "moving"
 const MIN_MOVEMENT_DEG = 0.0001; // ~11m — enough to stay realistic on road movement
 const MIN_SEND_INTERVAL_MS = 8_000;
 const HEARTBEAT_INTERVAL_MS = 20_000;
