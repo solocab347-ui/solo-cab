@@ -226,7 +226,7 @@ export default function AdminPushCenter() {
                       </td>
                       <td className="py-2 pr-2">
                         {t.is_active ? (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">Actif</Badge>
+                          <Badge variant="secondary">Actif</Badge>
                         ) : (
                           <Badge variant="outline">Inactif</Badge>
                         )}
@@ -281,7 +281,7 @@ export default function AdminPushCenter() {
                       <td className="py-2 pr-2 max-w-xs truncate">{l.title || "—"}</td>
                       <td className="py-2 pr-2">
                         {l.success ? (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 gap-1">
+                          <Badge variant="secondary" className="gap-1">
                             <CheckCircle2 className="w-3 h-3" /> OK {l.status_code || ""}
                           </Badge>
                         ) : (
