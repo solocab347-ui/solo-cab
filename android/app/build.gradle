@@ -3,6 +3,21 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.solocab.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    signingConfigs {
+        release {
+            def releaseStoreFile = System.getenv("SOLOCAB_RELEASE_STORE_FILE") ?: System.getenv("RELEASE_STORE_FILE") ?: project.findProperty("SOLOCAB_RELEASE_STORE_FILE") ?: project.findProperty("RELEASE_STORE_FILE")
+            def releaseKeyAlias = System.getenv("SOLOCAB_RELEASE_KEY_ALIAS") ?: System.getenv("RELEASE_KEY_ALIAS") ?: project.findProperty("SOLOCAB_RELEASE_KEY_ALIAS") ?: project.findProperty("RELEASE_KEY_ALIAS")
+            def releaseStorePassword = System.getenv("SOLOCAB_RELEASE_STORE_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD") ?: project.findProperty("SOLOCAB_RELEASE_STORE_PASSWORD") ?: project.findProperty("RELEASE_STORE_PASSWORD")
+            def releaseKeyPassword = System.getenv("SOLOCAB_RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_KEY_PASSWORD") ?: project.findProperty("SOLOCAB_RELEASE_KEY_PASSWORD") ?: project.findProperty("RELEASE_KEY_PASSWORD")
+
+            if (releaseStoreFile) {
+                storeFile file(releaseStoreFile)
+            }
+            keyAlias releaseKeyAlias
+            storePassword releaseStorePassword
+            keyPassword releaseKeyPassword
+        }
+    }
     defaultConfig {
         applicationId "com.solocab.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -18,8 +33,30 @@ android {
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ["assembleRelease", "bundleRelease"]) {
+        task.doFirst {
+            def required = [
+                "SOLOCAB_RELEASE_STORE_FILE or RELEASE_STORE_FILE": System.getenv("SOLOCAB_RELEASE_STORE_FILE") ?: System.getenv("RELEASE_STORE_FILE") ?: project.findProperty("SOLOCAB_RELEASE_STORE_FILE") ?: project.findProperty("RELEASE_STORE_FILE"),
+                "SOLOCAB_RELEASE_KEY_ALIAS or RELEASE_KEY_ALIAS": System.getenv("SOLOCAB_RELEASE_KEY_ALIAS") ?: System.getenv("RELEASE_KEY_ALIAS") ?: project.findProperty("SOLOCAB_RELEASE_KEY_ALIAS") ?: project.findProperty("RELEASE_KEY_ALIAS"),
+                "SOLOCAB_RELEASE_STORE_PASSWORD or RELEASE_STORE_PASSWORD": System.getenv("SOLOCAB_RELEASE_STORE_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD") ?: project.findProperty("SOLOCAB_RELEASE_STORE_PASSWORD") ?: project.findProperty("RELEASE_STORE_PASSWORD"),
+                "SOLOCAB_RELEASE_KEY_PASSWORD or RELEASE_KEY_PASSWORD": System.getenv("SOLOCAB_RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_KEY_PASSWORD") ?: project.findProperty("SOLOCAB_RELEASE_KEY_PASSWORD") ?: project.findProperty("RELEASE_KEY_PASSWORD")
+            ]
+            def missing = required.findAll { _, value -> !value }.keySet()
+            if (!missing.isEmpty()) {
+                throw new GradleException("Signature release Android incomplète. Paramètres manquants: ${missing.join(', ')}")
+            }
+            def releaseStoreFile = required["SOLOCAB_RELEASE_STORE_FILE or RELEASE_STORE_FILE"]
+            if (!file(releaseStoreFile).exists()) {
+                throw new GradleException("Fichier keystore release introuvable: ${releaseStoreFile}")
+            }
         }
     }
 }
