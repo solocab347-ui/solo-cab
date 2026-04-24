@@ -337,7 +337,7 @@ export function useDriverLocationTracker({
     }
   }, [releaseWakeLock]);
 
-  // ── Stale position checker ──
+  // ── Stale position checker (adaptive) ──
   useEffect(() => {
     if (!enabled) return;
 
@@ -346,10 +346,11 @@ export function useDriverLocationTracker({
       setLocationState((prev) => {
         if (!prev.lastUpdate) return prev;
         const age = Date.now() - prev.lastUpdate.getTime();
-        const isStale = age > STALE_THRESHOLD_MS;
+        const threshold = computeStaleThreshold(lastSpeedRef.current, prev.accuracy);
+        const isStale = age > threshold;
         return isStale !== prev.isStale ? { ...prev, isStale } : prev;
       });
-    }, 15_000);
+    }, 10_000);
 
     return () => {
       if (staleCheckRef.current) clearInterval(staleCheckRef.current);
