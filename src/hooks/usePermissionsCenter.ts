@@ -11,7 +11,7 @@
  * natives sont marquées "non-applicable".
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
 export type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown';
@@ -37,6 +37,16 @@ export type PermissionKey =
 interface UsePermissionsCenterOptions {
   role: 'driver' | 'client' | 'admin' | null;
 }
+
+interface SoloCabPermissionsPlugin {
+  openOverlaySettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  openBatteryOptimizationSettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  openAppDetailsSettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  checkSpecialPermissions(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  requestMicrophone(): Promise<{ granted: boolean }>;
+}
+
+const SoloCabPermissions = registerPlugin<SoloCabPermissionsPlugin>('SoloCabPermissions');
 
 const DRIVER_REQUIRED: PermissionKey[] = ['location', 'notifications', 'overlay', 'battery'];
 const CLIENT_REQUIRED: PermissionKey[] = ['location', 'notifications'];
