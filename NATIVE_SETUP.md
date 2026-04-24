@@ -136,11 +136,39 @@ Ajoutez ces clés dans `<dict>` :
 
 ## 🔔 Configuration FCM (Firebase Cloud Messaging) — Android
 
+### Étape unique et OBLIGATOIRE pour activer les notifications natives
+
+Le code Android est **déjà entièrement prêt** (service Java FCM, canal HIGH, full-screen intent,
+plugin Gradle conditionnel, dépendance `firebase-messaging`). Il manque seulement le fichier
+de configuration Firebase.
+
 1. Créez un projet sur https://console.firebase.google.com
-2. Ajoutez une **application Android** avec le package `com.solocab.app`
-3. Téléchargez `google-services.json` → placez-le dans `android/app/`
-4. Récupérez la **Server Key** dans Firebase → Settings → Cloud Messaging
-5. Dans Lovable, ajoutez le secret `FCM_SERVER_KEY` (Cloud → Secrets)
+2. Cliquez **Ajouter une application** → **Android** → package `com.solocab.app`
+3. (optionnel mais recommandé) Renseignez le SHA-1 de votre keystore release
+   (`keytool -list -v -keystore mon-keystore.jks`)
+4. **Téléchargez `google-services.json`**
+5. Placez-le dans `android/app/google-services.json` (à côté de `build.gradle`)
+6. Côté backend, le secret `FCM_SERVICE_ACCOUNT_JSON` est **DÉJÀ configuré** ✅
+   (généré depuis Firebase Console → Paramètres du projet → Comptes de service →
+   Générer une nouvelle clé privée → contenu JSON complet)
+
+### Vérification
+
+Après build (`./gradlew bundleRelease`) :
+```bash
+# Le plugin Google Services doit s'appliquer sans warning
+grep -A2 "google-services.json" android/app/build/outputs/logs/*.log
+```
+
+Sur l'appareil, ouvrez l'app et connectez-vous : le hook `useNativePushRegistration` doit
+créer une ligne dans la table `push_tokens` avec `platform = 'android'`.
+
+### Ce qui se passe automatiquement ensuite
+
+- Toute notification envoyée via `send-push-notification` (web) déclenche aussi un push FCM
+  natif vers tous les appareils Android/iOS de l'utilisateur (relai automatique).
+- Les notifications de type `incoming_ride` ouvrent l'app par-dessus le lockscreen
+  (full-screen intent + canal HIGH + `showWhenLocked` + `turnScreenOn`) — comportement Uber/Bolt.
 
 ---
 
