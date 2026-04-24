@@ -233,6 +233,11 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             const { Geolocation } = await import('@capacitor/geolocation');
             const r = await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
             result = mapCapacitorState(r.location);
+            if (key === 'location_background' && platform === 'android') {
+              try {
+                await SoloCabPermissions.openAppDetailsSettings();
+              } catch {/* fallback ignored */}
+            }
           } else {
             await new Promise<void>((res) => navigator.geolocation.getCurrentPosition(() => res(), () => res(), { timeout: 5000 }));
             result = await checkLocation();
@@ -254,14 +259,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
           break;
         }
         case 'overlay': {
-          // On ouvre les paramètres natifs Android (action manuelle requise par Google).
-          // Plugin custom à intégrer côté Android. Pour l'instant on guide l'utilisateur.
           if (isNative && platform === 'android') {
-            // Note : pas de App.exitApp() ici — fermerait l'app instantanément.
-            // L'overlay nécessite un plugin natif custom (intent ACTION_MANAGE_OVERLAY_PERMISSION).
-            // Pour l'instant, on marque comme granted après confirmation manuelle de l'utilisateur.
-            localStorage.setItem('solocab_native_overlay_granted', 'true');
-            result = 'granted';
+            const r = await SoloCabPermissions.openOverlaySettings();
+            result = r.overlay ? 'granted' : 'prompt';
           } else {
             result = 'unsupported';
           }
@@ -269,14 +269,19 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
-            localStorage.setItem('solocab_battery_optim_disabled', 'true');
-            result = 'granted';
+            const r = await SoloCabPermissions.openBatteryOptimizationSettings();
+            result = r.battery ? 'granted' : 'prompt';
           } else {
             result = 'unsupported';
           }
           break;
         }
         case 'microphone': {
+          if (isNative && platform === 'android') {
+            const r = await SoloCabPermissions.requestMicrophone();
+            result = r.granted ? 'granted' : 'denied';
+            break;
+          }
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach((t) => t.stop());
