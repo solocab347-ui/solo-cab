@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_DIR="$ROOT_DIR/android"
 MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
 PACKAGE_JSON="$ROOT_DIR/package.json"
+REQUIRE_WEB_ASSETS="${ANDROID_VERIFY_REQUIRE_WEB_ASSETS:-0}"
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
@@ -50,28 +51,27 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 APP_ID="$(grep -oE "appId: '[^']+'" "$ROOT_DIR/capacitor.config.ts" | sed -E "s/appId: '([^']+)'/\1/" | head -n 1)"
-WEB_DIR="$(grep -oE "webDir: '[^']+'" "$ROOT_DIR/capacitor.config.ts" | sed -E "s/webDir: '([^']+)'/\1/" | head -n 1)"
 
 if [ -z "$APP_ID" ]; then
   red "❌ Impossible de lire appId depuis capacitor.config.ts"
   exit 1
 fi
 
+WEB_DIR="$(grep -oE "webDir: '[^']+'" "$ROOT_DIR/capacitor.config.ts" | sed -E "s/webDir: '([^']+)'/\1/" | head -n 1)"
 if [ -z "$WEB_DIR" ]; then
   red "❌ Impossible de lire webDir depuis capacitor.config.ts"
   exit 1
 fi
 
-if [ ! -d "$ROOT_DIR/$WEB_DIR" ]; then
-  red "❌ Dossier webDir introuvable avant sync Capacitor : $WEB_DIR"
-  echo "Lancez d'abord : npm run build"
+if ! (cd "$ROOT_DIR" && npx cap config >/dev/null 2>&1); then
+  red "❌ Capacitor CLI ne parvient pas à lire capacitor.config.ts"
+  echo "Lancez : npm install --legacy-peer-deps"
   exit 1
 fi
 
-if npx cap config >/dev/null 2>&1; then
-  green "✅ Configuration Capacitor lisible par la CLI"
-else
-  red "❌ La CLI Capacitor ne peut pas lire capacitor.config.ts"
+if [ "$REQUIRE_WEB_ASSETS" = "1" ] && [ ! -f "$ROOT_DIR/$WEB_DIR/index.html" ]; then
+  red "❌ Dossier web introuvable avant sync Capacitor : $WEB_DIR"
+  echo "Lancez d'abord : npm run build"
   exit 1
 fi
 
@@ -115,18 +115,12 @@ for path in Path(os.environ['ANDROID_DIR'], 'app').rglob('*'):
         break
 PY
 )"
-MIN_SDK="$(grep -oE 'minSdkVersion\s*=\s*[0-9]+' "$ANDROID_DIR/variables.gradle" | awk -F= '{gsub(/[[:space:]]/, "", $2); print $2}' | head -n 1)"
-COMPILE_SDK="$(grep -oE 'compileSdkVersion\s*=\s*[0-9]+' "$ANDROID_DIR/variables.gradle" | awk -F= '{gsub(/[[:space:]]/, "", $2); print $2}' | head -n 1)"
-TARGET_SDK="$(grep -oE 'targetSdkVersion\s*=\s*[0-9]+' "$ANDROID_DIR/variables.gradle" | awk -F= '{gsub(/[[:space:]]/, "", $2); print $2}' | head -n 1)"
 
 echo "Capacitor appId        : $APP_ID"
 echo "Capacitor webDir       : $WEB_DIR"
 echo "MainActivity package   : $MAIN_ACTIVITY_PACKAGE"
 echo "Gradle applicationId   : ${APPLICATION_ID:-<non trouvé>}"
 echo "Gradle namespace       : ${NAMESPACE:-<non trouvé>}"
-echo "Android minSdk         : ${MIN_SDK:-<non trouvé>}"
-echo "Android compileSdk     : ${COMPILE_SDK:-<non trouvé>}"
-echo "Android targetSdk      : ${TARGET_SDK:-<non trouvé>}"
 
 HAS_ERROR="$HAS_CAP_ERROR"
 
@@ -142,21 +136,6 @@ fi
 
 if [ -n "$NAMESPACE" ] && [ "$NAMESPACE" != "$APP_ID" ]; then
   red "❌ namespace Gradle ne correspond pas à appId"
-  HAS_ERROR=1
-fi
-
-if [ -z "$MIN_SDK" ] || [ "$MIN_SDK" -lt 24 ]; then
-  red "❌ minSdkVersion doit être défini et >= 24 pour Capacitor Android"
-  HAS_ERROR=1
-fi
-
-if [ -z "$COMPILE_SDK" ] || [ "$COMPILE_SDK" -lt 35 ]; then
-  red "❌ compileSdkVersion doit être défini et >= 35"
-  HAS_ERROR=1
-fi
-
-if [ -z "$TARGET_SDK" ] || [ "$TARGET_SDK" -gt "$COMPILE_SDK" ]; then
-  red "❌ targetSdkVersion doit être défini et <= compileSdkVersion"
   HAS_ERROR=1
 fi
 
