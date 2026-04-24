@@ -1,103 +1,163 @@
-# 🚀 Refonte Performances & UX SoloCab — Plan complet
 
 ## Objectif
-Réduire le **Time-To-Interactive** de ~4s à <1s sur tous les dashboards (admin, chauffeur, client, guest), éliminer les HTTP 500 actuels, et offrir des transitions fluides type "app native premium".
 
----
+Corriger le blocage visible sur ta capture et renforcer le pipeline Android pour que :
 
-## 📦 PHASE 1 — Fondations DB & Cache (1 message)
-**Impact : élimine les timeouts SQL, divise par 3 les requêtes au boot**
+1. `npm install` en CI ne soit plus cassé par les peer-deps Stripe.
+2. les versions Stripe soient verrouillées et compatibles.
+3. `npm run android:verify && vite build` ne plante plus sur le script `verify-android-package.sh`.
+4. le workflow GitHub Actions relance bien `npm install`, build le bundle web, fait `cap sync android`, puis upload APK + logs.
 
-### 1.1 Indexes SQL critiques
-- `profiles(id)` — actuellement timeout HTTP 500
-- `factures(client_id, payment_status)` — timeout HTTP 500
-- `courses(client_id, status, scheduled_date)`
-- `notifications(user_id, created_at DESC)`
-- `course_ratings(client_id, status, rating_direction)`
-- `clients(user_id)`, `user_roles(user_id)`
-- `push_subscriptions(user_id, is_active)`
-- `client_driver_blocks(client_id, blocked_by)`
-- `devis(client_id, status, valid_until)`
+## Problème identifié sur la capture
 
-### 1.2 Cache React Query global
-- `staleTime: 30s` sur queries quasi-statiques
-- `staleTime: 5min` sur metadata
-- Désactiver `refetchOnWindowFocus` partout sauf temps réel
+Le terminal montre deux erreurs liées en cascade :
 
-### 1.3 Auth context unifié
-- 1 seul `supabase.auth.getUser()` partagé via `useAuth()`
+```text
+scripts/verify-android-package.sh: line 70: unexpected EOF while looking for matching `}'
+[error] Could not find the web assets directory: ./dist
+```
 
-### 1.4 Parallélisation boot dashboard
-- `Promise.all` pour requêtes indépendantes
+La première erreur vient du script `scripts/verify-android-package.sh`, probablement à cause de blocs heredoc Bash/Python trop fragiles sur l’environnement local.
 
----
+Comme `npm run build` exécute d’abord :
 
-## 📦 PHASE 2 — Code Splitting & Bundle (2-3 messages)
+```bash
+npm run android:verify && vite build
+```
 
-### 2.1 Lazy-load par onglet
-- ClientDashboard, DriverDashboard, AdminDashboard
+le `vite build` ne se lance pas, donc le dossier `dist/` n’est jamais généré. Ensuite `npx cap sync android` échoue logiquement avec :
 
-### 2.2 Découpage des fichiers monstres
-- CoursesList (3576 l), PartnerPaymentsManager (1494 l), DriverPlanning (1412 l), DriverDevisList (1361 l), OnboardingGoalsStep (1244 l)
+```text
+Could not find the web assets directory: ./dist
+```
 
-### 2.3 Suspense + Skeletons
-- Remplacer "Chargement..." par `<Skeleton />`
+## Plan d’implémentation
 
-### 2.4 Lazy-load Mapbox
+### 1. Durcir `scripts/verify-android-package.sh`
 
----
+Modifier le script pour supprimer les heredocs fragiles ou les rendre totalement sûrs :
 
-## 📦 PHASE 3 — Transitions & UX premium (2 messages)
+- utiliser des heredocs quotés (`<<'PY'`, `<<'NODE'`) quand aucune interpolation Bash n’est nécessaire ;
+- passer `ANDROID_DIR` via variable d’environnement au script Python au lieu de l’injecter directement dans le heredoc ;
+- éviter les syntaxes qui peuvent être interprétées par Bash avant d’arriver à Node/Python ;
+- conserver les mêmes contrôles :
+  - versions majeures Capacitor cohérentes ;
+  - `appId` dans `capacitor.config.ts` ;
+  - package de `MainActivity` ;
+  - `applicationId` Gradle ;
+  - `namespace` Gradle.
 
-### 3.1 Page transitions Framer Motion
-- Fade + translation 150-200ms entre routes
-- AnimatePresence sur modals/drawers
+Résultat attendu :
 
-### 3.2 Optimistic UI
-- Notes, favoris, annulations, notifications lues
+```bash
+npm run android:verify
+```
 
-### 3.3 Préfetch intelligent
-- React Query `prefetchQuery` au login
+doit passer sans erreur Bash.
 
-### 3.4 Skeletons contextuels par dashboard
+### 2. Verrouiller la stratégie peer-deps Stripe
 
----
+Compléter la stratégie déjà commencée :
 
-## 📦 PHASE 4 — Realtime, GPS & Service Worker (1-2 messages)
+- conserver `.npmrc` :
 
-### 4.1 Centralisation Realtime
-- 1 `RealtimeProvider` global, déduplication channels
+```text
+legacy-peer-deps=true
+fund=false
+audit=false
+```
 
-### 4.2 GPS chauffeur optimisé
-- Throttle 5s min, pause si onglet caché, batch updates
+- ajouter dans `package.json` un bloc `overrides` npm pour forcer les versions Stripe compatibles :
 
-### 4.3 Virtualization listes longues
-- `react-window` sur listes >100 items
+```json
+"overrides": {
+  "@stripe/react-stripe-js": "6.1.0",
+  "@stripe/stripe-js": "9.3.1"
+}
+```
 
-### 4.4 Service Worker assets
-- Cache fonts/images/JS, stale-while-revalidate
+- conserver les dépendances directes :
 
----
+```json
+"@stripe/react-stripe-js": "6.1.0",
+"@stripe/stripe-js": "9.3.1"
+```
 
-## 📊 Résultats attendus
+But : si une dépendance transitive tente de résoudre une autre version Stripe, npm restera aligné sur les versions validées.
 
-| Métrique | Avant | Après |
-|---|---|---|
-| TTI mobile 4G | ~4s | <1s |
-| Bundle initial | ~1.2MB | ~700KB |
-| Requêtes boot | 15+ | 4-5 |
-| HTTP 500 | Présents | 0 |
-| Transitions | Saccadées | Fluides 150ms |
+### 3. Renforcer le workflow GitHub Actions
 
----
+Mettre à jour `.github/workflows/android-build.yml` pour rendre l’installation plus explicite et traçable :
 
-## 🗓️ Ordre d'exécution
+- ajouter une variable d’environnement globale :
 
-1. **Msg 1** : Phase 1 (indexes + cache + auth + parallélisation)
-2. **Msg 2** : Phase 2.1 + 2.3 (lazy tabs + skeletons)
-3. **Msg 3** : Phase 2.2 (découpage fichiers)
-4. **Msg 4** : Phase 3.1 + 3.4 (transitions + skeletons)
-5. **Msg 5** : Phase 3.2 + 3.3 (optimistic UI + préfetch)
-6. **Msg 6** : Phase 4 (realtime + GPS + virtualization + SW)
+```yaml
+env:
+  NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+```
 
-Chaque phase est indépendante et réversible.
+- conserver :
+
+```bash
+npm install --legacy-peer-deps
+```
+
+- ajouter une étape de diagnostic après installation :
+
+```bash
+npm ls @stripe/react-stripe-js @stripe/stripe-js || true
+npm ls @capacitor/core @capacitor/android @capacitor/cli || true
+```
+
+et sauvegarder ce résultat dans les logs uploadés.
+
+### 4. Sécuriser l’ordre de build Android
+
+Garder l’ordre CI suivant :
+
+```text
+npm install --legacy-peer-deps
+npm run build
+npx cap add android si android/ absent
+bash scripts/patch-native.sh
+npx cap sync android
+npm run android:verify
+./gradlew assembleDebug
+upload APK + logs
+```
+
+Une fois le script `android:verify` corrigé, `npm run build` générera bien `dist/`, donc `cap sync android` ne devrait plus échouer sur l’absence du dossier web.
+
+### 5. Vérifications à lancer après modification
+
+Après approbation, je lancerai les vérifications disponibles ici :
+
+```bash
+npm install --legacy-peer-deps
+npm run android:verify
+npm run build
+npx cap sync android
+```
+
+Puis je confirmerai :
+
+- que les dépendances Stripe sont alignées ;
+- que les dépendances Capacitor restent alignées ;
+- que le script Android verify ne casse plus ;
+- que `dist/` est généré avant `cap sync android`.
+
+## Résultat attendu côté GitHub Actions
+
+Au prochain push, le workflow devra produire :
+
+- un artefact APK debug ;
+- un artefact logs avec :
+  - `npm-install.log`
+  - `stripe-deps.log`
+  - `capacitor-deps.log`
+  - `web-build.log`
+  - `cap-sync-android.log`
+  - `android-verify.log`
+  - `gradle-assemble-debug.log`
+
+Si le build échoue encore, les logs uploadés permettront d’identifier précisément l’étape fautive au lieu d’avoir seulement une erreur terminal partielle.
