@@ -154,6 +154,15 @@ export function useDriverLocationTracker({
     (lat: number, lng: number, _accuracy: number) => {
       lastCoordsRef.current = { lat, lon: lng };
       const now = new Date();
+      // Compute speed from previous fix → drives adaptive stale threshold
+      if (lastFixRef.current) {
+        const dt = (now.getTime() - lastFixRef.current.time) / 1000;
+        if (dt > 0.5) {
+          const dist = distanceMeters(lastFixRef.current.lat, lastFixRef.current.lon, lat, lng);
+          lastSpeedRef.current = dist / dt;
+        }
+      }
+      lastFixRef.current = { lat, lon: lng, time: now.getTime(), accuracy: _accuracy };
       // Always refresh lastUpdate (proves GPS is alive) even if position barely changed
       setLocationState((prev) => {
         const latChanged = !prev.latitude || Math.abs(lat - prev.latitude) > MIN_MOVEMENT_DEG;
