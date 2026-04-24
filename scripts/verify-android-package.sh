@@ -7,6 +7,11 @@ ANDROID_DIR="$ROOT_DIR/android"
 MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 REQUIRE_WEB_ASSETS="${ANDROID_VERIFY_REQUIRE_WEB_ASSETS:-0}"
+EXPECTED_APP_ID="com.solocab.app"
+EXPECTED_WEB_DIR="dist"
+EXPECTED_MIN_SDK="24"
+EXPECTED_COMPILE_SDK="36"
+EXPECTED_TARGET_SDK="36"
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
@@ -63,6 +68,16 @@ if [ -z "$WEB_DIR" ]; then
   exit 1
 fi
 
+if [ "$APP_ID" != "$EXPECTED_APP_ID" ]; then
+  red "❌ appId Capacitor invalide pour Play Store : $APP_ID (attendu : $EXPECTED_APP_ID)"
+  exit 1
+fi
+
+if [ "$WEB_DIR" != "$EXPECTED_WEB_DIR" ]; then
+  red "❌ webDir Capacitor invalide pour Android natif : $WEB_DIR (attendu : $EXPECTED_WEB_DIR)"
+  exit 1
+fi
+
 if ! (cd "$ROOT_DIR" && npx cap config >/dev/null 2>&1); then
   red "❌ Capacitor CLI ne parvient pas à lire capacitor.config.ts"
   echo "Lancez : npm install --legacy-peer-deps"
@@ -115,12 +130,20 @@ for path in Path(os.environ['ANDROID_DIR'], 'app').rglob('*'):
         break
 PY
 )"
+MIN_SDK="$(grep -oE 'minSdkVersion = [0-9]+' "$ANDROID_DIR/variables.gradle" | awk '{print $3}' | head -n 1)"
+COMPILE_SDK="$(grep -oE 'compileSdkVersion = [0-9]+' "$ANDROID_DIR/variables.gradle" | awk '{print $3}' | head -n 1)"
+TARGET_SDK="$(grep -oE 'targetSdkVersion = [0-9]+' "$ANDROID_DIR/variables.gradle" | awk '{print $3}' | head -n 1)"
+MANIFEST_PACKAGE_ATTR="$(grep -oE '<manifest[^>]+package=' "$MANIFEST" || true)"
+LAUNCH_MODE_COUNT="$(grep -o 'android:launchMode=' "$MANIFEST" | wc -l | tr -d ' ')"
 
 echo "Capacitor appId        : $APP_ID"
 echo "Capacitor webDir       : $WEB_DIR"
 echo "MainActivity package   : $MAIN_ACTIVITY_PACKAGE"
 echo "Gradle applicationId   : ${APPLICATION_ID:-<non trouvé>}"
 echo "Gradle namespace       : ${NAMESPACE:-<non trouvé>}"
+echo "Android minSdk         : ${MIN_SDK:-<non trouvé>}"
+echo "Android compileSdk     : ${COMPILE_SDK:-<non trouvé>}"
+echo "Android targetSdk      : ${TARGET_SDK:-<non trouvé>}"
 
 HAS_ERROR="$HAS_CAP_ERROR"
 
@@ -136,6 +159,31 @@ fi
 
 if [ -n "$NAMESPACE" ] && [ "$NAMESPACE" != "$APP_ID" ]; then
   red "❌ namespace Gradle ne correspond pas à appId"
+  HAS_ERROR=1
+fi
+
+if [ "${MIN_SDK:-}" != "$EXPECTED_MIN_SDK" ]; then
+  red "❌ minSdkVersion invalide pour Play Store : ${MIN_SDK:-<non trouvé>} (attendu : $EXPECTED_MIN_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ "${COMPILE_SDK:-}" != "$EXPECTED_COMPILE_SDK" ]; then
+  red "❌ compileSdkVersion invalide : ${COMPILE_SDK:-<non trouvé>} (attendu : $EXPECTED_COMPILE_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ "${TARGET_SDK:-}" != "$EXPECTED_TARGET_SDK" ]; then
+  red "❌ targetSdkVersion invalide pour Play Store : ${TARGET_SDK:-<non trouvé>} (attendu : $EXPECTED_TARGET_SDK)"
+  HAS_ERROR=1
+fi
+
+if [ -n "$MANIFEST_PACKAGE_ATTR" ]; then
+  red "❌ AndroidManifest.xml ne doit plus définir package= avec AGP moderne ; utilisez namespace/applicationId Gradle."
+  HAS_ERROR=1
+fi
+
+if [ "$LAUNCH_MODE_COUNT" -gt 1 ]; then
+  red "❌ AndroidManifest.xml contient android:launchMode plusieurs fois sur MainActivity."
   HAS_ERROR=1
 fi
 
