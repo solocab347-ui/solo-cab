@@ -102,12 +102,19 @@ jobs:
           npm run android:verify 2>&1 | tee logs/android-verify-presync.log
           npx cap sync android 2>&1 | tee logs/cap-sync-android.log
 
+      - name: Verify no PWA artifacts before Gradle
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run android:no-pwa 2>&1 | tee logs/android-no-pwa.log
+
       - name: Verify Android package consistency
         shell: bash
         run: |
           set -o pipefail
           npm run android:doctor 2>&1 | tee logs/android-doctor.log
           npm run android:verify 2>&1 | tee logs/android-verify.log
+          npm run android:no-pwa 2>&1 | tee -a logs/android-no-pwa.log
 
       - name: Build debug APK
         shell: bash
