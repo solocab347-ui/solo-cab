@@ -11,7 +11,7 @@
  * natives sont marquées "non-applicable".
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
 export type PermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown';
@@ -37,6 +37,16 @@ export type PermissionKey =
 interface UsePermissionsCenterOptions {
   role: 'driver' | 'client' | 'admin' | null;
 }
+
+interface SoloCabPermissionsPlugin {
+  openOverlaySettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  openBatteryOptimizationSettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  openAppDetailsSettings(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  checkSpecialPermissions(): Promise<{ overlay?: boolean; battery?: boolean; microphone?: boolean }>;
+  requestMicrophone(): Promise<{ granted: boolean }>;
+}
+
+const SoloCabPermissions = registerPlugin<SoloCabPermissionsPlugin>('SoloCabPermissions');
 
 const DRIVER_REQUIRED: PermissionKey[] = ['location', 'notifications', 'overlay', 'battery'];
 const CLIENT_REQUIRED: PermissionKey[] = ['location', 'notifications'];
@@ -145,19 +155,35 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
 
   const checkOverlay = useCallback(async (): Promise<PermissionStatus> => {
     if (platform !== 'android') return 'unsupported';
-    // Sera vérifié via plugin natif custom dans une future itération.
-    // Pour l'instant on lit le storage local : l'utilisateur déclare avoir activé.
-    const stored = localStorage.getItem('solocab_native_overlay_granted');
-    return stored === 'true' ? 'granted' : 'prompt';
-  }, [platform]);
+    if (!isNative) return 'unsupported';
+    try {
+      const r = await SoloCabPermissions.checkSpecialPermissions();
+      return r.overlay ? 'granted' : 'prompt';
+    } catch {
+      return 'unknown';
+    }
+  }, [isNative, platform]);
 
   const checkBattery = useCallback(async (): Promise<PermissionStatus> => {
     if (platform !== 'android') return 'unsupported';
-    const stored = localStorage.getItem('solocab_battery_optim_disabled');
-    return stored === 'true' ? 'granted' : 'prompt';
-  }, [platform]);
+    if (!isNative) return 'unsupported';
+    try {
+      const r = await SoloCabPermissions.checkSpecialPermissions();
+      return r.battery ? 'granted' : 'prompt';
+    } catch {
+      return 'unknown';
+    }
+  }, [isNative, platform]);
 
   const checkMicrophone = useCallback(async (): Promise<PermissionStatus> => {
+    if (isNative && platform === 'android') {
+      try {
+        const r = await SoloCabPermissions.checkSpecialPermissions();
+        return r.microphone ? 'granted' : 'prompt';
+      } catch {
+        return 'unknown';
+      }
+    }
     if (!navigator.permissions) return 'unsupported';
     try {
       const r = await navigator.permissions.query({ name: 'microphone' as PermissionName });
@@ -165,7 +191,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     } catch {
       return 'unknown';
     }
-  }, []);
+  }, [isNative, platform]);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
@@ -207,6 +233,11 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             const { Geolocation } = await import('@capacitor/geolocation');
             const r = await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
             result = mapCapacitorState(r.location);
+            if (key === 'location_background' && platform === 'android') {
+              try {
+                await SoloCabPermissions.openAppDetailsSettings();
+              } catch {/* fallback ignored */}
+            }
           } else {
             await new Promise<void>((res) => navigator.geolocation.getCurrentPosition(() => res(), () => res(), { timeout: 5000 }));
             result = await checkLocation();
@@ -228,14 +259,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
           break;
         }
         case 'overlay': {
-          // On ouvre les paramètres natifs Android (action manuelle requise par Google).
-          // Plugin custom à intégrer côté Android. Pour l'instant on guide l'utilisateur.
           if (isNative && platform === 'android') {
-            // Note : pas de App.exitApp() ici — fermerait l'app instantanément.
-            // L'overlay nécessite un plugin natif custom (intent ACTION_MANAGE_OVERLAY_PERMISSION).
-            // Pour l'instant, on marque comme granted après confirmation manuelle de l'utilisateur.
-            localStorage.setItem('solocab_native_overlay_granted', 'true');
-            result = 'granted';
+            const r = await SoloCabPermissions.openOverlaySettings();
+            result = r.overlay ? 'granted' : 'prompt';
           } else {
             result = 'unsupported';
           }
@@ -243,14 +269,19 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
-            localStorage.setItem('solocab_battery_optim_disabled', 'true');
-            result = 'granted';
+            const r = await SoloCabPermissions.openBatteryOptimizationSettings();
+            result = r.battery ? 'granted' : 'prompt';
           } else {
             result = 'unsupported';
           }
           break;
         }
         case 'microphone': {
+          if (isNative && platform === 'android') {
+            const r = await SoloCabPermissions.requestMicrophone();
+            result = r.granted ? 'granted' : 'denied';
+            break;
+          }
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach((t) => t.stop());
