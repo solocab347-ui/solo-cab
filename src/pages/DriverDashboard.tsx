@@ -826,15 +826,20 @@ const DriverDashboard = () => {
           </div>
         )}
 
-        {/* Tutorial interactif pour les nouveaux chauffeurs */}
+        {/* Tutoriel immersif (slides plein écran) */}
         <DriverTutorial
           isVisible={showTutorial}
           onNavigateToTab={(tab) => handleTabChange(tab)}
           onComplete={() => {
             setShowTutorial(false);
             if (driverProfile?.driver?.id) {
-              localStorage.setItem(`solocab_tutorial_done_${driverProfile.driver.id}`, "true");
+              markTutorialCompleted(driverProfile.driver.id);
             }
+          }}
+          onDismiss={() => {
+            // L'utilisateur a fermé sans terminer : on garde le compteur intact,
+            // markTutorialShown() a déjà été appelé à l'ouverture.
+            setShowTutorial(false);
           }}
         />
 
