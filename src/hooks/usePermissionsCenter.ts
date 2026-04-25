@@ -212,7 +212,8 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
       const r = await SoloCabPermissions.checkSpecialPermissions();
       return r.overlay ? 'granted' : 'prompt';
     } catch {
-      return 'unknown';
+      // Plugin natif indispo (APK pas rebuild) : on ne peut pas savoir, on suppose 'prompt'
+      return 'prompt';
     }
   }, [isNative, platform]);
 
@@ -223,7 +224,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
       const r = await SoloCabPermissions.checkSpecialPermissions();
       return r.battery ? 'granted' : 'prompt';
     } catch {
-      return 'unknown';
+      return 'prompt';
     }
   }, [isNative, platform]);
 
@@ -233,7 +234,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         const r = await SoloCabPermissions.checkSpecialPermissions();
         return r.microphone ? 'granted' : 'prompt';
       } catch {
-        return 'unknown';
+        return 'prompt';
       }
     }
     if (!navigator.permissions) return 'unsupported';
