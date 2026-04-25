@@ -51,19 +51,9 @@ interface SoloCabPermissionsPlugin {
 const SoloCabPermissions = registerPlugin<SoloCabPermissionsPlugin>('SoloCabPermissions');
 
 /**
- * Vérifie si le plugin natif custom est réellement disponible.
- * Si l'APK n'a pas été rebuild après l'ajout du plugin, il faut utiliser des fallbacks.
+ * Note : si l'APK n'a pas été rebuild après l'ajout du plugin natif custom,
+ * les appels à SoloCabPermissions.* échouent silencieusement et on passe par le fallback intent.
  */
-async function isCustomPluginAvailable(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return false;
-  try {
-    await SoloCabPermissions.checkSpecialPermissions();
-    return true;
-  } catch (err) {
-    console.warn('[Permissions] Plugin natif SoloCabPermissions indisponible (rebuild APK requis), fallback intent.', err);
-    return false;
-  }
-}
 
 /**
  * Fallback : ouvre les écrans Android système via App.openUrl (intent URL).
