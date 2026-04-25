@@ -42,6 +42,27 @@ export function useNativePushRegistration() {
           } catch {/* déjà créé ou plateforme non supportée */}
         }
 
+        // 1bis. iOS : enregistrer la catégorie INCOMING_RIDE avec actions inline
+        // (Accepter / Refuser). Le backend envoie `category: "INCOMING_RIDE"` dans
+        // l'APNS payload, ce qui déclenche l'affichage des boutons sur le lockscreen.
+        if (Capacitor.getPlatform() === 'ios') {
+          try {
+            await LocalNotifications.registerActionTypes({
+              types: [
+                {
+                  id: 'INCOMING_RIDE',
+                  actions: [
+                    { id: 'accept', title: '✅ Accepter', foreground: true },
+                    { id: 'decline', title: '❌ Refuser', destructive: true, foreground: false },
+                  ],
+                },
+              ],
+            });
+          } catch (e) {
+            console.warn('[NativePush] iOS action types register failed', e);
+          }
+        }
+
         // 2. Vérifier permission, sinon demander
         const perm = await PushNotifications.checkPermissions();
         if (perm.receive !== 'granted') {
