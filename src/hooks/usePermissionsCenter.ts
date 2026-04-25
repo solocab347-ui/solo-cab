@@ -50,6 +50,46 @@ interface SoloCabPermissionsPlugin {
 
 const SoloCabPermissions = registerPlugin<SoloCabPermissionsPlugin>('SoloCabPermissions');
 
+/**
+ * Note : si l'APK n'a pas été rebuild après l'ajout du plugin natif custom,
+ * les appels à SoloCabPermissions.* échouent silencieusement et on passe par le fallback intent.
+ */
+
+/**
+ * Fallback : ouvre les écrans Android système via App.openUrl (intent URL).
+ * Fonctionne sans rebuild de plugin custom.
+ */
+async function openAndroidSettingsFallback(target: 'overlay' | 'battery' | 'app_details' | 'notifications'): Promise<void> {
+  const appId = 'com.solocab.app';
+  let url: string;
+  switch (target) {
+    case 'overlay':
+      url = `intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=${appId};end`;
+      break;
+    case 'battery':
+      url = `intent:#Intent;action=android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS;package=${appId};end`;
+      break;
+    case 'notifications':
+      url = `intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.provider.extra.APP_PACKAGE=${appId};end`;
+      break;
+    case 'app_details':
+    default:
+      url = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${appId};end`;
+      break;
+  }
+  try {
+    // Le WebView Capacitor intercepte les URLs intent: et lance l'activité Android
+    window.location.href = url;
+  } catch (err) {
+    console.error('[Permissions] Fallback intent échec', target, err);
+  }
+}
+
+/**
+ * Vérifie si l'overlay est accordé via une astuce DOM (l'app peut tenter window.open).
+ * Sans plugin custom, on ne peut pas vraiment savoir : on retourne 'prompt' tant que non confirmé.
+ */
+
 const DRIVER_REQUIRED: PermissionKey[] = ['location', 'notifications', 'overlay', 'battery'];
 const CLIENT_REQUIRED: PermissionKey[] = ['location', 'notifications'];
 
@@ -162,7 +202,8 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
       const r = await SoloCabPermissions.checkSpecialPermissions();
       return r.overlay ? 'granted' : 'prompt';
     } catch {
-      return 'unknown';
+      // Plugin natif indispo (APK pas rebuild) : on ne peut pas savoir, on suppose 'prompt'
+      return 'prompt';
     }
   }, [isNative, platform]);
 
@@ -173,7 +214,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
       const r = await SoloCabPermissions.checkSpecialPermissions();
       return r.battery ? 'granted' : 'prompt';
     } catch {
-      return 'unknown';
+      return 'prompt';
     }
   }, [isNative, platform]);
 
@@ -183,7 +224,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         const r = await SoloCabPermissions.checkSpecialPermissions();
         return r.microphone ? 'granted' : 'prompt';
       } catch {
-        return 'unknown';
+        return 'prompt';
       }
     }
     if (!navigator.permissions) return 'unsupported';
@@ -238,7 +279,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             if (key === 'location_background' && platform === 'android') {
               try {
                 await SoloCabPermissions.openAppDetailsSettings();
-              } catch {/* fallback ignored */}
+              } catch {
+                await openAndroidSettingsFallback('app_details');
+              }
             }
           } else {
             await new Promise<void>((res) => navigator.geolocation.getCurrentPosition(() => res(), () => res(), { timeout: 5000 }));
@@ -262,6 +305,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
                   console.warn('[Permissions] register() a échoué:', regErr);
                 }
               }
+            } else if (platform === 'android') {
+              // Si refus persistant, ouvrir directement les paramètres notif système
+              await openAndroidSettingsFallback('notifications');
             }
           } else if ('Notification' in window) {
             const r = await Notification.requestPermission();
@@ -271,8 +317,14 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'overlay': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.openOverlaySettings();
-            result = r.overlay ? 'granted' : 'prompt';
+            try {
+              const r = await SoloCabPermissions.openOverlaySettings();
+              result = r.overlay ? 'granted' : 'prompt';
+            } catch {
+              // Plugin custom indispo : fallback intent direct
+              await openAndroidSettingsFallback('overlay');
+              result = 'prompt';
+            }
           } else {
             result = 'unsupported';
           }
@@ -280,8 +332,13 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.openBatteryOptimizationSettings();
-            result = r.battery ? 'granted' : 'prompt';
+            try {
+              const r = await SoloCabPermissions.openBatteryOptimizationSettings();
+              result = r.battery ? 'granted' : 'prompt';
+            } catch {
+              await openAndroidSettingsFallback('battery');
+              result = 'prompt';
+            }
           } else {
             result = 'unsupported';
           }
@@ -289,9 +346,16 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'microphone': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.requestMicrophone();
-            result = r.granted ? 'granted' : 'denied';
-            break;
+            try {
+              const r = await SoloCabPermissions.requestMicrophone();
+              result = r.granted ? 'granted' : 'denied';
+              break;
+            } catch {
+              // Fallback : ouvrir les paramètres détails app
+              await openAndroidSettingsFallback('app_details');
+              result = 'prompt';
+              break;
+            }
           }
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -328,7 +392,23 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
   const openPermissionTestAction = useCallback(async (action: PermissionTestAction): Promise<void> => {
     if (action === 'app_details') {
       if (isNative && platform === 'android') {
-        await SoloCabPermissions.openAppDetailsSettings();
+        try {
+          await SoloCabPermissions.openAppDetailsSettings();
+        } catch {
+          await openAndroidSettingsFallback('app_details');
+        }
+      }
+      await refreshAll();
+      return;
+    }
+
+    // Pour overlay/battery/microphone, on tente d'abord le plugin custom puis le fallback intent
+    if (isNative && platform === 'android' && (action === 'overlay' || action === 'battery')) {
+      try {
+        if (action === 'overlay') await SoloCabPermissions.openOverlaySettings();
+        else await SoloCabPermissions.openBatteryOptimizationSettings();
+      } catch {
+        await openAndroidSettingsFallback(action);
       }
       await refreshAll();
       return;
