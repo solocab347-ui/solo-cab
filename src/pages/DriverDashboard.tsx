@@ -51,6 +51,11 @@ import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
 import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
 import { DriverTutorial } from "@/components/driver/tutorial/DriverTutorial";
+import {
+  shouldAutoShowTutorial,
+  markTutorialShown,
+  markTutorialCompleted,
+} from "@/lib/tutorialState";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
