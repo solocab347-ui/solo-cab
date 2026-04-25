@@ -515,6 +515,31 @@ const ClientRideTracking = () => {
           </motion.div>
         </AnimatePresence>
 
+        {/* Téléchargement de facture après finalisation */}
+        {isCompleted && (
+          <Card className="border-green-500/30">
+            <CardContent className="pt-5 pb-4 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Votre facture est disponible</p>
+                <p className="text-xs text-muted-foreground">PDF officiel identique à celui du chauffeur</p>
+              </div>
+              <Button
+                onClick={handleDownloadInvoice}
+                disabled={downloadingInvoice}
+                size="sm"
+                className="shrink-0"
+              >
+                {downloadingInvoice ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Télécharger
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Phase Timeline */}
         {!isCancelled && (
           <Card>
