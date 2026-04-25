@@ -24,7 +24,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
   const [isResumeMode, setIsResumeMode] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  // Par défaut TRUE (modèle Uber/Bolt : on reste connecté entre les ouvertures)
+  const [rememberMe, setRememberMe] = useState<boolean>(getRememberMe());
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
