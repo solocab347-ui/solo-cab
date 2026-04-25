@@ -393,19 +393,22 @@ export function useDriverLocationTracker({
     };
   }, [enabled, driverId, startWebTracking, stopWebTracking]);
 
-  // Merge native position into state (only if changed)
+  // Merge native position into state. CRITICAL: always refresh lastUpdate when
+  // a native fix arrives — this is the canonical proof that the foreground
+  // service is alive, even if the coordinates haven't changed (driver immobile).
+  // Sans ça, `isStale` reste à true et le bandeau apparaît à tort.
   useEffect(() => {
     if (Capacitor.isNativePlatform() && nativeGeo.latitude && nativeGeo.longitude) {
-      setLocationState((prev) => {
-        if (prev.latitude === nativeGeo.latitude && prev.longitude === nativeGeo.longitude) return prev;
-        return {
-          ...prev,
-          latitude: nativeGeo.latitude,
-          longitude: nativeGeo.longitude,
-          accuracy: nativeGeo.accuracy,
-          isTracking: true,
-        };
-      });
+      setLocationState((prev) => ({
+        ...prev,
+        latitude: nativeGeo.latitude,
+        longitude: nativeGeo.longitude,
+        accuracy: nativeGeo.accuracy,
+        isTracking: true,
+        isStale: false,
+        error: null,
+        lastUpdate: new Date(),
+      }));
     }
   }, [nativeGeo.latitude, nativeGeo.longitude, nativeGeo.accuracy]);
 
