@@ -167,78 +167,94 @@ export function ProactiveCoachPopup({
   );
 }
 
-// Education tips about SoloCab philosophy
+// ─── Tips philosophie SoloCab — version 2026 ────────────────────────────────
+//
+// Réécriture complète après audit :
+//   - Caractères cassés (\'lindépendance, Cest...) corrigés
+//   - Suppression du faux "25% de commission" (la réalité = frais fixe)
+//   - Frais standardisés : 0,50 € fixe par course, 0,25 €/chauffeur en course
+//     partagée, 0,80 € pour une course spontanée (cf. mémoire fee-structure-v3)
+//   - Messages alignés sur les fonctionnalités actuelles
+//
 export const SOLOCAB_EDUCATION_TIPS: ProactiveMessage[] = [
   {
-    id: 'solocab-philosophy',
-    type: 'education',
-    title: 'La philosophie SoloCab',
-    message: 'SoloCab vous aide à reprendre le contrôle de votre activité. Finis les algorithmes qui décident pour vous ! Ici, vous fixez VOS tarifs, vous choisissez VOS clients.',
-    emoji: '🎯',
-    priority: 'high'
+    id: "philosophy-fair-fee",
+    type: "education",
+    title: "Une plateforme qui vous appartient",
+    message:
+      "SoloCab ne prend pas de pourcentage sur vos courses. Juste 0,50 € de frais fixe pour faire tourner la plateforme. Le reste est à vous.",
+    emoji: "🎯",
+    priority: "high",
   },
   {
-    id: 'independence-goal',
-    type: 'education',
-    title: '\'Votre objectif : lindépendance',
-    message: '\'Chaque client direct que vous fidélisez, cest une course sans frais de transaction à 25% ! En développant votre clientèle privée, vous gardez 100% de vos revenus.',
-    emoji: '💰',
-    priority: 'high'
+    id: "qr-code-power",
+    type: "tip",
+    title: "Le pouvoir du QR Code",
+    message:
+      "Votre QR code est votre meilleur outil de fidélisation. Après chaque course, proposez-le à vos passagers : ils scannent, ils réservent directement avec vous la prochaine fois.",
+    emoji: "📱",
+    actionLabel: "Voir mon QR Code",
+    priority: "high",
   },
   {
-    id: 'qr-code-power',
-    type: 'tip',
-    title: 'Le pouvoir du QR Code',
-    message: '\'Votre QR Code est votre meilleur outil ! Après chaque course, proposez-le à vos clients satisfaits. Cest simple : ils scannent, ils réservent directement avec vous.',
-    emoji: '📱',
-    actionLabel: 'Voir mon QR Code',
-    priority: 'medium'
+    id: "you-set-your-prices",
+    type: "education",
+    title: "Vous fixez vos tarifs",
+    message:
+      "Pas d'algorithme qui décide à votre place. Vous configurez vos prix selon vos villes, vos horaires et la qualité de service que vous offrez.",
+    emoji: "💎",
+    actionLabel: "Configurer mes tarifs",
+    priority: "high",
   },
   {
-    id: 'partnership-benefits',
-    type: 'education',
-    title: 'Les partenariats entre chauffeurs',
-    message: '\'Vous êtes indisponible mais un client fidèle a besoin dune course ? Redirigez-le vers un partenaire de confiance et recevez des frais de transaction. Tout le monde gagne !',
-    emoji: '🤝',
-    actionLabel: 'Découvrir les partenariats',
-    priority: 'medium'
+    id: "partnership-network",
+    type: "education",
+    title: "Le réseau entre chauffeurs",
+    message:
+      "Indisponible mais un client compte sur vous ? Partagez la course avec un partenaire de confiance — frais réduit à 0,25 € par chauffeur impliqué. Tout le monde y gagne.",
+    emoji: "🤝",
+    actionLabel: "Découvrir les partenariats",
+    priority: "medium",
   },
   {
-    id: 'premium-service',
-    type: 'tip',
-    title: 'La qualité fait la différence',
-    message: 'Les clients choisissent SoloCab pour un service premium. Eau fraîche, chargeur, propreté impeccable... Ces petits plus fidélisent vos clients à vie !',
-    emoji: '⭐',
-    priority: 'low'
+    id: "premium-service",
+    type: "tip",
+    title: "La qualité fait la différence",
+    message:
+      "Les clients reviennent pour un service premium : eau fraîche, chargeur, propreté impeccable, ponctualité. Ces petits plus créent des clients à vie.",
+    emoji: "⭐",
+    priority: "medium",
   },
   {
-    id: 'pricing-freedom',
-    type: 'education',
-    title: 'Vous fixez vos tarifs',
-    message: '\'\'Contrairement aux plateformes, cest VOUS qui décidez de vos prix. Un service premium mérite une tarification juste. Nayez pas peur de valoriser votre travail !',
-    emoji: '💎',
-    actionLabel: 'Configurer mes tarifs',
-    priority: 'high'
+    id: "recurring-clients",
+    type: "tip",
+    title: "Clients réguliers = revenus stables",
+    message:
+      "Un client récurrent (domicile-travail, école des enfants, aéroport) peut représenter plusieurs centaines d'euros de revenus mensuels prévisibles. Identifiez ces profils !",
+    emoji: "🔄",
+    priority: "medium",
   },
   {
-    id: 'recurring-clients',
-    type: 'tip',
-    title: 'Clients récurrents = revenus stables',
-    message: 'Un client régulier (trajet domicile-travail, école des enfants...) peut représenter 500€+ par mois de revenus garantis. Identifiez ces profils !',
-    emoji: '🔄',
-    priority: 'medium'
+    id: "no-surge-pricing",
+    type: "education",
+    title: "Pas de surge pricing",
+    message:
+      "Vos tarifs restent stables. Vos clients savent à quoi s'attendre — pas de mauvaise surprise, juste une relation de confiance qui dure.",
+    emoji: "✨",
+    priority: "low",
   },
   {
-    id: 'no-surge-pricing',
-    type: 'education',
-    title: 'Pas de surge pricing',
-    message: 'Vos clients apprécient la stabilité de vos tarifs. Contrairement à Uber, pas de mauvaise surprise pour eux, et une relation de confiance qui se construit.',
-    emoji: '✨',
-    priority: 'low'
-  }
+    id: "spontaneous-courses",
+    type: "tip",
+    title: "Les courses spontanées",
+    message:
+      "Quand un client vous hèle dans la rue, encaissez en quelques secondes via l'app : juste 0,80 € de frais — vous gardez le reste, et tout est tracé pour votre comptabilité.",
+    emoji: "⚡",
+    priority: "low",
+  },
 ];
 
-// Context-aware message generator
+// ─── Générateur contextuel ──────────────────────────────────────────────────
 export function generateContextualMessage(
   stats: {
     todayRevenue: number;
@@ -251,76 +267,75 @@ export function generateContextualMessage(
     soloCabPercentage: number;
     partnershipsCount: number;
   },
-  driverName?: string
+  driverName?: string,
 ): ProactiveMessage | null {
   const hour = new Date().getHours();
-  const name = driverName ? `${driverName}, ` : '';
+  const name = driverName ? `${driverName}, ` : "";
 
-  // Note: Les objectifs sont maintenant remplis à l'inscription, donc on ne demande plus de les définir
-  // Priority 1: No objectives set - DÉSACTIVÉ car remplis à l'onboarding
-  // if (!stats.hasObjectives) { ... }
-  // Priority 2: First client celebration
+  // Premier client direct → célébration
   if (stats.totalClients === 1) {
     return {
-      id: 'first-client',
-      type: 'celebration',
-      title: '🎉 Votre premier client direct !',
-      message: '\'\'\'Cest le début de votre indépendance ! Ce client, cest une course sans frais de transaction. Continuez à fidéliser, et bientôt vous naurez plus besoin des plateformes.',
-      emoji: '🏆',
-      priority: 'high'
+      id: "first-client",
+      type: "celebration",
+      title: "🎉 Votre premier client direct !",
+      message:
+        "Bravo ! Ce client est venu DIRECTEMENT chez vous, sans intermédiaire. Continuez à fidéliser avec votre QR code — c'est le début de votre indépendance.",
+      emoji: "🏆",
+      priority: "high",
     };
   }
 
-  // Priority 3: Great day celebration
+  // Excellente journée
   if (stats.todayRevenue > 200 && hour >= 18) {
     return {
-      id: 'great-day',
-      type: 'celebration',
-      title: `${name}Journée exceptionnelle !`,
-      message: `${stats.todayRevenue.toFixed(0)}€ aujourd'hui, c'est impressionnant ! Vous êtes sur la bonne voie pour atteindre l'indépendance.`,
-      emoji: '🔥',
-      priority: 'medium'
+      id: "great-day",
+      type: "celebration",
+      title: `${name}journée exceptionnelle !`,
+      message: `${stats.todayRevenue.toFixed(0)} € aujourd'hui. Bravo — vous valorisez votre travail comme il le mérite.`,
+      emoji: "🔥",
+      priority: "medium",
     };
   }
 
-  // Priority 4: Partnership suggestion if none
+  // Suggestion partenariat (clients fidèles mais aucun partenaire)
   if (stats.partnershipsCount === 0 && stats.totalClients >= 5) {
     return {
-      id: 'suggest-partnership',
-      type: 'tip',
-      title: 'Développez votre réseau !',
-      message: `Avec ${stats.totalClients} clients fidèles, pensez aux partenariats ! Si vous êtes indisponible, un partenaire peut prendre vos courses et vous reversez une petite frais de transaction.`,
-      emoji: '🤝',
-      actionLabel: 'Découvrir les partenariats',
-      priority: 'medium'
+      id: "suggest-partnership",
+      type: "tip",
+      title: "Pensez à votre réseau",
+      message: `Avec ${stats.totalClients} clients fidèles, un partenariat peut vous éviter de perdre une course quand vous êtes indisponible. Frais partagé : 0,25 € par chauffeur.`,
+      emoji: "🤝",
+      actionLabel: "Découvrir les partenariats",
+      priority: "medium",
     };
   }
 
-  // Priority 5: Morning motivation
+  // Boost matinal
   if (hour >= 6 && hour < 10 && stats.todayCourses === 0) {
     return {
-      id: 'morning-boost',
-      type: 'reminder',
-      title: `${name}Prêt pour une nouvelle journée ?`,
-      message: '\'Chaque course est une opportunité de fidéliser un nouveau client. Noubliez pas votre QR Code !',
-      emoji: '☀️',
-      priority: 'low'
+      id: "morning-boost",
+      type: "reminder",
+      title: `${name}prêt pour la journée ?`,
+      message:
+        "Chaque course est une occasion de fidéliser un nouveau client. N'oubliez pas votre QR code !",
+      emoji: "☀️",
+      priority: "low",
     };
   }
 
-  // Priority 6: Independence progress
+  // Progrès vers l'indépendance
   if (stats.soloCabPercentage >= 25 && stats.soloCabPercentage < 50) {
     return {
-      id: 'independence-progress',
-      type: 'milestone',
-      title: '\'Vous progressez vers lindépendance !',
-      message: `${stats.soloCabPercentage.toFixed(0)}% de vos revenus viennent de clients directs. Encore un effort et vous réduirez drastiquement votre dépendance aux plateformes !`,
-      emoji: '📈',
-      priority: 'medium'
+      id: "independence-progress",
+      type: "milestone",
+      title: "Vous progressez !",
+      message: `${stats.soloCabPercentage.toFixed(0)} % de vos revenus viennent de clients directs. Encore un effort et vous bâtirez une vraie clientèle privée.`,
+      emoji: "📈",
+      priority: "medium",
     };
   }
 
-  // Default: Random education tip
-  const randomTip = SOLOCAB_EDUCATION_TIPS[Math.floor(Math.random() * SOLOCAB_EDUCATION_TIPS.length)];
-  return randomTip;
+  // Par défaut : aucun message contextuel — laisse la rotation des tips éducation gérer
+  return null;
 }
+
