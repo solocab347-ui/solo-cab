@@ -18,6 +18,8 @@ interface UseDriverBackgroundGPSOptions {
 export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroundGPSOptions) {
   const watcherIdRef = useRef<string | null>(null);
   const keepAwakeActiveRef = useRef(false);
+  const lastFixAtRef = useRef<number>(0);
+  const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !driverId) return;
