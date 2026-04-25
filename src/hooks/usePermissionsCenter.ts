@@ -450,35 +450,43 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
 
     await refreshAll();
     return result;
-  }, [isNative, platform, checkLocation, refreshAll]);
+  }, [isNative, platform, checkLocation, refreshAll, log]);
 
   const openPermissionTestAction = useCallback(async (action: PermissionTestAction): Promise<void> => {
     if (action === 'app_details') {
       if (isNative && platform === 'android') {
+        log({ action: 'app_details', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openAppDetailsSettings()' });
         try {
           await SoloCabPermissions.openAppDetailsSettings();
-        } catch {
-          await openAndroidSettingsFallback('app_details');
+          log({ action: 'app_details', method: 'native_plugin', status: 'success', message: 'Plugin natif a ouvert les détails de l\'app' });
+        } catch (e: any) {
+          const msg = String(e?.message || e || 'plugin indisponible');
+          log({ action: 'app_details', method: 'native_plugin', status: 'error', message: 'Plugin indisponible — bascule sur intent', details: msg });
+          await openAndroidSettingsFallback('app_details', log);
         }
       }
       await refreshAll();
       return;
     }
 
-    // Pour overlay/battery/microphone, on tente d'abord le plugin custom puis le fallback intent
+    // Pour overlay/battery, on tente d'abord le plugin custom puis le fallback intent
     if (isNative && platform === 'android' && (action === 'overlay' || action === 'battery')) {
+      log({ action, method: 'native_plugin', status: 'attempt', message: `Test du bouton "${action}" via plugin natif` });
       try {
         if (action === 'overlay') await SoloCabPermissions.openOverlaySettings();
         else await SoloCabPermissions.openBatteryOptimizationSettings();
-      } catch {
-        await openAndroidSettingsFallback(action);
+        log({ action, method: 'native_plugin', status: 'success', message: 'Plugin natif a répondu sans erreur' });
+      } catch (e: any) {
+        const msg = String(e?.message || e || 'plugin indisponible');
+        log({ action, method: 'native_plugin', status: 'error', message: 'Plugin indisponible — bascule sur intent', details: msg });
+        await openAndroidSettingsFallback(action, log);
       }
       await refreshAll();
       return;
     }
 
     await requestPermission(action);
-  }, [isNative, platform, refreshAll, requestPermission]);
+  }, [isNative, platform, refreshAll, requestPermission, log]);
 
   useEffect(() => {
     refreshAll();
