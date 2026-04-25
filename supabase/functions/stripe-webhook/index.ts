@@ -1328,7 +1328,7 @@ serve(async (req) => {
         }
 
         // Record in payments table
-        await supabaseClient.from("payments").insert({
+        await supabaseClient.from("payments").upsert({
           course_id: metadata.course_id,
           driver_id: metadata.driver_id,
           stripe_payment_intent_id: paymentIntent.id,
@@ -1338,7 +1338,7 @@ serve(async (req) => {
           capture_method: "manual",
           authorized_at: new Date().toISOString(),
           metadata: metadata,
-        }).onConflict("stripe_payment_intent_id").ignore();
+        }, { onConflict: "stripe_payment_intent_id", ignoreDuplicates: true });
 
         // Notify driver
         if (metadata.driver_id) {

@@ -40,7 +40,7 @@ const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; s
  * instead of waiting 30s for the auto-recovery window.
  */
 const releaseLock = async (
-  supabaseClient: ReturnType<typeof createClient>,
+  supabaseClient: any,
   courseId: string,
   errorMessage?: string,
 ) => {
@@ -71,7 +71,7 @@ const releaseLock = async (
   }
 };
 
-const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<typeof createClient>, driverId: string) => {
+const syncDriverStatusAfterFinalization = async (supabaseClient: any, driverId: string) => {
   const { data: activeCourses, error } = await supabaseClient
     .from("courses")
     .select("status, scheduled_date, updated_at, created_at")
@@ -85,10 +85,10 @@ const syncDriverStatusAfterFinalization = async (supabaseClient: ReturnType<type
     return;
   }
 
-  const relevantCourses = (activeCourses || []).filter(isRelevantOperationalCourse);
-  const nextStatus = relevantCourses.some((course) => course.status === "in_progress")
+  const relevantCourses = ((activeCourses || []) as any[]).filter(isRelevantOperationalCourse);
+  const nextStatus = relevantCourses.some((course: any) => course.status === "in_progress")
     ? "in_ride"
-    : relevantCourses.some((course) => ["accepted", "driver_approaching", "driver_arrived"].includes(course.status))
+    : relevantCourses.some((course: any) => ["accepted", "driver_approaching", "driver_arrived"].includes(course.status))
       ? "assigned"
       : "online";
 
