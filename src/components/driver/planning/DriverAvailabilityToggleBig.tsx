@@ -22,9 +22,12 @@ export function DriverAvailabilityToggleBig({
   const isBreak = driverStatus === 'break';
   const isBusy = isInRide || isAssigned;
 
+  // GPS strictement synchronisé avec l'état chauffeur :
+  // online / assigned / in_ride → GPS actif. break / offline → coupé.
+  const trackingEnabled = isOnline || isAssigned || isInRide;
   const { isTracking, error } = useDriverLocationTracker({
     driverId,
-    enabled: true,
+    enabled: trackingEnabled,
   });
 
   const handleToggle = async () => {
