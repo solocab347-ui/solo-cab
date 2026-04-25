@@ -1019,7 +1019,29 @@ const DriverDashboard = () => {
                     loading={loading || isUpdating}
                   />
                 </TabsContent>
-                <TabsContent value="settings" className="mt-4">
+                <TabsContent value="settings" className="mt-4 space-y-4">
+                  {/* Bouton "Revoir le tutoriel" — toujours accessible */}
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card/50 p-3 sm:p-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">Tutoriel d'utilisation</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Revoyez le guide pas-à-pas SoloCab à tout moment.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (driverProfile?.driver?.id) {
+                          resetTutorialState(driverProfile.driver.id);
+                        }
+                        setShowTutorial(true);
+                      }}
+                    >
+                      Revoir le tutoriel
+                    </Button>
+                  </div>
+
                   <DriverSettingsSimplified
                     driverId={driverProfile.driver.id}
                     baseFare={baseFare}
