@@ -91,41 +91,19 @@ async function openAndroidSettingsFallback(
       break;
   }
 
-  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative URL intent: ${target}`, details: url });
-
-  // Détection de blocage WebView : si après 1.2s l'app est toujours active (pas mise en background),
-  // c'est que l'intent n'a pas été interceptée.
-  let leftApp = false;
-  const onVisChange = () => {
-    if (document.visibilityState === 'hidden') leftApp = true;
-  };
-  document.addEventListener('visibilitychange', onVisChange);
+  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative window.location intent: ${target}`, details: url });
 
   try {
-    // Le WebView Capacitor intercepte les URLs intent: et lance l'activité Android
+    // Le WebView Capacitor intercepte les URLs intent: et lance l'Activity Android.
+    // Note: si le plugin natif custom SoloCabPermissions a été registered (MainActivity),
+    // ce fallback n'est jamais utilisé en pratique.
     window.location.href = url;
-    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'URL intent: déclenchée (WebView)', details: 'window.location.href assigné' });
+    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'Intent déclenchée via WebView' });
   } catch (err: any) {
     const msg = String(err?.message || err || 'erreur inconnue');
     console.error('[Permissions] Fallback intent échec', target, err);
-    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec déclenchement intent: ${msg}`, details: msg });
-    document.removeEventListener('visibilitychange', onVisChange);
-    return;
+    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec intent: ${msg}`, details: msg });
   }
-
-  // Vérification post-déclenchement : si l'app n'a pas perdu le focus, c'est probablement bloqué
-  setTimeout(() => {
-    document.removeEventListener('visibilitychange', onVisChange);
-    if (!leftApp) {
-      log?.({
-        action: target,
-        method: 'intent_fallback',
-        status: 'webview_blocked',
-        message: 'Aucun changement d\'écran détecté — la WebView a peut-être bloqué l\'intent',
-        details: 'document.visibilityState est resté "visible" pendant 1.2s. Vérifie AndroidManifest.xml ou réinstalle l\'APK.',
-      });
-    }
-  }, 1200);
 }
 
 /**

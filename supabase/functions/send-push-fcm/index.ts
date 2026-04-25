@@ -87,21 +87,27 @@ async function sendFcmV1(
   projectId: string
 ): Promise<DeliveryResult> {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+  const isIncomingRide = payload.type === 'incoming_ride';
   const message = {
     message: {
       token,
       notification: { title: payload.title, body: payload.body },
       android: {
         priority: 'HIGH' as const,
+        ttl: isIncomingRide ? '60s' : '3600s', // course = courte durée
         notification: {
           sound: 'default',
-          channel_id: 'solocab_rides',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          channel_id: isIncomingRide ? 'solocab_rides' : 'solocab_default',
+          // notification_priority MAX → bypass Doze + DND quand category=CALL
+          notification_priority: 'PRIORITY_MAX' as const,
+          visibility: 'PUBLIC' as const,
+          // Permet à FCM de coalescer plusieurs notifs pour une même course
+          tag: payload.data?.ride_id ? `ride-${payload.data.ride_id}` : undefined,
         },
       },
       data: {
         type: payload.type || 'generic',
-        full_screen: payload.type === 'incoming_ride' ? 'true' : 'false',
+        full_screen: isIncomingRide ? 'true' : 'false',
         ...(payload.data || {}),
       },
     },
@@ -151,13 +157,18 @@ async function sendApns(
   bundleId: string
 ): Promise<DeliveryResult> {
   const url = `https://api.push.apple.com/3/device/${token}`;
+  const isIncomingRide = payload.type === 'incoming_ride';
   const body = {
     aps: {
       alert: { title: payload.title, body: payload.body },
-      sound: 'default',
+      sound: isIncomingRide ? 'default' : 'default',
       'mutable-content': 1,
       'content-available': 1,
-      category: payload.type || 'GENERIC',
+      // Catégorie iOS pour afficher actions Accepter/Refuser (à enregistrer côté app)
+      category: isIncomingRide ? 'INCOMING_RIDE' : (payload.type || 'GENERIC').toUpperCase(),
+      // Time-sensitive : passe les Focus Modes (équiv DND iOS), nécessite l'entitlement
+      'interruption-level': isIncomingRide ? 'time-sensitive' : 'active',
+      'thread-id': payload.data?.ride_id ? `ride-${payload.data.ride_id}` : undefined,
     },
     type: payload.type || 'generic',
     ...(payload.data || {}),
@@ -170,6 +181,7 @@ async function sendApns(
         'apns-topic': bundleId,
         'apns-priority': '10',
         'apns-push-type': 'alert',
+        'apns-collapse-id': payload.data?.ride_id ? `ride-${payload.data.ride_id}` : '',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
