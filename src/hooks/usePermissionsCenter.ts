@@ -91,21 +91,18 @@ async function openAndroidSettingsFallback(
       break;
   }
 
-  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative App.openUrl: ${target}`, details: url });
+  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative window.location intent: ${target}`, details: url });
 
   try {
-    // Capacitor App.openUrl contourne le filtre WebView et lance l'intent natif
-    const { App } = await import('@capacitor/app');
-    await App.openUrl({ url });
-    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'Intent ouverte via App.openUrl' });
+    // Le WebView Capacitor intercepte les URLs intent: et lance l'Activity Android.
+    // Note: si le plugin natif custom SoloCabPermissions a été registered (MainActivity),
+    // ce fallback n'est jamais utilisé en pratique.
+    window.location.href = url;
+    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'Intent déclenchée via WebView' });
   } catch (err: any) {
     const msg = String(err?.message || err || 'erreur inconnue');
-    console.error('[Permissions] App.openUrl échec', target, err);
-    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec App.openUrl: ${msg}`, details: msg });
-    // Dernier recours : window.location.href (peut être bloqué WebView mais on tente)
-    try {
-      window.location.href = url;
-    } catch {/* ignore */}
+    console.error('[Permissions] Fallback intent échec', target, err);
+    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec intent: ${msg}`, details: msg });
   }
 }
 
