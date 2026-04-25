@@ -1,163 +1,118 @@
 
-## Objectif
+## Contexte vérifié dans le code
 
-Corriger le blocage visible sur ta capture et renforcer le pipeline Android pour que :
+### 1. Facture guest = `.txt` basique (confirmé)
+`src/pages/GuestBookingTracking.tsx` (lignes 374–407) génère un `Blob` `text/plain` avec quelques lignes au lieu d'utiliser `generateUnifiedInvoicePDF` (qui est utilisé par `DriverFacturesList`, `ClientFacturesList`, `ClientCoursesList`, `CoursesList`).
 
-1. `npm install` en CI ne soit plus cassé par les peer-deps Stripe.
-2. les versions Stripe soient verrouillées et compatibles.
-3. `npm run android:verify && vite build` ne plante plus sur le script `verify-android-package.sh`.
-4. le workflow GitHub Actions relance bien `npm install`, build le bundle web, fait `cap sync android`, puis upload APK + logs.
+### 2. Le RPC `get_guest_booking_by_token` ne retourne PAS les métadonnées légales
+Migration la plus récente (`20260415145551`) : retourne seulement `facture_id/number/amount/payment_status` mais **pas** `siret`, `siren`, `tva_number`, `billing_address`, `tva_rate`, `tva_amount`, `solocab_fee_amount`, `stripe_fee_amount`, `net_amount_to_driver`, `airport_fee`, etc. → impossible de produire la même facture que côté chauffeur sans nouveau RPC.
 
-## Problème identifié sur la capture
+### 3. Client inscrit (`/suivi-course/:id` = `ClientRideTracking.tsx`)
+Aucun bouton "Télécharger la facture" sur la page de tracking en temps réel. Le téléchargement existe seulement dans `ClientFacturesList` (espace facturation), donc même problème UX que guest tant que la course est encore "fraîche".
 
-Le terminal montre deux erreurs liées en cascade :
+### 4. GPS arrière-plan : confirmé en base
+Audit précédent : drivers `online + is_available_now=true` avec `last_location_update` vieux de plusieurs jours = invisibles dans `find_nearby_drivers` (filtre 2 min). Pas de réconciliation serveur, pas de boot receiver Android, pas de watchdog JS quand le foreground service Android cesse silencieusement d'émettre.
 
-```text
-scripts/verify-android-package.sh: line 70: unexpected EOF while looking for matching `}'
-[error] Could not find the web assets directory: ./dist
-```
+---
 
-La première erreur vient du script `scripts/verify-android-package.sh`, probablement à cause de blocs heredoc Bash/Python trop fragiles sur l’environnement local.
+## Plan d'implémentation
 
-Comme `npm run build` exécute d’abord :
+### Partie A — Factures unifiées
 
-```bash
-npm run android:verify && vite build
-```
+**A1. Nouveau RPC `get_guest_invoice_data(_token text)`** (SECURITY DEFINER, GRANT anon + authenticated)
+Retourne tout ce que `generateUnifiedInvoicePDF` attend en variant `client` :
+- Course complète : `pickup_address`, `destination_address`, `scheduled_date`, `passengers_count`, `distance_km`, `duration_minutes`, `guest_name`, `guest_email`, `guest_phone`
+- Facture complète : `id`, `invoice_number`, `invoice_number_generated`, `amount`, `payment_method`, `payment_status`, `created_at`, `tva_rate`, `tva_amount`, `airport_fee`, `distance_km`, `promo_code`, `discount_amount`, `solocab_fee_amount`, `stripe_fee_amount`, `total_fees_amount`
+- Devis (si lié) : `amount`, `base_price`, `airport_fee`, `tva_rate`, `tva_amount`, `quote_number`, `distance_price`
+- Driver : `company_name`, `company_address`, `siret`, `siren`, `tva_number`, `profiles.full_name` (non masqué pour la facture, légalement requis), `profiles.email`, `profiles.phone`
+- Client : NULL pour guest (le `guest_name/email/phone` est dans course)
 
-le `vite build` ne se lance pas, donc le dossier `dist/` n’est jamais généré. Ensuite `npx cap sync android` échoue logiquement avec :
+Retourne sous forme JSON pour éviter la prolifération de colonnes.
 
-```text
-Could not find the web assets directory: ./dist
-```
+**A2. Refactor `GuestBookingTracking.tsx` `handleDownloadInvoice`**
+- Appeler `supabase.rpc('get_guest_invoice_data', { _token: token })`
+- Construire l'objet `UnifiedInvoiceInput` avec `variant: 'client'`
+- Appeler `generateUnifiedInvoicePDF(input, { download: true })`
+- Garder un fallback toast si le RPC échoue
+- Supprimer toute la logique Blob `.txt`
 
-## Plan d’implémentation
+**A3. Bouton "Télécharger la facture" sur `ClientRideTracking.tsx`** (clients inscrits, exclusifs ou non)
+- Affiché uniquement quand `course.status === 'completed'` ET qu'une facture existe pour `course.id`
+- Récupère la facture via `supabase.from('factures').select(...).eq('course_id', id).maybeSingle()` avec joints `courses`, `drivers`, `clients` comme `ClientFacturesList`
+- Appelle `generateUnifiedInvoicePDF` avec `variant: 'client'`
 
-### 1. Durcir `scripts/verify-android-package.sh`
+**A4. Test rapide** : ajouter 1–2 cas dans `generateUnifiedInvoicePDF.test.ts` couvrant le payload guest issu du nouveau RPC (présence/absence SIRET, devis sans facture, etc.).
 
-Modifier le script pour supprimer les heredocs fragiles ou les rendre totalement sûrs :
+---
 
-- utiliser des heredocs quotés (`<<'PY'`, `<<'NODE'`) quand aucune interpolation Bash n’est nécessaire ;
-- passer `ANDROID_DIR` via variable d’environnement au script Python au lieu de l’injecter directement dans le heredoc ;
-- éviter les syntaxes qui peuvent être interprétées par Bash avant d’arriver à Node/Python ;
-- conserver les mêmes contrôles :
-  - versions majeures Capacitor cohérentes ;
-  - `appId` dans `capacitor.config.ts` ;
-  - package de `MainActivity` ;
-  - `applicationId` Gradle ;
-  - `namespace` Gradle.
+### Partie B — Fiabilité GPS arrière-plan (chauffeur trouvable même app fermée)
 
-Résultat attendu :
+**B1. Réconciliation serveur (résout 80% du symptôme immédiatement)**
+Migration SQL :
+- Fonction `reconcile_stale_drivers()` qui passe en `offline` + `is_available_now=false` tout driver avec `last_location_update < now() - interval '15 minutes'` et `driver_status IN ('online','assigned')` mais SANS course active.
+- Tâche `pg_cron` toutes les 2 minutes.
+- Trigger `BEFORE UPDATE` sur `drivers` qui force `driver_status='offline'` si l'update n'inclut pas `last_location_update` ET que la dernière > 15min.
 
-```bash
-npm run android:verify
-```
+**B2. Élargir la fenêtre dans `find_nearby_drivers`**
+- Course immédiate : 3 min (au lieu de 2 min) pour absorber les jitters Android
+- Réservation : 10 min
+- Retourner `gps_age_seconds` pour debugging dans l'UI
 
-doit passer sans erreur Bash.
+**B3. Watchdog JS dans `useDriverBackgroundGPS.ts`**
+- `setInterval` 30 s qui vérifie `Date.now() - lastFixRef`
+- Si > 90 s ET `enabled === true` : `removeWatcher` + `addWatcher` (re-arm)
+- Log dans la console + toast discret pour diagnostic
 
-### 2. Verrouiller la stratégie peer-deps Stripe
+**B4. Heartbeat serveur garanti**
+Le 25 s heartbeat existe déjà mais s'exécute dans le JS. Compléter par : si l'app est en background ET le watcher natif est silencieux > 90 s, écrire un fix factice via `lastFix` du `nativeGpsBus` pour maintenir `last_location_update` frais (au lieu de laisser le serveur reconciler en offline).
 
-Compléter la stratégie déjà commencée :
+**B5. Boot Receiver Android (persistance après reboot/kill mémoire)**
+- Java `BootReceiver` qui écoute `BOOT_COMPLETED` + `MY_PACKAGE_REPLACED`
+- Démarre le foreground service `BackgroundGeolocationService` si un driverId est en cache (SharedPreferences écrites côté JS quand le tracking démarre)
+- Permission `RECEIVE_BOOT_COMPLETED` déjà présente dans `AndroidManifest.xml` ✅
 
-- conserver `.npmrc` :
+**B6. Edge function `ping-driver-gps` (réveil silencieux via FCM data-only)**
+- Trigger côté serveur : `pg_cron` toutes les 5 min repère drivers `online` avec `last_location_update` entre 3 et 10 min
+- Envoie un FCM data-only `{ "type": "gps_ping" }` qui réveille le service via le `SoloCabFirebaseMessagingService`
+- Le service force un fix immédiat puis update la BDD
 
-```text
-legacy-peer-deps=true
-fund=false
-audit=false
-```
+**B7. UI diagnostic enrichi (`GpsDiagnostic.tsx`)**
+- Nouveau bouton "Tester ma visibilité" : appelle `find_nearby_drivers` autour de la position actuelle du driver et vérifie que son propre id apparaît
+- Affiche `gps_age_seconds` retourné par la RPC pour transparence
 
-- ajouter dans `package.json` un bloc `overrides` npm pour forcer les versions Stripe compatibles :
+---
 
-```json
-"overrides": {
-  "@stripe/react-stripe-js": "6.1.0",
-  "@stripe/stripe-js": "9.3.1"
-}
-```
+## Ordre d'exécution suggéré
 
-- conserver les dépendances directes :
+1. **A1 + A2 + A3** (factures unifiées guest + client inscrit) — résout immédiatement l'écart visible sur tes screenshots
+2. **B1 + B2** (réconciliation serveur + fenêtre élargie) — résout les zombies sans rebuild APK
+3. **B3 + B4** (watchdog JS + heartbeat) — code TS, push immédiat
+4. **B5 + B6 + B7** (boot receiver + ping FCM + diag UI) — nécessite rebuild APK
 
-```json
-"@stripe/react-stripe-js": "6.1.0",
-"@stripe/stripe-js": "9.3.1"
-```
+## Notes de compatibilité
 
-But : si une dépendance transitive tente de résoudre une autre version Stripe, npm restera aligné sur les versions validées.
+- Le générateur `generateUnifiedInvoicePDF` accepte déjà `variant: 'client'` → aucun changement côté générateur.
+- Le RPC `get_guest_booking_by_token` reste inchangé (utilisé par tracking temps réel) ; on ajoute un RPC distinct `get_guest_invoice_data` pour ne pas casser les types TypeScript existants.
+- `pg_cron` doit être activé sur le projet Cloud (à vérifier au moment de l'implémentation, sinon migration `CREATE EXTENSION IF NOT EXISTS pg_cron`).
+- Tous les changements respectent les règles mémoire : `security_invoker`, `search_path = public`, masquage de noms côté tracking conservé MAIS pas pour la facture (mention légale obligatoire = nom complet du chauffeur/société).
 
-### 3. Renforcer le workflow GitHub Actions
+## Livrables attendus
 
-Mettre à jour `.github/workflows/android-build.yml` pour rendre l’installation plus explicite et traçable :
+| # | Fichier | Action |
+|---|---------|--------|
+| A1 | `supabase/migrations/<ts>_get_guest_invoice_data.sql` | nouveau |
+| A2 | `src/pages/GuestBookingTracking.tsx` | refactor handleDownloadInvoice |
+| A3 | `src/pages/ClientRideTracking.tsx` | ajout bouton + handler |
+| A4 | `src/lib/invoice/generateUnifiedInvoicePDF.test.ts` | tests guest |
+| B1 | `supabase/migrations/<ts>_reconcile_stale_drivers.sql` | nouveau + cron |
+| B2 | `supabase/migrations/<ts>_find_nearby_drivers_window.sql` | update RPC |
+| B3 | `src/hooks/useDriverBackgroundGPS.ts` | watchdog |
+| B4 | `src/lib/nativeGpsBus.ts` + hook | heartbeat fallback |
+| B5 | `android/app/src/main/java/.../BootReceiver.java` | nouveau |
+| B5 | `android/app/src/main/AndroidManifest.xml` | déclarer receiver |
+| B6 | `supabase/functions/ping-driver-gps/index.ts` | nouvelle edge fn + cron |
+| B7 | `src/components/diagnostic/GpsDiagnostic.tsx` | bouton "tester visibilité" |
 
-- ajouter une variable d’environnement globale :
+---
 
-```yaml
-env:
-  NPM_CONFIG_LEGACY_PEER_DEPS: "true"
-```
-
-- conserver :
-
-```bash
-npm install --legacy-peer-deps
-```
-
-- ajouter une étape de diagnostic après installation :
-
-```bash
-npm ls @stripe/react-stripe-js @stripe/stripe-js || true
-npm ls @capacitor/core @capacitor/android @capacitor/cli || true
-```
-
-et sauvegarder ce résultat dans les logs uploadés.
-
-### 4. Sécuriser l’ordre de build Android
-
-Garder l’ordre CI suivant :
-
-```text
-npm install --legacy-peer-deps
-npm run build
-npx cap add android si android/ absent
-bash scripts/patch-native.sh
-npx cap sync android
-npm run android:verify
-./gradlew assembleDebug
-upload APK + logs
-```
-
-Une fois le script `android:verify` corrigé, `npm run build` générera bien `dist/`, donc `cap sync android` ne devrait plus échouer sur l’absence du dossier web.
-
-### 5. Vérifications à lancer après modification
-
-Après approbation, je lancerai les vérifications disponibles ici :
-
-```bash
-npm install --legacy-peer-deps
-npm run android:verify
-npm run build
-npx cap sync android
-```
-
-Puis je confirmerai :
-
-- que les dépendances Stripe sont alignées ;
-- que les dépendances Capacitor restent alignées ;
-- que le script Android verify ne casse plus ;
-- que `dist/` est généré avant `cap sync android`.
-
-## Résultat attendu côté GitHub Actions
-
-Au prochain push, le workflow devra produire :
-
-- un artefact APK debug ;
-- un artefact logs avec :
-  - `npm-install.log`
-  - `stripe-deps.log`
-  - `capacitor-deps.log`
-  - `web-build.log`
-  - `cap-sync-android.log`
-  - `android-verify.log`
-  - `gradle-assemble-debug.log`
-
-Si le build échoue encore, les logs uploadés permettront d’identifier précisément l’étape fautive au lieu d’avoir seulement une erreur terminal partielle.
+**Approuve ce plan pour que je passe en mode implémentation et exécute tout d'une traite.** Si tu préfères une exécution séquentielle (factures d'abord, GPS ensuite), précise-le.
