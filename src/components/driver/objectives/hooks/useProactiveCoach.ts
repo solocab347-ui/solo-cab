@@ -58,46 +58,54 @@ export function useProactiveCoach({
     });
   }, []);
 
+  // Compteur d'éducation tips déjà vus (pour cap strict)
+  const educationShownCount = [...shownTips].filter(id =>
+    SOLOCAB_EDUCATION_TIPS.some(t => t.id === id)
+  ).length;
+
   // Check if we should show a tip
   const shouldShowTip = useCallback((): boolean => {
     if (!enabled) return false;
-    
+
+    // CAP STRICT : si on a déjà montré MAX_TOTAL_TIPS tips éducation, silence.
+    if (educationShownCount >= MAX_TOTAL_TIPS) return false;
+
     const lastTime = localStorage.getItem(LAST_TIP_TIME_KEY);
     if (lastTime) {
       const timeSince = Date.now() - parseInt(lastTime, 10);
       if (timeSince < TIP_COOLDOWN_MS) return false;
     }
     return true;
-  }, [enabled]);
+  }, [enabled, educationShownCount]);
 
   // Get next tip to show
   const getNextTip = useCallback((): ProactiveMessage | null => {
-    // First, check for contextual high-priority messages
+    // 1. Priorité aux célébrations / milestones contextuels (toujours autorisés)
     const contextual = generateContextualMessage(stats, driverName);
+    if (contextual && !EDUCATION_TYPES.has(contextual.type) && !shownTips.has(contextual.id)) {
+      return contextual;
+    }
+
+    // 2. Si cap atteint, on ne propose plus de tip éducation
+    if (educationShownCount >= MAX_TOTAL_TIPS) return null;
+
+    // 3. Tip éducation contextuel high-priority
     if (contextual && contextual.priority === 'high' && !shownTips.has(contextual.id)) {
       return contextual;
     }
 
-    // Then, try education tips that haven't been shown
+    // 4. Sinon, rotation des tips éducation par priorité
     const unshownEducation = SOLOCAB_EDUCATION_TIPS.filter(tip => !shownTips.has(tip.id));
     if (unshownEducation.length > 0) {
-      // Prioritize high priority tips
       const highPriority = unshownEducation.filter(t => t.priority === 'high');
-      if (highPriority.length > 0) {
-        return highPriority[0];
-      }
-      // Then medium
+      if (highPriority.length > 0) return highPriority[0];
       const mediumPriority = unshownEducation.filter(t => t.priority === 'medium');
-      if (mediumPriority.length > 0) {
-        return mediumPriority[0];
-      }
-      // Finally low
+      if (mediumPriority.length > 0) return mediumPriority[0];
       return unshownEducation[0];
     }
 
-    // If all education tips shown, return contextual if available
-    return contextual;
-  }, [stats, driverName, shownTips]);
+    return null;
+  }, [stats, driverName, shownTips, educationShownCount]);
 
   // Trigger a new tip
   const triggerTip = useCallback(() => {
