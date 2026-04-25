@@ -111,6 +111,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     };
 
     const stop = async () => {
+      if (watchdogRef.current) {
+        clearInterval(watchdogRef.current);
+        watchdogRef.current = null;
+      }
       if (watcherIdRef.current) {
         try {
           const bgMod: any = await loadBg();
