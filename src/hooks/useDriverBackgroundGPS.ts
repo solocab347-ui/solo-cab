@@ -30,6 +30,18 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     // (these packages have no web entry point)
     const loadBg = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'background-geolocation'));
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
+    const loadPrefs = () => import('@capacitor/preferences');
+
+    const setTrackingFlag = async (value: boolean) => {
+      try {
+        const { Preferences } = await loadPrefs();
+        if (value) {
+          await Preferences.set({ key: 'solocab_gps_tracking_enabled', value: 'true' });
+        } else {
+          await Preferences.remove({ key: 'solocab_gps_tracking_enabled' });
+        }
+      } catch {/* ignore */}
+    };
 
     const start = async () => {
       if (!enabled || watcherIdRef.current || cancelled) return;
@@ -46,6 +58,9 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         } catch (e) {
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
+
+        // Mémorise pour le BootReceiver Android
+        await setTrackingFlag(true);
 
         // Démarrer le watcher background (foreground service Android)
         const id = await BackgroundGeolocation.addWatcher(
