@@ -70,35 +70,28 @@ async function isCustomPluginAvailable(): Promise<boolean> {
  * Fonctionne sans rebuild de plugin custom.
  */
 async function openAndroidSettingsFallback(target: 'overlay' | 'battery' | 'app_details' | 'notifications'): Promise<void> {
+  const appId = 'com.solocab.app';
+  let url: string;
+  switch (target) {
+    case 'overlay':
+      url = `intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=${appId};end`;
+      break;
+    case 'battery':
+      url = `intent:#Intent;action=android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS;package=${appId};end`;
+      break;
+    case 'notifications':
+      url = `intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.provider.extra.APP_PACKAGE=${appId};end`;
+      break;
+    case 'app_details':
+    default:
+      url = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${appId};end`;
+      break;
+  }
   try {
-    const { App } = await import('@capacitor/app');
-    const appId = 'com.solocab.app';
-    let url: string;
-    switch (target) {
-      case 'overlay':
-        // Settings.ACTION_MANAGE_OVERLAY_PERMISSION
-        url = `intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;package=${appId};end`;
-        break;
-      case 'battery':
-        // Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-        url = `intent:#Intent;action=android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS;package=${appId};end`;
-        break;
-      case 'notifications':
-        url = `intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.provider.extra.APP_PACKAGE=${appId};end`;
-        break;
-      case 'app_details':
-      default:
-        url = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${appId};end`;
-        break;
-    }
-    await App.openUrl({ url });
+    // Le WebView Capacitor intercepte les URLs intent: et lance l'activité Android
+    window.location.href = url;
   } catch (err) {
     console.error('[Permissions] Fallback intent échec', target, err);
-    // Dernier recours : ouvrir les paramètres app génériques
-    try {
-      const { App } = await import('@capacitor/app');
-      await App.openUrl({ url: `package:com.solocab.app` });
-    } catch {/* abandon */}
   }
 }
 
