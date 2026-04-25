@@ -402,7 +402,23 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
   const openPermissionTestAction = useCallback(async (action: PermissionTestAction): Promise<void> => {
     if (action === 'app_details') {
       if (isNative && platform === 'android') {
-        await SoloCabPermissions.openAppDetailsSettings();
+        try {
+          await SoloCabPermissions.openAppDetailsSettings();
+        } catch {
+          await openAndroidSettingsFallback('app_details');
+        }
+      }
+      await refreshAll();
+      return;
+    }
+
+    // Pour overlay/battery/microphone, on tente d'abord le plugin custom puis le fallback intent
+    if (isNative && platform === 'android' && (action === 'overlay' || action === 'battery')) {
+      try {
+        if (action === 'overlay') await SoloCabPermissions.openOverlaySettings();
+        else await SoloCabPermissions.openBatteryOptimizationSettings();
+      } catch {
+        await openAndroidSettingsFallback(action);
       }
       await refreshAll();
       return;
