@@ -3,7 +3,13 @@ import { ProactiveMessage, SOLOCAB_EDUCATION_TIPS, generateContextualMessage } f
 
 const SHOWN_TIPS_KEY = 'solocab_shown_coach_tips';
 const LAST_TIP_TIME_KEY = 'solocab_last_tip_time';
-const TIP_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between tips
+const TIP_COOLDOWN_MS = 30 * 60 * 1000; // 30 min entre 2 tips
+
+// CAP STRICT : on ne pousse JAMAIS plus de MAX_TOTAL_TIPS pop-ups au total.
+// Les célébrations / milestones contextuels (first-client, great-day) restent
+// autorisés car informatifs et liés à un événement réel.
+const MAX_TOTAL_TIPS = 5;
+const EDUCATION_TYPES = new Set(['education', 'tip']);
 
 interface UseProactiveCoachOptions {
   driverId: string;
