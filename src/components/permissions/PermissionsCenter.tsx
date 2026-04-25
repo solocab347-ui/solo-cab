@@ -2,8 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Wrench, RefreshCw } from 'lucide-react';
-import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionTestAction } from '@/hooks/usePermissionsCenter';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Wrench, RefreshCw, Activity, Trash2 } from 'lucide-react';
+import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionTestAction, type PermissionDiagnosticEntry } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
 
 interface PermissionsCenterProps {
