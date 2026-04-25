@@ -62,6 +62,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               return;
             }
             if (!location || !driverId) return;
+            lastFixAtRef.current = Date.now();
             try {
               await supabase
                 .from('drivers')
@@ -79,7 +80,27 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
 
         if (!cancelled) {
           watcherIdRef.current = id;
+          lastFixAtRef.current = Date.now();
           console.log('[BackgroundGPS] foreground service started', id);
+
+          // Watchdog : si aucun fix > 90 s pendant que enabled === true,
+          // on re-arme le watcher pour éviter les zombies silencieux.
+          if (watchdogRef.current) clearInterval(watchdogRef.current);
+          watchdogRef.current = setInterval(async () => {
+            if (!enabled || !watcherIdRef.current) return;
+            const silenceMs = Date.now() - lastFixAtRef.current;
+            if (silenceMs > 90_000) {
+              console.warn('[BackgroundGPS] watchdog: silence', silenceMs, 'ms — re-arming');
+              try {
+                await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+                watcherIdRef.current = null;
+              } catch {/* ignore */}
+              if (!cancelled && enabled) {
+                // Re-démarre via start() qui réutilise loadBg()
+                await start();
+              }
+            }
+          }, 30_000);
         } else {
           // a été annulé entre-temps
           await BackgroundGeolocation.removeWatcher({ id });
