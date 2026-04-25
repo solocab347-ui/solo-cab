@@ -24121,6 +24121,10 @@ export type Database = {
       }
       cleanup_geocoding_cache: { Args: never; Returns: undefined }
       cleanup_old_security_logs: { Args: never; Returns: undefined }
+      clear_driver_gps_on_offline: {
+        Args: { _driver_id: string }
+        Returns: undefined
+      }
       client_can_view_course: {
         Args: { course_row: Database["public"]["Tables"]["courses"]["Row"] }
         Returns: boolean

@@ -254,6 +254,15 @@ export default function GpsDiagnostic() {
       </header>
 
       <main className="container max-w-2xl py-4 space-y-4">
+        <Alert variant="default" className="border-amber-500/40 bg-amber-500/5">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="text-amber-500">Mode diagnostic — GPS forcé</AlertTitle>
+          <AlertDescription>
+            Cette page maintient le GPS actif <strong>même si vous êtes hors-ligne ou en pause</strong>,
+            uniquement à des fins de test. Quittez cette page pour revenir au comportement normal :
+            le GPS ne s'active que lorsque vous êtes connecté ou en course.
+          </AlertDescription>
+        </Alert>
         {!isNative && (
           <Alert>
             <Smartphone className="h-4 w-4" />

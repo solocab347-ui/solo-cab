@@ -79,9 +79,11 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     ? 'Course en cours — indisponible'
     : 'Course attribuée — indisponible';
 
+  // GPS uniquement quand le chauffeur est utile (online / assigned / in_ride)
+  const trackingEnabled = isOnline || isAssigned || isInRide;
   const { latitude, longitude, isTracking, isStale } = useDriverLocationTracker({
     driverId,
-    enabled: true,
+    enabled: trackingEnabled,
     updateIntervalMs: 8000,
   });
 
