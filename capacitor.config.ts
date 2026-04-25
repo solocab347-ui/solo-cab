@@ -24,6 +24,9 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
+    // Recommandé par @capacitor-community/background-geolocation :
+    // évite l'arrêt des updates de localisation après 5 min en arrière-plan.
+    useLegacyBridge: true,
   },
   plugins: {
     PushNotifications: {
