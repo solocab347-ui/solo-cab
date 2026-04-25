@@ -36,6 +36,16 @@ export type PermissionKey =
 
 export type PermissionTestAction = PermissionKey | 'app_details';
 
+export interface PermissionDiagnosticEntry {
+  id: string;
+  timestamp: number;
+  action: string;
+  method: 'native_plugin' | 'intent_fallback' | 'web_api';
+  status: 'attempt' | 'success' | 'error' | 'webview_blocked';
+  message: string;
+  details?: string;
+}
+
 interface UsePermissionsCenterOptions {
   role: 'driver' | 'client' | 'admin' | null;
 }
@@ -59,7 +69,10 @@ const SoloCabPermissions = registerPlugin<SoloCabPermissionsPlugin>('SoloCabPerm
  * Fallback : ouvre les écrans Android système via App.openUrl (intent URL).
  * Fonctionne sans rebuild de plugin custom.
  */
-async function openAndroidSettingsFallback(target: 'overlay' | 'battery' | 'app_details' | 'notifications'): Promise<void> {
+async function openAndroidSettingsFallback(
+  target: 'overlay' | 'battery' | 'app_details' | 'notifications',
+  log?: (entry: Omit<PermissionDiagnosticEntry, 'id' | 'timestamp'>) => void,
+): Promise<void> {
   const appId = 'com.solocab.app';
   let url: string;
   switch (target) {
@@ -77,12 +90,42 @@ async function openAndroidSettingsFallback(target: 'overlay' | 'battery' | 'app_
       url = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${appId};end`;
       break;
   }
+
+  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative URL intent: ${target}`, details: url });
+
+  // Détection de blocage WebView : si après 1.2s l'app est toujours active (pas mise en background),
+  // c'est que l'intent n'a pas été interceptée.
+  let leftApp = false;
+  const onVisChange = () => {
+    if (document.visibilityState === 'hidden') leftApp = true;
+  };
+  document.addEventListener('visibilitychange', onVisChange);
+
   try {
     // Le WebView Capacitor intercepte les URLs intent: et lance l'activité Android
     window.location.href = url;
-  } catch (err) {
+    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'URL intent: déclenchée (WebView)', details: 'window.location.href assigné' });
+  } catch (err: any) {
+    const msg = String(err?.message || err || 'erreur inconnue');
     console.error('[Permissions] Fallback intent échec', target, err);
+    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec déclenchement intent: ${msg}`, details: msg });
+    document.removeEventListener('visibilitychange', onVisChange);
+    return;
   }
+
+  // Vérification post-déclenchement : si l'app n'a pas perdu le focus, c'est probablement bloqué
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', onVisChange);
+    if (!leftApp) {
+      log?.({
+        action: target,
+        method: 'intent_fallback',
+        status: 'webview_blocked',
+        message: 'Aucun changement d\'écran détecté — la WebView a peut-être bloqué l\'intent',
+        details: 'document.visibilityState est resté "visible" pendant 1.2s. Vérifie AndroidManifest.xml ou réinstalle l\'APK.',
+      });
+    }
+  }, 1200);
 }
 
 /**
@@ -96,8 +139,21 @@ const CLIENT_REQUIRED: PermissionKey[] = ['location', 'notifications'];
 export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
   const [permissions, setPermissions] = useState<PermissionState[]>([]);
   const [loading, setLoading] = useState(true);
+  const [diagnostics, setDiagnostics] = useState<PermissionDiagnosticEntry[]>([]);
   const isNative = Capacitor.isNativePlatform();
   const platform = Capacitor.getPlatform();
+
+  const log = useCallback((entry: Omit<PermissionDiagnosticEntry, 'id' | 'timestamp'>) => {
+    const full: PermissionDiagnosticEntry = {
+      ...entry,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: Date.now(),
+    };
+    console.log('[Permissions/Diag]', full);
+    setDiagnostics((prev) => [full, ...prev].slice(0, 30));
+  }, []);
+
+  const clearDiagnostics = useCallback(() => setDiagnostics([]), []);
 
   const buildBaseList = useCallback((): PermissionState[] => {
     const required = role === 'driver' ? DRIVER_REQUIRED : role === 'client' ? CLIENT_REQUIRED : [];
@@ -317,12 +373,15 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'overlay': {
           if (isNative && platform === 'android') {
+            log({ action: 'overlay', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openOverlaySettings()' });
             try {
               const r = await SoloCabPermissions.openOverlaySettings();
               result = r.overlay ? 'granted' : 'prompt';
-            } catch {
-              // Plugin custom indispo : fallback intent direct
-              await openAndroidSettingsFallback('overlay');
+              log({ action: 'overlay', method: 'native_plugin', status: 'success', message: `Plugin natif a répondu — overlay=${r.overlay}` });
+            } catch (e: any) {
+              const msg = String(e?.message || e || 'plugin indisponible');
+              log({ action: 'overlay', method: 'native_plugin', status: 'error', message: 'Plugin natif indisponible — bascule sur intent', details: msg });
+              await openAndroidSettingsFallback('overlay', log);
               result = 'prompt';
             }
           } else {
@@ -332,11 +391,15 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
+            log({ action: 'battery', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openBatteryOptimizationSettings()' });
             try {
               const r = await SoloCabPermissions.openBatteryOptimizationSettings();
               result = r.battery ? 'granted' : 'prompt';
-            } catch {
-              await openAndroidSettingsFallback('battery');
+              log({ action: 'battery', method: 'native_plugin', status: 'success', message: `Plugin natif a répondu — battery=${r.battery}` });
+            } catch (e: any) {
+              const msg = String(e?.message || e || 'plugin indisponible');
+              log({ action: 'battery', method: 'native_plugin', status: 'error', message: 'Plugin natif indisponible — bascule sur intent', details: msg });
+              await openAndroidSettingsFallback('battery', log);
               result = 'prompt';
             }
           } else {
@@ -387,35 +450,43 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
 
     await refreshAll();
     return result;
-  }, [isNative, platform, checkLocation, refreshAll]);
+  }, [isNative, platform, checkLocation, refreshAll, log]);
 
   const openPermissionTestAction = useCallback(async (action: PermissionTestAction): Promise<void> => {
     if (action === 'app_details') {
       if (isNative && platform === 'android') {
+        log({ action: 'app_details', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openAppDetailsSettings()' });
         try {
           await SoloCabPermissions.openAppDetailsSettings();
-        } catch {
-          await openAndroidSettingsFallback('app_details');
+          log({ action: 'app_details', method: 'native_plugin', status: 'success', message: 'Plugin natif a ouvert les détails de l\'app' });
+        } catch (e: any) {
+          const msg = String(e?.message || e || 'plugin indisponible');
+          log({ action: 'app_details', method: 'native_plugin', status: 'error', message: 'Plugin indisponible — bascule sur intent', details: msg });
+          await openAndroidSettingsFallback('app_details', log);
         }
       }
       await refreshAll();
       return;
     }
 
-    // Pour overlay/battery/microphone, on tente d'abord le plugin custom puis le fallback intent
+    // Pour overlay/battery, on tente d'abord le plugin custom puis le fallback intent
     if (isNative && platform === 'android' && (action === 'overlay' || action === 'battery')) {
+      log({ action, method: 'native_plugin', status: 'attempt', message: `Test du bouton "${action}" via plugin natif` });
       try {
         if (action === 'overlay') await SoloCabPermissions.openOverlaySettings();
         else await SoloCabPermissions.openBatteryOptimizationSettings();
-      } catch {
-        await openAndroidSettingsFallback(action);
+        log({ action, method: 'native_plugin', status: 'success', message: 'Plugin natif a répondu sans erreur' });
+      } catch (e: any) {
+        const msg = String(e?.message || e || 'plugin indisponible');
+        log({ action, method: 'native_plugin', status: 'error', message: 'Plugin indisponible — bascule sur intent', details: msg });
+        await openAndroidSettingsFallback(action, log);
       }
       await refreshAll();
       return;
     }
 
     await requestPermission(action);
-  }, [isNative, platform, refreshAll, requestPermission]);
+  }, [isNative, platform, refreshAll, requestPermission, log]);
 
   useEffect(() => {
     refreshAll();
@@ -460,6 +531,8 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     missingRequired,
     isNative,
     platform,
+    diagnostics,
+    clearDiagnostics,
   };
 }
 
