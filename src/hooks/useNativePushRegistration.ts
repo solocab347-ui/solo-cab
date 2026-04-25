@@ -42,6 +42,27 @@ export function useNativePushRegistration() {
           } catch {/* déjà créé ou plateforme non supportée */}
         }
 
+        // 1bis. iOS : enregistrer la catégorie INCOMING_RIDE avec actions inline
+        // (Accepter / Refuser). Le backend envoie `category: "INCOMING_RIDE"` dans
+        // l'APNS payload, ce qui déclenche l'affichage des boutons sur le lockscreen.
+        if (Capacitor.getPlatform() === 'ios') {
+          try {
+            await LocalNotifications.registerActionTypes({
+              types: [
+                {
+                  id: 'INCOMING_RIDE',
+                  actions: [
+                    { id: 'accept', title: '✅ Accepter', foreground: true },
+                    { id: 'decline', title: '❌ Refuser', destructive: true, foreground: false },
+                  ],
+                },
+              ],
+            });
+          } catch (e) {
+            console.warn('[NativePush] iOS action types register failed', e);
+          }
+        }
+
         // 2. Vérifier permission, sinon demander
         const perm = await PushNotifications.checkPermissions();
         if (perm.receive !== 'granted') {
@@ -116,15 +137,19 @@ export function useNativePushRegistration() {
           }
         });
 
-        // 7. User tape sur la notification → router vers la page d'acceptation
+        // 7. User tape sur la notification (ou sur Accepter/Refuser)
         const actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           const data = action.notification.data || {};
-          if (data.type === 'incoming_ride') {
-            // Stocker l'id de la course pour que l'overlay s'ouvre automatiquement
-            if (data.ride_id) {
-              try { sessionStorage.setItem('solocab_pending_ride', String(data.ride_id)); } catch {/* ignore */}
-            }
-            window.location.href = '/driver-dashboard?incoming=' + encodeURIComponent(String(data.ride_id || ''));
+          const actionId = action.actionId; // "tap" par défaut, "accept" ou "decline" sinon
+          if (data.type === 'incoming_ride' && data.ride_id) {
+            try {
+              sessionStorage.setItem('solocab_pending_ride', String(data.ride_id));
+              if (actionId === 'accept' || actionId === 'decline') {
+                sessionStorage.setItem('solocab_pending_ride_action', actionId);
+              }
+            } catch {/* ignore */}
+            const qs = `incoming=${encodeURIComponent(String(data.ride_id))}${actionId === 'accept' || actionId === 'decline' ? `&action=${actionId}` : ''}`;
+            window.location.href = `/driver-dashboard?${qs}`;
           }
         });
 
