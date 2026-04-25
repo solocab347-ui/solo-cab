@@ -531,6 +531,8 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
     missingRequired,
     isNative,
     platform,
+    diagnostics,
+    clearDiagnostics,
   };
 }
 
