@@ -352,9 +352,27 @@ export function useDriverLocationTracker({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (staleCheckRef.current) {
+      clearInterval(staleCheckRef.current);
+      staleCheckRef.current = null;
+    }
     releaseWakeLock();
+    // Hard reset — pas de coordonnées résiduelles, pas de prompt fantôme,
+    // pas de "stale" affiché alors que le chauffeur est volontairement hors-ligne.
+    lastSentRef.current = null;
+    lastCoordsRef.current = null;
+    lastFixRef.current = null;
+    lastSpeedRef.current = 0;
     if (mountedRef.current) {
-      setLocationState((prev) => prev.isTracking ? { ...prev, isTracking: false } : prev);
+      setLocationState({
+        latitude: null,
+        longitude: null,
+        accuracy: null,
+        lastUpdate: null,
+        error: null,
+        isTracking: false,
+        isStale: false,
+      });
     }
   }, [releaseWakeLock]);
 

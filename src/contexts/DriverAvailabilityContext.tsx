@@ -228,6 +228,15 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         ...(newOnline ? { last_location_update: new Date().toISOString() } : {}),
       })
       .eq('id', driverId);
+    // Quand le chauffeur se déconnecte : effacer immédiatement sa position serveur
+    // → il disparaît instantanément des recherches clients (sans attendre l'expiration de fraîcheur).
+    if (!newOnline) {
+      try {
+        await supabase.rpc('clear_driver_gps_on_offline', { _driver_id: driverId });
+      } catch (err) {
+        console.warn('[DriverAvailability] clear_driver_gps_on_offline failed', err);
+      }
+    }
     playAvailabilitySound(newOnline);
   }, [isOnline, driverStatus, driverId]);
 
@@ -247,6 +256,14 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         ...(newStatus === 'online' ? { last_location_update: new Date().toISOString() } : {}),
       })
       .eq('id', driverId);
+    // Pause = aucune émission GPS. On efface la position pour ne plus apparaître côté client.
+    if (newStatus === 'break') {
+      try {
+        await supabase.rpc('clear_driver_gps_on_offline', { _driver_id: driverId });
+      } catch (err) {
+        console.warn('[DriverAvailability] clear_driver_gps_on_offline (break) failed', err);
+      }
+    }
   }, [driverStatus, driverId]);
 
   // Legacy compat
