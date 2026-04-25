@@ -20,6 +20,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
   const keepAwakeActiveRef = useRef(false);
   const lastFixAtRef = useRef<number>(0);
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !driverId) return;
@@ -98,6 +99,33 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           lastFixAtRef.current = Date.now();
           console.log('[BackgroundGPS] foreground service started', id);
 
+          // Tick périodique (20s) : force getCurrentPosition pour garantir un fix
+          // récent même si le distanceFilter (30 m) n'est pas franchi.
+          // Évite le badge "Position GPS obsolète" quand le chauffeur est arrêté.
+          if (tickRef.current) clearInterval(tickRef.current);
+          tickRef.current = setInterval(async () => {
+            if (!enabled || !driverId || cancelled) return;
+            try {
+              const { Geolocation } = await import('@capacitor/geolocation');
+              const pos = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 15_000,
+                maximumAge: 0,
+              });
+              lastFixAtRef.current = Date.now();
+              await supabase
+                .from('drivers')
+                .update({
+                  current_latitude: pos.coords.latitude,
+                  current_longitude: pos.coords.longitude,
+                  last_location_update: new Date().toISOString(),
+                })
+                .eq('id', driverId);
+            } catch (e) {
+              console.warn('[BackgroundGPS] tick fail', e);
+            }
+          }, 20_000);
+
           // Watchdog : si aucun fix > 90 s pendant que enabled === true,
           // on re-arme le watcher pour éviter les zombies silencieux.
           if (watchdogRef.current) clearInterval(watchdogRef.current);
@@ -129,6 +157,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       if (watchdogRef.current) {
         clearInterval(watchdogRef.current);
         watchdogRef.current = null;
+      }
+      if (tickRef.current) {
+        clearInterval(tickRef.current);
+        tickRef.current = null;
       }
       if (watcherIdRef.current) {
         try {
