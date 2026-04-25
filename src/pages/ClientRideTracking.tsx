@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   MapPin, Clock, Phone, CheckCircle, XCircle, Car, Star,
-  Navigation, MessageCircle, ArrowLeft, Loader2, CreditCard,
+  Navigation, MessageCircle, ArrowLeft, Loader2, CreditCard, Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -92,6 +92,7 @@ const ClientRideTracking = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const [showReasonForm, setShowReasonForm] = useState(false);
   const [ratingReason, setRatingReason] = useState('');
   const [ratingReasonDetail, setRatingReasonDetail] = useState('');
@@ -315,6 +316,66 @@ const ClientRideTracking = () => {
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    if (!course) return;
+    setDownloadingInvoice(true);
+    try {
+      const { data: facture, error } = await supabase
+        .from('factures')
+        .select(`
+          *,
+          courses:course_id(
+            pickup_address, destination_address, scheduled_date,
+            passengers_count, distance_km, duration_minutes,
+            guest_name, guest_email, guest_phone
+          ),
+          drivers:driver_id(
+            company_name, company_address, siret, siren, tva_number,
+            profiles:user_id(full_name, phone, email)
+          ),
+          clients(
+            profiles:user_id(full_name, phone, email)
+          )
+        `)
+        .eq('course_id', course.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!facture) {
+        toast.error("La facture n'est pas encore disponible. Le chauffeur doit finaliser la course.");
+        return;
+      }
+
+      const { generateUnifiedInvoicePDF } = await import('@/lib/invoice/generateUnifiedInvoicePDF');
+      await generateUnifiedInvoicePDF(
+        {
+          facture: facture as any,
+          course: {
+            pickup_address: (facture as any).courses?.pickup_address || course.pickup_address,
+            destination_address: (facture as any).courses?.destination_address || course.destination_address,
+            scheduled_date: (facture as any).courses?.scheduled_date || course.scheduled_date,
+            passengers_count: (facture as any).courses?.passengers_count,
+            distance_km: (facture as any).courses?.distance_km ?? course.distance_km,
+            duration_minutes: (facture as any).courses?.duration_minutes ?? course.duration_minutes,
+            guest_name: (facture as any).courses?.guest_name,
+            guest_email: (facture as any).courses?.guest_email,
+            guest_phone: (facture as any).courses?.guest_phone,
+          },
+          driver: (facture as any).drivers || {},
+          client: (facture as any).clients,
+          variant: 'client',
+        },
+        { download: true }
+      );
+      toast.success('Facture téléchargée');
+    } catch (e) {
+      console.error('Erreur génération facture client', e);
+      toast.error('Erreur lors de la génération de la facture');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
   const getCurrentPhaseIndex = () => {
     if (!course) return -1;
     const status = course.status as CoursePhase;
@@ -453,6 +514,31 @@ const ClientRideTracking = () => {
             </Card>
           </motion.div>
         </AnimatePresence>
+
+        {/* Téléchargement de facture après finalisation */}
+        {isCompleted && (
+          <Card className="border-green-500/30">
+            <CardContent className="pt-5 pb-4 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Votre facture est disponible</p>
+                <p className="text-xs text-muted-foreground">PDF officiel identique à celui du chauffeur</p>
+              </div>
+              <Button
+                onClick={handleDownloadInvoice}
+                disabled={downloadingInvoice}
+                size="sm"
+                className="shrink-0"
+              >
+                {downloadingInvoice ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Télécharger
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Phase Timeline */}
         {!isCancelled && (

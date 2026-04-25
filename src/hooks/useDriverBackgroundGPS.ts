@@ -1,68 +1,46 @@
 /**
  * Foreground service GPS pour chauffeur en mission ou en ligne.
- *
- * Rôle UNIQUE : démarrer le seul watcher BackgroundGeolocation natif et
- * publier chaque fix sur le bus partagé (`nativeGpsBus`). Tous les autres
- * hooks consomment ce bus au lieu d'instancier un second watcher.
- *
  * - Active le foreground service Android (notification persistante + wake lock)
- * - Émet la position en background dès qu'elle change de plus de 15 m
- * - Heartbeat serveur toutes les 25 s même à l'arrêt → `last_location_update` reste frais
+ * - Émet la position toutes les 8 secondes en background
  * - S'arrête automatiquement quand le chauffeur passe offline
  *
- * Sur web, ce hook est un no-op.
+ * Sur web, ce hook est un no-op (le tracking foreground existant continue).
  */
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { publishNativeGpsFix } from '@/lib/nativeGpsBus';
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
   enabled: boolean; // true quand le chauffeur est online ou en course
 }
 
-const HEARTBEAT_MS = 25_000;
-
 export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroundGPSOptions) {
   const watcherIdRef = useRef<string | null>(null);
   const keepAwakeActiveRef = useRef(false);
-  const lastSentRef = useRef<{ lat: number; lon: number; time: number } | null>(null);
-  const lastFixRef = useRef<{ lat: number; lon: number } | null>(null);
-  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastFixAtRef = useRef<number>(0);
+  const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !driverId) return;
 
     let cancelled = false;
 
+    // Dynamic imports via variable to prevent Vite from resolving at build time
+    // (these packages have no web entry point)
     const loadBg = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'background-geolocation'));
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
+    const loadPrefs = () => import('@capacitor/preferences');
 
-    const sendToServer = async (lat: number, lon: number, accuracy: number | null) => {
+    const setTrackingFlag = async (value: boolean) => {
       try {
-        // RPC atomique : met à jour current_*, last_location_update et last_seen_at.
-        const { error } = await supabase.rpc('update_driver_location_batch', {
-          p_driver_id: driverId,
-          p_latitude: lat,
-          p_longitude: lon,
-          p_accuracy: accuracy,
-        });
-        if (error) {
-          // Fallback direct UPDATE si l'RPC n'a pas accepté le payload (vieux client)
-          await supabase
-            .from('drivers')
-            .update({
-              current_latitude: lat,
-              current_longitude: lon,
-              last_location_update: new Date().toISOString(),
-            })
-            .eq('id', driverId);
+        const { Preferences } = await loadPrefs();
+        if (value) {
+          await Preferences.set({ key: 'solocab_gps_tracking_enabled', value: 'true' });
+        } else {
+          await Preferences.remove({ key: 'solocab_gps_tracking_enabled' });
         }
-        lastSentRef.current = { lat, lon, time: Date.now() };
-      } catch (err) {
-        console.warn('[BackgroundGPS] sendToServer fail', err);
-      }
+      } catch {/* ignore */}
     };
 
     const start = async () => {
@@ -73,6 +51,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         const kaMod: any = await loadKa();
         const KeepAwake = kaMod.KeepAwake || kaMod.default;
 
+        // Wake lock pour empêcher le CPU de dormir
         try {
           await KeepAwake.keepAwake();
           keepAwakeActiveRef.current = true;
@@ -80,60 +59,65 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
 
+        // Mémorise pour le BootReceiver Android
+        await setTrackingFlag(true);
+
+        // Démarrer le watcher background (foreground service Android)
         const id = await BackgroundGeolocation.addWatcher(
           {
-            backgroundMessage: 'Suivi de position en cours',
-            backgroundTitle: 'SoloCab - GPS actif',
+            backgroundMessage: 'SoloCab suit votre position pour vous proposer des courses.',
+            backgroundTitle: '🚗 SoloCab actif',
             requestPermissions: true,
             stale: false,
-            distanceFilter: 15, // mètres — équilibre fraîcheur/batterie
+            distanceFilter: 30, // mètres
           },
-          async (location: any, error: any) => {
+          async (location, error) => {
             if (error) {
-              console.warn('[BackgroundGPS] watcher error', error);
+              console.warn('[BackgroundGPS] error', error);
               return;
             }
             if (!location || !driverId) return;
-
-            // Publier sur le bus pour le tracker UI / la carte / le diagnostic.
-            publishNativeGpsFix({
-              latitude: location.latitude,
-              longitude: location.longitude,
-              accuracy: location.accuracy ?? null,
-              speed: location.speed ?? null,
-              bearing: location.bearing ?? null,
-              time: location.time ?? Date.now(),
-            });
-
-            lastFixRef.current = { lat: location.latitude, lon: location.longitude };
-
-            // Throttling soft : on n'envoie au serveur que si la position a bougé
-            // ≥ ~12 m OU si le dernier envoi date de >15 s.
-            const last = lastSentRef.current;
-            const now = Date.now();
-            const moved =
-              !last ||
-              Math.abs(location.latitude - last.lat) > 0.00011 ||
-              Math.abs(location.longitude - last.lon) > 0.00011;
-            const overdue = !last || now - last.time > 15_000;
-            if (moved || overdue) {
-              await sendToServer(location.latitude, location.longitude, location.accuracy ?? null);
+            lastFixAtRef.current = Date.now();
+            try {
+              await supabase
+                .from('drivers')
+                .update({
+                  current_latitude: location.latitude,
+                  current_longitude: location.longitude,
+                  last_location_update: new Date().toISOString(),
+                })
+                .eq('id', driverId);
+            } catch (err) {
+              console.error('[BackgroundGPS] update fail', err);
             }
           }
         );
 
         if (!cancelled) {
           watcherIdRef.current = id;
+          lastFixAtRef.current = Date.now();
           console.log('[BackgroundGPS] foreground service started', id);
 
-          // Heartbeat : garantit que `last_location_update` reste frais
-          // même si le chauffeur est immobile (Android coupe les fixes répétés).
-          heartbeatRef.current = setInterval(() => {
-            const fix = lastFixRef.current;
-            if (!fix) return;
-            sendToServer(fix.lat, fix.lon, null);
-          }, HEARTBEAT_MS);
+          // Watchdog : si aucun fix > 90 s pendant que enabled === true,
+          // on re-arme le watcher pour éviter les zombies silencieux.
+          if (watchdogRef.current) clearInterval(watchdogRef.current);
+          watchdogRef.current = setInterval(async () => {
+            if (!enabled || !watcherIdRef.current) return;
+            const silenceMs = Date.now() - lastFixAtRef.current;
+            if (silenceMs > 90_000) {
+              console.warn('[BackgroundGPS] watchdog: silence', silenceMs, 'ms — re-arming');
+              try {
+                await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+                watcherIdRef.current = null;
+              } catch {/* ignore */}
+              if (!cancelled && enabled) {
+                // Re-démarre via start() qui réutilise loadBg()
+                await start();
+              }
+            }
+          }, 30_000);
         } else {
+          // a été annulé entre-temps
           await BackgroundGeolocation.removeWatcher({ id });
         }
       } catch (err) {
@@ -142,9 +126,9 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     };
 
     const stop = async () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-        heartbeatRef.current = null;
+      if (watchdogRef.current) {
+        clearInterval(watchdogRef.current);
+        watchdogRef.current = null;
       }
       if (watcherIdRef.current) {
         try {
@@ -164,6 +148,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           keepAwakeActiveRef.current = false;
         } catch {/* ignore */}
       }
+      await setTrackingFlag(false);
     };
 
     if (enabled) start();

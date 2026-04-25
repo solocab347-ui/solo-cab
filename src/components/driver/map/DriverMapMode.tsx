@@ -7,7 +7,6 @@ import { ActiveCourseCard } from './ActiveCourseCard';
 import { UpcomingReservationsBanner } from './UpcomingReservationsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
-import { useDriverPositionFreshness } from '@/hooks/useDriverPositionFreshness';
 import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
@@ -85,12 +84,6 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     enabled: true,
     updateIntervalMs: 8000,
   });
-
-  // Source de vérité serveur : évite d'afficher "Position GPS obsolète"
-  // si le service natif Android continue à pousser des positions à la base
-  // alors que le JS de la WebView est throttlé en arrière-plan.
-  const { isServerFresh, isNativeAlive } = useDriverPositionFreshness(driverId);
-  const showStaleBanner = isStale && isTracking && !isServerFresh && !isNativeAlive;
 
   const handleToggleAvailability = useCallback(async () => {
     await toggleAvailability();
@@ -471,10 +464,10 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
           </div>
         </div>
       )}
-      {showStaleBanner && (
+      {isStale && isTracking && (
         <div className="absolute top-[140px] left-0 right-0 z-[9991] flex justify-center pointer-events-none">
           <div className="bg-amber-500/90 backdrop-blur-sm text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
-            ⚠️ Position GPS obsolète — vérifiez votre signal
+            ⚠️ Position GPS obsolète — gardez l'app au premier plan
           </div>
         </div>
       )}

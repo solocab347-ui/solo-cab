@@ -24079,6 +24079,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_driver_gps_visibility: {
+        Args: { _driver_id: string }
+        Returns: Json
+      }
       check_driver_smart_availability: {
         Args: {
           p_driver_id: string
@@ -25211,6 +25215,7 @@ export type Database = {
           payment_status: string
         }[]
       }
+      get_guest_invoice_data: { Args: { _token: string }; Returns: Json }
       get_guest_ride_messages: {
         Args: { _token: string }
         Returns: {
@@ -25638,6 +25643,13 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      reconcile_stale_drivers: {
+        Args: never
+        Returns: {
+          last_update: string
+          reconciled_driver_id: string
         }[]
       }
       refresh_driver_statistics: { Args: never; Returns: undefined }

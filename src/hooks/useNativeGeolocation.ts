@@ -1,17 +1,9 @@
 /**
- * Consommateur du bus GPS natif.
- *
- * IMPORTANT : ce hook ne démarre PLUS son propre watcher BackgroundGeolocation.
- * Le watcher unique est géré par `useDriverBackgroundGPS` (monté globalement
- * dans <DriverBackgroundGPS />). Cela évite deux foreground services simultanés
- * et la notification dupliquée "GPS actif".
- *
- * Ici on s'abonne simplement au bus partagé et on relaie les fixes au composant.
- * Sur web → fallback no-op (le tracking web reste géré par useDriverLocationTracker).
+ * Native background geolocation via Capacitor plugin.
+ * Falls back gracefully to no-op on web.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { subscribeNativeGps, type NativeGpsFix } from '@/lib/nativeGpsBus';
 
 interface NativeGeoState {
   latitude: number | null;
@@ -37,33 +29,77 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
     isNative: Capacitor.isNativePlatform(),
   });
 
+  const watcherIdRef = useRef<string | null>(null);
   const onLocationRef = useRef(onLocation);
   onLocationRef.current = onLocation;
 
+  const start = useCallback(async () => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+      // This plugin uses registerPlugin pattern — import the addWatcher/removeWatcher directly
+      const { registerPlugin } = await import('@capacitor/core');
+      const BackgroundGeolocation = registerPlugin<{
+        addWatcher: (
+          options: Record<string, unknown>,
+          callback: (location: any, error: any) => void
+        ) => Promise<string>;
+        removeWatcher: (options: { id: string }) => Promise<void>;
+      }>('BackgroundGeolocation');
+
+      const id = await BackgroundGeolocation.addWatcher(
+        {
+          backgroundTitle: 'SoloCab - GPS actif',
+          backgroundMessage: 'Suivi de position en cours',
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 10,
+        },
+        (location: any, error: any) => {
+          if (error) {
+            console.error('[NativeGeo] Error:', error);
+            return;
+          }
+          if (location) {
+            setState((prev) => ({
+              ...prev,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy,
+              speed: location.speed ?? null,
+              bearing: location.bearing ?? null,
+            }));
+            onLocationRef.current?.(location.latitude, location.longitude, location.accuracy);
+          }
+        }
+      );
+
+      watcherIdRef.current = id;
+    } catch (err) {
+      console.warn('[NativeGeo] Plugin not available:', err);
+    }
+  }, []);
+
+  const stop = useCallback(async () => {
+    if (!watcherIdRef.current) return;
+    try {
+      const { registerPlugin } = await import('@capacitor/core');
+      const BackgroundGeolocation = registerPlugin<{
+        removeWatcher: (options: { id: string }) => Promise<void>;
+      }>('BackgroundGeolocation');
+      await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+      watcherIdRef.current = null;
+    } catch {}
+  }, []);
+
   useEffect(() => {
-    if (!enabled || !Capacitor.isNativePlatform()) return;
-
-    const unsub = subscribeNativeGps((fix: NativeGpsFix) => {
-      setState((prev) => {
-        if (
-          prev.latitude === fix.latitude &&
-          prev.longitude === fix.longitude &&
-          prev.accuracy === fix.accuracy
-        ) return prev;
-        return {
-          ...prev,
-          latitude: fix.latitude,
-          longitude: fix.longitude,
-          accuracy: fix.accuracy,
-          speed: fix.speed,
-          bearing: fix.bearing,
-        };
-      });
-      onLocationRef.current?.(fix.latitude, fix.longitude, fix.accuracy ?? 0);
-    });
-
-    return () => { unsub(); };
-  }, [enabled]);
+    if (enabled && Capacitor.isNativePlatform()) {
+      start();
+    } else {
+      stop();
+    }
+    return () => { stop(); };
+  }, [enabled, start, stop]);
 
   return state;
 }

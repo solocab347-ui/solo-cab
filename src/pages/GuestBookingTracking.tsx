@@ -371,39 +371,33 @@ const GuestBookingTracking = () => {
     }
   };
 
-  const handleDownloadInvoice = () => {
-    if (!booking || !booking.facture_number) return;
-    
-    // Use jsPDF-like approach inline (simple text-based PDF)
-    const invoiceContent = [
-      `FACTURE - ${booking.facture_number}`,
-      ``,
-      `Client: ${booking.guest_name}`,
-      `Date: ${format(new Date(booking.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-      ``,
-      `Trajet:`,
-      `  Départ: ${booking.pickup_address}`,
-      `  Arrivée: ${booking.destination_address}`,
-      ``,
-      `Distance: ${booking.distance_km?.toFixed(1) || '-'} km`,
-      `Durée estimée: ${booking.duration_minutes || '-'} min`,
-      ``,
-      `Montant TTC: ${(booking.facture_amount || booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €`,
-      `Statut: ${booking.facture_payment_status === 'paid' ? 'Payée' : 'En attente'}`,
-      ``,
-      `Chauffeur: ${booking.driver_company || booking.driver_name || '-'}`,
-      ``,
-      `Merci d'avoir utilisé SoloCab !`,
-    ].join('\n');
+  const handleDownloadInvoice = async () => {
+    if (!booking || !token) return;
+    try {
+      const { data, error } = await supabase.rpc('get_guest_invoice_data' as any, { _token: token });
+      if (error) throw error;
+      const payload = data as any;
+      if (!payload || !payload.facture) {
+        toast.error("La facture n'est pas encore disponible. Le chauffeur doit finaliser la course.");
+        return;
+      }
 
-    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `facture-${booking.facture_number}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Facture téléchargée');
+      const { generateUnifiedInvoicePDF } = await import('@/lib/invoice/generateUnifiedInvoicePDF');
+      await generateUnifiedInvoicePDF(
+        {
+          facture: { ...payload.facture, devis: payload.devis ?? undefined },
+          course: payload.course,
+          driver: payload.driver,
+          client: null,
+          variant: 'client',
+        },
+        { download: true }
+      );
+      toast.success('Facture téléchargée');
+    } catch (e) {
+      console.error('Erreur génération facture guest', e);
+      toast.error('Erreur lors de la génération de la facture');
+    }
   };
 
   // Status timeline
