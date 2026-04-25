@@ -51,6 +51,11 @@ import { PioneerBanner } from "@/components/driver/ui/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/courses/CourseQueueAlert";
 import { PremiumUpgradeBanner } from "@/components/premium/PremiumUpgradeBanner";
 import { DriverTutorial } from "@/components/driver/tutorial/DriverTutorial";
+import {
+  shouldAutoShowTutorial,
+  markTutorialShown,
+  markTutorialCompleted,
+} from "@/lib/tutorialState";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
@@ -211,12 +216,14 @@ const DriverDashboard = () => {
 
   // Incoming course overlay is now handled globally in GlobalRideOverlay
 
-  // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
+  // Tutoriel : 3 propositions max au login OU silence si déjà complété une fois.
+  // Voir src/lib/tutorialState.ts pour les règles précises.
   useEffect(() => {
-    if (driverProfile?.driver?.onboarding_completed) {
-      const tutorialKey = `solocab_tutorial_done_${driverProfile.driver.id}`;
-      if (!localStorage.getItem(tutorialKey)) {
+    const driverId = driverProfile?.driver?.id;
+    if (driverProfile?.driver?.onboarding_completed && driverId) {
+      if (shouldAutoShowTutorial(driverId)) {
         setShowTutorial(true);
+        markTutorialShown(driverId); // incrémente le compteur dès la présentation
       }
     }
   }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
@@ -819,15 +826,20 @@ const DriverDashboard = () => {
           </div>
         )}
 
-        {/* Tutorial interactif pour les nouveaux chauffeurs */}
+        {/* Tutoriel immersif (slides plein écran) */}
         <DriverTutorial
           isVisible={showTutorial}
           onNavigateToTab={(tab) => handleTabChange(tab)}
           onComplete={() => {
             setShowTutorial(false);
             if (driverProfile?.driver?.id) {
-              localStorage.setItem(`solocab_tutorial_done_${driverProfile.driver.id}`, "true");
+              markTutorialCompleted(driverProfile.driver.id);
             }
+          }}
+          onDismiss={() => {
+            // L'utilisateur a fermé sans terminer : on garde le compteur intact,
+            // markTutorialShown() a déjà été appelé à l'ouverture.
+            setShowTutorial(false);
           }}
         />
 
