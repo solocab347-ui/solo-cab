@@ -137,15 +137,19 @@ export function useNativePushRegistration() {
           }
         });
 
-        // 7. User tape sur la notification → router vers la page d'acceptation
+        // 7. User tape sur la notification (ou sur Accepter/Refuser)
         const actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           const data = action.notification.data || {};
-          if (data.type === 'incoming_ride') {
-            // Stocker l'id de la course pour que l'overlay s'ouvre automatiquement
-            if (data.ride_id) {
-              try { sessionStorage.setItem('solocab_pending_ride', String(data.ride_id)); } catch {/* ignore */}
-            }
-            window.location.href = '/driver-dashboard?incoming=' + encodeURIComponent(String(data.ride_id || ''));
+          const actionId = action.actionId; // "tap" par défaut, "accept" ou "decline" sinon
+          if (data.type === 'incoming_ride' && data.ride_id) {
+            try {
+              sessionStorage.setItem('solocab_pending_ride', String(data.ride_id));
+              if (actionId === 'accept' || actionId === 'decline') {
+                sessionStorage.setItem('solocab_pending_ride_action', actionId);
+              }
+            } catch {/* ignore */}
+            const qs = `incoming=${encodeURIComponent(String(data.ride_id))}${actionId === 'accept' || actionId === 'decline' ? `&action=${actionId}` : ''}`;
+            window.location.href = `/driver-dashboard?${qs}`;
           }
         });
 
