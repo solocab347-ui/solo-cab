@@ -55,6 +55,7 @@ import {
   shouldAutoShowTutorial,
   markTutorialShown,
   markTutorialCompleted,
+  resetTutorialState,
 } from "@/lib/tutorialState";
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
