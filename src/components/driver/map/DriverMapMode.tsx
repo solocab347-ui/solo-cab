@@ -7,6 +7,7 @@ import { ActiveCourseCard } from './ActiveCourseCard';
 import { UpcomingReservationsBanner } from './UpcomingReservationsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
+import { useDriverPositionFreshness } from '@/hooks/useDriverPositionFreshness';
 import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
