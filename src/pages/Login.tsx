@@ -34,19 +34,17 @@ const Login = () => {
   // Charger uniquement l'email sauvegardé (JAMAIS le mot de passe)
   useEffect(() => {
     try {
-      // Migration: supprimer les anciennes données contenant le mot de passe
       const saved = localStorage.getItem(REMEMBER_ME_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Migration : supprimer toute ancienne donnée contenant un mot de passe
         if (parsed.password) {
-          // Ancienne version avec mot de passe - migrer en supprimant le password
           localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
             email: parsed.email,
-            remember: true
+            remember: true,
           }));
         }
         if (parsed.email) setLoginEmail(parsed.email);
-        if (parsed.remember) setRememberMe(true);
       }
     } catch (e) {
       localStorage.removeItem(REMEMBER_ME_KEY);
