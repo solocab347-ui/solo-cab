@@ -1,9 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Wrench, RefreshCw, Activity, Trash2 } from 'lucide-react';
-import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionTestAction, type PermissionDiagnosticEntry } from '@/hooks/usePermissionsCenter';
+import { useState, useMemo } from 'react';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, MapPin } from 'lucide-react';
+import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionKey } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
 
 interface PermissionsCenterProps {
@@ -20,10 +20,44 @@ const STATUS_META: Record<PermissionStatus, { color: string; bg: string; label: 
   unknown:     { color: 'text-muted-foreground', bg: 'bg-muted',          label: 'Inconnue',       icon: AlertCircle },
 };
 
+/**
+ * Page Permissions simplifiée — 3 sections claires :
+ *  1. Essentielles (localisation + notifications)
+ *  2. Mode chauffeur pro (Android : overlay + batterie)
+ *  3. Optionnel (microphone)
+ */
 export function PermissionsCenter({ role, variant = 'page', onAllGranted }: PermissionsCenterProps) {
-  const { permissions, loading, refreshAll, requestPermission, openPermissionTestAction, allRequiredGranted, missingRequired, isNative, platform, diagnostics, clearDiagnostics } =
+  const { permissions, loading, requestPermission, allRequiredGranted, missingRequired, isNative, platform } =
     usePermissionsCenter({ role });
-  const [testingAction, setTestingAction] = useState<PermissionTestAction | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const groups = useMemo(() => {
+    const find = (k: PermissionKey) => permissions.find((p) => p.key === k);
+    return {
+      essentials: [find('location'), find('location_background'), find('notifications')].filter(Boolean) as PermissionState[],
+      androidPro: platform === 'android' && isNative
+        ? ([find('overlay'), find('battery')].filter(Boolean) as PermissionState[])
+        : [],
+      optional: [find('microphone')].filter(Boolean) as PermissionState[],
+    };
+  }, [permissions, platform, isNative]);
+
+  const handleRequestAll = async () => {
+    setBusy(true);
+    try {
+      // Chaîner les requests dans l'ordre logique
+      const order: PermissionKey[] = ['location', 'notifications', 'overlay', 'battery'];
+      for (const key of order) {
+        const perm = permissions.find((p) => p.key === key);
+        if (perm && perm.status !== 'granted' && perm.status !== 'unsupported') {
+          await requestPermission(key);
+        }
+      }
+      if (allRequiredGranted) onAllGranted?.();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -33,150 +67,68 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
     );
   }
 
-  const visible = permissions.filter((p) => p.status !== 'unsupported' || p.platform === 'all');
-
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* ─── Bandeau état global + CTA "Tout autoriser" ─── */}
       {variant === 'page' && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardHeader>
+        <Card className={cn('border-2', allRequiredGranted ? 'border-primary/30 bg-primary/5' : 'border-destructive/30 bg-destructive/5')}>
+          <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-primary/15">
-                <Shield className="h-6 w-6 text-primary" />
+              <div className={cn('p-2.5 rounded-xl shrink-0', allRequiredGranted ? 'bg-primary/15' : 'bg-destructive/15')}>
+                {allRequiredGranted ? <CheckCircle2 className="h-6 w-6 text-primary" /> : <Shield className="h-6 w-6 text-destructive" />}
               </div>
-              <div className="flex-1">
-                <CardTitle className="text-xl">Centre d'autorisations</CardTitle>
-                <CardDescription className="mt-1">
-                  Activez ces autorisations pour profiter de toutes les fonctionnalités{' '}
-                  {role === 'driver' ? 'chauffeur (alertes immédiates style Uber/Bolt)' : 'client'}.
-                </CardDescription>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold">
+                  {allRequiredGranted ? 'Tout est prêt' : `${missingRequired.length} autorisation${missingRequired.length > 1 ? 's' : ''} requise${missingRequired.length > 1 ? 's' : ''}`}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {allRequiredGranted
+                    ? 'Vous recevrez les courses en temps réel, même hors application.'
+                    : 'Sans ces réglages, vous risquez de manquer des courses.'}
+                </p>
+                {!allRequiredGranted && missingRequired.length > 0 && (
+                  <Button onClick={handleRequestAll} disabled={busy} className="mt-3 w-full sm:w-auto gap-2">
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                    Tout autoriser en 1 clic
+                  </Button>
+                )}
               </div>
-              <Badge variant={isNative ? 'default' : 'secondary'} className="gap-1">
-                <Smartphone className="h-3 w-3" /> {isNative ? `App ${platform}` : 'Web'}
+              <Badge variant={isNative ? 'default' : 'secondary'} className="gap-1 shrink-0">
+                <Smartphone className="h-3 w-3" /> {isNative ? platform : 'Web'}
               </Badge>
             </div>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Bandeau de complétion */}
-      {missingRequired.length > 0 && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm font-medium text-destructive">
-              ⚠️ {missingRequired.length} autorisation{missingRequired.length > 1 ? 's' : ''} essentielle{missingRequired.length > 1 ? 's' : ''} à activer
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Sans ces autorisations, vous risquez de manquer des courses.
-            </p>
           </CardContent>
         </Card>
       )}
 
-      {allRequiredGranted && missingRequired.length === 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-primary">Tout est prêt !</p>
-              <p className="text-xs text-muted-foreground">Vous recevrez les alertes en temps réel.</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ─── Section 1 : Essentielles ─── */}
+      <Section
+        icon={<Bell className="h-4 w-4" />}
+        title="Essentielles"
+        subtitle="Pour recevoir les courses et naviguer"
+        items={groups.essentials}
+        onRequest={requestPermission}
+      />
+
+      {/* ─── Section 2 : Mode chauffeur pro (Android only) ─── */}
+      {groups.androidPro.length > 0 && (
+        <Section
+          icon={<Zap className="h-4 w-4" />}
+          title="Mode chauffeur pro"
+          subtitle="Recevoir les alertes même téléphone verrouillé (style Uber/Bolt)"
+          items={groups.androidPro}
+          onRequest={requestPermission}
+        />
       )}
 
-      {/* Liste */}
-      <div className="space-y-2">
-        {visible.map((perm) => (
-          <PermissionRow key={perm.key} perm={perm} onRequest={() => requestPermission(perm.key).then((s) => {
-            if (s === 'granted' && allRequiredGranted) onAllGranted?.();
-          })} />
-        ))}
-      </div>
-
-      {variant === 'page' && (
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-primary/15">
-                <Wrench className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Test des boutons système</CardTitle>
-                <CardDescription>Ouvrez chaque réglage puis revenez ici : l'état se met à jour automatiquement.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {[
-              { action: 'overlay' as const, label: 'Tester overlay', perm: permissions.find((p) => p.key === 'overlay') },
-              { action: 'battery' as const, label: 'Tester batterie', perm: permissions.find((p) => p.key === 'battery') },
-              { action: 'microphone' as const, label: 'Tester micro', perm: permissions.find((p) => p.key === 'microphone') },
-              { action: 'app_details' as const, label: 'Tester détails appli', perm: undefined },
-            ].map(({ action, label, perm }) => (
-              <TestRow
-                key={action}
-                action={action}
-                label={label}
-                status={perm?.status ?? 'unknown'}
-                disabled={!isNative || platform !== 'android' || testingAction !== null}
-                loading={testingAction === action}
-                onClick={async () => {
-                  setTestingAction(action);
-                  try {
-                    await openPermissionTestAction(action);
-                  } finally {
-                    setTestingAction(null);
-                  }
-                }}
-              />
-            ))}
-            <Button variant="outline" className="w-full gap-2" onClick={refreshAll} disabled={testingAction !== null}>
-              <RefreshCw className="h-4 w-4" /> Rafraîchir l'état
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Journal de diagnostic en direct */}
-      {variant === 'page' && (
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-primary/15">
-                  <Activity className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Journal en direct</CardTitle>
-                  <CardDescription>
-                    Trace chaque tentative d'ouverture (plugin natif vs intent Android) pour détecter un blocage WebView.
-                  </CardDescription>
-                </div>
-              </div>
-              {diagnostics.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearDiagnostics} className="gap-1">
-                  <Trash2 className="h-3 w-3" /> Vider
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {diagnostics.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">
-                Aucun événement. Cliquez sur "Activer" ou "Ouvrir" ci-dessus pour générer une trace.
-              </p>
-            ) : (
-              <ul className="space-y-2 max-h-72 overflow-y-auto">
-                {diagnostics.map((entry) => (
-                  <DiagnosticRow key={entry.id} entry={entry} />
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* ─── Section 3 : Optionnel ─── */}
+      <Section
+        icon={<Mic className="h-4 w-4" />}
+        title="Optionnel"
+        subtitle="Confort supplémentaire"
+        items={groups.optional}
+        onRequest={requestPermission}
+      />
 
       {!isNative && (
         <p className="text-xs text-muted-foreground text-center pt-2">
@@ -187,89 +139,67 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
   );
 }
 
-function DiagnosticRow({ entry }: { entry: PermissionDiagnosticEntry }) {
-  const statusMeta = {
-    attempt:         { color: 'text-muted-foreground', bg: 'bg-muted',         label: '→ Tentative' },
-    success:         { color: 'text-primary',          bg: 'bg-primary/10',    label: '✓ Succès' },
-    error:           { color: 'text-destructive',      bg: 'bg-destructive/10', label: '✗ Erreur' },
-    webview_blocked: { color: 'text-destructive',      bg: 'bg-destructive/10', label: '⚠ WebView bloquée' },
-  }[entry.status];
-
-  const time = new Date(entry.timestamp).toLocaleTimeString('fr-FR', { hour12: false });
-
-  return (
-    <li className="rounded-lg border p-2.5 text-xs space-y-1">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className={cn('px-2 py-0.5 rounded-full font-medium', statusMeta.bg, statusMeta.color)}>
-          {statusMeta.label}
-        </span>
-        <span className="text-muted-foreground font-mono text-[10px]">{time}</span>
-      </div>
-      <p className="font-medium">
-        <span className="text-muted-foreground">[{entry.method}]</span> {entry.action} — {entry.message}
-      </p>
-      {entry.details && (
-        <p className="text-muted-foreground font-mono text-[10px] break-all bg-muted/50 rounded p-1.5">
-          {entry.details}
-        </p>
-      )}
-    </li>
-  );
-}
-
-function TestRow({ action, label, status, disabled, loading, onClick }: {
-  action: PermissionTestAction;
-  label: string;
-  status: PermissionStatus;
-  disabled: boolean;
-  loading: boolean;
-  onClick: () => void;
+function Section({
+  icon, title, subtitle, items, onRequest,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  items: PermissionState[];
+  onRequest: (key: PermissionKey) => Promise<unknown>;
 }) {
-  const meta = STATUS_META[status];
-  const Icon = meta.icon;
+  if (items.length === 0) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <div className={cn('inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs', meta.bg, meta.color)}>
-          <Icon className="h-3 w-3" />
-          <span>{action === 'app_details' ? 'Retour attendu' : meta.label}</span>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 px-1">
+        <div className="p-1.5 rounded-md bg-primary/10 text-primary">{icon}</div>
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </div>
-      <Button size="sm" variant="outline" onClick={onClick} disabled={disabled}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ouvrir'}
-      </Button>
+      <div className="space-y-2">
+        {items.map((perm) => (
+          <PermissionRow key={perm.key} perm={perm} onRequest={() => onRequest(perm.key)} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: () => void }) {
+function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: () => Promise<unknown> }) {
+  const [busy, setBusy] = useState(false);
   const meta = STATUS_META[perm.status];
   const Icon = meta.icon;
 
+  const handleClick = async () => {
+    setBusy(true);
+    try { await onRequest(); } finally { setBusy(false); }
+  };
+
   return (
     <Card className={cn('transition-all', perm.required && perm.status !== 'granted' && 'border-destructive/40')}>
-      <CardContent className="p-4 flex items-start gap-3">
-        <div className="text-2xl shrink-0">{perm.icon}</div>
+      <CardContent className="p-3.5 flex items-start gap-3">
+        <div className="text-xl shrink-0 leading-none mt-0.5">{perm.icon}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-medium text-sm">{perm.label}</h3>
+            <h3 className="font-medium text-sm leading-tight">{perm.label}</h3>
             {perm.required && (
-              <Badge variant="outline" className="text-[10px] h-5 border-destructive/40 text-destructive">
-                Obligatoire
+              <Badge variant="outline" className="text-[10px] h-4 border-destructive/40 text-destructive px-1.5">
+                Requis
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{perm.description}</p>
-          <div className={cn('inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full text-xs', meta.bg, meta.color)}>
-            <Icon className="h-3 w-3" />
+          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{perm.description}</p>
+          <div className={cn('inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[11px]', meta.bg, meta.color)}>
+            <Icon className="h-2.5 w-2.5" />
             <span>{meta.label}</span>
           </div>
         </div>
         {perm.status !== 'granted' && perm.status !== 'unsupported' && (
-          <Button size="sm" variant={perm.required ? 'default' : 'outline'} onClick={onRequest}>
-            Activer
+          <Button size="sm" variant={perm.required ? 'default' : 'outline'} onClick={handleClick} disabled={busy} className="shrink-0">
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Activer'}
           </Button>
         )}
       </CardContent>
