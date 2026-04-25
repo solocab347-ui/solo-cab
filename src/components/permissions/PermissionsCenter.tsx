@@ -21,7 +21,7 @@ const STATUS_META: Record<PermissionStatus, { color: string; bg: string; label: 
 };
 
 export function PermissionsCenter({ role, variant = 'page', onAllGranted }: PermissionsCenterProps) {
-  const { permissions, loading, refreshAll, requestPermission, openPermissionTestAction, allRequiredGranted, missingRequired, isNative, platform } =
+  const { permissions, loading, refreshAll, requestPermission, openPermissionTestAction, allRequiredGranted, missingRequired, isNative, platform, diagnostics, clearDiagnostics } =
     usePermissionsCenter({ role });
   const [testingAction, setTestingAction] = useState<PermissionTestAction | null>(null);
 
