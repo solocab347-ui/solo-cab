@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   MapPin, Clock, Phone, CheckCircle, XCircle, Car, Star,
-  Navigation, MessageCircle, ArrowLeft, Loader2, CreditCard,
+  Navigation, MessageCircle, ArrowLeft, Loader2, CreditCard, Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
