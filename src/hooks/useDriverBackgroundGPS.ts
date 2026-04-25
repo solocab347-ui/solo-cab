@@ -148,6 +148,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           keepAwakeActiveRef.current = false;
         } catch {/* ignore */}
       }
+      await setTrackingFlag(false);
     };
 
     if (enabled) start();
