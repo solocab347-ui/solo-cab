@@ -97,7 +97,7 @@ serve(async (req) => {
       await supabaseClient.from("notifications").insert({
         user_id: driverRel.user_id,
         title: "💳 Empreinte bancaire validée",
-        message: `${course.guest_name || "Un client"} a confirmé son empreinte de ${holdAmountEuros.toFixed(2)}€ pour réserver la course.`,
+        message: `${course?.guest_name || "Un client"} a confirmé son empreinte de ${holdAmountEuros.toFixed(2)}€ pour réserver la course.`,
         type: "info",
         link: "/driver-dashboard?tab=courses",
       });
