@@ -139,12 +139,81 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
         </Card>
       )}
 
+      {/* Journal de diagnostic en direct */}
+      {variant === 'page' && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-primary/15">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Journal en direct</CardTitle>
+                  <CardDescription>
+                    Trace chaque tentative d'ouverture (plugin natif vs intent Android) pour détecter un blocage WebView.
+                  </CardDescription>
+                </div>
+              </div>
+              {diagnostics.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearDiagnostics} className="gap-1">
+                  <Trash2 className="h-3 w-3" /> Vider
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {diagnostics.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                Aucun événement. Cliquez sur "Activer" ou "Ouvrir" ci-dessus pour générer une trace.
+              </p>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {diagnostics.map((entry) => (
+                  <DiagnosticRow key={entry.id} entry={entry} />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {!isNative && (
         <p className="text-xs text-muted-foreground text-center pt-2">
           💡 Pour bénéficier des alertes même téléphone verrouillé, installez l'application mobile.
         </p>
       )}
     </div>
+  );
+}
+
+function DiagnosticRow({ entry }: { entry: PermissionDiagnosticEntry }) {
+  const statusMeta = {
+    attempt:         { color: 'text-muted-foreground', bg: 'bg-muted',         label: '→ Tentative' },
+    success:         { color: 'text-primary',          bg: 'bg-primary/10',    label: '✓ Succès' },
+    error:           { color: 'text-destructive',      bg: 'bg-destructive/10', label: '✗ Erreur' },
+    webview_blocked: { color: 'text-destructive',      bg: 'bg-destructive/10', label: '⚠ WebView bloquée' },
+  }[entry.status];
+
+  const time = new Date(entry.timestamp).toLocaleTimeString('fr-FR', { hour12: false });
+
+  return (
+    <li className="rounded-lg border p-2.5 text-xs space-y-1">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className={cn('px-2 py-0.5 rounded-full font-medium', statusMeta.bg, statusMeta.color)}>
+          {statusMeta.label}
+        </span>
+        <span className="text-muted-foreground font-mono text-[10px]">{time}</span>
+      </div>
+      <p className="font-medium">
+        <span className="text-muted-foreground">[{entry.method}]</span> {entry.action} — {entry.message}
+      </p>
+      {entry.details && (
+        <p className="text-muted-foreground font-mono text-[10px] break-all bg-muted/50 rounded p-1.5">
+          {entry.details}
+        </p>
+      )}
+    </li>
   );
 }
 
