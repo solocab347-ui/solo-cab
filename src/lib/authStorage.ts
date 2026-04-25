@@ -1,61 +1,60 @@
 /**
- * Storage adapter pour Supabase Auth, contrôlé par "Se souvenir de moi".
+ * Gestion "Se souvenir de moi" pour la session Supabase.
  *
- * Comportement (modèle Uber/Bolt) :
- *  - Par défaut "Se souvenir de moi" est ACTIVÉ → session persistante en localStorage.
- *    L'utilisateur reste connecté indéfiniment, même après fermeture/rouverture
- *    de l'app (jusqu'à un signOut explicite).
- *  - Si l'utilisateur DÉCOCHE → la session est stockée en sessionStorage et est
- *    perdue à la fermeture du navigateur/onglet.
+ * Modèle Uber/Bolt : par défaut, la session est PERSISTANTE (l'utilisateur reste
+ * connecté entre les ouvertures de l'app). C'est déjà le comportement natif de
+ * Supabase (persistSession + localStorage).
  *
- * Le flag est lu/écrit via la clé `solocab_remember_session`.
+ * Si l'utilisateur DÉCOCHE "Se souvenir de moi", on déplace les tokens
+ * Supabase de localStorage vers sessionStorage. Résultat : à la fermeture
+ * du navigateur/onglet, la session est perdue → il devra se reconnecter.
  *
- * Important : Supabase appelle `getItem`/`setItem` à chaque rafraîchissement
- * de token. On lit donc le mode "à la volée" pour respecter le choix utilisateur
- * sans rebuild du client.
+ * Sur app native (Capacitor), sessionStorage est aussi vidé au cold-start,
+ * donc le comportement est cohérent.
  */
-const REMEMBER_SESSION_KEY = "solocab_remember_session";
+const REMEMBER_KEY = "solocab_remember_session";
+const SUPA_PREFIX = "sb-"; // toutes les clés Supabase commencent par sb-
 
-/**
- * Lit le mode souhaité.
- * Par défaut TRUE (persistance permanente, comme Uber/Bolt).
- */
 export function getRememberMe(): boolean {
   try {
-    const v = localStorage.getItem(REMEMBER_SESSION_KEY);
-    if (v === null) return true; // défaut : on garde la session
-    return v === "true";
+    const v = localStorage.getItem(REMEMBER_KEY);
+    return v === null ? true : v === "true";
   } catch {
     return true;
   }
 }
 
-/**
- * Définit le mode "Se souvenir de moi".
- * À appeler AVANT signIn pour que le token soit stocké au bon endroit.
- *
- * Si on bascule de persistant → temporaire, on déplace immédiatement
- * la session existante de localStorage vers sessionStorage (et inversement).
- */
 export function setRememberMe(remember: boolean) {
   try {
-    localStorage.setItem(REMEMBER_SESSION_KEY, remember ? "true" : "false");
+    localStorage.setItem(REMEMBER_KEY, remember ? "true" : "false");
+    applyRememberMode(remember);
+  } catch {
+    /* ignore */
+  }
+}
 
-    // Déplacer la session existante si nécessaire (pour appliquer immédiatement)
-    const SUPA_KEY_PREFIX = "sb-";
-    const fromStore = remember ? sessionStorage : localStorage;
-    const toStore = remember ? localStorage : sessionStorage;
+/**
+ * Déplace les tokens Supabase entre localStorage et sessionStorage
+ * pour refléter la préférence courante.
+ *
+ * - remember = true  → tout en localStorage (persistant)
+ * - remember = false → tout en sessionStorage (volatile)
+ */
+export function applyRememberMode(remember: boolean) {
+  try {
+    const from = remember ? sessionStorage : localStorage;
+    const to = remember ? localStorage : sessionStorage;
 
-    const keysToMove: string[] = [];
-    for (let i = 0; i < fromStore.length; i++) {
-      const k = fromStore.key(i);
-      if (k && k.startsWith(SUPA_KEY_PREFIX)) keysToMove.push(k);
+    const keys: string[] = [];
+    for (let i = 0; i < from.length; i++) {
+      const k = from.key(i);
+      if (k && k.startsWith(SUPA_PREFIX)) keys.push(k);
     }
-    for (const k of keysToMove) {
-      const val = fromStore.getItem(k);
+    for (const k of keys) {
+      const val = from.getItem(k);
       if (val !== null) {
-        toStore.setItem(k, val);
-        fromStore.removeItem(k);
+        to.setItem(k, val);
+        from.removeItem(k);
       }
     }
   } catch {
@@ -64,38 +63,14 @@ export function setRememberMe(remember: boolean) {
 }
 
 /**
- * Storage adapter pour Supabase qui route vers local ou session storage
- * selon la préférence courante.
+ * À appeler au boot de l'app, AVANT que le client Supabase ne lise sa session.
+ * Si l'utilisateur a précédemment décoché "Se souvenir de moi" et qu'on vient
+ * de relancer l'app, sessionStorage est vide → il sera donc bien déconnecté
+ * et atterrira sur l'écran de login. Si coché, rien ne change.
  *
- * Pour chaque opération on regarde où la clé existe (lecture) ou on choisit
- * la cible selon getRememberMe() (écriture).
+ * En revanche, si on trouve des clés au mauvais endroit (ex: après un toggle
+ * sans rechargement), on les remet à la bonne place.
  */
-export const supabaseAuthStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      // Chercher d'abord dans le storage actif, puis l'autre (fallback)
-      const remember = getRememberMe();
-      const primary = remember ? localStorage : sessionStorage;
-      const secondary = remember ? sessionStorage : localStorage;
-      return primary.getItem(key) ?? secondary.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      const remember = getRememberMe();
-      const target = remember ? localStorage : sessionStorage;
-      const other = remember ? sessionStorage : localStorage;
-      target.setItem(key, value);
-      // Nettoyer une éventuelle copie dans l'autre storage
-      try { other.removeItem(key); } catch {}
-    } catch {
-      /* ignore */
-    }
-  },
-  removeItem: (key: string): void => {
-    try { localStorage.removeItem(key); } catch {}
-    try { sessionStorage.removeItem(key); } catch {}
-  },
-};
+export function initRememberOnBoot() {
+  applyRememberMode(getRememberMe());
+}
