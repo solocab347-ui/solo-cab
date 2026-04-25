@@ -139,8 +139,21 @@ const CLIENT_REQUIRED: PermissionKey[] = ['location', 'notifications'];
 export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
   const [permissions, setPermissions] = useState<PermissionState[]>([]);
   const [loading, setLoading] = useState(true);
+  const [diagnostics, setDiagnostics] = useState<PermissionDiagnosticEntry[]>([]);
   const isNative = Capacitor.isNativePlatform();
   const platform = Capacitor.getPlatform();
+
+  const log = useCallback((entry: Omit<PermissionDiagnosticEntry, 'id' | 'timestamp'>) => {
+    const full: PermissionDiagnosticEntry = {
+      ...entry,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: Date.now(),
+    };
+    console.log('[Permissions/Diag]', full);
+    setDiagnostics((prev) => [full, ...prev].slice(0, 30));
+  }, []);
+
+  const clearDiagnostics = useCallback(() => setDiagnostics([]), []);
 
   const buildBaseList = useCallback((): PermissionState[] => {
     const required = role === 'driver' ? DRIVER_REQUIRED : role === 'client' ? CLIENT_REQUIRED : [];
