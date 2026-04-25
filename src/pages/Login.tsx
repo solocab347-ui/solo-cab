@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/productionLogger";
 import { useLocale } from "@/hooks/useLocale";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { getRememberMe, setRememberMe as persistRememberMe } from "@/lib/authStorage";
 
 
 const REMEMBER_ME_KEY = "solocab_remember_credentials";
@@ -23,7 +24,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
   const [isResumeMode, setIsResumeMode] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  // Par défaut TRUE (modèle Uber/Bolt : on reste connecté entre les ouvertures)
+  const [rememberMe, setRememberMe] = useState<boolean>(getRememberMe());
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
@@ -32,19 +34,17 @@ const Login = () => {
   // Charger uniquement l'email sauvegardé (JAMAIS le mot de passe)
   useEffect(() => {
     try {
-      // Migration: supprimer les anciennes données contenant le mot de passe
       const saved = localStorage.getItem(REMEMBER_ME_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Migration : supprimer toute ancienne donnée contenant un mot de passe
         if (parsed.password) {
-          // Ancienne version avec mot de passe - migrer en supprimant le password
           localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
             email: parsed.email,
-            remember: true
+            remember: true,
           }));
         }
         if (parsed.email) setLoginEmail(parsed.email);
-        if (parsed.remember) setRememberMe(true);
       }
     } catch (e) {
       localStorage.removeItem(REMEMBER_ME_KEY);
@@ -165,6 +165,10 @@ const Login = () => {
       } else {
         localStorage.removeItem(REMEMBER_ME_KEY);
       }
+
+      // Appliquer la préférence de persistance de session AVANT signIn
+      // (route les tokens Supabase vers localStorage ou sessionStorage)
+      persistRememberMe(rememberMe);
 
       // MODE CONNEXION NORMALE: Utiliser signIn qui gère tout (y compris employee check)
       await signIn(loginEmail, loginPassword);
