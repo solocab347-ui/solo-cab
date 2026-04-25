@@ -91,41 +91,22 @@ async function openAndroidSettingsFallback(
       break;
   }
 
-  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative URL intent: ${target}`, details: url });
-
-  // Détection de blocage WebView : si après 1.2s l'app est toujours active (pas mise en background),
-  // c'est que l'intent n'a pas été interceptée.
-  let leftApp = false;
-  const onVisChange = () => {
-    if (document.visibilityState === 'hidden') leftApp = true;
-  };
-  document.addEventListener('visibilitychange', onVisChange);
+  log?.({ action: target, method: 'intent_fallback', status: 'attempt', message: `Tentative App.openUrl: ${target}`, details: url });
 
   try {
-    // Le WebView Capacitor intercepte les URLs intent: et lance l'activité Android
-    window.location.href = url;
-    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'URL intent: déclenchée (WebView)', details: 'window.location.href assigné' });
+    // Capacitor App.openUrl contourne le filtre WebView et lance l'intent natif
+    const { App } = await import('@capacitor/app');
+    await App.openUrl({ url });
+    log?.({ action: target, method: 'intent_fallback', status: 'success', message: 'Intent ouverte via App.openUrl' });
   } catch (err: any) {
     const msg = String(err?.message || err || 'erreur inconnue');
-    console.error('[Permissions] Fallback intent échec', target, err);
-    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec déclenchement intent: ${msg}`, details: msg });
-    document.removeEventListener('visibilitychange', onVisChange);
-    return;
+    console.error('[Permissions] App.openUrl échec', target, err);
+    log?.({ action: target, method: 'intent_fallback', status: 'error', message: `Échec App.openUrl: ${msg}`, details: msg });
+    // Dernier recours : window.location.href (peut être bloqué WebView mais on tente)
+    try {
+      window.location.href = url;
+    } catch {/* ignore */}
   }
-
-  // Vérification post-déclenchement : si l'app n'a pas perdu le focus, c'est probablement bloqué
-  setTimeout(() => {
-    document.removeEventListener('visibilitychange', onVisChange);
-    if (!leftApp) {
-      log?.({
-        action: target,
-        method: 'intent_fallback',
-        status: 'webview_blocked',
-        message: 'Aucun changement d\'écran détecté — la WebView a peut-être bloqué l\'intent',
-        details: 'document.visibilityState est resté "visible" pendant 1.2s. Vérifie AndroidManifest.xml ou réinstalle l\'APK.',
-      });
-    }
-  }, 1200);
 }
 
 /**
