@@ -289,7 +289,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             if (key === 'location_background' && platform === 'android') {
               try {
                 await SoloCabPermissions.openAppDetailsSettings();
-              } catch {/* fallback ignored */}
+              } catch {
+                await openAndroidSettingsFallback('app_details');
+              }
             }
           } else {
             await new Promise<void>((res) => navigator.geolocation.getCurrentPosition(() => res(), () => res(), { timeout: 5000 }));
@@ -313,6 +315,9 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
                   console.warn('[Permissions] register() a échoué:', regErr);
                 }
               }
+            } else if (platform === 'android') {
+              // Si refus persistant, ouvrir directement les paramètres notif système
+              await openAndroidSettingsFallback('notifications');
             }
           } else if ('Notification' in window) {
             const r = await Notification.requestPermission();
@@ -322,8 +327,14 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'overlay': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.openOverlaySettings();
-            result = r.overlay ? 'granted' : 'prompt';
+            try {
+              const r = await SoloCabPermissions.openOverlaySettings();
+              result = r.overlay ? 'granted' : 'prompt';
+            } catch {
+              // Plugin custom indispo : fallback intent direct
+              await openAndroidSettingsFallback('overlay');
+              result = 'prompt';
+            }
           } else {
             result = 'unsupported';
           }
@@ -331,8 +342,13 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.openBatteryOptimizationSettings();
-            result = r.battery ? 'granted' : 'prompt';
+            try {
+              const r = await SoloCabPermissions.openBatteryOptimizationSettings();
+              result = r.battery ? 'granted' : 'prompt';
+            } catch {
+              await openAndroidSettingsFallback('battery');
+              result = 'prompt';
+            }
           } else {
             result = 'unsupported';
           }
@@ -340,9 +356,16 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'microphone': {
           if (isNative && platform === 'android') {
-            const r = await SoloCabPermissions.requestMicrophone();
-            result = r.granted ? 'granted' : 'denied';
-            break;
+            try {
+              const r = await SoloCabPermissions.requestMicrophone();
+              result = r.granted ? 'granted' : 'denied';
+              break;
+            } catch {
+              // Fallback : ouvrir les paramètres détails app
+              await openAndroidSettingsFallback('app_details');
+              result = 'prompt';
+              break;
+            }
           }
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
