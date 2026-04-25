@@ -89,9 +89,13 @@ serve(async (req) => {
       .eq("id", course_id)
       .single();
 
-    if (course?.driver?.user_id) {
+    const driverRel = Array.isArray((course as any)?.driver)
+      ? (course as any).driver[0]
+      : (course as any)?.driver;
+
+    if (driverRel?.user_id) {
       await supabaseClient.from("notifications").insert({
-        user_id: course.driver.user_id,
+        user_id: driverRel.user_id,
         title: "💳 Empreinte bancaire validée",
         message: `${course.guest_name || "Un client"} a confirmé son empreinte de ${holdAmountEuros.toFixed(2)}€ pour réserver la course.`,
         type: "info",
