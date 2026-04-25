@@ -373,12 +373,15 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'overlay': {
           if (isNative && platform === 'android') {
+            log({ action: 'overlay', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openOverlaySettings()' });
             try {
               const r = await SoloCabPermissions.openOverlaySettings();
               result = r.overlay ? 'granted' : 'prompt';
-            } catch {
-              // Plugin custom indispo : fallback intent direct
-              await openAndroidSettingsFallback('overlay');
+              log({ action: 'overlay', method: 'native_plugin', status: 'success', message: `Plugin natif a répondu — overlay=${r.overlay}` });
+            } catch (e: any) {
+              const msg = String(e?.message || e || 'plugin indisponible');
+              log({ action: 'overlay', method: 'native_plugin', status: 'error', message: 'Plugin natif indisponible — bascule sur intent', details: msg });
+              await openAndroidSettingsFallback('overlay', log);
               result = 'prompt';
             }
           } else {
@@ -388,11 +391,15 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         }
         case 'battery': {
           if (isNative && platform === 'android') {
+            log({ action: 'battery', method: 'native_plugin', status: 'attempt', message: 'Appel SoloCabPermissions.openBatteryOptimizationSettings()' });
             try {
               const r = await SoloCabPermissions.openBatteryOptimizationSettings();
               result = r.battery ? 'granted' : 'prompt';
-            } catch {
-              await openAndroidSettingsFallback('battery');
+              log({ action: 'battery', method: 'native_plugin', status: 'success', message: `Plugin natif a répondu — battery=${r.battery}` });
+            } catch (e: any) {
+              const msg = String(e?.message || e || 'plugin indisponible');
+              log({ action: 'battery', method: 'native_plugin', status: 'error', message: 'Plugin natif indisponible — bascule sur intent', details: msg });
+              await openAndroidSettingsFallback('battery', log);
               result = 'prompt';
             }
           } else {
