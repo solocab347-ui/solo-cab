@@ -166,6 +166,10 @@ const Login = () => {
         localStorage.removeItem(REMEMBER_ME_KEY);
       }
 
+      // Appliquer la préférence de persistance de session AVANT signIn
+      // (route les tokens Supabase vers localStorage ou sessionStorage)
+      persistRememberMe(rememberMe);
+
       // MODE CONNEXION NORMALE: Utiliser signIn qui gère tout (y compris employee check)
       await signIn(loginEmail, loginPassword);
       // La navigation est gérée dans signIn()
