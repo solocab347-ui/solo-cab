@@ -36,6 +36,16 @@ export type PermissionKey =
 
 export type PermissionTestAction = PermissionKey | 'app_details';
 
+export interface PermissionDiagnosticEntry {
+  id: string;
+  timestamp: number;
+  action: string;
+  method: 'native_plugin' | 'intent_fallback' | 'web_api';
+  status: 'attempt' | 'success' | 'error' | 'webview_blocked';
+  message: string;
+  details?: string;
+}
+
 interface UsePermissionsCenterOptions {
   role: 'driver' | 'client' | 'admin' | null;
 }
