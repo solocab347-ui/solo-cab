@@ -216,12 +216,14 @@ const DriverDashboard = () => {
 
   // Incoming course overlay is now handled globally in GlobalRideOverlay
 
-  // Show tutorial for new drivers who completed onboarding but haven't seen the tutorial
+  // Tutoriel : 3 propositions max au login OU silence si déjà complété une fois.
+  // Voir src/lib/tutorialState.ts pour les règles précises.
   useEffect(() => {
-    if (driverProfile?.driver?.onboarding_completed) {
-      const tutorialKey = `solocab_tutorial_done_${driverProfile.driver.id}`;
-      if (!localStorage.getItem(tutorialKey)) {
+    const driverId = driverProfile?.driver?.id;
+    if (driverProfile?.driver?.onboarding_completed && driverId) {
+      if (shouldAutoShowTutorial(driverId)) {
         setShowTutorial(true);
+        markTutorialShown(driverId); // incrémente le compteur dès la présentation
       }
     }
   }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
