@@ -48,6 +48,8 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
   const [saving, setSaving] = useState(false);
   const [targets, setTargets] = useState<Targets>(DEFAULTS);
   const [initial, setInitial] = useState<Targets>(DEFAULTS);
+  const [previousSaved, setPreviousSaved] = useState<Targets | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,17 +82,23 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
 
   const dirty = JSON.stringify(targets) !== JSON.stringify(initial);
 
-  const handleSave = async () => {
-    if (saving || !dirty) return;
+  // Diff pour la confirmation
+  const diff = useMemo(() => {
+    return (Object.keys(targets) as (keyof Targets)[])
+      .map(k => ({ key: k, before: initial[k], after: targets[k] }))
+      .filter(d => d.before !== d.after);
+  }, [targets, initial]);
+
+  const performSave = async (newValues: Targets, isRollback = false) => {
     setSaving(true);
     try {
       const { error } = await supabase
         .from('driver_objectives')
         .update({
-          cards_proposed_target: targets.cards_proposed_target,
-          qr_scans_target: targets.qr_scans_target,
-          direct_clients_target: targets.direct_clients_target,
-          independence_percentage_target: targets.independence_percentage_target,
+          cards_proposed_target: newValues.cards_proposed_target,
+          qr_scans_target: newValues.qr_scans_target,
+          direct_clients_target: newValues.direct_clients_target,
+          independence_percentage_target: newValues.independence_percentage_target,
           updated_at: new Date().toISOString(),
         })
         .eq('driver_id', driverId)
@@ -98,10 +106,20 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
 
       if (error) throw error;
 
-      setInitial(targets);
-      toast.success('Cibles d\'acquisition mises à jour', {
-        description: 'Un snapshot mensuel a été archivé automatiquement.',
-      });
+      if (isRollback) {
+        setPreviousSaved(null);
+        setTargets(newValues);
+        setInitial(newValues);
+        toast.success('Cibles restaurées', {
+          description: 'Les valeurs précédentes ont été remises en place.',
+        });
+      } else {
+        setPreviousSaved(initial); // mémorise pour le rollback
+        setInitial(newValues);
+        toast.success('Cibles d\'acquisition mises à jour', {
+          description: 'Snapshot archivé · annulation possible ci-dessous.',
+        });
+      }
       onUpdate?.();
     } catch (e: any) {
       console.error('[acq-quick-edit] save error', e);
@@ -109,6 +127,21 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveClick = () => {
+    if (saving || !dirty) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setConfirmOpen(false);
+    await performSave(targets, false);
+  };
+
+  const handleRollback = async () => {
+    if (!previousSaved || saving) return;
+    await performSave(previousSaved, true);
   };
 
   return (
