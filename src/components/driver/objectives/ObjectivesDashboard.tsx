@@ -144,9 +144,22 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         />
       </CollapsibleSection>
 
-      {/* 6. Collapsible History */}
+      {/* 6a. Collapsible Acquisition History (filtrable) */}
       <CollapsibleSection
-        title="Historique"
+        title="Historique d'acquisition"
+        icon={<History className="w-4 h-4" />}
+        open={showAcqHistory}
+        onToggle={() => setShowAcqHistory(v => !v)}
+      >
+        <AcquisitionHistory
+          entries={hook.dailyEntries}
+          platforms={hook.platforms}
+        />
+      </CollapsibleSection>
+
+      {/* 6b. Collapsible General History */}
+      <CollapsibleSection
+        title="Historique global"
         icon={<History className="w-4 h-4" />}
         open={showHistory}
         onToggle={() => setShowHistory(v => !v)}
