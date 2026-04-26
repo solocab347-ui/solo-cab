@@ -2,7 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, MapPin } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, Settings, ExternalLink, Info } from 'lucide-react';
 import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionKey } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
 
@@ -172,6 +173,7 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
   const [busy, setBusy] = useState(false);
   const meta = STATUS_META[perm.status];
   const Icon = meta.icon;
+  const isDenied = perm.status === 'denied';
 
   const handleClick = async () => {
     setBusy(true);
@@ -179,7 +181,11 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
   };
 
   return (
-    <Card className={cn('transition-all', perm.required && perm.status !== 'granted' && 'border-destructive/40')}>
+    <Card className={cn(
+      'transition-all',
+      perm.required && perm.status !== 'granted' && 'border-destructive/40',
+      isDenied && 'border-destructive/60 bg-destructive/5',
+    )}>
       <CardContent className="p-3.5 flex items-start gap-3">
         <div className="text-xl shrink-0 leading-none mt-0.5">{perm.icon}</div>
         <div className="flex-1 min-w-0">
@@ -196,8 +202,13 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
             <Icon className="h-2.5 w-2.5" />
             <span>{meta.label}</span>
           </div>
+
+          {/* ─── Bloc d'aide détaillé pour les permissions refusées ─── */}
+          {isDenied && (
+            <DeniedGuidance permKey={perm.key} onOpenSettings={handleClick} busy={busy} />
+          )}
         </div>
-        {perm.status !== 'granted' && perm.status !== 'unsupported' && (
+        {perm.status !== 'granted' && perm.status !== 'unsupported' && !isDenied && (
           <Button
             size="sm"
             variant={perm.required ? 'default' : 'outline'}
@@ -205,16 +216,113 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
             disabled={busy}
             className="shrink-0"
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : perm.status === 'denied' ? (
-              'Réglages'
-            ) : (
-              'Activer'
-            )}
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Activer'}
           </Button>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Panneau d'instructions étape par étape adapté à la plateforme
+ * pour expliquer pourquoi le bouton "Activer" ne suffit plus et
+ * comment réactiver la permission depuis les Réglages système.
+ */
+function DeniedGuidance({
+  permKey,
+  onOpenSettings,
+  busy,
+}: {
+  permKey: PermissionKey;
+  onOpenSettings: () => Promise<void> | void;
+  busy: boolean;
+}) {
+  const isNative = Capacitor.isNativePlatform();
+  const platform = Capacitor.getPlatform();
+
+  const { title, steps, ctaLabel } = useMemo(() => {
+    const isNotif = permKey === 'notifications';
+    const isLoc = permKey === 'location' || permKey === 'location_background';
+    const isMic = permKey === 'microphone';
+    const subject = isNotif ? 'les notifications' : isLoc ? 'la localisation' : isMic ? 'le microphone' : 'cette autorisation';
+
+    if (isNative && platform === 'android') {
+      return {
+        title: `Autorisation bloquée par Android`,
+        steps: [
+          'Touchez « Ouvrir les Réglages » ci-dessous',
+          'Allez dans « Autorisations »',
+          `Activez ${subject}`,
+          'Revenez dans l\'application',
+        ],
+        ctaLabel: 'Ouvrir les Réglages',
+      };
+    }
+    if (isNative && platform === 'ios') {
+      return {
+        title: `Autorisation bloquée par iOS`,
+        steps: [
+          'Touchez « Ouvrir les Réglages » ci-dessous',
+          `Activez ${subject} dans la liste`,
+          'Revenez dans l\'application',
+        ],
+        ctaLabel: 'Ouvrir les Réglages',
+      };
+    }
+    // Web / PWA
+    return {
+      title: `Autorisation bloquée par votre navigateur`,
+      steps: [
+        'Touchez l\'icône 🔒 (cadenas) à gauche de l\'URL',
+        'Ouvrez « Autorisations du site »',
+        `Passez ${subject} sur « Autoriser »`,
+        'Rechargez la page',
+      ],
+      ctaLabel: 'Voir les instructions',
+    };
+  }, [permKey, isNative, platform]);
+
+  return (
+    <div className="mt-3 rounded-lg border border-destructive/30 bg-background/60 p-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <Info className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-foreground">{title}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+            Le bouton « Activer » ne peut plus afficher la fenêtre du système : vous devez réactiver l'autorisation manuellement.
+          </p>
+        </div>
+      </div>
+
+      <ol className="text-[11px] text-muted-foreground space-y-1 pl-1">
+        {steps.map((step, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold shrink-0">
+              {i + 1}
+            </span>
+            <span className="leading-snug">{step}</span>
+          </li>
+        ))}
+      </ol>
+
+      <Button
+        size="sm"
+        variant="default"
+        onClick={onOpenSettings}
+        disabled={busy}
+        className="w-full gap-2 mt-1"
+      >
+        {busy ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <>
+            <Settings className="h-3.5 w-3.5" />
+            {ctaLabel}
+            <ExternalLink className="h-3 w-3 opacity-70" />
+          </>
+        )}
+      </Button>
+    </div>
   );
 }
