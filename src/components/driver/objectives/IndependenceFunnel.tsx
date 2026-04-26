@@ -68,6 +68,10 @@ export function IndependenceFunnel({
     () => objectives.find((o) => o.period_type === period) || null,
     [objectives, period],
   );
+  const monthlyObjective = useMemo(
+    () => objectives.find((o) => o.period_type === 'monthly') || null,
+    [objectives],
+  );
 
   // Filtre des entrées sur la période
   const periodEntries = useMemo(() => {
