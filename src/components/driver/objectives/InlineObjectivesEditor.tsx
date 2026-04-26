@@ -246,6 +246,49 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
           </Button>
         </div>
 
+        {/* === BLOC ACQUISITION (priorité héros) === */}
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-3 space-y-4">
+          <div className="flex items-center gap-2">
+            <Crown className="w-4 h-4 text-primary" />
+            <span className="text-xs font-semibold text-primary uppercase tracking-wide">Objectifs d'indépendance</span>
+          </div>
+
+          <EditRow icon={<Hand className="w-4 h-4 text-primary" />} label="Cartes proposées / mois">
+            <Input
+              type="number"
+              value={targetCardsProposed}
+              onChange={e => setTargetCardsProposed(parseInt(e.target.value) || 0)}
+              className="h-10 text-lg font-bold text-center"
+              min={0} max={1000} step={5}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">≈ {Math.round(targetCardsProposed / 22)}/jour • Une carte par course = idéal</p>
+          </EditRow>
+
+          <EditRow icon={<QrCode className="w-4 h-4 text-primary" />} label="Scans QR / mois">
+            <Input
+              type="number"
+              value={targetQrScans}
+              onChange={e => setTargetQrScans(parseInt(e.target.value) || 0)}
+              className="h-10 text-lg font-bold text-center"
+              min={0} max={500} step={1}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">≈ 50% des cartes proposées</p>
+          </EditRow>
+
+          <EditRow icon={<UserPlus className="w-4 h-4 text-primary" />} label="% du CA en direct (cible)">
+            <Slider
+              value={[targetIndependencePct]}
+              onValueChange={([v]) => setTargetIndependencePct(v)}
+              min={0} max={100} step={5}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>0% (full plateformes)</span>
+              <span className="font-semibold text-primary">{targetIndependencePct}%</span>
+              <span>100% (full direct)</span>
+            </div>
+          </EditRow>
+        </div>
+
         {/* Revenue */}
         <EditRow icon={<TrendingUp className="w-4 h-4 text-green-500" />} label="CA mensuel (€)">
           <Input
