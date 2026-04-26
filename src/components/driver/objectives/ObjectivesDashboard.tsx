@@ -126,10 +126,16 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         open={showHistory}
         onToggle={() => setShowHistory(v => !v)}
       >
-        <ObjectivesHistory 
-          entries={hook.dailyEntries}
-          platforms={hook.platforms}
-        />
+        <div className="space-y-3">
+          <AcquisitionHistory
+            entries={hook.dailyEntries}
+            platforms={hook.platforms}
+          />
+          <ObjectivesHistory 
+            entries={hook.dailyEntries}
+            platforms={hook.platforms}
+          />
+        </div>
       </CollapsibleSection>
     </div>
   );
