@@ -276,25 +276,29 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
 }
 
 function SliderRow({
-  label, value, onChange, max,
+  label, value, onChange, max, hint,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   max: number;
+  hint?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label className="text-xs">{label}</Label>
-        <span className="text-xs font-semibold tabular-nums">{value}</span>
+        <div className="flex items-center gap-1.5">
+          {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+          <span className="text-xs font-semibold tabular-nums">{value}</span>
+        </div>
       </div>
       <Slider
-        value={[value]}
+        value={[Math.min(value, max)]}
         min={0}
-        max={Math.max(max, value)}
+        max={Math.max(1, max)}
         step={1}
-        onValueChange={([v]) => onChange(v)}
+        onValueChange={([v]) => onChange(Math.min(v, max))}
       />
     </div>
   );
