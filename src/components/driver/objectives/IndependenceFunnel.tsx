@@ -36,6 +36,9 @@ interface IndependenceFunnelProps {
   totalDirectClients: number;
   /** Combien sont fidèles (>= 2 courses directes) */
   loyalClientsCount: number;
+  /** Pour le quick-edit inline des cibles */
+  driverId?: string;
+  onTargetsUpdated?: () => void;
 }
 
 const PERIOD_LABEL: Record<string, string> = {
