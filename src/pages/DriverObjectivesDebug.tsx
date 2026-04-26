@@ -24,7 +24,7 @@ export default function DriverObjectivesDebug() {
   const { user } = useAuth();
   const { driverProfile, isLoading: profileLoading } = useOptimizedDriverProfile(user?.id);
   const driverId = driverProfile?.driver?.id ?? '';
-  const driverName = driverProfile?.driver?.first_name as string | undefined;
+  const driverName = (driverProfile?.driver as { first_name?: string } | undefined)?.first_name;
 
   const hook = useDriverObjectives(driverId || null);
 
