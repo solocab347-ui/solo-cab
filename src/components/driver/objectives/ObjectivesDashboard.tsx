@@ -10,6 +10,8 @@ import { InlineObjectivesEditor } from './InlineObjectivesEditor';
 import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
+import { AcquisitionAlerts } from './AcquisitionAlerts';
+import { AcquisitionHistory } from './AcquisitionHistory';
 import { 
   Target, 
   MessageSquare,
@@ -62,9 +64,19 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         soloCabStats={hook.soloCabFullStats.week}
         totalDirectClients={hook.driverStats.totalClients}
         loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        driverId={driverId}
+        onTargetsUpdated={() => hook.fetchAll?.()}
       />
 
-      {/* 2bis. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
+      {/* 2bis. Alertes seuils — recommandations actionnables */}
+      <AcquisitionAlerts
+        entries={hook.dailyEntries}
+        objectives={hook.objectives}
+        totalDirectClients={hook.driverStats.totalClients}
+        currentIndependencePct={hook.driverStats.soloCabPercentage}
+      />
+
+      {/* 2ter. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
       <AcquisitionCoach
         entries={hook.dailyEntries}
         totalDirectClients={hook.driverStats.totalClients}
@@ -114,10 +126,16 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         open={showHistory}
         onToggle={() => setShowHistory(v => !v)}
       >
-        <ObjectivesHistory 
-          entries={hook.dailyEntries}
-          platforms={hook.platforms}
-        />
+        <div className="space-y-3">
+          <AcquisitionHistory
+            entries={hook.dailyEntries}
+            platforms={hook.platforms}
+          />
+          <ObjectivesHistory 
+            entries={hook.dailyEntries}
+            platforms={hook.platforms}
+          />
+        </div>
       </CollapsibleSection>
     </div>
   );
