@@ -36,6 +36,36 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
   const [signups7, setSignups7] = useState(realSignals.signups7);
   const [totalDirectClients, setTotalDirectClients] = useState(realSignals.totalDirectClients);
   const [loyalClientsCount, setLoyalClientsCount] = useState(realSignals.loyalClientsCount);
+  const [adjustments, setAdjustments] = useState<string[]>([]);
+
+  // Clamping automatique : maintient la cohérence de l'entonnoir
+  // signups ≤ scans ≤ proposed ≤ courses ; loyal ≤ totalDirect
+  useEffect(() => {
+    const fixes: string[] = [];
+    if (proposed7 > courses7) {
+      fixes.push(`Cartes proposées ramenées à ${courses7} (≤ courses)`);
+      setProposed7(courses7);
+    }
+    if (scans7 > proposed7) {
+      const newVal = Math.min(scans7, proposed7);
+      if (newVal !== scans7) {
+        fixes.push(`Scans ramenés à ${newVal} (≤ cartes proposées)`);
+        setScans7(newVal);
+      }
+    }
+    if (signups7 > scans7) {
+      const newVal = Math.min(signups7, scans7);
+      if (newVal !== signups7) {
+        fixes.push(`Inscriptions ramenées à ${newVal} (≤ scans)`);
+        setSignups7(newVal);
+      }
+    }
+    if (loyalClientsCount > totalDirectClients) {
+      fixes.push(`Clients fidèles ramenés à ${totalDirectClients} (≤ total directs)`);
+      setLoyalClientsCount(totalDirectClients);
+    }
+    setAdjustments(fixes);
+  }, [courses7, proposed7, scans7, signups7, totalDirectClients, loyalClientsCount]);
 
   const reset = () => {
     setCourses7(realSignals.courses7);
@@ -44,6 +74,7 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
     setSignups7(realSignals.signups7);
     setTotalDirectClients(realSignals.totalDirectClients);
     setLoyalClientsCount(realSignals.loyalClientsCount);
+    setAdjustments([]);
   };
 
   const simulatedSignals = useMemo<AlertSignals>(() => ({
