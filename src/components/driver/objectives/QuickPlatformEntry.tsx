@@ -633,6 +633,57 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                         />
                       </div>
                     </div>
+
+                    {/* Bloc Acquisition — le vrai levier d'indépendance */}
+                    <div className="mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Crown className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">
+                          Acquisition (ton vrai levier)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <Hand className="w-3 h-3 text-amber-500" /> Cartes
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.cardsProposedCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'cardsProposedCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nombre de fois où tu as proposé ta carte SoloCab"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <QrCode className="w-3 h-3 text-purple-500" /> Scans
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.qrScansCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'qrScansCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nombre de scans QR confirmés"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <UserPlus className="w-3 h-3 text-emerald-500" /> Inscrits
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.directSignupsCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'directSignupsCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nouveaux clients directs créés depuis cette plateforme"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
