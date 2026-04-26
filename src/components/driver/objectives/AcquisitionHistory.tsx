@@ -104,15 +104,33 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
   }, [entries, period, platformId, actionType, platformMap]);
 
   const totals = useMemo(() => {
-    return filtered.reduce(
+    const t = filtered.reduce(
       (acc, e) => ({
         cards: acc.cards + e.cards,
         scans: acc.scans + e.scans,
         signups: acc.signups + e.signups,
+        courses: acc.courses + (Number(e.raw.courses_count) || 0),
       }),
-      { cards: 0, scans: 0, signups: 0 },
+      { cards: 0, scans: 0, signups: 0, courses: 0 },
     );
+    return {
+      ...t,
+      proposalRate: t.courses > 0 ? t.cards / t.courses : null,
+      scanRate: t.cards > 0 ? t.scans / t.cards : null,
+      conversionRate: t.scans > 0 ? t.signups / t.scans : null,
+    };
   }, [filtered]);
+
+  // Warnings données manquantes (au niveau global, sur la sélection courante)
+  const warnings = useMemo(() => {
+    const w: string[] = [];
+    if (filtered.length > 0) {
+      if (totals.courses === 0) w.push("Aucune course enregistrée → impossible de calculer le taux de proposition.");
+      if (totals.cards === 0 && totals.courses > 0) w.push("0 carte proposée → taux de scan non calculable.");
+      if (totals.scans === 0 && totals.cards > 0) w.push("0 scan → taux de conversion non calculable.");
+    }
+    return w;
+  }, [filtered.length, totals]);
 
   return (
     <Card>
