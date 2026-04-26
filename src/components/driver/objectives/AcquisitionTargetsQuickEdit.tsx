@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Hand, QrCode, UserPlus, Crown, Loader2, Save, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Hand, QrCode, UserPlus, Crown, Loader2, Save, Settings2,
+  ChevronDown, ChevronUp, ArrowRight, RotateCcw, AlertTriangle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
