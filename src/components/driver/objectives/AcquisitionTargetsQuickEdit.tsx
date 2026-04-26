@@ -270,9 +270,52 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
           </div>
         )}
       </CardContent>
+
+      {/* Dialog de confirmation avant sauvegarde */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la modification des cibles ?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Cette modification sera enregistrée et un snapshot mensuel sera archivé automatiquement.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
+            {diff.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Aucun changement détecté.</p>
+            ) : diff.map(d => (
+              <div key={d.key} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground truncate">{LABEL_MAP[d.key]}</span>
+                <span className="flex items-center gap-1.5 font-mono tabular-nums shrink-0">
+                  <span className="text-muted-foreground line-through">{d.before}{d.key === 'independence_percentage_target' ? '%' : ''}</span>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                  <span className="font-semibold">{d.after}{d.key === 'independence_percentage_target' ? '%' : ''}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Garder les anciennes cibles</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSave}>
+              Confirmer & enregistrer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
+
+const LABEL_MAP: Record<keyof Targets, string> = {
+  cards_proposed_target: 'Cartes proposées / mois',
+  qr_scans_target: 'QR scannés / mois',
+  direct_clients_target: 'Clients directs / mois',
+  independence_percentage_target: 'Indépendance visée',
+};
 
 function NumberRow({
   icon, label, unit, value, onChange, min = 0, step = 1,
