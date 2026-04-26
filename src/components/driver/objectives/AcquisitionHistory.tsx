@@ -187,6 +187,37 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
           <TotalChip icon={<UserPlus className="w-3.5 h-3.5" />} label="Inscriptions" value={totals.signups} color="text-green-600 dark:text-green-400" bg="bg-green-500/10" />
         </div>
 
+        {/* Taux globaux avec formules transparentes */}
+        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-muted/30 border border-border">
+          <RateStat
+            label="Proposition"
+            rate={totals.proposalRate}
+            formula={`${totals.cards} / ${totals.courses} courses`}
+          />
+          <RateStat
+            label="Scan rate"
+            rate={totals.scanRate}
+            formula={`${totals.scans} / ${totals.cards} cartes`}
+          />
+          <RateStat
+            label="Conversion"
+            rate={totals.conversionRate}
+            formula={`${totals.signups} / ${totals.scans} scans`}
+          />
+        </div>
+
+        {/* Warnings données manquantes */}
+        {warnings.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1">
+            {warnings.map((w, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span className="leading-tight">{w}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Liste */}
         {filtered.length === 0 ? (
           <div className="text-center py-8 text-xs text-muted-foreground">
