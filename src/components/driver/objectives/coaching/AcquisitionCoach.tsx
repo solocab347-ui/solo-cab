@@ -277,6 +277,7 @@ export function AcquisitionCoach({
   loyalClientsCount,
   driverName,
   onOpenQR,
+  suppressedNudgeIds = [],
 }: AcquisitionCoachProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [hidden, setHidden] = useState(false);
@@ -290,7 +291,6 @@ export function AcquisitionCoach({
         const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const recent = parsed.filter((d) => d.ts > cutoff);
         setDismissed(new Set(recent.map((d) => d.id)));
-        // Re-persist sans les anciens
         if (recent.length !== parsed.length) {
           localStorage.setItem(COACH_DISMISSED_KEY, JSON.stringify(recent));
         }
@@ -301,15 +301,15 @@ export function AcquisitionCoach({
   const signals = useMemo(() => computeSignals(entries), [entries]);
 
   const nudge = useMemo(() => {
-    // Vérifier cap 7j
     if (dismissed.size >= MAX_NUDGES_7D) return null;
-    // Vérifier cooldown
     try {
       const last = localStorage.getItem(COACH_LAST_SHOWN_KEY);
       if (last && Date.now() - parseInt(last, 10) < COOLDOWN_MS) return null;
     } catch {}
-    return pickNudge(signals, totalDirectClients, loyalClientsCount, dismissed);
-  }, [signals, totalDirectClients, loyalClientsCount, dismissed]);
+    // Fusion : dismissed + nudges supprimés (dédoublonnage avec AcquisitionAlerts)
+    const blocked = new Set([...dismissed, ...suppressedNudgeIds]);
+    return pickNudge(signals, totalDirectClients, loyalClientsCount, blocked);
+  }, [signals, totalDirectClients, loyalClientsCount, dismissed, suppressedNudgeIds]);
 
   // Marquer le timestamp d'affichage la première fois qu'un nudge s'affiche
   useEffect(() => {
