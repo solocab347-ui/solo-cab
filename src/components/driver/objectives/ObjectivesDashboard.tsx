@@ -10,6 +10,8 @@ import { InlineObjectivesEditor } from './InlineObjectivesEditor';
 import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
+import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
+import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
   MessageSquare,
