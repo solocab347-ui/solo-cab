@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDriverObjectives } from '@/hooks/useDriverObjectives';
-import { DailyMotivation } from './coaching';
+import { DailyMotivation, AcquisitionCoach } from './coaching';
 import { QuickPlatformEntry } from './QuickPlatformEntry';
 import { InlineProgressCards } from './InlineProgressCards';
 import { InlineObjectivesEditor } from './InlineObjectivesEditor';
