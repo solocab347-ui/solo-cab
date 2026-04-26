@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   TrendingUp, Users, Smartphone, Calendar, Car, MapPin,
-  Edit3, Save, Check, Loader2, Settings2, ChevronDown, ChevronUp
+  Edit3, Save, Check, Loader2, Settings2, ChevronDown, ChevronUp,
+  Hand, QrCode, UserPlus, Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
