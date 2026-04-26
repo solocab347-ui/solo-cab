@@ -167,6 +167,30 @@ export function ProactiveCoachPopup({
   );
 }
 
+// ─── Célébrations milestones isolées (déclenchées hors rotation) ────────────
+// Utilisées par useProactiveCoach quand un événement réel survient.
+export const FIRST_SCAN_CELEBRATION: ProactiveMessage = {
+  id: "first-qr-scan",
+  type: "celebration",
+  title: "🎯 Premier scan QR !",
+  message:
+    "Quelqu'un vient de scanner votre QR code SoloCab. C'est le tout début de votre clientèle privée — chaque scan est un client potentiel qui revient sans intermédiaire. Continuez à proposer votre QR à chaque course !",
+  emoji: "📱",
+  priority: "high",
+  dismissable: true,
+};
+
+export const FIRST_SOLOCAB_COURSE_COMPLETED: ProactiveMessage = {
+  id: "first-solocab-course-completed",
+  type: "celebration",
+  title: "🚗 Première course SoloCab terminée !",
+  message:
+    "Bravo, vous venez de terminer votre toute première course via SoloCab. Voici ce qui change : vous gardez 100 % de votre tarif (juste 0,50 € de frais fixe), vous fixez vos prix, et ce client peut devenir un client direct grâce à votre QR. SoloCab, c'est votre indépendance qui démarre ici.",
+  emoji: "🏆",
+  priority: "high",
+  dismissable: true,
+};
+
 // ─── Tips philosophie SoloCab — version 2026 ────────────────────────────────
 //
 // Réécriture complète après audit :
