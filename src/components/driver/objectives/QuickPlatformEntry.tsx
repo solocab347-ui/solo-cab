@@ -36,7 +36,10 @@ import {
   Crown,
   Star,
   Users,
-  CalendarDays
+  CalendarDays,
+  Hand,
+  QrCode,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +61,9 @@ interface EntryState {
   coursesCount: number;
   hoursWorked: number;
   kmDriven: number;
+  cardsProposedCount: number;
+  qrScansCount: number;
+  directSignupsCount: number;
   isSaved: boolean;
   isModified: boolean;
 }
@@ -225,7 +231,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
       // Build entries for each platform
       const existingEntries = entriesRes.data || [];
       const entryStates: EntryState[] = platformsList.map(p => {
-        const existing = existingEntries.find(e => e.platform_id === p.id && !e.is_solocab);
+        const existing = existingEntries.find(e => e.platform_id === p.id && !e.is_solocab) as any;
         return {
           platformId: p.id,
           platformName: p.platform_name,
@@ -233,6 +239,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           coursesCount: existing?.courses_count || 0,
           hoursWorked: existing?.hours_worked || 0,
           kmDriven: existing?.km_driven || 0,
+          cardsProposedCount: existing?.cards_proposed_count || 0,
+          qrScansCount: existing?.qr_scans_count || 0,
+          directSignupsCount: existing?.direct_signups_count || 0,
           isSaved: !!existing,
           isModified: false,
         };
@@ -315,6 +324,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           hours_worked: entry.hoursWorked,
           km_driven: entry.kmDriven,
           new_clients_count: 0,
+          cards_proposed_count: entry.cardsProposedCount,
+          qr_scans_count: entry.qrScansCount,
+          direct_signups_count: entry.directSignupsCount,
         };
 
         const { data: existing } = await supabase
@@ -373,6 +385,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           coursesCount: 0,
           hoursWorked: 0,
           kmDriven: 0,
+          cardsProposedCount: 0,
+          qrScansCount: 0,
+          directSignupsCount: 0,
           isSaved: false,
           isModified: false,
         }]);
@@ -616,6 +631,57 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
                           placeholder="0"
                           className="h-8 text-sm"
                         />
+                      </div>
+                    </div>
+
+                    {/* Bloc Acquisition — le vrai levier d'indépendance */}
+                    <div className="mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Crown className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">
+                          Acquisition (ton vrai levier)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <Hand className="w-3 h-3 text-amber-500" /> Cartes
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.cardsProposedCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'cardsProposedCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nombre de fois où tu as proposé ta carte SoloCab"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <QrCode className="w-3 h-3 text-purple-500" /> Scans
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.qrScansCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'qrScansCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nombre de scans QR confirmés"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] flex items-center gap-1">
+                            <UserPlus className="w-3 h-3 text-emerald-500" /> Inscrits
+                          </Label>
+                          <Input
+                            type="number"
+                            value={entry.directSignupsCount || ''}
+                            onChange={(e) => updateEntry(entry.platformId, 'directSignupsCount', parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                            title="Nouveaux clients directs créés depuis cette plateforme"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

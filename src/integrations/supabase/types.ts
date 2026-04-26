@@ -6719,8 +6719,10 @@ export type Database = {
       }
       driver_daily_entries: {
         Row: {
+          cards_proposed_count: number
           courses_count: number | null
           created_at: string
+          direct_signups_count: number
           driver_id: string
           entry_date: string
           hours_worked: number | null
@@ -6730,12 +6732,15 @@ export type Database = {
           new_clients_count: number | null
           notes: string | null
           platform_id: string | null
+          qr_scans_count: number
           revenue: number | null
           updated_at: string
         }
         Insert: {
+          cards_proposed_count?: number
           courses_count?: number | null
           created_at?: string
+          direct_signups_count?: number
           driver_id: string
           entry_date?: string
           hours_worked?: number | null
@@ -6745,12 +6750,15 @@ export type Database = {
           new_clients_count?: number | null
           notes?: string | null
           platform_id?: string | null
+          qr_scans_count?: number
           revenue?: number | null
           updated_at?: string
         }
         Update: {
+          cards_proposed_count?: number
           courses_count?: number | null
           created_at?: string
+          direct_signups_count?: number
           driver_id?: string
           entry_date?: string
           hours_worked?: number | null
@@ -6760,6 +6768,7 @@ export type Database = {
           new_clients_count?: number | null
           notes?: string | null
           platform_id?: string | null
+          qr_scans_count?: number
           revenue?: number | null
           updated_at?: string
         }
@@ -7442,43 +7451,55 @@ export type Database = {
       }
       driver_objectives: {
         Row: {
+          cards_proposed_target: number
           courses_target: number | null
           created_at: string
+          direct_clients_target: number
           driver_id: string
           hours_target: number | null
           id: string
+          independence_percentage_target: number
           is_active: boolean | null
           km_target: number | null
           new_clients_target: number | null
           period_type: string
+          qr_scans_target: number
           rating_target: number | null
           revenue_target: number | null
           updated_at: string
         }
         Insert: {
+          cards_proposed_target?: number
           courses_target?: number | null
           created_at?: string
+          direct_clients_target?: number
           driver_id: string
           hours_target?: number | null
           id?: string
+          independence_percentage_target?: number
           is_active?: boolean | null
           km_target?: number | null
           new_clients_target?: number | null
           period_type: string
+          qr_scans_target?: number
           rating_target?: number | null
           revenue_target?: number | null
           updated_at?: string
         }
         Update: {
+          cards_proposed_target?: number
           courses_target?: number | null
           created_at?: string
+          direct_clients_target?: number
           driver_id?: string
           hours_target?: number | null
           id?: string
+          independence_percentage_target?: number
           is_active?: boolean | null
           km_target?: number | null
           new_clients_target?: number | null
           period_type?: string
+          qr_scans_target?: number
           rating_target?: number | null
           revenue_target?: number | null
           updated_at?: string
