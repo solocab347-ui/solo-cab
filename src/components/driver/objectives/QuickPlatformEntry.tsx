@@ -382,6 +382,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           coursesCount: 0,
           hoursWorked: 0,
           kmDriven: 0,
+          cardsProposedCount: 0,
+          qrScansCount: 0,
+          directSignupsCount: 0,
           isSaved: false,
           isModified: false,
         }]);
