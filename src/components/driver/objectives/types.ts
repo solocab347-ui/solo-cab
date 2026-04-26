@@ -40,6 +40,10 @@ export interface DriverDailyEntry {
   new_clients_count: number;
   hours_worked: number;
   km_driven: number;
+  // Tracking d'acquisition
+  cards_proposed_count: number;
+  qr_scans_count: number;
+  direct_signups_count: number;
   notes: string | null;
   created_at: string;
   updated_at: string;
