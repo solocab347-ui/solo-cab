@@ -8,7 +8,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Hand, QrCode, UserPlus, Calendar, Filter, ChevronRight, History as HistoryIcon } from 'lucide-react';
+import { Hand, QrCode, UserPlus, Calendar, Filter, ChevronRight, History as HistoryIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
