@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { ChevronDown, ChevronUp, FlaskConical, RotateCcw, CheckCircle2, XCircle, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, FlaskConical, RotateCcw, CheckCircle2, XCircle, EyeOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   computeAlertsFromSignals,
@@ -36,6 +36,36 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
   const [signups7, setSignups7] = useState(realSignals.signups7);
   const [totalDirectClients, setTotalDirectClients] = useState(realSignals.totalDirectClients);
   const [loyalClientsCount, setLoyalClientsCount] = useState(realSignals.loyalClientsCount);
+  const [adjustments, setAdjustments] = useState<string[]>([]);
+
+  // Clamping automatique : maintient la cohérence de l'entonnoir
+  // signups ≤ scans ≤ proposed ≤ courses ; loyal ≤ totalDirect
+  useEffect(() => {
+    const fixes: string[] = [];
+    if (proposed7 > courses7) {
+      fixes.push(`Cartes proposées ramenées à ${courses7} (≤ courses)`);
+      setProposed7(courses7);
+    }
+    if (scans7 > proposed7) {
+      const newVal = Math.min(scans7, proposed7);
+      if (newVal !== scans7) {
+        fixes.push(`Scans ramenés à ${newVal} (≤ cartes proposées)`);
+        setScans7(newVal);
+      }
+    }
+    if (signups7 > scans7) {
+      const newVal = Math.min(signups7, scans7);
+      if (newVal !== signups7) {
+        fixes.push(`Inscriptions ramenées à ${newVal} (≤ scans)`);
+        setSignups7(newVal);
+      }
+    }
+    if (loyalClientsCount > totalDirectClients) {
+      fixes.push(`Clients fidèles ramenés à ${totalDirectClients} (≤ total directs)`);
+      setLoyalClientsCount(totalDirectClients);
+    }
+    setAdjustments(fixes);
+  }, [courses7, proposed7, scans7, signups7, totalDirectClients, loyalClientsCount]);
 
   const reset = () => {
     setCourses7(realSignals.courses7);
@@ -44,6 +74,7 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
     setSignups7(realSignals.signups7);
     setTotalDirectClients(realSignals.totalDirectClients);
     setLoyalClientsCount(realSignals.loyalClientsCount);
+    setAdjustments([]);
   };
 
   const simulatedSignals = useMemo<AlertSignals>(() => ({
@@ -100,14 +131,58 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
-            {/* Sliders */}
+            {/* Sliders — bornes dynamiques pour respecter l'entonnoir */}
             <div className={cn('space-y-4 transition-opacity', !enabled && 'opacity-50 pointer-events-none')}>
               <SliderRow label="Courses (7j)" value={courses7} onChange={setCourses7} max={100} />
-              <SliderRow label="Cartes proposées (7j)" value={proposed7} onChange={setProposed7} max={100} />
-              <SliderRow label="Scans QR (7j)" value={scans7} onChange={setScans7} max={50} />
-              <SliderRow label="Inscriptions (7j)" value={signups7} onChange={setSignups7} max={20} />
+              <SliderRow
+                label="Cartes proposées (7j)"
+                value={proposed7}
+                onChange={setProposed7}
+                max={Math.max(1, courses7)}
+                hint={`max ${courses7} (= courses)`}
+              />
+              <SliderRow
+                label="Scans QR (7j)"
+                value={scans7}
+                onChange={setScans7}
+                max={Math.max(1, proposed7)}
+                hint={`max ${proposed7} (= cartes proposées)`}
+              />
+              <SliderRow
+                label="Inscriptions (7j)"
+                value={signups7}
+                onChange={setSignups7}
+                max={Math.max(1, scans7)}
+                hint={`max ${scans7} (= scans)`}
+              />
               <SliderRow label="Total clients directs" value={totalDirectClients} onChange={setTotalDirectClients} max={200} />
-              <SliderRow label="Clients fidèles (≥2 courses)" value={loyalClientsCount} onChange={setLoyalClientsCount} max={Math.max(1, totalDirectClients)} />
+              <SliderRow
+                label="Clients fidèles (≥2 courses)"
+                value={loyalClientsCount}
+                onChange={setLoyalClientsCount}
+                max={Math.max(1, totalDirectClients)}
+                hint={`max ${totalDirectClients} (= total directs)`}
+              />
+
+              {enabled && adjustments.length > 0 && (
+                <div className="p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                  <div className="flex items-start gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-tight">
+                        Valeurs ajustées automatiquement pour respecter l'entonnoir
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {adjustments.map((msg, i) => (
+                          <li key={i} className="text-[11px] text-amber-700/90 dark:text-amber-400/90 leading-tight">
+                            • {msg}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Button
                 size="sm"
@@ -201,25 +276,29 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
 }
 
 function SliderRow({
-  label, value, onChange, max,
+  label, value, onChange, max, hint,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   max: number;
+  hint?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label className="text-xs">{label}</Label>
-        <span className="text-xs font-semibold tabular-nums">{value}</span>
+        <div className="flex items-center gap-1.5">
+          {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+          <span className="text-xs font-semibold tabular-nums">{value}</span>
+        </div>
       </div>
       <Slider
-        value={[value]}
+        value={[Math.min(value, max)]}
         min={0}
-        max={Math.max(max, value)}
+        max={Math.max(1, max)}
         step={1}
-        onValueChange={([v]) => onChange(v)}
+        onValueChange={([v]) => onChange(Math.min(v, max))}
       />
     </div>
   );
