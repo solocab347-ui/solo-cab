@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDriverObjectives } from '@/hooks/useDriverObjectives';
-import { DailyMotivation, AcquisitionCoach } from './coaching';
+import { DailyMotivation, AcquisitionCoach, getSuppressedNudgeIdsFromAlerts } from './coaching';
 import { QuickPlatformEntry } from './QuickPlatformEntry';
 import { InlineProgressCards } from './InlineProgressCards';
 import { InlineObjectivesEditor } from './InlineObjectivesEditor';
@@ -11,6 +11,9 @@ import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
 import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
+import { AcquisitionAlerts } from './AcquisitionAlerts';
+import { AcquisitionHistory } from './AcquisitionHistory';
+import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
 import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
