@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDriverObjectives } from '@/hooks/useDriverObjectives';
-import { DailyMotivation, AcquisitionCoach } from './coaching';
+import { DailyMotivation, AcquisitionCoach, getSuppressedNudgeIdsFromAlerts } from './coaching';
 import { QuickPlatformEntry } from './QuickPlatformEntry';
 import { InlineProgressCards } from './InlineProgressCards';
 import { InlineObjectivesEditor } from './InlineObjectivesEditor';
@@ -11,6 +11,9 @@ import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
 import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
+import { AcquisitionAlerts } from './AcquisitionAlerts';
+import { AcquisitionHistory } from './AcquisitionHistory';
+import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
 import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
@@ -31,8 +34,12 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
   const acquisition = useDriverAcquisitionMetrics(driverId);
   const [showCoaching, setShowCoaching] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAcqHistory, setShowAcqHistory] = useState(false);
+  const [activeAlertIds, setActiveAlertIds] = useState<string[]>([]);
+  const [editTargetsOpen, setEditTargetsOpen] = useState(false);
   
   const unreadMessages = hook.coachingMessages.filter(m => !m.is_read).length;
+  const suppressedNudgeIds = getSuppressedNudgeIdsFromAlerts(activeAlertIds);
 
   if (hook.loading) {
     return (
@@ -76,24 +83,42 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         }
       />
 
+      {/* 2quater. Alertes seuils — actionnables, par-dessus le coach */}
+      <AcquisitionAlerts
+        entries={hook.dailyEntries}
+        objectives={hook.objectives}
+        totalDirectClients={hook.driverStats.totalClients}
+        loyalClientsCount={acquisition.loyalClientsCount}
+        onEditTargets={() => setEditTargetsOpen(true)}
+        onAlertsChange={setActiveAlertIds}
+      />
+
       {/* 2ter. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
       <AcquisitionCoach
         entries={hook.dailyEntries}
         totalDirectClients={hook.driverStats.totalClients}
         loyalClientsCount={acquisition.loyalClientsCount}
         driverName={driverName}
+        suppressedNudgeIds={suppressedNudgeIds}
       />
 
       {/* 3. Quick Daily Input — saisir l'activité (incl. tracking acquisition) */}
       <QuickPlatformEntry
         driverId={driverId}
-        onEntrySaved={() => hook.fetchAll?.()}
+        onEntrySaved={() => { hook.fetchAll?.(); acquisition.refetch(); }}
       />
 
       {/* 4. Progress Overview — cibles CA en conséquence */}
       <InlineProgressCards progress={hook.progress} driverId={driverId} />
 
-      {/* 5. Inline Objectives Editor — edit in place */}
+      {/* 5a. Quick edit cibles d'acquisition — popover dédié */}
+      <AcquisitionTargetsQuickEdit
+        driverId={driverId}
+        defaultOpen={editTargetsOpen}
+        onUpdate={() => { hook.fetchAll?.(); acquisition.refetch(); }}
+      />
+
+      {/* 5b. Inline Objectives Editor — édition complète des cibles CA */}
       <InlineObjectivesEditor
         driverId={driverId}
         onUpdate={() => hook.fetchAll?.()}
@@ -119,9 +144,22 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         />
       </CollapsibleSection>
 
-      {/* 6. Collapsible History */}
+      {/* 6a. Collapsible Acquisition History (filtrable) */}
       <CollapsibleSection
-        title="Historique"
+        title="Historique d'acquisition"
+        icon={<History className="w-4 h-4" />}
+        open={showAcqHistory}
+        onToggle={() => setShowAcqHistory(v => !v)}
+      >
+        <AcquisitionHistory
+          entries={hook.dailyEntries}
+          platforms={hook.platforms}
+        />
+      </CollapsibleSection>
+
+      {/* 6b. Collapsible General History */}
+      <CollapsibleSection
+        title="Historique global"
         icon={<History className="w-4 h-4" />}
         open={showHistory}
         onToggle={() => setShowHistory(v => !v)}
