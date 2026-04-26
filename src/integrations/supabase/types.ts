@@ -7584,6 +7584,48 @@ export type Database = {
           },
         ]
       }
+      driver_objectives_snapshots: {
+        Row: {
+          cards_proposed_target: number
+          change_reason: string | null
+          created_at: string
+          direct_clients_target: number
+          driver_id: string
+          id: string
+          independence_percentage_target: number
+          qr_scans_target: number
+          revenue_target: number
+          snapshot_month: number
+          snapshot_year: number
+        }
+        Insert: {
+          cards_proposed_target?: number
+          change_reason?: string | null
+          created_at?: string
+          direct_clients_target?: number
+          driver_id: string
+          id?: string
+          independence_percentage_target?: number
+          qr_scans_target?: number
+          revenue_target?: number
+          snapshot_month: number
+          snapshot_year: number
+        }
+        Update: {
+          cards_proposed_target?: number
+          change_reason?: string | null
+          created_at?: string
+          direct_clients_target?: number
+          driver_id?: string
+          id?: string
+          independence_percentage_target?: number
+          qr_scans_target?: number
+          revenue_target?: number
+          snapshot_month?: number
+          snapshot_year?: number
+        }
+        Relationships: []
+      }
       driver_partnerships: {
         Row: {
           accepted_at: string | null
@@ -25027,6 +25069,10 @@ export type Database = {
         Returns: Json
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_driver_loyal_clients_count: {
+        Args: { p_driver_id: string }
+        Returns: number
+      }
       get_driver_quote_request_ids: {
         Args: { _driver_id: string }
         Returns: string[]
