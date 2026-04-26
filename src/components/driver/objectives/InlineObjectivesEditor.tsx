@@ -61,6 +61,10 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
   const [platformPct, setPlatformPct] = useState(80);
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
   const [workHours, setWorkHours] = useState(8);
+  // Acquisition targets (mensuels)
+  const [targetCardsProposed, setTargetCardsProposed] = useState(60);
+  const [targetQrScans, setTargetQrScans] = useState(30);
+  const [targetIndependencePct, setTargetIndependencePct] = useState(20);
   const [objectivesData, setObjectivesData] = useState<ObjectivesData | null>(null);
 
   useEffect(() => {
