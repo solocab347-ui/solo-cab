@@ -206,6 +206,19 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
             </Button>
           </div>
           
+          {/* Bloc Acquisition (priorité haute) */}
+          <div className="mb-2 -mx-1 px-2 py-1.5 rounded-lg bg-primary/5 border border-primary/15">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Crown className="w-3 h-3 text-primary" />
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">Acquisition / mois</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <ObjectiveSummaryItem icon={<Hand className="w-3.5 h-3.5 text-primary" />} label="Cartes" value={`${targetCardsProposed}`} />
+              <ObjectiveSummaryItem icon={<QrCode className="w-3.5 h-3.5 text-primary" />} label="Scans" value={`${targetQrScans}`} />
+              <ObjectiveSummaryItem icon={<UserPlus className="w-3.5 h-3.5 text-primary" />} label="Indép." value={`${targetIndependencePct}%`} />
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <ObjectiveSummaryItem icon={<TrendingUp className="w-3.5 h-3.5 text-green-500" />} label="CA/mois" value={`${targetRevenue.toLocaleString()}€`} />
             <ObjectiveSummaryItem icon={<Car className="w-3.5 h-3.5 text-blue-500" />} label="Courses" value={`${targetCourses}`} />
