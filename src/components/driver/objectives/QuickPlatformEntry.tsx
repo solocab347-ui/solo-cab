@@ -36,7 +36,10 @@ import {
   Crown,
   Star,
   Users,
-  CalendarDays
+  CalendarDays,
+  Hand,
+  QrCode,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
