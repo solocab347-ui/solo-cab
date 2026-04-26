@@ -221,12 +221,12 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     size="sm"
-                    onClick={handleSave}
+                    onClick={handleSaveClick}
                     disabled={!dirty || saving}
                     className="h-10 flex-1"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}
-                    Enregistrer
+                    Enregistrer…
                   </Button>
                   {dirty && (
                     <Button
@@ -240,6 +240,31 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
                     </Button>
                   )}
                 </div>
+
+                {/* Bandeau rollback après une sauvegarde */}
+                {previousSaved && !dirty && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 leading-tight">
+                        Cibles modifiées avec succès
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                        Tu peux revenir aux valeurs précédentes en un clic.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleRollback}
+                        disabled={saving}
+                        className="h-8 mt-1.5 text-xs"
+                      >
+                        {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+                        Annuler la modification
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
