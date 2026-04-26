@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ProactiveMessage, SOLOCAB_EDUCATION_TIPS, generateContextualMessage } from '../coaching/ProactiveCoachPopup';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  ProactiveMessage,
+  SOLOCAB_EDUCATION_TIPS,
+  generateContextualMessage,
+  FIRST_SCAN_CELEBRATION,
+  FIRST_SOLOCAB_COURSE_COMPLETED,
+} from '../coaching/ProactiveCoachPopup';
 
 const SHOWN_TIPS_KEY = 'solocab_shown_coach_tips';
 const LAST_TIP_TIME_KEY = 'solocab_last_tip_time';
