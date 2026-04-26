@@ -324,6 +324,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           hours_worked: entry.hoursWorked,
           km_driven: entry.kmDriven,
           new_clients_count: 0,
+          cards_proposed_count: entry.cardsProposedCount,
+          qr_scans_count: entry.qrScansCount,
+          direct_signups_count: entry.directSignupsCount,
         };
 
         const { data: existing } = await supabase
