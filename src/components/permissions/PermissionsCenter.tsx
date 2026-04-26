@@ -198,8 +198,20 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
           </div>
         </div>
         {perm.status !== 'granted' && perm.status !== 'unsupported' && (
-          <Button size="sm" variant={perm.required ? 'default' : 'outline'} onClick={handleClick} disabled={busy} className="shrink-0">
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Activer'}
+          <Button
+            size="sm"
+            variant={perm.required ? 'default' : 'outline'}
+            onClick={handleClick}
+            disabled={busy}
+            className="shrink-0"
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : perm.status === 'denied' ? (
+              'Réglages'
+            ) : (
+              'Activer'
+            )}
           </Button>
         )}
       </CardContent>
