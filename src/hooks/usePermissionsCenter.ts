@@ -340,11 +340,10 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
                 try { await SoloCabPermissions.openAppDetailsSettings(); }
                 catch { await openAndroidSettingsFallback('notifications', log); }
               } else if (platform === 'ios') {
-                // iOS : seul le bouton "Réglages" système permet de réactiver
+                // iOS : "app-settings:" ouvre directement la page de l'app dans Réglages
                 try {
-                  const { App } = await import('@capacitor/app');
-                  // app-settings: ouvre directement la page de l'app dans Réglages iOS
-                  await App.openUrl({ url: 'app-settings:' });
+                  window.location.href = 'app-settings:';
+                  log({ action: 'notifications', method: 'intent_fallback', status: 'success', message: 'Ouverture des Réglages iOS' });
                 } catch (e) {
                   log({ action: 'notifications', method: 'intent_fallback', status: 'error', message: 'Impossible d\'ouvrir les Réglages iOS', details: String(e) });
                 }
