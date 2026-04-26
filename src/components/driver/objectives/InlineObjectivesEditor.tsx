@@ -133,13 +133,16 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
         selected_work_days: selectedDays,
         daily_targets: dailyTargetsMap,
         estimated_hourly_target: hourlyTarget,
+        target_cards_proposed: targetCardsProposed,
+        target_qr_scans: targetQrScans,
+        target_independence_pct: targetIndependencePct,
       };
 
       const mult = {
-        daily: { rev: 1/22, cli: 1/22, hrs: 1, crs: 1/22, km: 1/22 },
-        weekly: { rev: 1/4, cli: 1/4, hrs: selectedDays.length, crs: 1/4, km: 1/4 },
-        monthly: { rev: 1, cli: 1, hrs: selectedDays.length * 4, crs: 1, km: 1 },
-        yearly: { rev: 12, cli: 12, hrs: selectedDays.length * 4 * 12, crs: 12, km: 12 },
+        daily: { rev: 1/22, cli: 1/22, hrs: 1, crs: 1/22, km: 1/22, cards: 1/22, scans: 1/22 },
+        weekly: { rev: 1/4, cli: 1/4, hrs: selectedDays.length, crs: 1/4, km: 1/4, cards: 1/4, scans: 1/4 },
+        monthly: { rev: 1, cli: 1, hrs: selectedDays.length * 4, crs: 1, km: 1, cards: 1, scans: 1 },
+        yearly: { rev: 12, cli: 12, hrs: selectedDays.length * 4 * 12, crs: 12, km: 12, cards: 12, scans: 12 },
       };
 
       const objRows = (['daily', 'weekly', 'monthly', 'yearly'] as const).map(p => ({
@@ -150,6 +153,10 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
         hours_target: Math.round(workHours * mult[p].hrs),
         courses_target: Math.round(targetCourses * mult[p].crs),
         km_target: Math.round(targetKm * mult[p].km),
+        cards_proposed_target: Math.round(targetCardsProposed * mult[p].cards),
+        qr_scans_target: Math.round(targetQrScans * mult[p].scans),
+        direct_clients_target: Math.round(targetClients * mult[p].cli),
+        independence_percentage_target: targetIndependencePct,
         is_active: true,
       }));
 
