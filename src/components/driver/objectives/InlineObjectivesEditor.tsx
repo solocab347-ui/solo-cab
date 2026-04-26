@@ -87,6 +87,9 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
           if (d.platform_percentage !== undefined) setPlatformPct(d.platform_percentage);
           if (d.selected_work_days) setSelectedDays(d.selected_work_days);
           if (d.work_hours_per_day) setWorkHours(d.work_hours_per_day);
+          if (d.target_cards_proposed !== undefined) setTargetCardsProposed(d.target_cards_proposed);
+          if (d.target_qr_scans !== undefined) setTargetQrScans(d.target_qr_scans);
+          if (d.target_independence_pct !== undefined) setTargetIndependencePct(d.target_independence_pct);
         }
       } catch (e) {
         console.error('Error fetching objectives:', e);
