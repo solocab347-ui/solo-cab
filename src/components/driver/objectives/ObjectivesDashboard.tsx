@@ -34,8 +34,12 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
   const acquisition = useDriverAcquisitionMetrics(driverId);
   const [showCoaching, setShowCoaching] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAcqHistory, setShowAcqHistory] = useState(false);
+  const [activeAlertIds, setActiveAlertIds] = useState<string[]>([]);
+  const [editTargetsOpen, setEditTargetsOpen] = useState(false);
   
   const unreadMessages = hook.coachingMessages.filter(m => !m.is_read).length;
+  const suppressedNudgeIds = getSuppressedNudgeIdsFromAlerts(activeAlertIds);
 
   if (hook.loading) {
     return (
