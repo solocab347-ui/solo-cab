@@ -12,8 +12,10 @@ import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
 import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
 import { AcquisitionAlerts } from './AcquisitionAlerts';
+import { AcquisitionAlertsTester } from './AcquisitionAlertsTester';
 import { AcquisitionHistory } from './AcquisitionHistory';
 import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
+import { computeAlertSignals } from './acquisitionAlertsLogic';
 import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
