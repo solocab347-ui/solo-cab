@@ -12,8 +12,10 @@ import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
 import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
 import { AcquisitionAlerts } from './AcquisitionAlerts';
+import { AcquisitionAlertsTester } from './AcquisitionAlertsTester';
 import { AcquisitionHistory } from './AcquisitionHistory';
 import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
+import { computeAlertSignals } from './acquisitionAlertsLogic';
 import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
@@ -169,6 +171,16 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
           platforms={hook.platforms}
         />
       </CollapsibleSection>
+
+      {/* 7. Mode test alertes — simulation sans toucher à la base */}
+      <AcquisitionAlertsTester
+        realSignals={computeAlertSignals({
+          entries: hook.dailyEntries,
+          objectives: hook.objectives,
+          totalDirectClients: hook.driverStats.totalClients,
+          loyalClientsCount: acquisition.loyalClientsCount,
+        })}
+      />
     </div>
   );
 }

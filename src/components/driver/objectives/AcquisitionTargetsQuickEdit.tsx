@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Hand, QrCode, UserPlus, Crown, Loader2, Save, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Hand, QrCode, UserPlus, Crown, Loader2, Save, Settings2,
+  ChevronDown, ChevronUp, ArrowRight, RotateCcw, AlertTriangle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -41,6 +48,8 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
   const [saving, setSaving] = useState(false);
   const [targets, setTargets] = useState<Targets>(DEFAULTS);
   const [initial, setInitial] = useState<Targets>(DEFAULTS);
+  const [previousSaved, setPreviousSaved] = useState<Targets | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,17 +82,23 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
 
   const dirty = JSON.stringify(targets) !== JSON.stringify(initial);
 
-  const handleSave = async () => {
-    if (saving || !dirty) return;
+  // Diff pour la confirmation
+  const diff = useMemo(() => {
+    return (Object.keys(targets) as (keyof Targets)[])
+      .map(k => ({ key: k, before: initial[k], after: targets[k] }))
+      .filter(d => d.before !== d.after);
+  }, [targets, initial]);
+
+  const performSave = async (newValues: Targets, isRollback = false) => {
     setSaving(true);
     try {
       const { error } = await supabase
         .from('driver_objectives')
         .update({
-          cards_proposed_target: targets.cards_proposed_target,
-          qr_scans_target: targets.qr_scans_target,
-          direct_clients_target: targets.direct_clients_target,
-          independence_percentage_target: targets.independence_percentage_target,
+          cards_proposed_target: newValues.cards_proposed_target,
+          qr_scans_target: newValues.qr_scans_target,
+          direct_clients_target: newValues.direct_clients_target,
+          independence_percentage_target: newValues.independence_percentage_target,
           updated_at: new Date().toISOString(),
         })
         .eq('driver_id', driverId)
@@ -91,10 +106,20 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
 
       if (error) throw error;
 
-      setInitial(targets);
-      toast.success('Cibles d\'acquisition mises à jour', {
-        description: 'Un snapshot mensuel a été archivé automatiquement.',
-      });
+      if (isRollback) {
+        setPreviousSaved(null);
+        setTargets(newValues);
+        setInitial(newValues);
+        toast.success('Cibles restaurées', {
+          description: 'Les valeurs précédentes ont été remises en place.',
+        });
+      } else {
+        setPreviousSaved(initial); // mémorise pour le rollback
+        setInitial(newValues);
+        toast.success('Cibles d\'acquisition mises à jour', {
+          description: 'Snapshot archivé · annulation possible ci-dessous.',
+        });
+      }
       onUpdate?.();
     } catch (e: any) {
       console.error('[acq-quick-edit] save error', e);
@@ -102,6 +127,21 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveClick = () => {
+    if (saving || !dirty) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setConfirmOpen(false);
+    await performSave(targets, false);
+  };
+
+  const handleRollback = async () => {
+    if (!previousSaved || saving) return;
+    await performSave(previousSaved, true);
   };
 
   return (
@@ -181,12 +221,12 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     size="sm"
-                    onClick={handleSave}
+                    onClick={handleSaveClick}
                     disabled={!dirty || saving}
                     className="h-10 flex-1"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}
-                    Enregistrer
+                    Enregistrer…
                   </Button>
                   {dirty && (
                     <Button
@@ -200,14 +240,82 @@ export function AcquisitionTargetsQuickEdit({ driverId, onUpdate, defaultOpen = 
                     </Button>
                   )}
                 </div>
+
+                {/* Bandeau rollback après une sauvegarde */}
+                {previousSaved && !dirty && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 leading-tight">
+                        Cibles modifiées avec succès
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                        Tu peux revenir aux valeurs précédentes en un clic.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleRollback}
+                        disabled={saving}
+                        className="h-8 mt-1.5 text-xs"
+                      >
+                        {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+                        Annuler la modification
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
         )}
       </CardContent>
+
+      {/* Dialog de confirmation avant sauvegarde */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la modification des cibles ?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Cette modification sera enregistrée et un snapshot mensuel sera archivé automatiquement.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
+            {diff.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Aucun changement détecté.</p>
+            ) : diff.map(d => (
+              <div key={d.key} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground truncate">{LABEL_MAP[d.key]}</span>
+                <span className="flex items-center gap-1.5 font-mono tabular-nums shrink-0">
+                  <span className="text-muted-foreground line-through">{d.before}{d.key === 'independence_percentage_target' ? '%' : ''}</span>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                  <span className="font-semibold">{d.after}{d.key === 'independence_percentage_target' ? '%' : ''}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Garder les anciennes cibles</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSave}>
+              Confirmer & enregistrer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
+
+const LABEL_MAP: Record<keyof Targets, string> = {
+  cards_proposed_target: 'Cartes proposées / mois',
+  qr_scans_target: 'QR scannés / mois',
+  direct_clients_target: 'Clients directs / mois',
+  independence_percentage_target: 'Indépendance visée',
+};
 
 function NumberRow({
   icon, label, unit, value, onChange, min = 0, step = 1,

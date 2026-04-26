@@ -8,7 +8,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Hand, QrCode, UserPlus, Calendar, Filter, ChevronRight, History as HistoryIcon } from 'lucide-react';
+import { Hand, QrCode, UserPlus, Calendar, Filter, ChevronRight, History as HistoryIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -104,15 +104,33 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
   }, [entries, period, platformId, actionType, platformMap]);
 
   const totals = useMemo(() => {
-    return filtered.reduce(
+    const t = filtered.reduce(
       (acc, e) => ({
         cards: acc.cards + e.cards,
         scans: acc.scans + e.scans,
         signups: acc.signups + e.signups,
+        courses: acc.courses + (Number(e.raw.courses_count) || 0),
       }),
-      { cards: 0, scans: 0, signups: 0 },
+      { cards: 0, scans: 0, signups: 0, courses: 0 },
     );
+    return {
+      ...t,
+      proposalRate: t.courses > 0 ? t.cards / t.courses : null,
+      scanRate: t.cards > 0 ? t.scans / t.cards : null,
+      conversionRate: t.scans > 0 ? t.signups / t.scans : null,
+    };
   }, [filtered]);
+
+  // Warnings données manquantes (au niveau global, sur la sélection courante)
+  const warnings = useMemo(() => {
+    const w: string[] = [];
+    if (filtered.length > 0) {
+      if (totals.courses === 0) w.push("Aucune course enregistrée → impossible de calculer le taux de proposition.");
+      if (totals.cards === 0 && totals.courses > 0) w.push("0 carte proposée → taux de scan non calculable.");
+      if (totals.scans === 0 && totals.cards > 0) w.push("0 scan → taux de conversion non calculable.");
+    }
+    return w;
+  }, [filtered.length, totals]);
 
   return (
     <Card>
@@ -168,6 +186,37 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
           <TotalChip icon={<QrCode className="w-3.5 h-3.5" />} label="Scans" value={totals.scans} color="text-blue-600 dark:text-blue-400" bg="bg-blue-500/10" />
           <TotalChip icon={<UserPlus className="w-3.5 h-3.5" />} label="Inscriptions" value={totals.signups} color="text-green-600 dark:text-green-400" bg="bg-green-500/10" />
         </div>
+
+        {/* Taux globaux avec formules transparentes */}
+        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-muted/30 border border-border">
+          <RateStat
+            label="Proposition"
+            rate={totals.proposalRate}
+            formula={`${totals.cards} / ${totals.courses} courses`}
+          />
+          <RateStat
+            label="Scan rate"
+            rate={totals.scanRate}
+            formula={`${totals.scans} / ${totals.cards} cartes`}
+          />
+          <RateStat
+            label="Conversion"
+            rate={totals.conversionRate}
+            formula={`${totals.signups} / ${totals.scans} scans`}
+          />
+        </div>
+
+        {/* Warnings données manquantes */}
+        {warnings.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1">
+            {warnings.map((w, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span className="leading-tight">{w}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Liste */}
         {filtered.length === 0 ? (
@@ -234,23 +283,36 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
                 {selected.raw.hours_worked > 0 && (
                   <DetailLine label="Heures" value={`${selected.raw.hours_worked}h`} />
                 )}
-                <DetailLine
+              </div>
+
+              {/* Ratios calculés avec formule + warnings */}
+              <div className="space-y-1.5">
+                <h5 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Ratios calculés
+                </h5>
+                <RateRow
                   label="Taux de proposition"
-                  value={selected.raw.courses_count > 0
-                    ? `${Math.round((selected.cards / selected.raw.courses_count) * 100)}%`
-                    : '—'}
+                  numerator={selected.cards}
+                  numeratorLabel="cartes"
+                  denominator={selected.raw.courses_count}
+                  denominatorLabel="courses"
+                  missingMessage="Aucune course enregistrée ce jour."
                 />
-                <DetailLine
+                <RateRow
                   label="Taux de scan"
-                  value={selected.cards > 0
-                    ? `${Math.round((selected.scans / selected.cards) * 100)}%`
-                    : '—'}
+                  numerator={selected.scans}
+                  numeratorLabel="scans"
+                  denominator={selected.cards}
+                  denominatorLabel="cartes"
+                  missingMessage="Aucune carte proposée ce jour."
                 />
-                <DetailLine
+                <RateRow
                   label="Conversion scan → inscription"
-                  value={selected.scans > 0
-                    ? `${Math.round((selected.signups / selected.scans) * 100)}%`
-                    : '—'}
+                  numerator={selected.signups}
+                  numeratorLabel="signups"
+                  denominator={selected.scans}
+                  denominatorLabel="scans"
+                  missingMessage="Aucun scan ce jour."
                 />
               </div>
 
@@ -326,4 +388,51 @@ function safeFormatDate(d: string, fmt = 'dd MMM yyyy') {
   } catch {
     return d;
   }
+}
+
+function RateStat({ label, rate, formula }: { label: string; rate: number | null; formula: string }) {
+  return (
+    <div className="text-center">
+      <div className={cn('text-sm font-bold tabular-nums', rate === null && 'text-muted-foreground')}>
+        {rate === null ? '—' : `${Math.round(rate * 100)}%`}
+      </div>
+      <div className="text-[10px] text-muted-foreground leading-tight">{label}</div>
+      <div className="text-[9px] font-mono text-muted-foreground/70 mt-0.5 truncate" title={formula}>
+        {formula}
+      </div>
+    </div>
+  );
+}
+
+function RateRow({
+  label, numerator, numeratorLabel, denominator, denominatorLabel, missingMessage,
+}: {
+  label: string;
+  numerator: number;
+  numeratorLabel: string;
+  denominator: number;
+  denominatorLabel: string;
+  missingMessage: string;
+}) {
+  const computable = denominator > 0;
+  const pct = computable ? Math.round((numerator / denominator) * 100) : null;
+  return (
+    <div className="rounded-md border border-border/60 p-2 bg-card">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-medium">{label}</span>
+        <span className={cn('text-sm font-bold tabular-nums', !computable && 'text-muted-foreground')}>
+          {pct === null ? '—' : `${pct}%`}
+        </span>
+      </div>
+      <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+        = {numerator} {numeratorLabel} / {denominator} {denominatorLabel}
+      </div>
+      {!computable && (
+        <div className="flex items-start gap-1 mt-1 text-[10px] text-amber-700 dark:text-amber-400">
+          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+          <span className="leading-tight">{missingMessage}</span>
+        </div>
+      )}
+    </div>
+  );
 }
