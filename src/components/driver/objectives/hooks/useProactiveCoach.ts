@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ProactiveMessage, SOLOCAB_EDUCATION_TIPS, generateContextualMessage } from '../coaching/ProactiveCoachPopup';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  ProactiveMessage,
+  SOLOCAB_EDUCATION_TIPS,
+  generateContextualMessage,
+  FIRST_SCAN_CELEBRATION,
+  FIRST_SOLOCAB_COURSE_COMPLETED,
+} from '../coaching/ProactiveCoachPopup';
 
 const SHOWN_TIPS_KEY = 'solocab_shown_coach_tips';
 const LAST_TIP_TIME_KEY = 'solocab_last_tip_time';
@@ -162,6 +169,60 @@ export function useProactiveCoach({
       }
     }
   }, [stats.totalClients, driverName, shownTips, markTipAsShown]);
+
+  // Detect first QR scan & first completed SoloCab course (DB-driven, one-shot)
+  useEffect(() => {
+    if (!enabled || !driverId) return;
+
+    let cancelled = false;
+
+    const checkMilestones = async () => {
+      // ── Premier scan QR ───────────────────────────────────────────────
+      if (!shownTips.has(FIRST_SCAN_CELEBRATION.id)) {
+        try {
+          const { data: scanRows, error: scanErr } = await supabase
+            .from('driver_daily_entries')
+            .select('qr_scans_count')
+            .eq('driver_id', driverId)
+            .gt('qr_scans_count', 0)
+            .limit(1);
+
+          if (!cancelled && !scanErr && scanRows && scanRows.length > 0) {
+            setCurrentMessage(FIRST_SCAN_CELEBRATION);
+            markTipAsShown(FIRST_SCAN_CELEBRATION.id);
+            return; // Don't stack two popups
+          }
+        } catch {
+          // silent
+        }
+      }
+
+      // ── Première course SoloCab terminée ──────────────────────────────
+      if (!shownTips.has(FIRST_SOLOCAB_COURSE_COMPLETED.id)) {
+        try {
+          const { count, error } = await supabase
+            .from('courses')
+            .select('id', { count: 'exact', head: true })
+            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+            .eq('status', 'completed');
+
+          if (!cancelled && !error && (count ?? 0) >= 1) {
+            setCurrentMessage(FIRST_SOLOCAB_COURSE_COMPLETED);
+            markTipAsShown(FIRST_SOLOCAB_COURSE_COMPLETED.id);
+          }
+        } catch {
+          // silent
+        }
+      }
+    };
+
+    // Slight delay so it doesn't race with initial education tip
+    const t = setTimeout(checkMilestones, 4500);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [enabled, driverId, shownTips, markTipAsShown]);
 
   return {
     currentMessage,
