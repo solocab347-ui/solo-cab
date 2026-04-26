@@ -131,14 +131,58 @@ export function AcquisitionAlertsTester({ realSignals }: Props) {
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
-            {/* Sliders */}
+            {/* Sliders — bornes dynamiques pour respecter l'entonnoir */}
             <div className={cn('space-y-4 transition-opacity', !enabled && 'opacity-50 pointer-events-none')}>
               <SliderRow label="Courses (7j)" value={courses7} onChange={setCourses7} max={100} />
-              <SliderRow label="Cartes proposées (7j)" value={proposed7} onChange={setProposed7} max={100} />
-              <SliderRow label="Scans QR (7j)" value={scans7} onChange={setScans7} max={50} />
-              <SliderRow label="Inscriptions (7j)" value={signups7} onChange={setSignups7} max={20} />
+              <SliderRow
+                label="Cartes proposées (7j)"
+                value={proposed7}
+                onChange={setProposed7}
+                max={Math.max(1, courses7)}
+                hint={`max ${courses7} (= courses)`}
+              />
+              <SliderRow
+                label="Scans QR (7j)"
+                value={scans7}
+                onChange={setScans7}
+                max={Math.max(1, proposed7)}
+                hint={`max ${proposed7} (= cartes proposées)`}
+              />
+              <SliderRow
+                label="Inscriptions (7j)"
+                value={signups7}
+                onChange={setSignups7}
+                max={Math.max(1, scans7)}
+                hint={`max ${scans7} (= scans)`}
+              />
               <SliderRow label="Total clients directs" value={totalDirectClients} onChange={setTotalDirectClients} max={200} />
-              <SliderRow label="Clients fidèles (≥2 courses)" value={loyalClientsCount} onChange={setLoyalClientsCount} max={Math.max(1, totalDirectClients)} />
+              <SliderRow
+                label="Clients fidèles (≥2 courses)"
+                value={loyalClientsCount}
+                onChange={setLoyalClientsCount}
+                max={Math.max(1, totalDirectClients)}
+                hint={`max ${totalDirectClients} (= total directs)`}
+              />
+
+              {enabled && adjustments.length > 0 && (
+                <div className="p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                  <div className="flex items-start gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-tight">
+                        Valeurs ajustées automatiquement pour respecter l'entonnoir
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {adjustments.map((msg, i) => (
+                          <li key={i} className="text-[11px] text-amber-700/90 dark:text-amber-400/90 leading-tight">
+                            • {msg}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Button
                 size="sm"
