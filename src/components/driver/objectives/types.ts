@@ -2,12 +2,18 @@ export interface DriverObjective {
   id: string;
   driver_id: string;
   period_type: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  // Cibles "résultat" (CA = conséquence)
   revenue_target: number;
   courses_target: number;
   new_clients_target: number;
   hours_target: number;
   km_target: number;
   rating_target: number;
+  // Cibles "acquisition" (les leviers réels d'indépendance)
+  cards_proposed_target: number;
+  qr_scans_target: number;
+  direct_clients_target: number;
+  independence_percentage_target: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
