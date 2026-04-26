@@ -64,14 +64,23 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         objectives={hook.objectives}
         soloCabStats={hook.soloCabFullStats.week}
         totalDirectClients={hook.driverStats.totalClients}
-        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        loyalClientsCount={acquisition.loyalClientsCount}
       />
 
-      {/* 2bis. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
+      {/* 2bis. Récap mensuel — visible 7 premiers jours d'un nouveau mois */}
+      <MonthlyAcquisitionRecap
+        entries={hook.dailyEntries}
+        snapshots={acquisition.snapshots}
+        onSeeFunnel={() =>
+          document.getElementById('independence-funnel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      />
+
+      {/* 2ter. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
       <AcquisitionCoach
         entries={hook.dailyEntries}
         totalDirectClients={hook.driverStats.totalClients}
-        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        loyalClientsCount={acquisition.loyalClientsCount}
         driverName={driverName}
       />
 
