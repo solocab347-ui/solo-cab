@@ -231,7 +231,7 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
       // Build entries for each platform
       const existingEntries = entriesRes.data || [];
       const entryStates: EntryState[] = platformsList.map(p => {
-        const existing = existingEntries.find(e => e.platform_id === p.id && !e.is_solocab);
+        const existing = existingEntries.find(e => e.platform_id === p.id && !e.is_solocab) as any;
         return {
           platformId: p.id,
           platformName: p.platform_name,
@@ -239,6 +239,9 @@ export function QuickPlatformEntry({ driverId, onEntrySaved }: QuickPlatformEntr
           coursesCount: existing?.courses_count || 0,
           hoursWorked: existing?.hours_worked || 0,
           kmDriven: existing?.km_driven || 0,
+          cardsProposedCount: existing?.cards_proposed_count || 0,
+          qrScansCount: existing?.qr_scans_count || 0,
+          directSignupsCount: existing?.direct_signups_count || 0,
           isSaved: !!existing,
           isModified: false,
         };
