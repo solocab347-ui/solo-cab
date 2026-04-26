@@ -184,7 +184,7 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
       setSaving(false);
       savingRef.current = false;
     }
-  }, [driverId, targetRevenue, targetClients, targetCourses, targetKm, platformPct, solocabPct, workHours, selectedDays, objectivesData, onUpdate]);
+  }, [driverId, targetRevenue, targetClients, targetCourses, targetKm, platformPct, solocabPct, workHours, selectedDays, objectivesData, onUpdate, targetCardsProposed, targetQrScans, targetIndependencePct]);
 
   if (loading) {
     return <Card className="animate-pulse"><CardContent className="p-4"><div className="h-20 bg-muted/30 rounded-lg" /></CardContent></Card>;
