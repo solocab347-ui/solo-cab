@@ -60,6 +60,8 @@ export function IndependenceFunnel({
   soloCabStats,
   totalDirectClients,
   loyalClientsCount,
+  driverId,
+  onTargetsUpdated,
 }: IndependenceFunnelProps) {
   const objective = useMemo(
     () => objectives.find((o) => o.period_type === period) || null,
