@@ -57,6 +57,25 @@ interface AcquisitionCoachProps {
   loyalClientsCount: number;
   driverName?: string;
   onOpenQR?: () => void;
+  /** IDs de nudges à supprimer (ex: déjà couverts par AcquisitionAlerts) */
+  suppressedNudgeIds?: string[];
+}
+
+/** Topics couverts par AcquisitionAlerts → nudges à masquer pour éviter le doublon */
+const ALERT_TOPIC_TO_NUDGE_IDS: Record<string, string[]> = {
+  'thr-cards': ['alert-no-proposal-3d', 'alert-low-proposal-rate'],
+  'thr-scans': ['alert-no-scans-after-proposals'],
+  'thr-scan-rate': ['alert-no-scans-after-proposals'],
+  'thr-conversion': ['alert-low-conversion', 'tip-improve-profile'],
+  'thr-clients': ['tip-fidelisation'],
+};
+
+export function getSuppressedNudgeIdsFromAlerts(activeAlertIds: string[]): string[] {
+  const out = new Set<string>();
+  activeAlertIds.forEach((id) => {
+    (ALERT_TOPIC_TO_NUDGE_IDS[id] || []).forEach((n) => out.add(n));
+  });
+  return Array.from(out);
 }
 
 // --- Helpers d'analyse ---
