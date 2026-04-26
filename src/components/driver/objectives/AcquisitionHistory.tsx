@@ -389,3 +389,50 @@ function safeFormatDate(d: string, fmt = 'dd MMM yyyy') {
     return d;
   }
 }
+
+function RateStat({ label, rate, formula }: { label: string; rate: number | null; formula: string }) {
+  return (
+    <div className="text-center">
+      <div className={cn('text-sm font-bold tabular-nums', rate === null && 'text-muted-foreground')}>
+        {rate === null ? '—' : `${Math.round(rate * 100)}%`}
+      </div>
+      <div className="text-[10px] text-muted-foreground leading-tight">{label}</div>
+      <div className="text-[9px] font-mono text-muted-foreground/70 mt-0.5 truncate" title={formula}>
+        {formula}
+      </div>
+    </div>
+  );
+}
+
+function RateRow({
+  label, numerator, numeratorLabel, denominator, denominatorLabel, missingMessage,
+}: {
+  label: string;
+  numerator: number;
+  numeratorLabel: string;
+  denominator: number;
+  denominatorLabel: string;
+  missingMessage: string;
+}) {
+  const computable = denominator > 0;
+  const pct = computable ? Math.round((numerator / denominator) * 100) : null;
+  return (
+    <div className="rounded-md border border-border/60 p-2 bg-card">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-medium">{label}</span>
+        <span className={cn('text-sm font-bold tabular-nums', !computable && 'text-muted-foreground')}>
+          {pct === null ? '—' : `${pct}%`}
+        </span>
+      </div>
+      <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+        = {numerator} {numeratorLabel} / {denominator} {denominatorLabel}
+      </div>
+      {!computable && (
+        <div className="flex items-start gap-1 mt-1 text-[10px] text-amber-700 dark:text-amber-400">
+          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+          <span className="leading-tight">{missingMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+}
