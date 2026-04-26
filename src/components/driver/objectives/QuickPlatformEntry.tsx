@@ -61,6 +61,9 @@ interface EntryState {
   coursesCount: number;
   hoursWorked: number;
   kmDriven: number;
+  cardsProposedCount: number;
+  qrScansCount: number;
+  directSignupsCount: number;
   isSaved: boolean;
   isModified: boolean;
 }
