@@ -64,6 +64,14 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
       />
 
+      {/* 2bis. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
+      <AcquisitionCoach
+        entries={hook.dailyEntries}
+        totalDirectClients={hook.driverStats.totalClients}
+        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        driverName={driverName}
+      />
+
       {/* 3. Quick Daily Input — saisir l'activité (incl. tracking acquisition) */}
       <QuickPlatformEntry
         driverId={driverId}
