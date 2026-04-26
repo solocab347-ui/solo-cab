@@ -185,7 +185,7 @@ export const FIRST_SOLOCAB_COURSE_COMPLETED: ProactiveMessage = {
   type: "celebration",
   title: "🚗 Première course SoloCab terminée !",
   message:
-    "Bravo, vous venez de terminer votre toute première course via SoloCab. Voici ce qui change : vous gardez 100 % de votre tarif (juste 0,50 € de frais fixe), vous fixez vos prix, et ce client peut devenir un client direct grâce à votre QR. SoloCab, c'est votre indépendance qui démarre ici.",
+    "Bravo, vous venez de terminer votre toute première course via SoloCab. Voici la réalité de votre rémunération : SoloCab prélève uniquement 0,50 € fixe par course (pas de pourcentage). Les frais Stripe (notre partenaire de paiement) s'ajoutent selon leur grille publique et sont gérés automatiquement. Le reste vous revient directement sur votre compte Stripe Connect, avec encaissement, virements et facturation 100 % automatisés. Vous fixez vos prix, et ce client peut devenir un client direct grâce à votre QR.",
   emoji: "🏆",
   priority: "high",
   dismissable: true,
