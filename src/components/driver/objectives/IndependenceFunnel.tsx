@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import type { DriverDailyEntry, DriverObjective } from './types';
+import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
 
 interface IndependenceFunnelProps {
   /** Période affichée par défaut */
