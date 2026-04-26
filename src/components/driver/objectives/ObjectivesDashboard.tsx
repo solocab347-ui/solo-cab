@@ -54,16 +54,26 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         onOpenCoach={() => setShowCoaching(true)}
       />
 
-      {/* 2. Quick Daily Input — THE most important, always visible */}
+      {/* 2. ⭐ FUNNEL D'INDÉPENDANCE — héros : ce qui compte vraiment */}
+      <IndependenceFunnel
+        period="weekly"
+        entries={hook.dailyEntries}
+        objectives={hook.objectives}
+        soloCabStats={hook.soloCabFullStats.week}
+        totalDirectClients={hook.driverStats.totalClients}
+        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+      />
+
+      {/* 3. Quick Daily Input — saisir l'activité (incl. tracking acquisition) */}
       <QuickPlatformEntry
         driverId={driverId}
         onEntrySaved={() => hook.fetchAll?.()}
       />
 
-      {/* 3. Progress Overview — inline, no tab needed */}
+      {/* 4. Progress Overview — cibles CA en conséquence */}
       <InlineProgressCards progress={hook.progress} driverId={driverId} />
 
-      {/* 4. Inline Objectives Editor — edit in place */}
+      {/* 5. Inline Objectives Editor — edit in place */}
       <InlineObjectivesEditor
         driverId={driverId}
         onUpdate={() => hook.fetchAll?.()}
