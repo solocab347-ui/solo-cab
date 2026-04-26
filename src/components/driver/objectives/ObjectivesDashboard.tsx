@@ -28,6 +28,7 @@ interface ObjectivesDashboardProps {
 
 export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboardProps) {
   const hook = useDriverObjectives(driverId);
+  const acquisition = useDriverAcquisitionMetrics(driverId);
   const [showCoaching, setShowCoaching] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   
