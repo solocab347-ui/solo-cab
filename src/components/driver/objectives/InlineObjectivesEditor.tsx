@@ -27,6 +27,10 @@ interface ObjectivesData {
   daily_targets?: Record<string, { target: number; weight: number }>;
   estimated_hourly_target?: number;
   goals_completed_at?: string;
+  // Acquisition targets (mensuel)
+  target_cards_proposed?: number;
+  target_qr_scans?: number;
+  target_independence_pct?: number;
 }
 
 interface InlineObjectivesEditorProps {
