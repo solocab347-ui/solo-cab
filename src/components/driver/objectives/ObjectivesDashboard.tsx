@@ -10,8 +10,8 @@ import { InlineObjectivesEditor } from './InlineObjectivesEditor';
 import { CoachingPanel } from './CoachingPanel';
 import { ObjectivesHistory } from './ObjectivesHistory';
 import { IndependenceFunnel } from './IndependenceFunnel';
-import { AcquisitionAlerts } from './AcquisitionAlerts';
-import { AcquisitionHistory } from './AcquisitionHistory';
+import { MonthlyAcquisitionRecap } from './MonthlyAcquisitionRecap';
+import { useDriverAcquisitionMetrics } from './hooks/useDriverAcquisitionMetrics';
 import { 
   Target, 
   MessageSquare,
@@ -28,6 +28,7 @@ interface ObjectivesDashboardProps {
 
 export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboardProps) {
   const hook = useDriverObjectives(driverId);
+  const acquisition = useDriverAcquisitionMetrics(driverId);
   const [showCoaching, setShowCoaching] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   
@@ -63,24 +64,23 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         objectives={hook.objectives}
         soloCabStats={hook.soloCabFullStats.week}
         totalDirectClients={hook.driverStats.totalClients}
-        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
-        driverId={driverId}
-        onTargetsUpdated={() => hook.fetchAll?.()}
+        loyalClientsCount={acquisition.loyalClientsCount}
       />
 
-      {/* 2bis. Alertes seuils — recommandations actionnables */}
-      <AcquisitionAlerts
+      {/* 2bis. Récap mensuel — visible 7 premiers jours d'un nouveau mois */}
+      <MonthlyAcquisitionRecap
         entries={hook.dailyEntries}
-        objectives={hook.objectives}
-        totalDirectClients={hook.driverStats.totalClients}
-        currentIndependencePct={hook.driverStats.soloCabPercentage}
+        snapshots={acquisition.snapshots}
+        onSeeFunnel={() =>
+          document.getElementById('independence-funnel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
       />
 
       {/* 2ter. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
       <AcquisitionCoach
         entries={hook.dailyEntries}
         totalDirectClients={hook.driverStats.totalClients}
-        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        loyalClientsCount={acquisition.loyalClientsCount}
         driverName={driverName}
       />
 
@@ -126,16 +126,10 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         open={showHistory}
         onToggle={() => setShowHistory(v => !v)}
       >
-        <div className="space-y-3">
-          <AcquisitionHistory
-            entries={hook.dailyEntries}
-            platforms={hook.platforms}
-          />
-          <ObjectivesHistory 
-            entries={hook.dailyEntries}
-            platforms={hook.platforms}
-          />
-        </div>
+        <ObjectivesHistory 
+          entries={hook.dailyEntries}
+          platforms={hook.platforms}
+        />
       </CollapsibleSection>
     </div>
   );

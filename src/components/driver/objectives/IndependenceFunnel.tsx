@@ -18,7 +18,6 @@ import {
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import type { DriverDailyEntry, DriverObjective } from './types';
-import { AcquisitionTargetsQuickEdit } from './AcquisitionTargetsQuickEdit';
 
 interface IndependenceFunnelProps {
   /** Période affichée par défaut */
@@ -37,9 +36,6 @@ interface IndependenceFunnelProps {
   totalDirectClients: number;
   /** Combien sont fidèles (>= 2 courses directes) */
   loyalClientsCount: number;
-  /** Pour le quick-edit inline des cibles */
-  driverId?: string;
-  onTargetsUpdated?: () => void;
 }
 
 const PERIOD_LABEL: Record<string, string> = {
@@ -61,16 +57,10 @@ export function IndependenceFunnel({
   soloCabStats,
   totalDirectClients,
   loyalClientsCount,
-  driverId,
-  onTargetsUpdated,
 }: IndependenceFunnelProps) {
   const objective = useMemo(
     () => objectives.find((o) => o.period_type === period) || null,
     [objectives, period],
-  );
-  const monthlyObjective = useMemo(
-    () => objectives.find((o) => o.period_type === 'monthly') || null,
-    [objectives],
   );
 
   // Filtre des entrées sur la période
@@ -162,25 +152,13 @@ export function IndependenceFunnel({
               <p className="text-[11px] text-muted-foreground">{PERIOD_LABEL[period]}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Badge
-              variant="secondary"
-              className="gap-1 bg-primary/10 text-primary border-primary/20"
-            >
-              <Sparkles className="w-3 h-3" />
-              {independencePct}% direct
-            </Badge>
-            {driverId && (
-              <AcquisitionTargetsQuickEdit
-                driverId={driverId}
-                currentCardsTarget={monthlyObjective?.cards_proposed_target}
-                currentScansTarget={monthlyObjective?.qr_scans_target}
-                currentDirectClientsTarget={monthlyObjective?.direct_clients_target}
-                currentIndependencePct={monthlyObjective?.independence_percentage_target}
-                onSaved={onTargetsUpdated}
-              />
-            )}
-          </div>
+          <Badge
+            variant="secondary"
+            className="gap-1 bg-primary/10 text-primary border-primary/20"
+          >
+            <Sparkles className="w-3 h-3" />
+            {independencePct}% direct
+          </Badge>
         </div>
 
         {/* Punchline */}

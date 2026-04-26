@@ -88,7 +88,6 @@ const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 const Permissions = lazy(() => import("./pages/Permissions"));
 const GpsDiagnostic = lazy(() => import("./pages/GpsDiagnostic"));
-const DriverObjectivesDebug = lazy(() => import("./pages/DriverObjectivesDebug"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -306,16 +305,6 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["driver", "admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <GpsDiagnostic />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/driver/objectives-debug"
-                element={
-                  <ProtectedRoute allowedRoles={["driver", "admin"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <DriverObjectivesDebug />
                     </Suspense>
                   </ProtectedRoute>
                 }
