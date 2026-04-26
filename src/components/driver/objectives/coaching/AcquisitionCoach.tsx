@@ -4,265 +4,64 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  QrCode,
-  Hand,
   Sparkles,
   AlertTriangle,
   Trophy,
-  Heart,
   Lightbulb,
   X,
   ArrowRight,
+  Bug,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { DriverDailyEntry } from '../types';
+import {
+  computeSignals,
+  pickNudge,
+  evaluateAllNudges,
+  COACH_DISMISSED_KEY,
+  COACH_LAST_SHOWN_KEY,
+  COOLDOWN_MS,
+  MAX_NUDGES_7D,
+  type NudgeType,
+} from './acquisitionCoachLogic';
 
 /**
  * AcquisitionCoach — mentor non intrusif orienté acquisition de clients directs.
  *
- * Philosophie : on ne pousse JAMAIS le chauffeur sur le CA.
- * On le pousse sur les leviers qui rendent indépendant :
- *  1. Proposer sa carte SoloCab après chaque course externe
- *  2. Faire scanner le QR code
- *  3. Convertir les scans en inscriptions
- *  4. Fidéliser les clients existants
+ * Voir acquisitionCoachLogic.ts pour la logique pure (règles, signaux, picker).
  *
- * Règles d'apparition :
- *  - 1 seul nudge à la fois
- *  - cooldown 4h entre 2 nudges
- *  - cap global 8 nudges dismissés / 7j glissants
- *  - milestones (célébrations) toujours autorisés
+ * Props :
+ *  - fullWidth : bord-à-bord (utile en mobile pour maximiser la lisibilité)
+ *  - debug : affiche un panneau diagnostic listant toutes les règles
  */
-
-const COACH_DISMISSED_KEY = 'solocab_acq_coach_dismissed';
-const COACH_LAST_SHOWN_KEY = 'solocab_acq_coach_last';
-const COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4h
-const MAX_NUDGES_7D = 8;
-
-type NudgeType = 'celebration' | 'opportunity' | 'tip' | 'alert';
-
-interface Nudge {
-  id: string;
-  type: NudgeType;
-  title: string;
-  body: string;
-  cta?: { label: string; action: 'open-qr' | 'open-funnel' | 'dismiss' };
-  /** Une fois dismissé, on ne le remontre pas (sauf milestones répétables) */
-  oneShot?: boolean;
-}
-
 interface AcquisitionCoachProps {
   entries: DriverDailyEntry[];
   totalDirectClients: number;
   loyalClientsCount: number;
   driverName?: string;
   onOpenQR?: () => void;
+  /** Force le mode pleine largeur (sinon : auto sur mobile) */
+  fullWidth?: boolean;
+  /** Affiche un panneau debug en dessous (rules log) */
+  debug?: boolean;
 }
 
-// --- Helpers d'analyse ---
-function computeSignals(entries: DriverDailyEntry[]) {
-  const last7 = entries.slice(0, 7);
-  const last3 = entries.slice(0, 3);
-
-  const sum = (arr: DriverDailyEntry[], key: keyof DriverDailyEntry) =>
-    arr.reduce((s, e) => s + (Number(e[key]) || 0), 0);
-
-  const courses7 = sum(last7, 'courses_count');
-  const proposed7 = sum(last7, 'cards_proposed_count' as keyof DriverDailyEntry);
-  const scans7 = sum(last7, 'qr_scans_count' as keyof DriverDailyEntry);
-  const signups7 = sum(last7, 'direct_signups_count' as keyof DriverDailyEntry);
-
-  const courses3 = sum(last3, 'courses_count');
-  const proposed3 = sum(last3, 'cards_proposed_count' as keyof DriverDailyEntry);
-
-  const proposalRate7 = courses7 > 0 ? proposed7 / courses7 : 0;
-  const conversionRate7 = scans7 > 0 ? signups7 / scans7 : 0;
-  const scanRate7 = proposed7 > 0 ? scans7 / proposed7 : 0;
-
-  return {
-    courses7,
-    proposed7,
-    scans7,
-    signups7,
-    courses3,
-    proposed3,
-    proposalRate7,
-    conversionRate7,
-    scanRate7,
-  };
-}
-
-function pickNudge(
-  signals: ReturnType<typeof computeSignals>,
-  totalDirectClients: number,
-  loyalClientsCount: number,
-  alreadyDismissed: Set<string>,
-): Nudge | null {
-  // 1. CÉLÉBRATIONS (priorité haute, jamais dismissés en oneShot pour milestones répétables)
-  if (totalDirectClients === 1 && !alreadyDismissed.has('celeb-first-client')) {
-    return {
-      id: 'celeb-first-client',
-      type: 'celebration',
-      title: '🎉 Ton premier client direct !',
-      body: "Bravo, tu viens de signer ta première vraie victoire. Chaque client direct = 0% de commission plateforme. C'est ça, l'indépendance.",
-      oneShot: true,
-    };
-  }
-  if (totalDirectClients >= 10 && totalDirectClients < 11 && !alreadyDismissed.has('celeb-10-clients')) {
-    return {
-      id: 'celeb-10-clients',
-      type: 'celebration',
-      title: '🏆 10 clients directs !',
-      body: 'Tu construis ta vraie clientèle. Continue : à 50, tu commences à pouvoir te passer des plateformes les jours creux.',
-      oneShot: true,
-    };
-  }
-  if (totalDirectClients >= 50 && totalDirectClients < 51 && !alreadyDismissed.has('celeb-50-clients')) {
-    return {
-      id: 'celeb-50-clients',
-      type: 'celebration',
-      title: '👑 50 clients directs — Tu es indépendant',
-      body: 'À ce stade, tu as une base solide. Concentre-toi sur la fidélisation : un client qui revient = bien plus rentable qu\'un nouveau.',
-      oneShot: true,
-    };
-  }
-  if (loyalClientsCount >= 5 && !alreadyDismissed.has('celeb-first-loyals')) {
-    return {
-      id: 'celeb-first-loyals',
-      type: 'celebration',
-      title: '❤️ 5 clients fidèles',
-      body: "Ces clients reviennent. C'est le vrai indicateur d'indépendance — bien plus que le CA brut.",
-      oneShot: true,
-    };
-  }
-
-  // 2. ALERTES contextuelles (basées sur les signaux récents)
-  if (
-    signals.courses3 >= 10 &&
-    signals.proposed3 === 0 &&
-    !alreadyDismissed.has('alert-no-proposal-3d')
-  ) {
-    return {
-      id: 'alert-no-proposal-3d',
-      type: 'alert',
-      title: '10 courses, 0 carte proposée',
-      body: "Tu travailles dur sur les plateformes mais tu ne captes aucun client pour toi. Une simple phrase à la fin de la course peut tout changer : « Si vous voulez me reprendre directement, scannez ce QR ».",
-      cta: { label: 'Voir mon QR code', action: 'open-qr' },
-      oneShot: true,
-    };
-  }
-
-  if (
-    signals.courses7 >= 20 &&
-    signals.proposalRate7 < 0.2 &&
-    signals.proposed7 > 0 &&
-    !alreadyDismissed.has('alert-low-proposal-rate')
-  ) {
-    return {
-      id: 'alert-low-proposal-rate',
-      type: 'alert',
-      title: `Seulement ${Math.round(signals.proposalRate7 * 100)}% de propositions`,
-      body: 'Tu proposes ta carte à moins d\'1 client sur 5. Vise 80% : la majorité accepte au moins de scanner par curiosité, et c\'est gratuit pour toi.',
-      oneShot: true,
-    };
-  }
-
-  if (
-    signals.proposed7 >= 10 &&
-    signals.scans7 === 0 &&
-    !alreadyDismissed.has('alert-no-scans-after-proposals')
-  ) {
-    return {
-      id: 'alert-no-scans-after-proposals',
-      type: 'alert',
-      title: 'Tu proposes mais personne ne scanne',
-      body: 'Soit ta carte/QR n\'est pas accessible (pas affiché dans la voiture ?), soit ta phrase est trop floue. Astuce : pose la carte sur le siège passager, pas dans la boîte à gants.',
-      cta: { label: 'Voir mon QR code', action: 'open-qr' },
-      oneShot: true,
-    };
-  }
-
-  if (
-    signals.scans7 >= 5 &&
-    signals.signups7 === 0 &&
-    !alreadyDismissed.has('alert-low-conversion')
-  ) {
-    return {
-      id: 'alert-low-conversion',
-      type: 'alert',
-      title: 'Des scans, mais pas d\'inscrits',
-      body: 'Les clients scannent mais ne finalisent pas. Vérifie que ton profil public est bien rempli (photo, véhicule, présentation). Un profil vide = méfiance.',
-      oneShot: true,
-    };
-  }
-
-  // 3. OPPORTUNITÉS / TIPS (rotation douce)
-  if (
-    signals.scanRate7 >= 0.3 &&
-    signals.conversionRate7 < 0.3 &&
-    signals.scans7 >= 3 &&
-    !alreadyDismissed.has('tip-improve-profile')
-  ) {
-    return {
-      id: 'tip-improve-profile',
-      type: 'tip',
-      title: 'Ton profil mérite mieux',
-      body: 'Tes clients scannent (bon signe !) mais hésitent à s\'inscrire. Une bio courte + une vraie photo = +60% de conversion en moyenne.',
-      oneShot: true,
-    };
-  }
-
-  if (totalDirectClients >= 3 && loyalClientsCount === 0 && !alreadyDismissed.has('tip-fidelisation')) {
-    return {
-      id: 'tip-fidelisation',
-      type: 'tip',
-      title: 'Pense à recontacter',
-      body: 'Tu as des clients directs mais aucun ne revient. Un SMS « disponible ce week-end ? » 1x par mois suffit à créer le réflexe.',
-      oneShot: true,
-    };
-  }
-
-  if (signals.courses7 === 0 && totalDirectClients < 3 && !alreadyDismissed.has('tip-getting-started')) {
-    return {
-      id: 'tip-getting-started',
-      type: 'tip',
-      title: 'Démarre ta base clients',
-      body: 'Aucune saisie cette semaine. Même si tu roules sur Uber/Bolt, note tes courses ici : ça te permet de tracker combien de clients tu pourrais convertir en direct.',
-      cta: { label: 'Comprendre l\'acquisition', action: 'open-funnel' },
-      oneShot: true,
-    };
-  }
-
-  if (
-    signals.proposalRate7 >= 0.5 &&
-    signals.scanRate7 >= 0.4 &&
-    signals.conversionRate7 >= 0.3 &&
-    !alreadyDismissed.has('tip-pro-mode')
-  ) {
-    return {
-      id: 'tip-pro-mode',
-      type: 'celebration',
-      title: '🚀 Tu maîtrises l\'acquisition',
-      body: 'Tes ratios sont excellents : tu proposes, on scanne, on s\'inscrit. À ce rythme tu deviendras indépendant beaucoup plus vite que la moyenne.',
-      oneShot: true,
-    };
-  }
-
-  return null;
-}
-
-// --- Composant ---
 export function AcquisitionCoach({
   entries,
   totalDirectClients,
   loyalClientsCount,
-  driverName,
   onOpenQR,
+  fullWidth,
+  debug = false,
 }: AcquisitionCoachProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [hidden, setHidden] = useState(false);
+  const [showDebug, setShowDebug] = useState(debug);
+  const isMobile = useIsMobile();
 
-  // Charger l'état persisté
+  const useFullWidth = fullWidth ?? isMobile;
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(COACH_DISMISSED_KEY);
@@ -271,7 +70,6 @@ export function AcquisitionCoach({
         const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const recent = parsed.filter((d) => d.ts > cutoff);
         setDismissed(new Set(recent.map((d) => d.id)));
-        // Re-persist sans les anciens
         if (recent.length !== parsed.length) {
           localStorage.setItem(COACH_DISMISSED_KEY, JSON.stringify(recent));
         }
@@ -281,24 +79,29 @@ export function AcquisitionCoach({
 
   const signals = useMemo(() => computeSignals(entries), [entries]);
 
-  const nudge = useMemo(() => {
-    // Vérifier cap 7j
-    if (dismissed.size >= MAX_NUDGES_7D) return null;
-    // Vérifier cooldown
+  const inCooldown = useMemo(() => {
     try {
       const last = localStorage.getItem(COACH_LAST_SHOWN_KEY);
-      if (last && Date.now() - parseInt(last, 10) < COOLDOWN_MS) return null;
-    } catch {}
-    return pickNudge(signals, totalDirectClients, loyalClientsCount, dismissed);
-  }, [signals, totalDirectClients, loyalClientsCount, dismissed]);
+      return !!(last && Date.now() - parseInt(last, 10) < COOLDOWN_MS);
+    } catch {
+      return false;
+    }
+  }, [dismissed]);
 
-  // Marquer le timestamp d'affichage la première fois qu'un nudge s'affiche
+  const capReached = dismissed.size >= MAX_NUDGES_7D;
+
+  const nudge = useMemo(() => {
+    if (capReached || inCooldown) return null;
+    return pickNudge(signals, totalDirectClients, loyalClientsCount, dismissed);
+  }, [signals, totalDirectClients, loyalClientsCount, dismissed, capReached, inCooldown]);
+
   useEffect(() => {
     if (nudge && !hidden) {
       try {
         localStorage.setItem(COACH_LAST_SHOWN_KEY, Date.now().toString());
       } catch {}
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nudge?.id, hidden]);
 
   const handleDismiss = () => {
@@ -324,83 +127,291 @@ export function AcquisitionCoach({
     if (!nudge?.cta) return;
     if (nudge.cta.action === 'open-qr' && onOpenQR) onOpenQR();
     if (nudge.cta.action === 'open-funnel') {
-      // Scroll vers le funnel (id côté IndependenceFunnel)
       document.getElementById('independence-funnel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     handleDismiss();
   };
 
-  if (!nudge || hidden) return null;
+  const evaluations = useMemo(
+    () =>
+      evaluateAllNudges(
+        signals,
+        totalDirectClients,
+        loyalClientsCount,
+        dismissed,
+        capReached,
+        inCooldown,
+      ),
+    [signals, totalDirectClients, loyalClientsCount, dismissed, capReached, inCooldown],
+  );
 
-  const styles = TYPE_STYLES[nudge.type];
+  // Render
+  return (
+    <>
+      <AnimatePresence mode="wait">
+        {nudge && !hidden && (
+          <motion.div
+            key={nudge.id}
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className={useFullWidth ? '-mx-3 sm:mx-0' : ''}
+          >
+            <NudgeCard
+              nudge={nudge}
+              compact={!isMobile}
+              onCTA={handleCTA}
+              onDismiss={handleDismiss}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Debug toggle (toujours dispo en dev, ou si prop debug=true) */}
+      {(debug || import.meta.env.DEV) && (
+        <button
+          type="button"
+          onClick={() => setShowDebug((v) => !v)}
+          className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Bug className="w-3 h-3" />
+          {showDebug ? 'Masquer le diagnostic' : 'Diagnostic des nudges'}
+        </button>
+      )}
+
+      {showDebug && (
+        <CoachDebugPanel
+          signals={signals}
+          totalDirectClients={totalDirectClients}
+          loyalClientsCount={loyalClientsCount}
+          dismissedSize={dismissed.size}
+          capReached={capReached}
+          inCooldown={inCooldown}
+          evaluations={evaluations}
+        />
+      )}
+    </>
+  );
+}
+
+// --- Carte du nudge (extraite pour pouvoir varier compact/full) ---
+function NudgeCard({
+  nudge,
+  compact,
+  onCTA,
+  onDismiss,
+}: {
+  nudge: ReturnType<typeof pickNudge> & object;
+  compact: boolean;
+  onCTA: () => void;
+  onDismiss: () => void;
+}) {
+  if (!nudge) return null;
+  const styles = TYPE_STYLES[nudge.type as NudgeType];
   const Icon = styles.icon;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key={nudge.id}
-        initial={{ opacity: 0, y: -12, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -8, scale: 0.98 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-      >
-        <Card
-          className={cn(
-            'overflow-hidden border-2 relative',
-            styles.border,
-            styles.bg,
-          )}
-        >
-          <CardContent className="p-3.5">
-            <div className="flex items-start gap-3">
-              <div
+    <Card
+      className={cn(
+        'overflow-hidden border-2 relative',
+        styles.border,
+        styles.bg,
+      )}
+    >
+      <CardContent className={compact ? 'p-3.5' : 'p-4'}>
+        <div className={cn('flex items-start', compact ? 'gap-3' : 'gap-3.5')}>
+          <div
+            className={cn(
+              'flex-shrink-0 rounded-full flex items-center justify-center',
+              compact ? 'w-9 h-9' : 'w-11 h-11',
+              styles.iconBg,
+            )}
+          >
+            <Icon className={cn(compact ? 'w-4.5 h-4.5' : 'w-5 h-5', styles.iconColor)} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className={cn('flex items-center gap-2', compact ? 'mb-1' : 'mb-1.5 flex-wrap')}>
+              <h4 className={cn('font-semibold leading-tight', compact ? 'text-sm' : 'text-base')}>
+                {nudge.title}
+              </h4>
+              <Badge
+                variant="outline"
                 className={cn(
-                  'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
-                  styles.iconBg,
+                  'font-medium',
+                  compact ? 'text-[9px] px-1.5 h-4' : 'text-[10px] px-2 h-5',
+                  styles.badge,
                 )}
               >
-                <Icon className={cn('w-4.5 h-4.5', styles.iconColor)} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-sm font-semibold leading-tight">
-                    {nudge.title}
-                  </h4>
-                  <Badge
-                    variant="outline"
-                    className={cn('text-[9px] px-1.5 h-4 font-medium', styles.badge)}
-                  >
-                    {styles.label}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {nudge.body}
-                </p>
-                {nudge.cta && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCTA}
-                    className="mt-2.5 h-7 text-xs gap-1.5"
-                  >
-                    {nudge.cta.label}
-                    <ArrowRight className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleDismiss}
-                aria-label="Fermer"
-                className="flex-shrink-0 -mr-1 -mt-1 p-1 rounded-md hover:bg-muted/60 transition-colors"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+                {styles.label}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </AnimatePresence>
+            <p
+              className={cn(
+                'text-muted-foreground leading-relaxed',
+                compact ? 'text-xs' : 'text-sm',
+              )}
+            >
+              {nudge.body}
+            </p>
+            {nudge.cta && (
+              <Button
+                size={compact ? 'sm' : 'default'}
+                variant="outline"
+                onClick={onCTA}
+                className={cn(
+                  'mt-3 gap-1.5 font-medium',
+                  compact ? 'h-8 text-xs' : 'h-11 w-full sm:w-auto text-sm',
+                )}
+              >
+                {nudge.cta.label}
+                <ArrowRight className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
+              </Button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Fermer"
+            className={cn(
+              'flex-shrink-0 rounded-md hover:bg-muted/60 active:bg-muted transition-colors touch-manipulation',
+              compact ? '-mr-1 -mt-1 p-1' : 'p-2 -mr-1 -mt-1',
+            )}
+          >
+            <X className={cn('text-muted-foreground', compact ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- Panneau debug ---
+function CoachDebugPanel({
+  signals,
+  totalDirectClients,
+  loyalClientsCount,
+  dismissedSize,
+  capReached,
+  inCooldown,
+  evaluations,
+}: {
+  signals: ReturnType<typeof computeSignals>;
+  totalDirectClients: number;
+  loyalClientsCount: number;
+  dismissedSize: number;
+  capReached: boolean;
+  inCooldown: boolean;
+  evaluations: ReturnType<typeof evaluateAllNudges>;
+}) {
+  const reasonLabel: Record<typeof evaluations[number]['reason'], { label: string; color: string }> = {
+    'shown': { label: '✓ AFFICHÉ', color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
+    'lower-priority': { label: 'Priorité plus basse', color: 'bg-muted text-muted-foreground border-border' },
+    'condition-not-met': { label: 'Condition KO', color: 'bg-muted/50 text-muted-foreground border-border' },
+    'already-dismissed': { label: 'Déjà fermé', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
+    'cooldown': { label: 'Cooldown 4h', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+    'cap-reached': { label: 'Cap 8/7j atteint', color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  };
+
+  return (
+    <Card className="mt-2 border-dashed border-muted-foreground/30 bg-muted/20">
+      <CardContent className="p-3 space-y-3 text-[11px]">
+        <div className="flex items-center gap-1.5">
+          <Bug className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="font-semibold uppercase tracking-wide text-muted-foreground">
+            Diagnostic AcquisitionCoach
+          </span>
+        </div>
+
+        {/* Signaux 7j */}
+        <div>
+          <div className="font-semibold mb-1.5">Signaux (7 derniers jours)</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono">
+            <DebugRow k="courses (7j)" v={signals.courses7} />
+            <DebugRow k="proposed (7j)" v={signals.proposed7} />
+            <DebugRow k="scans (7j)" v={signals.scans7} />
+            <DebugRow k="signups (7j)" v={signals.signups7} />
+            <DebugRow k="courses (3j)" v={signals.courses3} />
+            <DebugRow k="proposed (3j)" v={signals.proposed3} />
+            <DebugRow k="taux propositions" v={`${Math.round(signals.proposalRate7 * 100)}%`} />
+            <DebugRow k="taux scans" v={`${Math.round(signals.scanRate7 * 100)}%`} />
+            <DebugRow k="taux conversion" v={`${Math.round(signals.conversionRate7 * 100)}%`} />
+            <DebugRow k="clients directs" v={totalDirectClients} />
+            <DebugRow k="clients fidèles" v={loyalClientsCount} />
+          </div>
+        </div>
+
+        {/* État global */}
+        <div>
+          <div className="font-semibold mb-1.5">État du coach</div>
+          <div className="flex flex-wrap gap-1.5">
+            <StateBadge active={capReached} label={`Cap ${dismissedSize}/${MAX_NUDGES_7D}`} bad={capReached} />
+            <StateBadge active={inCooldown} label="Cooldown 4h" bad={inCooldown} />
+          </div>
+        </div>
+
+        {/* Liste des règles */}
+        <div>
+          <div className="font-semibold mb-1.5">Règles ({evaluations.length})</div>
+          <div className="space-y-1.5">
+            {evaluations.map((e) => {
+              const r = reasonLabel[e.reason];
+              return (
+                <div
+                  key={e.id}
+                  className={cn(
+                    'border rounded p-1.5 leading-tight',
+                    e.reason === 'shown' ? r.color : 'border-border bg-background/50',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-[10px] text-muted-foreground">{e.id}</div>
+                      <div className="font-medium text-[11px] truncate">{e.title}</div>
+                    </div>
+                    <Badge variant="outline" className={cn('text-[9px] px-1.5 h-4 shrink-0', r.color)}>
+                      {r.label}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    if: {e.condition}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                    values: {Object.entries(e.values).map(([k, v]) => `${k}=${v}`).join(', ')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DebugRow({ k, v }: { k: string; v: number | string }) {
+  return (
+    <>
+      <span className="text-muted-foreground">{k}</span>
+      <span className="text-right font-semibold">{v}</span>
+    </>
+  );
+}
+
+function StateBadge({ active, label, bad }: { active: boolean; label: string; bad?: boolean }) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        'text-[10px]',
+        active && bad && 'bg-destructive/10 text-destructive border-destructive/30',
+        active && !bad && 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+        !active && 'opacity-60',
+      )}
+    >
+      {active ? '● ' : '○ '}
+      {label}
+    </Badge>
   );
 }
 
