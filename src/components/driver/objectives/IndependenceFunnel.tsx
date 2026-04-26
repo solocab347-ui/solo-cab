@@ -135,7 +135,7 @@ export function IndependenceFunnel({
   }, [totalCourses, propositionRate, cardsProposed, qrScans, directSignups, independencePct, scanRate, period]);
 
   return (
-    <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-card via-card to-primary/[0.03]">
+    <Card id="independence-funnel" className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-card via-card to-primary/[0.03]">
       {/* Glow décoratif */}
       <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-48 h-48 rounded-full bg-accent/10 blur-3xl pointer-events-none" />

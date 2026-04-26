@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDriverObjectives } from '@/hooks/useDriverObjectives';
-import { DailyMotivation } from './coaching';
+import { DailyMotivation, AcquisitionCoach } from './coaching';
 import { QuickPlatformEntry } from './QuickPlatformEntry';
 import { InlineProgressCards } from './InlineProgressCards';
 import { InlineObjectivesEditor } from './InlineObjectivesEditor';
@@ -62,6 +62,14 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         soloCabStats={hook.soloCabFullStats.week}
         totalDirectClients={hook.driverStats.totalClients}
         loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+      />
+
+      {/* 2bis. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
+      <AcquisitionCoach
+        entries={hook.dailyEntries}
+        totalDirectClients={hook.driverStats.totalClients}
+        loyalClientsCount={Math.floor(hook.driverStats.totalClients * 0.3)}
+        driverName={driverName}
       />
 
       {/* 3. Quick Daily Input — saisir l'activité (incl. tracking acquisition) */}

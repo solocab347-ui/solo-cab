@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   TrendingUp, Users, Smartphone, Calendar, Car, MapPin,
-  Edit3, Save, Check, Loader2, Settings2, ChevronDown, ChevronUp
+  Edit3, Save, Check, Loader2, Settings2, ChevronDown, ChevronUp,
+  Hand, QrCode, UserPlus, Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,10 @@ interface ObjectivesData {
   daily_targets?: Record<string, { target: number; weight: number }>;
   estimated_hourly_target?: number;
   goals_completed_at?: string;
+  // Acquisition targets (mensuel)
+  target_cards_proposed?: number;
+  target_qr_scans?: number;
+  target_independence_pct?: number;
 }
 
 interface InlineObjectivesEditorProps {
@@ -56,6 +61,10 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
   const [platformPct, setPlatformPct] = useState(80);
   const [selectedDays, setSelectedDays] = useState<string[]>(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
   const [workHours, setWorkHours] = useState(8);
+  // Acquisition targets (mensuels)
+  const [targetCardsProposed, setTargetCardsProposed] = useState(60);
+  const [targetQrScans, setTargetQrScans] = useState(30);
+  const [targetIndependencePct, setTargetIndependencePct] = useState(20);
   const [objectivesData, setObjectivesData] = useState<ObjectivesData | null>(null);
 
   useEffect(() => {
@@ -78,6 +87,9 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
           if (d.platform_percentage !== undefined) setPlatformPct(d.platform_percentage);
           if (d.selected_work_days) setSelectedDays(d.selected_work_days);
           if (d.work_hours_per_day) setWorkHours(d.work_hours_per_day);
+          if (d.target_cards_proposed !== undefined) setTargetCardsProposed(d.target_cards_proposed);
+          if (d.target_qr_scans !== undefined) setTargetQrScans(d.target_qr_scans);
+          if (d.target_independence_pct !== undefined) setTargetIndependencePct(d.target_independence_pct);
         }
       } catch (e) {
         console.error('Error fetching objectives:', e);
@@ -121,13 +133,16 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
         selected_work_days: selectedDays,
         daily_targets: dailyTargetsMap,
         estimated_hourly_target: hourlyTarget,
+        target_cards_proposed: targetCardsProposed,
+        target_qr_scans: targetQrScans,
+        target_independence_pct: targetIndependencePct,
       };
 
       const mult = {
-        daily: { rev: 1/22, cli: 1/22, hrs: 1, crs: 1/22, km: 1/22 },
-        weekly: { rev: 1/4, cli: 1/4, hrs: selectedDays.length, crs: 1/4, km: 1/4 },
-        monthly: { rev: 1, cli: 1, hrs: selectedDays.length * 4, crs: 1, km: 1 },
-        yearly: { rev: 12, cli: 12, hrs: selectedDays.length * 4 * 12, crs: 12, km: 12 },
+        daily: { rev: 1/22, cli: 1/22, hrs: 1, crs: 1/22, km: 1/22, cards: 1/22, scans: 1/22 },
+        weekly: { rev: 1/4, cli: 1/4, hrs: selectedDays.length, crs: 1/4, km: 1/4, cards: 1/4, scans: 1/4 },
+        monthly: { rev: 1, cli: 1, hrs: selectedDays.length * 4, crs: 1, km: 1, cards: 1, scans: 1 },
+        yearly: { rev: 12, cli: 12, hrs: selectedDays.length * 4 * 12, crs: 12, km: 12, cards: 12, scans: 12 },
       };
 
       const objRows = (['daily', 'weekly', 'monthly', 'yearly'] as const).map(p => ({
@@ -138,6 +153,10 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
         hours_target: Math.round(workHours * mult[p].hrs),
         courses_target: Math.round(targetCourses * mult[p].crs),
         km_target: Math.round(targetKm * mult[p].km),
+        cards_proposed_target: Math.round(targetCardsProposed * mult[p].cards),
+        qr_scans_target: Math.round(targetQrScans * mult[p].scans),
+        direct_clients_target: Math.round(targetClients * mult[p].cli),
+        independence_percentage_target: targetIndependencePct,
         is_active: true,
       }));
 
@@ -165,7 +184,7 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
       setSaving(false);
       savingRef.current = false;
     }
-  }, [driverId, targetRevenue, targetClients, targetCourses, targetKm, platformPct, solocabPct, workHours, selectedDays, objectivesData, onUpdate]);
+  }, [driverId, targetRevenue, targetClients, targetCourses, targetKm, platformPct, solocabPct, workHours, selectedDays, objectivesData, onUpdate, targetCardsProposed, targetQrScans, targetIndependencePct]);
 
   if (loading) {
     return <Card className="animate-pulse"><CardContent className="p-4"><div className="h-20 bg-muted/30 rounded-lg" /></CardContent></Card>;
@@ -187,6 +206,19 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
             </Button>
           </div>
           
+          {/* Bloc Acquisition (priorité haute) */}
+          <div className="mb-2 -mx-1 px-2 py-1.5 rounded-lg bg-primary/5 border border-primary/15">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Crown className="w-3 h-3 text-primary" />
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">Acquisition / mois</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <ObjectiveSummaryItem icon={<Hand className="w-3.5 h-3.5 text-primary" />} label="Cartes" value={`${targetCardsProposed}`} />
+              <ObjectiveSummaryItem icon={<QrCode className="w-3.5 h-3.5 text-primary" />} label="Scans" value={`${targetQrScans}`} />
+              <ObjectiveSummaryItem icon={<UserPlus className="w-3.5 h-3.5 text-primary" />} label="Indép." value={`${targetIndependencePct}%`} />
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <ObjectiveSummaryItem icon={<TrendingUp className="w-3.5 h-3.5 text-green-500" />} label="CA/mois" value={`${targetRevenue.toLocaleString()}€`} />
             <ObjectiveSummaryItem icon={<Car className="w-3.5 h-3.5 text-blue-500" />} label="Courses" value={`${targetCourses}`} />
@@ -212,6 +244,49 @@ export function InlineObjectivesEditor({ driverId, onUpdate }: InlineObjectivesE
           <Button variant="ghost" size="sm" onClick={() => setEditing(false)} className="h-8 text-xs">
             Annuler
           </Button>
+        </div>
+
+        {/* === BLOC ACQUISITION (priorité héros) === */}
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-3 space-y-4">
+          <div className="flex items-center gap-2">
+            <Crown className="w-4 h-4 text-primary" />
+            <span className="text-xs font-semibold text-primary uppercase tracking-wide">Objectifs d'indépendance</span>
+          </div>
+
+          <EditRow icon={<Hand className="w-4 h-4 text-primary" />} label="Cartes proposées / mois">
+            <Input
+              type="number"
+              value={targetCardsProposed}
+              onChange={e => setTargetCardsProposed(parseInt(e.target.value) || 0)}
+              className="h-10 text-lg font-bold text-center"
+              min={0} max={1000} step={5}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">≈ {Math.round(targetCardsProposed / 22)}/jour • Une carte par course = idéal</p>
+          </EditRow>
+
+          <EditRow icon={<QrCode className="w-4 h-4 text-primary" />} label="Scans QR / mois">
+            <Input
+              type="number"
+              value={targetQrScans}
+              onChange={e => setTargetQrScans(parseInt(e.target.value) || 0)}
+              className="h-10 text-lg font-bold text-center"
+              min={0} max={500} step={1}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">≈ 50% des cartes proposées</p>
+          </EditRow>
+
+          <EditRow icon={<UserPlus className="w-4 h-4 text-primary" />} label="% du CA en direct (cible)">
+            <Slider
+              value={[targetIndependencePct]}
+              onValueChange={([v]) => setTargetIndependencePct(v)}
+              min={0} max={100} step={5}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>0% (full plateformes)</span>
+              <span className="font-semibold text-primary">{targetIndependencePct}%</span>
+              <span>100% (full direct)</span>
+            </div>
+          </EditRow>
         </div>
 
         {/* Revenue */}
