@@ -2,7 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, MapPin } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, Settings, ExternalLink, Info } from 'lucide-react';
 import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionKey } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
 
