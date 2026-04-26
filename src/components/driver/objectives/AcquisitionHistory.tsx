@@ -283,23 +283,36 @@ export function AcquisitionHistory({ entries, platforms }: Props) {
                 {selected.raw.hours_worked > 0 && (
                   <DetailLine label="Heures" value={`${selected.raw.hours_worked}h`} />
                 )}
-                <DetailLine
+              </div>
+
+              {/* Ratios calculés avec formule + warnings */}
+              <div className="space-y-1.5">
+                <h5 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Ratios calculés
+                </h5>
+                <RateRow
                   label="Taux de proposition"
-                  value={selected.raw.courses_count > 0
-                    ? `${Math.round((selected.cards / selected.raw.courses_count) * 100)}%`
-                    : '—'}
+                  numerator={selected.cards}
+                  numeratorLabel="cartes"
+                  denominator={selected.raw.courses_count}
+                  denominatorLabel="courses"
+                  missingMessage="Aucune course enregistrée ce jour."
                 />
-                <DetailLine
+                <RateRow
                   label="Taux de scan"
-                  value={selected.cards > 0
-                    ? `${Math.round((selected.scans / selected.cards) * 100)}%`
-                    : '—'}
+                  numerator={selected.scans}
+                  numeratorLabel="scans"
+                  denominator={selected.cards}
+                  denominatorLabel="cartes"
+                  missingMessage="Aucune carte proposée ce jour."
                 />
-                <DetailLine
+                <RateRow
                   label="Conversion scan → inscription"
-                  value={selected.scans > 0
-                    ? `${Math.round((selected.signups / selected.scans) * 100)}%`
-                    : '—'}
+                  numerator={selected.signups}
+                  numeratorLabel="signups"
+                  denominator={selected.scans}
+                  denominatorLabel="scans"
+                  missingMessage="Aucun scan ce jour."
                 />
               </div>
 
