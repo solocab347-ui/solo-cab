@@ -324,10 +324,38 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
           break;
         }
         case 'notifications': {
+          // Vérifier l'état actuel AVANT de re-demander : si déjà 'denied', le navigateur
+          // ne réaffichera PAS la prompt → il faut ouvrir les paramètres directement.
+          const currentStatus = await checkNotifications();
+          log({ action: 'notifications', method: isNative ? 'native_plugin' : 'web_api', status: 'attempt', message: `État actuel: ${currentStatus}` });
+
           if (isNative) {
             const { PushNotifications } = await import('@capacitor/push-notifications');
+
+            // Si déjà refusé sur Android/iOS, requestPermissions() retourne immédiatement 'denied'
+            // sans afficher la prompt. On doit envoyer l'utilisateur aux paramètres système.
+            if (currentStatus === 'denied') {
+              log({ action: 'notifications', method: 'intent_fallback', status: 'attempt', message: 'Permission déjà refusée — ouverture des paramètres système' });
+              if (platform === 'android') {
+                try { await SoloCabPermissions.openAppDetailsSettings(); }
+                catch { await openAndroidSettingsFallback('notifications', log); }
+              } else if (platform === 'ios') {
+                // iOS : seul le bouton "Réglages" système permet de réactiver
+                try {
+                  const { App } = await import('@capacitor/app');
+                  // app-settings: ouvre directement la page de l'app dans Réglages iOS
+                  await App.openUrl({ url: 'app-settings:' });
+                } catch (e) {
+                  log({ action: 'notifications', method: 'intent_fallback', status: 'error', message: 'Impossible d\'ouvrir les Réglages iOS', details: String(e) });
+                }
+              }
+              result = 'denied';
+              break;
+            }
+
             const r = await PushNotifications.requestPermissions();
             result = mapCapacitorState(r.receive);
+            log({ action: 'notifications', method: 'native_plugin', status: result === 'granted' ? 'success' : 'error', message: `requestPermissions() → ${result}` });
             if (result === 'granted') {
               try {
                 await PushNotifications.register();
@@ -339,13 +367,32 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
                   console.warn('[Permissions] register() a échoué:', regErr);
                 }
               }
-            } else if (platform === 'android') {
-              // Si refus persistant, ouvrir directement les paramètres notif système
-              await openAndroidSettingsFallback('notifications');
+            } else if (result === 'denied' && platform === 'android') {
+              // Refus immédiat (ex : user a coché "Ne plus demander") → paramètres
+              await openAndroidSettingsFallback('notifications', log);
             }
           } else if ('Notification' in window) {
+            // ===== Web (PWA / navigateur) =====
+            if (currentStatus === 'denied') {
+              // Le navigateur ne réaffichera plus la prompt → on guide l'utilisateur
+              log({ action: 'notifications', method: 'web_api', status: 'webview_blocked', message: 'Notifications bloquées par le navigateur — l\'utilisateur doit les réactiver manuellement dans les paramètres du site' });
+              alert(
+                'Notifications bloquées par votre navigateur.\n\n' +
+                'Pour les réactiver :\n' +
+                '1. Tapez sur l\'icône 🔒 (cadenas) à gauche de l\'URL\n' +
+                '2. Sélectionnez "Autorisations" ou "Notifications"\n' +
+                '3. Choisissez "Autoriser" puis rechargez la page.\n\n' +
+                '💡 Pour des alertes même téléphone verrouillé, installez l\'app native.'
+              );
+              result = 'denied';
+              break;
+            }
             const r = await Notification.requestPermission();
             result = r as PermissionStatus;
+            log({ action: 'notifications', method: 'web_api', status: result === 'granted' ? 'success' : 'error', message: `Notification.requestPermission() → ${result}` });
+          } else {
+            log({ action: 'notifications', method: 'web_api', status: 'error', message: 'API Notification non supportée par ce navigateur' });
+            result = 'unsupported';
           }
           break;
         }
