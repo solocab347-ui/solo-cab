@@ -162,13 +162,25 @@ export function IndependenceFunnel({
               <p className="text-[11px] text-muted-foreground">{PERIOD_LABEL[period]}</p>
             </div>
           </div>
-          <Badge
-            variant="secondary"
-            className="gap-1 bg-primary/10 text-primary border-primary/20"
-          >
-            <Sparkles className="w-3 h-3" />
-            {independencePct}% direct
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="secondary"
+              className="gap-1 bg-primary/10 text-primary border-primary/20"
+            >
+              <Sparkles className="w-3 h-3" />
+              {independencePct}% direct
+            </Badge>
+            {driverId && (
+              <AcquisitionTargetsQuickEdit
+                driverId={driverId}
+                currentCardsTarget={monthlyObjective?.cards_proposed_target}
+                currentScansTarget={monthlyObjective?.qr_scans_target}
+                currentDirectClientsTarget={monthlyObjective?.direct_clients_target}
+                currentIndependencePct={monthlyObjective?.independence_percentage_target}
+                onSaved={onTargetsUpdated}
+              />
+            )}
+          </div>
         </div>
 
         {/* Punchline */}
