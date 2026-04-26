@@ -83,24 +83,42 @@ export function ObjectivesDashboard({ driverId, driverName }: ObjectivesDashboar
         }
       />
 
+      {/* 2quater. Alertes seuils — actionnables, par-dessus le coach */}
+      <AcquisitionAlerts
+        entries={hook.dailyEntries}
+        objectives={hook.objectives}
+        totalDirectClients={hook.driverStats.totalClients}
+        loyalClientsCount={acquisition.loyalClientsCount}
+        onEditTargets={() => setEditTargetsOpen(true)}
+        onAlertsChange={setActiveAlertIds}
+      />
+
       {/* 2ter. Mentor d'acquisition contextuel — célèbre, alerte, conseille */}
       <AcquisitionCoach
         entries={hook.dailyEntries}
         totalDirectClients={hook.driverStats.totalClients}
         loyalClientsCount={acquisition.loyalClientsCount}
         driverName={driverName}
+        suppressedNudgeIds={suppressedNudgeIds}
       />
 
       {/* 3. Quick Daily Input — saisir l'activité (incl. tracking acquisition) */}
       <QuickPlatformEntry
         driverId={driverId}
-        onEntrySaved={() => hook.fetchAll?.()}
+        onEntrySaved={() => { hook.fetchAll?.(); acquisition.refetch(); }}
       />
 
       {/* 4. Progress Overview — cibles CA en conséquence */}
       <InlineProgressCards progress={hook.progress} driverId={driverId} />
 
-      {/* 5. Inline Objectives Editor — edit in place */}
+      {/* 5a. Quick edit cibles d'acquisition — popover dédié */}
+      <AcquisitionTargetsQuickEdit
+        driverId={driverId}
+        defaultOpen={editTargetsOpen}
+        onUpdate={() => { hook.fetchAll?.(); acquisition.refetch(); }}
+      />
+
+      {/* 5b. Inline Objectives Editor — édition complète des cibles CA */}
       <InlineObjectivesEditor
         driverId={driverId}
         onUpdate={() => hook.fetchAll?.()}
