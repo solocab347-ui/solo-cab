@@ -88,6 +88,19 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+      - name: Verify .ipa artifact exists
+        script: |
+          set -e
+          echo "🔍 Vérification de la présence du .ipa avant publication"
+          IPA_FILE=$(find build/ios/ipa -maxdepth 2 -name "*.ipa" | head -n 1)
+          if [ -z "$IPA_FILE" ] || [ ! -f "$IPA_FILE" ]; then
+            echo "❌ ERREUR : aucun fichier .ipa trouvé dans build/ios/ipa/"
+            echo "   Contenu du dossier :"
+            ls -la build/ios/ipa/ 2>/dev/null || echo "   (dossier inexistant)"
+            exit 1
+          fi
+          IPA_SIZE=$(du -h "$IPA_FILE" | cut -f1)
+          echo "✅ .ipa trouvé : $IPA_FILE ($IPA_SIZE)"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
