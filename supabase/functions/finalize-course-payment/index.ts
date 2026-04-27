@@ -567,10 +567,11 @@ serve(async (req) => {
           // Solder les arriérés cash si récupérés
           await settleArrears(
             supabaseClient,
-            arrears.rowsToSettle.map((r) => r.id),
+            arrears.rowsToSettle,
             insertedPayment?.id ?? null,
             course_id,
             course.driver_id,
+            arrears.consolidatedDebtBeforeCents,
             arrears.consolidatedDebtToReduceCents,
           );
 
@@ -776,10 +777,11 @@ serve(async (req) => {
           // Solder les arriérés cash si récupérés
           await settleArrears(
             supabaseClient,
-            arrears.rowsToSettle.map((r) => r.id),
+            arrears.rowsToSettle,
             insertedOrphanPayment?.id ?? null,
             course_id,
             course.driver_id,
+            arrears.consolidatedDebtBeforeCents,
             arrears.consolidatedDebtToReduceCents,
           );
 
@@ -1039,10 +1041,11 @@ serve(async (req) => {
       // Solder les arriérés cash si récupérés
       await settleArrears(
         supabaseClient,
-        fbArrears.rowsToSettle.map((r) => r.id),
+        fbArrears.rowsToSettle,
         insertedFbPayment?.id ?? null,
         course_id,
         course.driver_id,
+        fbArrears.consolidatedDebtBeforeCents,
         fbArrears.consolidatedDebtToReduceCents,
       );
 
