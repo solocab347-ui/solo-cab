@@ -357,7 +357,7 @@ export function SimplifiedOnboardingTunnel({
             <span className="text-sm font-semibold text-foreground">Configuration</span>
           </div>
           <button
-            onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth'; }}
+            onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
