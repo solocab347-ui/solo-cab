@@ -200,7 +200,9 @@ export function SharedCoursesInCoursesList({ driverId }: Props) {
 
   const handleOpenPaymentDialog = (courseId: string, requestedMethod: string | null) => {
     setSelectedCourseId(courseId);
-    setPaymentMethod(requestedMethod || '');
+    // Cash interdit sur courses partagées : on n'auto-sélectionne jamais 'cash'
+    const safeMethod = requestedMethod && requestedMethod !== 'cash' ? requestedMethod : '';
+    setPaymentMethod(safeMethod);
     setShowPaymentDialog(true);
   };
 
