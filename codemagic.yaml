@@ -155,6 +155,19 @@ workflows:
         script: |
           cd android
           ./gradlew bundleRelease
+      - name: Verify .aab artifact exists
+        script: |
+          set -e
+          echo "🔍 Vérification de la présence du .aab avant publication"
+          AAB_FILE=$(find android/app/build/outputs -name "*.aab" | head -n 1)
+          if [ -z "$AAB_FILE" ] || [ ! -f "$AAB_FILE" ]; then
+            echo "❌ ERREUR : aucun fichier .aab trouvé dans android/app/build/outputs/"
+            echo "   Contenu du dossier :"
+            find android/app/build/outputs -type f 2>/dev/null || echo "   (dossier inexistant)"
+            exit 1
+          fi
+          AAB_SIZE=$(du -h "$AAB_FILE" | cut -f1)
+          echo "✅ .aab trouvé : $AAB_FILE ($AAB_SIZE)"
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
