@@ -412,6 +412,10 @@ export function ObjectivesGoalsFunnel({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25 }}
               >
+                {STEP_INTENT[currentStep.id] && (
+                  <WhyBanner text={STEP_INTENT[currentStep.id]!} />
+                )}
+
                 {currentStep.id === "intro" && <IntroStep />}
 
                 {currentStep.id === "revenue" && (
