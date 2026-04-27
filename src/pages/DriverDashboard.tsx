@@ -257,8 +257,28 @@ const DriverDashboard = () => {
       }
     }
   }, [driverProfile?.driver?.id]);
-  
-  // Use unified partnership notification count hook
+
+  // Funnel obligatoire: fixer ses objectifs à la 1ère connexion (post-onboarding, post-profil)
+  useEffect(() => {
+    const drv = driverProfile?.driver;
+    if (!drv) return;
+    if (!drv.onboarding_completed) return; // attend la fin de l'onboarding
+    if (showProfileWizard) return; // attend la fin du wizard de profil
+    const objectivesDone =
+      (drv as any).objectives_completed === true ||
+      (drv as any).onboarding_objectives_completed === true;
+    if (!objectivesDone) {
+      setShowObjectivesFunnel(true);
+    } else {
+      setShowObjectivesFunnel(false);
+    }
+  }, [
+    driverProfile?.driver?.id,
+    driverProfile?.driver?.onboarding_completed,
+    (driverProfile?.driver as any)?.objectives_completed,
+    (driverProfile?.driver as any)?.onboarding_objectives_completed,
+    showProfileWizard,
+  ]);
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 
   // Handle URL parameters for tab navigation (from notifications)
