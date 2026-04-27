@@ -94,6 +94,7 @@ import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
 import { UnifiedFinancesHub } from "@/components/driver/hubs/UnifiedFinancesHub";
 import { UnifiedPerformanceHub } from "@/components/driver/hubs/UnifiedPerformanceHub";
 import { UnifiedToolsHub } from "@/components/driver/hubs/UnifiedToolsHub";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -1173,6 +1174,13 @@ const DriverDashboard = () => {
 
       {/* Global Floating Map Button — accessible from any dashboard tab */}
       {driverIdForProvider && <FloatingMapButton onClick={() => setViewMode("map")} />}
+
+      {/* Widget de signalement (bug / amélioration) avec capture d'écran obligatoire pour les bugs */}
+      <FeedbackWidget
+        userType="driver"
+        userName={driverProfile?.full_name || (driverProfile as any)?.driver?.full_name}
+        userEmail={driverProfile?.email}
+      />
 
     </div>
     </DriverAvailabilityProvider>

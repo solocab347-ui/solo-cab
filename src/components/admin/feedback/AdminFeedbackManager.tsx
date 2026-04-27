@@ -35,6 +35,7 @@ import {
   ArrowUpDown
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FeedbackAttachmentImage } from "@/components/feedback/FeedbackAttachmentImage";
 
 interface FeedbackItem {
   id: string;
@@ -148,6 +149,19 @@ export const AdminFeedbackManager = () => {
 
       if (error) throw error;
 
+      // 🔔 Notifier l'utilisateur (chauffeur / client) qu'une réponse est arrivée
+      if (selectedFeedback.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: selectedFeedback.user_id,
+          title: selectedFeedback.feedback_type === "bug"
+            ? "💬 Réponse à votre signalement de bug"
+            : "💬 Réponse à votre suggestion",
+          message: `${adminName} : « ${responseMessage.trim().slice(0, 140)}${responseMessage.trim().length > 140 ? "…" : ""} »`,
+          type: "info",
+          link: selectedFeedback.user_type === "client" ? "/client-dashboard" : "/driver-dashboard",
+        });
+      }
+
       toast.success("Réponse envoyée avec succès");
       setResponseMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
@@ -191,6 +205,25 @@ export const AdminFeedbackManager = () => {
         .eq("id", selectedFeedback.id);
 
       if (error) throw error;
+
+      // 🔔 Notifier l'utilisateur des transitions visibles (in_progress / resolved)
+      if (selectedFeedback.user_id && (newStatus === "in_progress" || newStatus === "resolved")) {
+        const titleByStatus: Record<string, string> = {
+          in_progress: "🛠️ Votre signalement est en cours de traitement",
+          resolved: "✅ Votre signalement est résolu",
+        };
+        const msgByStatus: Record<string, string> = {
+          in_progress: `Notre équipe a pris en charge : « ${selectedFeedback.title} ».`,
+          resolved: `« ${selectedFeedback.title} » a été marqué comme résolu. Consultez les échanges pour plus de détails.`,
+        };
+        await supabase.from("notifications").insert({
+          user_id: selectedFeedback.user_id,
+          title: titleByStatus[newStatus],
+          message: msgByStatus[newStatus],
+          type: newStatus === "resolved" ? "success" : "info",
+          link: selectedFeedback.user_type === "client" ? "/client-dashboard" : "/driver-dashboard",
+        });
+      }
 
       toast.success("Statut mis à jour");
       setSelectedFeedback({ ...selectedFeedback, status: newStatus });
@@ -512,19 +545,12 @@ export const AdminFeedbackManager = () => {
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedFeedback.user_feedback_attachments.map((att) => (
-                        <a
+                        <FeedbackAttachmentImage
                           key={att.id}
-                          href={att.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <img
-                            src={att.file_url}
-                            alt={att.file_name}
-                            className="w-32 h-32 object-cover rounded-lg border hover:border-primary transition-colors"
-                          />
-                        </a>
+                          fileUrl={att.file_url}
+                          fileName={att.file_name}
+                          className="w-32 h-32"
+                        />
                       ))}
                     </div>
                   </div>

@@ -17,6 +17,8 @@ interface Props {
 const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
   const [driver, setDriver] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [sharedSent, setSharedSent] = useState<any[]>([]);
+  const [sharedReceived, setSharedReceived] = useState<any[]>([]);
   const [stripeAccount, setStripeAccount] = useState<any>(null);
   const [stripePayouts, setStripePayouts] = useState<any[]>([]);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
@@ -43,15 +45,19 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
     try {
       const filterDate = getFilterDate();
       
-      const [driverRes, coursesRes, ratingsRes] = await Promise.all([
+      const [driverRes, coursesRes, ratingsRes, sharedSentRes, sharedRecvRes] = await Promise.all([
         supabase.from("drivers").select("*, profiles:user_id(first_name, last_name, email, phone, full_name, profile_photo_url)").eq("id", driverId).single(),
         supabase.from("courses").select("id, course_number, pickup_address, destination_address, final_payment_amount, payment_method_used, payment_status, status, updated_at, created_at, stripe_payment_intent_id, client_id, clients(profiles:user_id(full_name))").eq("driver_id", driverId).eq("status", "completed").gte("updated_at", filterDate).order("updated_at", { ascending: false }).limit(100),
         supabase.from("course_ratings").select("rating").eq("driver_id", driverId),
+        supabase.from("shared_courses").select("id, course_amount, commission_amount, commission_percentage, payment_status, status, completed_at, created_at, receiver_driver_id").eq("sender_driver_id", driverId).gte("created_at", filterDate).order("created_at", { ascending: false }).limit(50),
+        supabase.from("shared_courses").select("id, course_amount, commission_amount, commission_percentage, payment_status, status, completed_at, created_at, sender_driver_id").eq("receiver_driver_id", driverId).gte("created_at", filterDate).order("created_at", { ascending: false }).limit(50),
       ]);
 
       const driverData = driverRes.data;
       setDriver(driverData);
       setCourses(coursesRes.data || []);
+      setSharedSent(sharedSentRes.data || []);
+      setSharedReceived(sharedRecvRes.data || []);
 
       // Calculate stats
       const coursesList = coursesRes.data || [];
@@ -309,6 +315,60 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
               })}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Courses partagées — cohérence chauffeur ↔ admin */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wallet className="w-4 h-4" /> Courses partagées
+            <Badge variant="outline" className="ml-2 text-[10px]">Émises : {sharedSent.length}</Badge>
+            <Badge variant="outline" className="text-[10px]">Reçues : {sharedReceived.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            { title: "En tant qu'émetteur (commission perçue)", rows: sharedSent, isSender: true },
+            { title: "En tant que receveur (revenus nets)", rows: sharedReceived, isSender: false },
+          ].map((block) => (
+            <div key={block.title}>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">{block.title}</p>
+              {block.rows.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Aucune entrée sur la période.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-right text-xs">Montant TTC</TableHead>
+                      <TableHead className="text-right text-xs">{block.isSender ? "Commission %" : "Net receveur"}</TableHead>
+                      <TableHead className="text-xs">Paiement</TableHead>
+                      <TableHead className="text-xs">Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {block.rows.map((s: any) => {
+                      const amount = Number(s.course_amount || 0);
+                      const commission = Number(s.commission_amount || 0);
+                      const net = block.isSender ? commission : Math.max(0, amount - commission);
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell className="text-xs">{format(new Date(s.created_at), "dd/MM HH:mm")}</TableCell>
+                          <TableCell className="text-right text-sm">{amount.toFixed(2)}€</TableCell>
+                          <TableCell className="text-right text-sm font-bold text-emerald-600">
+                            {block.isSender ? `${commission.toFixed(2)}€ (${s.commission_percentage}%)` : `${net.toFixed(2)}€`}
+                          </TableCell>
+                          <TableCell><Badge variant="outline" className="text-[10px]">{s.payment_status || "—"}</Badge></TableCell>
+                          <TableCell><Badge variant={s.status === "completed" ? "default" : "secondary"} className="text-[10px]">{s.status}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
