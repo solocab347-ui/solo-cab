@@ -174,14 +174,13 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
             continue;
           }
 
-          const { data: publicUrl } = supabase.storage
-            .from("feedback-attachments")
-            .getPublicUrl(fileName);
-
+          // Bucket privé → on stocke le chemin (storage path) ; l'admin
+          // génère un signed URL au moment de l'affichage / téléchargement.
           await supabase.from("user_feedback_attachments").insert({
             feedback_id: feedback.id,
             file_name: attachment.file.name,
-            file_url: publicUrl.publicUrl,
+            // file_url contient le path interne au bucket pour les nouvelles entrées
+            file_url: fileName,
             file_type: attachment.file.type,
             file_size: attachment.file.size
           });
