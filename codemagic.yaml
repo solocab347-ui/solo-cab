@@ -40,6 +40,38 @@ workflows:
       - name: Capacitor sync iOS
         script: |
           npx cap sync ios
+      - name: iOS preflight - validate workspace & scheme
+        script: |
+          set -e
+          echo "🔍 Préflight iOS — vérification des fichiers du projet"
+          echo ""
+          echo "📂 Contenu de ios/ :"
+          ls -la ios/ || { echo "❌ Dossier ios/ introuvable"; exit 1; }
+          echo ""
+          echo "📂 Contenu de ios/App/ :"
+          ls -la ios/App/ || { echo "❌ Dossier ios/App/ introuvable"; exit 1; }
+          echo ""
+          if [ ! -d "$XCODE_WORKSPACE" ]; then
+            echo "❌ ERREUR : Xcode workspace introuvable à : $XCODE_WORKSPACE"
+            echo "   Workspaces .xcworkspace présents dans le repo :"
+            find ios -name "*.xcworkspace" -maxdepth 4 -type d || true
+            exit 1
+          fi
+          echo "✅ Workspace trouvé : $XCODE_WORKSPACE"
+          echo ""
+          echo "📋 Liste des schémas disponibles dans le workspace :"
+          AVAILABLE_SCHEMES=$(xcodebuild -workspace "$XCODE_WORKSPACE" -list 2>/dev/null || true)
+          echo "$AVAILABLE_SCHEMES"
+          if ! echo "$AVAILABLE_SCHEMES" | grep -qE "^[[:space:]]+${XCODE_SCHEME}$"; then
+            echo "❌ ERREUR : Schéma '$XCODE_SCHEME' introuvable dans le workspace."
+            exit 1
+          fi
+          echo "✅ Schéma '$XCODE_SCHEME' trouvé"
+          echo ""
+          echo "📄 Podfile :"
+          test -f ios/App/Podfile && echo "✅ Podfile présent" || { echo "❌ Podfile manquant"; exit 1; }
+          echo ""
+          echo "🎯 Préflight iOS réussi — prêt pour xcodebuild"
       - name: Set up code signing
         script: |
           xcode-project use-profiles
