@@ -305,16 +305,22 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
 
               {/* Status pill */}
                <button
-                onClick={isBusy ? undefined : handleToggleAvailability}
+                onClick={isBusy || isToggling ? undefined : handleToggleAvailability}
+                disabled={isBusy || isToggling}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 shadow-md ${
                   isBusy
                     ? 'bg-amber-500 text-white shadow-amber-500/30 cursor-default'
                     : isOnline
                       ? 'bg-emerald-500 text-white shadow-emerald-500/30'
                       : 'bg-destructive text-destructive-foreground shadow-destructive/30'
-                }`}
+                } ${isToggling ? 'opacity-70 cursor-wait' : ''}`}
               >
-                {isBusy ? (
+                {isToggling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Mise à jour…
+                  </>
+                ) : isBusy ? (
                   <>
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
