@@ -16774,6 +16774,7 @@ export type Database = {
           client_notified: boolean | null
           client_notified_at: string | null
           client_payment_method: string | null
+          client_payment_url: string | null
           commission_amount: number
           commission_percentage: number
           completed_at: string | null
@@ -16787,6 +16788,8 @@ export type Database = {
           partner_reference_number: string | null
           partnership_id: string | null
           payment_id: string | null
+          payment_link_created_at: string | null
+          payment_link_created_by: string | null
           payment_method_used: string | null
           payment_required: boolean | null
           payment_settled: boolean | null
@@ -16805,6 +16808,7 @@ export type Database = {
           solocab_fee_cents: number
           started_at: string | null
           status: string | null
+          stripe_checkout_session_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -16817,6 +16821,7 @@ export type Database = {
           client_notified?: boolean | null
           client_notified_at?: string | null
           client_payment_method?: string | null
+          client_payment_url?: string | null
           commission_amount: number
           commission_percentage: number
           completed_at?: string | null
@@ -16830,6 +16835,8 @@ export type Database = {
           partner_reference_number?: string | null
           partnership_id?: string | null
           payment_id?: string | null
+          payment_link_created_at?: string | null
+          payment_link_created_by?: string | null
           payment_method_used?: string | null
           payment_required?: boolean | null
           payment_settled?: boolean | null
@@ -16848,6 +16855,7 @@ export type Database = {
           solocab_fee_cents?: number
           started_at?: string | null
           status?: string | null
+          stripe_checkout_session_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -16860,6 +16868,7 @@ export type Database = {
           client_notified?: boolean | null
           client_notified_at?: string | null
           client_payment_method?: string | null
+          client_payment_url?: string | null
           commission_amount?: number
           commission_percentage?: number
           completed_at?: string | null
@@ -16873,6 +16882,8 @@ export type Database = {
           partner_reference_number?: string | null
           partnership_id?: string | null
           payment_id?: string | null
+          payment_link_created_at?: string | null
+          payment_link_created_by?: string | null
           payment_method_used?: string | null
           payment_required?: boolean | null
           payment_settled?: boolean | null
@@ -16891,6 +16902,7 @@ export type Database = {
           solocab_fee_cents?: number
           started_at?: string | null
           status?: string | null
+          stripe_checkout_session_id?: string | null
           updated_at?: string | null
         }
         Relationships: [

@@ -9,11 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Car, Calendar, Euro, FileText, AlertCircle, Loader2, Hash,
-  CheckCircle2, CircleDot, ArrowRight, TrendingDown, Play, CheckCheck
+  CheckCircle2, CircleDot, ArrowRight, TrendingDown, Play, CheckCheck, CreditCard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SharedCourseClientInfo } from './SharedCourseClientInfo';
+import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
 
 interface Props {
   driverId: string | null;
@@ -40,6 +41,8 @@ interface ReceivedCourse {
   course_number: string | null;
   shared_status: string;
   partner_reference_number: string | null;
+  payment_status: string | null;
+  client_payment_url: string | null;
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
@@ -67,7 +70,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
           id, course_id, sender_driver_id, course_amount,
           commission_percentage, commission_amount, solocab_fee_cents,
           earnings_for_receiver, status, created_at, completed_at,
-          partner_reference_number,
+          partner_reference_number, payment_status, client_payment_url,
           courses!inner(
             pickup_address, destination_address, scheduled_date,
             passengers_count, distance_km, status, course_number
@@ -119,6 +122,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             course_number: course.course_number,
             shared_status: item.status,
             partner_reference_number: (item as any).partner_reference_number,
+            payment_status: (item as any).payment_status ?? null,
+            client_payment_url: (item as any).client_payment_url ?? null,
             sender_name: profile?.full_name || 'Partenaire',
             sender_photo: driverData.card_photo_url || profile?.profile_photo_url,
             sender_company: driverData.company_name,
@@ -224,6 +229,8 @@ function ReceivedCourseCard({ course, driverId, shortenAddress, formatSharingNum
   getStatusBadge: (s: string) => JSX.Element; onAction: () => void;
   actionLoading: string | null; setActionLoading: (id: string | null) => void;
 }) {
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
   const handleStartCourse = async () => {
     setActionLoading(course.id);
     try {
@@ -234,12 +241,20 @@ function ReceivedCourseCard({ course, driverId, shortenAddress, formatSharingNum
     } catch { toast.error('Erreur'); } finally { setActionLoading(null); }
   };
 
+  const isPaid = String(course.payment_status || '').startsWith('paid');
+
   const handleCompleteCourse = async () => {
+    // GARDE-FOU : aucune course partagée ne peut être terminée sans confirmation Stripe
+    if (!isPaid) {
+      toast.error('Paiement Stripe non confirmé — générez ou vérifiez le lien client avant de terminer');
+      setPaymentDialogOpen(true);
+      return;
+    }
     setActionLoading(course.id);
     try {
       const { error } = await supabase.from('shared_courses').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', course.id);
       if (error) throw error;
-      toast.success('Course terminée ! Le paiement sera traité automatiquement via Stripe.');
+      toast.success('Course terminée — paiement Stripe déjà encaissé.');
       onAction();
     } catch { toast.error('Erreur'); } finally { setActionLoading(null); }
   };
@@ -299,6 +314,21 @@ function ReceivedCourseCard({ course, driverId, shortenAddress, formatSharingNum
             </div>
           )}
           <SharedCourseClientInfo sharedCourseId={course.id} driverId={driverId} sharedStatus={course.shared_status} />
+
+          {/* Statut paiement Stripe */}
+          <div className="pt-2 border-t">
+            {isPaid ? (
+              <Badge className="bg-green-500/15 text-green-700 border-green-500/30">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Course déjà réglée — Stripe confirmé
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Paiement client requis avant la fin
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Financial breakdown */}
@@ -321,22 +351,55 @@ function ReceivedCourseCard({ course, driverId, shortenAddress, formatSharingNum
               <span className="text-green-600">{course.earnings.toFixed(2)} €</span>
             </div>
           </div>
-          
+
           {(canStart || canComplete) && (
-            <div className="mt-3 flex gap-2">
-              {canStart && (
-                <Button size="sm" className="flex-1" onClick={handleStartCourse} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Play className="h-4 w-4 mr-1" />Démarrer</>}
+            <div className="mt-3 space-y-2">
+              {!isPaid && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-primary/40 text-primary"
+                  onClick={() => setPaymentDialogOpen(true)}
+                >
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Lien / QR de paiement client
                 </Button>
               )}
-              {canComplete && (
-                <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={handleCompleteCourse} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCheck className="h-4 w-4 mr-1" />Terminer</>}
-                </Button>
+              <div className="flex gap-2">
+                {canStart && (
+                  <Button size="sm" className="flex-1" onClick={handleStartCourse} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Play className="h-4 w-4 mr-1" />Démarrer</>}
+                  </Button>
+                )}
+                {canComplete && (
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                    onClick={handleCompleteCourse}
+                    disabled={isLoading || !isPaid}
+                    title={!isPaid ? 'Stripe doit confirmer le paiement avant de terminer' : undefined}
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCheck className="h-4 w-4 mr-1" />Terminer</>}
+                  </Button>
+                )}
+              </div>
+              {!isPaid && canComplete && (
+                <p className="text-[10px] text-amber-700 text-center">
+                  ⚠ Bouton "Terminer" verrouillé tant que Stripe n'a pas confirmé le paiement TTC.
+                </p>
               )}
             </div>
           )}
         </div>
+
+        <SharedCoursePaymentLinkDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          sharedCourseId={course.id}
+          amountTtc={course.course_amount}
+          courseLabel={`${shortenAddress(course.pickup_address)} → ${shortenAddress(course.destination_address)}`}
+          onPaid={onAction}
+        />
       </CardContent>
     </Card>
   );

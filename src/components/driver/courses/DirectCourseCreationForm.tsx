@@ -746,6 +746,45 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
           />
         </div>
 
+        {/* Récap final avant soumission */}
+        <Card className="p-4 bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/30">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle className="w-4 h-4 text-primary" />
+            <Label className="font-semibold">Récapitulatif avant confirmation</Label>
+          </div>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Mode de tarification</span>
+              <span className="font-medium">
+                {priceMode === 'auto' && 'Calculatrice SoloCab'}
+                {priceMode === 'percentage' && `Calculé + ${pricePercentage || 0}%`}
+                {priceMode === 'manual' && 'Montant manuel'}
+              </span>
+            </div>
+            {calculatedPrice !== null && priceMode !== 'manual' && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Prix calculé de base</span>
+                <span>{calculatedPrice.toFixed(2)}€</span>
+              </div>
+            )}
+            {priceMode === 'percentage' && calculatedPrice !== null && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Surcharge (+{pricePercentage || 0}%)</span>
+                <span>+{(calculatedPrice * ((parseFloat(pricePercentage) || 0) / 100)).toFixed(2)}€</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-primary/20 pt-2 mt-2">
+              <span className="font-semibold">Prix TTC final facturé</span>
+              <span className="font-bold text-primary text-lg">
+                {finalPrice !== null ? `${finalPrice.toFixed(2)}€` : '—'}
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground italic pt-1">
+              Ce montant exact sera transmis au backend et utilisé pour le lien de paiement Stripe.
+            </p>
+          </div>
+        </Card>
+
         {/* Boutons */}
         <div className="flex gap-4 pt-4">
           <Button
@@ -758,13 +797,13 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
           </Button>
           <Button
             type="submit"
-            disabled={courseLoading || calculating}
+            disabled={courseLoading || calculating || finalPrice === null}
             className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg"
           >
             {courseLoading ? "Création..." : calculating ? "Calcul..." : (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Confirmer la course
+                Confirmer ({finalPrice !== null ? `${finalPrice.toFixed(2)}€` : '—'})
               </>
             )}
           </Button>
