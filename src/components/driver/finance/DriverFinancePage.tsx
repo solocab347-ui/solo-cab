@@ -120,6 +120,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
   const [carryOver, setCarryOver] = useState<CarryOverStats | null>(null);
+  const [monthlyTransactions, setMonthlyTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
@@ -142,7 +143,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const weekEndIso = weekEnd.toISOString();
 
       // Load all data in parallel
-      const [balancesResult, pendingResult, paymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
+      const monthFloor = new Date();
+      monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 11, 1);
+      monthFloor.setUTCHours(0, 0, 0, 0);
+
+      const [balancesResult, pendingResult, paymentsResult, monthlyPaymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
           .select(`
@@ -173,6 +178,14 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .order("created_at", { ascending: false })
           .limit(200),
         supabase
+          .from("stripe_transactions")
+          .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
+          .eq("driver_id", driverId)
+          .in("status", ["succeeded", "completed"])
+          .gte("created_at", monthFloor.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        supabase
           .from("drivers")
           .select("stripe_connect_charges_enabled, cash_debt_pending")
           .eq("id", driverId)
@@ -195,6 +208,18 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       }));
       setSettlements(mapped);
       setPendingPayments(pendingResult.data || []);
+      setMonthlyTransactions(((monthlyPaymentsResult.data || []) as any[]).map((p: any) => ({
+        id: p.id,
+        course_id: p.course_id || p.id,
+        amount: Number(p.gross_amount || 0),
+        net_to_driver: Number(p.net_amount || 0),
+        stripe_fee_amount: Number(p.stripe_fee_amount || 0),
+        solocab_fee_amount: Number(p.solocab_fee_amount || 0),
+        status: p.status,
+        payment_type: p.transaction_type || "course_payment",
+        payment_method: p.payment_method || "stripe",
+        created_at: p.created_at,
+      })));
 
       // Calculate wallet stats from stripe_transactions
       const txns = (paymentsResult.data || []) as any[];
@@ -358,6 +383,10 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const d = new Date(ref);
       set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
+    for (const t of monthlyTransactions) {
+      const d = new Date(t.created_at);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
     // Toujours inclure les 6 derniers mois pour permettre une consultation
     // même si aucun règlement n'a été produit (nouveau chauffeur, période creuse).
     const now = new Date();
@@ -366,7 +395,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
     return Array.from(set).sort().reverse().slice(0, 12);
-  }, [settlements]);
+  }, [settlements, monthlyTransactions]);
 
   // Agrégat mensuel à partir des règlements hebdomadaires.
   // On utilise week_end pour rattacher chaque règlement au mois où il a été clôturé,
@@ -379,18 +408,29 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return key === selectedMonth;
     });
+    const txns = monthlyTransactions.filter((t) => {
+      const d = new Date(t.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return key === selectedMonth;
+    });
+    const uniqueCourses = new Set(txns.map((t) => t.course_id || t.id));
     return {
       weeks: filtered,
-      totalNet: filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
-      totalFees: filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
+      transactions: txns,
+      totalNet: txns.length > 0
+        ? txns.reduce((sum, t) => sum + (t.net_to_driver || 0), 0)
+        : filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
+      totalFees: txns.length > 0
+        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0), 0)
+        : filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
       totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
-      totalCourses: filtered.reduce(
+      totalCourses: txns.length > 0 ? uniqueCourses.size : filtered.reduce(
         (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
         0
       ),
       failedCount: filtered.filter((s) => s.transfer_status === 'failed' || s.transfer_status === 'skipped').length,
     };
-  }, [settlements, selectedMonth]);
+  }, [settlements, monthlyTransactions, selectedMonth]);
 
   // Early return APRÈS tous les hooks pour préserver l'ordre stable des hooks.
   if (loading) {
@@ -868,41 +908,48 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                 </div>
               </Card>
 
-              {monthlyAggregate.weeks.length === 0 ? (
+              {monthlyAggregate.weeks.length === 0 && monthlyAggregate.transactions.length === 0 ? (
                 <Card className="p-8 text-center text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>Aucun règlement pour ce mois</p>
                 </Card>
               ) : (
-                monthlyAggregate.weeks.map((s) => (
-                  <Card key={s.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">
-                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
-                        </span>
+                <>
+                  {monthlyAggregate.weeks.map((s) => (
+                    <Card key={s.id} className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">
+                            {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                          </span>
+                        </div>
+                        {getStatusBadge(s.transfer_status)}
                       </div>
-                      {getStatusBadge(s.transfer_status)}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Frais transaction</span>
-                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Frais transaction</span>
+                          <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Frais</span>
+                          <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Net versé</span>
+                          <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                            {s.net_amount.toFixed(2)}€
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Frais</span>
-                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Net versé</span>
-                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                          {s.net_amount.toFixed(2)}€
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                ))
+                    </Card>
+                  ))}
+                  {monthlyAggregate.weeks.length === 0 && monthlyAggregate.transactions.length > 0 && (
+                    <Card className="p-4 bg-primary/5 border-primary/20 text-sm text-muted-foreground">
+                      Courses du mois visibles ci-dessus ; le règlement hebdomadaire correspondant n'a pas encore été clôturé.
+                    </Card>
+                  )}
+                </>
               )}
             </>
           )}

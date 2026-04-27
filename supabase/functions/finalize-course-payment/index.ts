@@ -35,9 +35,9 @@ const computeApplicationFeeWithArrears = async (
   arrearsRecoveredCents: number;
   rowsToSettle: Array<{ id: string; cents: number }>;
   totalArrearsCents: number;
-  consolidatedDebtToReduceCents: number;
+  consolidatedDebtAfterRecoveryCents: number;
 }> => {
-  const [{ data: pendingCashRows }, { data: driverRow }] = await Promise.all([
+  const [{ data: pendingCashRows }, { data: driverRow }, { data: unresolvedWeeklyBalances }] = await Promise.all([
     supabaseClient
       .from("driver_balance_pending")
       .select("id, solocab_fee, created_at")
@@ -50,45 +50,87 @@ const computeApplicationFeeWithArrears = async (
       .select("cash_debt_pending")
       .eq("id", driverId)
       .single(),
+    supabaseClient
+      .from("driver_weekly_balances")
+      .select("settlement_id")
+      .eq("driver_id", driverId)
+      .in("transfer_status", ["compensated_cash", "below_minimum", "failed", "skipped", "skipped_no_stripe"]),
   ]);
 
-  const rows = (pendingCashRows || []).map((r: any) => ({
+  const settlementIds = (unresolvedWeeklyBalances || []).map((b: any) => b.settlement_id).filter(Boolean);
+  const { data: unresolvedSettledCashRows } = settlementIds.length > 0
+    ? await supabaseClient
+      .from("driver_balance_pending")
+      .select("id, solocab_fee, created_at")
+      .eq("driver_id", driverId)
+      .eq("payment_type", "cash")
+      .is("settled_via_payment_id", null)
+      .in("settlement_id", settlementIds)
+      .order("created_at", { ascending: true })
+    : { data: [] };
+
+  const pendingRows = (pendingCashRows || []).map((r: any) => ({
     id: r.id as string,
     cents: Math.round((Number(r.solocab_fee) || 0) * 100),
   }));
-  const pendingRowsCents = rows.reduce((s, r) => s + r.cents, 0);
+  const previousRows = (unresolvedSettledCashRows || []).map((r: any) => ({
+    id: r.id as string,
+    cents: Math.round((Number(r.solocab_fee) || 0) * 100),
+  }));
+  const pendingRowsCents = pendingRows.reduce((s, r) => s + r.cents, 0);
+  const previousRowsCents = previousRows.reduce((s, r) => s + r.cents, 0);
   const consolidatedDebtCents = Math.max(
-    0,
+    previousRowsCents,
     Math.round((Number(driverRow?.cash_debt_pending) || 0) * 100),
   );
-  const totalArrearsCents = pendingRowsCents + consolidatedDebtCents;
+  const totalArrearsCents = consolidatedDebtCents + pendingRowsCents;
 
   const estimatedStripeFeeCents = Math.ceil(captureAmountCents * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE * 100);
   const maxApplicationFeeCents = Math.max(0, captureAmountCents - estimatedStripeFeeCents);
-  const desiredCents = SOLOCAB_FEE_CENTS + totalArrearsCents;
-  const finalFeeCents = Math.min(desiredCents, maxApplicationFeeCents);
-  const arrearsRecoveredCents = Math.max(0, finalFeeCents - SOLOCAB_FEE_CENTS);
+  const baseFeeCents = Math.min(SOLOCAB_FEE_CENTS, maxApplicationFeeCents);
+  let remainingCapacity = Math.max(0, maxApplicationFeeCents - baseFeeCents);
 
-  // Priorité 1 : éponger les rows pending dans l'ordre chronologique
   const rowsToSettle: Array<{ id: string; cents: number }> = [];
-  let remaining = arrearsRecoveredCents;
-  for (const r of rows) {
-    if (r.cents <= remaining) {
+  let previousRecoveredCents = 0;
+  let pendingRecoveredCents = 0;
+
+  // Priorité 1 : arriérés des semaines précédentes, uniquement par frais entiers.
+  for (const r of previousRows) {
+    if (r.cents > 0 && r.cents <= remainingCapacity) {
       rowsToSettle.push(r);
-      remaining -= r.cents;
-      if (remaining <= 0) break;
+      previousRecoveredCents += r.cents;
+      remainingCapacity -= r.cents;
     }
   }
-  // Priorité 2 : tout ce qui n'a pas été utilisé pour les rows pending
-  // décrémente la dette consolidée (drivers.cash_debt_pending).
-  const consolidatedDebtToReduceCents = Math.min(consolidatedDebtCents, remaining);
+
+  // Si la dette consolidée n'a plus de lignes détaillées, on la récupère par blocs de 0,50€.
+  const virtualPreviousDebtCents = Math.max(0, consolidatedDebtCents - previousRowsCents);
+  const virtualRecoveredCents = Math.min(
+    virtualPreviousDebtCents,
+    Math.floor(remainingCapacity / SOLOCAB_FEE_CENTS) * SOLOCAB_FEE_CENTS,
+  );
+  previousRecoveredCents += virtualRecoveredCents;
+  remainingCapacity -= virtualRecoveredCents;
+
+  // Priorité 2 : frais cash de la semaine en cours, eux aussi par lignes entières.
+  for (const r of pendingRows) {
+    if (r.cents > 0 && r.cents <= remainingCapacity) {
+      rowsToSettle.push(r);
+      pendingRecoveredCents += r.cents;
+      remainingCapacity -= r.cents;
+    }
+  }
+
+  const arrearsRecoveredCents = previousRecoveredCents + pendingRecoveredCents;
+  const finalFeeCents = baseFeeCents + arrearsRecoveredCents;
+  const consolidatedDebtAfterRecoveryCents = Math.max(0, consolidatedDebtCents - previousRecoveredCents);
 
   return {
     finalFeeCents,
     arrearsRecoveredCents,
     rowsToSettle,
     totalArrearsCents,
-    consolidatedDebtToReduceCents,
+    consolidatedDebtAfterRecoveryCents,
   };
 };
 
@@ -102,7 +144,7 @@ const settleArrears = async (
   paymentId: string | null,
   courseId: string,
   driverId?: string,
-  consolidatedDebtToReduceCents?: number,
+  consolidatedDebtAfterRecoveryCents?: number,
 ): Promise<void> => {
   if (rowIds.length > 0) {
     const { error } = await supabaseClient
@@ -121,15 +163,8 @@ const settleArrears = async (
     }
   }
 
-  if (driverId && consolidatedDebtToReduceCents && consolidatedDebtToReduceCents > 0) {
-    const { data: current } = await supabaseClient
-      .from("drivers")
-      .select("cash_debt_pending")
-      .eq("id", driverId)
-      .single();
-    const currentCents = Math.round((Number(current?.cash_debt_pending) || 0) * 100);
-    const newCents = Math.max(0, currentCents - consolidatedDebtToReduceCents);
-    const newEur = newCents / 100;
+  if (driverId && typeof consolidatedDebtAfterRecoveryCents === "number") {
+    const newEur = Math.max(0, consolidatedDebtAfterRecoveryCents) / 100;
     const { error: updErr } = await supabaseClient
       .from("drivers")
       .update({ cash_debt_pending: newEur })
@@ -137,9 +172,8 @@ const settleArrears = async (
     if (updErr) {
       logStep("Failed to decrement consolidated cash debt", { error: updErr.message, driverId });
     } else {
-      logStep("Consolidated cash debt decremented", {
+      logStep("Consolidated cash debt synchronized", {
         driverId,
-        reducedEur: consolidatedDebtToReduceCents / 100,
         newDebtEur: newEur,
       });
     }
