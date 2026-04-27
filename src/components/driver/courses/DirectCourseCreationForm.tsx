@@ -47,9 +47,11 @@ interface DirectCourseCreationFormProps {
   title?: string;
   /** Custom subtitle shown in the form header. */
   subtitle?: string;
+  /** Force le retrait des paiements espèces (utilisé pour le flow "créer + partager"). */
+  forShareFlow?: boolean;
 }
 
-export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipPostCreationScreen, title, subtitle }: DirectCourseCreationFormProps) => {
+export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipPostCreationScreen, title, subtitle, forShareFlow }: DirectCourseCreationFormProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createDirectCourse, loading: courseLoading } = useDirectCourseCreation();
