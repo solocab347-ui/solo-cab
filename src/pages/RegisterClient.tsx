@@ -280,7 +280,7 @@ const RegisterClient = () => {
     } catch (error: any) {
       if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
         toast.error("Cette adresse email est déjà utilisée. Connectez-vous.");
-        navigate("/auth?redirect=/client-dashboard");
+        navigate("/login?redirect=/client-dashboard");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
       }
