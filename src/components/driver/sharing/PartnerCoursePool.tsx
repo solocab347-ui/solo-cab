@@ -26,7 +26,12 @@ import {
   Phone,
   Mail,
   Eye,
-  User
+  User,
+  Sparkles,
+  Handshake,
+  Receipt,
+  Navigation,
+  TrendingUp,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
