@@ -316,19 +316,17 @@ function ReceivedCourseCard({ course, driverId, shortenAddress, formatSharingNum
           )}
           <SharedCourseClientInfo sharedCourseId={course.id} driverId={driverId} sharedStatus={course.shared_status} />
 
-          {/* Statut paiement Stripe */}
-          <div className="pt-2 border-t">
-            {isPaid ? (
-              <Badge className="bg-green-500/15 text-green-700 border-green-500/30">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Course déjà réglée — Stripe confirmé
-              </Badge>
-            ) : (
-              <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                Paiement client requis avant la fin
-              </Badge>
-            )}
+          {/* Timeline de progression bilatérale (sync temps réel) */}
+          <div className="pt-2">
+            <SharedCourseProgressTimeline
+              sharedCourseId={course.id}
+              perspective="receiver"
+              initial={{
+                status: course.shared_status,
+                payment_status: course.payment_status,
+                completed_at: course.completed_at,
+              }}
+            />
           </div>
         </div>
 
