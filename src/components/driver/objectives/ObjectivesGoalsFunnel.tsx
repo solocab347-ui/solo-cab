@@ -534,57 +534,93 @@ export function ObjectivesGoalsFunnel({
 
 function IntroStep() {
   return (
-    <div className="space-y-5 text-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center">
-        <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+    <div className="space-y-5">
+      {/* Hero */}
+      <div className="text-center space-y-3">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center">
+          <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+        </div>
+        <div>
+          <h3 className="text-xl sm:text-2xl font-bold mb-1">
+            On configure ton copilote
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            6 étapes rapides pour transformer SoloCab en vrai outil de pilotage —
+            adapté à <strong className="text-foreground">tes</strong> objectifs,
+            pas à des moyennes.
+          </p>
+        </div>
       </div>
-      <div>
-        <h3 className="text-xl sm:text-2xl font-bold mb-2">
-          Cap sur ton indépendance
-        </h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          En 7 étapes rapides, on définit ensemble ton revenu, ton planning, tes
-          plateformes, tes dépenses et ton plan d'acquisition clients. Tu pourras
-          tout modifier ensuite.
+
+      {/* Pourquoi on te pose ces questions */}
+      <div className="bg-card border-2 border-primary/20 rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Compass className="w-4 h-4 text-primary" />
+          <h4 className="text-sm font-bold text-foreground">
+            Pourquoi on te pose ces questions ?
+          </h4>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Sans tes objectifs, ton dashboard n'est qu'un compteur. Avec eux, il
+          devient un copilote qui te dit chaque jour{" "}
+          <strong className="text-foreground">où tu en es</strong> et{" "}
+          <strong className="text-foreground">ce qu'il te reste à faire</strong>{" "}
+          pour atteindre ton cap.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        <ValueCard
-          icon={Crown}
-          title="0,50€"
-          desc="par course"
-          subtitle="Notre seule commission"
-        />
-        <ValueCard
-          icon={Sparkles}
-          title="100%"
-          desc="de tes revenus"
-          subtitle="Aucun pourcentage prélevé"
-        />
-        <ValueCard
-          icon={Users}
-          title="Tes clients"
-          desc="t'appartiennent"
-          subtitle="QR + carte personnelle"
-        />
-        <ValueCard
-          icon={Heart}
-          title="19,99€"
-          desc="Premium /mois"
-          subtitle="Optionnel — réseau VTC"
-        />
+      {/* À quoi ça va servir */}
+      <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <h4 className="text-sm font-bold text-foreground">
+            À quoi ça va servir concrètement ?
+          </h4>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground">
+          <UseCaseItem icon={LineChart} label="Suivi en temps réel" desc="Ton dashboard affiche ta progression jour, semaine, mois." />
+          <UseCaseItem icon={CheckCircle2} label="Saisie quotidienne pré-remplie" desc="Tes plateformes et cibles sont chargées automatiquement." />
+          <UseCaseItem icon={Bell} label="Alertes intelligentes" desc="Tu es prévenu si tu dérives ou si tu dépasses tes limites." />
+          <UseCaseItem icon={QrCode} label="Plan de libération" desc="Tu mesures ton autonomie vs Uber/Bolt mois après mois." />
+        </ul>
       </div>
 
-      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-left flex gap-2">
-        <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+      {/* Valeurs SoloCab */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <ValueCard icon={Crown} title="0,50€" desc="par course" subtitle="Notre seule commission" />
+        <ValueCard icon={Sparkles} title="100%" desc="de tes revenus" subtitle="Aucun pourcentage prélevé" />
+        <ValueCard icon={Users} title="Tes clients" desc="t'appartiennent" subtitle="QR + carte personnelle" />
+        <ValueCard icon={Heart} title="19,99€" desc="Premium /mois" subtitle="Optionnel — réseau VTC" />
+      </div>
+
+      {/* Combien de temps */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs flex items-center gap-2">
+        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-muted-foreground">
-          <strong className="text-foreground">L'objectif n'est pas le CA</strong>,
-          c'est ton indépendance. Chaque scan QR = un client qui revient sans
-          intermédiaire. Tu vises 30% de revenus directs ? On t'y emmène.
+          <strong className="text-foreground">3 minutes chrono</strong> — et tu
+          pourras tout modifier ensuite dans Performance → Objectifs.
         </p>
       </div>
     </div>
+  );
+}
+
+function UseCaseItem({
+  icon: Icon,
+  label,
+  desc,
+}: {
+  icon: any;
+  label: string;
+  desc: string;
+}) {
+  return (
+    <li className="flex items-start gap-2">
+      <Icon className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+      <div>
+        <strong className="text-foreground">{label}.</strong> {desc}
+      </div>
+    </li>
   );
 }
 
