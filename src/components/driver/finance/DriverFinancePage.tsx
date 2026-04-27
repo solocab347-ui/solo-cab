@@ -359,7 +359,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           shared_courses_as_sender: 0,
           shared_courses_as_receiver: 0,
           standard_courses_count: 0,
-          transfer_status: key === weekStartIso.slice(0, 10) ? "pending" : "completed",
+          transfer_status: "no_activity",
           stripe_transfer_id: null,
           transfer_executed_at: null,
           transfer_error: null,
