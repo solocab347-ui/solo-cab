@@ -36,7 +36,35 @@ serve(async (req) => {
     
     // CRITICAL: must use ASYNC variant in Deno (SubtleCrypto is async)
     const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-    logStep("✓ Signature verified", { type: event.type });
+    logStep("✓ Signature verified", { type: event.type, id: event.id });
+
+    // ========================================
+    // IDEMPOTENCY GUARD — prevent double-processing if Stripe retries the same event
+    // (insert-then-check pattern using the UNIQUE constraint on stripe_event_id)
+    // ========================================
+    const { error: idempInsertError } = await supabaseClient
+      .from("stripe_webhook_events")
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        livemode: event.livemode,
+        status: "received",
+      });
+
+    if (idempInsertError) {
+      // 23505 = unique_violation → event already received, ack quickly so Stripe stops retrying
+      const code = (idempInsertError as any).code;
+      if (code === "23505") {
+        logStep("⚠️ Duplicate event ignored", { id: event.id, type: event.type });
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      // Non-blocking: log and continue (we never want to lose a real event)
+      logStep("WARN: idempotency log insert failed", { code, message: idempInsertError.message });
+    }
+
 
     // ========================================
     // DRIVER SUBSCRIPTION EVENTS
@@ -1680,6 +1708,18 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    // Best-effort: mark this event as failed in the idempotency log so admin can retry/inspect
+    try {
+      const sigForLookup = req.headers.get("stripe-signature");
+      if (sigForLookup) {
+        // We cannot extract event.id without re-parsing; log a synthetic row keyed by signature
+        await supabaseClient.from("stripe_webhook_events").update({
+          status: "error",
+          error_message: errorMessage,
+          processed_at: new Date().toISOString(),
+        }).eq("status", "received").gte("received_at", new Date(Date.now() - 60_000).toISOString());
+      }
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
   }
 });
