@@ -17,8 +17,10 @@ import { toast } from 'sonner';
 import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
 import { DirectCourseCreationForm } from '../courses/DirectCourseCreationForm';
 import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerDialog';
+import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
 import { useDriverPremium } from '@/hooks/useDriverPremium';
 import { PremiumGate } from '@/components/premium/PremiumGate';
+import { CreditCard, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   driverId: string | null;
