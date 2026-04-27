@@ -76,6 +76,9 @@ export function useDriverLocationTracker({
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const mountedRef = useRef(true);
   const trackingRef = useRef(false);
+  // Serialize availability toggles — prevents UI freeze from rapid clicks
+  const availabilityInFlightRef = useRef<Promise<void> | null>(null);
+  const lastAvailabilityRef = useRef<{ value: boolean; time: number } | null>(null);
 
   // ── Send location to DB — silent, no UI re-render on success ──
   const sendLocationToServer = useCallback(
