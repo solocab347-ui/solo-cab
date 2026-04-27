@@ -692,6 +692,8 @@ serve(async (req) => {
             arrears.rowsToSettle.map((r) => r.id),
             insertedOrphanPayment?.id ?? null,
             course_id,
+            course.driver_id,
+            arrears.consolidatedDebtToReduceCents,
           );
 
           try {
