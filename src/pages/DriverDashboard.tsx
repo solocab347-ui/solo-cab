@@ -60,6 +60,7 @@ import {
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
+import { ObjectivesGoalsFunnel } from "@/components/driver/objectives/ObjectivesGoalsFunnel";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
 import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
 import { SpontaneousPayment } from "@/components/driver/finance/SpontaneousPayment";
@@ -135,6 +136,7 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
+  const [showObjectivesFunnel, setShowObjectivesFunnel] = useState(false);
   const [viewMode, setViewModeState] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
     // Explicit URL override always wins
