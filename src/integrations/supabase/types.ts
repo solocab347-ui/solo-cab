@@ -22461,6 +22461,15 @@ export type Database = {
         Args: { _message: string; _token: string }
         Returns: Json
       }
+      set_driver_availability_atomic: {
+        Args: { _driver_id: string; _target: string }
+        Returns: {
+          blocked: boolean
+          blocked_reason: string
+          driver_status: string
+          is_available_now: boolean
+        }[]
+      }
       set_favorite_vehicle: {
         Args: { _driver_id: string; _vehicle_id: string }
         Returns: boolean
