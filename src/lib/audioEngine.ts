@@ -1,6 +1,6 @@
 /**
  * Shared Audio Engine for SoloCab
- * Solves mobile/PWA/Capacitor AudioContext autoplay restrictions
+ * Solves mobile/Capacitor AudioContext autoplay restrictions
  * by reusing a single AudioContext and unlocking it on first user gesture.
  */
 
