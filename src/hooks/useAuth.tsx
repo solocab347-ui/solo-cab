@@ -335,7 +335,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.success("Compte créé avec succès !");
     } catch (error: any) {
       logger.error("Signup error", { error });
-      if (error.message.includes("already registered")) {
+      // Toast déjà affiché par la pré-vérification, on évite le doublon.
+      if (error.message === "EMAIL_ALREADY_EXISTS") {
+        throw error;
+      }
+      if (error.message?.includes("already registered")) {
         toast.error("Cet email est déjà utilisé");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
