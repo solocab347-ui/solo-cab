@@ -19,6 +19,7 @@ import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
+import { ClientCourseProgressTimeline } from "@/components/client/ClientCourseProgressTimeline";
 import logo from "@/assets/logo-solocab.png";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
@@ -514,6 +515,20 @@ const ClientRideTracking = () => {
             </Card>
           </motion.div>
         </AnimatePresence>
+
+        {/* Timeline bilatérale (paiement → check-in → fin → confirmation) */}
+        {!isCancelled && (
+          <ClientCourseProgressTimeline
+            courseId={course.id}
+            initial={{
+              status: course.status,
+              payment_status: course.payment_status,
+              payment_method: course.payment_method,
+              completed_at: (course as any).completed_at ?? null,
+              client_rating: course.client_rating,
+            }}
+          />
+        )}
 
         {/* Téléchargement de facture après finalisation */}
         {isCompleted && (
