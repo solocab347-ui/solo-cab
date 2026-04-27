@@ -139,6 +139,12 @@ export function DriverPaymentMethodSelector({
           : "Indiquez le moyen de paiement prévu pour cette course"
         }
       </p>
+
+      {excludeReason && excludeMethods.length > 0 && (
+        <p className="text-[11px] text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded p-2">
+          ⚠️ {excludeReason}
+        </p>
+      )}
     </div>
   );
 }
