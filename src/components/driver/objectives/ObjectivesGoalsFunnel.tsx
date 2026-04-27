@@ -50,7 +50,6 @@ type StepId =
   | "activity"
   | "planning"
   | "platforms"
-  | "expenses"
   | "liberation"
   | "summary";
 
@@ -60,10 +59,25 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "activity", label: "Activité" },
   { id: "planning", label: "Planning" },
   { id: "platforms", label: "Plateformes" },
-  { id: "expenses", label: "Dépenses" },
   { id: "liberation", label: "Libération" },
   { id: "summary", label: "Validation" },
 ];
+
+// Phrase pédagogique affichée en bandeau au début de chaque étape
+const STEP_INTENT: Partial<Record<StepId, string>> = {
+  revenue:
+    "Pour mesurer ta progression et calculer combien tu dois faire chaque semaine pour y arriver.",
+  activity:
+    "Pour vérifier que ton CA est atteignable avec ton volume — ou ajuster ton panier moyen.",
+  planning:
+    "Pour calculer ton taux horaire réel et t'alerter si tu approches les limites de sécurité VTC.",
+  platforms:
+    "Pour mesurer ta dépendance aux plateformes aujourd'hui et suivre ta libération mois après mois.",
+  liberation:
+    "Chaque carte donnée, chaque QR scanné = un client qui revient sans commission. C'est ton vrai capital.",
+  summary:
+    "Tout est modifiable dans Performance → Objectifs. Cette config alimente ton dashboard dès demain matin.",
+};
 
 // Valeurs SoloCab de référence
 const SOLOCAB_VALUES = {
