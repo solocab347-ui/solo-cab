@@ -392,6 +392,18 @@ export function SentPartnerCourses({ driverId }: Props) {
         </AlertDescription>
       </Alert>
 
+      <Alert className="bg-amber-500/10 border-amber-500/30">
+        <Info className="h-4 w-4 text-amber-700" />
+        <AlertDescription className="text-xs text-amber-900 leading-relaxed">
+          <strong>Responsabilité paiement (course hors SoloCab) :</strong> si vous avez créé la course pour
+          votre <strong>client privé</strong>, c'est à vous de générer le lien Stripe et de vous assurer
+          que le client paie (lien copiable, QR code, partage WhatsApp/SMS). Vous pouvez aussi
+          déléguer l'encaissement au chauffeur receveur, mais il est <strong>recommandé</strong> de gérer
+          vous-même votre client. Aucune course ne peut être terminée sans confirmation de paiement
+          Stripe.
+        </AlertDescription>
+      </Alert>
+
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pending" className="text-xs">En cours ({activeCourses.length})</TabsTrigger>
