@@ -182,7 +182,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         // virements précédents échoués) qui n'a pas encore été settlé.
         supabase
           .from("driver_balance_pending" as any)
-          .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type")
+          .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, created_at")
           .eq("driver_id", driverId)
           .eq("status", "pending"),
       ]);
