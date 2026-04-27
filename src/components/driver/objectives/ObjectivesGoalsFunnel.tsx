@@ -455,18 +455,6 @@ export function ObjectivesGoalsFunnel({
                   />
                 )}
 
-                {currentStep.id === "expenses" && (
-                  <ExpensesStep
-                    expenses={expenses}
-                    onChange={setExpenses}
-                    total={calc.totalExpenses}
-                    solocabFees={calc.solocabFees}
-                    targetRevenue={targetRevenue}
-                    netRevenue={calc.netRevenue}
-                    netMarginPct={calc.netMarginPct}
-                  />
-                )}
-
                 {currentStep.id === "liberation" && (
                   <LiberationStep
                     cards={cardsTarget}
@@ -487,10 +475,8 @@ export function ObjectivesGoalsFunnel({
                     km={targetKm}
                     days={selectedDays.length}
                     hours={hoursPerDay}
-                    expenses={calc.totalExpenses}
                     solocabFees={calc.solocabFees}
-                    netRevenue={calc.netRevenue}
-                    netMarginPct={calc.netMarginPct}
+                    revenueAfterFees={calc.revenueAfterFees}
                     platforms={selectedPlatforms}
                     cards={cardsTarget}
                     scans={qrScansTarget}
