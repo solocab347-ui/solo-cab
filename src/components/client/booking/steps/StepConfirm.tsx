@@ -191,8 +191,25 @@ export function StepConfirm({
   const handleRegister = async () => {
     setIsRegistering(true);
     try {
+      // Vérification préalable email déjà utilisé
+      const cleanEmail = regEmail.trim().toLowerCase();
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error('Email déjà utilisé', {
+          description: message,
+          duration: 8000,
+          action: {
+            label: 'Se connecter',
+            onClick: () => { window.location.href = loginPath; },
+          },
+        });
+        setIsRegistering(false);
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: regEmail.trim(),
+        email: cleanEmail,
         password: regPassword,
         options: { data: { full_name: regName.trim(), phone: regPhone.trim(), user_type: 'client' } },
       });
