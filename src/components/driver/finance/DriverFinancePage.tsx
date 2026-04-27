@@ -99,6 +99,21 @@ interface PendingBalanceStats {
   cardFeesCollected: number; // SoloCab fees from card courses (already taken)
 }
 
+/**
+ * Reports / arriérés portés depuis les semaines précédentes :
+ *  - frais espèces non encore prélevés (status pending, créés AVANT lundi 00:00 UTC)
+ *  - virements Stripe précédents en échec / skipped (RIB manquant, rejet bancaire…)
+ *
+ * Ces montants se cumulent semaine après semaine jusqu'à être encaissés.
+ */
+interface CarryOverStats {
+  cashFeesOwedFromPastWeeks: number;
+  pastPendingNet: number;
+  pastPendingCourses: number;
+  failedSettlements: Settlement[];
+  failedSettlementsTotal: number;
+}
+
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
