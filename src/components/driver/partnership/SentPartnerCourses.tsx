@@ -537,23 +537,61 @@ export function SentPartnerCourses({ driverId }: Props) {
                   </div>
                   {getStatusBadge(course.status)}
                 </div>
-                <div className="p-3">
+                <div className="p-3 space-y-1">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-primary" />
                     {format(new Date(course.scheduled_date), "d MMM yyyy", { locale: fr })}
                   </div>
-                </div>
-                <div className="p-3 border-t bg-green-500/5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Frais de transaction reçus</span>
-                    <span className="font-bold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {course.pickup_address} → {course.destination_address}
                   </div>
+                </div>
+                {/* Récap financier complet bilatéral */}
+                <div className="p-3 border-t bg-green-500/5 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Montant TTC client</span>
+                    <span className="font-medium">{course.course_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vos frais de transaction ({course.commission_percentage}%)</span>
+                    <span className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Reversé au receveur</span>
+                    <span className="text-foreground">{course.earnings_for_receiver.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Frais SoloCab</span>
+                    <span className="text-muted-foreground">-{course.solocab_fee.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t font-semibold">
+                    <span>Crédité sur votre portefeuille</span>
+                    <span className="text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  </div>
+                  {String(course.payment_status || '').startsWith('paid') && (
+                    <div className="flex items-center gap-1 pt-1 text-[10px] text-green-700">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Paiement Stripe confirmé
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </TabsContent>
       </Tabs>
+
+      {/* Dialog lien de paiement Stripe (côté émetteur) */}
+      {paymentDialog && (
+        <SharedCoursePaymentLinkDialog
+          open={!!paymentDialog}
+          onOpenChange={(open) => { if (!open) setPaymentDialog(null); }}
+          sharedCourseId={paymentDialog.id}
+          amountTtc={paymentDialog.amount}
+          courseLabel={paymentDialog.label}
+          onPaid={() => loadSentCourses()}
+        />
+      )}
     </div>
   );
 }
