@@ -955,6 +955,8 @@ serve(async (req) => {
         fbArrears.rowsToSettle.map((r) => r.id),
         insertedFbPayment?.id ?? null,
         course_id,
+        course.driver_id,
+        fbArrears.consolidatedDebtToReduceCents,
       );
 
       try {
