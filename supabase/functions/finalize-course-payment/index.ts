@@ -561,15 +561,22 @@ serve(async (req) => {
           logStep("Found orphaned PI in Stripe!", { piId: orphanedPI.id, amount: orphanedPI.amount });
 
           // Capture it
-          const captureAmountCents = Math.round(totalAmount * 100);
+          const captureAmountCents = Math.min(Math.round(totalAmount * 100), orphanedPI.amount);
+
+          // Calcul application_fee avec arriérés cash
+          const arrears = await computeApplicationFeeWithArrears(
+            supabaseClient,
+            course.driver_id,
+            captureAmountCents,
+          );
+
           const captured = await stripe.paymentIntents.capture(orphanedPI.id, {
-            amount_to_capture: Math.min(captureAmountCents, orphanedPI.amount),
+            amount_to_capture: captureAmountCents,
+            application_fee_amount: arrears.finalFeeCents,
           });
 
-          const STRIPE_PERCENTAGE = 0.015;
-          const STRIPE_FIXED_FEE = 0.25;
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
-          const solocabFee = SOLOCAB_FEE_CENTS / 100;
+          const solocabFee = arrears.finalFeeCents / 100; // Inclut éventuels arriérés
           const totalFees = solocabFee + stripeFee;
           const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
@@ -591,27 +598,43 @@ serve(async (req) => {
             net_amount_to_driver: netToDriver,
           }).eq("id", course_id);
 
-          const { error: orphanPayErr } = await supabaseClient.from("payments").insert({
-            course_id,
-            driver_id: course.driver_id,
-            client_id: course.client_id,
-            stripe_payment_intent_id: captured.id,
-            stripe_charge_id: (captured.latest_charge as string) || null,
-            amount: totalAmount,
-            captured_amount: totalAmount,
-            application_fee_amount: solocabFee,
-            stripe_fee_amount: stripeFee,
-            net_to_driver: netToDriver,
-            status: "succeeded",
-            payment_type: "course_capture",
-            capture_method: "manual",
-            payment_method: "card",
-            captured_at: new Date().toISOString(),
-            metadata: { flow: "orphaned_pi_recovery" },
-          });
+          const { data: insertedOrphanPayment, error: orphanPayErr } = await supabaseClient
+            .from("payments")
+            .insert({
+              course_id,
+              driver_id: course.driver_id,
+              client_id: course.client_id,
+              stripe_payment_intent_id: captured.id,
+              stripe_charge_id: (captured.latest_charge as string) || null,
+              amount: totalAmount,
+              captured_amount: totalAmount,
+              application_fee_amount: solocabFee,
+              stripe_fee_amount: stripeFee,
+              net_to_driver: netToDriver,
+              status: "succeeded",
+              payment_type: "course_capture",
+              capture_method: "manual",
+              payment_method: "card",
+              captured_at: new Date().toISOString(),
+              metadata: {
+                flow: "orphaned_pi_recovery",
+                arrears_recovered_eur: arrears.arrearsRecoveredCents / 100,
+                arrears_count: arrears.rowsToSettle.length,
+              },
+            })
+            .select("id")
+            .maybeSingle();
           if (orphanPayErr?.code === "23505") {
             logStep("Payment already recorded (duplicate prevented)", { course_id });
           }
+
+          // Solder les arriérés cash si récupérés
+          await settleArrears(
+            supabaseClient,
+            arrears.rowsToSettle.map((r) => r.id),
+            insertedOrphanPayment?.id ?? null,
+            course_id,
+          );
 
           try {
             await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
