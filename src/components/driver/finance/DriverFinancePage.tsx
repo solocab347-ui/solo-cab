@@ -493,6 +493,14 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />Échoué</Badge>;
       case "skipped":
         return <Badge variant="secondary" className="gap-1"><AlertCircle className="w-3 h-3" />Ignoré</Badge>;
+      case "below_minimum":
+        return <Badge variant="outline" className="gap-1 border-warning/30 text-warning"><Clock className="w-3 h-3" />Sous 1€</Badge>;
+      case "compensated_cash":
+        return <Badge variant="outline" className="gap-1 border-warning/30 text-warning"><CheckCircle className="w-3 h-3" />Compensé</Badge>;
+      case "skipped_no_stripe":
+        return <Badge variant="secondary" className="gap-1"><AlertCircle className="w-3 h-3" />Stripe absent</Badge>;
+      case "no_activity":
+        return <Badge variant="outline" className="gap-1 border-border text-muted-foreground"><Calendar className="w-3 h-3" />Aucune course</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
