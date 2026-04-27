@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  Users, Send, UserCheck, Star, Car, Phone, Hash, 
-  Globe, Heart, AlertTriangle, CreditCard, ExternalLink, Loader2, Euro
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Users, Send, Star, Car, Heart, Globe, AlertTriangle,
+  CreditCard, ExternalLink, Loader2, Euro, Crown, Clock,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -30,8 +34,6 @@ interface Favorite {
   driver_rides: number;
   show_rating: boolean;
   show_rides: boolean;
-  show_phone: boolean;
-  driver_phone: string | null;
   has_stripe_connect: boolean;
   is_premium: boolean;
 }
@@ -44,7 +46,7 @@ interface ShareCourseWithPartnerDialogProps {
   onSuccess: () => void;
 }
 
-type ShareMode = 'choose' | 'network' | 'favorites' | 'specific';
+const SOLOCAB_FEE_PER_DRIVER = 0.25; // shared course fee, per driver
 
 export function ShareCourseWithPartnerDialog({
   open,
@@ -54,51 +56,54 @@ export function ShareCourseWithPartnerDialog({
   onSuccess,
 }: ShareCourseWithPartnerDialogProps) {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [selectedFavorite, setSelectedFavorite] = useState<Favorite | null>(null);
+  const [selectedFavoriteIds, setSelectedFavoriteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // Publication settings
+  const [commission, setCommission] = useState<number>(22); // 20-25%
+  const [alsoBroadcastNetwork, setAlsoBroadcastNetwork] = useState<boolean>(true);
+  const [favoritesWindow, setFavoritesWindow] = useState<number>(5); // minutes
   const [notifyClient, setNotifyClient] = useState(true);
   const [clientMessage, setClientMessage] = useState('');
-  const [shareMode, setShareMode] = useState<ShareMode>('choose');
-  
+
   const { isPremium } = useDriverPremium();
-  const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
+  const { isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
 
   useEffect(() => {
     if (open && driverId && isPremium) {
       loadFavorites();
-      setShareMode('choose');
-      setSelectedFavorite(null);
+      setSelectedFavoriteIds(new Set());
+      setCommission(22);
+      setAlsoBroadcastNetwork(true);
+      setFavoritesWindow(5);
     }
   }, [open, driverId, isPremium]);
 
   useEffect(() => {
-    if (selectedFavorite) {
-      setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedFavorite.driver_name} qui prendra soin de vous.`
-      );
-    } else if (shareMode === 'network' || shareMode === 'favorites') {
-      setClientMessage(
-        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous.`
-      );
-    }
-  }, [selectedFavorite, shareMode]);
+    setClientMessage(
+      `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous.`,
+    );
+  }, [open]);
 
-  // Block sharing for non-premium users
+  // ---- Premium gating ----
   if (open && !isPremium) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Fonctionnalité Premium</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              Fonctionnalité Premium
+            </DialogTitle>
             <DialogDescription>
               Le partage de courses est réservé aux abonnés Premium.
             </DialogDescription>
           </DialogHeader>
-          <PremiumGate 
-            isPremium={false} 
-            featureName="Partage de courses" 
-            featureDescription="Partagez vos courses avec d'autres chauffeurs et gagnez des rétributions."
+          <PremiumGate
+            isPremium={false}
+            featureName="Partage de courses"
+            featureDescription="Partagez vos courses avec d'autres chauffeurs et touchez une commission de 20 à 25%."
           />
         </DialogContent>
       </Dialog>
@@ -117,227 +122,84 @@ export function ShareCourseWithPartnerDialog({
 
       const enriched: Favorite[] = [];
       for (const fav of favData || []) {
-          const { data: driverData } = await supabase
+        const { data: driverData } = await supabase
           .from('drivers')
-        .select('user_id, company_name, sharing_number, rating, total_rides, card_photo_url, contact_phone, show_phone_for_sharing, show_rating_for_sharing, show_rides_for_sharing, stripe_connect_account_id, stripe_connect_status, subscription_tier, subscription_paid, free_access_granted, free_access_type')
+          .select(`
+            id, full_name, photo_url, company_name, sharing_number,
+            average_rating, completed_rides_count,
+            stripe_connect_account_id, stripe_connect_charges_enabled,
+            premium_active, public_show_rating, public_show_rides
+          `)
           .eq('id', fav.favorite_driver_id)
-          .single();
+          .maybeSingle();
 
-        if (driverData) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, profile_photo_url, phone')
-            .eq('id', driverData.user_id)
-            .single();
-
-          enriched.push({
-            id: fav.id,
-            favorite_driver_id: fav.favorite_driver_id,
-            driver_name: profile?.full_name?.split(' ')[0] || 'Chauffeur',
-            driver_photo: driverData.card_photo_url || profile?.profile_photo_url || null,
-            driver_company: driverData.company_name,
-            driver_sharing_number: driverData.sharing_number,
-            driver_rating: driverData.rating || 0,
-            driver_rides: driverData.total_rides || 0,
-            show_rating: driverData.show_rating_for_sharing ?? false,
-            show_rides: driverData.show_rides_for_sharing ?? false,
-            show_phone: driverData.show_phone_for_sharing ?? false,
-            driver_phone: driverData.show_phone_for_sharing ? (driverData.contact_phone || profile?.phone) : null,
-            has_stripe_connect: !!driverData.stripe_connect_account_id && driverData.stripe_connect_status === 'active',
-            is_premium: (driverData.subscription_tier === 'premium' && driverData.subscription_paid) || 
-              (driverData.free_access_granted && (driverData.free_access_type === 'unlimited' || driverData.free_access_type === 'administrative')),
-          });
-        }
+        if (!driverData) continue;
+        enriched.push({
+          id: fav.id,
+          favorite_driver_id: fav.favorite_driver_id,
+          driver_name: driverData.full_name || 'Chauffeur',
+          driver_photo: driverData.photo_url,
+          driver_company: driverData.company_name,
+          driver_sharing_number: driverData.sharing_number,
+          driver_rating: Number(driverData.average_rating) || 0,
+          driver_rides: driverData.completed_rides_count || 0,
+          show_rating: driverData.public_show_rating ?? true,
+          show_rides: driverData.public_show_rides ?? true,
+          has_stripe_connect: !!(
+            driverData.stripe_connect_account_id && driverData.stripe_connect_charges_enabled
+          ),
+          is_premium: !!driverData.premium_active,
+        });
       }
       setFavorites(enriched);
-    } catch (error) {
-      console.error('Error loading favorites:', error);
+    } catch (err) {
+      console.error('Error loading favorites:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatSharingNumber = (num: number | null) => {
-    if (!num) return 'N/A';
-    return `SOLO-${String(num).padStart(6, '0')}`;
+  const formatSharingNumber = (num: number | null) =>
+    num ? `SOLO-${String(num).padStart(6, '0')}` : 'N/A';
+
+  // ---- Course amount + financial breakdown ----
+  const courseAmount = useMemo(() => {
+    const accepted = course?.devis?.find((d: any) => d.status === 'accepted');
+    return Number(accepted?.amount || course?.devis_amount || 0);
+  }, [course]);
+
+  const breakdown = useMemo(() => {
+    const commissionAmount = (courseAmount * commission) / 100;
+    const senderNet = commissionAmount - SOLOCAB_FEE_PER_DRIVER;
+    const receiverGross = courseAmount - commissionAmount;
+    const receiverNet = receiverGross - SOLOCAB_FEE_PER_DRIVER;
+    return { commissionAmount, senderNet, receiverGross, receiverNet };
+  }, [courseAmount, commission]);
+
+  const eligibleFavorites = useMemo(
+    () => favorites.filter((f) => f.has_stripe_connect),
+    [favorites],
+  );
+
+  const toggleFavorite = (id: string) => {
+    setSelectedFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  // Calculate commission based on new rules
-  const getCourseAmount = () => {
-    const acceptedDevis = course?.devis?.find((d: any) => d.status === 'accepted');
-    return acceptedDevis?.amount || 0;
-  };
+  const selectAllFavorites = () =>
+    setSelectedFavoriteIds(new Set(eligibleFavorites.map((f) => f.favorite_driver_id)));
 
-  const getCommissionInfo = () => {
-    const amount = getCourseAmount();
-    const percentage = amount < 30 ? 15 : 20;
-    const commission = (amount * percentage) / 100;
-    const solocabFee = 0.10;
-    const receiverEarnings = amount - commission - solocabFee;
-    return { percentage, commission, solocabFee, receiverEarnings, amount };
-  };
+  const clearFavoriteSelection = () => setSelectedFavoriteIds(new Set());
 
-  const handleSendCourse = async () => {
-    if (!course) return;
-    
-    const acceptedDevis = course.devis?.find((d: any) => d.status === 'accepted');
-    if (!acceptedDevis) {
-      toast.error('Le devis doit être accepté avant de partager la course');
-      return;
-    }
-
-    setSending(true);
-    try {
-      const { amount, percentage, commission, solocabFee } = getCommissionInfo();
-      const poolGroupId = crypto.randomUUID();
-
-      if (shareMode === 'network') {
-        // Push to open network pool - visible to all Stripe Connect drivers
-        const { error } = await supabase.from('partner_course_pool').insert({
-          course_id: course.id,
-          sender_driver_id: driverId,
-          partnership_ids: null,
-          course_amount: amount,
-          commission_percentage: percentage,
-          estimated_commission: commission,
-          message: null,
-          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // No expiration
-          sharing_scope: 'network',
-          target_driver_ids: null,
-          solocab_fee_cents: 25,
-          pickup_latitude: course.pickup_latitude || null,
-          pickup_longitude: course.pickup_longitude || null,
-        });
-
-        if (error) throw error;
-
-        // Notify client
-        if (notifyClient && course.client_id) {
-          await notifyClientAboutShare(course.client_id, clientMessage);
-        }
-
-        toast.success('Course publiée sur le réseau de partage !');
-      } else if (shareMode === 'favorites') {
-        // Push to favorites only
-        const stripeReadyFavorites = favorites.filter(f => f.has_stripe_connect);
-        if (stripeReadyFavorites.length === 0) {
-          toast.error('Aucun favori avec Stripe Connect actif');
-          setSending(false);
-          return;
-        }
-
-        const targetIds = stripeReadyFavorites.map(f => f.favorite_driver_id);
-        
-        const { error } = await supabase.from('partner_course_pool').insert({
-          course_id: course.id,
-          sender_driver_id: driverId,
-          partnership_ids: null,
-          course_amount: amount,
-          commission_percentage: percentage,
-          estimated_commission: commission,
-          message: null,
-          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          sharing_scope: 'favorites',
-          target_driver_ids: targetIds,
-          solocab_fee_cents: 25,
-          pickup_latitude: course.pickup_latitude || null,
-          pickup_longitude: course.pickup_longitude || null,
-        });
-
-        if (error) throw error;
-
-        // Notify each favorite
-        for (const fav of stripeReadyFavorites) {
-          const { data: driverData } = await supabase
-            .from('drivers')
-            .select('user_id')
-            .eq('id', fav.favorite_driver_id)
-            .single();
-          
-          if (driverData?.user_id) {
-            await supabase.from('notifications').insert({
-              user_id: driverData.user_id,
-              title: '🤝 Nouvelle course disponible',
-              message: `Une course est disponible pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-              type: 'info',
-              link: '/driver-dashboard',
-            });
-          }
-        }
-
-        if (notifyClient && course.client_id) {
-          await notifyClientAboutShare(course.client_id, clientMessage);
-        }
-
-        toast.success(`Course envoyée à ${stripeReadyFavorites.length} favori(s) !`);
-      } else if (shareMode === 'specific' && selectedFavorite) {
-        if (!selectedFavorite.has_stripe_connect) {
-          toast.error('\'Ce chauffeur na pas Stripe Connect actif');
-          setSending(false);
-          return;
-        }
-
-        // Direct share to specific driver
-        const { error } = await supabase.from('shared_courses').insert({
-          course_id: course.id,
-          partnership_id: null,
-          sender_driver_id: driverId,
-          receiver_driver_id: selectedFavorite.favorite_driver_id,
-          course_amount: amount,
-          commission_percentage: percentage,
-          commission_amount: commission,
-          solocab_fee_cents: 25,
-          sharing_scope: 'specific',
-          status: 'pending',
-          sharing_mode: 'single',
-          client_notified: notifyClient,
-          client_notified_at: notifyClient ? new Date().toISOString() : null,
-          client_message: notifyClient ? clientMessage : null,
-          earnings_for_receiver: amount - commission - 0.10,
-        });
-
-        if (error) throw error;
-
-        // Notify receiver
-        const { data: receiverData } = await supabase
-          .from('drivers')
-          .select('user_id')
-          .eq('id', selectedFavorite.favorite_driver_id)
-          .single();
-
-        if (receiverData?.user_id) {
-          await supabase.from('notifications').insert({
-            user_id: receiverData.user_id,
-            title: '🤝 Nouvelle course partagée',
-            message: `Un chauffeur vous a envoyé une course pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-            type: 'info',
-            link: '/driver-dashboard',
-          });
-        }
-
-        if (notifyClient && course.client_id) {
-          await notifyClientAboutShare(course.client_id, clientMessage);
-        }
-
-        toast.success(`Course envoyée à ${selectedFavorite.driver_name} !`);
-      }
-
-      onOpenChange(false);
-      setSelectedFavorite(null);
-      setClientMessage('');
-      setShareMode('choose');
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error sending course:', error);
-      if (error?.code === '23505') {
-        toast.error('Cette course est déjà partagée');
-      } else {
-        toast.error(`Erreur lors de l'envoi: ${error?.message || 'Erreur inconnue'}`);
-      }
-    } finally {
-      setSending(false);
-    }
-  };
+  // ---- Validation ----
+  const canPublish =
+    !stripeNotConnected &&
+    courseAmount > 0 &&
+    (selectedFavoriteIds.size > 0 || alsoBroadcastNetwork);
 
   const notifyClientAboutShare = async (clientId: string, message: string) => {
     const { data: clientData } = await supabase
@@ -357,10 +219,82 @@ export function ShareCourseWithPartnerDialog({
     }
   };
 
-  if (!course) return null;
+  const handlePublish = async () => {
+    if (!course || !canPublish) return;
+    setSending(true);
+    try {
+      const targetIds =
+        selectedFavoriteIds.size > 0 ? Array.from(selectedFavoriteIds) : null;
 
-  const commissionInfo = getCommissionInfo();
-  const stripeReadyFavorites = favorites.filter(f => f.has_stripe_connect);
+      const { data, error } = await supabase.rpc('publish_course_to_pool', {
+        p_course_id: course.id,
+        p_sender_driver_id: driverId,
+        p_commission_percentage: commission,
+        p_target_favorite_ids: targetIds,
+        p_also_broadcast_network: alsoBroadcastNetwork,
+        p_favorites_window_minutes: favoritesWindow,
+        p_message: null,
+      });
+
+      if (error) throw error;
+      const result = (data as any)?.[0] || data;
+      if (result && result.success === false) {
+        throw new Error(result.message || "Échec de la publication");
+      }
+
+      // Notify client (optional)
+      if (notifyClient && course.client_id) {
+        await notifyClientAboutShare(course.client_id, clientMessage);
+      }
+
+      // Notify selected favorites immediately (best effort)
+      if (targetIds && targetIds.length > 0) {
+        for (const fid of targetIds) {
+          const { data: rec } = await supabase
+            .from('drivers')
+            .select('user_id')
+            .eq('id', fid)
+            .maybeSingle();
+          if (rec?.user_id) {
+            await supabase.from('notifications').insert({
+              user_id: rec.user_id,
+              title: '🤝 Nouvelle course partagée',
+              message: `Une course est disponible pour le ${format(
+                new Date(course.scheduled_date),
+                "d MMMM yyyy 'à' HH:mm",
+                { locale: fr },
+              )} (commission ${commission}%)`,
+              type: 'info',
+              link: '/driver-dashboard',
+            });
+          }
+        }
+      }
+
+      const scopeLabel =
+        targetIds && alsoBroadcastNetwork
+          ? `${targetIds.length} favori(s), puis réseau dans ${favoritesWindow} min`
+          : targetIds
+            ? `${targetIds.length} favori(s) uniquement`
+            : 'Réseau ouvert';
+      toast.success(`Course publiée • ${scopeLabel}`);
+
+      onOpenChange(false);
+      setSelectedFavoriteIds(new Set());
+      onSuccess();
+    } catch (err: any) {
+      console.error('Publish error:', err);
+      if (err?.code === '23505') {
+        toast.error('Cette course est déjà publiée dans le pool.');
+      } else {
+        toast.error(err?.message || 'Erreur lors de la publication.');
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!course) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -368,10 +302,10 @@ export function ShareCourseWithPartnerDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            Partager la course
+            Publier la course
           </DialogTitle>
           <DialogDescription>
-            Choisissez comment partager cette course sur le réseau SoloCab.
+            Choisissez vos favoris, votre commission et la diffusion réseau.
           </DialogDescription>
         </DialogHeader>
 
@@ -382,10 +316,15 @@ export function ShareCourseWithPartnerDialog({
               <CreditCard className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-700 font-semibold">Stripe Connect requis</AlertTitle>
               <AlertDescription className="text-amber-600 text-sm space-y-2">
-                <p>Pour partager des courses, vous devez configurer Stripe Connect.</p>
-                <Button 
-                  size="sm" variant="outline" className="mt-2"
-                  onClick={() => { onOpenChange(false); window.location.href = '/driver-dashboard?tab=settings'; }}
+                <p>Pour partager des courses, configurez Stripe Connect.</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => {
+                    onOpenChange(false);
+                    window.location.href = '/driver-dashboard?tab=settings';
+                  }}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Configurer Stripe
@@ -394,238 +333,249 @@ export function ShareCourseWithPartnerDialog({
             </Alert>
           )}
 
-          {/* Course info */}
+          {/* Course summary */}
           <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
-            <p className="font-medium">{course.clients?.profiles?.full_name || 'Client'}</p>
+            <p className="font-medium">
+              {course.clients?.profiles?.full_name || 'Client'}
+            </p>
             <p className="text-muted-foreground text-xs">
               {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
             </p>
             <p className="text-xs text-muted-foreground truncate">{course.pickup_address}</p>
             <p className="text-xs text-muted-foreground truncate">→ {course.destination_address}</p>
-            {commissionInfo.amount > 0 && (
-              <p className="text-primary font-semibold mt-2">{commissionInfo.amount.toFixed(2)}€</p>
+            {courseAmount > 0 && (
+              <p className="text-primary font-semibold mt-2">{courseAmount.toFixed(2)}€</p>
             )}
           </div>
 
-          {/* Commission breakdown */}
-          {commissionInfo.amount > 0 && (
+          {/* Commission slider 20-25% */}
+          <div className="space-y-2 p-3 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <Euro className="h-3.5 w-3.5" />
+                Votre commission
+              </Label>
+              <Badge variant="secondary" className="font-mono">{commission}%</Badge>
+            </div>
+            <Slider
+              value={[commission]}
+              min={20}
+              max={25}
+              step={1}
+              onValueChange={(v) => setCommission(v[0])}
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>20%</span><span>21%</span><span>22%</span><span>23%</span><span>24%</span><span>25%</span>
+            </div>
+          </div>
+
+          {/* Financial breakdown */}
+          {courseAmount > 0 && (
             <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-1 text-xs">
               <p className="font-medium text-sm flex items-center gap-1">
                 <Euro className="h-3.5 w-3.5" />
                 Répartition automatique
               </p>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Votre rétribution ({commissionInfo.percentage}%)</span>
-                <span className="font-medium text-primary">{commissionInfo.commission.toFixed(2)}€</span>
+                <span className="text-muted-foreground">Course (carte)</span>
+                <span className="font-medium">{courseAmount.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Chauffeur exécutant</span>
-                <span className="font-medium">{commissionInfo.receiverEarnings.toFixed(2)}€</span>
+                <span className="text-muted-foreground">
+                  Commission ({commission}%)
+                </span>
+                <span className="font-medium">{breakdown.commissionAmount.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between text-primary">
+                <span>Vous (net après frais 0.25€)</span>
+                <span className="font-semibold">{breakdown.senderNet.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Frais de transaction</span>
-                <span className="font-medium">0.25€</span>
+                <span className="text-muted-foreground">
+                  Chauffeur partenaire (net après frais 0.25€)
+                </span>
+                <span className="font-medium">{breakdown.receiverNet.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Frais SoloCab total</span>
+                <span>0.50€</span>
               </div>
             </div>
           )}
 
-          {/* Share mode selection */}
-          {shareMode === 'choose' && (
-            <div className="space-y-3">
-              <Label>Comment souhaitez-vous partager ?</Label>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto py-3"
-                  onClick={() => setShareMode('network')}
-                  disabled={stripeNotConnected}
-                >
-                  <Globe className="w-5 h-5 mr-3 text-primary" />
-                  <div className="text-left">
-                    <p className="font-medium">Réseau ouvert</p>
-                    <p className="text-xs text-muted-foreground">
-                      Tous les chauffeurs Stripe Connect proches
-                    </p>
-                  </div>
-                </Button>
-                
-                {favorites.length > 0 && (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => setShareMode('favorites')}
-                    disabled={stripeNotConnected}
-                  >
-                    <Heart className="w-5 h-5 mr-3 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">Mes favoris ({stripeReadyFavorites.length})</p>
-                      <p className="text-xs text-muted-foreground">
-                        Envoyer uniquement à vos chauffeurs privilégiés
-                      </p>
-                    </div>
-                  </Button>
+          {/* Favorites selection */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <Heart className="h-3.5 w-3.5 text-primary" />
+                Favoris prioritaires
+                {eligibleFavorites.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({selectedFavoriteIds.size}/{eligibleFavorites.length})
+                  </span>
                 )}
-                
-                {favorites.length > 0 && (
+              </Label>
+              {eligibleFavorites.length > 0 && (
+                <div className="flex gap-1">
                   <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => setShareMode('specific')}
-                    disabled={stripeNotConnected}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={selectAllFavorites}
                   >
-                    <UserCheck className="w-5 h-5 mr-3 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">Chauffeur spécifique</p>
-                      <p className="text-xs text-muted-foreground">
-                        Choisir un chauffeur en particulier
-                      </p>
-                    </div>
+                    Tous
                   </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Network confirmation */}
-          {shareMode === 'network' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Publier sur le réseau</Label>
-                <Button variant="ghost" size="sm" onClick={() => setShareMode('choose')}>Retour</Button>
-              </div>
-              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-sm font-medium text-primary flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Réseau ouvert SoloCab
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tous les chauffeurs avec Stripe Connect actif pourront voir et accepter cette course.
-                  Les chauffeurs proches de la zone de prise en charge seront prioritaires.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Favorites confirmation */}
-          {shareMode === 'favorites' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Envoyer aux favoris</Label>
-                <Button variant="ghost" size="sm" onClick={() => setShareMode('choose')}>Retour</Button>
-              </div>
-              {stripeReadyFavorites.length === 0 ? (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>Aucun favori avec Stripe Connect actif.</AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {stripeReadyFavorites.map((fav) => (
-                    <div key={fav.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={fav.driver_photo || undefined} />
-                        <AvatarFallback className="text-xs">{fav.driver_name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="flex-1 truncate">{fav.driver_name}</span>
-                      <span className="text-xs text-primary font-mono">{formatSharingNumber(fav.driver_sharing_number)}</span>
-                    </div>
-                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={clearFavoriteSelection}
+                  >
+                    Aucun
+                  </Button>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Specific driver selection */}
-          {shareMode === 'specific' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Choisir un chauffeur</Label>
-                <Button variant="ghost" size="sm" onClick={() => { setShareMode('choose'); setSelectedFavorite(null); }}>Retour</Button>
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
               </div>
-              <div className="space-y-2 max-h-56 overflow-y-auto">
-                {favorites.map((fav) => (
-                  <div
-                    key={fav.id}
-                    onClick={() => fav.has_stripe_connect && fav.is_premium && setSelectedFavorite(fav)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedFavorite?.id === fav.id
-                        ? 'border-primary bg-primary/10'
-                        : (!fav.has_stripe_connect || !fav.is_premium)
-                        ? 'border-muted bg-muted/30 cursor-not-allowed opacity-60'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
+            ) : eligibleFavorites.length === 0 ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Aucun favori avec Stripe Connect actif. La course sera diffusée au réseau.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-1">
+                {eligibleFavorites.map((fav) => {
+                  const checked = selectedFavoriteIds.has(fav.favorite_driver_id);
+                  return (
+                    <div
+                      key={fav.id}
+                      onClick={() => toggleFavorite(fav.favorite_driver_id)}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                        checked ? 'bg-primary/10' : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <Checkbox checked={checked} className="pointer-events-none" />
+                      <Avatar className="h-7 w-7">
                         <AvatarImage src={fav.driver_photo || undefined} />
-                        <AvatarFallback>{fav.driver_name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-xs">
+                          {fav.driver_name.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{fav.driver_name}</p>
-                        {fav.driver_company && (
-                          <p className="text-xs text-muted-foreground truncate">{fav.driver_company}</p>
-                        )}
-                        <div className="flex items-center gap-1 text-primary font-mono text-xs">
-                          <Hash className="w-3 h-3" />
-                          {formatSharingNumber(fav.driver_sharing_number)}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          {fav.show_rating && <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" />{fav.driver_rating.toFixed(1)}</span>}
-                          {fav.show_rides && <span className="flex items-center gap-1"><Car className="w-3 h-3" />{fav.driver_rides}</span>}
-                          {fav.show_phone && fav.driver_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{fav.driver_phone}</span>}
+                        <p className="text-sm font-medium truncate">{fav.driver_name}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <span className="font-mono">{formatSharingNumber(fav.driver_sharing_number)}</span>
+                          {fav.show_rating && (
+                            <span className="flex items-center gap-0.5">
+                              <Star className="w-2.5 h-2.5 text-yellow-500" />
+                              {fav.driver_rating.toFixed(1)}
+                            </span>
+                          )}
+                          {fav.show_rides && (
+                            <span className="flex items-center gap-0.5">
+                              <Car className="w-2.5 h-2.5" />
+                              {fav.driver_rides}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      {!fav.has_stripe_connect && (
-                        <Badge variant="destructive" className="text-xs">Pas Stripe</Badge>
-                      )}
-                      {fav.has_stripe_connect && !fav.is_premium && (
-                        <Badge variant="secondary" className="text-xs">Non Premium</Badge>
+                      {!fav.is_premium && (
+                        <Badge variant="outline" className="text-[10px]">Non Premium</Badge>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            )}
+          </div>
+
+          {/* Network broadcast toggle */}
+          <div className="space-y-3 p-3 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="broadcast-network" className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5 text-primary" />
+                Diffuser au réseau
+              </Label>
+              <Switch
+                id="broadcast-network"
+                checked={alsoBroadcastNetwork}
+                onCheckedChange={setAlsoBroadcastNetwork}
+              />
             </div>
-          )}
+            <p className="text-[11px] text-muted-foreground">
+              {selectedFavoriteIds.size > 0 && alsoBroadcastNetwork
+                ? `Vos favoris ont la priorité pendant ${favoritesWindow} min, puis la course sera ouverte au réseau Premium.`
+                : alsoBroadcastNetwork
+                  ? 'La course sera immédiatement visible par tous les chauffeurs Premium.'
+                  : selectedFavoriteIds.size > 0
+                    ? 'La course sera réservée à vos favoris uniquement.'
+                    : 'Sélectionnez au moins un favori ou activez la diffusion réseau.'}
+            </p>
+
+            {selectedFavoriteIds.size > 0 && alsoBroadcastNetwork && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Délai d'exclusivité favoris
+                  </Label>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {favoritesWindow} min
+                  </Badge>
+                </div>
+                <Slider
+                  value={[favoritesWindow]}
+                  min={2}
+                  max={30}
+                  step={1}
+                  onValueChange={(v) => setFavoritesWindow(v[0])}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Client notification */}
-          {shareMode !== 'choose' && (
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="notify-client">Notifier le client</Label>
-                <Switch id="notify-client" checked={notifyClient} onCheckedChange={setNotifyClient} />
-              </div>
-              {notifyClient && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Message au client</Label>
-                  <Textarea
-                    value={clientMessage}
-                    onChange={(e) => setClientMessage(e.target.value)}
-                    placeholder="Message envoyé au client..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
-              )}
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notify-client" className="text-sm">Notifier le client</Label>
+              <Switch
+                id="notify-client"
+                checked={notifyClient}
+                onCheckedChange={setNotifyClient}
+              />
             </div>
-          )}
+            {notifyClient && (
+              <Textarea
+                value={clientMessage}
+                onChange={(e) => setClientMessage(e.target.value)}
+                placeholder="Message envoyé au client..."
+                rows={2}
+                className="text-xs"
+              />
+            )}
+          </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-          {shareMode !== 'choose' && (
-            <Button
-              onClick={handleSendCourse}
-              disabled={
-                (shareMode === 'specific' && !selectedFavorite) || 
-                (shareMode === 'favorites' && stripeReadyFavorites.length === 0) ||
-                sending || stripeNotConnected
-              }
-            >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-              {sending ? 'Envoi...' : shareMode === 'network' ? 'Publier' : shareMode === 'favorites' ? 'Envoyer aux favoris' : 'Envoyer'}
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button onClick={handlePublish} disabled={!canPublish || sending}>
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            {sending ? 'Publication…' : 'Publier la course'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
