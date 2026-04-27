@@ -85,7 +85,6 @@ const ApkHealthCheck = lazy(() => import("./pages/ApkHealthCheck"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
-const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 const Permissions = lazy(() => import("./pages/Permissions"));
 const GpsDiagnostic = lazy(() => import("./pages/GpsDiagnostic"));
 
@@ -356,27 +355,8 @@ const App = () => (
                   <CancellationPolicy />
                 </Suspense>
               } />
-              <Route
-                path="/driver/partner-search"
-                element={
-                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <DriverPartnerSearch />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Alias route for driver-partner-search */}
-              <Route
-                path="/driver-partner-search"
-                element={
-                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <DriverPartnerSearch />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/driver/partner-search" element={<Navigate to="/driver-dashboard" replace />} />
+              <Route path="/driver-partner-search" element={<Navigate to="/driver-dashboard" replace />} />
               
               {/* Redirections des anciennes routes company/fleet vers accueil */}
               <Route path="/register-company" element={<Navigate to="/" replace />} />
