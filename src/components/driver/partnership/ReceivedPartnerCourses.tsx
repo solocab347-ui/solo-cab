@@ -9,11 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Car, Calendar, Euro, FileText, AlertCircle, Loader2, Hash,
-  CheckCircle2, CircleDot, ArrowRight, TrendingDown, Play, CheckCheck
+  CheckCircle2, CircleDot, ArrowRight, TrendingDown, Play, CheckCheck, CreditCard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SharedCourseClientInfo } from './SharedCourseClientInfo';
+import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
 
 interface Props {
   driverId: string | null;
