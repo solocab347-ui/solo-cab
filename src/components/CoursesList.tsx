@@ -33,9 +33,7 @@ import { CourseType, CourseTypeInfo, getCourseType, getCourseTypeFilters, COURSE
 import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/courses/CourseTypeBadge";
 import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelector";
 import { SharedCoursesInCoursesList } from "@/components/driver/sharing/SharedCoursesInCoursesList";
-import { CompletedPartnerCoursesList } from "@/components/driver/sharing/CompletedPartnerCoursesList";
 import { PendingCompanyQuotesInCoursesList } from "@/components/driver/company/PendingCompanyQuotesInCoursesList";
-import { PendingFleetCoursesInCoursesList } from "@/components/driver/company/PendingFleetCoursesInCoursesList";
 import { PendingPartnerCoursesInCoursesList } from "@/components/driver/sharing/PendingPartnerCoursesInCoursesList";
 import { CourseClientContact } from "@/components/driver/courses/CourseClientContact";
 import { CompanyCourseIndicator } from "@/components/driver/company/CompanyCourseIndicator";
@@ -431,10 +429,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             .select("*", { count: "exact", head: true })
             .eq("receiver_driver_id", driverId)
             .in("status", ["accepted", "in_progress"]),
-          supabase
-            .from("partner_order_documents")
-            .select("*", { count: "exact", head: true })
-            .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
+          Promise.resolve({ count: 0 } as { count: number }),
         ]);
 
         const sharedErrors = sharedChunksResults.filter((result) => result.error);
@@ -551,10 +546,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             .select("*", { count: "exact", head: true })
             .eq("receiver_driver_id", driverId)
             .in("status", ["accepted", "in_progress"]),
-          supabase
-            .from("partner_order_documents")
-            .select("*", { count: "exact", head: true })
-            .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
+          Promise.resolve({ count: 0 } as { count: number }),
         ]);
         setReceivedSharedCoursesCount(receivedCountResult.count || 0);
         setCompletedPartnerCoursesCount(completedCountResult.count || 0);
@@ -1939,13 +1931,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3 sm:space-y-4 mt-4">
-          {/* Courses gestionnaire de flotte en attente */}
-          <PendingFleetCoursesInCoursesList 
-            driverId={driverId} 
-            onCountChange={setPendingFleetCoursesCount}
-            onCourseAccepted={fetchCourses}
-          />
-          
           {/* Demandes entreprises en attente */}
           <PendingCompanyQuotesInCoursesList 
             driverId={driverId} 
@@ -2893,8 +2878,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             </>
           )}
           
-          {/* Courses partenaires terminées */}
-          <CompletedPartnerCoursesList driverId={driverId} limit={20} />
         </TabsContent>
 
         <TabsContent value="rejected" className="space-y-4">

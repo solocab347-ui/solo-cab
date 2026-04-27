@@ -3,15 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface DriverPartner {
   id: string;
-  partnerId: string;
-  partnerName: string;
-  partnerPhoto?: string;
-  commissionPercentage: number;
-  sharingNumber?: number;
-  status: string;
-  stripeConnected: boolean;
+  full_name: string | null;
+  photo_url: string | null;
+  sharing_number: number | null;
 }
 
+/**
+ * Nouveau modèle : "partners" = favoris du chauffeur.
+ * Plus de contrats — l'adhésion Premium remplace la signature.
+ */
 export function useDriverPartners(driverId: string | null) {
   const [partners, setPartners] = useState<DriverPartner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,80 +22,38 @@ export function useDriverPartners(driverId: string | null) {
       setLoading(false);
       return;
     }
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('driver_favorites')
+        .select(`
+          favorite_driver_id,
+          driver:drivers!driver_favorites_favorite_driver_id_fkey(
+            id, full_name, photo_url, sharing_number
+          )
+        `)
+        .eq('driver_id', driverId);
 
-    const fetchPartners = async () => {
-      try {
-        // Get partnerships where this driver is involved
-        const { data: partnerships, error } = await supabase
-          .from('driver_partnerships')
-          .select('*')
-          .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-          .eq('status', 'accepted');
-
-        if (error) throw error;
-
-        if (!partnerships || partnerships.length === 0) {
-          setPartners([]);
-          setLoading(false);
-          return;
-        }
-
-        // Get partner driver IDs
-        const partnerIds = partnerships.map(p => 
-          p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id
+      if (!active) return;
+      if (error || !data) {
+        setPartners([]);
+      } else {
+        setPartners(
+          data
+            .map((row: any) => row.driver)
+            .filter(Boolean)
+            .map((d: any) => ({
+              id: d.id,
+              full_name: d.full_name,
+              photo_url: d.photo_url,
+              sharing_number: d.sharing_number,
+            }))
         );
-
-        // Get driver info - ONLY drivers with Stripe Connect for sharing
-        const { data: driversRaw } = await supabase
-          .from('drivers')
-          .select('*')
-          .in('id', partnerIds);
-
-        // Filter only drivers with stripe_account_id and cast to bypass typing
-        const drivers = (driversRaw as any[])?.filter(d => d.stripe_account_id) || [];
-        const driverMap = new Map(drivers.map(d => [d.id, d]));
-
-        // Get profiles
-        const userIds = drivers.map(d => d.user_id) || [];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, profile_photo_url')
-          .in('id', userIds);
-
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-        // Build partners list - only include partners who have Stripe Connect
-        const partnersList: DriverPartner[] = partnerships
-          .filter(p => {
-            const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
-            return driverMap.has(partnerId);
-          })
-          .map(p => {
-            const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
-            const driver = driverMap.get(partnerId);
-            const profile = driver ? profileMap.get(driver.user_id) : null;
-
-            return {
-              id: p.id,
-              partnerId,
-              partnerName: profile?.full_name || 'Partenaire',
-              partnerPhoto: profile?.profile_photo_url || undefined,
-              commissionPercentage: p.commission_percentage || 10,
-              sharingNumber: driver?.sharing_number,
-              status: p.status,
-              stripeConnected: !!driver?.stripe_account_id
-            };
-          });
-
-        setPartners(partnersList);
-      } catch (error) {
-        console.error('Error fetching partners:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchPartners();
+      setLoading(false);
+    })();
+    return () => { active = false; };
   }, [driverId]);
 
   return { partners, loading };
