@@ -114,11 +114,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Drapeau : seul un signOut() explicite (clic utilisateur) peut purger la session.
+  // Tous les autres SIGNED_OUT (échec refresh réseau, mobile en veille, etc.) sont ignorés.
+  const userInitiatedSignOutRef = { current: false } as { current: boolean };
+  (AuthProvider as any)._userSignOutFlag = userInitiatedSignOutRef;
+
   useEffect(() => {
     let isMounted = true;
     let isInitializing = true;
-    let refreshRetryCount = 0;
-    const MAX_REFRESH_RETRIES = 2; // Moins de retries pour rapidité
 
     // TIMEOUT DE SÉCURITÉ: 5 secondes pour UX fluide
     const safetyTimeout = setTimeout(() => {
@@ -129,83 +132,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }, 5000);
 
-    // Fonction pour gérer l'échec du refresh token - RAPIDE
-    const handleRefreshFailure = async () => {
-      refreshRetryCount++;
-      
-      if (refreshRetryCount <= MAX_REFRESH_RETRIES) {
-        const backoffDelay = Math.min(300 * refreshRetryCount, 600);
-        logger.warn(`Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES}`, { backoffDelay });
-        
-        await new Promise(resolve => setTimeout(resolve, backoffDelay));
-        
+    // Refresh silencieux et infini en arrière-plan en cas d'échec réseau.
+    // On NE déconnecte JAMAIS le chauffeur automatiquement.
+    let backgroundRetryTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleSilentRefresh = (delayMs: number) => {
+      if (backgroundRetryTimer) clearTimeout(backgroundRetryTimer);
+      backgroundRetryTimer = setTimeout(async () => {
         try {
           const { data, error } = await supabase.auth.refreshSession();
           if (!error && data.session) {
-            logger.info("Session refreshed successfully on retry");
-            refreshRetryCount = 0;
-            return true;
+            logger.info("Background session refresh succeeded");
+            return;
           }
-        } catch (retryError) {
-          logger.error("Retry failed", { retryError });
+          // Backoff doux : 5s -> 15s -> 30s -> 60s (max), boucle infinie
+          const next = Math.min(delayMs * 2, 60_000);
+          logger.warn("Background refresh failed, will retry", { nextDelayMs: next });
+          scheduleSilentRefresh(next);
+        } catch {
+          const next = Math.min(delayMs * 2, 60_000);
+          scheduleSilentRefresh(next);
         }
-        
-        return await handleRefreshFailure();
-      } else {
-        logger.error("Max refresh retries reached, clearing session");
-        clearAuthCache();
-        setUser(null);
-        setSession(null);
-        setUserRole(null);
-        setUserRoles([]);
-        toast.error("Session expirée, veuillez vous reconnecter");
-        navigate("/login");
-        return false;
-      }
+      }, delayMs);
     };
 
-    // Auth state listener - SIMPLIFIÉ
+    // Auth state listener - JAMAIS de déconnexion automatique
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
-        
+
         // IGNORER les événements pendant l'init
         if (isInitializing && (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
           return;
         }
-        
-        // Gestion de l'échec du refresh token
+
+        // Échec de refresh : on relance en arrière-plan, on NE déconnecte PAS
         if (event === "TOKEN_REFRESHED" && !session) {
-          setTimeout(() => handleRefreshFailure(), 0);
+          logger.warn("Refresh token failed - keeping local session, retrying in background");
+          scheduleSilentRefresh(5_000);
           return;
         }
-        
-        // Déconnexion
+
+        // SIGNED_OUT : seulement si l'utilisateur a cliqué sur Déconnexion.
+        // Sinon on ignore (peut être déclenché par échec de refresh côté SDK,
+        // mise en veille mobile, perte réseau, etc.)
         if (event === "SIGNED_OUT") {
+          if (!userInitiatedSignOutRef.current) {
+            logger.warn("Ignoring non-user-initiated SIGNED_OUT to keep session active");
+            scheduleSilentRefresh(2_000);
+            return;
+          }
           clearAuthCache();
           setUser(null);
           setSession(null);
           setUserRole(null);
           setUserRoles([]);
-          // Reset driver session marker so next login defaults to map mode
           try { sessionStorage.removeItem("solocab_driver_session_started"); } catch {}
+          userInitiatedSignOutRef.current = false;
           return;
         }
-        
-        // Reset retry counter
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          refreshRetryCount = 0;
+
+        // Refresh réussi
+        if (event === "TOKEN_REFRESHED" && session) {
+          setSession(session);
+          setUser(session.user ?? null);
+          if (backgroundRetryTimer) {
+            clearTimeout(backgroundRetryTimer);
+            backgroundRetryTimer = null;
+          }
         }
-        
+
         // Mise à jour pour SIGNED_IN post-init
         if (event === "SIGNED_IN" && !isInitializing) {
           setSession(session);
           setUser(session?.user ?? null);
-          
+
           if (session?.user) {
             setTimeout(() => {
               fetchUserRole(session.user.id).then((role) => {
-                // If no role found and on oauth-onboarding, don't redirect
                 if (!role && window.location.pathname === "/oauth-onboarding") {
                   return;
                 }
