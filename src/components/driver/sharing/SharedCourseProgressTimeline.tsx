@@ -164,12 +164,84 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
           </span>
         </div>
 
+        {/* === État Stripe (pipeline paiement) === */}
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <CreditCard className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                État Stripe
+              </span>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-[10px] h-5 px-1.5 border',
+                webhookConfirmed
+                  ? 'bg-green-500/10 text-green-700 border-green-500/40'
+                  : checkoutCreated
+                    ? 'bg-blue-500/10 text-blue-700 border-blue-500/40'
+                    : 'bg-muted text-muted-foreground border-border',
+              )}
+            >
+              {webhookConfirmed ? 'Payé ✓ webhook' : checkoutCreated ? 'En attente paiement' : 'Lien non généré'}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {stripePhases.map((phase, i) => {
+              const Icon = phase.icon;
+              const isCurrent = i === currentStripePhaseIdx && !stripePhases[i + 1]?.reached;
+              return (
+                <div key={phase.key} className="flex-1 flex items-center">
+                  <div
+                    title={phase.label}
+                    className={cn(
+                      'flex flex-col items-center gap-0.5 flex-1 min-w-0',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-6 w-6 items-center justify-center rounded-full border transition-colors',
+                        phase.reached && !isCurrent && 'bg-green-500 border-green-500 text-white',
+                        isCurrent && 'bg-primary border-primary text-primary-foreground animate-pulse',
+                        !phase.reached && 'bg-background border-border text-muted-foreground',
+                      )}
+                    >
+                      <Icon className="h-3 w-3" />
+                    </div>
+                    <span className={cn(
+                      'text-[9px] text-center leading-tight truncate w-full',
+                      phase.reached ? 'text-foreground font-medium' : 'text-muted-foreground',
+                    )}>
+                      {phase.label}
+                    </span>
+                  </div>
+                  {i < stripePhases.length - 1 && (
+                    <div className={cn(
+                      'h-0.5 flex-1 mx-0.5 -mt-3 rounded',
+                      stripePhases[i + 1].reached ? 'bg-green-500' : 'bg-border',
+                    )} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {!checkoutCreated && 'En attente de génération du lien de paiement Stripe.'}
+            {checkoutCreated && !webhookConfirmed && 'Lien envoyé au client. En attente de confirmation Stripe via webhook.'}
+            {webhookConfirmed && !isCompleted && '✓ Paiement confirmé par le webhook Stripe — le check-in est désormais autorisé.'}
+            {webhookConfirmed && isCompleted && '✓ Paiement confirmé et course terminée. Synchronisation des portefeuilles en cours.'}
+          </p>
+        </div>
+
         {/* Garde-fou visuel UI */}
         {!isPaid && (
           <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-700">
             <Lock className="h-3 w-3 shrink-0" />
             <span>
-              Tant que Stripe n’a pas confirmé le paiement, la course ne peut pas être terminée ni déverrouillée.
+              Tant que Stripe n’a pas confirmé le paiement (webhook), la course ne peut pas être démarrée, terminée ni déverrouillée.
             </span>
           </div>
         )}
