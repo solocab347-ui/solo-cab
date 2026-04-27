@@ -147,7 +147,22 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 11, 1);
       monthFloor.setUTCHours(0, 0, 0, 0);
 
-      const [balancesResult, pendingResult, paymentsResult, monthlyPaymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
+      // ═══ SOURCE UNIQUE DE VÉRITÉ POUR LE RÉCAP FINANCIER ═══
+      // `driver_balance_pending` contient TOUTES les courses (cash + CB) avec
+      // gross / solocab_fee / stripe_fee / net dès leur création (status='pending')
+      // puis basculées en 'settled' lors du process-weekly-settlement.
+      // → Une SEULE source pour le récap hebdo, mensuel ET les antécédents.
+      // `stripe_transactions` est conservé uniquement pour enrichir l'affichage
+      // des transactions récentes (description, transaction_type, status Stripe).
+      const [
+        balancesResult,
+        pendingResult,
+        weeklyTxnsResult,
+        monthlyTxnsResult,
+        driverResult,
+        pendingBalanceResult,
+        allBalancePendingResult,
+      ] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
           .select(`
@@ -166,8 +181,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .is("settlement_id", null)
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
           .order("created_at", { ascending: false }),
-        // ⚠️ Transactions filtrées sur la SEMAINE EN COURS uniquement
-        // (le bilan hebdo doit repartir à zéro chaque lundi).
+        // Détails Stripe (CB uniquement) sur la semaine — pour métadonnées
+        // (description, type) à afficher dans la liste détaillée.
         supabase
           .from("stripe_transactions")
           .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
@@ -177,6 +192,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .lte("created_at", weekEndIso)
           .order("created_at", { ascending: false })
           .limit(200),
+        // Détails Stripe (CB) sur 12 mois — métadonnées pour mensuel.
         supabase
           .from("stripe_transactions")
           .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
@@ -190,15 +206,58 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .select("stripe_connect_charges_enabled, cash_debt_pending")
           .eq("id", driverId)
           .single(),
-        // ⚠️ driver_balance_pending reste non-filtré : il porte naturellement
-        // la semaine en cours + tout carry-over (frais espèces non prélevés,
-        // virements précédents échoués) qui n'a pas encore été settlé.
+        // Toujours pending : alimente l'encart "Solde en attente" (semaine + carry-over).
         supabase
           .from("driver_balance_pending" as any)
           .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, created_at")
           .eq("driver_id", driverId)
           .eq("status", "pending"),
+        // ⭐ SOURCE UNIQUE pour le récap : 12 mois, tous statuts confondus
+        // (pending + settled), cash + CB. C'est ce qui garantit la cohérence
+        // entre semaine en cours, mensuel et antécédents.
+        supabase
+          .from("driver_balance_pending" as any)
+          .select("id, course_id, gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, status, created_at")
+          .eq("driver_id", driverId)
+          .gte("created_at", monthFloor.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(2000),
       ]);
+
+      // Helper : convertit une ligne driver_balance_pending en TransactionItem.
+      // Enrichit avec les métadonnées Stripe (description, type) si dispo.
+      const stripeMetaByCourse = new Map<string, any>();
+      for (const t of (monthlyTxnsResult.data || []) as any[]) {
+        if (t.course_id) stripeMetaByCourse.set(t.course_id, t);
+      }
+      const balancePendingToTxn = (b: any): TransactionItem => {
+        const meta = b.course_id ? stripeMetaByCourse.get(b.course_id) : null;
+        return {
+          id: b.id || meta?.id || b.course_id,
+          course_id: b.course_id || b.id,
+          amount: Number(b.gross_amount || 0),
+          net_to_driver: Number(b.net_amount || 0),
+          stripe_fee_amount: Number(b.stripe_fee || 0),
+          solocab_fee_amount: Number(b.solocab_fee || 0),
+          status: b.status === 'settled' ? 'completed' : 'pending',
+          payment_type: meta?.transaction_type || 'course_payment',
+          payment_method: b.payment_type === 'cash' ? 'cash' : (meta?.payment_method || 'stripe'),
+          created_at: b.created_at,
+        };
+      };
+
+      // Construire les listes unifiées : semaine en cours + 12 derniers mois.
+      const allBp = ((allBalancePendingResult.data || []) as any[]);
+      const weeklyTxnsUnified: TransactionItem[] = allBp
+        .filter((b) => {
+          const t = new Date(b.created_at).getTime();
+          return t >= weekStart.getTime() && t <= weekEnd.getTime();
+        })
+        .map(balancePendingToTxn);
+      const monthlyTxnsUnified: TransactionItem[] = allBp.map(balancePendingToTxn);
+      // Compat : on alias paymentsResult / monthlyPaymentsResult pour la suite.
+      const paymentsResult = { data: weeklyTxnsUnified } as any;
+      const monthlyPaymentsResult = { data: monthlyTxnsUnified } as any;
 
       setStripeEnabled(!!driverResult.data?.stripe_connect_charges_enabled);
       const mapped = (balancesResult.data || []).map((b: any) => ({
