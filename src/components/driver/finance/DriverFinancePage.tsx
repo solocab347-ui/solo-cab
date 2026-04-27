@@ -126,6 +126,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [stripeBalance, setStripeBalance] = useState<any>(null);
   const [stripePayouts, setStripePayouts] = useState<any[]>([]);
   const [historyView, setHistoryView] = useState<"week" | "month">("week");
+  // Navigation semaine par semaine dans l'historique : 0 = semaine la plus récente.
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
