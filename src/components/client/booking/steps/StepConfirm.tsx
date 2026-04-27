@@ -217,7 +217,7 @@ export function StepConfirm({
       if (data.user) {
         await supabase.from('profiles').upsert({
           id: data.user.id, full_name: regName.trim(), phone: regPhone.trim(),
-          user_type: 'client', email: regEmail.trim(),
+          user_type: 'client', email: cleanEmail,
         } as any);
         await supabase.from('clients').upsert({ user_id: data.user.id, is_exclusive: false }, { onConflict: 'user_id' });
         await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'client' as any }, { onConflict: 'user_id,role' });
