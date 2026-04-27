@@ -108,6 +108,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
   const [stripePayouts, setStripePayouts] = useState<any[]>([]);
+  const [historyView, setHistoryView] = useState<"week" | "month">("week");
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     loadData();
