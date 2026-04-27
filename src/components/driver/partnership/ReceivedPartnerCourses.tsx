@@ -70,7 +70,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
           id, course_id, sender_driver_id, course_amount,
           commission_percentage, commission_amount, solocab_fee_cents,
           earnings_for_receiver, status, created_at, completed_at,
-          partner_reference_number,
+          partner_reference_number, payment_status, client_payment_url,
           courses!inner(
             pickup_address, destination_address, scheduled_date,
             passengers_count, distance_km, status, course_number
@@ -122,6 +122,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             course_number: course.course_number,
             shared_status: item.status,
             partner_reference_number: (item as any).partner_reference_number,
+            payment_status: (item as any).payment_status ?? null,
+            client_payment_url: (item as any).client_payment_url ?? null,
             sender_name: profile?.full_name || 'Partenaire',
             sender_photo: driverData.card_photo_url || profile?.profile_photo_url,
             sender_company: driverData.company_name,
