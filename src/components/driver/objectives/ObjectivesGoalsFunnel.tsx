@@ -141,6 +141,9 @@ export function ObjectivesGoalsFunnel({
   const [directClientsTarget, setDirectClientsTarget] = useState(8);
   const [independencePctTarget, setIndependencePctTarget] = useState(30);
 
+  const currentStep = STEPS[stepIndex];
+  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+
   // ===== Calculs dérivés =====
   const calc = useMemo(() => {
     const weeklyRevenue = Math.round(targetRevenue / 4);
