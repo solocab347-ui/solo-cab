@@ -239,6 +239,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           courses!inner(
             pickup_address,
             destination_address,
+            pickup_latitude,
+            pickup_longitude,
             scheduled_date,
             passengers_count,
             distance_km,
