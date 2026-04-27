@@ -8,10 +8,86 @@ const corsHeaders = {
 };
 
 const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
+const STRIPE_PERCENTAGE = 0.015;
+const STRIPE_FIXED_FEE = 0.25;
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[FINALIZE-COURSE-PAYMENT] ${step}${detailsStr}`);
+};
+
+/**
+ * Calcule le montant total des frais SoloCab à prélever sur cette CB :
+ * 0,50€ (course en cours) + arriérés cash en attente, borné par capacité de la course.
+ * Retourne aussi la liste des rows driver_balance_pending à solder.
+ */
+const computeApplicationFeeWithArrears = async (
+  supabaseClient: any,
+  driverId: string,
+  captureAmountCents: number,
+): Promise<{
+  finalFeeCents: number;
+  arrearsRecoveredCents: number;
+  rowsToSettle: Array<{ id: string; cents: number }>;
+  totalArrearsCents: number;
+}> => {
+  const { data: pendingCashRows } = await supabaseClient
+    .from("driver_balance_pending")
+    .select("id, solocab_fee, created_at")
+    .eq("driver_id", driverId)
+    .eq("payment_type", "cash")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  const rows = (pendingCashRows || []).map((r: any) => ({
+    id: r.id as string,
+    cents: Math.round((Number(r.solocab_fee) || 0) * 100),
+  }));
+  const totalArrearsCents = rows.reduce((s, r) => s + r.cents, 0);
+
+  const estimatedStripeFeeCents = Math.ceil(captureAmountCents * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE * 100);
+  const maxApplicationFeeCents = Math.max(0, captureAmountCents - estimatedStripeFeeCents);
+  const desiredCents = SOLOCAB_FEE_CENTS + totalArrearsCents;
+  const finalFeeCents = Math.min(desiredCents, maxApplicationFeeCents);
+  const arrearsRecoveredCents = Math.max(0, finalFeeCents - SOLOCAB_FEE_CENTS);
+
+  // Sélection des rows à solder dans l'ordre chronologique sans dépasser arrearsRecoveredCents
+  const rowsToSettle: Array<{ id: string; cents: number }> = [];
+  let remaining = arrearsRecoveredCents;
+  for (const r of rows) {
+    if (r.cents <= remaining) {
+      rowsToSettle.push(r);
+      remaining -= r.cents;
+      if (remaining <= 0) break;
+    }
+  }
+  return { finalFeeCents, arrearsRecoveredCents, rowsToSettle, totalArrearsCents };
+};
+
+/**
+ * Marque les lignes driver_balance_pending comme soldées via cette CB.
+ */
+const settleArrears = async (
+  supabaseClient: any,
+  rowIds: string[],
+  paymentId: string | null,
+  courseId: string,
+): Promise<void> => {
+  if (rowIds.length === 0) return;
+  const { error } = await supabaseClient
+    .from("driver_balance_pending")
+    .update({
+      status: "settled",
+      settled_at: new Date().toISOString(),
+      settled_via_payment_id: paymentId,
+      settled_via_course_id: courseId,
+    })
+    .in("id", rowIds);
+  if (error) {
+    logStep("Failed to settle cash arrears", { error: error.message, ids: rowIds });
+  } else {
+    logStep("Cash arrears settled via card payment", { count: rowIds.length });
+  }
 };
 
 const isRelevantOperationalCourse = (course: { scheduled_date?: string | null; status?: string | null; updated_at?: string | null; created_at?: string | null }) => {
