@@ -267,29 +267,19 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       }));
       setSettlements(mapped);
       setPendingPayments(pendingResult.data || []);
-      setMonthlyTransactions(((monthlyPaymentsResult.data || []) as any[]).map((p: any) => ({
-        id: p.id,
-        course_id: p.course_id || p.id,
-        amount: Number(p.gross_amount || 0),
-        net_to_driver: Number(p.net_amount || 0),
-        stripe_fee_amount: Number(p.stripe_fee_amount || 0),
-        solocab_fee_amount: Number(p.solocab_fee_amount || 0),
-        status: p.status,
-        payment_type: p.transaction_type || "course_payment",
-        payment_method: p.payment_method || "stripe",
-        created_at: p.created_at,
-      })));
+      // Les listes sont déjà normalisées (TransactionItem) via balancePendingToTxn.
+      setMonthlyTransactions((monthlyPaymentsResult.data || []) as TransactionItem[]);
 
-      // Calculate wallet stats from stripe_transactions
-      const txns = (paymentsResult.data || []) as any[];
-      const totalEarned = txns.reduce((s: number, p: any) => s + (p.gross_amount || 0), 0);
-      const totalStripeFees = txns.reduce((s: number, p: any) => s + (p.stripe_fee_amount || 0), 0);
-      const totalSolocabFees = txns.reduce((s: number, p: any) => s + (p.solocab_fee_amount || 0), 0);
+      // Récap hebdo : même source unifiée → cohérence garantie avec mensuel + antécédents.
+      const txns = (paymentsResult.data || []) as TransactionItem[];
+      const totalEarned = txns.reduce((s, p) => s + (p.amount || 0), 0);
+      const totalStripeFees = txns.reduce((s, p) => s + (p.stripe_fee_amount || 0), 0);
+      const totalSolocabFees = txns.reduce((s, p) => s + (p.solocab_fee_amount || 0), 0);
       const totalFees = totalStripeFees + totalSolocabFees;
-      const totalNet = txns.reduce((s: number, p: any) => s + (p.net_amount || 0), 0);
+      const totalNet = txns.reduce((s, p) => s + (p.net_to_driver || 0), 0);
 
-      const cardTxns = txns.filter((t: any) => t.payment_method !== 'cash');
-      const cashTxns = txns.filter((t: any) => t.payment_method === 'cash');
+      const cardTxns = txns.filter((t) => t.payment_method !== 'cash');
+      const cashTxns = txns.filter((t) => t.payment_method === 'cash');
 
       setWalletStats({
         totalEarned,
@@ -299,21 +289,10 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         avgPerCourse: txns.length > 0 ? totalEarned / txns.length : 0,
         cardCourses: cardTxns.length,
         cashCourses: cashTxns.length,
-        cardStripeFees: cardTxns.reduce((s: number, t: any) => s + (t.stripe_fee_amount || 0), 0),
-        cardSolocabFees: cardTxns.reduce((s: number, t: any) => s + (t.solocab_fee_amount || 0), 0),
-        cashSolocabFees: cashTxns.reduce((s: number, t: any) => s + (t.solocab_fee_amount || 0), 0),
-        recentTransactions: txns.slice(0, 30).map((p: any) => ({
-          id: p.id,
-          course_id: p.course_id || '',
-          amount: p.gross_amount || 0,
-          net_to_driver: p.net_amount || 0,
-          stripe_fee_amount: p.stripe_fee_amount || 0,
-          solocab_fee_amount: p.solocab_fee_amount || 0,
-          status: p.status,
-          payment_type: p.transaction_type || "full_payment",
-          payment_method: p.payment_method || 'stripe',
-          created_at: p.created_at,
-        })),
+        cardStripeFees: cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0),
+        cardSolocabFees: cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+        cashSolocabFees: cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+        recentTransactions: txns.slice(0, 30),
       });
 
       // Calculate pending balance from driver_balance_pending
