@@ -455,11 +455,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
     const cashTxns = txns.filter((t) => t.payment_method === 'cash');
     const uniqueCourses = new Set(txns.map((t) => t.course_id || t.id));
 
-    // Frais : on prend la source AUTORITAIRE pour éviter les écarts.
-    //  - Si la semaine est clôturée → settlements (figé, vérité comptable).
-    //  - Sinon → on agrège stripe_transactions (réflexion temps réel).
-    // Les courses cash ET CB sont incluses dans stripe_transactions (cash =
-    // payment_method='cash'), donc le total reflète tous les frais SoloCab.
+    // Source UNIQUE = `monthlyTransactions` (alimenté par `driver_balance_pending`,
+    // qui contient toutes les courses cash + CB, settled + pending). Cela garantit
+    // que `mensuel = somme(semaines) + courses pending` sans aucun écart.
+    const totalSolocabFees = txns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0);
+    const totalStripeFees = txns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0);
     return {
       weeks: filtered,
       transactions: txns,
@@ -468,17 +468,10 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       cardSolocabFees: cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
       cashSolocabFees: cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
       cardStripeFees: cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0),
-      totalNet: txns.length > 0
-        ? txns.reduce((sum, t) => sum + (t.net_to_driver || 0), 0)
-        : filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
-      totalFees: txns.length > 0
-        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0) + (t.stripe_fee_amount || 0), 0)
-        : filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
+      totalNet: txns.reduce((sum, t) => sum + (t.net_to_driver || 0), 0),
+      totalFees: totalSolocabFees + totalStripeFees,
       totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
-      totalCourses: txns.length > 0 ? uniqueCourses.size : filtered.reduce(
-        (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
-        0
-      ),
+      totalCourses: uniqueCourses.size,
       failedCount: filtered.filter((s) => s.transfer_status === 'failed' || s.transfer_status === 'skipped').length,
     };
   }, [settlements, monthlyTransactions, selectedMonth]);
