@@ -22,16 +22,12 @@ import {
   Rocket,
   Users,
   Car,
-  Fuel,
-  Wrench,
-  ShieldCheck,
-  Receipt,
-  Building2,
-  Wallet,
   Hand,
   UserPlus,
   Heart,
-  Route,
+  LineChart,
+  Bell,
+  Compass,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
