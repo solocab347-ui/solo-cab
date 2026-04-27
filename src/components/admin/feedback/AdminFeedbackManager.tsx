@@ -35,6 +35,7 @@ import {
   ArrowUpDown
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FeedbackAttachmentImage } from "@/components/feedback/FeedbackAttachmentImage";
 
 interface FeedbackItem {
   id: string;
