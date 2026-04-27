@@ -606,6 +606,71 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </div>
       )}
 
+      {/* 🔁 REPORTS DES SEMAINES PRÉCÉDENTES — placé APRÈS la semaine en cours
+          car c'est une information complémentaire (non capitale).
+          ⚠️ Les frais espèces antécédents sont déjà affichés dans la carte
+          "Frais SoloCab" ci-dessus → on ne les redonne PAS ici (anti-duplication).
+          On ne garde donc que ce qui n'est visible nulle part ailleurs :
+            - Net en report (paiements non versés des semaines passées)
+            - Virements non exécutés (RIB manquant, rejet bancaire, etc.) */}
+      {carryOver && (carryOver.failedSettlements.length > 0
+        || Math.abs(carryOver.pastPendingNet) > 0.01) && (
+        <Card className="p-4 bg-warning/5 border-warning/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning" />
+            <h3 className="text-sm font-semibold text-warning">Reports des semaines précédentes</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Math.abs(carryOver.pastPendingNet) > 0.01 && (
+              <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
+                <p className="text-[11px] text-muted-foreground">Net en report</p>
+                <p className={`text-lg font-bold ${carryOver.pastPendingNet >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                  {carryOver.pastPendingNet.toFixed(2)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {carryOver.pastPendingCourses} course(s) en attente de règlement
+                </p>
+              </div>
+            )}
+
+            {carryOver.failedSettlements.length > 0 && (
+              <div className="p-3 rounded-lg bg-background/40 border border-destructive/30">
+                <p className="text-[11px] text-muted-foreground">Virements non exécutés</p>
+                <p className="text-lg font-bold text-destructive">
+                  {carryOver.failedSettlementsTotal.toFixed(2)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {carryOver.failedSettlements.length} règlement(s) en échec
+                </p>
+              </div>
+            )}
+          </div>
+
+          {carryOver.failedSettlements.length > 0 && (
+            <div className="border-t border-warning/20 pt-3 space-y-1">
+              <p className="text-[11px] font-semibold text-foreground">Détail des virements en échec :</p>
+              {carryOver.failedSettlements.slice(0, 3).map((s) => (
+                <div key={s.id} className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })}
+                    {' → '}
+                    {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                  </span>
+                  <span className="font-medium text-destructive">{s.net_amount.toFixed(2)}€</span>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground italic pt-1">
+                💡 Vérifiez votre RIB dans l'onglet "RIB" pour débloquer les virements.
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground italic border-t border-warning/20 pt-2">
+            Les frais antécédents impayés sont visibles dans la carte « Frais SoloCab » ci-dessus.
+          </p>
+        </Card>
+      )}
+
       <Tabs defaultValue="wallet" className="space-y-4">
         <TabsList className="w-full">
           <TabsTrigger value="wallet" className="flex-1 gap-1">
