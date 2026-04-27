@@ -352,7 +352,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
   };
 
   // Show success screen with payment link option
-  if (createdCourse && driverHasStripeConnect) {
+  if (createdCourse && driverHasStripeConnect && !skipPostCreationScreen && !onCreated) {
     return (
       <Card className="p-6 bg-card border-primary/10">
         <div className="text-center space-y-6">
