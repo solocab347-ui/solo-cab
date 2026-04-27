@@ -149,6 +149,19 @@ export const AdminFeedbackManager = () => {
 
       if (error) throw error;
 
+      // 🔔 Notifier l'utilisateur (chauffeur / client) qu'une réponse est arrivée
+      if (selectedFeedback.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: selectedFeedback.user_id,
+          title: selectedFeedback.feedback_type === "bug"
+            ? "💬 Réponse à votre signalement de bug"
+            : "💬 Réponse à votre suggestion",
+          message: `${adminName} : « ${responseMessage.trim().slice(0, 140)}${responseMessage.trim().length > 140 ? "…" : ""} »`,
+          type: "info",
+          link: selectedFeedback.user_type === "client" ? "/client-dashboard" : "/driver-dashboard",
+        });
+      }
+
       toast.success("Réponse envoyée avec succès");
       setResponseMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
