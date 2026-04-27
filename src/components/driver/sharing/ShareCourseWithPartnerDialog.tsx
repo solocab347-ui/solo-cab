@@ -180,9 +180,17 @@ export function ShareCourseWithPartnerDialog({
     num ? `SOLO-${String(num).padStart(6, '0')}` : 'N/A';
 
   // ---- Course amount + financial breakdown ----
+  // Order of precedence: accepted devis > devis_amount fallback > guest_estimated_price
+  // (guest courses created via the chained "Créer + partager" flow expose the price as guest_estimated_price)
   const courseAmount = useMemo(() => {
-    const accepted = course?.devis?.find((d: any) => d.status === 'accepted');
-    return Number(accepted?.amount || course?.devis_amount || 0);
+    const accepted = course?.devis?.find?.((d: any) => d.status === 'accepted');
+    return Number(
+      accepted?.amount ||
+      course?.devis_amount ||
+      course?.guest_estimated_price ||
+      course?.estimated_price ||
+      0,
+    );
   }, [course]);
 
   const breakdown = useMemo(() => {
@@ -352,14 +360,34 @@ export function ShareCourseWithPartnerDialog({
 
           {/* Course summary */}
           <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
-            <p className="font-medium">
-              {course.clients?.profiles?.full_name || 'Client'}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium truncate">
+                {course.clients?.profiles?.full_name ||
+                  course.guest_name ||
+                  'Client'}
+              </p>
+              {course.is_guest_booking && (
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  Client privé
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground text-xs">
               {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
             </p>
-            <p className="text-xs text-muted-foreground truncate">{course.pickup_address}</p>
-            <p className="text-xs text-muted-foreground truncate">→ {course.destination_address}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              📍 {course.pickup_address}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              🏁 {course.destination_address}
+            </p>
+            {(course.distance_km || course.duration_minutes) && (
+              <p className="text-[11px] text-muted-foreground">
+                {course.distance_km ? `${Number(course.distance_km).toFixed(1)} km` : ''}
+                {course.distance_km && course.duration_minutes ? ' • ' : ''}
+                {course.duration_minutes ? `${Math.round(Number(course.duration_minutes))} min` : ''}
+              </p>
+            )}
             {courseAmount > 0 && (
               <p className="text-primary font-semibold mt-2">{courseAmount.toFixed(2)}€</p>
             )}
