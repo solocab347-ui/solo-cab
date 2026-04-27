@@ -1117,8 +1117,8 @@ serve(async (req) => {
           const receiverAmount = totalAmount - commissionAmount - solocabFee;
           await supabaseClient.from("notifications").insert({
             user_id: receiverData.user_id,
-            title: "✅ Paiement course partagée reçu",
-            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (rétribution ${commissionAmount.toFixed(2)}€ + frais 0.25€).`,
+            title: "✅ Paiement course partagée confirmé",
+            message: `Stripe a confirmé le paiement client (${totalAmount.toFixed(2)}€). Vous pouvez maintenant terminer la course. Net : ${receiverAmount.toFixed(2)}€.`,
             type: "info",
           });
         }
