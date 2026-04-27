@@ -60,21 +60,10 @@ export async function openExternalUrl(
       console.warn("[openExternalUrl] @capacitor/browser plugin not available natively — using App.openUrl fallback. Run `npx cap sync` and rebuild APK to enable in-app browser.");
     }
 
-    // 2. Fallback: open in system browser via @capacitor/app
-    if (Capacitor.isPluginAvailable("App")) {
-      try {
-        const { App } = await import("@capacitor/app");
-        // App.openUrl opens the OS default browser (Chrome / Safari)
-        await App.openUrl({ url });
-        return;
-      } catch (err) {
-        console.error("[openExternalUrl] App.openUrl failed", err);
-        // Fall through
-      }
-    }
-
-    // 3. Last-resort: navigate the WebView itself.
-    //    This loses app context but at least the user sees Stripe.
+    // 2. Fallback: navigate the WebView to the URL.
+    //    On Capacitor Android with allowNavigation not whitelisted, the WebView
+    //    will delegate to the OS browser (Chrome). On iOS the WebView will load it.
+    //    Either way, the user reaches Stripe — never a silent failure.
     try {
       window.location.href = url;
       return;
