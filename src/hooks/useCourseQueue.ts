@@ -144,21 +144,6 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
   // Share course with a partner (PREMIUM ONLY - caller must verify premium status)
   const shareWithPartner = async (queueId: string, courseId: string, partnerId: string) => {
     try {
-      // First, get the partnership
-      const { data: partnerships } = await supabase
-        .from('driver_partnerships')
-        .select('id, commission_percentage')
-        .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-        .or(`driver_a_id.eq.${partnerId},driver_b_id.eq.${partnerId}`)
-        .eq('status', 'accepted')
-        .limit(1);
-
-      const partnership = partnerships?.[0];
-      if (!partnership) {
-        toast.error('Partenariat non trouvé');
-        return false;
-      }
-
       // Get course price
       const { data: devis } = await supabase
         .from('devis')
@@ -168,7 +153,7 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
         .limit(1);
 
       const courseAmount = devis?.[0]?.amount || 0;
-      const commissionPercentage = partnership.commission_percentage || 10;
+      const commissionPercentage = 20; // default commission
       const commissionAmount = (courseAmount * commissionPercentage) / 100;
 
       // Create shared course entry
@@ -176,7 +161,6 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
         .from('shared_courses')
         .insert({
           course_id: courseId,
-          partnership_id: partnership.id,
           sender_driver_id: driverId,
           receiver_driver_id: partnerId,
           course_amount: courseAmount,

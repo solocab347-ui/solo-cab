@@ -80,12 +80,11 @@ export function useDriverObjectives(driverId: string | null) {
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .eq('status', 'completed');
 
-      // Get partnerships count
+      // Partnerships table removed - count favorites instead
       const { count: partnerCount } = await supabase
-        .from('driver_partnerships')
-        .select('id', { count: 'exact' })
-        .or(`requester_id.eq.${driverId},target_id.eq.${driverId}`)
-        .eq('status', 'active');
+        .from('driver_favorites')
+        .select('id', { count: 'exact', head: true })
+        .eq('driver_id', driverId);
 
       // Calculate total revenue from courses
       const totalRevenue = courses?.reduce((sum, c: any) => sum + (c.final_payment_amount || 0), 0) || 0;
