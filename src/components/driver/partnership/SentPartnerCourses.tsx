@@ -8,12 +8,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Car, Calendar, Euro, FileText, AlertCircle, Loader2, 
-  ArrowRight, TrendingUp, Send, Receipt, Plus, Globe, Heart, XCircle, Trash2
+  ArrowRight, TrendingUp, Send, Receipt, Plus, Globe, Heart, XCircle, Trash2,
+  Sparkles, UserPlus, Crown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
+import { DirectCourseCreationForm } from '../courses/DirectCourseCreationForm';
+import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerDialog';
+import { useDriverPremium } from '@/hooks/useDriverPremium';
+import { PremiumGate } from '@/components/premium/PremiumGate';
 
 interface Props {
   driverId: string | null;
