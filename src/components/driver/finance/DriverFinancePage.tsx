@@ -286,26 +286,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-4">
-            <Skeleton className="h-6 w-48 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  const totalPendingCommissions = pendingPayments
-    .filter(p => p.sender_driver_id === driverId)
-    .reduce((sum, p) => sum + p.sender_commission_amount, 0);
-
-  // Bornes de la semaine en cours pour affichage
-  const currentWeek = getCurrentVtcWeek();
-  const weekLabel = `${format(currentWeek.start, "d MMM", { locale: fr })} → ${format(currentWeek.end, "d MMM yyyy", { locale: fr })}`;
+  // ⚠️ TOUS les hooks (useMemo, etc.) DOIVENT être déclarés AVANT tout early return
+  // sinon React lève "Rendered more hooks than during the previous render".
 
   // Liste des mois disponibles dans l'historique des règlements (12 derniers max)
   const availableMonths = useMemo(() => {
@@ -340,6 +322,28 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       ),
     };
   }, [settlements, selectedMonth]);
+
+  // Early return APRÈS tous les hooks pour préserver l'ordre stable des hooks.
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-full" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  const totalPendingCommissions = pendingPayments
+    .filter(p => p.sender_driver_id === driverId)
+    .reduce((sum, p) => sum + p.sender_commission_amount, 0);
+
+  // Bornes de la semaine en cours pour affichage
+  const currentWeek = getCurrentVtcWeek();
+  const weekLabel = `${format(currentWeek.start, "d MMM", { locale: fr })} → ${format(currentWeek.end, "d MMM yyyy", { locale: fr })}`;
 
   const formatMonthLabel = (key: string) => {
     const [y, m] = key.split("-");
