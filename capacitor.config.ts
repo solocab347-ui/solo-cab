@@ -21,6 +21,18 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     cleartext: true,
+    // Whitelist domains the WebView is allowed to navigate to in-place.
+    // Anything NOT in this list opens in the OS browser (which is what we want
+    // for Stripe Connect onboarding when the in-app browser plugin is unavailable).
+    allowNavigation: [
+      'connect.stripe.com',
+      '*.stripe.com',
+      'js.stripe.com',
+      'solocab.fr',
+      '*.solocab.fr',
+      '*.lovable.app',
+      '*.lovableproject.com',
+    ],
   },
   android: {
     allowMixedContent: true,
