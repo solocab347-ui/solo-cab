@@ -69,7 +69,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
-  const { isAvailable, isOnline, driverStatus, toggleAvailability } = useDriverAvailability();
+  const { isAvailable, isOnline, driverStatus, toggleAvailability, isToggling } = useDriverAvailability();
   const isAssigned = driverStatus === 'assigned';
   const isInRide = driverStatus === 'in_ride';
   const isBreak = driverStatus === 'break';
@@ -88,8 +88,9 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   });
 
   const handleToggleAvailability = useCallback(async () => {
+    if (isBusy || isToggling) return;
     await toggleAvailability();
-  }, [toggleAvailability]);
+  }, [toggleAvailability, isBusy, isToggling]);
 
   const fetchRevenue = useCallback(async () => {
     try {
@@ -304,16 +305,22 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
 
               {/* Status pill */}
                <button
-                onClick={isBusy ? undefined : handleToggleAvailability}
+                onClick={isBusy || isToggling ? undefined : handleToggleAvailability}
+                disabled={isBusy || isToggling}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 shadow-md ${
                   isBusy
                     ? 'bg-amber-500 text-white shadow-amber-500/30 cursor-default'
                     : isOnline
                       ? 'bg-emerald-500 text-white shadow-emerald-500/30'
                       : 'bg-destructive text-destructive-foreground shadow-destructive/30'
-                }`}
+                } ${isToggling ? 'opacity-70 cursor-wait' : ''}`}
               >
-                {isBusy ? (
+                {isToggling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Mise à jour…
+                  </>
+                ) : isBusy ? (
                   <>
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
@@ -457,8 +464,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
         </div>
       )}
 
-      {/* Loading */}
-      {!isTracking && (
+      {/* Loading — only while we actually try to track GPS */}
+      {trackingEnabled && !isTracking && (
         <div className="absolute inset-0 z-[42] flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
           <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />

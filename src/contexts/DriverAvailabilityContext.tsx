@@ -2,30 +2,36 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, Re
 import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
+import { toast } from 'sonner';
 
 /**
- * Driver status state machine (SoloCab intelligent):
- * - 'offline'   → Hors ligne: pas de courses immédiates, reçoit réservations >2h
- * - 'online'    → En ligne: courses immédiates + réservations futures
- * - 'assigned'  → Course assignée: pas de nouvelles courses immédiates, réservations futures OK
- * - 'in_ride'   → En course: pas visible immédiat, réservations lointaines uniquement
- * - 'break'     → En pause: rien du tout
- * 
- * "isOnline" = driver chose to go online (online, assigned, in_ride)
- * "isAvailableForCourses" = 'online' specifically (immediate rides)
+ * Single source of truth for the driver status.
+ * Lifecycle:
+ *   offline → driver chose to disconnect
+ *   online  → driver is available for immediate rides + reservations
+ *   break   → driver paused, no rides
+ *   assigned/in_ride → owned by the active course, the toggle is locked
+ *
+ * All status changes go through `set_driver_availability_atomic` so
+ * driver_status, is_available_now, GPS columns and freshness move together.
  */
 
 interface DriverAvailabilityContextType {
-  /** True if driver is connected (not offline/break) */
+  /** True if driver is connected (online | assigned | in_ride) */
   isOnline: boolean;
-  /** True if driver is available for new immediate courses (online) */
+  /** True if driver is available for new immediate courses (strictly online) */
   isAvailableForCourses: boolean;
-  /** Current driver_status */
+  /** Current driver_status string */
   driverStatus: string;
+  /** Current `is_available_now` flag from DB */
+  isAvailableNow: boolean;
+  /** Initial fetch in progress */
   isLoading: boolean;
+  /** A toggle/break mutation is in flight */
+  isToggling: boolean;
   /** Toggle between offline ↔ online (user action) */
   toggleOnline: () => Promise<void>;
-  /** Set break mode */
+  /** Toggle between online ↔ break */
   toggleBreak: () => Promise<void>;
   /** Legacy compat */
   isAvailable: boolean;
@@ -37,7 +43,9 @@ const DriverAvailabilityContext = createContext<DriverAvailabilityContextType>({
   isOnline: false,
   isAvailableForCourses: false,
   driverStatus: 'offline',
+  isAvailableNow: false,
   isLoading: true,
+  isToggling: false,
   toggleOnline: async () => {},
   toggleBreak: async () => {},
   isAvailable: false,
@@ -57,13 +65,28 @@ interface Props {
 const CONNECTED_STATUSES = ['online', 'assigned', 'in_ride'];
 const BUSY_STATUSES = ['in_ride', 'assigned'];
 
+type AvailabilityTarget = 'online' | 'offline' | 'break';
+
 export function DriverAvailabilityProvider({ driverId, children }: Props) {
   const [driverStatus, setDriverStatus] = useState<string>('offline');
+  const [isAvailableNow, setIsAvailableNow] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isToggling, setIsToggling] = useState(false);
   const mountedRef = useRef(true);
+  const inFlightRef = useRef<Promise<void> | null>(null);
 
-  const isOnline = CONNECTED_STATUSES.includes(driverStatus);
-  const isAvailableForCourses = driverStatus === 'online';
+  // The map / dashboard buttons should only consider the driver "online"
+  // when BOTH driver_status === 'online' AND is_available_now === true.
+  // For busy statuses the flag is irrelevant — the course owns the state.
+  const isBusyStatus = BUSY_STATUSES.includes(driverStatus);
+  const isOnline = isBusyStatus || (driverStatus === 'online' && isAvailableNow);
+  const isAvailableForCourses = driverStatus === 'online' && isAvailableNow;
+
+  const applyDriverRow = useCallback((row: { driver_status?: string | null; is_available_now?: boolean | null } | null) => {
+    if (!row) return;
+    if (typeof row.driver_status === 'string') setDriverStatus(row.driver_status);
+    if (typeof row.is_available_now === 'boolean') setIsAvailableNow(row.is_available_now);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -71,11 +94,12 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
     const fetchStatus = async () => {
       const { data: driverData } = await supabase
         .from('drivers')
-        .select('driver_status')
+        .select('driver_status, is_available_now')
         .eq('id', driverId)
         .maybeSingle();
 
       let nextStatus = driverData?.driver_status || 'offline';
+      let nextAvailable = !!driverData?.is_available_now;
 
       if (nextStatus === 'assigned') {
         const nowIso = new Date().toISOString();
@@ -122,12 +146,14 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
         if (!hasPendingIncoming && !reconciledBusyStatus) {
           nextStatus = 'online';
+          nextAvailable = true;
           await supabase
             .from('drivers')
             .update({ driver_status: nextStatus, is_available_now: true })
             .eq('id', driverId);
         } else if (reconciledBusyStatus && reconciledBusyStatus !== nextStatus) {
           nextStatus = reconciledBusyStatus;
+          nextAvailable = false;
           await supabase
             .from('drivers')
             .update({
@@ -150,11 +176,12 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
         if (reconciledStatus !== nextStatus) {
           nextStatus = reconciledStatus;
+          nextAvailable = nextStatus === 'online';
           await supabase
             .from('drivers')
             .update({
               driver_status: nextStatus,
-              is_available_now: nextStatus === 'online',
+              is_available_now: nextAvailable,
             })
             .eq('id', driverId);
         }
@@ -162,6 +189,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
 
       if (!mountedRef.current) return;
       setDriverStatus(nextStatus);
+      setIsAvailableNow(nextAvailable);
       setIsLoading(false);
     };
 
@@ -180,12 +208,12 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         (payload) => {
           if (!mountedRef.current) return;
           const newData = payload.new as any;
-          if (newData?.driver_status) {
-            if (['assigned', 'in_ride'].includes(newData.driver_status)) {
-              fetchStatus();
-            } else {
-              setDriverStatus(newData.driver_status);
-            }
+          if (!newData) return;
+          if (newData.driver_status && ['assigned', 'in_ride'].includes(newData.driver_status)) {
+            // Busy state needs a full refetch so we reconcile with active courses.
+            fetchStatus();
+          } else {
+            applyDriverRow(newData);
           }
         }
       )
@@ -207,84 +235,116 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       mountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [driverId]);
+  }, [driverId, applyDriverRow]);
+
+  // ── Atomic mutation ──
+  const runAtomic = useCallback(
+    async (target: AvailabilityTarget) => {
+      if (!driverId) return;
+
+      const previousStatus = driverStatus;
+      const previousAvailable = isAvailableNow;
+      const optimisticStatus = target === 'online' ? 'online' : target === 'break' ? 'break' : 'offline';
+      const optimisticAvailable = target === 'online';
+
+      // Optimistic UI — instant feedback even if the network is slow.
+      setDriverStatus(optimisticStatus);
+      setIsAvailableNow(optimisticAvailable);
+      setIsToggling(true);
+
+      try {
+        const { data, error } = await supabase.rpc('set_driver_availability_atomic', {
+          _driver_id: driverId,
+          _target: target,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        const row = Array.isArray(data) ? data[0] : (data as any);
+
+        if (row?.blocked) {
+          // Roll back optimistic change.
+          setDriverStatus(previousStatus);
+          setIsAvailableNow(previousAvailable);
+
+          if (row.blocked_reason === 'driver_busy') {
+            toast.warning('Course en cours — impossible de changer le statut maintenant.');
+          } else if (row.blocked_reason === 'forbidden') {
+            toast.error('Action non autorisée.');
+          } else if (row.blocked_reason === 'driver_not_found') {
+            toast.error('Profil chauffeur introuvable.');
+          }
+          return;
+        }
+
+        if (row?.driver_status) {
+          setDriverStatus(row.driver_status);
+          setIsAvailableNow(!!row.is_available_now);
+        }
+      } catch (err) {
+        console.error('[DriverAvailability] set_driver_availability_atomic failed', err);
+        setDriverStatus(previousStatus);
+        setIsAvailableNow(previousAvailable);
+        toast.error('Connexion instable, réessayez.');
+      } finally {
+        if (mountedRef.current) {
+          setIsToggling(false);
+        }
+      }
+    },
+    [driverId, driverStatus, isAvailableNow]
+  );
+
+  // Serialize toggles so rapid taps cannot interleave RPC calls.
+  const enqueue = useCallback(
+    (target: AvailabilityTarget) => {
+      const prior = inFlightRef.current;
+      const next = (prior ? prior.then(() => runAtomic(target), () => runAtomic(target)) : runAtomic(target));
+      inFlightRef.current = next.finally(() => {
+        if (inFlightRef.current === next) inFlightRef.current = null;
+      });
+      return next;
+    },
+    [runAtomic]
+  );
 
   const toggleOnline = useCallback(async () => {
-    // GUARD: Never toggle away from in_ride/assigned — only user can toggle offline ↔ online
     if (BUSY_STATUSES.includes(driverStatus)) {
       console.warn('[DriverAvailability] Cannot toggle while in status:', driverStatus);
       return;
     }
-    // If on break, go back to online
-    const newOnline = driverStatus === 'break' ? true : !isOnline;
-    const newStatus = newOnline ? 'online' : 'offline';
-    setDriverStatus(newStatus);
-    await supabase
-      .from('drivers')
-      .update({
-        is_available_now: newOnline,
-        driver_status: newStatus,
-        // Keep GPS timestamp fresh when going online to ensure visibility
-        ...(newOnline ? { last_location_update: new Date().toISOString() } : {}),
-      })
-      .eq('id', driverId);
-    // Quand le chauffeur se déconnecte : effacer immédiatement sa position serveur
-    // → il disparaît instantanément des recherches clients (sans attendre l'expiration de fraîcheur).
-    if (!newOnline) {
-      try {
-        await supabase.rpc('clear_driver_gps_on_offline', { _driver_id: driverId });
-      } catch (err) {
-        console.warn('[DriverAvailability] clear_driver_gps_on_offline failed', err);
-      }
-    }
-    playAvailabilitySound(newOnline);
-  }, [isOnline, driverStatus, driverId]);
+    const target: AvailabilityTarget = isOnline ? 'offline' : 'online';
+    const willBeOnline = target === 'online';
+    await enqueue(target);
+    playAvailabilitySound(willBeOnline);
+  }, [driverStatus, isOnline, enqueue]);
 
   const toggleBreak = useCallback(async () => {
     if (BUSY_STATUSES.includes(driverStatus)) {
       console.warn('[DriverAvailability] Cannot take break while busy:', driverStatus);
       return;
     }
-    const isBreak = driverStatus === 'break';
-    const newStatus = isBreak ? 'online' : 'break';
-    setDriverStatus(newStatus);
-    await supabase
-      .from('drivers')
-      .update({
-        is_available_now: newStatus === 'online',
-        driver_status: newStatus,
-        ...(newStatus === 'online' ? { last_location_update: new Date().toISOString() } : {}),
-      })
-      .eq('id', driverId);
-    // Pause = aucune émission GPS. On efface la position pour ne plus apparaître côté client.
-    if (newStatus === 'break') {
-      try {
-        await supabase.rpc('clear_driver_gps_on_offline', { _driver_id: driverId });
-      } catch (err) {
-        console.warn('[DriverAvailability] clear_driver_gps_on_offline (break) failed', err);
-      }
-    }
-  }, [driverStatus, driverId]);
+    const target: AvailabilityTarget = driverStatus === 'break' ? 'online' : 'break';
+    await enqueue(target);
+  }, [driverStatus, enqueue]);
 
-  // Legacy compat
-  const setAvailabilityDirect = useCallback(async (val: boolean) => {
-    const newStatus = val ? 'online' : 'offline';
-    setDriverStatus(newStatus);
-    await supabase
-      .from('drivers')
-      .update({
-        is_available_now: val,
-        driver_status: newStatus,
-      })
-      .eq('id', driverId);
-  }, [driverId]);
+  const setAvailabilityDirect = useCallback(
+    async (val: boolean) => {
+      await enqueue(val ? 'online' : 'offline');
+    },
+    [enqueue]
+  );
 
   return (
     <DriverAvailabilityContext.Provider value={{
       isOnline,
       isAvailableForCourses,
       driverStatus,
+      isAvailableNow,
       isLoading,
+      isToggling,
       toggleOnline,
       toggleBreak,
       // Legacy compat
