@@ -256,8 +256,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
       // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
       // le début de la semaine en cours (lundi 00:00 UTC).
-      //  - cashFeesOwedFromPastWeeks : frais espèces en attente de prélèvement
-      //    sur des semaines déjà fermées.
+      //  - cashFeesOwedFromPastWeeks : frais espèces non encore prélevés.
+      //    Source PRINCIPALE = `drivers.cash_debt_pending` (alimenté par
+      //    process-weekly-settlement quand le net carte ne suffit pas à éponger
+      //    la commission cash). On y ajoute le résiduel `pending` créé après
+      //    le settlement (cas rares : course cash réglée juste après le lundi 6h).
       //  - pastPendingNet / pastPendingCourses : net qui n'a pas pu être versé
       //    et qui se cumule jusqu'au prochain virement réussi.
       //  - failedSettlements : règlements hebdo en échec ou ignorés
@@ -265,12 +268,19 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const pastPbData = pbData.filter(
         (b: any) => b.created_at && new Date(b.created_at).getTime() < weekStart.getTime()
       );
-      let cashFeesOwedFromPastWeeks = 0;
-      let pastPendingNet = 0;
-      for (const b of pastPbData) {
-        if (b.payment_type === 'cash') cashFeesOwedFromPastWeeks += Number(b.solocab_fee || 0);
-        pastPendingNet += Number(b.net_amount || 0);
-      }
+      const cashDebtFromDriver = Number(driverResult.data?.cash_debt_pending || 0);
+      const pastPendingCashFees = pastPbData.reduce(
+        (sum: number, b: any) => sum + (b.payment_type === 'cash' ? Number(b.solocab_fee || 0) : 0),
+        0
+      );
+      // Source autoritaire : la dette consolidée par le settlement hebdo.
+      // On prend le MAX pour couvrir aussi les cas où des entries pending
+      // n'ont pas encore été agrégées (ex: course cash réglée après lundi 6h).
+      const cashFeesOwedFromPastWeeks = Math.max(cashDebtFromDriver, pastPendingCashFees);
+      const pastPendingNet = pastPbData.reduce(
+        (sum: number, b: any) => sum + Number(b.net_amount || 0),
+        0
+      );
       const failedSettlements = mapped.filter(
         (s: Settlement) => s.transfer_status === 'failed' || s.transfer_status === 'skipped'
       );
