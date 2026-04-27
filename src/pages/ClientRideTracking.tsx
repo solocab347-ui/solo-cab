@@ -19,6 +19,7 @@ import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
 import { LiveTrackingMap } from "@/components/tracking/LiveTrackingMap";
+import { ClientCourseProgressTimeline } from "@/components/client/ClientCourseProgressTimeline";
 import logo from "@/assets/logo-solocab.png";
 
 type CoursePhase = 'accepted' | 'driver_approaching' | 'driver_arrived' | 'in_progress' | 'completed' | 'cancelled' | 'refused';
