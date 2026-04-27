@@ -1708,6 +1708,18 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    // Best-effort: mark this event as failed in the idempotency log so admin can retry/inspect
+    try {
+      const sigForLookup = req.headers.get("stripe-signature");
+      if (sigForLookup) {
+        // We cannot extract event.id without re-parsing; log a synthetic row keyed by signature
+        await supabaseClient.from("stripe_webhook_events").update({
+          status: "error",
+          error_message: errorMessage,
+          processed_at: new Date().toISOString(),
+        }).eq("status", "received").gte("received_at", new Date(Date.now() - 60_000).toISOString());
+      }
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
   }
 });
