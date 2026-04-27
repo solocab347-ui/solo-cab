@@ -413,15 +413,28 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return key === selectedMonth;
     });
+    const cardTxns = txns.filter((t) => t.payment_method !== 'cash');
+    const cashTxns = txns.filter((t) => t.payment_method === 'cash');
     const uniqueCourses = new Set(txns.map((t) => t.course_id || t.id));
+
+    // Frais : on prend la source AUTORITAIRE pour éviter les écarts.
+    //  - Si la semaine est clôturée → settlements (figé, vérité comptable).
+    //  - Sinon → on agrège stripe_transactions (réflexion temps réel).
+    // Les courses cash ET CB sont incluses dans stripe_transactions (cash =
+    // payment_method='cash'), donc le total reflète tous les frais SoloCab.
     return {
       weeks: filtered,
       transactions: txns,
+      cardCourses: cardTxns.length,
+      cashCourses: cashTxns.length,
+      cardSolocabFees: cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+      cashSolocabFees: cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+      cardStripeFees: cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0),
       totalNet: txns.length > 0
         ? txns.reduce((sum, t) => sum + (t.net_to_driver || 0), 0)
         : filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
       totalFees: txns.length > 0
-        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0), 0)
+        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0) + (t.stripe_fee_amount || 0), 0)
         : filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
       totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
       totalCourses: txns.length > 0 ? uniqueCourses.size : filtered.reduce(
