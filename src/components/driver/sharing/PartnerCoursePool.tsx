@@ -31,7 +31,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DeclineCourseDialog } from '../partnership/DeclineCourseDialog';
-import { SenderProfileDialog } from '../partnership/SenderProfileDialog';
+
 
 interface PooledCourse {
   pool_id: string;
@@ -526,7 +526,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
       // For pool mode, use atomic claiming function
       if (course.sharing_mode === 'pool') {
         const { data, error } = await supabase.rpc('claim_pool_course', {
-          p_shared_course_id: course.id,
+          p_pool_id: course.id,
           p_claimer_driver_id: driverId
         });
         if (error) throw error;
@@ -599,14 +599,14 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
     
     setClaiming(poolId);
     try {
-      const { data, error } = await supabase.rpc('claim_pooled_course', {
-        _pool_id: poolId,
-        _claimer_driver_id: driverId
+      const { data, error } = await supabase.rpc('claim_pool_course', {
+        p_pool_id: poolId,
+        p_claimer_driver_id: driverId
       });
 
       if (error) throw error;
 
-      const result = data?.[0];
+      const result = data as any;
       if (result?.success) {
         toast.success(result.message);
         loadPooledCourses();
@@ -1049,15 +1049,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
         senderName={selectedCourse?.sender_name || 'Partenaire'}
       />
 
-      {/* Sender Profile Dialog */}
-      {selectedCourse && driverId && (
-        <SenderProfileDialog
-          open={profileDialogOpen}
-          onOpenChange={setProfileDialogOpen}
-          senderDriverId={selectedCourse.sender_driver_id}
-          currentDriverId={driverId}
-        />
-      )}
+      {/* Sender Profile Dialog removed (obsolete) */}
     </div>
   );
 }
