@@ -802,7 +802,20 @@ const DriverDashboard = () => {
           />
         )}
 
-        {!showProfileWizard && (<>
+        {/* Objectives Goals Funnel - Mandatory after profile is complete, before dashboard access */}
+        {!showProfileWizard && showObjectivesFunnel && driverProfile?.driver?.id && user && (
+          <ObjectivesGoalsFunnel
+            driverId={driverProfile.driver.id}
+            driverUserId={user.id}
+            onComplete={() => {
+              setShowObjectivesFunnel(false);
+              queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user.id] });
+            }}
+          />
+        )}
+
+        {!showProfileWizard && !showObjectivesFunnel && (<>
+
 
         {/* Pioneer Banner - Affichage pour les pionniers */}
         {driverProfile?.driver?.is_pioneer && (
