@@ -370,16 +370,23 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
             </p>
             {schedules.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-xs">
-                {schedules.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between gap-1 rounded border border-border/50 px-2 py-1">
-                    <span className="font-medium">{s.day_of_week}</span>
-                    {s.is_active ? (
-                      <span className="text-muted-foreground">{s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}</span>
-                    ) : (
-                      <Badge variant="outline" className="text-[9px]">Off</Badge>
-                    )}
-                  </div>
-                ))}
+                {(() => {
+                  const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+                  return schedules.map((s) => {
+                    const dayIdx = typeof s.day_of_week === "number" ? s.day_of_week : parseInt(s.day_of_week, 10);
+                    const dayLabel = !isNaN(dayIdx) ? DAY_LABELS[dayIdx] : String(s.day_of_week);
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-1 rounded border border-border/50 px-2 py-1">
+                        <span className="font-medium">{dayLabel}</span>
+                        {s.is_working_day ? (
+                          <span className="text-muted-foreground">{s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}</span>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px]">Off</Badge>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             ) : (
               <span className="text-xs text-muted-foreground italic">Pas d'horaires configurés</span>
