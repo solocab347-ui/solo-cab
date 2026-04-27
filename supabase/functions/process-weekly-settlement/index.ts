@@ -55,6 +55,26 @@ async function fetchAllRows(supabase: any, table: string, column: string, value:
   return rows;
 }
 
+async function fetchEligibleDrivers(supabase: any) {
+  const rows: any[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, user_id, cash_debt_pending, company_name")
+      .eq("status", "validated")
+      .not("stripe_connect_account_id", "is", null)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Failed to fetch eligible drivers: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return rows;
+}
+
 // ─── Pool de promesses limitées en parallélisme ─────────────────
 async function runWithConcurrency<T, R>(
   items: T[], limit: number, worker: (item: T, idx: number) => Promise<R>
@@ -162,14 +182,18 @@ serve(async (req) => {
       }
     }
 
-    const allDriverIds = Object.keys(driverTotals).filter(id => !alreadyProcessed.has(id));
-    log("Drivers to process this run", { total: Object.keys(driverTotals).length, todo: allDriverIds.length });
+    const eligibleDrivers = await fetchEligibleDrivers(supabase);
+    const eligibleDriverIds = eligibleDrivers.map((d) => d.id);
+    const allDriverIds = Array.from(new Set([...Object.keys(driverTotals), ...eligibleDriverIds]))
+      .filter(id => !alreadyProcessed.has(id));
+    log("Drivers to process this run", { active_with_activity: Object.keys(driverTotals).length, eligible_drivers: eligibleDriverIds.length, todo: allDriverIds.length });
 
     // ═══ 2. BATCH LOOKUP chauffeurs (1 query au lieu de N) ═══
-    // On pagine par tranches de 500 pour PostgREST
     const driversById: Record<string, any> = {};
-    for (let i = 0; i < allDriverIds.length; i += 500) {
-      const chunk = allDriverIds.slice(i, i + 500);
+    for (const d of eligibleDrivers) driversById[d.id] = d;
+    const missingDriverIds = allDriverIds.filter((id) => !driversById[id]);
+    for (let i = 0; i < missingDriverIds.length; i += 500) {
+      const chunk = missingDriverIds.slice(i, i + 500);
       const { data: ds } = await supabase
         .from("drivers")
         .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, user_id, cash_debt_pending, company_name")
@@ -195,7 +219,11 @@ serve(async (req) => {
       previousCashDebt: number; totalCashDebt: number; realNet: number; realNetCents: number;
     };
     const tasks: Task[] = allDriverIds.map(driverId => {
-      const agg = driverTotals[driverId];
+      const agg = driverTotals[driverId] || {
+        card_gross: 0, card_solocab_fees: 0, card_stripe_fees: 0,
+        card_net: 0, card_courses: 0, card_balance_ids: [],
+        cash_gross: 0, cash_fees_owed: 0, cash_courses: 0, cash_balance_ids: [],
+      };
       const driver = driversById[driverId];
       const previousCashDebt = Number(driver?.cash_debt_pending || 0);
       const totalCashDebt = previousCashDebt + agg.cash_fees_owed;
@@ -217,6 +245,17 @@ serve(async (req) => {
     // ═══ 5. WORKER : traite UN chauffeur (pas d'écriture DB ici, on bufferise) ═══
     async function processOne(task: Task) {
       const { driverId, driver, agg, previousCashDebt, totalCashDebt, realNet, realNetCents } = task;
+
+      if (agg.card_courses === 0 && agg.cash_courses === 0 && totalCashDebt === 0) {
+        balanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: 0, total_solocab_fees: 0,
+          net_amount: 0, standard_courses_count: 0,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "no_activity",
+        });
+        return;
+      }
 
       // Sans Stripe → accumule dette, pas de virement
       if (!driver?.stripe_connect_account_id || !driver?.stripe_connect_charges_enabled) {

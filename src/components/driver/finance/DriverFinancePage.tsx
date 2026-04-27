@@ -29,6 +29,29 @@ function getCurrentVtcWeek(): { start: Date; end: Date } {
   return { start, end };
 }
 
+function getVtcWeekForDate(date: Date): { start: Date; end: Date } {
+  const day = date.getUTCDay();
+  const daysFromMonday = day === 0 ? 6 : day - 1;
+  const start = new Date(date);
+  start.setUTCDate(date.getUTCDate() - daysFromMonday);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+function toWeekKey(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return getVtcWeekForDate(d).start.toISOString().slice(0, 10);
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
 interface DriverFinancePageProps {
   driverId: string;
   initialTab?: string;
@@ -48,6 +71,11 @@ interface Settlement {
   stripe_transfer_id: string | null;
   transfer_executed_at: string | null;
   transfer_error: string | null;
+}
+
+interface WeekHistoryEntry extends Settlement {
+  isGenerated?: boolean;
+  activityCount?: number;
 }
 
 interface PendingPayment {
@@ -115,7 +143,7 @@ interface CarryOverStats {
 }
 
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [settlements, setSettlements] = useState<WeekHistoryEntry[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
@@ -146,7 +174,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
       // Load all data in parallel
       const monthFloor = new Date();
-      monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 11, 1);
+      monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 23, 1);
       monthFloor.setUTCHours(0, 0, 0, 0);
 
       // ═══ SOURCE UNIQUE DE VÉRITÉ POUR LE RÉCAP FINANCIER ═══
@@ -175,7 +203,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           `)
           .eq("driver_id", driverId)
           .order("created_at", { ascending: false })
-          .limit(52),
+          .limit(260),
         supabase
           .from("shared_course_payments")
           .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
@@ -205,7 +233,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .limit(1000),
         supabase
           .from("drivers")
-          .select("stripe_connect_charges_enabled, cash_debt_pending")
+          .select("created_at, stripe_connect_created_at, stripe_connect_updated_at, stripe_connect_charges_enabled, cash_debt_pending")
           .eq("id", driverId)
           .single(),
         // Toujours pending : alimente l'encart "Solde en attente" (semaine + carry-over).
@@ -221,9 +249,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .from("driver_balance_pending" as any)
           .select("id, course_id, gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, status, created_at")
           .eq("driver_id", driverId)
-          .gte("created_at", monthFloor.toISOString())
           .order("created_at", { ascending: false })
-          .limit(2000),
+          .limit(5000),
       ]);
 
       // Helper : convertit une ligne driver_balance_pending en TransactionItem.
@@ -266,8 +293,85 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         ...b,
         week_start: b.settlement?.week_start,
         week_end: b.settlement?.week_end,
-      }));
-      setSettlements(mapped);
+      })) as WeekHistoryEntry[];
+      const driverStart = new Date(
+        driverResult.data?.stripe_connect_created_at
+        || driverResult.data?.stripe_connect_updated_at
+        || driverResult.data?.created_at
+        || weekStartIso
+      );
+      const firstWeek = getVtcWeekForDate(driverStart).start;
+      const generatedByWeek = new Map<string, WeekHistoryEntry>();
+
+      for (const s of mapped) {
+        if (s.week_start) generatedByWeek.set(toWeekKey(s.week_start), s);
+      }
+
+      for (const b of allBp) {
+        const key = toWeekKey(b.created_at);
+        const existing = generatedByWeek.get(key);
+        const gross = Number(b.gross_amount || 0);
+        const solocabFee = Number(b.solocab_fee || 0);
+        const stripeFee = Number(b.stripe_fee || 0);
+        const net = Number(b.net_amount || 0);
+        if (existing) {
+          if (existing.isGenerated) {
+            existing.net_amount += net;
+            existing.total_commissions_earned += gross;
+            existing.total_solocab_fees += solocabFee + stripeFee;
+            existing.standard_courses_count += 1;
+          }
+          existing.activityCount = (existing.activityCount || 0) + 1;
+          continue;
+        }
+        const { start, end } = getVtcWeekForDate(new Date(b.created_at));
+        generatedByWeek.set(key, {
+          id: `activity-${key}`,
+          week_start: start.toISOString(),
+          week_end: end.toISOString(),
+          net_amount: net,
+          total_commissions_earned: gross,
+          total_solocab_fees: solocabFee + stripeFee,
+          shared_courses_as_sender: 0,
+          shared_courses_as_receiver: 0,
+          standard_courses_count: 1,
+          transfer_status: b.status === "settled" ? "completed" : "pending",
+          stripe_transfer_id: null,
+          transfer_executed_at: null,
+          transfer_error: null,
+          isGenerated: true,
+          activityCount: 1,
+        });
+      }
+
+      for (let cursor = new Date(weekStart); cursor >= firstWeek; cursor = addUtcDays(cursor, -7)) {
+        const key = cursor.toISOString().slice(0, 10);
+        if (generatedByWeek.has(key)) continue;
+        const end = addUtcDays(cursor, 6);
+        end.setUTCHours(23, 59, 59, 999);
+        generatedByWeek.set(key, {
+          id: `empty-${key}`,
+          week_start: cursor.toISOString(),
+          week_end: end.toISOString(),
+          net_amount: 0,
+          total_commissions_earned: 0,
+          total_solocab_fees: 0,
+          shared_courses_as_sender: 0,
+          shared_courses_as_receiver: 0,
+          standard_courses_count: 0,
+          transfer_status: "no_activity",
+          stripe_transfer_id: null,
+          transfer_executed_at: null,
+          transfer_error: null,
+          isGenerated: true,
+          activityCount: 0,
+        });
+      }
+
+      const completeWeekHistory = Array.from(generatedByWeek.values()).sort(
+        (a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime()
+      );
+      setSettlements(completeWeekHistory);
       setPendingPayments(pendingResult.data || []);
       // Les listes sont déjà normalisées (TransactionItem) via balancePendingToTxn.
       setMonthlyTransactions((monthlyPaymentsResult.data || []) as TransactionItem[]);
@@ -389,6 +493,14 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />Échoué</Badge>;
       case "skipped":
         return <Badge variant="secondary" className="gap-1"><AlertCircle className="w-3 h-3" />Ignoré</Badge>;
+      case "below_minimum":
+        return <Badge variant="outline" className="gap-1 border-warning/30 text-warning"><Clock className="w-3 h-3" />Sous 1€</Badge>;
+      case "compensated_cash":
+        return <Badge variant="outline" className="gap-1 border-warning/30 text-warning"><CheckCircle className="w-3 h-3" />Compensé</Badge>;
+      case "skipped_no_stripe":
+        return <Badge variant="secondary" className="gap-1"><AlertCircle className="w-3 h-3" />Stripe absent</Badge>;
+      case "no_activity":
+        return <Badge variant="outline" className="gap-1 border-border text-muted-foreground"><Calendar className="w-3 h-3" />Aucune course</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
