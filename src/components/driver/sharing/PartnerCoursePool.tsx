@@ -33,6 +33,26 @@ import { fr } from 'date-fns/locale';
 import { DeclineCourseDialog } from '../partnership/DeclineCourseDialog';
 
 
+// Stripe pricing constants (matches backend STRIPE_PERCENTAGE / STRIPE_FIXED_FEE)
+const STRIPE_PERCENTAGE = 0.029;
+const STRIPE_FIXED_FEE = 0.30;
+const SOLOCAB_FEE_SHARED = 0.25;
+
+const computeFees = (amount: number) => {
+  const stripeFee = amount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE;
+  const total = stripeFee + SOLOCAB_FEE_SHARED;
+  return { stripeFee, solocabFee: SOLOCAB_FEE_SHARED, total };
+};
+
+// Haversine distance (km) between two lat/lng points
+const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 interface PooledCourse {
   pool_id: string;
   course_id: string;
@@ -45,6 +65,8 @@ interface PooledCourse {
   created_at: string;
   pickup_address: string;
   destination_address: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
@@ -53,13 +75,13 @@ interface PooledCourse {
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
+  sender_phone: string | null;
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;  // null si show_rating_for_sharing = false
-  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
+  sender_rating: number | null;
+  sender_total_rides: number | null;
   sender_show_phone: boolean;
   sender_show_email: boolean;
   sender_show_rating: boolean;
@@ -79,21 +101,23 @@ interface SharedCourse {
   created_at: string;
   pickup_address: string;
   destination_address: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
-  // Sender info (complet avec visibilité)
+  // Sender info
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
+  sender_phone: string | null;
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;  // null si show_rating_for_sharing = false
-  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
+  sender_rating: number | null;
+  sender_total_rides: number | null;
   sender_bio: string | null;
   sender_services_offered: string[] | null;
   sender_show_phone: boolean;
