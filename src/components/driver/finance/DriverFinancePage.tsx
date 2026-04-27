@@ -476,8 +476,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             Stripe
           </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1">
-            <Calendar className="w-4 h-4" />
-            Versements
+            <History className="w-4 h-4" />
+            Historique
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
