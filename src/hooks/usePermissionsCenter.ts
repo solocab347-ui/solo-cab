@@ -372,23 +372,17 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
             }
           } else if ('Notification' in window) {
             // ===== Web (PWA / navigateur) =====
-            if (currentStatus === 'denied') {
-              // Le navigateur ne réaffichera plus la prompt → on guide l'utilisateur
-              log({ action: 'notifications', method: 'web_api', status: 'webview_blocked', message: 'Notifications bloquées par le navigateur — l\'utilisateur doit les réactiver manuellement dans les paramètres du site' });
-              alert(
-                'Notifications bloquées par votre navigateur.\n\n' +
-                'Pour les réactiver :\n' +
-                '1. Tapez sur l\'icône 🔒 (cadenas) à gauche de l\'URL\n' +
-                '2. Sélectionnez "Autorisations" ou "Notifications"\n' +
-                '3. Choisissez "Autoriser" puis rechargez la page.\n\n' +
-                '💡 Pour des alertes même téléphone verrouillé, installez l\'app native.'
-              );
-              result = 'denied';
-              break;
+            // On TENTE TOUJOURS requestPermission() — Chrome peut avoir reset la perm
+            // entre-temps (l'utilisateur a pu débloquer manuellement avant de revenir).
+            // Si toujours 'denied', l'UI affichera le guide visuel (sans alert bloquante).
+            try {
+              const r = await Notification.requestPermission();
+              result = r as PermissionStatus;
+              log({ action: 'notifications', method: 'web_api', status: result === 'granted' ? 'success' : 'error', message: `Notification.requestPermission() → ${result}` });
+            } catch (e) {
+              result = currentStatus;
+              log({ action: 'notifications', method: 'web_api', status: 'error', message: 'requestPermission() a levé une exception (probablement déjà denied)', details: String(e) });
             }
-            const r = await Notification.requestPermission();
-            result = r as PermissionStatus;
-            log({ action: 'notifications', method: 'web_api', status: result === 'granted' ? 'success' : 'error', message: `Notification.requestPermission() → ${result}` });
           } else {
             log({ action: 'notifications', method: 'web_api', status: 'error', message: 'API Notification non supportée par ce navigateur' });
             result = 'unsupported';
