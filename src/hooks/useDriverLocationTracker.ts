@@ -430,66 +430,14 @@ export function useDriverLocationTracker({
     }
   }, [nativeGeo.latitude, nativeGeo.longitude, nativeGeo.accuracy]);
 
-  // ── Availability toggle (serialized + debounced anti-spam) ──
-  const updateAvailability = useCallback(
-    async (isAvailable: boolean) => {
-      if (!driverId) return;
-
-      // Anti-spam: ignore identical toggles fired within 800ms (rapid clicks → UI freeze)
-      const now = Date.now();
-      const last = lastAvailabilityRef.current;
-      if (last && last.value === isAvailable && (now - last.time) < 800) {
-        return;
-      }
-      lastAvailabilityRef.current = { value: isAvailable, time: now };
-
-      // Serialize: queue behind any in-flight toggle to avoid concurrent UPDATEs
-      // racing the active-course guard.
-      const run = async () => {
-        try {
-          // Guard: never reset to online/offline if driver has an active course
-          const { data: activeCourse } = await supabase
-            .from('courses')
-            .select('id')
-            .eq('driver_id', driverId)
-            .in('status', ['driver_approaching', 'in_progress', 'driver_arrived'] as any[])
-            .limit(1)
-            .maybeSingle();
-
-          if (activeCourse) {
-            console.warn('[GPS] Blocked availability toggle — active course exists');
-            return;
-          }
-
-          await supabase
-            .from('drivers')
-            .update({
-              is_available_now: isAvailable,
-              driver_status: isAvailable ? 'online' : 'offline',
-            })
-            .eq('id', driverId);
-        } catch (err) {
-          console.error('[GPS] Failed to update availability:', err);
-        }
-      };
-
-      const prior = availabilityInFlightRef.current;
-      const next = (prior ? prior.then(run, run) : run());
-      availabilityInFlightRef.current = next.finally(() => {
-        if (availabilityInFlightRef.current === next) {
-          availabilityInFlightRef.current = null;
-        }
-      });
-      return next;
-    },
-    [driverId]
-  );
+  // NOTE: Driver availability mutations now go exclusively through
+  // `DriverAvailabilityContext` → `set_driver_availability_atomic`.
+  // The GPS hook is responsible for position tracking only.
 
   return {
     ...locationState,
     startTracking: startWebTracking,
     stopTracking: stopWebTracking,
-    updateAvailability,
     /** Current adaptive stale threshold in ms (depends on speed + accuracy) */
     staleThresholdMs: computeStaleThreshold(lastSpeedRef.current, locationState.accuracy),
     /** Last computed speed in m/s (0 if stationary or unknown) */
