@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Car, Calendar, Euro, FileText, AlertCircle, Loader2, 
   ArrowRight, TrendingUp, Send, Receipt, Plus, Globe, Heart, XCircle, Trash2,
-  Sparkles, UserPlus, Crown
+  Sparkles, UserPlus, Crown, CreditCard, CheckCircle2, Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,7 +20,6 @@ import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerD
 import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
 import { useDriverPremium } from '@/hooks/useDriverPremium';
 import { PremiumGate } from '@/components/premium/PremiumGate';
-import { CreditCard, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   driverId: string | null;
