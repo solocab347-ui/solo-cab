@@ -1,13 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote, RefreshCw } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote, RefreshCw, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+/**
+ * Bornes de la semaine VTC en cours.
+ * Convention SoloCab (alignée sur process-weekly-settlement) :
+ *   Lundi 00:00 UTC → Dimanche 23:59:59 UTC
+ * Le settlement tourne ensuite le lundi suivant à 6h.
+ */
+function getCurrentVtcWeek(): { start: Date; end: Date } {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=dimanche, 1=lundi
+  const daysFromMonday = day === 0 ? 6 : day - 1;
+  const start = new Date(now);
+  start.setUTCDate(now.getUTCDate() - daysFromMonday);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+}
 
 interface DriverFinancePageProps {
   driverId: string;
