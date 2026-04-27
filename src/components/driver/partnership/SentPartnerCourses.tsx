@@ -64,10 +64,35 @@ export function SentPartnerCourses({ driverId }: Props) {
   const [createdCourseToShare, setCreatedCourseToShare] = useState<any>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [paymentDialog, setPaymentDialog] = useState<{ id: string; amount: number; label: string } | null>(null);
   const { isPremium } = useDriverPremium();
 
   useEffect(() => {
     if (driverId) loadSentCourses();
+  }, [driverId]);
+
+  // Realtime: notifie l'émetteur quand une course partagée est terminée ou payée
+  useEffect(() => {
+    if (!driverId) return;
+    const channel = supabase
+      .channel(`sent-shared-${driverId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shared_courses', filter: `sender_driver_id=eq.${driverId}` },
+        (payload) => {
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+          if (newRow?.status === 'completed' && oldRow?.status !== 'completed') {
+            toast.success(`✅ Course partagée terminée — vos frais de transaction ont été crédités.`);
+          }
+          if (String(newRow?.payment_status || '').startsWith('paid') && !String(oldRow?.payment_status || '').startsWith('paid')) {
+            toast.success('💳 Paiement client confirmé par Stripe sur votre course partagée.');
+          }
+          loadSentCourses();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [driverId]);
 
   const loadSentCourses = async () => {
