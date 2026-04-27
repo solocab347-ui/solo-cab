@@ -513,19 +513,12 @@ export const AdminFeedbackManager = () => {
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedFeedback.user_feedback_attachments.map((att) => (
-                        <a
+                        <FeedbackAttachmentImage
                           key={att.id}
-                          href={att.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <img
-                            src={att.file_url}
-                            alt={att.file_name}
-                            className="w-32 h-32 object-cover rounded-lg border hover:border-primary transition-colors"
-                          />
-                        </a>
+                          fileUrl={att.file_url}
+                          fileName={att.file_name}
+                          className="w-32 h-32"
+                        />
                       ))}
                     </div>
                   </div>
