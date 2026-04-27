@@ -779,6 +779,18 @@ serve(async (req) => {
 
     const amountCents = Math.round(totalAmount * 100);
 
+    // Calcul application_fee avec arriérés cash (avant création du PI)
+    const fbArrears = await computeApplicationFeeWithArrears(
+      supabaseClient,
+      course.driver_id,
+      amountCents,
+    );
+    logStep("Fallback: arrears computation", {
+      totalArrearsCents: fbArrears.totalArrearsCents,
+      arrearsRecoveredCents: fbArrears.arrearsRecoveredCents,
+      finalFeeCents: fbArrears.finalFeeCents,
+    });
+
     const paymentIntentParams: any = {
       amount: amountCents,
       currency: "eur",
@@ -791,13 +803,14 @@ serve(async (req) => {
         destination: course.driver.stripe_connect_account_id,
       },
       on_behalf_of: course.driver.stripe_connect_account_id,
-      application_fee_amount: Math.min(SOLOCAB_FEE_CENTS, amountCents),
+      application_fee_amount: fbArrears.finalFeeCents,
       metadata: {
         course_id,
         driver_id: course.driver_id,
         type: "course_final_payment",
         flow: "fallback_new_pi",
-        solocab_fee: (Math.min(SOLOCAB_FEE_CENTS, amountCents) / 100).toFixed(2),
+        solocab_fee: (fbArrears.finalFeeCents / 100).toFixed(2),
+        arrears_recovered_eur: (fbArrears.arrearsRecoveredCents / 100).toFixed(2),
       },
     };
 
@@ -823,11 +836,10 @@ serve(async (req) => {
       throw new Error(`Échec du paiement: ${stripeError.message}`);
     }
 
-    // Calculer les frais
-    const STRIPE_PERCENTAGE = 0.015;
-    const STRIPE_FIXED_FEE = 0.25;
+    // Calculer les frais (utilise constants globales)
     const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
-    const totalFees = SOLOCAB_FEE_CENTS / 100 + stripeFee;
+    const fbSolocabFee = fbArrears.finalFeeCents / 100;
+    const totalFees = fbSolocabFee + stripeFee;
     const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
     if (paymentIntent.status === "succeeded") {
@@ -841,33 +853,49 @@ serve(async (req) => {
           final_payment_amount: totalAmount,
           final_payment_at: new Date().toISOString(),
           payment_captured_at: new Date().toISOString(),
-          solocab_fee_amount: SOLOCAB_FEE_CENTS / 100,
+          solocab_fee_amount: fbSolocabFee,
           stripe_fee_amount: stripeFee,
           total_fees_amount: totalFees,
           net_amount_to_driver: netToDriver,
         })
         .eq("id", course_id);
 
-      const { error: fbPayErr } = await supabaseClient.from("payments").insert({
-        course_id,
-        driver_id: course.driver_id,
-        client_id: course.client_id,
-        stripe_payment_intent_id: paymentIntent.id,
-        stripe_charge_id: (paymentIntent.latest_charge as string) || null,
-        amount: totalAmount,
-        captured_amount: totalAmount,
-        application_fee_amount: SOLOCAB_FEE_CENTS / 100,
-        stripe_fee_amount: stripeFee,
-        net_to_driver: netToDriver,
-        status: "succeeded",
-        payment_type: "course_payment",
-        capture_method: "automatic",
-        payment_method: "card",
-        captured_at: new Date().toISOString(),
-      });
+      const { data: insertedFbPayment, error: fbPayErr } = await supabaseClient
+        .from("payments")
+        .insert({
+          course_id,
+          driver_id: course.driver_id,
+          client_id: course.client_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_charge_id: (paymentIntent.latest_charge as string) || null,
+          amount: totalAmount,
+          captured_amount: totalAmount,
+          application_fee_amount: fbSolocabFee,
+          stripe_fee_amount: stripeFee,
+          net_to_driver: netToDriver,
+          status: "succeeded",
+          payment_type: "course_payment",
+          capture_method: "automatic",
+          payment_method: "card",
+          captured_at: new Date().toISOString(),
+          metadata: {
+            arrears_recovered_eur: fbArrears.arrearsRecoveredCents / 100,
+            arrears_count: fbArrears.rowsToSettle.length,
+          },
+        })
+        .select("id")
+        .maybeSingle();
       if (fbPayErr?.code === "23505") {
         logStep("Payment already recorded (duplicate prevented)", { course_id });
       }
+
+      // Solder les arriérés cash si récupérés
+      await settleArrears(
+        supabaseClient,
+        fbArrears.rowsToSettle.map((r) => r.id),
+        insertedFbPayment?.id ?? null,
+        course_id,
+      );
 
       try {
         await supabaseClient.functions.invoke("create-facture-auto", { body: { course_id } });
