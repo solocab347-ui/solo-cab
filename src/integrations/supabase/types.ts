@@ -17628,6 +17628,42 @@ export type Database = {
           },
         ]
       }
+      stripe_webhook_events: {
+        Row: {
+          error_message: string | null
+          event_type: string
+          id: string
+          livemode: boolean | null
+          payload: Json | null
+          processed_at: string | null
+          received_at: string
+          status: string
+          stripe_event_id: string
+        }
+        Insert: {
+          error_message?: string | null
+          event_type: string
+          id?: string
+          livemode?: boolean | null
+          payload?: Json | null
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_event_id: string
+        }
+        Update: {
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          livemode?: boolean | null
+          payload?: Json | null
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_event_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
