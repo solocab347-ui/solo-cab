@@ -254,6 +254,38 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         cardFeesCollected,
       });
 
+      // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
+      // le début de la semaine en cours (lundi 00:00 UTC).
+      //  - cashFeesOwedFromPastWeeks : frais espèces en attente de prélèvement
+      //    sur des semaines déjà fermées.
+      //  - pastPendingNet / pastPendingCourses : net qui n'a pas pu être versé
+      //    et qui se cumule jusqu'au prochain virement réussi.
+      //  - failedSettlements : règlements hebdo en échec ou ignorés
+      //    (RIB manquant, rejet bancaire, virement non exécuté…).
+      const pastPbData = pbData.filter(
+        (b: any) => b.created_at && new Date(b.created_at).getTime() < weekStart.getTime()
+      );
+      let cashFeesOwedFromPastWeeks = 0;
+      let pastPendingNet = 0;
+      for (const b of pastPbData) {
+        if (b.payment_type === 'cash') cashFeesOwedFromPastWeeks += Number(b.solocab_fee || 0);
+        pastPendingNet += Number(b.net_amount || 0);
+      }
+      const failedSettlements = mapped.filter(
+        (s: Settlement) => s.transfer_status === 'failed' || s.transfer_status === 'skipped'
+      );
+      const failedSettlementsTotal = failedSettlements.reduce(
+        (sum: number, s: Settlement) => sum + Number(s.net_amount || 0),
+        0
+      );
+      setCarryOver({
+        cashFeesOwedFromPastWeeks,
+        pastPendingNet,
+        pastPendingCourses: pastPbData.length,
+        failedSettlements,
+        failedSettlementsTotal,
+      });
+
       // Fetch Stripe real-time data
       try {
         const [balRes, payRes] = await Promise.all([
