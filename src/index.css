@@ -10,23 +10,6 @@
 All colors MUST be HSL.
 */
 
-/* PWA Install Banner offset - Adds padding when banner is visible */
-.pwa-banner-visible {
-  --pwa-banner-height: 72px;
-}
-
-.pwa-banner-visible main,
-.pwa-banner-visible .main-content,
-.pwa-banner-visible [data-main-content] {
-  padding-bottom: calc(var(--pwa-banner-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
-}
-
-/* Ensure fixed bottom elements account for banner */
-.pwa-banner-visible .fixed-bottom-element,
-.pwa-banner-visible [data-fixed-bottom] {
-  bottom: calc(var(--pwa-banner-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
-}
-
 /* iOS Safe Area Support */
 .safe-area-top {
   padding-top: env(safe-area-inset-top);

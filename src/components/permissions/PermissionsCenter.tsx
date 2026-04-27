@@ -142,11 +142,6 @@ export function PermissionsCenter({ role, variant = 'page', onAllGranted }: Perm
         onRequest={requestPermission}
       />
 
-      {!isNative && (
-        <p className="text-xs text-muted-foreground text-center pt-2">
-          💡 Pour bénéficier des alertes même téléphone verrouillé, installez l'application mobile.
-        </p>
-      )}
     </div>
   );
 }
