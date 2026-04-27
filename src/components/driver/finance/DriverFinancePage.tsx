@@ -561,13 +561,37 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <ArrowDownRight className="w-4 h-4" />
               Frais SoloCab
             </div>
-            <p className="text-2xl font-bold text-destructive">
-              -{pendingBalance.totalSolocabFees.toFixed(2)}€
-            </p>
-            <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
-              <p>✅ Prélevé (CB): {pendingBalance.cardFeesCollected.toFixed(2)}€</p>
-              <p>⏳ À déduire (Espèces): {pendingBalance.cashFeesOwed.toFixed(2)}€</p>
-            </div>
+            {(() => {
+              // Semaine en cours = frais SoloCab visibles dans walletStats
+              // (déjà filtré sur la semaine VTC en cours).
+              const weekFees =
+                (walletStats?.cardSolocabFees || 0) + (walletStats?.cashSolocabFees || 0);
+              // Arriérés = frais espèces non prélevés des semaines passées
+              // (déjà calculé dans carryOver à partir de driver_balance_pending).
+              const previousFees = carryOver?.cashFeesOwedFromPastWeeks || 0;
+              const total = weekFees + previousFees;
+              return (
+                <>
+                  <p className="text-2xl font-bold text-destructive">
+                    -{total.toFixed(2)}€
+                  </p>
+                  <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                    <p>📅 Semaine en cours : -{weekFees.toFixed(2)}€</p>
+                    {previousFees > 0 ? (
+                      <p className="text-warning font-medium">
+                        + Frais antécédents impayés : -{previousFees.toFixed(2)}€
+                      </p>
+                    ) : (
+                      <p className="text-success">✅ Aucun frais antécédent impayé</p>
+                    )}
+                    <p className="pt-1 border-t border-destructive/10 mt-1">
+                      ✅ Prélevé (CB) : {pendingBalance.cardFeesCollected.toFixed(2)}€
+                    </p>
+                    <p>⏳ À déduire (Espèces) : {pendingBalance.cashFeesOwed.toFixed(2)}€</p>
+                  </div>
+                </>
+              );
+            })()}
           </Card>
           {totalPendingCommissions > 0 ? (
             <Card className="p-4 bg-success/5 border-success/20">
