@@ -4,55 +4,95 @@ import { debounce } from '@/lib/performanceOptimizations';
 
 /**
  * Gestionnaire centralisé optimisé des subscriptions Supabase
- * Support 1000+ connexions simultanées avec debouncing et channel pooling
+ *
+ * Stabilité (v2):
+ * - Cap relevé à 30 (15 était trop bas et provoquait des évictions FIFO silencieuses
+ *   qui se manifestaient par des "freezes" perçus utilisateur).
+ * - Reconnexion automatique sur visibilitychange (réveil de l'onglet) et `online`.
+ * - Retry exponentiel sur CHANNEL_ERROR / CLOSED au lieu d'un unsubscribe définitif.
+ * - Cleanup propre lors du unmount, sans perdre les configs pour pouvoir reconnecter.
  */
 
+type ChannelConfig = {
+  table: string;
+  event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+  schema?: string;
+  filter?: string;
+  debounceMs?: number;
+};
+
+type ChannelEntry = {
+  channel: RealtimeChannel;
+  config: ChannelConfig;
+  callback: (payload: any) => void;
+  debouncedCallback: (payload: any) => void;
+  retryCount: number;
+  retryTimer: ReturnType<typeof setTimeout> | null;
+};
+
+const MAX_CHANNELS = 30;
+const MAX_RETRY = 5;
+
 class SubscriptionManager {
-  private channels: Map<string, RealtimeChannel> = new Map();
-  private cleanupCallbacks: Map<string, () => void> = new Map();
-  private debouncedCallbacks: Map<string, Function> = new Map();
-  private reconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+  private entries: Map<string, ChannelEntry> = new Map();
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      // Reconnect dead channels when tab becomes visible again
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.healthCheck();
+        }
+      });
+      // Reconnect when network comes back
+      window.addEventListener('online', () => this.healthCheck());
+
+      // Cleanup on unload
+      window.addEventListener('beforeunload', () => this.unsubscribeAll());
+    }
+  }
 
   /**
    * Subscribe to changes with automatic cleanup, debouncing, and reconnection
    */
   subscribe(
     channelName: string,
-    config: {
-      table: string;
-      event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
-      schema?: string;
-      filter?: string;
-      debounceMs?: number;
-    },
+    config: ChannelConfig,
     callback: (payload: any) => void
   ): () => void {
-    // Limite de sécurité: max 10 channels simultanés
-    if (this.channels.size >= 15) {
-      console.warn(`⚠️ Limite de channels atteinte (${this.channels.size}), nettoyage forcé`);
-      const oldestChannel = Array.from(this.channels.keys())[0];
+    // Cap: warn but evict the OLDEST (FIFO) only if necessary
+    if (this.entries.size >= MAX_CHANNELS && !this.entries.has(channelName)) {
+      console.warn(`⚠️ [subscriptionManager] cap reached (${MAX_CHANNELS}), evicting oldest`);
+      const oldestChannel = Array.from(this.entries.keys())[0];
       this.unsubscribe(oldestChannel);
     }
 
-    // Si le channel existe déjà, le remplacer pour garantir le bon callback
-    // Ne PAS réutiliser l'ancien car le callback peut avoir changé
-    if (this.channels.has(channelName)) {
+    // Replace existing channel for the same name to ensure latest callback is used
+    if (this.entries.has(channelName)) {
       this.unsubscribe(channelName);
     }
 
-    // Créer callback debounced si demandé
-    const debouncedCallback = config.debounceMs 
-      ? debounce(callback, config.debounceMs)
-      : callback;
+    this.attach(channelName, config, callback, 0);
 
-    this.debouncedCallbacks.set(channelName, debouncedCallback);
+    return () => this.unsubscribe(channelName);
+  }
+
+  private attach(
+    channelName: string,
+    config: ChannelConfig,
+    callback: (payload: any) => void,
+    retryCount: number,
+  ) {
+    const debouncedCallback = config.debounceMs
+      ? (debounce(callback, config.debounceMs) as (payload: any) => void)
+      : callback;
 
     const channel = supabase
       .channel(channelName, {
         config: {
           broadcast: { self: false },
-          presence: { key: '' }
-        }
+          presence: { key: '' },
+        },
       })
       .on(
         'postgres_changes' as any,
@@ -60,84 +100,98 @@ class SubscriptionManager {
           event: config.event || '*',
           schema: config.schema || 'public',
           table: config.table,
-          filter: config.filter
+          filter: config.filter,
         } as any,
         debouncedCallback
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          // Cleanup silencieux
-          this.unsubscribe(channelName);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          this.scheduleRetry(channelName);
         }
       });
 
-    this.channels.set(channelName, channel);
-
-    // Return cleanup function
-    const cleanup = () => this.unsubscribe(channelName);
-    this.cleanupCallbacks.set(channelName, cleanup);
-    
-    return cleanup;
+    this.entries.set(channelName, {
+      channel,
+      config,
+      callback,
+      debouncedCallback,
+      retryCount,
+      retryTimer: null,
+    });
   }
 
+  private scheduleRetry(channelName: string) {
+    const entry = this.entries.get(channelName);
+    if (!entry) return;
+    if (entry.retryTimer) return; // already scheduled
+
+    if (entry.retryCount >= MAX_RETRY) {
+      console.warn(`⚠️ [subscriptionManager] max retries reached for ${channelName}, giving up`);
+      return;
+    }
+
+    // Backoff: 1s, 2s, 4s, 8s, 16s
+    const delay = Math.min(16_000, 1000 * Math.pow(2, entry.retryCount));
+    entry.retryTimer = setTimeout(() => {
+      const current = this.entries.get(channelName);
+      if (!current) return;
+      const nextRetry = current.retryCount + 1;
+      // Tear down old channel cleanly
+      try { supabase.removeChannel(current.channel); } catch (_) { /* noop */ }
+      // Re-attach with fresh subscription
+      this.attach(channelName, current.config, current.callback, nextRetry);
+    }, delay);
+  }
 
   /**
-   * Unsubscribe from a specific channel
+   * Force a re-subscribe of all currently-tracked channels.
+   * Called when the tab becomes visible or the network reconnects.
+   */
+  private healthCheck() {
+    if (this.entries.size === 0) return;
+    const snapshots = Array.from(this.entries.entries()).map(([name, e]) => ({
+      name,
+      config: e.config,
+      callback: e.callback,
+    }));
+    snapshots.forEach(({ name, config, callback }) => {
+      // Only re-attach if the channel state is not joined.
+      // Supabase RealtimeChannel exposes state via .state — be defensive.
+      const entry = this.entries.get(name);
+      if (!entry) return;
+      const state = (entry.channel as any).state;
+      if (state !== 'joined' && state !== 'joining') {
+        try { supabase.removeChannel(entry.channel); } catch (_) { /* noop */ }
+        if (entry.retryTimer) { clearTimeout(entry.retryTimer); }
+        this.entries.delete(name);
+        this.attach(name, config, callback, 0);
+      }
+    });
+  }
+
+  /**
+   * Unsubscribe from a specific channel (final — no retry).
    */
   unsubscribe(channelName: string): void {
-    // Clear reconnect timer if exists
-    const timer = this.reconnectTimers.get(channelName);
-    if (timer) {
-      clearTimeout(timer);
-      this.reconnectTimers.delete(channelName);
-    }
-
-    const channel = this.channels.get(channelName);
-    if (channel) {
-      supabase.removeChannel(channel);
-      this.channels.delete(channelName);
-      this.cleanupCallbacks.delete(channelName);
-      this.debouncedCallbacks.delete(channelName);
-    }
+    const entry = this.entries.get(channelName);
+    if (!entry) return;
+    if (entry.retryTimer) clearTimeout(entry.retryTimer);
+    try { supabase.removeChannel(entry.channel); } catch (_) { /* noop */ }
+    this.entries.delete(channelName);
   }
 
-  /**
-   * Unsubscribe from all channels
-   */
   unsubscribeAll(): void {
-    // Clear all reconnect timers
-    this.reconnectTimers.forEach((timer) => clearTimeout(timer));
-    this.reconnectTimers.clear();
-
-    this.channels.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
-    this.channels.clear();
-    this.cleanupCallbacks.clear();
-    this.debouncedCallbacks.clear();
+    this.entries.forEach((_e, name) => this.unsubscribe(name));
   }
 
-  /**
-   * Get active channels count
-   */
   getActiveCount(): number {
-    return this.channels.size;
+    return this.entries.size;
   }
 
-  /**
-   * Check if a channel is active
-   */
   isActive(channelName: string): boolean {
-    return this.channels.has(channelName);
+    return this.entries.has(channelName);
   }
 }
 
 // Singleton instance
 export const subscriptionManager = new SubscriptionManager();
-
-// Cleanup on window unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    subscriptionManager.unsubscribeAll();
-  });
-}
