@@ -94,6 +94,7 @@ import { FloatingMapButton } from "@/components/driver/ui/FloatingMapButton";
 import { UnifiedFinancesHub } from "@/components/driver/hubs/UnifiedFinancesHub";
 import { UnifiedPerformanceHub } from "@/components/driver/hubs/UnifiedPerformanceHub";
 import { UnifiedToolsHub } from "@/components/driver/hubs/UnifiedToolsHub";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
