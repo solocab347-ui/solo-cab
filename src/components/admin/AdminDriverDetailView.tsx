@@ -45,15 +45,19 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
     try {
       const filterDate = getFilterDate();
       
-      const [driverRes, coursesRes, ratingsRes] = await Promise.all([
+      const [driverRes, coursesRes, ratingsRes, sharedSentRes, sharedRecvRes] = await Promise.all([
         supabase.from("drivers").select("*, profiles:user_id(first_name, last_name, email, phone, full_name, profile_photo_url)").eq("id", driverId).single(),
         supabase.from("courses").select("id, course_number, pickup_address, destination_address, final_payment_amount, payment_method_used, payment_status, status, updated_at, created_at, stripe_payment_intent_id, client_id, clients(profiles:user_id(full_name))").eq("driver_id", driverId).eq("status", "completed").gte("updated_at", filterDate).order("updated_at", { ascending: false }).limit(100),
         supabase.from("course_ratings").select("rating").eq("driver_id", driverId),
+        supabase.from("shared_courses").select("id, course_amount, commission_amount, commission_percentage, payment_status, status, completed_at, created_at, receiver_driver_id").eq("sender_driver_id", driverId).gte("created_at", filterDate).order("created_at", { ascending: false }).limit(50),
+        supabase.from("shared_courses").select("id, course_amount, commission_amount, commission_percentage, payment_status, status, completed_at, created_at, sender_driver_id").eq("receiver_driver_id", driverId).gte("created_at", filterDate).order("created_at", { ascending: false }).limit(50),
       ]);
 
       const driverData = driverRes.data;
       setDriver(driverData);
       setCourses(coursesRes.data || []);
+      setSharedSent(sharedSentRes.data || []);
+      setSharedReceived(sharedRecvRes.data || []);
 
       // Calculate stats
       const coursesList = coursesRes.data || [];
