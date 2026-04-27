@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { StripeConnectSetupGuide } from "./StripeConnectSetupGuide";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 
 interface StripeConnectCardProps {
   driverId: string;
@@ -57,9 +58,15 @@ export function StripeConnectCard({ driverId, onStatusChange, compact = false }:
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, "_blank");
+        await openExternalUrl(data.url, {
+          onClose: () => {
+            toast.info("Vérification de votre compte Stripe...");
+            refresh();
+            onStatusChange?.();
+          },
+        });
         toast.success("Redirection vers Stripe...", {
-          description: "Complétez votre inscription dans le nouvel onglet"
+          description: "Complétez votre inscription puis revenez à l'app"
         });
       }
     } catch (err: any) {

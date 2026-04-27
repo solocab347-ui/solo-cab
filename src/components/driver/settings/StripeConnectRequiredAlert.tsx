@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 
 interface StripeConnectRequiredAlertProps {
   context: "sharing" | "online_payment";
@@ -27,9 +28,13 @@ export function StripeConnectRequiredAlert({ context, onComplete }: StripeConnec
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, "_blank");
+        await openExternalUrl(data.url, {
+          onClose: () => {
+            toast.info("De retour de Stripe...");
+            onComplete?.();
+          },
+        });
         toast.success("Redirection vers Stripe...");
-        onComplete?.();
       }
     } catch (err: any) {
       console.error("Stripe Connect error:", err);
