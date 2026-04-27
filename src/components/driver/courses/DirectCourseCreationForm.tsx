@@ -109,6 +109,11 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
     }
     return calculatedPrice;
   })();
+
+  useEffect(() => {
+    fetchDriverProfile();
+  }, [user]);
+
   useEffect(() => {
     if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
       calculateRouteData();
