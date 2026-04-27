@@ -167,10 +167,15 @@ export function SentPartnerCourses({ driverId }: Props) {
         const receiverInfo = item.receiver_driver_id ? receiverMap.get(item.receiver_driver_id) : null;
         const course = item.courses as any;
         const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
+        const earnings = (item as any).earnings_for_receiver
+          ?? Math.max(0, item.course_amount - item.commission_amount - solocabFee);
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: item.receiver_driver_id,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
           commission_amount: item.commission_amount, solocab_fee: solocabFee,
+          earnings_for_receiver: earnings,
+          payment_status: (item as any).payment_status ?? null,
+          client_payment_url: (item as any).client_payment_url ?? null,
           status: item.status, sharing_scope: (item as any).sharing_scope || 'specific',
           created_at: item.created_at, completed_at: item.completed_at,
           pickup_address: course.pickup_address, destination_address: course.destination_address,
@@ -186,10 +191,14 @@ export function SentPartnerCourses({ driverId }: Props) {
       for (const item of poolData || []) {
         const course = item.courses as any;
         const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
+        const earnings = Math.max(0, item.course_amount - (item.estimated_commission || 0) - solocabFee);
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: null,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
           commission_amount: item.estimated_commission, solocab_fee: solocabFee,
+          earnings_for_receiver: earnings,
+          payment_status: null,
+          client_payment_url: null,
           status: item.status, sharing_scope: (item as any).sharing_scope || 'network',
           created_at: item.created_at, completed_at: null,
           pickup_address: course.pickup_address, destination_address: course.destination_address,
