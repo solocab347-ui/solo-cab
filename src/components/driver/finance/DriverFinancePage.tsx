@@ -99,11 +99,27 @@ interface PendingBalanceStats {
   cardFeesCollected: number; // SoloCab fees from card courses (already taken)
 }
 
+/**
+ * Reports / arriérés portés depuis les semaines précédentes :
+ *  - frais espèces non encore prélevés (status pending, créés AVANT lundi 00:00 UTC)
+ *  - virements Stripe précédents en échec / skipped (RIB manquant, rejet bancaire…)
+ *
+ * Ces montants se cumulent semaine après semaine jusqu'à être encaissés.
+ */
+interface CarryOverStats {
+  cashFeesOwedFromPastWeeks: number;
+  pastPendingNet: number;
+  pastPendingCourses: number;
+  failedSettlements: Settlement[];
+  failedSettlementsTotal: number;
+}
+
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
+  const [carryOver, setCarryOver] = useState<CarryOverStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
@@ -166,7 +182,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         // virements précédents échoués) qui n'a pas encore été settlé.
         supabase
           .from("driver_balance_pending" as any)
-          .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type")
+          .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, created_at")
           .eq("driver_id", driverId)
           .eq("status", "pending"),
       ]);
@@ -238,6 +254,38 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         cardFeesCollected,
       });
 
+      // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
+      // le début de la semaine en cours (lundi 00:00 UTC).
+      //  - cashFeesOwedFromPastWeeks : frais espèces en attente de prélèvement
+      //    sur des semaines déjà fermées.
+      //  - pastPendingNet / pastPendingCourses : net qui n'a pas pu être versé
+      //    et qui se cumule jusqu'au prochain virement réussi.
+      //  - failedSettlements : règlements hebdo en échec ou ignorés
+      //    (RIB manquant, rejet bancaire, virement non exécuté…).
+      const pastPbData = pbData.filter(
+        (b: any) => b.created_at && new Date(b.created_at).getTime() < weekStart.getTime()
+      );
+      let cashFeesOwedFromPastWeeks = 0;
+      let pastPendingNet = 0;
+      for (const b of pastPbData) {
+        if (b.payment_type === 'cash') cashFeesOwedFromPastWeeks += Number(b.solocab_fee || 0);
+        pastPendingNet += Number(b.net_amount || 0);
+      }
+      const failedSettlements = mapped.filter(
+        (s: Settlement) => s.transfer_status === 'failed' || s.transfer_status === 'skipped'
+      );
+      const failedSettlementsTotal = failedSettlements.reduce(
+        (sum: number, s: Settlement) => sum + Number(s.net_amount || 0),
+        0
+      );
+      setCarryOver({
+        cashFeesOwedFromPastWeeks,
+        pastPendingNet,
+        pastPendingCourses: pastPbData.length,
+        failedSettlements,
+        failedSettlementsTotal,
+      });
+
       // Fetch Stripe real-time data
       try {
         const [balRes, payRes] = await Promise.all([
@@ -289,25 +337,35 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   // ⚠️ TOUS les hooks (useMemo, etc.) DOIVENT être déclarés AVANT tout early return
   // sinon React lève "Rendered more hooks than during the previous render".
 
-  // Liste des mois disponibles dans l'historique des règlements (12 derniers max)
+  // Liste des mois disponibles dans l'historique des règlements (12 derniers max).
+  // On indexe sur week_end (date où la semaine se "comptabilise") pour éviter
+  // qu'une semaine à cheval sur 2 mois disparaisse de la sélection.
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
     for (const s of settlements) {
-      if (!s.week_start) continue;
-      const d = new Date(s.week_start);
+      const ref = s.week_end || s.week_start;
+      if (!ref) continue;
+      const d = new Date(ref);
       set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
-    // Inclure aussi le mois courant pour pouvoir le sélectionner même sans data
+    // Toujours inclure les 6 derniers mois pour permettre une consultation
+    // même si aucun règlement n'a été produit (nouveau chauffeur, période creuse).
     const now = new Date();
-    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
     return Array.from(set).sort().reverse().slice(0, 12);
   }, [settlements]);
 
-  // Agrégat mensuel à partir des règlements hebdomadaires
+  // Agrégat mensuel à partir des règlements hebdomadaires.
+  // On utilise week_end pour rattacher chaque règlement au mois où il a été clôturé,
+  // ce qui correspond à la perception réelle du chauffeur.
   const monthlyAggregate = useMemo(() => {
     const filtered = settlements.filter((s) => {
-      if (!s.week_start) return false;
-      const d = new Date(s.week_start);
+      const ref = s.week_end || s.week_start;
+      if (!ref) return false;
+      const d = new Date(ref);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return key === selectedMonth;
     });
@@ -320,6 +378,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
         0
       ),
+      failedCount: filtered.filter((s) => s.transfer_status === 'failed' || s.transfer_status === 'skipped').length,
     };
   }, [settlements, selectedMonth]);
 
@@ -376,6 +435,77 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           Reset chaque lundi 6h
         </Badge>
       </Card>
+
+      {/* 🔁 REPORTS DES SEMAINES PRÉCÉDENTES — toujours visibles s'il y en a,
+          pour éviter au chauffeur de fouiller l'historique. */}
+      {carryOver && (carryOver.cashFeesOwedFromPastWeeks > 0
+        || carryOver.failedSettlements.length > 0
+        || carryOver.pastPendingNet !== 0) && (
+        <Card className="p-4 bg-warning/5 border-warning/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning" />
+            <h3 className="text-sm font-semibold text-warning">Reports des semaines précédentes</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Frais espèces non prélevés portés sur les semaines passées */}
+            <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
+              <p className="text-[11px] text-muted-foreground">Frais espèces à régulariser</p>
+              <p className="text-lg font-bold text-warning">
+                {carryOver.cashFeesOwedFromPastWeeks.toFixed(2)}€
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Issus de courses cash non encore débitées
+              </p>
+            </div>
+
+            {/* Net pending hérité (gross espèces + cb pending + carry-over) */}
+            <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
+              <p className="text-[11px] text-muted-foreground">Net en report</p>
+              <p className={`text-lg font-bold ${carryOver.pastPendingNet >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                {carryOver.pastPendingNet.toFixed(2)}€
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {carryOver.pastPendingCourses} course(s) en attente de règlement
+              </p>
+            </div>
+
+            {/* Virements échoués / ignorés (RIB manquant, rejet bancaire…) */}
+            <div className="p-3 rounded-lg bg-background/40 border border-destructive/30">
+              <p className="text-[11px] text-muted-foreground">Virements non exécutés</p>
+              <p className="text-lg font-bold text-destructive">
+                {carryOver.failedSettlementsTotal.toFixed(2)}€
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {carryOver.failedSettlements.length} règlement(s) en échec
+              </p>
+            </div>
+          </div>
+
+          {carryOver.failedSettlements.length > 0 && (
+            <div className="border-t border-warning/20 pt-3 space-y-1">
+              <p className="text-[11px] font-semibold text-foreground">Détail des virements en échec :</p>
+              {carryOver.failedSettlements.slice(0, 3).map((s) => (
+                <div key={s.id} className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })}
+                    {' → '}
+                    {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                  </span>
+                  <span className="font-medium text-destructive">{s.net_amount.toFixed(2)}€</span>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground italic pt-1">
+                💡 Vérifiez votre RIB dans l'onglet "RIB" pour débloquer les virements.
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground italic border-t border-warning/20 pt-2">
+            Ces montants se cumulent semaine après semaine jusqu'à être encaissés ou réglés.
+            Ils sont déjà inclus dans le total "Prochain versement" ci-dessous.
+          </p>
+        </Card>
+      )}
 
       {/* Wallet summary cards */}
       {walletStats && (
@@ -692,10 +822,15 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground">
+                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground flex-wrap">
                   <span>{monthlyAggregate.weeks.length} semaine(s)</span>
                   <span>{monthlyAggregate.totalCourses} courses</span>
                   <span className="text-success">+{monthlyAggregate.totalCommissions.toFixed(2)}€ frais transaction</span>
+                  {monthlyAggregate.failedCount > 0 && (
+                    <span className="text-destructive font-medium">
+                      ⚠️ {monthlyAggregate.failedCount} virement(s) en échec
+                    </span>
+                  )}
                 </div>
               </Card>
 
