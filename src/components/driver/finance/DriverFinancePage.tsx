@@ -174,7 +174,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .limit(200),
         supabase
           .from("drivers")
-          .select("stripe_connect_charges_enabled")
+          .select("stripe_connect_charges_enabled, cash_debt_pending")
           .eq("id", driverId)
           .single(),
         // ⚠️ driver_balance_pending reste non-filtré : il porte naturellement
