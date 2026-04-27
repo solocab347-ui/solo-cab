@@ -1009,7 +1009,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             </>
           )}
 
-          {/* VUE SEMAINE — liste classique */}
+          {/* VUE SEMAINE — navigation semaine par semaine (← →).
+              Index 0 = semaine la plus récente (settlements est trié desc). */}
           {historyView === "week" && (
             <>
               {settlements.length === 0 ? (
@@ -1019,43 +1020,86 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                   <p className="text-xs mt-1">Les règlements apparaîtront ici après le premier lundi</p>
                 </Card>
               ) : (
-                settlements.map((s) => (
-                  <Card key={s.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">
-                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
-                        </span>
-                      </div>
-                      {getStatusBadge(s.transfer_status)}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Frais de transaction</span>
-                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Frais</span>
-                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Net versé</span>
-                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                          {s.net_amount.toFixed(2)}€
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                      <span>{s.shared_courses_as_sender} envoyées</span>
-                      <span>{s.shared_courses_as_receiver} reçues</span>
-                      <span>{s.standard_courses_count} standards</span>
-                    </div>
-                    {s.transfer_error && (
-                      <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
-                    )}
-                  </Card>
-                ))
+                (() => {
+                  const safeIndex = Math.min(selectedWeekIndex, settlements.length - 1);
+                  const s = settlements[safeIndex];
+                  const canGoPrev = safeIndex < settlements.length - 1; // semaine plus ancienne
+                  const canGoNext = safeIndex > 0; // semaine plus récente
+                  return (
+                    <>
+                      {/* Barre de navigation */}
+                      <Card className="p-3 flex items-center justify-between">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!canGoPrev}
+                          onClick={() => setSelectedWeekIndex(safeIndex + 1)}
+                          className="gap-1"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          Précédente
+                        </Button>
+                        <div className="text-center">
+                          <p className="text-[10px] text-muted-foreground">
+                            Semaine {safeIndex + 1} / {settlements.length}
+                          </p>
+                          <p className="text-xs font-semibold text-foreground">
+                            {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })}
+                            {' → '}
+                            {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!canGoNext}
+                          onClick={() => setSelectedWeekIndex(safeIndex - 1)}
+                          className="gap-1"
+                        >
+                          Suivante
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </Card>
+
+                      {/* Détail de la semaine sélectionnée */}
+                      <Card key={s.id} className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">
+                              {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                            </span>
+                          </div>
+                          {getStatusBadge(s.transfer_status)}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Frais de transaction</span>
+                            <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Frais</span>
+                            <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Net versé</span>
+                            <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                              {s.net_amount.toFixed(2)}€
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                          <span>{s.shared_courses_as_sender} envoyées</span>
+                          <span>{s.shared_courses_as_receiver} reçues</span>
+                          <span>{s.standard_courses_count} standards</span>
+                        </div>
+                        {s.transfer_error && (
+                          <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
+                        )}
+                      </Card>
+                    </>
+                  );
+                })()
               )}
             </>
           )}
