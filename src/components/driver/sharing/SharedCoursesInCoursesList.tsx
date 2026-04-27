@@ -64,9 +64,11 @@ interface SharedCourseDisplay {
   sender_phone: string | null;
 }
 
+// ⚠️ Les courses partagées n'acceptent JAMAIS le paiement en espèces.
+// Le règlement passe obligatoirement par Stripe (lien/QR) afin de garantir
+// la traçabilité, le déclenchement de la commission et la clôture.
 const PAYMENT_METHODS = [
-  { value: 'card', label: 'Carte bancaire', icon: CreditCard },
-  { value: 'cash', label: 'Espèces', icon: Banknote },
+  { value: 'card', label: 'Carte bancaire (Stripe)', icon: CreditCard },
   { value: 'transfer', label: 'Virement', icon: Smartphone },
 ];
 
