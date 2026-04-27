@@ -483,6 +483,8 @@ serve(async (req) => {
             arrears.rowsToSettle.map((r) => r.id),
             insertedPayment?.id ?? null,
             course_id,
+            course.driver_id,
+            arrears.consolidatedDebtToReduceCents,
           );
 
           // Créer la facture automatiquement
