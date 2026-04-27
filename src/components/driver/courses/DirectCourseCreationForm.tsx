@@ -39,9 +39,17 @@ import { DriverPaymentMethodSelector } from "@/components/shared/DriverPaymentMe
 interface DirectCourseCreationFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  /** Called after successful creation with the created course (used for chained sharing). When provided and returns true, the internal success screen is skipped. */
+  onCreated?: (course: any) => void | boolean | Promise<void | boolean>;
+  /** Hides the internal post-creation Stripe payment link screen (used when the parent takes over, e.g. chaining to share dialog). */
+  skipPostCreationScreen?: boolean;
+  /** Custom title shown in the form header. */
+  title?: string;
+  /** Custom subtitle shown in the form header. */
+  subtitle?: string;
 }
 
-export const DirectCourseCreationForm = ({ onSuccess, onCancel }: DirectCourseCreationFormProps) => {
+export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipPostCreationScreen, title, subtitle }: DirectCourseCreationFormProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createDirectCourse, loading: courseLoading } = useDirectCourseCreation();
