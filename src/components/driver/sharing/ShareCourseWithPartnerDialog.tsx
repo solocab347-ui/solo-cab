@@ -221,8 +221,14 @@ export function ShareCourseWithPartnerDialog({
   const clearFavoriteSelection = () => setSelectedFavoriteIds(new Set());
 
   // ---- Validation ----
+  // 🚫 Le paiement en espèces est INTERDIT sur les courses partagées :
+  // tout règlement doit transiter par Stripe pour garantir la traçabilité,
+  // le déclenchement automatique de la commission et la clôture sécurisée.
+  const isCashRequested = (course?.payment_method ?? course?.payment_method_requested) === 'cash';
+
   const canPublish =
     !stripeNotConnected &&
+    !isCashRequested &&
     courseAmount > 0 &&
     (selectedFavoriteIds.size > 0 || alsoBroadcastNetwork);
 
