@@ -300,8 +300,9 @@ export function SentPartnerCourses({ driverId }: Props) {
 
         <DirectCourseCreationForm
           title="Nouvelle course à partager"
-          subtitle="Pour un client privé non inscrit"
+          subtitle="Pour un client privé non inscrit — paiement Stripe obligatoire (espèces interdit)"
           skipPostCreationScreen
+          forShareFlow
           onCancel={() => {
             setShowCreateAndShare(false);
             setCreatedCourseToShare(null);

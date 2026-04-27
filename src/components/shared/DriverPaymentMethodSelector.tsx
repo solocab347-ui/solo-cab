@@ -28,6 +28,10 @@ interface DriverPaymentMethodSelectorProps {
   onChange: (value: string) => void;
   label?: string;
   showNotSpecified?: boolean;
+  /** Méthodes à masquer/interdire (ex: ['cash'] pour les courses partagées) */
+  excludeMethods?: string[];
+  /** Texte d'avertissement affiché sous le sélecteur quand une méthode est exclue */
+  excludeReason?: string;
   className?: string;
 }
 
@@ -40,19 +44,25 @@ export function DriverPaymentMethodSelector({
   onChange,
   label = "Moyen de paiement",
   showNotSpecified: _showNotSpecified = false,
+  excludeMethods = [],
+  excludeReason,
   className = ""
 }: DriverPaymentMethodSelectorProps) {
   const { config, loading, isStripeEnabled } = useDriverPaymentMethods(driverId);
 
-  // Build available methods from driver config
-  const availableMethods = [...config.acceptedMethods];
+  // Build available methods from driver config (et retire les exclusions)
+  const availableMethods = [...config.acceptedMethods].filter((m) => !excludeMethods.includes(m));
 
-  // Set default value if current value is not available
+  // Set default value if current value is not available (or exclu)
   useEffect(() => {
-    if (!loading && value && !availableMethods.includes(value)) {
-      onChange(config.defaultMethod || 'cash');
+    if (loading) return;
+    if (value && (!availableMethods.includes(value) || excludeMethods.includes(value))) {
+      const fallback = availableMethods.includes(config.defaultMethod || '')
+        ? (config.defaultMethod as string)
+        : (availableMethods[0] || '');
+      onChange(fallback);
     }
-  }, [loading, value, availableMethods, config.defaultMethod, onChange]);
+  }, [loading, value, availableMethods, config.defaultMethod, onChange, excludeMethods]);
 
   if (loading) {
     return (
@@ -129,6 +139,12 @@ export function DriverPaymentMethodSelector({
           : "Indiquez le moyen de paiement prévu pour cette course"
         }
       </p>
+
+      {excludeReason && excludeMethods.length > 0 && (
+        <p className="text-[11px] text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded p-2">
+          ⚠️ {excludeReason}
+        </p>
+      )}
     </div>
   );
 }

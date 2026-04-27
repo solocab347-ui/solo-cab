@@ -47,9 +47,11 @@ interface DirectCourseCreationFormProps {
   title?: string;
   /** Custom subtitle shown in the form header. */
   subtitle?: string;
+  /** Force le retrait des paiements espèces (utilisé pour le flow "créer + partager"). */
+  forShareFlow?: boolean;
 }
 
-export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipPostCreationScreen, title, subtitle }: DirectCourseCreationFormProps) => {
+export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipPostCreationScreen, title, subtitle, forShareFlow }: DirectCourseCreationFormProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createDirectCourse, loading: courseLoading } = useDirectCourseCreation();
@@ -83,7 +85,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
   const [passengersCount, setPassengersCount] = useState("1");
   const [notes, setNotes] = useState("");
   const [durationHours, setDurationHours] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState(forShareFlow ? "card" : "cash");
   
   // Calculated values
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -731,6 +733,8 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
               onChange={setPaymentMethod}
               label="Moyen de paiement prévu"
               showNotSpecified={true}
+              excludeMethods={forShareFlow ? ['cash'] : []}
+              excludeReason={forShareFlow ? "Le paiement en espèces est interdit sur les courses partagées : tout règlement doit transiter par Stripe (lien / QR)." : undefined}
             />
           </div>
         )}

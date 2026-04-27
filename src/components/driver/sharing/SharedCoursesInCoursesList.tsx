@@ -64,9 +64,11 @@ interface SharedCourseDisplay {
   sender_phone: string | null;
 }
 
+// ⚠️ Les courses partagées n'acceptent JAMAIS le paiement en espèces.
+// Le règlement passe obligatoirement par Stripe (lien/QR) afin de garantir
+// la traçabilité, le déclenchement de la commission et la clôture.
 const PAYMENT_METHODS = [
-  { value: 'card', label: 'Carte bancaire', icon: CreditCard },
-  { value: 'cash', label: 'Espèces', icon: Banknote },
+  { value: 'card', label: 'Carte bancaire (Stripe)', icon: CreditCard },
   { value: 'transfer', label: 'Virement', icon: Smartphone },
 ];
 
@@ -198,13 +200,19 @@ export function SharedCoursesInCoursesList({ driverId }: Props) {
 
   const handleOpenPaymentDialog = (courseId: string, requestedMethod: string | null) => {
     setSelectedCourseId(courseId);
-    setPaymentMethod(requestedMethod || '');
+    // Cash interdit sur courses partagées : on n'auto-sélectionne jamais 'cash'
+    const safeMethod = requestedMethod && requestedMethod !== 'cash' ? requestedMethod : '';
+    setPaymentMethod(safeMethod);
     setShowPaymentDialog(true);
   };
 
   const handleCompleteCourse = async () => {
     if (!selectedCourseId || !paymentMethod) {
       toast.error('Veuillez sélectionner un moyen de paiement');
+      return;
+    }
+    if (paymentMethod === 'cash') {
+      toast.error("Le paiement en espèces n'est jamais autorisé sur une course partagée. Utilisez Stripe (lien/QR).");
       return;
     }
 

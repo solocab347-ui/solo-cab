@@ -221,8 +221,14 @@ export function ShareCourseWithPartnerDialog({
   const clearFavoriteSelection = () => setSelectedFavoriteIds(new Set());
 
   // ---- Validation ----
+  // 🚫 Le paiement en espèces est INTERDIT sur les courses partagées :
+  // tout règlement doit transiter par Stripe pour garantir la traçabilité,
+  // le déclenchement automatique de la commission et la clôture sécurisée.
+  const isCashRequested = (course?.payment_method ?? course?.payment_method_requested) === 'cash';
+
   const canPublish =
     !stripeNotConnected &&
+    !isCashRequested &&
     courseAmount > 0 &&
     (selectedFavoriteIds.size > 0 || alsoBroadcastNetwork);
 
@@ -246,6 +252,10 @@ export function ShareCourseWithPartnerDialog({
 
   const handlePublish = async () => {
     if (!course || !canPublish) return;
+    if (isCashRequested) {
+      toast.error("Une course en espèces ne peut jamais être partagée. Passez la course en Carte bancaire.");
+      return;
+    }
     setSending(true);
     try {
       const targetIds =
@@ -354,6 +364,21 @@ export function ShareCourseWithPartnerDialog({
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Configurer Stripe
                 </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isCashRequested && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive font-semibold">
+                Paiement en espèces non autorisé
+              </AlertTitle>
+              <AlertDescription className="text-destructive/90 text-sm">
+                Une course en espèces ne peut <strong>jamais</strong> être partagée. Tout règlement
+                doit transiter par Stripe (lien / QR code) afin de garantir la traçabilité,
+                le déclenchement automatique de la commission et la clôture sécurisée.
+                Modifiez le moyen de paiement de la course en <strong>Carte bancaire</strong> avant de la partager.
               </AlertDescription>
             </Alert>
           )}
