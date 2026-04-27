@@ -413,15 +413,28 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return key === selectedMonth;
     });
+    const cardTxns = txns.filter((t) => t.payment_method !== 'cash');
+    const cashTxns = txns.filter((t) => t.payment_method === 'cash');
     const uniqueCourses = new Set(txns.map((t) => t.course_id || t.id));
+
+    // Frais : on prend la source AUTORITAIRE pour éviter les écarts.
+    //  - Si la semaine est clôturée → settlements (figé, vérité comptable).
+    //  - Sinon → on agrège stripe_transactions (réflexion temps réel).
+    // Les courses cash ET CB sont incluses dans stripe_transactions (cash =
+    // payment_method='cash'), donc le total reflète tous les frais SoloCab.
     return {
       weeks: filtered,
       transactions: txns,
+      cardCourses: cardTxns.length,
+      cashCourses: cashTxns.length,
+      cardSolocabFees: cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+      cashSolocabFees: cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0),
+      cardStripeFees: cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0),
       totalNet: txns.length > 0
         ? txns.reduce((sum, t) => sum + (t.net_to_driver || 0), 0)
         : filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
       totalFees: txns.length > 0
-        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0), 0)
+        ? txns.reduce((sum, t) => sum + (t.solocab_fee_amount || 0) + (t.stripe_fee_amount || 0), 0)
         : filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
       totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
       totalCourses: txns.length > 0 ? uniqueCourses.size : filtered.reduce(
@@ -486,76 +499,9 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </Badge>
       </Card>
 
-      {/* 🔁 REPORTS DES SEMAINES PRÉCÉDENTES — toujours visibles s'il y en a,
-          pour éviter au chauffeur de fouiller l'historique. */}
-      {carryOver && (carryOver.cashFeesOwedFromPastWeeks > 0
-        || carryOver.failedSettlements.length > 0
-        || carryOver.pastPendingNet !== 0) && (
-        <Card className="p-4 bg-warning/5 border-warning/30 space-y-3">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-warning" />
-            <h3 className="text-sm font-semibold text-warning">Reports des semaines précédentes</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Frais espèces non prélevés portés sur les semaines passées */}
-            <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
-              <p className="text-[11px] text-muted-foreground">Frais espèces à régulariser</p>
-              <p className="text-lg font-bold text-warning">
-                {carryOver.cashFeesOwedFromPastWeeks.toFixed(2)}€
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                Issus de courses cash non encore débitées
-              </p>
-            </div>
-
-            {/* Net pending hérité (gross espèces + cb pending + carry-over) */}
-            <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
-              <p className="text-[11px] text-muted-foreground">Net en report</p>
-              <p className={`text-lg font-bold ${carryOver.pastPendingNet >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                {carryOver.pastPendingNet.toFixed(2)}€
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {carryOver.pastPendingCourses} course(s) en attente de règlement
-              </p>
-            </div>
-
-            {/* Virements échoués / ignorés (RIB manquant, rejet bancaire…) */}
-            <div className="p-3 rounded-lg bg-background/40 border border-destructive/30">
-              <p className="text-[11px] text-muted-foreground">Virements non exécutés</p>
-              <p className="text-lg font-bold text-destructive">
-                {carryOver.failedSettlementsTotal.toFixed(2)}€
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {carryOver.failedSettlements.length} règlement(s) en échec
-              </p>
-            </div>
-          </div>
-
-          {carryOver.failedSettlements.length > 0 && (
-            <div className="border-t border-warning/20 pt-3 space-y-1">
-              <p className="text-[11px] font-semibold text-foreground">Détail des virements en échec :</p>
-              {carryOver.failedSettlements.slice(0, 3).map((s) => (
-                <div key={s.id} className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">
-                    {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })}
-                    {' → '}
-                    {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
-                  </span>
-                  <span className="font-medium text-destructive">{s.net_amount.toFixed(2)}€</span>
-                </div>
-              ))}
-              <p className="text-[10px] text-muted-foreground italic pt-1">
-                💡 Vérifiez votre RIB dans l'onglet "RIB" pour débloquer les virements.
-              </p>
-            </div>
-          )}
-
-          <p className="text-[10px] text-muted-foreground italic border-t border-warning/20 pt-2">
-            Ces montants se cumulent semaine après semaine jusqu'à être encaissés ou réglés.
-            Ils sont déjà inclus dans le total "Prochain versement" ci-dessous.
-          </p>
-        </Card>
-      )}
+      {/* (Le bandeau "Reports des semaines précédentes" est rendu plus bas,
+          APRÈS le récap de la semaine en cours, pour respecter la hiérarchie
+          d'information : la semaine d'abord, les compléments ensuite.) */}
 
       {/* Wallet summary cards */}
       {walletStats && (
@@ -671,6 +617,71 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             </Card>
           )}
         </div>
+      )}
+
+      {/* 🔁 REPORTS DES SEMAINES PRÉCÉDENTES — placé APRÈS la semaine en cours
+          car c'est une information complémentaire (non capitale).
+          ⚠️ Les frais espèces antécédents sont déjà affichés dans la carte
+          "Frais SoloCab" ci-dessus → on ne les redonne PAS ici (anti-duplication).
+          On ne garde donc que ce qui n'est visible nulle part ailleurs :
+            - Net en report (paiements non versés des semaines passées)
+            - Virements non exécutés (RIB manquant, rejet bancaire, etc.) */}
+      {carryOver && (carryOver.failedSettlements.length > 0
+        || Math.abs(carryOver.pastPendingNet) > 0.01) && (
+        <Card className="p-4 bg-warning/5 border-warning/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning" />
+            <h3 className="text-sm font-semibold text-warning">Reports des semaines précédentes</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Math.abs(carryOver.pastPendingNet) > 0.01 && (
+              <div className="p-3 rounded-lg bg-background/40 border border-warning/20">
+                <p className="text-[11px] text-muted-foreground">Net en report</p>
+                <p className={`text-lg font-bold ${carryOver.pastPendingNet >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                  {carryOver.pastPendingNet.toFixed(2)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {carryOver.pastPendingCourses} course(s) en attente de règlement
+                </p>
+              </div>
+            )}
+
+            {carryOver.failedSettlements.length > 0 && (
+              <div className="p-3 rounded-lg bg-background/40 border border-destructive/30">
+                <p className="text-[11px] text-muted-foreground">Virements non exécutés</p>
+                <p className="text-lg font-bold text-destructive">
+                  {carryOver.failedSettlementsTotal.toFixed(2)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {carryOver.failedSettlements.length} règlement(s) en échec
+                </p>
+              </div>
+            )}
+          </div>
+
+          {carryOver.failedSettlements.length > 0 && (
+            <div className="border-t border-warning/20 pt-3 space-y-1">
+              <p className="text-[11px] font-semibold text-foreground">Détail des virements en échec :</p>
+              {carryOver.failedSettlements.slice(0, 3).map((s) => (
+                <div key={s.id} className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })}
+                    {' → '}
+                    {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                  </span>
+                  <span className="font-medium text-destructive">{s.net_amount.toFixed(2)}€</span>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground italic pt-1">
+                💡 Vérifiez votre RIB dans l'onglet "RIB" pour débloquer les virements.
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground italic border-t border-warning/20 pt-2">
+            Les frais antécédents impayés sont visibles dans la carte « Frais SoloCab » ci-dessus.
+          </p>
+        </Card>
       )}
 
       <Tabs defaultValue="wallet" className="space-y-4">
@@ -894,6 +905,17 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                     <p className="text-2xl font-bold text-destructive">
                       -{monthlyAggregate.totalFees.toFixed(2)}€
                     </p>
+                    <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                      {monthlyAggregate.cardStripeFees > 0 && (
+                        <p>Stripe : -{monthlyAggregate.cardStripeFees.toFixed(2)}€</p>
+                      )}
+                      <p>
+                        SoloCab : -{(monthlyAggregate.cardSolocabFees + monthlyAggregate.cashSolocabFees).toFixed(2)}€
+                        <span className="opacity-70">
+                          {' '}({monthlyAggregate.cardCourses} CB + {monthlyAggregate.cashCourses} cash)
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground flex-wrap">
