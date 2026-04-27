@@ -182,13 +182,61 @@ function Section({
 
 function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: () => Promise<unknown> }) {
   const [busy, setBusy] = useState(false);
+  const [probe, setProbe] = useState<TestProbe | null>(null);
   const meta = STATUS_META[perm.status];
   const Icon = meta.icon;
   const isDenied = perm.status === 'denied';
 
-  const handleClick = async () => {
+  /** Sonde de test : capture l'état avant/après et déduit si la prompt a vraiment été affichée */
+  const runProbe = async () => {
     setBusy(true);
-    try { await onRequest(); } finally { setBusy(false); }
+    const before = perm.status;
+    let rawWebState: string | undefined;
+    const t0 = performance.now();
+
+    // Snapshot brut Web AVANT
+    if (perm.key === 'notifications' && typeof window !== 'undefined' && 'Notification' in window) {
+      rawWebState = Notification.permission;
+    }
+
+    try {
+      await onRequest();
+    } catch (e) {
+      console.error('[PermissionsTest] onRequest threw:', e);
+    }
+
+    const durationMs = Math.round(performance.now() - t0);
+
+    // Lecture brute APRÈS
+    let after: PermissionStatus = before;
+    if (perm.key === 'notifications' && typeof window !== 'undefined' && 'Notification' in window) {
+      after = Notification.permission as PermissionStatus;
+      rawWebState = `${rawWebState} → ${Notification.permission}`;
+    } else if (perm.key === 'location' && typeof navigator !== 'undefined' && navigator.permissions) {
+      try {
+        const r = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        after = r.state as PermissionStatus;
+      } catch { /* ignore */ }
+    }
+
+    // Heuristique : si la prompt a été affichée, l'utilisateur a mis ≥ 400 ms à répondre
+    // OU l'état a changé (granted/denied après prompt). Si <150 ms ET pas de changement → refus immédiat (bloqué).
+    let promptShown: boolean | 'unknown' = 'unknown';
+    let message = '';
+    if (durationMs < 150 && before === 'denied' && after === 'denied') {
+      promptShown = false;
+      message = '⚠ Le navigateur a renvoyé "denied" immédiatement sans afficher la fenêtre. La permission est définitivement bloquée — utilisez la procédure manuelle.';
+    } else if (durationMs >= 400 || before !== after) {
+      promptShown = true;
+      message = before !== after
+        ? `✅ Réponse système : "${after}"`
+        : `Fenêtre système affichée — réponse inchangée : "${after}"`;
+    } else {
+      message = `Action terminée en ${durationMs} ms — état : "${after}"`;
+    }
+
+    setProbe({ before, after, rawWebState, promptShown, durationMs, ts: Date.now(), message });
+    setBusy(false);
   };
 
   return (
@@ -214,16 +262,19 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
             <span>{meta.label}</span>
           </div>
 
+          {/* ─── Mode test : résultat de la dernière tentative ─── */}
+          {probe && <TestProbeBox probe={probe} />}
+
           {/* ─── Bloc d'aide détaillé pour les permissions refusées ─── */}
           {isDenied && (
-            <DeniedGuidance permKey={perm.key} onOpenSettings={handleClick} busy={busy} />
+            <DeniedGuidance permKey={perm.key} onOpenSettings={runProbe} busy={busy} />
           )}
         </div>
         {perm.status !== 'granted' && perm.status !== 'unsupported' && !isDenied && (
           <Button
             size="sm"
             variant={perm.required ? 'default' : 'outline'}
-            onClick={handleClick}
+            onClick={runProbe}
             disabled={busy}
             className="shrink-0"
           >
@@ -232,6 +283,36 @@ function PermissionRow({ perm, onRequest }: { perm: PermissionState; onRequest: 
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Encart visuel qui affiche le résultat de la dernière sonde de test */
+function TestProbeBox({ probe }: { probe: TestProbe }) {
+  const tone = probe.promptShown === false
+    ? 'border-destructive/40 bg-destructive/10 text-destructive'
+    : probe.after === 'granted'
+      ? 'border-primary/40 bg-primary/10 text-primary'
+      : 'border-border bg-muted text-foreground';
+
+  return (
+    <div className={cn('mt-2 rounded-md border p-2 text-[11px] space-y-1', tone)}>
+      <div className="flex items-center gap-1.5 font-semibold">
+        <FlaskConical className="h-3 w-3" />
+        <span>Mode test — résultat</span>
+        <span className="ml-auto text-[10px] opacity-70">{probe.durationMs} ms</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-foreground/80">
+        <Badge variant="outline" className="text-[10px] h-4 px-1.5">{probe.before}</Badge>
+        <ArrowRight className="h-3 w-3 opacity-60" />
+        <Badge variant="outline" className="text-[10px] h-4 px-1.5">{probe.after}</Badge>
+        {probe.promptShown === true && <span className="text-[10px] opacity-70">· prompt affichée</span>}
+        {probe.promptShown === false && <span className="text-[10px] opacity-70">· prompt bloquée</span>}
+      </div>
+      <p className="leading-snug">{probe.message}</p>
+      {probe.rawWebState && (
+        <p className="text-[10px] opacity-70 font-mono">Notification.permission : {probe.rawWebState}</p>
+      )}
+    </div>
   );
 }
 
