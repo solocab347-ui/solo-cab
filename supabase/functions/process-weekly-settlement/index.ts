@@ -219,7 +219,11 @@ serve(async (req) => {
       previousCashDebt: number; totalCashDebt: number; realNet: number; realNetCents: number;
     };
     const tasks: Task[] = allDriverIds.map(driverId => {
-      const agg = driverTotals[driverId];
+      const agg = driverTotals[driverId] || {
+        card_gross: 0, card_solocab_fees: 0, card_stripe_fees: 0,
+        card_net: 0, card_courses: 0, card_balance_ids: [],
+        cash_gross: 0, cash_fees_owed: 0, cash_courses: 0, cash_balance_ids: [],
+      };
       const driver = driversById[driverId];
       const previousCashDebt = Number(driver?.cash_debt_pending || 0);
       const totalCashDebt = previousCashDebt + agg.cash_fees_owed;
@@ -241,6 +245,17 @@ serve(async (req) => {
     // ═══ 5. WORKER : traite UN chauffeur (pas d'écriture DB ici, on bufferise) ═══
     async function processOne(task: Task) {
       const { driverId, driver, agg, previousCashDebt, totalCashDebt, realNet, realNetCents } = task;
+
+      if (agg.card_courses === 0 && agg.cash_courses === 0 && totalCashDebt === 0) {
+        balanceInserts.push({
+          settlement_id: settlementId, driver_id: driverId,
+          total_commissions_earned: 0, total_solocab_fees: 0,
+          net_amount: 0, standard_courses_count: 0,
+          shared_courses_as_sender: 0, shared_courses_as_receiver: 0,
+          transfer_status: "no_activity",
+        });
+        return;
+      }
 
       // Sans Stripe → accumule dette, pas de virement
       if (!driver?.stripe_connect_account_id || !driver?.stripe_connect_charges_enabled) {
