@@ -301,7 +301,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
       scheduledDate,
       passengersCount: parseInt(passengersCount),
       notes: notes.trim() || undefined,
-      estimatedPrice: calculatedPrice || undefined,
+      estimatedPrice: finalPrice ?? undefined,
       courseType,
       durationHours: durationHours ? parseFloat(durationHours) : undefined,
       paymentMethod: paymentMethod !== "not_specified" ? paymentMethod : undefined,
@@ -310,6 +310,12 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
     if (course) {
       toast.success("Course confirmée créée avec succès !");
       setCreatedCourse(course);
+
+      // Parent (e.g. share-after-create flow) takes over via onCreated.
+      if (onCreated) {
+        await onCreated(course);
+        return;
+      }
       // If driver has Stripe Connect, show payment link option instead of navigating away
       if (!driverHasStripeConnect) {
         onSuccess?.();
