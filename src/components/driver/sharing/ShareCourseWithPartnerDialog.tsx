@@ -125,30 +125,47 @@ export function ShareCourseWithPartnerDialog({
         const { data: driverData } = await supabase
           .from('drivers')
           .select(`
-            id, full_name, photo_url, company_name, sharing_number,
-            average_rating, completed_rides_count,
+            id, user_id, company_name, sharing_number,
+            rating, total_rides,
             stripe_connect_account_id, stripe_connect_charges_enabled,
-            premium_active, public_show_rating, public_show_rides
+            show_rating_for_sharing, show_rides_for_sharing
           `)
           .eq('id', fav.favorite_driver_id)
           .maybeSingle();
 
         if (!driverData) continue;
+
+        // Profile (name + photo)
+        const { data: profileData } = (await (supabase as any)
+          .from('profiles')
+          .select('full_name, profile_photo_url, avatar_url')
+          .eq('user_id', (driverData as any).user_id)
+          .maybeSingle()) as { data: { full_name?: string; profile_photo_url?: string; avatar_url?: string } | null };
+
+        // Premium status via active subscription
+        const { data: sub } = await supabase
+          .from('driver_subscriptions')
+          .select('status')
+          .eq('driver_id', fav.favorite_driver_id)
+          .maybeSingle();
+
         enriched.push({
           id: fav.id,
           favorite_driver_id: fav.favorite_driver_id,
-          driver_name: driverData.full_name || 'Chauffeur',
-          driver_photo: driverData.photo_url,
-          driver_company: driverData.company_name,
-          driver_sharing_number: driverData.sharing_number,
-          driver_rating: Number(driverData.average_rating) || 0,
-          driver_rides: driverData.completed_rides_count || 0,
-          show_rating: driverData.public_show_rating ?? true,
-          show_rides: driverData.public_show_rides ?? true,
+          driver_name: profileData?.full_name || 'Chauffeur',
+          driver_photo:
+            profileData?.profile_photo_url || profileData?.avatar_url || null,
+          driver_company: (driverData as any).company_name,
+          driver_sharing_number: (driverData as any).sharing_number,
+          driver_rating: Number((driverData as any).rating) || 0,
+          driver_rides: (driverData as any).total_rides || 0,
+          show_rating: (driverData as any).show_rating_for_sharing ?? true,
+          show_rides: (driverData as any).show_rides_for_sharing ?? true,
           has_stripe_connect: !!(
-            driverData.stripe_connect_account_id && driverData.stripe_connect_charges_enabled
+            (driverData as any).stripe_connect_account_id &&
+            (driverData as any).stripe_connect_charges_enabled
           ),
-          is_premium: !!driverData.premium_active,
+          is_premium: sub?.status === 'active' || sub?.status === 'trialing',
         });
       }
       setFavorites(enriched);
