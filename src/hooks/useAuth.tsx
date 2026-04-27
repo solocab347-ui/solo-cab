@@ -433,6 +433,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      // Marque cette déconnexion comme initiée par l'utilisateur
+      // afin que le listener onAuthStateChange autorise la purge.
+      const flag = (AuthProvider as any)._userSignOutFlag;
+      if (flag) flag.current = true;
       // Reset driver session marker so next login defaults to map mode
       try { sessionStorage.removeItem("solocab_driver_session_started"); } catch {}
       // Utiliser le nouveau système de déconnexion instantanée
