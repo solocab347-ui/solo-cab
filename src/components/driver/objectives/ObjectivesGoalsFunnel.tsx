@@ -226,15 +226,9 @@ export function ObjectivesGoalsFunnel({
         current_monthly_revenue: currentMonthlyRevenue,
         // Acquisition
         target_direct_clients: directClientsTarget,
-        // Dépenses (nouveau)
-        monthly_expenses: {
-          ...expenses,
-          total: calc.totalExpenses,
-        },
-        target_net_revenue: Math.round(calc.netRevenue),
         // Audit
         goals_completed_at: new Date().toISOString(),
-        source: "goals_funnel_v2",
+        source: "goals_funnel_v3",
       };
 
       // 2. Upsert des 4 périodes driver_objectives
