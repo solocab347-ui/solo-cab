@@ -6278,6 +6278,8 @@ export type Database = {
           net_amount: number
           payment_type: string
           settled_at: string | null
+          settled_via_course_id: string | null
+          settled_via_payment_id: string | null
           settlement_id: string | null
           solocab_fee: number
           source_payment_id: string | null
@@ -6294,6 +6296,8 @@ export type Database = {
           net_amount?: number
           payment_type?: string
           settled_at?: string | null
+          settled_via_course_id?: string | null
+          settled_via_payment_id?: string | null
           settlement_id?: string | null
           solocab_fee?: number
           source_payment_id?: string | null
@@ -6310,6 +6314,8 @@ export type Database = {
           net_amount?: number
           payment_type?: string
           settled_at?: string | null
+          settled_via_course_id?: string | null
+          settled_via_payment_id?: string | null
           settlement_id?: string | null
           solocab_fee?: number
           source_payment_id?: string | null
