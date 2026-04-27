@@ -36,7 +36,35 @@ serve(async (req) => {
     
     // CRITICAL: must use ASYNC variant in Deno (SubtleCrypto is async)
     const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-    logStep("✓ Signature verified", { type: event.type });
+    logStep("✓ Signature verified", { type: event.type, id: event.id });
+
+    // ========================================
+    // IDEMPOTENCY GUARD — prevent double-processing if Stripe retries the same event
+    // (insert-then-check pattern using the UNIQUE constraint on stripe_event_id)
+    // ========================================
+    const { error: idempInsertError } = await supabaseClient
+      .from("stripe_webhook_events")
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        livemode: event.livemode,
+        status: "received",
+      });
+
+    if (idempInsertError) {
+      // 23505 = unique_violation → event already received, ack quickly so Stripe stops retrying
+      const code = (idempInsertError as any).code;
+      if (code === "23505") {
+        logStep("⚠️ Duplicate event ignored", { id: event.id, type: event.type });
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      // Non-blocking: log and continue (we never want to lose a real event)
+      logStep("WARN: idempotency log insert failed", { code, message: idempInsertError.message });
+    }
+
 
     // ========================================
     // DRIVER SUBSCRIPTION EVENTS
