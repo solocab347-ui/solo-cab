@@ -53,8 +53,8 @@ const BENEFITS = [
   },
   {
     icon: BadgePercent,
-    title: 'Frais de transaction automatiques',
-    description: 'Tu touches 15% (courses < 30€) ou 20% (≥ 30€) sur chaque course partagée et acceptée par un partenaire.',
+    title: 'Commission automatique',
+    description: 'Tu touches une commission de 20% à 25% (défaut 22%) sur chaque course partagée et acceptée par un partenaire.',
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10',
   },

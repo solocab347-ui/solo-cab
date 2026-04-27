@@ -157,7 +157,7 @@ export function DriverAvailabilitySlots({ driverId }: DriverAvailabilitySlotsPro
               <p className="text-sm font-semibold text-foreground mb-1">Pourquoi définir tes horaires ?</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Les courses demandées en dehors de tes horaires sont automatiquement proposées au réseau SoloCab. 
-                Si un partenaire l'accepte, tu touches <span className="font-semibold text-emerald-600">15% (courses &lt; 30€) ou 20% (≥ 30€)</span> de frais de transaction.
+                Si un partenaire l'accepte, tu touches <span className="font-semibold text-emerald-600">une commission de 20% à 25%</span> sur le montant de la course.
               </p>
             </div>
           </div>
