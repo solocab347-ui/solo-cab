@@ -317,6 +317,60 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Courses partagées — cohérence chauffeur ↔ admin */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wallet className="w-4 h-4" /> Courses partagées
+            <Badge variant="outline" className="ml-2 text-[10px]">Émises : {sharedSent.length}</Badge>
+            <Badge variant="outline" className="text-[10px]">Reçues : {sharedReceived.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            { title: "En tant qu'émetteur (commission perçue)", rows: sharedSent, isSender: true },
+            { title: "En tant que receveur (revenus nets)", rows: sharedReceived, isSender: false },
+          ].map((block) => (
+            <div key={block.title}>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">{block.title}</p>
+              {block.rows.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Aucune entrée sur la période.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-right text-xs">Montant TTC</TableHead>
+                      <TableHead className="text-right text-xs">{block.isSender ? "Commission %" : "Net receveur"}</TableHead>
+                      <TableHead className="text-xs">Paiement</TableHead>
+                      <TableHead className="text-xs">Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {block.rows.map((s: any) => {
+                      const amount = Number(s.course_amount || 0);
+                      const commission = Number(s.commission_amount || 0);
+                      const net = block.isSender ? commission : Math.max(0, amount - commission);
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell className="text-xs">{format(new Date(s.created_at), "dd/MM HH:mm")}</TableCell>
+                          <TableCell className="text-right text-sm">{amount.toFixed(2)}€</TableCell>
+                          <TableCell className="text-right text-sm font-bold text-emerald-600">
+                            {block.isSender ? `${commission.toFixed(2)}€ (${s.commission_percentage}%)` : `${net.toFixed(2)}€`}
+                          </TableCell>
+                          <TableCell><Badge variant="outline" className="text-[10px]">{s.payment_status || "—"}</Badge></TableCell>
+                          <TableCell><Badge variant={s.status === "completed" ? "default" : "secondary"} className="text-[10px]">{s.status}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 };
