@@ -85,7 +85,7 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
   const [passengersCount, setPassengersCount] = useState("1");
   const [notes, setNotes] = useState("");
   const [durationHours, setDurationHours] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState(forShareFlow ? "card" : "cash");
   
   // Calculated values
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
