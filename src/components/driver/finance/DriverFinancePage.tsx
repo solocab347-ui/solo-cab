@@ -905,6 +905,17 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                     <p className="text-2xl font-bold text-destructive">
                       -{monthlyAggregate.totalFees.toFixed(2)}€
                     </p>
+                    <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                      {monthlyAggregate.cardStripeFees > 0 && (
+                        <p>Stripe : -{monthlyAggregate.cardStripeFees.toFixed(2)}€</p>
+                      )}
+                      <p>
+                        SoloCab : -{(monthlyAggregate.cardSolocabFees + monthlyAggregate.cashSolocabFees).toFixed(2)}€
+                        <span className="opacity-70">
+                          {' '}({monthlyAggregate.cardCourses} CB + {monthlyAggregate.cashCourses} cash)
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground flex-wrap">
