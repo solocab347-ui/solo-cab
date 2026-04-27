@@ -733,6 +733,8 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
               onChange={setPaymentMethod}
               label="Moyen de paiement prévu"
               showNotSpecified={true}
+              excludeMethods={forShareFlow ? ['cash'] : []}
+              excludeReason={forShareFlow ? "Le paiement en espèces est interdit sur les courses partagées : tout règlement doit transiter par Stripe (lien / QR)." : undefined}
             />
           </div>
         )}
