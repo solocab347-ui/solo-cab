@@ -294,7 +294,78 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         ...b,
         week_start: b.settlement?.week_start,
         week_end: b.settlement?.week_end,
-      }));
+      })) as WeekHistoryEntry[];
+      const driverStart = new Date(
+        driverResult.data?.stripe_connect_created_at
+        || driverResult.data?.stripe_connect_updated_at
+        || driverResult.data?.created_at
+        || weekStartIso
+      );
+      const firstWeek = getVtcWeekForDate(driverStart).start;
+      const generatedByWeek = new Map<string, WeekHistoryEntry>();
+
+      for (const s of mapped) {
+        if (s.week_start) generatedByWeek.set(toWeekKey(s.week_start), s);
+      }
+
+      for (const b of allBp) {
+        const key = toWeekKey(b.created_at);
+        const existing = generatedByWeek.get(key);
+        if (existing) {
+          existing.activityCount = (existing.activityCount || 0) + 1;
+          continue;
+        }
+        const { start, end } = getVtcWeekForDate(new Date(b.created_at));
+        const gross = Number(b.gross_amount || 0);
+        const solocabFee = Number(b.solocab_fee || 0);
+        const stripeFee = Number(b.stripe_fee || 0);
+        const net = Number(b.net_amount || 0);
+        generatedByWeek.set(key, {
+          id: `activity-${key}`,
+          week_start: start.toISOString(),
+          week_end: end.toISOString(),
+          net_amount: net,
+          total_commissions_earned: gross,
+          total_solocab_fees: solocabFee + stripeFee,
+          shared_courses_as_sender: 0,
+          shared_courses_as_receiver: 0,
+          standard_courses_count: 1,
+          transfer_status: b.status === "settled" ? "completed" : "pending",
+          stripe_transfer_id: null,
+          transfer_executed_at: null,
+          transfer_error: null,
+          isGenerated: true,
+          activityCount: 1,
+        });
+      }
+
+      for (let cursor = new Date(weekStart); cursor >= firstWeek; cursor = addUtcDays(cursor, -7)) {
+        const key = cursor.toISOString().slice(0, 10);
+        if (generatedByWeek.has(key)) continue;
+        const end = addUtcDays(cursor, 6);
+        end.setUTCHours(23, 59, 59, 999);
+        generatedByWeek.set(key, {
+          id: `empty-${key}`,
+          week_start: cursor.toISOString(),
+          week_end: end.toISOString(),
+          net_amount: 0,
+          total_commissions_earned: 0,
+          total_solocab_fees: 0,
+          shared_courses_as_sender: 0,
+          shared_courses_as_receiver: 0,
+          standard_courses_count: 0,
+          transfer_status: key === weekStartIso.slice(0, 10) ? "pending" : "completed",
+          stripe_transfer_id: null,
+          transfer_executed_at: null,
+          transfer_error: null,
+          isGenerated: true,
+          activityCount: 0,
+        });
+      }
+
+      const completeWeekHistory = Array.from(generatedByWeek.values()).sort(
+        (a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime()
+      );
       setSettlements(mapped);
       setPendingPayments(pendingResult.data || []);
       // Les listes sont déjà normalisées (TransactionItem) via balancePendingToTxn.
