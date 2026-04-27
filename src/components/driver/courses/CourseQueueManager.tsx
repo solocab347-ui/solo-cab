@@ -299,16 +299,16 @@ export function CourseQueueManager({ driverId }: CourseQueueManagerProps) {
                     key={partner.id}
                     variant="outline"
                     className="w-full justify-start gap-3 h-auto py-3"
-                    onClick={() => handleShareWithPartner(partner.partnerId)}
+                    onClick={() => handleShareWithPartner(partner.id)}
                     disabled={processingId !== null}
                   >
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <User className="h-5 w-5 text-primary" />
                     </div>
                     <div className="text-left">
-                      <p className="font-medium">{partner.partnerName}</p>
+                      <p className="font-medium">{partner.full_name ?? 'Chauffeur'}</p>
                       <p className="text-xs text-muted-foreground">
-                        Commission: {partner.commissionPercentage}%
+                        Commission: 20% (modifiable jusqu'à 25%)
                       </p>
                     </div>
                   </Button>
