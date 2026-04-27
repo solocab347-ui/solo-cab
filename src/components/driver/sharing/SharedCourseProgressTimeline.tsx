@@ -16,6 +16,11 @@ interface Props {
     status?: string | null;
     payment_status?: string | null;
     completed_at?: string | null;
+    stripe_checkout_session_id?: string | null;
+    payment_link_created_at?: string | null;
+    payment_settled?: boolean | null;
+    payment_settled_at?: string | null;
+    client_payment_method?: string | null;
   };
   className?: string;
 }
