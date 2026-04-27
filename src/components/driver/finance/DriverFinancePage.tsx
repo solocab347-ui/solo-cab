@@ -29,6 +29,29 @@ function getCurrentVtcWeek(): { start: Date; end: Date } {
   return { start, end };
 }
 
+function getVtcWeekForDate(date: Date): { start: Date; end: Date } {
+  const day = date.getUTCDay();
+  const daysFromMonday = day === 0 ? 6 : day - 1;
+  const start = new Date(date);
+  start.setUTCDate(date.getUTCDate() - daysFromMonday);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+function toWeekKey(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return getVtcWeekForDate(d).start.toISOString().slice(0, 10);
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
 interface DriverFinancePageProps {
   driverId: string;
   initialTab?: string;
@@ -48,6 +71,11 @@ interface Settlement {
   stripe_transfer_id: string | null;
   transfer_executed_at: string | null;
   transfer_error: string | null;
+}
+
+interface WeekHistoryEntry extends Settlement {
+  isGenerated?: boolean;
+  activityCount?: number;
 }
 
 interface PendingPayment {
