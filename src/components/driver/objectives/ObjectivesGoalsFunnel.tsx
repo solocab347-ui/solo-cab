@@ -97,17 +97,9 @@ const DAYS = [
   { id: "dimanche", label: "D", full: "Dimanche", weight: 1.2, index: 0 },
 ];
 
-// Postes de dépenses VTC France
-const EXPENSE_PRESETS = [
-  { key: "fuel", label: "Carburant", icon: Fuel, default: 600, max: 1500 },
-  { key: "insurance", label: "Assurance pro VTC", icon: ShieldCheck, default: 130, max: 300 },
-  { key: "vehicle_lease", label: "Location / leasing", icon: Car, default: 0, max: 1200 },
-  { key: "maintenance", label: "Entretien", icon: Wrench, default: 100, max: 400 },
-  { key: "licenses", label: "Licences / redevances", icon: Receipt, default: 50, max: 200 },
-  { key: "accountant", label: "Comptable / autres", icon: Building2, default: 100, max: 400 },
-] as const;
-
-type ExpenseKey = (typeof EXPENSE_PRESETS)[number]["key"];
+// (Étape "Dépenses" retirée — feedback chauffeur : trop intrusif au moment
+// de l'inscription. Les coûts d'exploitation seront proposés plus tard via
+// un module dédié dans Performance → Finances, hors tunnel d'objectifs.)
 
 export function ObjectivesGoalsFunnel({
   driverId,
