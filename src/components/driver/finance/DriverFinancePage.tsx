@@ -1,13 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote, RefreshCw } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Calendar, CheckCircle, Clock, XCircle, AlertCircle, CreditCard, TrendingUp, Euro, Banknote, RefreshCw, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+/**
+ * Bornes de la semaine VTC en cours.
+ * Convention SoloCab (alignée sur process-weekly-settlement) :
+ *   Lundi 00:00 UTC → Dimanche 23:59:59 UTC
+ * Le settlement tourne ensuite le lundi suivant à 6h.
+ */
+function getCurrentVtcWeek(): { start: Date; end: Date } {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=dimanche, 1=lundi
+  const daysFromMonday = day === 0 ? 6 : day - 1;
+  const start = new Date(now);
+  start.setUTCDate(now.getUTCDate() - daysFromMonday);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+}
 
 interface DriverFinancePageProps {
   driverId: string;
@@ -88,6 +108,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
   const [stripePayouts, setStripePayouts] = useState<any[]>([]);
+  const [historyView, setHistoryView] = useState<"week" | "month">("week");
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     loadData();
@@ -95,6 +120,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
   const loadData = async () => {
     try {
+      // Bornes de la semaine VTC en cours (lundi → dimanche UTC)
+      const { start: weekStart, end: weekEnd } = getCurrentVtcWeek();
+      const weekStartIso = weekStart.toISOString();
+      const weekEndIso = weekEnd.toISOString();
+
       // Load all data in parallel
       const [balancesResult, pendingResult, paymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
         supabase
@@ -107,7 +137,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           `)
           .eq("driver_id", driverId)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(52),
         supabase
           .from("shared_course_payments")
           .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
@@ -115,18 +145,25 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .is("settlement_id", null)
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
           .order("created_at", { ascending: false }),
+        // ⚠️ Transactions filtrées sur la SEMAINE EN COURS uniquement
+        // (le bilan hebdo doit repartir à zéro chaque lundi).
         supabase
           .from("stripe_transactions")
           .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
           .eq("driver_id", driverId)
           .in("status", ["succeeded", "completed"])
+          .gte("created_at", weekStartIso)
+          .lte("created_at", weekEndIso)
           .order("created_at", { ascending: false })
-          .limit(50),
+          .limit(200),
         supabase
           .from("drivers")
           .select("stripe_connect_charges_enabled")
           .eq("id", driverId)
           .single(),
+        // ⚠️ driver_balance_pending reste non-filtré : il porte naturellement
+        // la semaine en cours + tout carry-over (frais espèces non prélevés,
+        // virements précédents échoués) qui n'a pas encore été settlé.
         supabase
           .from("driver_balance_pending" as any)
           .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type")
@@ -266,6 +303,50 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
     .filter(p => p.sender_driver_id === driverId)
     .reduce((sum, p) => sum + p.sender_commission_amount, 0);
 
+  // Bornes de la semaine en cours pour affichage
+  const currentWeek = getCurrentVtcWeek();
+  const weekLabel = `${format(currentWeek.start, "d MMM", { locale: fr })} → ${format(currentWeek.end, "d MMM yyyy", { locale: fr })}`;
+
+  // Liste des mois disponibles dans l'historique des règlements (12 derniers max)
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of settlements) {
+      if (!s.week_start) continue;
+      const d = new Date(s.week_start);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    // Inclure aussi le mois courant pour pouvoir le sélectionner même sans data
+    const now = new Date();
+    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    return Array.from(set).sort().reverse().slice(0, 12);
+  }, [settlements]);
+
+  // Agrégat mensuel à partir des règlements hebdomadaires
+  const monthlyAggregate = useMemo(() => {
+    const filtered = settlements.filter((s) => {
+      if (!s.week_start) return false;
+      const d = new Date(s.week_start);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return key === selectedMonth;
+    });
+    return {
+      weeks: filtered,
+      totalNet: filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
+      totalFees: filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
+      totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
+      totalCourses: filtered.reduce(
+        (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
+        0
+      ),
+    };
+  }, [settlements, selectedMonth]);
+
+  const formatMonthLabel = (key: string) => {
+    const [y, m] = key.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return format(d, "MMMM yyyy", { locale: fr });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -278,13 +359,27 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </div>
       </div>
 
+      {/* Bandeau semaine en cours — repère temporel clair */}
+      <Card className="p-3 bg-primary/5 border-primary/20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          <div>
+            <p className="text-xs text-muted-foreground">Semaine en cours</p>
+            <p className="text-sm font-semibold text-foreground">{weekLabel}</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+          Reset chaque lundi 6h
+        </Badge>
+      </Card>
+
       {/* Wallet summary cards */}
       {walletStats && (
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut)</p>
+                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut) — semaine</p>
                 <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
               </div>
               <div className="p-3 rounded-full bg-primary/20">
@@ -298,11 +393,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           </Card>
 
           <Card className="p-3 bg-success/5 border-success/20">
-            <p className="text-xs text-muted-foreground mb-1">Net chauffeur</p>
+            <p className="text-xs text-muted-foreground mb-1">Net chauffeur (semaine)</p>
             <p className="text-xl font-bold text-success">{walletStats.totalNet.toFixed(2)}€</p>
           </Card>
           <Card className="p-3 bg-destructive/5 border-destructive/20">
-            <p className="text-xs text-muted-foreground mb-1">Total frais</p>
+            <p className="text-xs text-muted-foreground mb-1">Total frais (semaine)</p>
             <p className="text-xl font-bold text-destructive">-{walletStats.totalFees.toFixed(2)}€</p>
             <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
               <p>Stripe: -{(walletStats.cardStripeFees).toFixed(2)}€</p>
@@ -381,8 +476,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
             Stripe
           </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1">
-            <Calendar className="w-4 h-4" />
-            Versements
+            <History className="w-4 h-4" />
+            Historique
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 gap-1">
             <Clock className="w-4 h-4" />
@@ -520,6 +615,48 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </TabsContent>
 
         <TabsContent value="history" className="space-y-3">
+          {/* Sélecteur de vue : Semaine / Mois */}
+          <Card className="p-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex rounded-lg bg-muted p-1">
+                <button
+                  onClick={() => setHistoryView("week")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    historyView === "week"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Par semaine
+                </button>
+                <button
+                  onClick={() => setHistoryView("month")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    historyView === "month"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Par mois
+                </button>
+              </div>
+              {historyView === "month" && availableMonths.length > 0 && (
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="h-8 w-[180px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map((m) => (
+                      <SelectItem key={m} value={m} className="text-xs capitalize">
+                        {formatMonthLabel(m)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </Card>
+
           {/* Info banner */}
           <Card className="p-4 bg-primary/10 border-primary/20">
             <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
@@ -528,53 +665,124 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <li>• Pour les CB : frais prélevés à la transaction</li>
               <li>• Pour les espèces : frais déduits du prochain versement</li>
               <li>• Versement net unique chaque <strong>lundi à 6h</strong></li>
+              <li>• Les chiffres en haut concernent <strong>uniquement la semaine en cours</strong></li>
             </ul>
           </Card>
 
-          {settlements.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Aucun règlement effectué pour le moment</p>
-              <p className="text-xs mt-1">Les règlements apparaîtront ici après le premier lundi</p>
-            </Card>
-          ) : (
-            settlements.map((s) => (
-              <Card key={s.id} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">
-                      {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
-                    </span>
-                  </div>
-                  {getStatusBadge(s.transfer_status)}
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+          {/* VUE MOIS — récap agrégé puis liste des semaines du mois */}
+          {historyView === "month" && (
+            <>
+              <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1 capitalize">{formatMonthLabel(selectedMonth)}</p>
+                <div className="grid grid-cols-2 gap-3 mt-2">
                   <div>
-                    <span className="text-muted-foreground">Frais de transaction</span>
-                    <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                    <p className="text-[11px] text-muted-foreground">Net versé (mois)</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {monthlyAggregate.totalNet.toFixed(2)}€
+                    </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Frais</span>
-                    <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Net versé</span>
-                    <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                      {s.net_amount.toFixed(2)}€
+                    <p className="text-[11px] text-muted-foreground">Total frais</p>
+                    <p className="text-2xl font-bold text-destructive">
+                      -{monthlyAggregate.totalFees.toFixed(2)}€
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                  <span>{s.shared_courses_as_sender} envoyées</span>
-                  <span>{s.shared_courses_as_receiver} reçues</span>
-                  <span>{s.standard_courses_count} standards</span>
+                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground">
+                  <span>{monthlyAggregate.weeks.length} semaine(s)</span>
+                  <span>{monthlyAggregate.totalCourses} courses</span>
+                  <span className="text-success">+{monthlyAggregate.totalCommissions.toFixed(2)}€ frais transaction</span>
                 </div>
-                {s.transfer_error && (
-                  <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
-                )}
               </Card>
-            ))
+
+              {monthlyAggregate.weeks.length === 0 ? (
+                <Card className="p-8 text-center text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun règlement pour ce mois</p>
+                </Card>
+              ) : (
+                monthlyAggregate.weeks.map((s) => (
+                  <Card key={s.id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                        </span>
+                      </div>
+                      {getStatusBadge(s.transfer_status)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Frais transaction</span>
+                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Frais</span>
+                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Net versé</span>
+                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                          {s.net_amount.toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </>
+          )}
+
+          {/* VUE SEMAINE — liste classique */}
+          {historyView === "week" && (
+            <>
+              {settlements.length === 0 ? (
+                <Card className="p-8 text-center text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun règlement effectué pour le moment</p>
+                  <p className="text-xs mt-1">Les règlements apparaîtront ici après le premier lundi</p>
+                </Card>
+              ) : (
+                settlements.map((s) => (
+                  <Card key={s.id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                        </span>
+                      </div>
+                      {getStatusBadge(s.transfer_status)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Frais de transaction</span>
+                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Frais</span>
+                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Net versé</span>
+                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                          {s.net_amount.toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                      <span>{s.shared_courses_as_sender} envoyées</span>
+                      <span>{s.shared_courses_as_receiver} reçues</span>
+                      <span>{s.standard_courses_count} standards</span>
+                    </div>
+                    {s.transfer_error && (
+                      <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
+                    )}
+                  </Card>
+                ))
+              )}
+            </>
           )}
         </TabsContent>
 
