@@ -298,6 +298,10 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
     .filter(p => p.sender_driver_id === driverId)
     .reduce((sum, p) => sum + p.sender_commission_amount, 0);
 
+  // Bornes de la semaine en cours pour affichage
+  const currentWeek = getCurrentVtcWeek();
+  const weekLabel = `${format(currentWeek.start, "d MMM", { locale: fr })} → ${format(currentWeek.end, "d MMM yyyy", { locale: fr })}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -309,6 +313,20 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <p className="text-sm text-muted-foreground">Vue complète de vos revenus et versements</p>
         </div>
       </div>
+
+      {/* Bandeau semaine en cours — repère temporel clair */}
+      <Card className="p-3 bg-primary/5 border-primary/20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          <div>
+            <p className="text-xs text-muted-foreground">Semaine en cours</p>
+            <p className="text-sm font-semibold text-foreground">{weekLabel}</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+          Reset chaque lundi 6h
+        </Badge>
+      </Card>
 
       {/* Wallet summary cards */}
       {walletStats && (
