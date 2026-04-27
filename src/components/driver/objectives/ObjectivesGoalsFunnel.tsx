@@ -22,16 +22,12 @@ import {
   Rocket,
   Users,
   Car,
-  Fuel,
-  Wrench,
-  ShieldCheck,
-  Receipt,
-  Building2,
-  Wallet,
   Hand,
   UserPlus,
   Heart,
-  Route,
+  LineChart,
+  Bell,
+  Compass,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,7 +46,6 @@ type StepId =
   | "activity"
   | "planning"
   | "platforms"
-  | "expenses"
   | "liberation"
   | "summary";
 
@@ -60,10 +55,25 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "activity", label: "Activité" },
   { id: "planning", label: "Planning" },
   { id: "platforms", label: "Plateformes" },
-  { id: "expenses", label: "Dépenses" },
   { id: "liberation", label: "Libération" },
   { id: "summary", label: "Validation" },
 ];
+
+// Phrase pédagogique affichée en bandeau au début de chaque étape
+const STEP_INTENT: Partial<Record<StepId, string>> = {
+  revenue:
+    "Pour mesurer ta progression et calculer combien tu dois faire chaque semaine pour y arriver.",
+  activity:
+    "Pour vérifier que ton CA est atteignable avec ton volume — ou ajuster ton panier moyen.",
+  planning:
+    "Pour calculer ton taux horaire réel et t'alerter si tu approches les limites de sécurité VTC.",
+  platforms:
+    "Pour mesurer ta dépendance aux plateformes aujourd'hui et suivre ta libération mois après mois.",
+  liberation:
+    "Chaque carte donnée, chaque QR scanné = un client qui revient sans commission. C'est ton vrai capital.",
+  summary:
+    "Tout est modifiable dans Performance → Objectifs. Cette config alimente ton dashboard dès demain matin.",
+};
 
 // Valeurs SoloCab de référence
 const SOLOCAB_VALUES = {
@@ -87,17 +97,9 @@ const DAYS = [
   { id: "dimanche", label: "D", full: "Dimanche", weight: 1.2, index: 0 },
 ];
 
-// Postes de dépenses VTC France
-const EXPENSE_PRESETS = [
-  { key: "fuel", label: "Carburant", icon: Fuel, default: 600, max: 1500 },
-  { key: "insurance", label: "Assurance pro VTC", icon: ShieldCheck, default: 130, max: 300 },
-  { key: "vehicle_lease", label: "Location / leasing", icon: Car, default: 0, max: 1200 },
-  { key: "maintenance", label: "Entretien", icon: Wrench, default: 100, max: 400 },
-  { key: "licenses", label: "Licences / redevances", icon: Receipt, default: 50, max: 200 },
-  { key: "accountant", label: "Comptable / autres", icon: Building2, default: 100, max: 400 },
-] as const;
-
-type ExpenseKey = (typeof EXPENSE_PRESETS)[number]["key"];
+// (Étape "Dépenses" retirée — feedback chauffeur : trop intrusif au moment
+// de l'inscription. Les coûts d'exploitation seront proposés plus tard via
+// un module dédié dans Performance → Finances, hors tunnel d'objectifs.)
 
 export function ObjectivesGoalsFunnel({
   driverId,
@@ -131,14 +133,7 @@ export function ObjectivesGoalsFunnel({
   const [platformPercentage, setPlatformPercentage] = useState(80); // % du CA actuel sur plateformes
   const [currentMonthlyRevenue, setCurrentMonthlyRevenue] = useState(2000);
 
-  // Étape 6 — Dépenses
-  const [expenses, setExpenses] = useState<Record<ExpenseKey, number>>(() => {
-    const init = {} as Record<ExpenseKey, number>;
-    EXPENSE_PRESETS.forEach((e) => {
-      init[e.key] = e.default;
-    });
-    return init;
-  });
+  // (étape Dépenses retirée — voir commentaire EXPENSE_PRESETS)
 
   // Étape 7 — Libération / acquisition
   const [cardsTarget, setCardsTarget] = useState(60);
@@ -155,10 +150,8 @@ export function ObjectivesGoalsFunnel({
     const monthlyHours = hoursPerDay * selectedDays.length * 4;
     const hourlyRate = monthlyHours > 0 ? targetRevenue / monthlyHours : 0;
     const avgFare = targetCourses > 0 ? targetRevenue / targetCourses : 0;
-    const totalExpenses = Object.values(expenses).reduce((s, v) => s + v, 0);
     const solocabFees = targetCourses * SOLOCAB_VALUES.commission;
-    const netRevenue = targetRevenue - totalExpenses - solocabFees;
-    const netMarginPct = targetRevenue > 0 ? (netRevenue / targetRevenue) * 100 : 0;
+    const revenueAfterFees = targetRevenue - solocabFees;
     const solocabPercentage = 100 - platformPercentage;
 
     // Daily targets selon poids des jours
@@ -177,10 +170,8 @@ export function ObjectivesGoalsFunnel({
       monthlyHours,
       hourlyRate,
       avgFare,
-      totalExpenses,
       solocabFees,
-      netRevenue,
-      netMarginPct,
+      revenueAfterFees,
       solocabPercentage,
       dailyTargets,
     };
@@ -189,7 +180,6 @@ export function ObjectivesGoalsFunnel({
     targetCourses,
     hoursPerDay,
     selectedDays,
-    expenses,
     platformPercentage,
   ]);
 
@@ -236,15 +226,9 @@ export function ObjectivesGoalsFunnel({
         current_monthly_revenue: currentMonthlyRevenue,
         // Acquisition
         target_direct_clients: directClientsTarget,
-        // Dépenses (nouveau)
-        monthly_expenses: {
-          ...expenses,
-          total: calc.totalExpenses,
-        },
-        target_net_revenue: Math.round(calc.netRevenue),
         // Audit
         goals_completed_at: new Date().toISOString(),
-        source: "goals_funnel_v2",
+        source: "goals_funnel_v3",
       };
 
       // 2. Upsert des 4 périodes driver_objectives
@@ -428,6 +412,10 @@ export function ObjectivesGoalsFunnel({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25 }}
               >
+                {STEP_INTENT[currentStep.id] && (
+                  <WhyBanner text={STEP_INTENT[currentStep.id]!} />
+                )}
+
                 {currentStep.id === "intro" && <IntroStep />}
 
                 {currentStep.id === "revenue" && (
@@ -471,18 +459,6 @@ export function ObjectivesGoalsFunnel({
                   />
                 )}
 
-                {currentStep.id === "expenses" && (
-                  <ExpensesStep
-                    expenses={expenses}
-                    onChange={setExpenses}
-                    total={calc.totalExpenses}
-                    solocabFees={calc.solocabFees}
-                    targetRevenue={targetRevenue}
-                    netRevenue={calc.netRevenue}
-                    netMarginPct={calc.netMarginPct}
-                  />
-                )}
-
                 {currentStep.id === "liberation" && (
                   <LiberationStep
                     cards={cardsTarget}
@@ -503,10 +479,8 @@ export function ObjectivesGoalsFunnel({
                     km={targetKm}
                     days={selectedDays.length}
                     hours={hoursPerDay}
-                    expenses={calc.totalExpenses}
                     solocabFees={calc.solocabFees}
-                    netRevenue={calc.netRevenue}
-                    netMarginPct={calc.netMarginPct}
+                    revenueAfterFees={calc.revenueAfterFees}
                     platforms={selectedPlatforms}
                     cards={cardsTarget}
                     scans={qrScansTarget}
@@ -564,57 +538,93 @@ export function ObjectivesGoalsFunnel({
 
 function IntroStep() {
   return (
-    <div className="space-y-5 text-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center">
-        <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+    <div className="space-y-5">
+      {/* Hero */}
+      <div className="text-center space-y-3">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center">
+          <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+        </div>
+        <div>
+          <h3 className="text-xl sm:text-2xl font-bold mb-1">
+            On configure ton copilote
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            6 étapes rapides pour transformer SoloCab en vrai outil de pilotage —
+            adapté à <strong className="text-foreground">tes</strong> objectifs,
+            pas à des moyennes.
+          </p>
+        </div>
       </div>
-      <div>
-        <h3 className="text-xl sm:text-2xl font-bold mb-2">
-          Cap sur ton indépendance
-        </h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          En 7 étapes rapides, on définit ensemble ton revenu, ton planning, tes
-          plateformes, tes dépenses et ton plan d'acquisition clients. Tu pourras
-          tout modifier ensuite.
+
+      {/* Pourquoi on te pose ces questions */}
+      <div className="bg-card border-2 border-primary/20 rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Compass className="w-4 h-4 text-primary" />
+          <h4 className="text-sm font-bold text-foreground">
+            Pourquoi on te pose ces questions ?
+          </h4>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Sans tes objectifs, ton dashboard n'est qu'un compteur. Avec eux, il
+          devient un copilote qui te dit chaque jour{" "}
+          <strong className="text-foreground">où tu en es</strong> et{" "}
+          <strong className="text-foreground">ce qu'il te reste à faire</strong>{" "}
+          pour atteindre ton cap.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        <ValueCard
-          icon={Crown}
-          title="0,50€"
-          desc="par course"
-          subtitle="Notre seule commission"
-        />
-        <ValueCard
-          icon={Sparkles}
-          title="100%"
-          desc="de tes revenus"
-          subtitle="Aucun pourcentage prélevé"
-        />
-        <ValueCard
-          icon={Users}
-          title="Tes clients"
-          desc="t'appartiennent"
-          subtitle="QR + carte personnelle"
-        />
-        <ValueCard
-          icon={Heart}
-          title="19,99€"
-          desc="Premium /mois"
-          subtitle="Optionnel — réseau VTC"
-        />
+      {/* À quoi ça va servir */}
+      <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <h4 className="text-sm font-bold text-foreground">
+            À quoi ça va servir concrètement ?
+          </h4>
+        </div>
+        <ul className="space-y-1.5 text-xs text-muted-foreground">
+          <UseCaseItem icon={LineChart} label="Suivi en temps réel" desc="Ton dashboard affiche ta progression jour, semaine, mois." />
+          <UseCaseItem icon={CheckCircle2} label="Saisie quotidienne pré-remplie" desc="Tes plateformes et cibles sont chargées automatiquement." />
+          <UseCaseItem icon={Bell} label="Alertes intelligentes" desc="Tu es prévenu si tu dérives ou si tu dépasses tes limites." />
+          <UseCaseItem icon={QrCode} label="Plan de libération" desc="Tu mesures ton autonomie vs Uber/Bolt mois après mois." />
+        </ul>
       </div>
 
-      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-left flex gap-2">
-        <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+      {/* Valeurs SoloCab */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <ValueCard icon={Crown} title="0,50€" desc="par course" subtitle="Notre seule commission" />
+        <ValueCard icon={Sparkles} title="100%" desc="de tes revenus" subtitle="Aucun pourcentage prélevé" />
+        <ValueCard icon={Users} title="Tes clients" desc="t'appartiennent" subtitle="QR + carte personnelle" />
+        <ValueCard icon={Heart} title="19,99€" desc="Premium /mois" subtitle="Optionnel — réseau VTC" />
+      </div>
+
+      {/* Combien de temps */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs flex items-center gap-2">
+        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-muted-foreground">
-          <strong className="text-foreground">L'objectif n'est pas le CA</strong>,
-          c'est ton indépendance. Chaque scan QR = un client qui revient sans
-          intermédiaire. Tu vises 30% de revenus directs ? On t'y emmène.
+          <strong className="text-foreground">3 minutes chrono</strong> — et tu
+          pourras tout modifier ensuite dans Performance → Objectifs.
         </p>
       </div>
     </div>
+  );
+}
+
+function UseCaseItem({
+  icon: Icon,
+  label,
+  desc,
+}: {
+  icon: any;
+  label: string;
+  desc: string;
+}) {
+  return (
+    <li className="flex items-start gap-2">
+      <Icon className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+      <div>
+        <strong className="text-foreground">{label}.</strong> {desc}
+      </div>
+    </li>
   );
 }
 
@@ -943,103 +953,7 @@ function PlatformsStep({
   );
 }
 
-function ExpensesStep({
-  expenses,
-  onChange,
-  total,
-  solocabFees,
-  targetRevenue,
-  netRevenue,
-  netMarginPct,
-}: {
-  expenses: Record<ExpenseKey, number>;
-  onChange: (e: Record<ExpenseKey, number>) => void;
-  total: number;
-  solocabFees: number;
-  targetRevenue: number;
-  netRevenue: number;
-  netMarginPct: number;
-}) {
-  return (
-    <div className="space-y-5">
-      <StepHeader
-        icon={Wallet}
-        title="Tes dépenses mensuelles"
-        subtitle="Pour calculer ton revenu net réel et ton seuil de rentabilité."
-      />
-
-      <div className="space-y-3">
-        {EXPENSE_PRESETS.map((preset) => {
-          const Icon = preset.icon;
-          const value = expenses[preset.key];
-          return (
-            <div key={preset.key} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                  <Label className="text-xs font-medium">{preset.label}</Label>
-                </div>
-                <span className="text-sm font-bold">
-                  {value.toLocaleString("fr-FR")}€
-                </span>
-              </div>
-              <Slider
-                value={[value]}
-                onValueChange={(v) =>
-                  onChange({ ...expenses, [preset.key]: v[0] })
-                }
-                min={0}
-                max={preset.max}
-                step={10}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="bg-gradient-to-br from-destructive/5 to-warning/5 border border-destructive/20 rounded-lg p-3 space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Total dépenses</span>
-          <span className="font-bold text-destructive">
-            {total.toLocaleString("fr-FR")}€
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Frais SoloCab</span>
-          <span className="font-bold text-foreground">
-            {solocabFees.toFixed(2)}€
-          </span>
-        </div>
-        <div className="border-t border-border/50 pt-2 flex items-center justify-between">
-          <span className="text-sm font-medium">Revenu net visé</span>
-          <div className="text-right">
-            <div
-              className={cn(
-                "text-lg font-bold",
-                netRevenue > 0 ? "text-primary" : "text-destructive"
-              )}
-            >
-              {netRevenue.toFixed(0)}€
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              {netMarginPct.toFixed(1)}% de marge
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {netRevenue < 0 && (
-        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-xs flex gap-2">
-          <Info className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-          <p className="text-destructive">
-            Tes dépenses dépassent ton revenu visé. Augmente le CA cible ou réduis
-            les dépenses.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+// (ExpensesStep retirée — voir commentaire EXPENSE_PRESETS)
 
 function LiberationStep({
   cards,
@@ -1145,10 +1059,8 @@ function SummaryStep({
   km,
   days,
   hours,
-  expenses,
   solocabFees,
-  netRevenue,
-  netMarginPct,
+  revenueAfterFees,
   platforms,
   cards,
   scans,
@@ -1160,10 +1072,8 @@ function SummaryStep({
   km: number;
   days: number;
   hours: number;
-  expenses: number;
   solocabFees: number;
-  netRevenue: number;
-  netMarginPct: number;
+  revenueAfterFees: number;
   platforms: string[];
   cards: number;
   scans: number;
@@ -1203,10 +1113,10 @@ function SummaryStep({
           sub={platforms.slice(0, 2).join(", ") + (platforms.length > 2 ? "…" : "")}
         />
         <SummaryCard
-          icon={Wallet}
-          label="Dépenses"
-          value={`${expenses.toLocaleString("fr-FR")}€`}
-          sub={`+ ${solocabFees.toFixed(0)}€ frais SoloCab`}
+          icon={Crown}
+          label="Frais SoloCab"
+          value={`${solocabFees.toFixed(0)}€`}
+          sub="0,50€ × courses"
         />
         <SummaryCard
           icon={QrCode}
@@ -1218,22 +1128,17 @@ function SummaryStep({
 
       <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 border-2 border-primary/30 rounded-lg p-4">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
-          Ton revenu NET visé
+          Ton revenu après frais SoloCab
         </p>
         <div className="flex items-baseline justify-between">
-          <span
-            className={cn(
-              "text-3xl font-bold",
-              netRevenue > 0 ? "text-primary" : "text-destructive"
-            )}
-          >
-            {netRevenue.toFixed(0)}€
+          <span className="text-3xl font-bold text-primary">
+            {revenueAfterFees.toFixed(0)}€
           </span>
           <span className="text-xs text-muted-foreground">/mois</span>
         </div>
         <div className="flex items-center justify-between mt-2 text-xs">
           <span className="text-muted-foreground">
-            Marge nette : <strong className="text-foreground">{netMarginPct.toFixed(1)}%</strong>
+            Hors charges & dépenses perso
           </span>
           <span className="text-muted-foreground">
             Indépendance visée : <strong className="text-primary">{indepPct}%</strong>
@@ -1241,9 +1146,14 @@ function SummaryStep({
         </div>
       </div>
 
-      <p className="text-xs text-center text-muted-foreground">
-        Modifiable à tout moment dans <strong>Performance → Objectifs</strong>.
-      </p>
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs flex gap-2">
+        <Bell className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+        <p className="text-muted-foreground">
+          <strong className="text-foreground">À partir de demain matin :</strong>{" "}
+          ton dashboard suit ces objectifs en temps réel et t'alerte si tu déries.
+          Tout est modifiable dans <strong>Performance → Objectifs</strong>.
+        </p>
+      </div>
     </div>
   );
 }
@@ -1424,6 +1334,22 @@ function SmallTarget({
         step={1}
         className="text-base font-bold h-9 text-center"
       />
+    </div>
+  );
+}
+
+function WhyBanner({ text }: { text: string }) {
+  return (
+    <div className="mb-4 bg-primary/5 border-l-4 border-primary rounded-r-md px-3 py-2 flex gap-2">
+      <Compass className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-primary font-semibold">
+          Pourquoi cette étape ?
+        </p>
+        <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
