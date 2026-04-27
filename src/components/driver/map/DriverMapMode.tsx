@@ -464,8 +464,8 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
         </div>
       )}
 
-      {/* Loading */}
-      {!isTracking && (
+      {/* Loading — only while we actually try to track GPS */}
+      {trackingEnabled && !isTracking && (
         <div className="absolute inset-0 z-[42] flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
           <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
