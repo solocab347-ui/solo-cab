@@ -163,39 +163,8 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
         .eq('receiver_driver_id', driverId)
         .in('status', ['accepted', 'in_progress']);
 
-      // ALSO fetch fleet shared courses (courses shared TO this driver by fleet managers)
-      const { data: fleetSharedCourses } = await supabase
-        .from('fleet_partner_courses')
-        .select(`
-          id,
-          course_id,
-          fleet_manager_id,
-          course_amount,
-          commission_percentage,
-          commission_amount,
-          earnings_for_driver,
-          equipment_type,
-          status,
-          courses!inner(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            passengers_count,
-            distance_km,
-            duration_minutes,
-            status,
-            course_number,
-            notes
-          ),
-          fleet_managers!inner(
-            id,
-            company_name,
-            logo_url
-          )
-        `)
-        .eq('driver_id', driverId)
-        .in('status', ['accepted', 'in_progress']);
+      // Fleet sharing has been removed
+      const fleetSharedCourses: any[] = [];
 
       // Collect sender driver IDs for profiles
       const senderDriverIds = new Set<string>();
