@@ -128,6 +128,11 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
       toast.error("Veuillez remplir le titre et la description");
       return;
     }
+    // 🛑 Garde-fou : capture d'écran OBLIGATOIRE pour les bugs
+    if (feedbackType === "bug" && attachments.length === 0) {
+      toast.error("Une capture d'écran est obligatoire pour signaler un bug. Elle nous permet de le résoudre beaucoup plus vite.");
+      return;
+    }
 
     setSubmitting(true);
     try {
