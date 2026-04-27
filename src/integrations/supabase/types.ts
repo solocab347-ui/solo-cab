@@ -281,6 +281,48 @@ export type Database = {
         }
         Relationships: []
       }
+      arrears_recovery_log: {
+        Row: {
+          amount_recovered_cents: number
+          consolidated_debt_after_cents: number | null
+          consolidated_debt_before_cents: number | null
+          created_at: string
+          driver_id: string
+          id: string
+          recovery_course_id: string
+          recovery_payment_id: string | null
+          source_origin_course_id: string | null
+          source_pending_id: string | null
+          source_type: string
+        }
+        Insert: {
+          amount_recovered_cents: number
+          consolidated_debt_after_cents?: number | null
+          consolidated_debt_before_cents?: number | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          recovery_course_id: string
+          recovery_payment_id?: string | null
+          source_origin_course_id?: string | null
+          source_pending_id?: string | null
+          source_type: string
+        }
+        Update: {
+          amount_recovered_cents?: number
+          consolidated_debt_after_cents?: number | null
+          consolidated_debt_before_cents?: number | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          recovery_course_id?: string
+          recovery_payment_id?: string | null
+          source_origin_course_id?: string | null
+          source_pending_id?: string | null
+          source_type?: string
+        }
+        Relationships: []
+      }
       assistant_requests: {
         Row: {
           admin_id: string | null
