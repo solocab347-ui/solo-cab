@@ -401,6 +401,7 @@ serve(async (req) => {
           solocab_fee: solocabFee,
           total_fees: totalFees,
           net_to_driver: netToDriver,
+          arrears_recovered_eur: arrearsRecoveredCents / 100,
         },
       }),
       {
