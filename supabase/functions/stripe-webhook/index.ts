@@ -1053,21 +1053,19 @@ serve(async (req) => {
           })
           .eq("stripe_checkout_session_id", session.id);
 
-        // Update shared course status
+        // Update shared course payment status ONLY.
+        // IMPORTANT: do NOT auto-complete the ride here — the receiver driver
+        // must manually press "Terminer" after the actual trip ends. Stripe's
+        // role is only to confirm the payment; the operational lifecycle is
+        // controlled by the driver.
         await supabaseClient
           .from("shared_courses")
           .update({
             payment_status: "paid",
-            status: "completed",
-            completed_at: new Date().toISOString(),
           })
           .eq("id", sharedCourseId);
 
-        // Update course status
-        await supabaseClient
-          .from("courses")
-          .update({ status: "completed" })
-          .eq("id", courseId);
+        // Do NOT touch courses.status here either — same reason.
 
         // NETTING: Commission transfer is now DEFERRED to weekly settlement
         // Instead of immediate transfer, mark payment as completed for weekly batch processing
