@@ -286,25 +286,65 @@ serve(async (req) => {
       .eq("id", course_id);
 
     // Record in payments table (idempotent — unique index prevents duplicates)
-    const { error: payErr } = await supabaseClient.from("payments").insert({
-      course_id,
-      driver_id: course.driver_id,
-      client_id: course.client_id,
-      stripe_payment_intent_id: paymentIntentId,
-      stripe_charge_id: paymentIntent.latest_charge as string || null,
-      amount: capturedAmount,
-      captured_amount: capturedAmount,
-      application_fee_amount: solocabFee,
-      stripe_fee_amount: stripeFee,
-      net_to_driver: netToDriver,
-      status: "captured",
-      payment_type: "course_payment",
-      capture_method: "manual",
-      payment_method: "card",
-      captured_at: new Date().toISOString(),
-    });
+    const { data: insertedPayment, error: payErr } = await supabaseClient
+      .from("payments")
+      .insert({
+        course_id,
+        driver_id: course.driver_id,
+        client_id: course.client_id,
+        stripe_payment_intent_id: paymentIntentId,
+        stripe_charge_id: (paymentIntent.latest_charge as string) || null,
+        amount: capturedAmount,
+        captured_amount: capturedAmount,
+        application_fee_amount: solocabFee,
+        stripe_fee_amount: stripeFee,
+        net_to_driver: netToDriver,
+        status: "captured",
+        payment_type: "course_payment",
+        capture_method: "manual",
+        payment_method: "card",
+        captured_at: new Date().toISOString(),
+        metadata: arrearsRecoveredCents > 0
+          ? { arrears_recovered_eur: arrearsRecoveredCents / 100, arrears_count: pendingCashRows?.length || 0 }
+          : undefined,
+      })
+      .select("id")
+      .maybeSingle();
     if (payErr?.code === "23505") {
       logStep("Payment already recorded (duplicate prevented)", { course_id });
+    }
+
+    // ═══ MARQUER LES ARRIÉRÉS CASH SOLDÉS via cette CB ═══
+    if (arrearsRecoveredCents > 0 && pendingCashRows && pendingCashRows.length > 0) {
+      let remainingCents = arrearsRecoveredCents;
+      const idsToSettle: string[] = [];
+      for (const row of pendingCashRows) {
+        const rowCents = Math.round((Number(row.solocab_fee) || 0) * 100);
+        if (rowCents <= remainingCents) {
+          idsToSettle.push(row.id);
+          remainingCents -= rowCents;
+          if (remainingCents <= 0) break;
+        }
+      }
+      if (idsToSettle.length > 0) {
+        const { error: settleErr } = await supabaseClient
+          .from("driver_balance_pending")
+          .update({
+            status: "settled",
+            settled_at: new Date().toISOString(),
+            settled_via_payment_id: insertedPayment?.id ?? null,
+            settled_via_course_id: course_id,
+          })
+          .in("id", idsToSettle);
+        if (settleErr) {
+          logStep("Failed to mark cash arrears settled", { error: settleErr.message, ids: idsToSettle });
+        } else {
+          logStep("Cash arrears settled via card capture", {
+            count: idsToSettle.length,
+            recoveredEur: arrearsRecoveredCents / 100,
+          });
+        }
+      }
     }
 
     // Create or update facture
