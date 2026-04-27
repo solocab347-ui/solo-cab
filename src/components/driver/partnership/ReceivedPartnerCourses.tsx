@@ -178,7 +178,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
       <Alert className="bg-blue-500/10 border-blue-500/30">
         <FileText className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '15-20'}%) et les frais de transaction sont déduits automatiquement.
+          <strong>Courses reçues</strong> : La commission ({activeCourses[0]?.commission_percentage || '20-25'}%) et les frais (Stripe + SoloCab) sont déduits automatiquement.
         </AlertDescription>
       </Alert>
 

@@ -26,12 +26,37 @@ import {
   Phone,
   Mail,
   Eye,
-  User
+  User,
+  Sparkles,
+  Handshake,
+  Receipt,
+  Navigation,
+  TrendingUp,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DeclineCourseDialog } from '../partnership/DeclineCourseDialog';
 
+
+// Stripe pricing constants (matches backend STRIPE_PERCENTAGE / STRIPE_FIXED_FEE)
+const STRIPE_PERCENTAGE = 0.029;
+const STRIPE_FIXED_FEE = 0.30;
+const SOLOCAB_FEE_SHARED = 0.25;
+
+const computeFees = (amount: number) => {
+  const stripeFee = amount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE;
+  const total = stripeFee + SOLOCAB_FEE_SHARED;
+  return { stripeFee, solocabFee: SOLOCAB_FEE_SHARED, total };
+};
+
+// Haversine distance (km) between two lat/lng points
+const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 interface PooledCourse {
   pool_id: string;
@@ -45,6 +70,8 @@ interface PooledCourse {
   created_at: string;
   pickup_address: string;
   destination_address: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
@@ -53,13 +80,13 @@ interface PooledCourse {
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
+  sender_phone: string | null;
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;  // null si show_rating_for_sharing = false
-  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
+  sender_rating: number | null;
+  sender_total_rides: number | null;
   sender_show_phone: boolean;
   sender_show_email: boolean;
   sender_show_rating: boolean;
@@ -79,21 +106,23 @@ interface SharedCourse {
   created_at: string;
   pickup_address: string;
   destination_address: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
-  // Sender info (complet avec visibilité)
+  // Sender info
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
+  sender_phone: string | null;
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;  // null si show_rating_for_sharing = false
-  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
+  sender_rating: number | null;
+  sender_total_rides: number | null;
   sender_bio: string | null;
   sender_services_offered: string[] | null;
   sender_show_phone: boolean;
@@ -120,7 +149,19 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
   const [claiming, setClaiming] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
-  
+  const [receiverPos, setReceiverPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Track receiver geolocation for "distance to client" estimation
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setReceiverPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
   // Dialog states
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -215,6 +256,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           courses!inner(
             pickup_address,
             destination_address,
+            pickup_latitude,
+            pickup_longitude,
             scheduled_date,
             passengers_count,
             distance_km,
@@ -335,6 +378,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             created_at: item.created_at,
             pickup_address: course.pickup_address,
             destination_address: course.destination_address,
+            pickup_latitude: course.pickup_latitude,
+            pickup_longitude: course.pickup_longitude,
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
@@ -480,6 +525,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             created_at: item.created_at,
             pickup_address: course.pickup_address,
             destination_address: course.destination_address,
+            pickup_latitude: (item as any).pickup_latitude ?? null,
+            pickup_longitude: (item as any).pickup_longitude ?? null,
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
@@ -692,9 +739,25 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
               </AlertDescription>
             </Alert>
           ) : (
-            sharedCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden border-primary/30">
+            sharedCourses.map((course) => {
+              const fees = computeFees(course.course_amount);
+              const netReceiver = Math.max(0, course.course_amount - course.commission_amount - fees.total);
+              const distanceToPickup = (receiverPos && course.pickup_latitude && course.pickup_longitude)
+                ? haversineKm(receiverPos.lat, receiverPos.lng, course.pickup_latitude, course.pickup_longitude)
+                : null;
+
+              return (
+              <Card key={course.id} className="overflow-hidden border-2 border-primary/40 shadow-lg shadow-primary/10 ring-1 ring-primary/20">
                 <CardContent className="p-0">
+                  {/* PREMIUM partner banner — clearly differentiates from classic client courses */}
+                  <div className="bg-gradient-to-r from-primary via-primary/90 to-accent px-3 py-2 flex items-center justify-between text-primary-foreground">
+                    <div className="flex items-center gap-2">
+                      <Handshake className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Course partagée — Réseau partenaire</span>
+                    </div>
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+
                   {/* Sender info header - ENRICHI */}
                   <div className="p-3 border-b bg-primary/5">
                     <div className="flex items-center justify-between">
@@ -706,7 +769,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Partenaire</p>
+                          <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Envoyée par</p>
                           <p className="font-semibold truncate">{course.sender_name}</p>
                           {course.sender_company && (
                             <p className="text-xs text-muted-foreground truncate">{course.sender_company}</p>
@@ -815,15 +878,21 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {course.passengers_count}
+                        {course.passengers_count} pax
                       </span>
                       {course.distance_km && (
                         <span className="flex items-center gap-1">
                           <Car className="h-3 w-3" />
-                          {course.distance_km.toFixed(0)} km
+                          Course : {course.distance_km.toFixed(0)} km
+                        </span>
+                      )}
+                      {distanceToPickup !== null && (
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <Navigation className="h-3 w-3" />
+                          ~{distanceToPickup.toFixed(1)} km de vous
                         </span>
                       )}
                     </div>
@@ -845,86 +914,76 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Client contact info */}
-                        <div className="grid grid-cols-1 gap-1.5 pt-2 border-t border-blue-500/20">
-                          {course.client_phone && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 justify-start text-xs bg-blue-500/10 hover:bg-blue-500/20"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`tel:${course.client_phone}`, '_self');
-                              }}
-                            >
-                              <Phone className="h-3 w-3 mr-2 text-blue-600" />
-                              {course.client_phone}
-                            </Button>
-                          )}
-                          {course.client_email && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 justify-start text-xs bg-blue-500/10 hover:bg-blue-500/20"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`mailto:${course.client_email}`, '_blank');
-                              }}
-                            >
-                              <Mail className="h-3 w-3 mr-2 text-blue-600" />
-                              {course.client_email}
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     )}
                   </div>
 
+                  {/* Financial breakdown — full transparency before accepting */}
+                  <div className="px-3 py-3 bg-gradient-to-br from-muted/40 to-primary/5 border-t border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Receipt className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">Détail financier</span>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Montant total course</span>
+                        <span className="font-semibold">{course.course_amount.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Commission expéditeur ({course.commission_percentage}%)</span>
+                        <span className="text-orange-600">−{course.commission_amount.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground" title={`Stripe: ${fees.stripeFee.toFixed(2)}€ + SoloCab: ${fees.solocabFee.toFixed(2)}€`}>
+                          Frais (Stripe + SoloCab)
+                        </span>
+                        <span className="text-red-500">−{fees.total.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 mt-1.5 border-t border-primary/20">
+                        <span className="font-semibold flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-green-600" />
+                          Vous encaissez (net estimé)
+                        </span>
+                        <span className="font-bold text-green-600 text-base">{netReceiver.toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Footer with actions */}
-                  <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-bold flex items-center gap-1">
-                        <Euro className="h-4 w-4" />
-                        {course.course_amount.toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        -{course.commission_percentage}% = {course.commission_amount.toFixed(2)}€ comm.
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCourse(course);
-                          setDeclineDialogOpen(true);
-                        }}
-                        disabled={claiming === course.id}
-                        className="h-9 border-red-500/30 text-red-600 hover:bg-red-500/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => acceptSharedCourse(course)}
-                        disabled={claiming === course.id}
-                        size="sm"
-                        className="h-9 px-4"
-                      >
-                        {claiming === course.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-1" />
-                            Accepter
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                  <div className="p-3 border-t bg-background flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCourse(course);
+                        setDeclineDialogOpen(true);
+                      }}
+                      disabled={claiming === course.id}
+                      className="h-10 border-red-500/30 text-red-600 hover:bg-red-500/10"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Refuser
+                    </Button>
+                    <Button
+                      onClick={() => acceptSharedCourse(course)}
+                      disabled={claiming === course.id}
+                      size="sm"
+                      className="h-10 px-5 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                    >
+                      {claiming === course.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          Accepter
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))
+              );
+            })
           )}
         </TabsContent>
 
@@ -938,32 +997,54 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
               </AlertDescription>
             </Alert>
           ) : (
-            pooledCourses.map((course) => (
-              <Card key={course.pool_id} className="overflow-hidden">
+            pooledCourses.map((course) => {
+              const fees = computeFees(course.course_amount);
+              const netReceiver = Math.max(0, course.course_amount - course.estimated_commission - fees.total);
+              const distanceToPickup = (receiverPos && course.pickup_latitude && course.pickup_longitude)
+                ? haversineKm(receiverPos.lat, receiverPos.lng, course.pickup_latitude, course.pickup_longitude)
+                : null;
+
+              return (
+              <Card key={course.pool_id} className="overflow-hidden border-2 border-primary/40 shadow-lg shadow-primary/10 ring-1 ring-primary/20">
                 <CardContent className="p-0">
-                  {/* Sender & Expiry */}
-                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  {/* PREMIUM partner banner */}
+                  <div className="bg-gradient-to-r from-primary via-primary/90 to-accent px-3 py-2 flex items-center justify-between text-primary-foreground">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
+                      <Handshake className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Course partagée — Pool partenaires</span>
+                    </div>
+                    <Badge variant="outline" className="bg-white/20 border-white/30 text-primary-foreground text-[10px] flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
+                    </Badge>
+                  </div>
+
+                  {/* Sender */}
+                  <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-primary/30">
                         <AvatarImage src={course.sender_photo || undefined} />
-                        <AvatarFallback className="text-xs">{course.sender_name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary">{course.sender_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">{course.sender_name}</p>
+                        <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Envoyée par</p>
+                        <p className="text-sm font-semibold">{course.sender_name}</p>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                           {course.sender_sharing_number && (
                             <span className="text-primary font-mono">{formatSharingNumber(course.sender_sharing_number)}</span>
                           )}
                           {course.sender_company && (
-                            <span>{course.sender_company}</span>
+                            <span>• {course.sender_company}</span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
-                    </Badge>
+                    {course.sender_rating && (
+                      <Badge variant="outline" className="text-xs bg-yellow-500/10">
+                        <span className="text-yellow-600 mr-1">★</span>
+                        {course.sender_rating.toFixed(1)}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Course info */}
@@ -987,15 +1068,21 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {course.passengers_count}
+                        {course.passengers_count} pax
                       </span>
                       {course.distance_km && (
                         <span className="flex items-center gap-1">
                           <Car className="h-3 w-3" />
-                          {course.distance_km.toFixed(0)} km
+                          Course : {course.distance_km.toFixed(0)} km
+                        </span>
+                      )}
+                      {distanceToPickup !== null && (
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <Navigation className="h-3 w-3" />
+                          ~{distanceToPickup.toFixed(1)} km de vous
                         </span>
                       )}
                     </div>
@@ -1007,36 +1094,59 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                     )}
                   </div>
 
-                  {/* Footer */}
-                  <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-bold flex items-center gap-1">
-                        <Euro className="h-4 w-4" />
-                        {course.course_amount.toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        -{course.commission_percentage}% = {course.estimated_commission.toFixed(2)}€ comm.
-                      </p>
+                  {/* Financial breakdown */}
+                  <div className="px-3 py-3 bg-gradient-to-br from-muted/40 to-primary/5 border-t border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Receipt className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">Détail financier</span>
                     </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Montant total course</span>
+                        <span className="font-semibold">{course.course_amount.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Commission expéditeur ({course.commission_percentage}%)</span>
+                        <span className="text-orange-600">−{course.estimated_commission.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground" title={`Stripe: ${fees.stripeFee.toFixed(2)}€ + SoloCab: ${fees.solocabFee.toFixed(2)}€`}>
+                          Frais (Stripe + SoloCab)
+                        </span>
+                        <span className="text-red-500">−{fees.total.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 mt-1.5 border-t border-primary/20">
+                        <span className="font-semibold flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-green-600" />
+                          Vous encaissez (net estimé)
+                        </span>
+                        <span className="font-bold text-green-600 text-base">{netReceiver.toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-3 border-t bg-background flex items-center justify-end">
                     <Button
                       onClick={() => claimPooledCourse(course.pool_id)}
                       disabled={claiming === course.pool_id}
                       size="sm"
-                      className="h-10 px-4"
+                      className="h-10 px-5 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                     >
                       {claiming === course.pool_id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
                           <Check className="h-4 w-4 mr-1" />
-                          Prendre
+                          Prendre la course
                         </>
                       )}
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))
+              );
+            })
           )}
         </TabsContent>
       </Tabs>

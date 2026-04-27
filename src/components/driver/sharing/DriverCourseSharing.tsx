@@ -178,7 +178,7 @@ export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
             {/* Rétribution info */}
             <div className="mt-3 p-2 bg-background/60 rounded-lg border border-border/30">
               <p className="text-xs text-muted-foreground">
-                <strong>Rétributions :</strong> 15% (&lt;30€) / 20% (≥30€) • Frais : 0.25€/course
+                <strong>Commission expéditeur :</strong> 20% à 25% (défaut 22%) • Frais SoloCab : 0,25€/chauffeur
               </p>
             </div>
           </CardContent>

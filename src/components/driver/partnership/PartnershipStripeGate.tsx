@@ -56,7 +56,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
     {
       icon: <TrendingUp className="h-5 w-5 text-primary" />,
       title: 'Augmentez vos revenus',
-      description: 'Gagnez des frais de transaction de 15% à 20% sur chaque course que vous partagez avec un partenaire',
+      description: 'Gagnez une commission de 20% à 25% sur chaque course que vous partagez avec un partenaire',
     },
   ];
 
@@ -128,7 +128,7 @@ export function PartnershipStripeGate({ driverId, stripeStatus, onRefresh }: Par
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <span>Les frais de transaction du partenaire sont automatiquement reversés (15% à 20%)</span>
+                <span>La commission du partenaire est automatiquement reversée (20% à 25%)</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
