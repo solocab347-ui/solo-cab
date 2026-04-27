@@ -11,6 +11,7 @@ import { BookingCardStep } from '../BookingCardStep';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { checkEmailExists, buildExistingAccountMessage } from '@/lib/checkEmailExists';
 import type { User } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
 
