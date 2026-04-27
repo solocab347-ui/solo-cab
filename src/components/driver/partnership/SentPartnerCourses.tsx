@@ -458,10 +458,10 @@ export function SentPartnerCourses({ driverId }: Props) {
                   </div>
                 </div>
 
-                <div className="p-3 border-t bg-muted/20">
+                <div className="p-3 border-t bg-muted/20 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Montant</p>
+                      <p className="text-xs text-muted-foreground">Montant TTC</p>
                       <p className="font-semibold">{course.course_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-center">
@@ -469,10 +469,43 @@ export function SentPartnerCourses({ driverId }: Props) {
                       <p className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Frais</p>
-                      <p className="text-xs text-muted-foreground">0.20€</p>
+                      <p className="text-xs text-muted-foreground">Frais SoloCab</p>
+                      <p className="text-xs text-muted-foreground">{course.solocab_fee.toFixed(2)} €</p>
                     </div>
                   </div>
+
+                  {/* Statut paiement Stripe + bouton lien */}
+                  {course.receiver_driver_id && (
+                    <div className="pt-2 border-t flex items-center justify-between gap-2">
+                      {String(course.payment_status || '').startsWith('paid') ? (
+                        <Badge className="bg-green-500/15 text-green-700 border-green-500/30 text-xs">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Stripe confirmé
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-xs">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Paiement client en attente
+                        </Badge>
+                      )}
+                      {!String(course.payment_status || '').startsWith('paid') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-primary/40 text-primary"
+                          onClick={() => setPaymentDialog({
+                            id: course.id,
+                            amount: course.course_amount,
+                            label: course.course_number ? `#${course.course_number}` : '',
+                          })}
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Lien / QR
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
                   {(course.status === 'pending' || course.status === 'available') && (
                     <Button 
                       variant="outline" size="sm" className="w-full mt-2 text-destructive" 
