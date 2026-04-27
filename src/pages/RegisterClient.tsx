@@ -394,7 +394,7 @@ const RegisterClient = () => {
 
               <p className="text-xs text-center text-muted-foreground">
                 Déjà un compte ?{" "}
-                <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/auth?redirect=/client-dashboard")}>
+                <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/login?redirect=/client-dashboard")}>
                   Se connecter
                 </Button>
               </p>
