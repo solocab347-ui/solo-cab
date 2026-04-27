@@ -136,11 +136,11 @@ export function ShareCourseWithPartnerDialog({
         if (!driverData) continue;
 
         // Profile (name + photo)
-        const { data: profileData } = await supabase
+        const { data: profileData } = (await (supabase as any)
           .from('profiles')
           .select('full_name, profile_photo_url, avatar_url')
           .eq('user_id', (driverData as any).user_id)
-          .maybeSingle();
+          .maybeSingle()) as { data: { full_name?: string; profile_photo_url?: string; avatar_url?: string } | null };
 
         // Premium status via active subscription
         const { data: sub } = await supabase
