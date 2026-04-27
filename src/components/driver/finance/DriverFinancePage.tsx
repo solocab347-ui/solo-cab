@@ -307,6 +307,46 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const currentWeek = getCurrentVtcWeek();
   const weekLabel = `${format(currentWeek.start, "d MMM", { locale: fr })} → ${format(currentWeek.end, "d MMM yyyy", { locale: fr })}`;
 
+  // Liste des mois disponibles dans l'historique des règlements (12 derniers max)
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of settlements) {
+      if (!s.week_start) continue;
+      const d = new Date(s.week_start);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    // Inclure aussi le mois courant pour pouvoir le sélectionner même sans data
+    const now = new Date();
+    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    return Array.from(set).sort().reverse().slice(0, 12);
+  }, [settlements]);
+
+  // Agrégat mensuel à partir des règlements hebdomadaires
+  const monthlyAggregate = useMemo(() => {
+    const filtered = settlements.filter((s) => {
+      if (!s.week_start) return false;
+      const d = new Date(s.week_start);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return key === selectedMonth;
+    });
+    return {
+      weeks: filtered,
+      totalNet: filtered.reduce((sum, s) => sum + (s.net_amount || 0), 0),
+      totalFees: filtered.reduce((sum, s) => sum + (s.total_solocab_fees || 0), 0),
+      totalCommissions: filtered.reduce((sum, s) => sum + (s.total_commissions_earned || 0), 0),
+      totalCourses: filtered.reduce(
+        (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
+        0
+      ),
+    };
+  }, [settlements, selectedMonth]);
+
+  const formatMonthLabel = (key: string) => {
+    const [y, m] = key.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return format(d, "MMMM yyyy", { locale: fr });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
