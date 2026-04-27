@@ -16,7 +16,7 @@ export function DriverAvailabilityToggleBig({
   onAvailabilityChange,
   onSwitchToMap,
 }: DriverAvailabilityToggleBigProps) {
-  const { isOnline, isAvailableForCourses, driverStatus, isLoading, toggleAvailability, toggleBreak } = useDriverAvailability();
+  const { isOnline, isAvailableForCourses, driverStatus, isLoading, isToggling, toggleAvailability, toggleBreak } = useDriverAvailability();
   const isAssigned = driverStatus === 'assigned';
   const isInRide = driverStatus === 'in_ride';
   const isBreak = driverStatus === 'break';
@@ -31,10 +31,11 @@ export function DriverAvailabilityToggleBig({
   });
 
   const handleToggle = async () => {
-    if (isBusy) return;
+    if (isBusy || isToggling) return;
+    const willGoOnline = !isOnline;
     await toggleAvailability();
-    onAvailabilityChange?.(!isOnline);
-    if (!isOnline && onSwitchToMap) {
+    onAvailabilityChange?.(willGoOnline);
+    if (willGoOnline && onSwitchToMap) {
       onSwitchToMap();
     }
   };
