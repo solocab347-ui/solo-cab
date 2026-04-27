@@ -73,9 +73,10 @@ export function DriverAvailabilityToggleBig({
     <div className="space-y-2 mt-4">
       <button
         onClick={handleToggle}
+        disabled={isBusy || isToggling}
         className={cn(
           'w-full rounded-2xl p-4 flex items-center justify-between gap-4 transition-all duration-500 border-2 shadow-lg',
-          isBusy ? 'cursor-default' : 'cursor-pointer active:scale-[0.98]',
+          isBusy ? 'cursor-default' : isToggling ? 'cursor-wait opacity-80' : 'cursor-pointer active:scale-[0.98]',
           isBusy
             ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-amber-400/20 border-amber-500/60 shadow-amber-500/25'
             : isBreak
