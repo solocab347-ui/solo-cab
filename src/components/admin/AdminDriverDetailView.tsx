@@ -136,7 +136,7 @@ const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
           .gte("created_at", filterDate)
           .order("created_at", { ascending: false })
           .limit(100),
-        supabase.from("driver_schedules").select("*").eq("driver_id", driverId),
+        supabase.from("driver_work_schedules").select("*").eq("driver_id", driverId).order("day_of_week"),
         supabase.from("driver_vehicles").select("*").eq("driver_id", driverId),
       ]);
 
