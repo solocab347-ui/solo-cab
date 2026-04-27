@@ -370,11 +370,14 @@ serve(async (req) => {
       });
     }
 
-    // Notify driver with fee breakdown
+    // Notify driver with fee breakdown (incl. arrears recovery message)
+    const arrearsMsg = arrearsRecoveredCents > 0
+      ? ` (dont ${(arrearsRecoveredCents / 100).toFixed(2)}€ de frais antécédents récupérés)`
+      : "";
     await supabaseClient.from("notifications").insert({
       user_id: course.driver.user_id,
       title: "💰 Paiement encaissé",
-      message: `${capturedAmount.toFixed(2)}€ encaissé. Net après frais: ${netToDriver.toFixed(2)}€`,
+      message: `${capturedAmount.toFixed(2)}€ encaissé. Net après frais: ${netToDriver.toFixed(2)}€${arrearsMsg}`,
       type: "info",
     });
 
