@@ -115,6 +115,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
   const loadData = async () => {
     try {
+      // Bornes de la semaine VTC en cours (lundi → dimanche UTC)
+      const { start: weekStart, end: weekEnd } = getCurrentVtcWeek();
+      const weekStartIso = weekStart.toISOString();
+      const weekEndIso = weekEnd.toISOString();
+
       // Load all data in parallel
       const [balancesResult, pendingResult, paymentsResult, driverResult, pendingBalanceResult] = await Promise.all([
         supabase
@@ -127,7 +132,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           `)
           .eq("driver_id", driverId)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(52),
         supabase
           .from("shared_course_payments")
           .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
@@ -135,18 +140,25 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .is("settlement_id", null)
           .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
           .order("created_at", { ascending: false }),
+        // ⚠️ Transactions filtrées sur la SEMAINE EN COURS uniquement
+        // (le bilan hebdo doit repartir à zéro chaque lundi).
         supabase
           .from("stripe_transactions")
           .select("id, course_id, gross_amount, net_amount, stripe_fee_amount, solocab_fee_amount, status, transaction_type, payment_method, created_at, description")
           .eq("driver_id", driverId)
           .in("status", ["succeeded", "completed"])
+          .gte("created_at", weekStartIso)
+          .lte("created_at", weekEndIso)
           .order("created_at", { ascending: false })
-          .limit(50),
+          .limit(200),
         supabase
           .from("drivers")
           .select("stripe_connect_charges_enabled")
           .eq("id", driverId)
           .single(),
+        // ⚠️ driver_balance_pending reste non-filtré : il porte naturellement
+        // la semaine en cours + tout carry-over (frais espèces non prélevés,
+        // virements précédents échoués) qui n'a pas encore été settlé.
         supabase
           .from("driver_balance_pending" as any)
           .select("gross_amount, solocab_fee, stripe_fee, net_amount, payment_type")
