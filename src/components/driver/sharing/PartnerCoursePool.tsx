@@ -508,6 +508,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             created_at: item.created_at,
             pickup_address: course.pickup_address,
             destination_address: course.destination_address,
+            pickup_latitude: (item as any).pickup_latitude ?? null,
+            pickup_longitude: (item as any).pickup_longitude ?? null,
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
