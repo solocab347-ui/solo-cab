@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Car, Calendar, Euro, FileText, AlertCircle, Loader2, 
   ArrowRight, TrendingUp, Send, Receipt, Plus, Globe, Heart, XCircle, Trash2,
-  Sparkles, UserPlus, Crown
+  Sparkles, UserPlus, Crown, CreditCard, CheckCircle2, Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
 import { DirectCourseCreationForm } from '../courses/DirectCourseCreationForm';
 import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerDialog';
+import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
 import { useDriverPremium } from '@/hooks/useDriverPremium';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 
@@ -32,6 +33,7 @@ interface SentCourse {
   commission_percentage: number;
   commission_amount: number;
   solocab_fee: number;
+  earnings_for_receiver: number;
   status: string;
   sharing_scope: string;
   created_at: string;
@@ -43,6 +45,8 @@ interface SentCourse {
   distance_km: number | null;
   course_status: string;
   course_number: string | null;
+  payment_status: string | null;
+  client_payment_url: string | null;
   receiver_name: string | null;
   receiver_photo: string | null;
   receiver_company: string | null;
@@ -60,10 +64,35 @@ export function SentPartnerCourses({ driverId }: Props) {
   const [createdCourseToShare, setCreatedCourseToShare] = useState<any>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [paymentDialog, setPaymentDialog] = useState<{ id: string; amount: number; label: string } | null>(null);
   const { isPremium } = useDriverPremium();
 
   useEffect(() => {
     if (driverId) loadSentCourses();
+  }, [driverId]);
+
+  // Realtime: notifie l'émetteur quand une course partagée est terminée ou payée
+  useEffect(() => {
+    if (!driverId) return;
+    const channel = supabase
+      .channel(`sent-shared-${driverId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shared_courses', filter: `sender_driver_id=eq.${driverId}` },
+        (payload) => {
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+          if (newRow?.status === 'completed' && oldRow?.status !== 'completed') {
+            toast.success(`✅ Course partagée terminée — vos frais de transaction ont été crédités.`);
+          }
+          if (String(newRow?.payment_status || '').startsWith('paid') && !String(oldRow?.payment_status || '').startsWith('paid')) {
+            toast.success('💳 Paiement client confirmé par Stripe sur votre course partagée.');
+          }
+          loadSentCourses();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [driverId]);
 
   const loadSentCourses = async () => {
@@ -76,6 +105,7 @@ export function SentPartnerCourses({ driverId }: Props) {
         .select(`
           id, course_id, receiver_driver_id, course_amount,
           commission_percentage, commission_amount, solocab_fee_cents,
+          earnings_for_receiver, payment_status, client_payment_url,
           status, sharing_scope, created_at, completed_at,
           courses!inner(pickup_address, destination_address, scheduled_date, passengers_count, distance_km, status, course_number)
         `)
@@ -137,10 +167,15 @@ export function SentPartnerCourses({ driverId }: Props) {
         const receiverInfo = item.receiver_driver_id ? receiverMap.get(item.receiver_driver_id) : null;
         const course = item.courses as any;
         const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
+        const earnings = (item as any).earnings_for_receiver
+          ?? Math.max(0, item.course_amount - item.commission_amount - solocabFee);
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: item.receiver_driver_id,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
           commission_amount: item.commission_amount, solocab_fee: solocabFee,
+          earnings_for_receiver: earnings,
+          payment_status: (item as any).payment_status ?? null,
+          client_payment_url: (item as any).client_payment_url ?? null,
           status: item.status, sharing_scope: (item as any).sharing_scope || 'specific',
           created_at: item.created_at, completed_at: item.completed_at,
           pickup_address: course.pickup_address, destination_address: course.destination_address,
@@ -156,10 +191,14 @@ export function SentPartnerCourses({ driverId }: Props) {
       for (const item of poolData || []) {
         const course = item.courses as any;
         const solocabFee = ((item as any).solocab_fee_cents || 25) / 100;
+        const earnings = Math.max(0, item.course_amount - (item.estimated_commission || 0) - solocabFee);
         allCourses.push({
           id: item.id, course_id: item.course_id, receiver_driver_id: null,
           course_amount: item.course_amount, commission_percentage: item.commission_percentage,
           commission_amount: item.estimated_commission, solocab_fee: solocabFee,
+          earnings_for_receiver: earnings,
+          payment_status: null,
+          client_payment_url: null,
           status: item.status, sharing_scope: (item as any).sharing_scope || 'network',
           created_at: item.created_at, completed_at: null,
           pickup_address: course.pickup_address, destination_address: course.destination_address,
@@ -353,6 +392,18 @@ export function SentPartnerCourses({ driverId }: Props) {
         </AlertDescription>
       </Alert>
 
+      <Alert className="bg-amber-500/10 border-amber-500/30">
+        <Info className="h-4 w-4 text-amber-700" />
+        <AlertDescription className="text-xs text-amber-900 leading-relaxed">
+          <strong>Responsabilité paiement (course hors SoloCab) :</strong> si vous avez créé la course pour
+          votre <strong>client privé</strong>, c'est à vous de générer le lien Stripe et de vous assurer
+          que le client paie (lien copiable, QR code, partage WhatsApp/SMS). Vous pouvez aussi
+          déléguer l'encaissement au chauffeur receveur, mais il est <strong>recommandé</strong> de gérer
+          vous-même votre client. Aucune course ne peut être terminée sans confirmation de paiement
+          Stripe.
+        </AlertDescription>
+      </Alert>
+
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pending" className="text-xs">En cours ({activeCourses.length})</TabsTrigger>
@@ -407,10 +458,10 @@ export function SentPartnerCourses({ driverId }: Props) {
                   </div>
                 </div>
 
-                <div className="p-3 border-t bg-muted/20">
+                <div className="p-3 border-t bg-muted/20 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Montant</p>
+                      <p className="text-xs text-muted-foreground">Montant TTC</p>
                       <p className="font-semibold">{course.course_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-center">
@@ -418,10 +469,43 @@ export function SentPartnerCourses({ driverId }: Props) {
                       <p className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Frais</p>
-                      <p className="text-xs text-muted-foreground">0.20€</p>
+                      <p className="text-xs text-muted-foreground">Frais SoloCab</p>
+                      <p className="text-xs text-muted-foreground">{course.solocab_fee.toFixed(2)} €</p>
                     </div>
                   </div>
+
+                  {/* Statut paiement Stripe + bouton lien */}
+                  {course.receiver_driver_id && (
+                    <div className="pt-2 border-t flex items-center justify-between gap-2">
+                      {String(course.payment_status || '').startsWith('paid') ? (
+                        <Badge className="bg-green-500/15 text-green-700 border-green-500/30 text-xs">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Stripe confirmé
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-xs">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Paiement client en attente
+                        </Badge>
+                      )}
+                      {!String(course.payment_status || '').startsWith('paid') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-primary/40 text-primary"
+                          onClick={() => setPaymentDialog({
+                            id: course.id,
+                            amount: course.course_amount,
+                            label: course.course_number ? `#${course.course_number}` : '',
+                          })}
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Lien / QR
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
                   {(course.status === 'pending' || course.status === 'available') && (
                     <Button 
                       variant="outline" size="sm" className="w-full mt-2 text-destructive" 
@@ -453,23 +537,61 @@ export function SentPartnerCourses({ driverId }: Props) {
                   </div>
                   {getStatusBadge(course.status)}
                 </div>
-                <div className="p-3">
+                <div className="p-3 space-y-1">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-primary" />
                     {format(new Date(course.scheduled_date), "d MMM yyyy", { locale: fr })}
                   </div>
-                </div>
-                <div className="p-3 border-t bg-green-500/5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Frais de transaction reçus</span>
-                    <span className="font-bold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {course.pickup_address} → {course.destination_address}
                   </div>
+                </div>
+                {/* Récap financier complet bilatéral */}
+                <div className="p-3 border-t bg-green-500/5 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Montant TTC client</span>
+                    <span className="font-medium">{course.course_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vos frais de transaction ({course.commission_percentage}%)</span>
+                    <span className="font-semibold text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Reversé au receveur</span>
+                    <span className="text-foreground">{course.earnings_for_receiver.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Frais SoloCab</span>
+                    <span className="text-muted-foreground">-{course.solocab_fee.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t font-semibold">
+                    <span>Crédité sur votre portefeuille</span>
+                    <span className="text-green-600">+{course.commission_amount.toFixed(2)} €</span>
+                  </div>
+                  {String(course.payment_status || '').startsWith('paid') && (
+                    <div className="flex items-center gap-1 pt-1 text-[10px] text-green-700">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Paiement Stripe confirmé
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </TabsContent>
       </Tabs>
+
+      {/* Dialog lien de paiement Stripe (côté émetteur) */}
+      {paymentDialog && (
+        <SharedCoursePaymentLinkDialog
+          open={!!paymentDialog}
+          onOpenChange={(open) => { if (!open) setPaymentDialog(null); }}
+          sharedCourseId={paymentDialog.id}
+          amountTtc={paymentDialog.amount}
+          courseLabel={paymentDialog.label}
+          onPaid={() => loadSentCourses()}
+        />
+      )}
     </div>
   );
 }
