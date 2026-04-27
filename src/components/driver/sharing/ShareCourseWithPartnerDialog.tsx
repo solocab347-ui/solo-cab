@@ -364,6 +364,21 @@ export function ShareCourseWithPartnerDialog({
             </Alert>
           )}
 
+          {isCashRequested && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <AlertTitle className="text-destructive font-semibold">
+                Paiement en espèces non autorisé
+              </AlertTitle>
+              <AlertDescription className="text-destructive/90 text-sm">
+                Une course en espèces ne peut <strong>jamais</strong> être partagée. Tout règlement
+                doit transiter par Stripe (lien / QR code) afin de garantir la traçabilité,
+                le déclenchement automatique de la commission et la clôture sécurisée.
+                Modifiez le moyen de paiement de la course en <strong>Carte bancaire</strong> avant de la partager.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Course summary */}
           <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
             <div className="flex items-center justify-between gap-2">
