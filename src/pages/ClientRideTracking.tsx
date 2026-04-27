@@ -516,6 +516,20 @@ const ClientRideTracking = () => {
           </motion.div>
         </AnimatePresence>
 
+        {/* Timeline bilatérale (paiement → check-in → fin → confirmation) */}
+        {!isCancelled && (
+          <ClientCourseProgressTimeline
+            courseId={course.id}
+            initial={{
+              status: course.status,
+              payment_status: course.payment_status,
+              payment_method: course.payment_method,
+              completed_at: (course as any).completed_at ?? null,
+              client_rating: course.client_rating,
+            }}
+          />
+        )}
+
         {/* Téléchargement de facture après finalisation */}
         {isCompleted && (
           <Card className="border-green-500/30">
