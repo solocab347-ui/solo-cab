@@ -615,6 +615,48 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </TabsContent>
 
         <TabsContent value="history" className="space-y-3">
+          {/* Sélecteur de vue : Semaine / Mois */}
+          <Card className="p-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex rounded-lg bg-muted p-1">
+                <button
+                  onClick={() => setHistoryView("week")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    historyView === "week"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Par semaine
+                </button>
+                <button
+                  onClick={() => setHistoryView("month")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    historyView === "month"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Par mois
+                </button>
+              </div>
+              {historyView === "month" && availableMonths.length > 0 && (
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="h-8 w-[180px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map((m) => (
+                      <SelectItem key={m} value={m} className="text-xs capitalize">
+                        {formatMonthLabel(m)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </Card>
+
           {/* Info banner */}
           <Card className="p-4 bg-primary/10 border-primary/20">
             <h4 className="font-semibold text-primary mb-2">💡 Comment fonctionne le règlement ?</h4>
@@ -623,53 +665,124 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <li>• Pour les CB : frais prélevés à la transaction</li>
               <li>• Pour les espèces : frais déduits du prochain versement</li>
               <li>• Versement net unique chaque <strong>lundi à 6h</strong></li>
+              <li>• Les chiffres en haut concernent <strong>uniquement la semaine en cours</strong></li>
             </ul>
           </Card>
 
-          {settlements.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Aucun règlement effectué pour le moment</p>
-              <p className="text-xs mt-1">Les règlements apparaîtront ici après le premier lundi</p>
-            </Card>
-          ) : (
-            settlements.map((s) => (
-              <Card key={s.id} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">
-                      {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
-                    </span>
-                  </div>
-                  {getStatusBadge(s.transfer_status)}
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+          {/* VUE MOIS — récap agrégé puis liste des semaines du mois */}
+          {historyView === "month" && (
+            <>
+              <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1 capitalize">{formatMonthLabel(selectedMonth)}</p>
+                <div className="grid grid-cols-2 gap-3 mt-2">
                   <div>
-                    <span className="text-muted-foreground">Frais de transaction</span>
-                    <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                    <p className="text-[11px] text-muted-foreground">Net versé (mois)</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {monthlyAggregate.totalNet.toFixed(2)}€
+                    </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Frais</span>
-                    <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Net versé</span>
-                    <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                      {s.net_amount.toFixed(2)}€
+                    <p className="text-[11px] text-muted-foreground">Total frais</p>
+                    <p className="text-2xl font-bold text-destructive">
+                      -{monthlyAggregate.totalFees.toFixed(2)}€
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                  <span>{s.shared_courses_as_sender} envoyées</span>
-                  <span>{s.shared_courses_as_receiver} reçues</span>
-                  <span>{s.standard_courses_count} standards</span>
+                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground">
+                  <span>{monthlyAggregate.weeks.length} semaine(s)</span>
+                  <span>{monthlyAggregate.totalCourses} courses</span>
+                  <span className="text-success">+{monthlyAggregate.totalCommissions.toFixed(2)}€ frais transaction</span>
                 </div>
-                {s.transfer_error && (
-                  <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
-                )}
               </Card>
-            ))
+
+              {monthlyAggregate.weeks.length === 0 ? (
+                <Card className="p-8 text-center text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun règlement pour ce mois</p>
+                </Card>
+              ) : (
+                monthlyAggregate.weeks.map((s) => (
+                  <Card key={s.id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                        </span>
+                      </div>
+                      {getStatusBadge(s.transfer_status)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Frais transaction</span>
+                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Frais</span>
+                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Net versé</span>
+                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                          {s.net_amount.toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </>
+          )}
+
+          {/* VUE SEMAINE — liste classique */}
+          {historyView === "week" && (
+            <>
+              {settlements.length === 0 ? (
+                <Card className="p-8 text-center text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun règlement effectué pour le moment</p>
+                  <p className="text-xs mt-1">Les règlements apparaîtront ici après le premier lundi</p>
+                </Card>
+              ) : (
+                settlements.map((s) => (
+                  <Card key={s.id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {s.week_start && format(new Date(s.week_start), "dd MMM", { locale: fr })} → {s.week_end && format(new Date(s.week_end), "dd MMM yyyy", { locale: fr })}
+                        </span>
+                      </div>
+                      {getStatusBadge(s.transfer_status)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Frais de transaction</span>
+                        <p className="font-semibold text-success">+{s.total_commissions_earned.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Frais</span>
+                        <p className="font-semibold text-destructive">-{s.total_solocab_fees.toFixed(2)}€</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Net versé</span>
+                        <p className={`font-semibold ${s.net_amount >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                          {s.net_amount.toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                      <span>{s.shared_courses_as_sender} envoyées</span>
+                      <span>{s.shared_courses_as_receiver} reçues</span>
+                      <span>{s.standard_courses_count} standards</span>
+                    </div>
+                    {s.transfer_error && (
+                      <p className="text-xs text-destructive mt-2">{s.transfer_error}</p>
+                    )}
+                  </Card>
+                ))
+              )}
+            </>
           )}
         </TabsContent>
 
