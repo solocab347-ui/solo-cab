@@ -207,22 +207,37 @@ serve(async (req) => {
     logStep("Capturing payment intent", { paymentIntentId });
 
     // ═══ ARRIÉRÉS CASH : Récupérer les frais SoloCab des courses cash impayées ═══
-    // On retrieve toutes les lignes driver_balance_pending de type 'cash' status='pending'
-    // antérieures à cette capture, pour les soldes via cette CB.
-    const { data: pendingCashRows } = await supabaseClient
-      .from("driver_balance_pending")
-      .select("id, course_id, solocab_fee, created_at")
-      .eq("driver_id", course.driver_id)
-      .eq("payment_type", "cash")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true });
+    // 2 sources :
+    //  1. driver_balance_pending status='pending' (entries non agrégées)
+    //  2. drivers.cash_debt_pending (dette consolidée par le settlement hebdo)
+    const [{ data: pendingCashRows }, { data: driverRow }] = await Promise.all([
+      supabaseClient
+        .from("driver_balance_pending")
+        .select("id, course_id, solocab_fee, created_at")
+        .eq("driver_id", course.driver_id)
+        .eq("payment_type", "cash")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true }),
+      supabaseClient
+        .from("drivers")
+        .select("cash_debt_pending")
+        .eq("id", course.driver_id)
+        .single(),
+    ]);
 
-    const arrearsTotalCents = (pendingCashRows || []).reduce(
+    const pendingRowsCents = (pendingCashRows || []).reduce(
       (sum, r) => sum + Math.round((Number(r.solocab_fee) || 0) * 100),
       0
     );
+    const consolidatedDebtCents = Math.max(
+      0,
+      Math.round((Number(driverRow?.cash_debt_pending) || 0) * 100),
+    );
+    const arrearsTotalCents = pendingRowsCents + consolidatedDebtCents;
     logStep("Cash arrears found", {
-      count: pendingCashRows?.length || 0,
+      pendingRowsCount: pendingCashRows?.length || 0,
+      pendingRowsCents,
+      consolidatedDebtCents,
       arrearsCents: arrearsTotalCents,
     });
 
@@ -315,10 +330,12 @@ serve(async (req) => {
     }
 
     // ═══ MARQUER LES ARRIÉRÉS CASH SOLDÉS via cette CB ═══
-    if (arrearsRecoveredCents > 0 && pendingCashRows && pendingCashRows.length > 0) {
+    // Priorité 1 : éponger les rows pending dans l'ordre chronologique.
+    // Priorité 2 : le résiduel décrémente drivers.cash_debt_pending.
+    if (arrearsRecoveredCents > 0) {
       let remainingCents = arrearsRecoveredCents;
       const idsToSettle: string[] = [];
-      for (const row of pendingCashRows) {
+      for (const row of (pendingCashRows || [])) {
         const rowCents = Math.round((Number(row.solocab_fee) || 0) * 100);
         if (rowCents <= remainingCents) {
           idsToSettle.push(row.id);
@@ -342,6 +359,30 @@ serve(async (req) => {
           logStep("Cash arrears settled via card capture", {
             count: idsToSettle.length,
             recoveredEur: arrearsRecoveredCents / 100,
+          });
+        }
+      }
+
+      // Décrémente la dette consolidée si nécessaire
+      const consolidatedReduceCents = Math.min(consolidatedDebtCents, remainingCents);
+      if (consolidatedReduceCents > 0) {
+        const { data: current } = await supabaseClient
+          .from("drivers")
+          .select("cash_debt_pending")
+          .eq("id", course.driver_id)
+          .single();
+        const currentCents = Math.round((Number(current?.cash_debt_pending) || 0) * 100);
+        const newEur = Math.max(0, currentCents - consolidatedReduceCents) / 100;
+        const { error: updErr } = await supabaseClient
+          .from("drivers")
+          .update({ cash_debt_pending: newEur })
+          .eq("id", course.driver_id);
+        if (updErr) {
+          logStep("Failed to decrement consolidated cash debt", { error: updErr.message });
+        } else {
+          logStep("Consolidated cash debt decremented", {
+            reducedEur: consolidatedReduceCents / 100,
+            newDebtEur: newEur,
           });
         }
       }
