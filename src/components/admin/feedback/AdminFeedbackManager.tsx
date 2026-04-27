@@ -206,6 +206,25 @@ export const AdminFeedbackManager = () => {
 
       if (error) throw error;
 
+      // 🔔 Notifier l'utilisateur des transitions visibles (in_progress / resolved)
+      if (selectedFeedback.user_id && (newStatus === "in_progress" || newStatus === "resolved")) {
+        const titleByStatus: Record<string, string> = {
+          in_progress: "🛠️ Votre signalement est en cours de traitement",
+          resolved: "✅ Votre signalement est résolu",
+        };
+        const msgByStatus: Record<string, string> = {
+          in_progress: `Notre équipe a pris en charge : « ${selectedFeedback.title} ».`,
+          resolved: `« ${selectedFeedback.title} » a été marqué comme résolu. Consultez les échanges pour plus de détails.`,
+        };
+        await supabase.from("notifications").insert({
+          user_id: selectedFeedback.user_id,
+          title: titleByStatus[newStatus],
+          message: msgByStatus[newStatus],
+          type: newStatus === "resolved" ? "success" : "info",
+          link: selectedFeedback.user_type === "client" ? "/client-dashboard" : "/driver-dashboard",
+        });
+      }
+
       toast.success("Statut mis à jour");
       setSelectedFeedback({ ...selectedFeedback, status: newStatus });
       queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
