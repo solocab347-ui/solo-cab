@@ -53,15 +53,12 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       const { data: userData, error: userError } = await supabase.auth.getUser();
 
       if (userError || !userData.user) {
-        console.warn("Skipping premium check because the auth session is invalid:", userError?.message);
+        // On NE déconnecte PAS le chauffeur ici. Un échec de getUser() peut être
+        // causé par une coupure réseau temporaire ; déconnecter automatiquement
+        // ferait sortir le chauffeur de l'app contre sa volonté.
+        // Seul un clic explicite sur "Déconnexion" doit purger la session.
+        console.warn("Skipping premium check (auth check failed, keeping session):", userError?.message);
         clearPremiumState();
-
-        try {
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {
-          // Ignore cleanup failures here - the goal is only to stop the stale session loop.
-        }
-
         return;
       }
 
