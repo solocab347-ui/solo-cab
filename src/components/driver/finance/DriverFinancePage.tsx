@@ -822,10 +822,15 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground">
+                <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground flex-wrap">
                   <span>{monthlyAggregate.weeks.length} semaine(s)</span>
                   <span>{monthlyAggregate.totalCourses} courses</span>
                   <span className="text-success">+{monthlyAggregate.totalCommissions.toFixed(2)}€ frais transaction</span>
+                  {monthlyAggregate.failedCount > 0 && (
+                    <span className="text-destructive font-medium">
+                      ⚠️ {monthlyAggregate.failedCount} virement(s) en échec
+                    </span>
+                  )}
                 </div>
               </Card>
 
