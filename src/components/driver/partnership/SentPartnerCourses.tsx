@@ -507,6 +507,21 @@ export function SentPartnerCourses({ driverId }: Props) {
                     </div>
                   )}
 
+                  {/* Timeline de progression bilatérale */}
+                  {course.receiver_driver_id && (
+                    <div className="pt-2">
+                      <SharedCourseProgressTimeline
+                        sharedCourseId={course.id}
+                        perspective="sender"
+                        initial={{
+                          status: course.status,
+                          payment_status: course.payment_status,
+                          completed_at: course.completed_at,
+                        }}
+                      />
+                    </div>
+                  )}
+
                   {(course.status === 'pending' || course.status === 'available') && (
                     <Button 
                       variant="outline" size="sm" className="w-full mt-2 text-destructive" 
