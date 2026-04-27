@@ -360,9 +360,15 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Camera className="w-4 h-4" />
-                Captures d'écran (recommandé)
+                {feedbackType === "bug"
+                  ? <>Captures d'écran <span className="text-destructive">*obligatoire</span></>
+                  : "Captures d'écran (recommandé)"}
               </Label>
-              <div className="p-4 border-2 border-dashed rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className={`p-4 border-2 border-dashed rounded-lg transition-colors ${
+                feedbackType === "bug" && attachments.length === 0
+                  ? "border-destructive/50 bg-destructive/5"
+                  : "bg-muted/30 hover:bg-muted/50"
+              }`}>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -375,15 +381,19 @@ export const FeedbackWidget = ({ userType, userName, userEmail }: FeedbackWidget
                   <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={feedbackType === "bug" && attachments.length === 0 ? "destructive" : "outline"}
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <ImageIcon className="w-4 h-4 mr-2" />
-                    Ajouter des captures d'écran
+                    {feedbackType === "bug" ? "Ajouter une capture d'écran" : "Ajouter des captures d'écran"}
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Les captures d'écran nous aident à mieux comprendre votre retour
+                  <p className={`text-xs mt-2 ${
+                    feedbackType === "bug" && attachments.length === 0 ? "text-destructive" : "text-muted-foreground"
+                  }`}>
+                    {feedbackType === "bug"
+                      ? "Pour traiter votre bug, joignez au moins une capture d'écran montrant le problème."
+                      : "Les captures d'écran nous aident à mieux comprendre votre retour."}
                   </p>
                 </div>
               </div>
