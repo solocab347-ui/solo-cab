@@ -33,11 +33,27 @@ const STEPS: { key: Step; label: string; icon: any; help: string }[] = [
   { key: 'settled',     label: 'Portefeuilles crédités', icon: CheckCircle2,help: 'Commission émetteur + revenus receveur synchronisés' },
 ];
 
+type RowData = {
+  status: string | null;
+  payment_status: string | null;
+  completed_at: string | null;
+  stripe_checkout_session_id: string | null;
+  payment_link_created_at: string | null;
+  payment_settled: boolean | null;
+  payment_settled_at: string | null;
+  client_payment_method: string | null;
+};
+
 export function SharedCourseProgressTimeline({ sharedCourseId, perspective, initial, className }: Props) {
-  const [data, setData] = useState<{ status: string | null; payment_status: string | null; completed_at: string | null }>({
+  const [data, setData] = useState<RowData>({
     status: initial?.status ?? null,
     payment_status: initial?.payment_status ?? null,
     completed_at: initial?.completed_at ?? null,
+    stripe_checkout_session_id: initial?.stripe_checkout_session_id ?? null,
+    payment_link_created_at: initial?.payment_link_created_at ?? null,
+    payment_settled: initial?.payment_settled ?? null,
+    payment_settled_at: initial?.payment_settled_at ?? null,
+    client_payment_method: initial?.client_payment_method ?? null,
   });
 
   useEffect(() => {
@@ -45,7 +61,7 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
     const fetchOnce = async () => {
       const { data: row } = await supabase
         .from('shared_courses')
-        .select('status, payment_status, completed_at')
+        .select('status, payment_status, completed_at, stripe_checkout_session_id, payment_link_created_at, payment_settled, payment_settled_at, client_payment_method')
         .eq('id', sharedCourseId)
         .maybeSingle();
       if (!cancelled && row) {
@@ -53,6 +69,11 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
           status: (row as any).status ?? null,
           payment_status: (row as any).payment_status ?? null,
           completed_at: (row as any).completed_at ?? null,
+          stripe_checkout_session_id: (row as any).stripe_checkout_session_id ?? null,
+          payment_link_created_at: (row as any).payment_link_created_at ?? null,
+          payment_settled: (row as any).payment_settled ?? null,
+          payment_settled_at: (row as any).payment_settled_at ?? null,
+          client_payment_method: (row as any).client_payment_method ?? null,
         });
       }
     };
@@ -69,6 +90,11 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
             status: n.status ?? null,
             payment_status: n.payment_status ?? null,
             completed_at: n.completed_at ?? null,
+            stripe_checkout_session_id: n.stripe_checkout_session_id ?? null,
+            payment_link_created_at: n.payment_link_created_at ?? null,
+            payment_settled: n.payment_settled ?? null,
+            payment_settled_at: n.payment_settled_at ?? null,
+            client_payment_method: n.client_payment_method ?? null,
           });
         },
       )
@@ -79,8 +105,33 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
   const isPaid = String(data.payment_status || '').startsWith('paid');
   const isInProgress = data.status === 'in_progress' || data.status === 'completed';
   const isCompleted = data.status === 'completed' || !!data.completed_at;
-  // "settled" = course completed ET paiement Stripe paid (les fonds peuvent être redistribués)
-  const isSettled = isCompleted && isPaid;
+  const isSettled = (data.payment_settled === true) || (isCompleted && isPaid);
+
+  // ===== Stripe lifecycle (créé → checkout → payé webhook → prêt check-in) =====
+  const checkoutCreated = !!data.stripe_checkout_session_id || !!data.payment_link_created_at;
+  const webhookConfirmed = isPaid; // payment_status passe à "paid" via le webhook stripe-webhook
+  const readyForCheckin = webhookConfirmed; // garde-fou : check-in autorisé seulement après confirmation webhook
+
+  type StripePhase = {
+    key: 'created' | 'checkout' | 'webhook' | 'ready';
+    label: string;
+    icon: any;
+    reached: boolean;
+    timestamp?: string | null;
+  };
+  const stripePhases: StripePhase[] = [
+    { key: 'created',  label: 'Course créée',          icon: Sparkles,    reached: true },
+    { key: 'checkout', label: 'Lien Stripe généré',    icon: Link2,       reached: checkoutCreated, timestamp: data.payment_link_created_at },
+    { key: 'webhook',  label: 'Paiement confirmé',     icon: Webhook,     reached: webhookConfirmed },
+    { key: 'ready',    label: 'Prêt pour check-in',    icon: ShieldCheck, reached: readyForCheckin },
+  ];
+  const currentStripePhaseIdx = (() => {
+    let last = 0;
+    stripePhases.forEach((p, i) => { if (p.reached) last = i; });
+    return last;
+  })();
+
+
 
   const stepState = (key: Step): 'done' | 'current' | 'todo' => {
     const order: Step[] = ['created', 'paid', 'in_progress', 'completed', 'settled'];
