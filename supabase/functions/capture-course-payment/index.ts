@@ -335,10 +335,20 @@ serve(async (req) => {
     if (arrearsRecoveredCents > 0) {
       let remainingCents = arrearsRecoveredCents;
       const idsToSettle: string[] = [];
+      const auditEntries: any[] = [];
       for (const row of (pendingCashRows || [])) {
         const rowCents = Math.round((Number(row.solocab_fee) || 0) * 100);
         if (rowCents <= remainingCents) {
           idsToSettle.push(row.id);
+          auditEntries.push({
+            driver_id: course.driver_id,
+            recovery_payment_id: insertedPayment?.id ?? null,
+            recovery_course_id: course_id,
+            source_type: "pending_row",
+            source_pending_id: row.id,
+            source_origin_course_id: row.course_id ?? null,
+            amount_recovered_cents: rowCents,
+          });
           remainingCents -= rowCents;
           if (remainingCents <= 0) break;
         }
@@ -372,7 +382,8 @@ serve(async (req) => {
           .eq("id", course.driver_id)
           .single();
         const currentCents = Math.round((Number(current?.cash_debt_pending) || 0) * 100);
-        const newEur = Math.max(0, currentCents - consolidatedReduceCents) / 100;
+        const newCents = Math.max(0, currentCents - consolidatedReduceCents);
+        const newEur = newCents / 100;
         const { error: updErr } = await supabaseClient
           .from("drivers")
           .update({ cash_debt_pending: newEur })
@@ -384,6 +395,27 @@ serve(async (req) => {
             reducedEur: consolidatedReduceCents / 100,
             newDebtEur: newEur,
           });
+          auditEntries.push({
+            driver_id: course.driver_id,
+            recovery_payment_id: insertedPayment?.id ?? null,
+            recovery_course_id: course_id,
+            source_type: "consolidated_debt",
+            source_pending_id: null,
+            source_origin_course_id: null,
+            amount_recovered_cents: consolidatedReduceCents,
+            consolidated_debt_before_cents: currentCents,
+            consolidated_debt_after_cents: newCents,
+          });
+        }
+      }
+
+      // Audit trail : journalise toutes les récupérations
+      if (auditEntries.length > 0) {
+        const { error: logErr } = await supabaseClient
+          .from("arrears_recovery_log")
+          .insert(auditEntries);
+        if (logErr) {
+          logStep("Failed to insert arrears recovery log", { error: logErr.message });
         }
       }
     }

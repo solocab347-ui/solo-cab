@@ -437,6 +437,23 @@ serve(async (req) => {
       processed_driver_ids: [...alreadyProcessed, ...newlyProcessed],
     }).eq("id", settlementId);
 
+    // ═══ 9.5 AUTO-HEAL : réaligner cash_debt_pending pour les chauffeurs dont
+    // les balances cash sont passées en "settled" sans transfer Stripe réussi.
+    // Garantit que les arriérés ne disparaissent jamais à cause d'un échec.
+    try {
+      const { data: healResult, error: healErr } = await supabase.functions.invoke(
+        "retry-settlement-arrears",
+        { body: { settlement_id: settlementId } },
+      );
+      if (healErr) {
+        log("Auto-heal invocation failed", { error: healErr.message });
+      } else {
+        log("Auto-heal completed", { healed: healResult?.healed ?? 0 });
+      }
+    } catch (e: any) {
+      log("Auto-heal exception", { error: String(e) });
+    }
+
     // Notifs admins (in-app + email) si erreurs
     if (failed > 0 || stripeAvailableEur < totalAmount) {
       const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
