@@ -1122,6 +1122,21 @@ serve(async (req) => {
             type: "info",
           });
         }
+
+        // Notify sender driver too — they need real-time visibility on the payment
+        const { data: senderNotifData } = await supabaseClient
+          .from("drivers")
+          .select("user_id")
+          .eq("id", senderDriverId)
+          .single();
+        if (senderNotifData?.user_id) {
+          await supabaseClient.from("notifications").insert({
+            user_id: senderNotifData.user_id,
+            title: "💳 Paiement client confirmé",
+            message: `Stripe a confirmé le règlement de votre course partagée. Vos frais de transaction (${commissionAmount.toFixed(2)}€) seront versés au prochain règlement hebdomadaire.`,
+            type: "info",
+          });
+        }
       }
 
       // CASE 6: Deposit payment
