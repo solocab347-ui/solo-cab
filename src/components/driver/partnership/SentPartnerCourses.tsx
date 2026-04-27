@@ -56,7 +56,11 @@ export function SentPartnerCourses({ driverId }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [showPropose, setShowPropose] = useState(false);
+  const [showCreateAndShare, setShowCreateAndShare] = useState(false);
+  const [createdCourseToShare, setCreatedCourseToShare] = useState<any>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const { isPremium } = useDriverPremium();
 
   useEffect(() => {
     if (driverId) loadSentCourses();
