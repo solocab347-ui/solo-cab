@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface OnboardingBillingStepProps {
   data: {
@@ -83,7 +84,13 @@ export function OnboardingBillingStep({ data, onUpdate }: OnboardingBillingStepP
       const { data: onboardingData, error } = await supabase.functions.invoke('stripe-connect-onboarding');
       if (error) throw error;
       if (onboardingData?.url) {
-        window.open(onboardingData.url, '_blank');
+        await openExternalUrl(onboardingData.url, {
+          onClose: () => {
+            // Re-check status when user comes back from Stripe
+            toast.info('Vérification de votre compte Stripe...');
+            checkStripeStatus();
+          },
+        });
         toast.info('Complétez votre inscription puis revenez ici.');
       }
     } catch (error: any) {

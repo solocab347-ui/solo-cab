@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 
 interface StripeConnectInfoProps {
   driverId: string;
@@ -40,7 +41,13 @@ export function StripeConnectInfo({ driverId, billingType, onStatusChange }: Str
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, "_blank");
+        await openExternalUrl(data.url, {
+          onClose: () => {
+            toast.info("Vérification de votre compte Stripe...");
+            refresh();
+            onStatusChange?.();
+          },
+        });
         toast.success("Redirection vers Stripe...");
       }
     } catch (err: any) {

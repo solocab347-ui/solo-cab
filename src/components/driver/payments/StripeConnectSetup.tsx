@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 import { 
   CreditCard, 
   CheckCircle2, 
@@ -76,8 +77,13 @@ export function StripeConnectSetup({ driverId, onStatusChange }: StripeConnectSe
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, '_blank');
-        toast.info('Fenêtre Stripe ouverte. Complétez votre inscription puis revenez ici.');
+        await openExternalUrl(data.url, {
+          onClose: () => {
+            toast.info('Vérification de votre compte Stripe...');
+            checkStatus();
+          },
+        });
+        toast.info('Complétez votre inscription Stripe puis revenez à l\'app.');
       }
     } catch (error: any) {
       console.error('Error starting onboarding:', error);

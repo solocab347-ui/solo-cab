@@ -207,11 +207,18 @@ export function SimplifiedOnboardingTunnel({
   const startStripeOnboarding = async () => {
     setStripeLoading(true);
     try {
+      const { openExternalUrl } = await import('@/lib/openExternalUrl');
       const { data, error } = await supabase.functions.invoke('stripe-connect-onboarding');
       if (error) throw error;
       if (data?.url) {
         toast.info('Vous allez être redirigé vers Stripe. Revenez ici après inscription.');
-        setTimeout(() => window.open(data.url, '_blank'), 800);
+        setTimeout(() => {
+          openExternalUrl(data.url, {
+            onClose: () => {
+              toast.info('Vérification de votre compte Stripe...');
+            },
+          });
+        }, 800);
       }
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors du démarrage');
