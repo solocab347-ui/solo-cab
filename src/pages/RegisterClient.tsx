@@ -257,7 +257,7 @@ const RegisterClient = () => {
       });
       if (signInError) {
         toast.success("Compte créé ! Connectez-vous pour accéder à votre espace.");
-        navigate("/auth?redirect=/client-dashboard");
+        navigate("/login?redirect=/client-dashboard");
         return;
       }
 
@@ -280,7 +280,7 @@ const RegisterClient = () => {
     } catch (error: any) {
       if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
         toast.error("Cette adresse email est déjà utilisée. Connectez-vous.");
-        navigate("/auth?redirect=/client-dashboard");
+        navigate("/login?redirect=/client-dashboard");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
       }
@@ -394,7 +394,7 @@ const RegisterClient = () => {
 
               <p className="text-xs text-center text-muted-foreground">
                 Déjà un compte ?{" "}
-                <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/auth?redirect=/client-dashboard")}>
+                <Button variant="link" className="p-0 h-auto text-xs" onClick={() => navigate("/login?redirect=/client-dashboard")}>
                   Se connecter
                 </Button>
               </p>

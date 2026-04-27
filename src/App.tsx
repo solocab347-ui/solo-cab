@@ -115,6 +115,12 @@ const App = () => (
                 <AnimatedRoutes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><Login /></Suspense>} />
+              {/* Alias historiques vers /login pour éviter les 404 (anciens liens, emails) */}
+              <Route path="/auth" element={<Navigate to="/login" replace />} />
+              <Route path="/sign-in" element={<Navigate to="/login" replace />} />
+              <Route path="/connexion" element={<Navigate to="/login" replace />} />
+              <Route path="/logout" element={<Navigate to="/login" replace />} />
+              <Route path="/deconnexion" element={<Navigate to="/login" replace />} />
               <Route path="/signup" element={<Suspense fallback={<LoadingFallback />}><SignupChoice /></Suspense>} />
               <Route path="/oauth-onboarding" element={<Suspense fallback={<LoadingFallback />}><OAuthOnboarding /></Suspense>} />
               <Route path="/chauffeurs" element={<Suspense fallback={<LoadingFallback />}><Chauffeurs /></Suspense>} />
