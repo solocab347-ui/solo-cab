@@ -143,7 +143,7 @@ interface CarryOverStats {
 }
 
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [settlements, setSettlements] = useState<WeekHistoryEntry[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
@@ -174,7 +174,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
 
       // Load all data in parallel
       const monthFloor = new Date();
-      monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 11, 1);
+      monthFloor.setUTCMonth(monthFloor.getUTCMonth() - 23, 1);
       monthFloor.setUTCHours(0, 0, 0, 0);
 
       // ═══ SOURCE UNIQUE DE VÉRITÉ POUR LE RÉCAP FINANCIER ═══
@@ -203,7 +203,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           `)
           .eq("driver_id", driverId)
           .order("created_at", { ascending: false })
-          .limit(52),
+          .limit(260),
         supabase
           .from("shared_course_payments")
           .select("id, course_amount, commission_amount, sender_commission_amount, platform_fee, created_at, sender_driver_id, receiver_driver_id")
@@ -233,7 +233,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .limit(1000),
         supabase
           .from("drivers")
-          .select("stripe_connect_charges_enabled, cash_debt_pending")
+          .select("created_at, stripe_connect_created_at, stripe_connect_updated_at, stripe_connect_charges_enabled, cash_debt_pending")
           .eq("id", driverId)
           .single(),
         // Toujours pending : alimente l'encart "Solde en attente" (semaine + carry-over).
@@ -251,7 +251,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .eq("driver_id", driverId)
           .gte("created_at", monthFloor.toISOString())
           .order("created_at", { ascending: false })
-          .limit(2000),
+          .limit(5000),
       ]);
 
       // Helper : convertit une ligne driver_balance_pending en TransactionItem.
