@@ -18,6 +18,7 @@ import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
 import { DirectCourseCreationForm } from '../courses/DirectCourseCreationForm';
 import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerDialog';
 import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
+import { SharedCourseProgressTimeline } from '../sharing/SharedCourseProgressTimeline';
 import { useDriverPremium } from '@/hooks/useDriverPremium';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 
@@ -503,6 +504,21 @@ export function SentPartnerCourses({ driverId }: Props) {
                           Lien / QR
                         </Button>
                       )}
+                    </div>
+                  )}
+
+                  {/* Timeline de progression bilatérale */}
+                  {course.receiver_driver_id && (
+                    <div className="pt-2">
+                      <SharedCourseProgressTimeline
+                        sharedCourseId={course.id}
+                        perspective="sender"
+                        initial={{
+                          status: course.status,
+                          payment_status: course.payment_status,
+                          completed_at: course.completed_at,
+                        }}
+                      />
                     </div>
                   )}
 
