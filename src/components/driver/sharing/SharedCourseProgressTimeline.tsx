@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, Circle, Loader2, CreditCard, Play, Flag, Sparkles, Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, Circle, Loader2, CreditCard, Play, Flag, Sparkles, Lock, Link2, Webhook, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Step = 'created' | 'paid' | 'in_progress' | 'completed' | 'settled';
@@ -15,6 +16,11 @@ interface Props {
     status?: string | null;
     payment_status?: string | null;
     completed_at?: string | null;
+    stripe_checkout_session_id?: string | null;
+    payment_link_created_at?: string | null;
+    payment_settled?: boolean | null;
+    payment_settled_at?: string | null;
+    client_payment_method?: string | null;
   };
   className?: string;
 }
@@ -27,11 +33,27 @@ const STEPS: { key: Step; label: string; icon: any; help: string }[] = [
   { key: 'settled',     label: 'Portefeuilles crédités', icon: CheckCircle2,help: 'Commission émetteur + revenus receveur synchronisés' },
 ];
 
+type RowData = {
+  status: string | null;
+  payment_status: string | null;
+  completed_at: string | null;
+  stripe_checkout_session_id: string | null;
+  payment_link_created_at: string | null;
+  payment_settled: boolean | null;
+  payment_settled_at: string | null;
+  client_payment_method: string | null;
+};
+
 export function SharedCourseProgressTimeline({ sharedCourseId, perspective, initial, className }: Props) {
-  const [data, setData] = useState<{ status: string | null; payment_status: string | null; completed_at: string | null }>({
+  const [data, setData] = useState<RowData>({
     status: initial?.status ?? null,
     payment_status: initial?.payment_status ?? null,
     completed_at: initial?.completed_at ?? null,
+    stripe_checkout_session_id: initial?.stripe_checkout_session_id ?? null,
+    payment_link_created_at: initial?.payment_link_created_at ?? null,
+    payment_settled: initial?.payment_settled ?? null,
+    payment_settled_at: initial?.payment_settled_at ?? null,
+    client_payment_method: initial?.client_payment_method ?? null,
   });
 
   useEffect(() => {
@@ -39,7 +61,7 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
     const fetchOnce = async () => {
       const { data: row } = await supabase
         .from('shared_courses')
-        .select('status, payment_status, completed_at')
+        .select('status, payment_status, completed_at, stripe_checkout_session_id, payment_link_created_at, payment_settled, payment_settled_at, client_payment_method')
         .eq('id', sharedCourseId)
         .maybeSingle();
       if (!cancelled && row) {
@@ -47,6 +69,11 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
           status: (row as any).status ?? null,
           payment_status: (row as any).payment_status ?? null,
           completed_at: (row as any).completed_at ?? null,
+          stripe_checkout_session_id: (row as any).stripe_checkout_session_id ?? null,
+          payment_link_created_at: (row as any).payment_link_created_at ?? null,
+          payment_settled: (row as any).payment_settled ?? null,
+          payment_settled_at: (row as any).payment_settled_at ?? null,
+          client_payment_method: (row as any).client_payment_method ?? null,
         });
       }
     };
@@ -63,6 +90,11 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
             status: n.status ?? null,
             payment_status: n.payment_status ?? null,
             completed_at: n.completed_at ?? null,
+            stripe_checkout_session_id: n.stripe_checkout_session_id ?? null,
+            payment_link_created_at: n.payment_link_created_at ?? null,
+            payment_settled: n.payment_settled ?? null,
+            payment_settled_at: n.payment_settled_at ?? null,
+            client_payment_method: n.client_payment_method ?? null,
           });
         },
       )
@@ -73,8 +105,33 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
   const isPaid = String(data.payment_status || '').startsWith('paid');
   const isInProgress = data.status === 'in_progress' || data.status === 'completed';
   const isCompleted = data.status === 'completed' || !!data.completed_at;
-  // "settled" = course completed ET paiement Stripe paid (les fonds peuvent être redistribués)
-  const isSettled = isCompleted && isPaid;
+  const isSettled = (data.payment_settled === true) || (isCompleted && isPaid);
+
+  // ===== Stripe lifecycle (créé → checkout → payé webhook → prêt check-in) =====
+  const checkoutCreated = !!data.stripe_checkout_session_id || !!data.payment_link_created_at;
+  const webhookConfirmed = isPaid; // payment_status passe à "paid" via le webhook stripe-webhook
+  const readyForCheckin = webhookConfirmed; // garde-fou : check-in autorisé seulement après confirmation webhook
+
+  type StripePhase = {
+    key: 'created' | 'checkout' | 'webhook' | 'ready';
+    label: string;
+    icon: any;
+    reached: boolean;
+    timestamp?: string | null;
+  };
+  const stripePhases: StripePhase[] = [
+    { key: 'created',  label: 'Course créée',          icon: Sparkles,    reached: true },
+    { key: 'checkout', label: 'Lien Stripe généré',    icon: Link2,       reached: checkoutCreated, timestamp: data.payment_link_created_at },
+    { key: 'webhook',  label: 'Paiement confirmé',     icon: Webhook,     reached: webhookConfirmed },
+    { key: 'ready',    label: 'Prêt pour check-in',    icon: ShieldCheck, reached: readyForCheckin },
+  ];
+  const currentStripePhaseIdx = (() => {
+    let last = 0;
+    stripePhases.forEach((p, i) => { if (p.reached) last = i; });
+    return last;
+  })();
+
+
 
   const stepState = (key: Step): 'done' | 'current' | 'todo' => {
     const order: Step[] = ['created', 'paid', 'in_progress', 'completed', 'settled'];
@@ -107,12 +164,84 @@ export function SharedCourseProgressTimeline({ sharedCourseId, perspective, init
           </span>
         </div>
 
+        {/* === État Stripe (pipeline paiement) === */}
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <CreditCard className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                État Stripe
+              </span>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-[10px] h-5 px-1.5 border',
+                webhookConfirmed
+                  ? 'bg-green-500/10 text-green-700 border-green-500/40'
+                  : checkoutCreated
+                    ? 'bg-blue-500/10 text-blue-700 border-blue-500/40'
+                    : 'bg-muted text-muted-foreground border-border',
+              )}
+            >
+              {webhookConfirmed ? 'Payé ✓ webhook' : checkoutCreated ? 'En attente paiement' : 'Lien non généré'}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {stripePhases.map((phase, i) => {
+              const Icon = phase.icon;
+              const isCurrent = i === currentStripePhaseIdx && !stripePhases[i + 1]?.reached;
+              return (
+                <div key={phase.key} className="flex-1 flex items-center">
+                  <div
+                    title={phase.label}
+                    className={cn(
+                      'flex flex-col items-center gap-0.5 flex-1 min-w-0',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-6 w-6 items-center justify-center rounded-full border transition-colors',
+                        phase.reached && !isCurrent && 'bg-green-500 border-green-500 text-white',
+                        isCurrent && 'bg-primary border-primary text-primary-foreground animate-pulse',
+                        !phase.reached && 'bg-background border-border text-muted-foreground',
+                      )}
+                    >
+                      <Icon className="h-3 w-3" />
+                    </div>
+                    <span className={cn(
+                      'text-[9px] text-center leading-tight truncate w-full',
+                      phase.reached ? 'text-foreground font-medium' : 'text-muted-foreground',
+                    )}>
+                      {phase.label}
+                    </span>
+                  </div>
+                  {i < stripePhases.length - 1 && (
+                    <div className={cn(
+                      'h-0.5 flex-1 mx-0.5 -mt-3 rounded',
+                      stripePhases[i + 1].reached ? 'bg-green-500' : 'bg-border',
+                    )} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {!checkoutCreated && 'En attente de génération du lien de paiement Stripe.'}
+            {checkoutCreated && !webhookConfirmed && 'Lien envoyé au client. En attente de confirmation Stripe via webhook.'}
+            {webhookConfirmed && !isCompleted && '✓ Paiement confirmé par le webhook Stripe — le check-in est désormais autorisé.'}
+            {webhookConfirmed && isCompleted && '✓ Paiement confirmé et course terminée. Synchronisation des portefeuilles en cours.'}
+          </p>
+        </div>
+
         {/* Garde-fou visuel UI */}
         {!isPaid && (
           <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-700">
             <Lock className="h-3 w-3 shrink-0" />
             <span>
-              Tant que Stripe n’a pas confirmé le paiement, la course ne peut pas être terminée ni déverrouillée.
+              Tant que Stripe n’a pas confirmé le paiement (webhook), la course ne peut pas être démarrée, terminée ni déverrouillée.
             </span>
           </div>
         )}
