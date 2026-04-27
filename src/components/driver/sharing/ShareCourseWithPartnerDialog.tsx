@@ -252,6 +252,10 @@ export function ShareCourseWithPartnerDialog({
 
   const handlePublish = async () => {
     if (!course || !canPublish) return;
+    if (isCashRequested) {
+      toast.error("Une course en espèces ne peut jamais être partagée. Passez la course en Carte bancaire.");
+      return;
+    }
     setSending(true);
     try {
       const targetIds =
