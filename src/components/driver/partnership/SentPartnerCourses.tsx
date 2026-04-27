@@ -18,6 +18,7 @@ import { PushCourseToPartners } from '../sharing/PushCourseToPartners';
 import { DirectCourseCreationForm } from '../courses/DirectCourseCreationForm';
 import { ShareCourseWithPartnerDialog } from '../sharing/ShareCourseWithPartnerDialog';
 import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
+import { SharedCourseProgressTimeline } from '../sharing/SharedCourseProgressTimeline';
 import { useDriverPremium } from '@/hooks/useDriverPremium';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 
