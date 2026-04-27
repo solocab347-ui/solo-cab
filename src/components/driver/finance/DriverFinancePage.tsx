@@ -249,7 +249,6 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .from("driver_balance_pending" as any)
           .select("id, course_id, gross_amount, solocab_fee, stripe_fee, net_amount, payment_type, status, created_at")
           .eq("driver_id", driverId)
-          .gte("created_at", monthFloor.toISOString())
           .order("created_at", { ascending: false })
           .limit(5000),
       ]);
