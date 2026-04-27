@@ -41,6 +41,8 @@ interface ReceivedCourse {
   course_number: string | null;
   shared_status: string;
   partner_reference_number: string | null;
+  payment_status: string | null;
+  client_payment_url: string | null;
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
