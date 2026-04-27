@@ -3,9 +3,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, Settings, ExternalLink, Info } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Loader2, Smartphone, Shield, Zap, Mic, Bell, Settings, ExternalLink, Info, FlaskConical, ArrowRight } from 'lucide-react';
 import { usePermissionsCenter, type PermissionState, type PermissionStatus, type PermissionKey } from '@/hooks/usePermissionsCenter';
 import { cn } from '@/lib/utils';
+
+/** Résultat d'un essai de permission utilisé par le mode Test */
+interface TestProbe {
+  before: PermissionStatus;
+  after: PermissionStatus;
+  rawWebState?: string; // résultat brut Notification.requestPermission() / navigator.permissions.query
+  promptShown: boolean | 'unknown';
+  durationMs: number;
+  ts: number;
+  message: string;
+}
 
 interface PermissionsCenterProps {
   role: 'driver' | 'client' | 'admin' | null;
