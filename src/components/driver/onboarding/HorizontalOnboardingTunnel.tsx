@@ -740,7 +740,7 @@ export function HorizontalOnboardingTunnel({
                 Étape {currentStep + 1}/{STEPS.length}
               </span>
               <button
-                onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+                onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}
                 className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
               >
                 <LogOut className="w-3 h-3" />
