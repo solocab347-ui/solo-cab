@@ -211,6 +211,10 @@ export function SharedCoursesInCoursesList({ driverId }: Props) {
       toast.error('Veuillez sélectionner un moyen de paiement');
       return;
     }
+    if (paymentMethod === 'cash') {
+      toast.error("Le paiement en espèces n'est jamais autorisé sur une course partagée. Utilisez Stripe (lien/QR).");
+      return;
+    }
 
     setActionLoading(selectedCourseId);
     try {
