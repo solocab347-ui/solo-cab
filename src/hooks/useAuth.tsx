@@ -274,9 +274,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+      const cleanEmail = email.trim().toLowerCase();
+
+      // Vérification préalable : email déjà utilisé ?
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error("Email déjà utilisé", {
+          description: message,
+          duration: 8000,
+          action: {
+            label: "Se connecter",
+            onClick: () => navigate(loginPath),
+          },
+        });
+        throw new Error("EMAIL_ALREADY_EXISTS");
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           emailRedirectTo: redirectUrl,
