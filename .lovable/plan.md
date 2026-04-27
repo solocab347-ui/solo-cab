@@ -1,55 +1,137 @@
-Plan de correction proposé :
+## Contexte — ce qui existe déjà
 
-1. Unifier la source de vérité du statut chauffeur
-   - Remplacer les lectures partielles qui ne regardent que `driver_status` par une lecture complète de `driver_status` + `is_available_now`.
-   - Déduire l’état affiché avec une règle unique :
-     - `online` + `is_available_now=true` = En ligne
-     - `offline` ou `break` = Hors ligne / Pause
-     - `assigned` ou `in_ride` = Course en cours, bouton verrouillé
-   - Appliquer cette même règle sur le dashboard et sur la carte.
+L'écosystème objectifs SoloCab est riche mais fragmenté. Audit :
 
-2. Corriger le clic du bouton sur la carte
-   - Ajouter un état `isToggling` dans le contexte de disponibilité.
-   - Pendant le changement, désactiver temporairement le bouton et afficher un chargement au lieu de donner l’impression que rien ne se passe.
-   - Garder le bouton carte cliquable quand le chauffeur est vraiment hors ligne, sauf s’il est en course assignée/en course.
+**Tables BDD**
+- `driver_objectives` : cibles par période (revenue, courses, hours, km, qr_scans, cards_proposed, direct_clients, independence_pct)
+- `drivers.objectives_data` (JSONB) : config de référence avec un schéma précis (`target_monthly_revenue`, `target_weekly_revenue`, `target_direct_clients`, `target_monthly_courses`, `target_monthly_km`, `work_hours_per_day`, `work_days_per_week`, `selected_work_days`, `platform_percentage`, `solocab_percentage`, `daily_targets`, `estimated_hourly_target`)
+- `driver_platforms` : Uber/Bolt/Heetch/etc. saisies par le chauffeur
+- `driver_daily_entries` : suivi quotidien (CA + courses + km + heures + scans QR + cartes proposées) par plateforme ET pour SoloCab
 
-3. Sécuriser le changement en ligne/hors ligne côté backend
-   - Créer une fonction backend atomique de changement de statut chauffeur.
-   - Elle mettra à jour ensemble : `driver_status`, `is_available_now`, `last_location_update`, et l’effacement GPS quand le chauffeur passe hors ligne/pause.
-   - Elle empêchera un passage hors ligne/en ligne incohérent si une course active existe.
-   - Cela évite les états divergents entre dashboard, carte et recherche client.
+**Composants en place**
+- `OnboardingObjectivesStep` (tunnel d'inscription) : choisit un *profil de motivation* mais n'écrit PAS les chiffres dans `objectives_data`
+- `ObjectivesEditor` / `InlineObjectivesEditor` (réglages dashboard) : éditent `objectives_data` avec le schéma complet et propagent vers `driver_objectives` (4 périodes)
+- `AcquisitionTargetsQuickEdit` : édite les 4 cibles d'acquisition
+- `PlatformsManager` + `QuickPlatformEntry` : ajout plateformes + saisie quotidienne
+- `IndependenceFunnel` : visualise Courses → Propositions → Scans → Inscrits → Fidèles
+- `DashboardObjectivesWidget`, `MonthlyAcquisitionRecap`, `ObjectivesHistory` : suivi temps réel
+- `useDriverObjectives` : auto-seed des `driver_objectives` à partir de `objectives_data` SI `target_monthly_revenue` est présent
 
-4. Supprimer les doubles systèmes concurrents
-   - Le hook GPS `useDriverLocationTracker` contient encore une ancienne méthode `updateAvailability` qui peut écrire directement dans `drivers`.
-   - La disponibilité doit passer uniquement par `DriverAvailabilityContext`.
-   - Le hook GPS restera responsable de la position uniquement, pas du statut métier.
+**Problème de continuité identifié**
+Mon `ObjectivesGoalsFunnel` actuel écrit `objectives_data: { revenue_monthly, courses_per_week, hours_per_week, qr_clients_per_month }` — clés inconnues du reste du système. Conséquence : l'auto-seed ne déclenche pas, les éditeurs lisent du vide, le suivi ne s'aligne pas.
 
-5. Stabiliser la synchronisation dashboard ↔ carte
-   - Éviter de remonter deux providers indépendants qui se réinitialisent quand on change entre dashboard et carte.
-   - Garder un seul contexte de disponibilité autour des deux modes, pour que la carte et le dashboard partagent immédiatement le même état.
-   - Forcer une relecture courte après mutation si le realtime met trop de temps à revenir.
+## Plan d'action
 
-6. Corriger l’overlay de chargement carte
-   - Actuellement la carte affiche “Localisation…” même quand le chauffeur est hors ligne, ce qui peut donner l’impression d’un blocage.
-   - Afficher le chargement GPS seulement si le suivi GPS est censé être actif.
-   - En hors ligne, afficher plutôt un état clair “Hors ligne — activez le service pour recevoir les courses immédiates”.
+### 1. Refonte du `ObjectivesGoalsFunnel` (7 étapes)
 
-7. Vérifier l’absence de résidus PWA actifs
-   - Le scan ne montre pas de composant/banner/import PWA actif dans `src`, `public`, `index.html`, `vite.config` ou `package.json`.
-   - Seul le script de garde `android:no-pwa` reste, volontairement, pour empêcher une réintroduction PWA dans les builds.
-   - Après correction, lancer la vérification anti-PWA et un build TypeScript/Vite pour confirmer qu’aucun import inutile ni sélecteur PWA n’est conservé.
+Aligner le funnel sur le schéma existant et y intégrer plateformes externes, dépenses et libération.
 
-Fichiers concernés principalement :
-- `src/contexts/DriverAvailabilityContext.tsx`
-- `src/components/driver/planning/DriverAvailabilityToggleBig.tsx`
-- `src/components/driver/map/DriverMapMode.tsx`
-- `src/hooks/useDriverLocationTracker.ts`
-- `src/pages/DriverDashboard.tsx`
-- nouvelle migration backend pour la fonction atomique de statut chauffeur
+```text
+Étape 1  Intro            Valeurs SoloCab + promesse "indépendance"
+Étape 2  Revenu           target_monthly_revenue + estimation hebdo/horaire
+Étape 3  Activité         target_monthly_courses + target_monthly_km
+Étape 4  Planning         work_hours_per_day + selected_work_days
+Étape 5  Plateformes      Sélection Uber/Bolt/Heetch/... + estimation %
+                          actuel sur plateformes (-> platform_percentage)
+Étape 6  Dépenses         Dépenses mensuelles estimées (carburant,
+                          assurance, loyer véhicule, entretien, etc.)
+                          → calcul revenu net visé
+Étape 7  Libération       Cibles d'acquisition (cartes/QR/clients directs)
+                          + objectif % indépendance + récap final
+```
 
-Résultat attendu :
-- Le dashboard et la carte affichent toujours le même état.
-- Un clic sur “En ligne/Hors ligne” réagit immédiatement visuellement.
-- Plus de faux blocage “Localisation…” en hors ligne.
-- Le GPS ne reste pas actif ni affiché après déconnexion.
-- Le chauffeur ne peut pas être affiché en ligne sur le dashboard et hors ligne sur la carte en même temps.
+### 2. Schéma `objectives_data` unifié
+
+Écrire dans `objectives_data` exactement les clés attendues par `ObjectivesEditor` + ajouts dépenses :
+
+```ts
+{
+  // Revenu (compat éditeur)
+  target_monthly_revenue, target_weekly_revenue,
+  target_monthly_courses, target_monthly_km,
+  // Planning (compat éditeur)
+  work_hours_per_day, work_days_per_week,
+  selected_work_days, daily_targets, estimated_hourly_target,
+  // Mix plateformes (compat éditeur)
+  platform_percentage, solocab_percentage,
+  current_monthly_revenue, current_direct_clients,
+  // Acquisition (compat AcquisitionTargetsQuickEdit)
+  target_direct_clients,
+  // NOUVEAU — dépenses
+  monthly_expenses: {
+    fuel, insurance, vehicle_lease, maintenance,
+    licenses, accountant, other, total
+  },
+  target_net_revenue, // revenu - dépenses - frais SoloCab
+  // Audit
+  goals_completed_at, source: 'goals_funnel_v2'
+}
+```
+
+### 3. Propagation vers `driver_objectives` + `driver_platforms`
+
+Dans la même transaction de validation finale :
+- Upsert 4 lignes `driver_objectives` (daily/weekly/monthly/yearly) avec les multiplicateurs déjà utilisés par `ObjectivesEditor` (revenue, courses, hours, km, new_clients, qr_scans_target, cards_proposed_target, direct_clients_target, independence_percentage_target)
+- Upsert `driver_work_schedules` (7 lignes, jours travaillés selon selected_work_days)
+- Upsert les `driver_platforms` sélectionnées (réutilise `addPlatform` du hook)
+- Marquer `drivers.objectives_completed = true` + `onboarding_objectives_completed = true`
+
+### 4. Continuité — vérifications
+
+- L'`ObjectivesEditor` du dashboard lit `objectives_data` → toutes les valeurs préremplies après le funnel
+- Le hook `useDriverObjectives` a déjà l'auto-seed sur `target_monthly_revenue` → on lui fournit la clé attendue
+- `AcquisitionTargetsQuickEdit` lit directement `driver_objectives` → on aura écrit `qr_scans_target`/`cards_proposed_target`/`direct_clients_target`
+- Le `DailyEntryForm` propose les plateformes du `driver_platforms` → seedées au funnel
+- `IndependenceFunnel` agrège entries vs targets → cohérent dès le 1er jour
+- Le `MonthlyAcquisitionRecap` se base sur les snapshots d'objectifs → trigger `trg_snapshot_driver_objectives` déjà en place
+
+### 5. Étape "Dépenses" (nouvelle, locale au funnel)
+
+Sliders pour 6 postes types VTC France (références Solocab) :
+- Carburant : 400-1200 €/mois
+- Assurance pro VTC : 80-200 €/mois
+- Location/leasing véhicule : 0-900 €/mois
+- Entretien : 50-200 €/mois
+- Licence/redevances : 30-80 €/mois
+- Comptable + autres : 50-200 €/mois
+
+Affiche en direct :
+- Total dépenses mensuelles
+- Frais SoloCab estimés (courses × 0,50 €)
+- **Revenu net visé** = revenu cible − dépenses − frais SoloCab
+- % de marge nette
+
+Stocké dans `objectives_data.monthly_expenses` (pas de nouvelle table — léger, modifiable depuis l'éditeur plus tard si demandé).
+
+### 6. Étape "Libération" (acquisition + indépendance)
+
+Sliders pour les 4 cibles d'acquisition mensuelles avec explications SoloCab :
+- Cartes proposées (`cards_proposed_target`) — défaut 60
+- Scans QR (`qr_scans_target`) — défaut 30
+- Clients directs convertis (`direct_clients_target`) — défaut 8
+- % d'indépendance visé (`independence_percentage_target`) — défaut 30 %
+
+Réutilise visuellement le funnel d'indépendance (Courses → Cartes → Scans → Inscrits → Fidèles) à titre pédagogique.
+
+## Ce qu'il faut changer
+
+| Fichier | Action |
+|---|---|
+| `src/components/driver/objectives/ObjectivesGoalsFunnel.tsx` | Refonte complète : 7 étapes, schéma `objectives_data` unifié, persistance plateformes/horaires/objectifs |
+| `src/pages/DriverDashboard.tsx` | Aucun changement (intégration déjà en place) |
+| Aucune migration BDD nécessaire | Toutes les colonnes existent déjà |
+
+## Hors scope (pour rester focus)
+
+- Pas de table `driver_expenses` dédiée (les dépenses fines vivront dans `objectives_data.monthly_expenses`, suffisant pour la cible "objectif")
+- Pas de modification de `OnboardingObjectivesStep` (reste l'étape "vision") — le funnel post-inscription prend le relais sur les chiffres
+- Pas de changement de l'`ObjectivesEditor` (déjà compatible)
+
+## Résultat attendu
+
+Après le funnel :
+1. `objectives_data` contient toutes les clés attendues par l'éditeur dashboard
+2. `driver_objectives` contient 4 lignes alignées (daily/weekly/monthly/yearly) avec cibles complètes incluant acquisition
+3. `driver_platforms` contient les plateformes externes du chauffeur
+4. `driver_work_schedules` contient les jours travaillés
+5. Le suivi quotidien (`DailyEntryForm`), l'`IndependenceFunnel`, le `DashboardObjectivesWidget` et le `MonthlyAcquisitionRecap` affichent immédiatement la progression cohérente
