@@ -337,25 +337,35 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   // ⚠️ TOUS les hooks (useMemo, etc.) DOIVENT être déclarés AVANT tout early return
   // sinon React lève "Rendered more hooks than during the previous render".
 
-  // Liste des mois disponibles dans l'historique des règlements (12 derniers max)
+  // Liste des mois disponibles dans l'historique des règlements (12 derniers max).
+  // On indexe sur week_end (date où la semaine se "comptabilise") pour éviter
+  // qu'une semaine à cheval sur 2 mois disparaisse de la sélection.
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
     for (const s of settlements) {
-      if (!s.week_start) continue;
-      const d = new Date(s.week_start);
+      const ref = s.week_end || s.week_start;
+      if (!ref) continue;
+      const d = new Date(ref);
       set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
-    // Inclure aussi le mois courant pour pouvoir le sélectionner même sans data
+    // Toujours inclure les 6 derniers mois pour permettre une consultation
+    // même si aucun règlement n'a été produit (nouveau chauffeur, période creuse).
     const now = new Date();
-    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
     return Array.from(set).sort().reverse().slice(0, 12);
   }, [settlements]);
 
-  // Agrégat mensuel à partir des règlements hebdomadaires
+  // Agrégat mensuel à partir des règlements hebdomadaires.
+  // On utilise week_end pour rattacher chaque règlement au mois où il a été clôturé,
+  // ce qui correspond à la perception réelle du chauffeur.
   const monthlyAggregate = useMemo(() => {
     const filtered = settlements.filter((s) => {
-      if (!s.week_start) return false;
-      const d = new Date(s.week_start);
+      const ref = s.week_end || s.week_start;
+      if (!ref) return false;
+      const d = new Date(ref);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return key === selectedMonth;
     });
@@ -368,6 +378,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         (sum, s) => sum + (s.standard_courses_count || 0) + (s.shared_courses_as_sender || 0) + (s.shared_courses_as_receiver || 0),
         0
       ),
+      failedCount: filtered.filter((s) => s.transfer_status === 'failed' || s.transfer_status === 'skipped').length,
     };
   }, [settlements, selectedMonth]);
 
