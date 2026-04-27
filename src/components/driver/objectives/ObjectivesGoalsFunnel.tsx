@@ -327,25 +327,35 @@ export function ObjectivesGoalsFunnel({
           };
         });
 
-      // 5. Exécution parallèle
+      // 5. Exécution parallèle (les query builders Supabase sont thenable)
       const ops: Promise<any>[] = [
-        supabase
-          .from("drivers")
-          .update({
-            objectives_completed: true,
-            onboarding_objectives_completed: true,
-            objectives_data: JSON.parse(JSON.stringify(objectivesData)),
-          })
-          .eq("id", driverId),
-        supabase
-          .from("driver_objectives")
-          .upsert(objectivesRows, { onConflict: "driver_id,period_type" }),
-        supabase
-          .from("driver_work_schedules")
-          .upsert(scheduleRows, { onConflict: "driver_id,day_of_week" }),
+        Promise.resolve(
+          supabase
+            .from("drivers")
+            .update({
+              objectives_completed: true,
+              onboarding_objectives_completed: true,
+              objectives_data: JSON.parse(JSON.stringify(objectivesData)),
+            })
+            .eq("id", driverId)
+        ),
+        Promise.resolve(
+          supabase
+            .from("driver_objectives")
+            .upsert(objectivesRows, { onConflict: "driver_id,period_type" })
+        ),
+        Promise.resolve(
+          supabase
+            .from("driver_work_schedules")
+            .upsert(scheduleRows, { onConflict: "driver_id,day_of_week" })
+        ),
       ];
       if (platformsToInsert.length > 0) {
-        ops.push(supabase.from("driver_platforms").insert(platformsToInsert));
+        ops.push(
+          Promise.resolve(
+            supabase.from("driver_platforms").insert(platformsToInsert)
+          )
+        );
       }
 
       const results = await Promise.all(ops);
