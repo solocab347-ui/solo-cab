@@ -257,7 +257,7 @@ const RegisterClient = () => {
       });
       if (signInError) {
         toast.success("Compte créé ! Connectez-vous pour accéder à votre espace.");
-        navigate("/auth?redirect=/client-dashboard");
+        navigate("/login?redirect=/client-dashboard");
         return;
       }
 
