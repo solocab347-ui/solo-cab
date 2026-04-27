@@ -105,6 +105,7 @@ export function SentPartnerCourses({ driverId }: Props) {
         .select(`
           id, course_id, receiver_driver_id, course_amount,
           commission_percentage, commission_amount, solocab_fee_cents,
+          earnings_for_receiver, payment_status, client_payment_url,
           status, sharing_scope, created_at, completed_at,
           courses!inner(pickup_address, destination_address, scheduled_date, passengers_count, distance_km, status, course_number)
         `)
