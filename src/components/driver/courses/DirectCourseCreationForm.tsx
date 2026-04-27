@@ -596,20 +596,90 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
           </div>
         )}
 
-        {/* Prix estimé */}
-        {calculatedPrice !== null && (
-          <Card className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Prix estimé TTC</p>
-                <p className="text-xs text-muted-foreground">
-                  {courseType === "classic" ? "TVA 10%" : "TVA 20%"}
-                </p>
+        {/* Prix : auto / surcharge % / manuel */}
+        <Card className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 space-y-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-primary" />
+            <Label className="font-semibold">Prix de la course</Label>
+          </div>
+
+          <RadioGroup
+            value={priceMode}
+            onValueChange={(v) => setPriceMode(v as 'auto' | 'percentage' | 'manual')}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+          >
+            <Label
+              htmlFor="price-auto"
+              className={`flex items-center gap-2 rounded-md border p-2 cursor-pointer text-xs ${priceMode === 'auto' ? 'border-primary bg-primary/10' : 'border-border'}`}
+            >
+              <RadioGroupItem value="auto" id="price-auto" />
+              Calculatrice SoloCab
+            </Label>
+            <Label
+              htmlFor="price-percentage"
+              className={`flex items-center gap-2 rounded-md border p-2 cursor-pointer text-xs ${priceMode === 'percentage' ? 'border-primary bg-primary/10' : 'border-border'}`}
+            >
+              <RadioGroupItem value="percentage" id="price-percentage" disabled={calculatedPrice === null} />
+              Calcul + surcharge %
+            </Label>
+            <Label
+              htmlFor="price-manual"
+              className={`flex items-center gap-2 rounded-md border p-2 cursor-pointer text-xs ${priceMode === 'manual' ? 'border-primary bg-primary/10' : 'border-border'}`}
+            >
+              <RadioGroupItem value="manual" id="price-manual" />
+              Montant manuel
+            </Label>
+          </RadioGroup>
+
+          {priceMode === 'percentage' && (
+            <div className="space-y-1">
+              <Label className="text-xs">Surcharge appliquée au prix calculé (%)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="200"
+                  step="1"
+                  value={pricePercentage}
+                  onChange={(e) => setPricePercentage(e.target.value)}
+                  className="bg-background w-24"
+                />
+                <span className="text-sm text-muted-foreground">%</span>
               </div>
-              <p className="text-3xl font-bold text-primary">{calculatedPrice}€</p>
             </div>
-          </Card>
-        )}
+          )}
+
+          {priceMode === 'manual' && (
+            <div className="space-y-1">
+              <Label className="text-xs">Montant TTC libre (€)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={manualPrice}
+                onChange={(e) => setManualPrice(e.target.value)}
+                placeholder="Ex: 45.00"
+                className="bg-background"
+              />
+            </div>
+          )}
+
+          <div className="flex items-end justify-between pt-2 border-t border-primary/20">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {priceMode === 'auto' && (calculating ? 'Calcul en cours…' : `Prix calculé (${courseType === 'classic' ? 'TVA 10%' : 'TVA 20%'})`)}
+                {priceMode === 'percentage' && calculatedPrice !== null && `Calculé : ${calculatedPrice.toFixed(2)}€ + ${pricePercentage || 0}%`}
+                {priceMode === 'manual' && 'Prix défini manuellement'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {finalPrice !== null ? 'Prix TTC final qui sera facturé' : 'Renseignez les adresses ou un montant'}
+              </p>
+            </div>
+            <p className="text-3xl font-bold text-primary">
+              {finalPrice !== null ? `${finalPrice.toFixed(2)}€` : '—'}
+            </p>
+          </div>
+        </Card>
 
         {/* Date et passagers */}
         <div className="bg-card/50 p-6 rounded-lg border border-border space-y-4">
