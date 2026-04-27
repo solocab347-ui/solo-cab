@@ -257,14 +257,29 @@ export async function instantGetSession(): Promise<AuthResult> {
     };
   }
 
+  // Validation utilisateur en arrière-plan SEULEMENT.
+  // On ne purge JAMAIS la session locale ici : seul un signOut explicite
+  // (clic utilisateur sur "Déconnexion") peut fermer la session.
+  // Cela évite les déconnexions intempestives sur réseau lent / mobile en veille.
   const userValidation = await withTimeout(
     supabase.auth.getUser(),
-    3000,
+    5000,
     { data: { user: null }, error: { message: 'validation_timeout' } as any }
   );
 
-  if (userValidation.error || !userValidation.data.user) {
-    logger.warn('Invalid local auth session detected, clearing local session', {
+  // Cas STRICT : token explicitement révoqué côté serveur (compte supprimé/banni).
+  // On ne purge QUE si Supabase répond clairement "user introuvable / token invalide".
+  // Un timeout réseau n'est PAS un motif de déconnexion.
+  const errMsg = userValidation.error?.message?.toLowerCase() || '';
+  const isExplicitInvalid =
+    !userValidation.error?.message?.includes('validation_timeout') &&
+    (errMsg.includes('user not found') ||
+      errMsg.includes('invalid jwt') ||
+      errMsg.includes('jwt expired') ||
+      errMsg.includes('not authenticated'));
+
+  if (isExplicitInvalid) {
+    logger.warn('Auth token explicitly revoked by server, clearing local session', {
       error: userValidation.error?.message,
     });
     clearAuthCache();
