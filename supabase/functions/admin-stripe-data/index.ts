@@ -46,12 +46,34 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "list_payment_intents": {
-        const pis = await stripe.paymentIntents.list({
+        const baseParams: any = {
           limit: params?.limit || 25,
           starting_after: params?.starting_after || undefined,
           created: params?.created || undefined,
-        });
-        result = pis;
+          expand: ["data.latest_charge.balance_transaction"],
+        };
+        // If account_id is provided, scope the request to that connected account
+        const requestOptions = params?.account_id
+          ? { stripeAccount: params.account_id as string }
+          : undefined;
+        const pis = await stripe.paymentIntents.list(baseParams, requestOptions);
+
+        // Re-shape: expose `charges.data[0].balance_transaction.fee` for the admin UI
+        // (Stripe's new API returns `latest_charge` instead of `charges`)
+        const enriched = {
+          ...pis,
+          data: pis.data.map((pi: any) => {
+            const lc = pi?.latest_charge;
+            if (lc && typeof lc === "object") {
+              return {
+                ...pi,
+                charges: { data: [lc] },
+              };
+            }
+            return pi;
+          }),
+        };
+        result = enriched;
         break;
       }
 
