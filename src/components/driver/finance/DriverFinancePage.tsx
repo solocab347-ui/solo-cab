@@ -311,15 +311,21 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       for (const b of allBp) {
         const key = toWeekKey(b.created_at);
         const existing = generatedByWeek.get(key);
-        if (existing) {
-          existing.activityCount = (existing.activityCount || 0) + 1;
-          continue;
-        }
-        const { start, end } = getVtcWeekForDate(new Date(b.created_at));
         const gross = Number(b.gross_amount || 0);
         const solocabFee = Number(b.solocab_fee || 0);
         const stripeFee = Number(b.stripe_fee || 0);
         const net = Number(b.net_amount || 0);
+        if (existing) {
+          if (existing.isGenerated) {
+            existing.net_amount += net;
+            existing.total_commissions_earned += gross;
+            existing.total_solocab_fees += solocabFee + stripeFee;
+            existing.standard_courses_count += 1;
+          }
+          existing.activityCount = (existing.activityCount || 0) + 1;
+          continue;
+        }
+        const { start, end } = getVtcWeekForDate(new Date(b.created_at));
         generatedByWeek.set(key, {
           id: `activity-${key}`,
           week_start: start.toISOString(),
@@ -366,7 +372,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       const completeWeekHistory = Array.from(generatedByWeek.values()).sort(
         (a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime()
       );
-      setSettlements(mapped);
+      setSettlements(completeWeekHistory);
       setPendingPayments(pendingResult.data || []);
       // Les listes sont déjà normalisées (TransactionItem) via balancePendingToTxn.
       setMonthlyTransactions((monthlyPaymentsResult.data || []) as TransactionItem[]);
