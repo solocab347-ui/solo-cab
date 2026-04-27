@@ -69,7 +69,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
 
-  const { isAvailable, isOnline, driverStatus, toggleAvailability } = useDriverAvailability();
+  const { isAvailable, isOnline, driverStatus, toggleAvailability, isToggling } = useDriverAvailability();
   const isAssigned = driverStatus === 'assigned';
   const isInRide = driverStatus === 'in_ride';
   const isBreak = driverStatus === 'break';
@@ -88,8 +88,9 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   });
 
   const handleToggleAvailability = useCallback(async () => {
+    if (isBusy || isToggling) return;
     await toggleAvailability();
-  }, [toggleAvailability]);
+  }, [toggleAvailability, isBusy, isToggling]);
 
   const fetchRevenue = useCallback(async () => {
     try {
