@@ -1337,3 +1337,19 @@ function SmallTarget({
     </div>
   );
 }
+
+function WhyBanner({ text }: { text: string }) {
+  return (
+    <div className="mb-4 bg-primary/5 border-l-4 border-primary rounded-r-md px-3 py-2 flex gap-2">
+      <Compass className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-primary font-semibold">
+          Pourquoi cette étape ?
+        </p>
+        <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+          {text}
+        </p>
+      </div>
+    </div>
+  );
+}
