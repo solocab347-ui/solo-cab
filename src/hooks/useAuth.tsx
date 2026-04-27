@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logger } from "@/lib/productionLogger";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { 
   instantSignIn, 
   instantGetSession, 
