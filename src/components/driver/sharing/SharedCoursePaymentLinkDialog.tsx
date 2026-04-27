@@ -239,10 +239,10 @@ export function SharedCoursePaymentLinkDialog({
             )}
             <Button
               onClick={() => createLink(false)}
-              disabled={status === 'creating'}
+              disabled={(status as Status) === 'creating'}
               className="w-full"
             >
-              {status === 'creating' ? (
+              {(status as Status) === 'creating' ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Génération du lien Stripe...
@@ -335,7 +335,7 @@ export function SharedCoursePaymentLinkDialog({
                 size="sm"
                 variant="ghost"
                 onClick={() => createLink(true)}
-                disabled={status === 'creating'}
+                disabled={(status as Status) === 'creating'}
                 title="Régénérer un nouveau lien"
               >
                 <RefreshCw className="w-3 h-3" />
