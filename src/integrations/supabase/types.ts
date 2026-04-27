@@ -23906,6 +23906,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_hard_delete_driver: { Args: { p_driver_id: string }; Returns: Json }
       apply_first_order_discount: {
         Args: {
           p_client_id: string
