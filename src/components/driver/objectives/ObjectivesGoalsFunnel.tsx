@@ -1019,10 +1019,8 @@ function SummaryStep({
   km,
   days,
   hours,
-  expenses,
   solocabFees,
-  netRevenue,
-  netMarginPct,
+  revenueAfterFees,
   platforms,
   cards,
   scans,
@@ -1034,10 +1032,8 @@ function SummaryStep({
   km: number;
   days: number;
   hours: number;
-  expenses: number;
   solocabFees: number;
-  netRevenue: number;
-  netMarginPct: number;
+  revenueAfterFees: number;
   platforms: string[];
   cards: number;
   scans: number;
@@ -1077,10 +1073,10 @@ function SummaryStep({
           sub={platforms.slice(0, 2).join(", ") + (platforms.length > 2 ? "…" : "")}
         />
         <SummaryCard
-          icon={Wallet}
-          label="Dépenses"
-          value={`${expenses.toLocaleString("fr-FR")}€`}
-          sub={`+ ${solocabFees.toFixed(0)}€ frais SoloCab`}
+          icon={Crown}
+          label="Frais SoloCab"
+          value={`${solocabFees.toFixed(0)}€`}
+          sub="0,50€ × courses"
         />
         <SummaryCard
           icon={QrCode}
@@ -1092,22 +1088,17 @@ function SummaryStep({
 
       <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 border-2 border-primary/30 rounded-lg p-4">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
-          Ton revenu NET visé
+          Ton revenu après frais SoloCab
         </p>
         <div className="flex items-baseline justify-between">
-          <span
-            className={cn(
-              "text-3xl font-bold",
-              netRevenue > 0 ? "text-primary" : "text-destructive"
-            )}
-          >
-            {netRevenue.toFixed(0)}€
+          <span className="text-3xl font-bold text-primary">
+            {revenueAfterFees.toFixed(0)}€
           </span>
           <span className="text-xs text-muted-foreground">/mois</span>
         </div>
         <div className="flex items-center justify-between mt-2 text-xs">
           <span className="text-muted-foreground">
-            Marge nette : <strong className="text-foreground">{netMarginPct.toFixed(1)}%</strong>
+            Hors charges & dépenses perso
           </span>
           <span className="text-muted-foreground">
             Indépendance visée : <strong className="text-primary">{indepPct}%</strong>
@@ -1115,9 +1106,14 @@ function SummaryStep({
         </div>
       </div>
 
-      <p className="text-xs text-center text-muted-foreground">
-        Modifiable à tout moment dans <strong>Performance → Objectifs</strong>.
-      </p>
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs flex gap-2">
+        <Bell className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+        <p className="text-muted-foreground">
+          <strong className="text-foreground">À partir de demain matin :</strong>{" "}
+          ton dashboard suit ces objectifs en temps réel et t'alerte si tu déries.
+          Tout est modifiable dans <strong>Performance → Objectifs</strong>.
+        </p>
+      </div>
     </div>
   );
 }
