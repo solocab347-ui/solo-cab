@@ -371,7 +371,7 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
               await openAndroidSettingsFallback('notifications', log);
             }
           } else if ('Notification' in window) {
-            // ===== Web (PWA / navigateur) =====
+            // ===== Web (navigateur) =====
             // On TENTE TOUJOURS requestPermission() — Chrome peut avoir reset la perm
             // entre-temps (l'utilisateur a pu débloquer manuellement avant de revenir).
             // Si toujours 'denied', l'UI affichera le guide visuel (sans alert bloquante).

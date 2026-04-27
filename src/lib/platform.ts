@@ -15,7 +15,7 @@ import { Capacitor } from "@capacitor/core";
 
 /**
  * `true` si l'application tourne dans un conteneur natif Capacitor (iOS/Android).
- * `false` sur le web (incluant la PWA installée).
+ * `false` sur le web.
  */
 export const isMobileApp = (): boolean => {
   try {
