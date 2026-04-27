@@ -17,6 +17,8 @@ interface Props {
 const AdminDriverDetailView = ({ driverId, onBack }: Props) => {
   const [driver, setDriver] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [sharedSent, setSharedSent] = useState<any[]>([]);
+  const [sharedReceived, setSharedReceived] = useState<any[]>([]);
   const [stripeAccount, setStripeAccount] = useState<any>(null);
   const [stripePayouts, setStripePayouts] = useState<any[]>([]);
   const [stripeBalance, setStripeBalance] = useState<any>(null);
