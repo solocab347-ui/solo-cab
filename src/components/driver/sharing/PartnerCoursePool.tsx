@@ -997,32 +997,54 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
               </AlertDescription>
             </Alert>
           ) : (
-            pooledCourses.map((course) => (
-              <Card key={course.pool_id} className="overflow-hidden">
+            pooledCourses.map((course) => {
+              const fees = computeFees(course.course_amount);
+              const netReceiver = Math.max(0, course.course_amount - course.estimated_commission - fees.total);
+              const distanceToPickup = (receiverPos && course.pickup_latitude && course.pickup_longitude)
+                ? haversineKm(receiverPos.lat, receiverPos.lng, course.pickup_latitude, course.pickup_longitude)
+                : null;
+
+              return (
+              <Card key={course.pool_id} className="overflow-hidden border-2 border-primary/40 shadow-lg shadow-primary/10 ring-1 ring-primary/20">
                 <CardContent className="p-0">
-                  {/* Sender & Expiry */}
-                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  {/* PREMIUM partner banner */}
+                  <div className="bg-gradient-to-r from-primary via-primary/90 to-accent px-3 py-2 flex items-center justify-between text-primary-foreground">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
+                      <Handshake className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Course partagée — Pool partenaires</span>
+                    </div>
+                    <Badge variant="outline" className="bg-white/20 border-white/30 text-primary-foreground text-[10px] flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
+                    </Badge>
+                  </div>
+
+                  {/* Sender */}
+                  <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-primary/30">
                         <AvatarImage src={course.sender_photo || undefined} />
-                        <AvatarFallback className="text-xs">{course.sender_name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary">{course.sender_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">{course.sender_name}</p>
+                        <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Envoyée par</p>
+                        <p className="text-sm font-semibold">{course.sender_name}</p>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                           {course.sender_sharing_number && (
                             <span className="text-primary font-mono">{formatSharingNumber(course.sender_sharing_number)}</span>
                           )}
                           {course.sender_company && (
-                            <span>{course.sender_company}</span>
+                            <span>• {course.sender_company}</span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
-                    </Badge>
+                    {course.sender_rating && (
+                      <Badge variant="outline" className="text-xs bg-yellow-500/10">
+                        <span className="text-yellow-600 mr-1">★</span>
+                        {course.sender_rating.toFixed(1)}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Course info */}
@@ -1046,15 +1068,21 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {course.passengers_count}
+                        {course.passengers_count} pax
                       </span>
                       {course.distance_km && (
                         <span className="flex items-center gap-1">
                           <Car className="h-3 w-3" />
-                          {course.distance_km.toFixed(0)} km
+                          Course : {course.distance_km.toFixed(0)} km
+                        </span>
+                      )}
+                      {distanceToPickup !== null && (
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <Navigation className="h-3 w-3" />
+                          ~{distanceToPickup.toFixed(1)} km de vous
                         </span>
                       )}
                     </div>
@@ -1066,36 +1094,59 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                     )}
                   </div>
 
-                  {/* Footer */}
-                  <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-bold flex items-center gap-1">
-                        <Euro className="h-4 w-4" />
-                        {course.course_amount.toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        -{course.commission_percentage}% = {course.estimated_commission.toFixed(2)}€ comm.
-                      </p>
+                  {/* Financial breakdown */}
+                  <div className="px-3 py-3 bg-gradient-to-br from-muted/40 to-primary/5 border-t border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Receipt className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">Détail financier</span>
                     </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Montant total course</span>
+                        <span className="font-semibold">{course.course_amount.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Commission expéditeur ({course.commission_percentage}%)</span>
+                        <span className="text-orange-600">−{course.estimated_commission.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground" title={`Stripe: ${fees.stripeFee.toFixed(2)}€ + SoloCab: ${fees.solocabFee.toFixed(2)}€`}>
+                          Frais (Stripe + SoloCab)
+                        </span>
+                        <span className="text-red-500">−{fees.total.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 mt-1.5 border-t border-primary/20">
+                        <span className="font-semibold flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-green-600" />
+                          Vous encaissez (net estimé)
+                        </span>
+                        <span className="font-bold text-green-600 text-base">{netReceiver.toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-3 border-t bg-background flex items-center justify-end">
                     <Button
                       onClick={() => claimPooledCourse(course.pool_id)}
                       disabled={claiming === course.pool_id}
                       size="sm"
-                      className="h-10 px-4"
+                      className="h-10 px-5 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                     >
                       {claiming === course.pool_id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
                           <Check className="h-4 w-4 mr-1" />
-                          Prendre
+                          Prendre la course
                         </>
                       )}
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))
+              );
+            })
           )}
         </TabsContent>
       </Tabs>
