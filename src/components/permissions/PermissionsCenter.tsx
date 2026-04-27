@@ -357,7 +357,7 @@ function DeniedGuidance({
         ctaLabel: 'Ouvrir les Réglages',
       };
     }
-    // Web / PWA — on retente toujours la prompt système au clic
+    // Web — on retente toujours la prompt système au clic
     return {
       title: `Autorisation refusée par le navigateur`,
       helper: `Touchez le bouton pour redemander l'autorisation. Si le navigateur ne réaffiche pas la fenêtre, suivez la procédure ci-dessous.`,
