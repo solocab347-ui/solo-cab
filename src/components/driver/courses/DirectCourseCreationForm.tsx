@@ -425,8 +425,8 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
           <UserX className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">Course pour Client Non Inscrit</h2>
-          <p className="text-sm text-muted-foreground">Création directe sans devis</p>
+          <h2 className="text-xl font-bold">{title || "Course pour Client Non Inscrit"}</h2>
+          <p className="text-sm text-muted-foreground">{subtitle || "Création directe sans devis"}</p>
         </div>
       </div>
 
