@@ -33,6 +33,7 @@ interface SentCourse {
   commission_percentage: number;
   commission_amount: number;
   solocab_fee: number;
+  earnings_for_receiver: number;
   status: string;
   sharing_scope: string;
   created_at: string;
@@ -44,6 +45,8 @@ interface SentCourse {
   distance_km: number | null;
   course_status: string;
   course_number: string | null;
+  payment_status: string | null;
+  client_payment_url: string | null;
   receiver_name: string | null;
   receiver_photo: string | null;
   receiver_company: string | null;
