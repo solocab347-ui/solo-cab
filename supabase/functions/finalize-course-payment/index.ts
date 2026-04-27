@@ -336,26 +336,35 @@ serve(async (req) => {
 
         if (existingPI.status === "requires_capture") {
           // CAPTURE the full amount (or adjusted amount if different)
-          const captureAmountCents = Math.round(totalAmount * 100);
-          
-          const captured = await stripe.paymentIntents.capture(
-            holdPiId,
-            {
-              amount_to_capture: Math.min(captureAmountCents, existingPI.amount),
-            }
+          const captureAmountCents = Math.min(Math.round(totalAmount * 100), existingPI.amount);
+
+          // Calcul application_fee avec arriérés cash
+          const arrears = await computeApplicationFeeWithArrears(
+            supabaseClient,
+            course.driver_id,
+            captureAmountCents,
           );
+          logStep("Capture: arrears computation", {
+            totalArrearsCents: arrears.totalArrearsCents,
+            arrearsRecoveredCents: arrears.arrearsRecoveredCents,
+            finalFeeCents: arrears.finalFeeCents,
+          });
+
+          const captured = await stripe.paymentIntents.capture(holdPiId, {
+            amount_to_capture: captureAmountCents,
+            application_fee_amount: arrears.finalFeeCents,
+          });
 
           logStep("✅ Hold captured successfully", {
             piId: captured.id,
             amountCaptured: captured.amount_received,
             status: captured.status,
+            applicationFeeCents: arrears.finalFeeCents,
           });
 
           // Calculer les frais pour traçabilité
-          const STRIPE_PERCENTAGE = 0.015;
-          const STRIPE_FIXED_FEE = 0.25;
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
-          const solocabFee = SOLOCAB_FEE_CENTS / 100;
+          const solocabFee = arrears.finalFeeCents / 100; // Inclut éventuels arriérés
           const totalFees = solocabFee + stripeFee;
           const netToDriver = Math.max(0, Math.round((totalAmount - totalFees) * 100) / 100);
 
@@ -378,33 +387,47 @@ serve(async (req) => {
             .eq("id", course_id);
 
           // Record in unified payments table (idempotent — unique index prevents duplicates)
-          const { error: payInsertErr } = await supabaseClient.from("payments").insert({
-            course_id,
-            driver_id: course.driver_id,
-            client_id: course.client_id,
-            stripe_payment_intent_id: captured.id,
-            stripe_charge_id: (captured.latest_charge as string) || null,
-            amount: totalAmount,
-            captured_amount: totalAmount,
-            application_fee_amount: solocabFee,
-            stripe_fee_amount: stripeFee,
-            net_to_driver: netToDriver,
-            status: "succeeded",
-            payment_type: "course_capture",
-            capture_method: "manual",
-            payment_method: "card",
-            captured_at: new Date().toISOString(),
-            metadata: {
-              hold_payment_intent_id: holdPiId,
-              total_amount: totalAmount,
-              flow: "authorize_then_capture",
-            },
-          });
+          const { data: insertedPayment, error: payInsertErr } = await supabaseClient
+            .from("payments")
+            .insert({
+              course_id,
+              driver_id: course.driver_id,
+              client_id: course.client_id,
+              stripe_payment_intent_id: captured.id,
+              stripe_charge_id: (captured.latest_charge as string) || null,
+              amount: totalAmount,
+              captured_amount: totalAmount,
+              application_fee_amount: solocabFee,
+              stripe_fee_amount: stripeFee,
+              net_to_driver: netToDriver,
+              status: "succeeded",
+              payment_type: "course_capture",
+              capture_method: "manual",
+              payment_method: "card",
+              captured_at: new Date().toISOString(),
+              metadata: {
+                hold_payment_intent_id: holdPiId,
+                total_amount: totalAmount,
+                flow: "authorize_then_capture",
+                arrears_recovered_eur: arrears.arrearsRecoveredCents / 100,
+                arrears_count: arrears.rowsToSettle.length,
+              },
+            })
+            .select("id")
+            .maybeSingle();
           if (payInsertErr?.code === "23505") {
             logStep("Payment already recorded (duplicate prevented)", { course_id });
           } else if (payInsertErr) {
             logStep("Payment insert error (non-blocking)", { error: payInsertErr.message });
           }
+
+          // Solder les arriérés cash si récupérés
+          await settleArrears(
+            supabaseClient,
+            arrears.rowsToSettle.map((r) => r.id),
+            insertedPayment?.id ?? null,
+            course_id,
+          );
 
           // Créer la facture automatiquement
           try {
