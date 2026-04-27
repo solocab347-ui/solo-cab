@@ -60,6 +60,7 @@ import {
 import { CourseQueueManager } from "@/components/driver/courses/CourseQueueManager";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { ObjectivesDashboard } from "@/components/driver/objectives/ObjectivesDashboard";
+import { ObjectivesGoalsFunnel } from "@/components/driver/objectives/ObjectivesGoalsFunnel";
 import { DriverPaymentSettings } from "@/components/driver/settings/DriverPaymentSettings";
 import { DriverFinancePage } from "@/components/driver/finance/DriverFinancePage";
 import { SpontaneousPayment } from "@/components/driver/finance/SpontaneousPayment";
@@ -135,6 +136,7 @@ const DriverDashboard = () => {
   const [showOnboardingTunnel, setShowOnboardingTunnel] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
+  const [showObjectivesFunnel, setShowObjectivesFunnel] = useState(false);
   const [viewMode, setViewModeState] = useState<"dashboard" | "map">(() => {
     const viewParam = searchParams.get("view");
     // Explicit URL override always wins
@@ -255,7 +257,29 @@ const DriverDashboard = () => {
       }
     }
   }, [driverProfile?.driver?.id]);
-  
+
+  // Funnel obligatoire: fixer ses objectifs à la 1ère connexion (post-onboarding, post-profil)
+  useEffect(() => {
+    const drv = driverProfile?.driver;
+    if (!drv) return;
+    if (!drv.onboarding_completed) return; // attend la fin de l'onboarding
+    if (showProfileWizard) return; // attend la fin du wizard de profil
+    const objectivesDone =
+      (drv as any).objectives_completed === true ||
+      (drv as any).onboarding_objectives_completed === true;
+    if (!objectivesDone) {
+      setShowObjectivesFunnel(true);
+    } else {
+      setShowObjectivesFunnel(false);
+    }
+  }, [
+    driverProfile?.driver?.id,
+    driverProfile?.driver?.onboarding_completed,
+    (driverProfile?.driver as any)?.objectives_completed,
+    (driverProfile?.driver as any)?.onboarding_objectives_completed,
+    showProfileWizard,
+  ]);
+
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 
@@ -778,7 +802,20 @@ const DriverDashboard = () => {
           />
         )}
 
-        {!showProfileWizard && (<>
+        {/* Objectives Goals Funnel - Mandatory after profile is complete, before dashboard access */}
+        {!showProfileWizard && showObjectivesFunnel && driverProfile?.driver?.id && user && (
+          <ObjectivesGoalsFunnel
+            driverId={driverProfile.driver.id}
+            driverUserId={user.id}
+            onComplete={() => {
+              setShowObjectivesFunnel(false);
+              queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user.id] });
+            }}
+          />
+        )}
+
+        {!showProfileWizard && !showObjectivesFunnel && (<>
+
 
         {/* Pioneer Banner - Affichage pour les pionniers */}
         {driverProfile?.driver?.is_pioneer && (
