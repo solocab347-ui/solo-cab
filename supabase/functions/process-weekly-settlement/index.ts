@@ -55,6 +55,26 @@ async function fetchAllRows(supabase: any, table: string, column: string, value:
   return rows;
 }
 
+async function fetchEligibleDrivers(supabase: any) {
+  const rows: any[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, user_id, cash_debt_pending, company_name")
+      .eq("status", "validated")
+      .not("stripe_connect_account_id", "is", null)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Failed to fetch eligible drivers: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return rows;
+}
+
 // ─── Pool de promesses limitées en parallélisme ─────────────────
 async function runWithConcurrency<T, R>(
   items: T[], limit: number, worker: (item: T, idx: number) => Promise<R>
@@ -162,14 +182,18 @@ serve(async (req) => {
       }
     }
 
-    const allDriverIds = Object.keys(driverTotals).filter(id => !alreadyProcessed.has(id));
-    log("Drivers to process this run", { total: Object.keys(driverTotals).length, todo: allDriverIds.length });
+    const eligibleDrivers = await fetchEligibleDrivers(supabase);
+    const eligibleDriverIds = eligibleDrivers.map((d) => d.id);
+    const allDriverIds = Array.from(new Set([...Object.keys(driverTotals), ...eligibleDriverIds]))
+      .filter(id => !alreadyProcessed.has(id));
+    log("Drivers to process this run", { active_with_activity: Object.keys(driverTotals).length, eligible_drivers: eligibleDriverIds.length, todo: allDriverIds.length });
 
     // ═══ 2. BATCH LOOKUP chauffeurs (1 query au lieu de N) ═══
-    // On pagine par tranches de 500 pour PostgREST
     const driversById: Record<string, any> = {};
-    for (let i = 0; i < allDriverIds.length; i += 500) {
-      const chunk = allDriverIds.slice(i, i + 500);
+    for (const d of eligibleDrivers) driversById[d.id] = d;
+    const missingDriverIds = allDriverIds.filter((id) => !driversById[id]);
+    for (let i = 0; i < missingDriverIds.length; i += 500) {
+      const chunk = missingDriverIds.slice(i, i + 500);
       const { data: ds } = await supabase
         .from("drivers")
         .select("id, stripe_connect_account_id, stripe_connect_charges_enabled, user_id, cash_debt_pending, company_name")
