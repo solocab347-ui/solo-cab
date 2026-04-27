@@ -40,6 +40,38 @@ workflows:
       - name: Capacitor sync iOS
         script: |
           npx cap sync ios
+      - name: iOS preflight - validate workspace & scheme
+        script: |
+          set -e
+          echo "🔍 Préflight iOS — vérification des fichiers du projet"
+          echo ""
+          echo "📂 Contenu de ios/ :"
+          ls -la ios/ || { echo "❌ Dossier ios/ introuvable"; exit 1; }
+          echo ""
+          echo "📂 Contenu de ios/App/ :"
+          ls -la ios/App/ || { echo "❌ Dossier ios/App/ introuvable"; exit 1; }
+          echo ""
+          if [ ! -d "$XCODE_WORKSPACE" ]; then
+            echo "❌ ERREUR : Xcode workspace introuvable à : $XCODE_WORKSPACE"
+            echo "   Workspaces .xcworkspace présents dans le repo :"
+            find ios -name "*.xcworkspace" -maxdepth 4 -type d || true
+            exit 1
+          fi
+          echo "✅ Workspace trouvé : $XCODE_WORKSPACE"
+          echo ""
+          echo "📋 Liste des schémas disponibles dans le workspace :"
+          AVAILABLE_SCHEMES=$(xcodebuild -workspace "$XCODE_WORKSPACE" -list 2>/dev/null || true)
+          echo "$AVAILABLE_SCHEMES"
+          if ! echo "$AVAILABLE_SCHEMES" | grep -qE "^[[:space:]]+${XCODE_SCHEME}$"; then
+            echo "❌ ERREUR : Schéma '$XCODE_SCHEME' introuvable dans le workspace."
+            exit 1
+          fi
+          echo "✅ Schéma '$XCODE_SCHEME' trouvé"
+          echo ""
+          echo "📄 Podfile :"
+          test -f ios/App/Podfile && echo "✅ Podfile présent" || { echo "❌ Podfile manquant"; exit 1; }
+          echo ""
+          echo "🎯 Préflight iOS réussi — prêt pour xcodebuild"
       - name: Set up code signing
         script: |
           xcode-project use-profiles
@@ -56,6 +88,19 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+      - name: Verify .ipa artifact exists
+        script: |
+          set -e
+          echo "🔍 Vérification de la présence du .ipa avant publication"
+          IPA_FILE=$(find build/ios/ipa -maxdepth 2 -name "*.ipa" | head -n 1)
+          if [ -z "$IPA_FILE" ] || [ ! -f "$IPA_FILE" ]; then
+            echo "❌ ERREUR : aucun fichier .ipa trouvé dans build/ios/ipa/"
+            echo "   Contenu du dossier :"
+            ls -la build/ios/ipa/ 2>/dev/null || echo "   (dossier inexistant)"
+            exit 1
+          fi
+          IPA_SIZE=$(du -h "$IPA_FILE" | cut -f1)
+          echo "✅ .ipa trouvé : $IPA_FILE ($IPA_SIZE)"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -110,6 +155,19 @@ workflows:
         script: |
           cd android
           ./gradlew bundleRelease
+      - name: Verify .aab artifact exists
+        script: |
+          set -e
+          echo "🔍 Vérification de la présence du .aab avant publication"
+          AAB_FILE=$(find android/app/build/outputs -name "*.aab" | head -n 1)
+          if [ -z "$AAB_FILE" ] || [ ! -f "$AAB_FILE" ]; then
+            echo "❌ ERREUR : aucun fichier .aab trouvé dans android/app/build/outputs/"
+            echo "   Contenu du dossier :"
+            find android/app/build/outputs -type f 2>/dev/null || echo "   (dossier inexistant)"
+            exit 1
+          fi
+          AAB_SIZE=$(du -h "$AAB_FILE" | cut -f1)
+          echo "✅ .aab trouvé : $AAB_FILE ($AAB_SIZE)"
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
