@@ -264,6 +264,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isMounted = false;
       isInitializing = false;
       clearTimeout(safetyTimeout);
+      if (backgroundRetryTimer) clearTimeout(backgroundRetryTimer);
       subscription.unsubscribe();
     };
   }, []);
