@@ -206,17 +206,61 @@ serve(async (req) => {
 
     logStep("Capturing payment intent", { paymentIntentId });
 
-    // Capture the payment
-    const paymentIntent = await stripe.paymentIntents.capture(
-      paymentIntentId,
-      amount_to_capture ? { amount_to_capture: Math.round(amount_to_capture * 100) } : {}
+    // ═══ ARRIÉRÉS CASH : Récupérer les frais SoloCab des courses cash impayées ═══
+    // On retrieve toutes les lignes driver_balance_pending de type 'cash' status='pending'
+    // antérieures à cette capture, pour les soldes via cette CB.
+    const { data: pendingCashRows } = await supabaseClient
+      .from("driver_balance_pending")
+      .select("id, course_id, solocab_fee, created_at")
+      .eq("driver_id", course.driver_id)
+      .eq("payment_type", "cash")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+
+    const arrearsTotalCents = (pendingCashRows || []).reduce(
+      (sum, r) => sum + Math.round((Number(r.solocab_fee) || 0) * 100),
+      0
     );
+    logStep("Cash arrears found", {
+      count: pendingCashRows?.length || 0,
+      arrearsCents: arrearsTotalCents,
+    });
+
+    // Pré-calcul du montant à capturer pour borner application_fee
+    const captureAmountCents = amount_to_capture
+      ? Math.round(amount_to_capture * 100)
+      : Math.round((course.final_payment_amount || course.guest_estimated_price || 0) * 100);
+
+    // Estimation des frais Stripe pour borner application_fee (Stripe exige : app_fee ≤ amount - stripe_fee)
+    const estimatedStripeFeeCents = Math.ceil(captureAmountCents * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE * 100);
+    const maxApplicationFeeCents = Math.max(0, captureAmountCents - estimatedStripeFeeCents);
+
+    // Frais SoloCab souhaités : 0,50€ (course en cours) + arriérés cash
+    const desiredApplicationFeeCents = SOLOCAB_FEE_CENTS + arrearsTotalCents;
+    const finalApplicationFeeCents = Math.min(desiredApplicationFeeCents, maxApplicationFeeCents);
+    const arrearsRecoveredCents = Math.max(0, finalApplicationFeeCents - SOLOCAB_FEE_CENTS);
+
+    logStep("Application fee computation", {
+      desiredCents: desiredApplicationFeeCents,
+      maxCents: maxApplicationFeeCents,
+      finalCents: finalApplicationFeeCents,
+      arrearsRecoveredCents,
+    });
+
+    // Capture the payment with custom application_fee_amount
+    const captureParams: Record<string, unknown> = {
+      application_fee_amount: finalApplicationFeeCents,
+    };
+    if (amount_to_capture) {
+      captureParams.amount_to_capture = captureAmountCents;
+    }
+    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId, captureParams as any);
 
     const capturedAmount = paymentIntent.amount_received / 100;
 
     // Calculate fees (aligned with finalize-course-payment)
     const stripeFee = Math.round((capturedAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
-    const solocabFee = SOLOCAB_FEE_CENTS / 100;
+    const solocabFee = finalApplicationFeeCents / 100; // Inclut éventuels arriérés
     const totalFees = stripeFee + solocabFee;
     // CRITICAL: Ensure driver never receives negative amount
     const netToDriver = Math.max(0, Math.round((capturedAmount - totalFees) * 100) / 100);
