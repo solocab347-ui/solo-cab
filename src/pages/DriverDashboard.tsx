@@ -35,7 +35,7 @@ import { ProfileCompletionWizard } from "@/components/driver/profile/ProfileComp
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/planning/DriverPlanning";
 import { OutOfScheduleAlerts } from "@/components/driver/planning/OutOfScheduleAlerts";
-import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
+import { PartnerCoursesHub } from "@/components/driver/partnership/PartnerCoursesHub";
 import { DriverCourseSharing } from "@/components/driver/sharing/DriverCourseSharing";
 import { PremiumGate } from "@/components/premium/PremiumGate";
 import { GuestBookingsList } from "@/components/driver/clients/GuestBookingsList";
@@ -1132,7 +1132,7 @@ const DriverDashboard = () => {
           {/* Partenariats Tab */}
           <TabsContent value="sharing" className="space-y-6">
             {isPremium ? (
-              <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
+              <PartnerCoursesHub driverId={driverProfile?.id ?? null} />
             ) : (
               <PremiumGate featureName="Partenariats & Partage de courses" featureDescription="Accédez au réseau de partenaires et développez votre activité." />
             )}

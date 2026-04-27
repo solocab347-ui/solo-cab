@@ -163,39 +163,8 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
         .eq('receiver_driver_id', driverId)
         .in('status', ['accepted', 'in_progress']);
 
-      // ALSO fetch fleet shared courses (courses shared TO this driver by fleet managers)
-      const { data: fleetSharedCourses } = await supabase
-        .from('fleet_partner_courses')
-        .select(`
-          id,
-          course_id,
-          fleet_manager_id,
-          course_amount,
-          commission_percentage,
-          commission_amount,
-          earnings_for_driver,
-          equipment_type,
-          status,
-          courses!inner(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            passengers_count,
-            distance_km,
-            duration_minutes,
-            status,
-            course_number,
-            notes
-          ),
-          fleet_managers!inner(
-            id,
-            company_name,
-            logo_url
-          )
-        `)
-        .eq('driver_id', driverId)
-        .in('status', ['accepted', 'in_progress']);
+      // Fleet sharing has been removed
+      const fleetSharedCourses: any[] = [];
 
       // Collect sender driver IDs for profiles
       const senderDriverIds = new Set<string>();
@@ -365,27 +334,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           });
         }
 
-        // Fetch fleet driver partnerships
-        const { data: fleetData } = await supabase
-          .from("fleet_driver_partnerships")
-          .select("id, fleet_manager_id, driver_id, status")
-          .eq("driver_id", driverId)
-          .eq("status", "active");
-
-        // Get fleet manager names
-        const fleetManagerIds = [...new Set(fleetData?.map(f => f.fleet_manager_id) || [])];
-        let fleetManagerNames: Record<string, string> = {};
-        if (fleetManagerIds.length > 0) {
-          const { data: fleetManagers } = await supabase
-            .from("fleet_managers")
-            .select("id, company_name")
-            .in("id", fleetManagerIds);
-          
-          fleetManagers?.forEach(fm => {
-            fleetManagerNames[fm.id] = fm.company_name;
-          });
-        }
-
+        // Fleet partnerships removed
         // Enrich courses with type info
         enrichedOwnCourses = coursesData.map(course => {
           const courseSharedData = sharedData?.filter(sc => sc.course_id === course.id) || [];
@@ -404,20 +353,12 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             company: { company_name: companyNames[cc.company_id] || 'Entreprise' }
           }));
 
-          // Check if this is a fleet course (driver has active fleet partnership and course was created by fleet)
-          const activeFleetPartnership = fleetData?.[0];
-          const isFleetCourse = activeFleetPartnership && course.driver_ids?.includes(driverId);
-
           const courseType = getCourseType(
             { ...course, shared_courses: enrichedSharedCourses, company_courses: enrichedCompanyCourses },
             driverId,
             {
               sharedCourses: enrichedSharedCourses,
               companyCourses: enrichedCompanyCourses,
-              fleetDriverInfo: isFleetCourse && activeFleetPartnership ? {
-                fleet_manager_id: activeFleetPartnership.fleet_manager_id,
-                fleet_name: fleetManagerNames[activeFleetPartnership.fleet_manager_id]
-              } : undefined
             }
           );
 

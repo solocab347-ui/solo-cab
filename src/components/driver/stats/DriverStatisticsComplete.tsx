@@ -194,23 +194,8 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
     const companyCourseIds = new Set(companyCourses?.map(cc => cc.course_id) || []);
 
-    // Get fleet courses
-    let fleetCourseIds = new Set<string>();
-    const { data: fleetPartnership } = await supabase
-      .from('fleet_driver_partnerships')
-      .select('fleet_manager_id')
-      .eq('driver_id', driverId)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (fleetPartnership) {
-      const { data: fleetCommissions } = await supabase
-        .from('partnership_course_commissions')
-        .select('course_id')
-        .in('course_id', courses?.map(c => c.id) || []);
-      
-      fleetCourseIds = new Set(fleetCommissions?.map(fc => fc.course_id) || []);
-    }
+    // Fleet partnerships removed
+    const fleetCourseIds = new Set<string>();
 
     // Calculate stats - only count completed courses
     const completedCourses = courses?.filter(c => c.status === 'completed') || [];
@@ -273,15 +258,8 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
       return sum + (Number(course?.final_payment_amount) || 0);
     }, 0) || 0;
 
-    // Get commissions owed
-    const { data: commissionsOwed } = await supabase
-      .from('partnership_course_commissions')
-      .select('commission_amount')
-      .eq('payment_status', 'pending')
-      .gte('created_at', dateRange.start.toISOString())
-      .lte('created_at', dateRange.end.toISOString());
-
-    const totalCommissionsOwed = commissionsOwed?.reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
+    // partnership_course_commissions table removed
+    const totalCommissionsOwed = 0;
 
     // Get commissions received
     const { data: sharedByMe } = await supabase
@@ -320,26 +298,24 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
   };
 
   const fetchPartnerRankings = async () => {
-    // Driver partnerships
-    const { data: driverPartnerships } = await supabase
-      .from('driver_partnerships')
-      .select('id, driver_a_id, driver_b_id, commission_percentage')
-      .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-      .eq('status', 'active');
+    // Driver partnerships table removed - use shared_courses directly
+    const { data: sharedSent } = await supabase
+      .from('shared_courses')
+      .select('id, receiver_driver_id, course_amount, commission_percentage')
+      .eq('sender_driver_id', driverId)
+      .eq('status', 'completed');
+
+    const partnerMap = new Map<string, { count: number; revenue: number; commission: number }>();
+    (sharedSent || []).forEach((sc: any) => {
+      if (!sc.receiver_driver_id) return;
+      const entry = partnerMap.get(sc.receiver_driver_id) || { count: 0, revenue: 0, commission: sc.commission_percentage || 0 };
+      entry.count += 1;
+      entry.revenue += Number(sc.course_amount || 0);
+      partnerMap.set(sc.receiver_driver_id, entry);
+    });
 
     const partnerRankings: PartnerRanking[] = [];
-    
-    for (const p of driverPartnerships || []) {
-      const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
-      
-      // Get shared courses count
-      const { data: sharedCourses } = await supabase
-        .from('shared_courses')
-        .select('id, course_amount')
-        .eq('partnership_id', p.id)
-        .eq('status', 'completed');
-
-      // Get partner info
+    for (const [partnerId, info] of partnerMap.entries()) {
       const { data: partnerDriver } = await supabase
         .from('drivers')
         .select('user_id, company_name')
@@ -358,53 +334,18 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
           name: profile?.full_name || partnerDriver.company_name || 'Partenaire',
           photo: profile?.profile_photo_url || undefined,
           type: 'driver',
-          coursesCount: sharedCourses?.length || 0,
-          revenue: sharedCourses?.reduce((sum, s) => sum + Number(s.course_amount || 0), 0) || 0,
-          commissionPercentage: p.commission_percentage
+          coursesCount: info.count,
+          revenue: info.revenue,
+          commissionPercentage: info.commission
         });
       }
     }
 
-    // Sort by courses count
     partnerRankings.sort((a, b) => b.coursesCount - a.coursesCount);
     setTopPartners(partnerRankings.slice(0, 5));
 
-    // Fleet partnerships
-    const { data: fleetPartnerships } = await supabase
-      .from('fleet_driver_partnerships')
-      .select('id, fleet_manager_id, commission_percentage, total_owed, total_paid')
-      .eq('driver_id', driverId)
-      .eq('status', 'active');
-
-    const fleetRankings: PartnerRanking[] = [];
-    for (const fp of fleetPartnerships || []) {
-      const { data: fleet } = await supabase
-        .from('fleet_managers')
-        .select('company_name, logo_url')
-        .eq('id', fp.fleet_manager_id)
-        .single();
-
-      if (fleet) {
-        // Get courses count
-        const { data: commissions } = await supabase
-          .from('partnership_course_commissions')
-          .select('id, course_amount')
-          .eq('partnership_id', fp.id);
-
-        fleetRankings.push({
-          id: fp.fleet_manager_id,
-          name: fleet.company_name || 'Gestionnaire',
-          photo: fleet.logo_url || undefined,
-          type: 'fleet',
-          coursesCount: commissions?.length || 0,
-          revenue: commissions?.reduce((sum, c) => sum + Number(c.course_amount || 0), 0) || 0,
-          commissionPercentage: fp.commission_percentage
-        });
-      }
-    }
-
-    fleetRankings.sort((a, b) => b.revenue - a.revenue);
-    setTopFleets(fleetRankings.slice(0, 5));
+    // Fleet partnerships removed
+    setTopFleets([]);
 
     // Company agreements
     const { data: companyAgreements } = await supabase
