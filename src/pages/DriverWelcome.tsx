@@ -147,7 +147,7 @@ const DriverWelcome = () => {
               <RefreshCw className="w-4 h-4 mr-2" />
               Réessayer
             </Button>
-            <Button variant="outline" onClick={() => navigate("/auth")} className="w-full border-border text-muted-foreground">
+            <Button variant="outline" onClick={() => navigate("/login")} className="w-full border-border text-muted-foreground">
               Se connecter
             </Button>
           </div>
