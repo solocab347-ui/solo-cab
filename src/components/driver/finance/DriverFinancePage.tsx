@@ -334,7 +334,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut)</p>
+                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut) — semaine</p>
                 <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
               </div>
               <div className="p-3 rounded-full bg-primary/20">
@@ -348,11 +348,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           </Card>
 
           <Card className="p-3 bg-success/5 border-success/20">
-            <p className="text-xs text-muted-foreground mb-1">Net chauffeur</p>
+            <p className="text-xs text-muted-foreground mb-1">Net chauffeur (semaine)</p>
             <p className="text-xl font-bold text-success">{walletStats.totalNet.toFixed(2)}€</p>
           </Card>
           <Card className="p-3 bg-destructive/5 border-destructive/20">
-            <p className="text-xs text-muted-foreground mb-1">Total frais</p>
+            <p className="text-xs text-muted-foreground mb-1">Total frais (semaine)</p>
             <p className="text-xl font-bold text-destructive">-{walletStats.totalFees.toFixed(2)}€</p>
             <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
               <p>Stripe: -{(walletStats.cardStripeFees).toFixed(2)}€</p>
