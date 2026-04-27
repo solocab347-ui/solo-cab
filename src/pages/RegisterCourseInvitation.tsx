@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { Loader2, Eye, EyeOff, MapPin, Navigation, Clock, Euro, User, Car, AlertCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { LanguageSelector } from "@/components/LanguageSelector";
