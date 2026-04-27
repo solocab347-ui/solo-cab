@@ -1053,21 +1053,19 @@ serve(async (req) => {
           })
           .eq("stripe_checkout_session_id", session.id);
 
-        // Update shared course status
+        // Update shared course payment status ONLY.
+        // IMPORTANT: do NOT auto-complete the ride here — the receiver driver
+        // must manually press "Terminer" after the actual trip ends. Stripe's
+        // role is only to confirm the payment; the operational lifecycle is
+        // controlled by the driver.
         await supabaseClient
           .from("shared_courses")
           .update({
             payment_status: "paid",
-            status: "completed",
-            completed_at: new Date().toISOString(),
           })
           .eq("id", sharedCourseId);
 
-        // Update course status
-        await supabaseClient
-          .from("courses")
-          .update({ status: "completed" })
-          .eq("id", courseId);
+        // Do NOT touch courses.status here either — same reason.
 
         // NETTING: Commission transfer is now DEFERRED to weekly settlement
         // Instead of immediate transfer, mark payment as completed for weekly batch processing
@@ -1119,8 +1117,23 @@ serve(async (req) => {
           const receiverAmount = totalAmount - commissionAmount - solocabFee;
           await supabaseClient.from("notifications").insert({
             user_id: receiverData.user_id,
-            title: "✅ Paiement course partagée reçu",
-            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ (rétribution ${commissionAmount.toFixed(2)}€ + frais 0.25€).`,
+            title: "✅ Paiement course partagée confirmé",
+            message: `Stripe a confirmé le paiement client (${totalAmount.toFixed(2)}€). Vous pouvez maintenant terminer la course. Net : ${receiverAmount.toFixed(2)}€.`,
+            type: "info",
+          });
+        }
+
+        // Notify sender driver too — they need real-time visibility on the payment
+        const { data: senderNotifData } = await supabaseClient
+          .from("drivers")
+          .select("user_id")
+          .eq("id", senderDriverId)
+          .single();
+        if (senderNotifData?.user_id) {
+          await supabaseClient.from("notifications").insert({
+            user_id: senderNotifData.user_id,
+            title: "💳 Paiement client confirmé",
+            message: `Stripe a confirmé le règlement de votre course partagée. Vos frais de transaction (${commissionAmount.toFixed(2)}€) seront versés au prochain règlement hebdomadaire.`,
             type: "info",
           });
         }
