@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { 
   Loader2, CheckCircle, Shield, Eye, EyeOff, 
   ArrowRight, ArrowLeft, Rocket, Users, Target, CreditCard,
