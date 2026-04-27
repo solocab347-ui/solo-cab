@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, Circle, Loader2, CreditCard, Play, Flag, Sparkles, Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, Circle, Loader2, CreditCard, Play, Flag, Sparkles, Lock, Link2, Webhook, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Step = 'created' | 'paid' | 'in_progress' | 'completed' | 'settled';
