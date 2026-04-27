@@ -1175,6 +1175,13 @@ const DriverDashboard = () => {
       {/* Global Floating Map Button — accessible from any dashboard tab */}
       {driverIdForProvider && <FloatingMapButton onClick={() => setViewMode("map")} />}
 
+      {/* Widget de signalement (bug / amélioration) avec capture d'écran obligatoire pour les bugs */}
+      <FeedbackWidget
+        userType="driver"
+        userName={driverProfile?.full_name || (driverProfile as any)?.driver?.full_name}
+        userEmail={driverProfile?.email}
+      />
+
     </div>
     </DriverAvailabilityProvider>
   );
