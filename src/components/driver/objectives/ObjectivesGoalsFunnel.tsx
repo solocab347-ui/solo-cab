@@ -133,14 +133,7 @@ export function ObjectivesGoalsFunnel({
   const [platformPercentage, setPlatformPercentage] = useState(80); // % du CA actuel sur plateformes
   const [currentMonthlyRevenue, setCurrentMonthlyRevenue] = useState(2000);
 
-  // Étape 6 — Dépenses
-  const [expenses, setExpenses] = useState<Record<ExpenseKey, number>>(() => {
-    const init = {} as Record<ExpenseKey, number>;
-    EXPENSE_PRESETS.forEach((e) => {
-      init[e.key] = e.default;
-    });
-    return init;
-  });
+  // (étape Dépenses retirée — voir commentaire EXPENSE_PRESETS)
 
   // Étape 7 — Libération / acquisition
   const [cardsTarget, setCardsTarget] = useState(60);
