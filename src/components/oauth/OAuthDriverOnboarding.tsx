@@ -90,15 +90,22 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
   const handleStripeOnboarding = async () => {
     setLoading(true);
     try {
+      const { openExternalUrl } = await import("@/lib/openExternalUrl");
       const { data, error } = await supabase.functions.invoke("stripe-connect-onboarding");
       
       if (error) throw error;
       if (!data?.url) throw new Error("Impossible de démarrer Stripe");
 
-      // Redirect to Stripe
-      window.location.href = data.url;
+      await openExternalUrl(data.url, {
+        onClose: () => {
+          // User closed Stripe browser → continue to dashboard
+          toast.info("Configuration Stripe terminée. Bienvenue !");
+          navigate("/driver-welcome", { replace: true });
+        },
+      });
     } catch (err: any) {
       toast.error("Erreur Stripe", { description: err.message });
+    } finally {
       setLoading(false);
     }
   };
