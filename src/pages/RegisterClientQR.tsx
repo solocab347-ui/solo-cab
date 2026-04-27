@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { Loader2, Star, Car, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeAddress } from "@/lib/inputSanitizer";
@@ -129,6 +130,22 @@ const RegisterClientQR = () => {
       const cleanPhone = sanitizePhone(formData.phone);
       const cleanAddress = sanitizeAddress(formData.address);
       
+      // Vérification préalable email déjà utilisé
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error("Email déjà utilisé", {
+          description: message,
+          duration: 8000,
+          action: {
+            label: "Se connecter",
+            onClick: () => navigate(loginPath),
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
       // Créer le compte utilisateur
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: cleanEmail,

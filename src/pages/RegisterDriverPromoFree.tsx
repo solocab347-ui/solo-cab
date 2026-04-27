@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { 
   Loader2, CheckCircle, Shield, Eye, EyeOff, 
   ArrowRight, ArrowLeft, Rocket, Users, Target, CreditCard,
@@ -169,8 +170,32 @@ const RegisterDriverPromoFree = () => {
     setLoading(true);
     
     try {
+      // 0. Vérification préalable : email déjà utilisé ?
+      const cleanEmail = email.trim().toLowerCase();
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error("Email déjà utilisé", {
+          description: message,
+          duration: 8000,
+          action: {
+            label: "Se connecter",
+            onClick: () => {
+              setLoginEmail(cleanEmail);
+              setIsLoginMode(true);
+              navigate(loginPath);
+            },
+          },
+        });
+        setLoginEmail(cleanEmail);
+        setIsLoginMode(true);
+        setCurrentStep("confirm_password");
+        setLoading(false);
+        return;
+      }
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: cleanEmail,
         password,
         options: {
           data: { full_name: fullName.trim() },

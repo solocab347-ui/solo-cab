@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { Loader2, Eye, EyeOff, ArrowLeft, UserCheck, CheckCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -138,8 +139,25 @@ const RegisterClientDriver = () => {
     setLoading(true);
 
     try {
+      // Vérification préalable email déjà utilisé
+      const cleanEmail = formData.email.trim().toLowerCase();
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error("Email déjà utilisé", {
+          description: message,
+          duration: 8000,
+          action: {
+            label: "Se connecter",
+            onClick: () => navigate(loginPath),
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: cleanEmail,
         password: formData.password,
         options: {
           data: {

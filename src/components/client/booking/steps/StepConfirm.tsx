@@ -11,6 +11,7 @@ import { BookingCardStep } from '../BookingCardStep';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { checkEmailExists, buildExistingAccountMessage } from '@/lib/checkEmailExists';
 import type { User } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -190,8 +191,25 @@ export function StepConfirm({
   const handleRegister = async () => {
     setIsRegistering(true);
     try {
+      // Vérification préalable email déjà utilisé
+      const cleanEmail = regEmail.trim().toLowerCase();
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error('Email déjà utilisé', {
+          description: message,
+          duration: 8000,
+          action: {
+            label: 'Se connecter',
+            onClick: () => { window.location.href = loginPath; },
+          },
+        });
+        setIsRegistering(false);
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: regEmail.trim(),
+        email: cleanEmail,
         password: regPassword,
         options: { data: { full_name: regName.trim(), phone: regPhone.trim(), user_type: 'client' } },
       });
@@ -199,7 +217,7 @@ export function StepConfirm({
       if (data.user) {
         await supabase.from('profiles').upsert({
           id: data.user.id, full_name: regName.trim(), phone: regPhone.trim(),
-          user_type: 'client', email: regEmail.trim(),
+          user_type: 'client', email: cleanEmail,
         } as any);
         await supabase.from('clients').upsert({ user_id: data.user.id, is_exclusive: false }, { onConflict: 'user_id' });
         await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'client' as any }, { onConflict: 'user_id,role' });

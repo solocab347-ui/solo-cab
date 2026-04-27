@@ -29,6 +29,8 @@ project_id = "iyothopplhbwcfrpxryc"
     verify_jwt = false
   [functions.check-driver-subscription]
     verify_jwt = true
+  [functions.check-email-exists]
+    verify_jwt = false
   [functions.check-expired-free-access]
     verify_jwt = false
   [functions.check-expired-trials]

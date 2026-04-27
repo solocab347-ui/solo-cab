@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logger } from "@/lib/productionLogger";
+import { checkEmailExists, buildExistingAccountMessage } from "@/lib/checkEmailExists";
 import { 
   instantSignIn, 
   instantGetSession, 
@@ -273,9 +274,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+      const cleanEmail = email.trim().toLowerCase();
+
+      // Vérification préalable : email déjà utilisé ?
+      const existing = await checkEmailExists(cleanEmail);
+      if (existing.exists) {
+        const { message, loginPath } = buildExistingAccountMessage(existing.role);
+        toast.error("Email déjà utilisé", {
+          description: message,
+          duration: 8000,
+          action: {
+            label: "Se connecter",
+            onClick: () => navigate(loginPath),
+          },
+        });
+        throw new Error("EMAIL_ALREADY_EXISTS");
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           emailRedirectTo: redirectUrl,
@@ -318,7 +335,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.success("Compte créé avec succès !");
     } catch (error: any) {
       logger.error("Signup error", { error });
-      if (error.message.includes("already registered")) {
+      // Toast déjà affiché par la pré-vérification, on évite le doublon.
+      if (error.message === "EMAIL_ALREADY_EXISTS") {
+        throw error;
+      }
+      if (error.message?.includes("already registered")) {
         toast.error("Cet email est déjà utilisé");
       } else {
         toast.error(error.message || "Erreur lors de l'inscription");
