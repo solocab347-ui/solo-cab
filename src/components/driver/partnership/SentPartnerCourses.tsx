@@ -239,14 +239,94 @@ export function SentPartnerCourses({ driverId }: Props) {
     );
   }
 
+  if (showCreateAndShare) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setShowCreateAndShare(false);
+            setCreatedCourseToShare(null);
+          }}
+        >← Retour</Button>
+
+        <Alert className="bg-primary/10 border-primary/30">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-sm">
+            <strong>Créer + partager</strong> : créez une course pour un client privé non inscrit puis partagez-la immédiatement avec un partenaire du réseau.
+          </AlertDescription>
+        </Alert>
+
+        <DirectCourseCreationForm
+          title="Nouvelle course à partager"
+          subtitle="Pour un client privé non inscrit"
+          skipPostCreationScreen
+          onCancel={() => {
+            setShowCreateAndShare(false);
+            setCreatedCourseToShare(null);
+          }}
+          onCreated={async (course) => {
+            // Open share dialog with the freshly created course
+            setCreatedCourseToShare(course);
+            setShareDialogOpen(true);
+            return true;
+          }}
+        />
+
+        {createdCourseToShare && driverId && (
+          <ShareCourseWithPartnerDialog
+            open={shareDialogOpen}
+            onOpenChange={(open) => {
+              setShareDialogOpen(open);
+              if (!open) {
+                // After share dialog closes, return to list and refresh
+                setShowCreateAndShare(false);
+                setCreatedCourseToShare(null);
+                loadSentCourses();
+              }
+            }}
+            course={createdCourseToShare}
+            driverId={driverId}
+            onSuccess={() => {
+              setShareDialogOpen(false);
+              setShowCreateAndShare(false);
+              setCreatedCourseToShare(null);
+              loadSentCourses();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   const activeCourses = courses.filter(c => !['cancelled', 'declined', 'completed'].includes(c.status));
   const completedCourses = courses.filter(c => c.status === 'completed');
   const totalCommission = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
 
   return (
     <div className="space-y-4">
+      {/* Premium: Create + share — for private off-network clients */}
+      <Button
+        onClick={() => {
+          if (!isPremium) {
+            toast.error("Cette fonctionnalité est réservée aux chauffeurs Premium.");
+            return;
+          }
+          setShowCreateAndShare(true);
+        }}
+        variant="outline"
+        className="w-full border-2 border-primary/40 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20"
+        size="lg"
+      >
+        <Crown className="h-4 w-4 mr-2 text-primary" />
+        <UserPlus className="h-4 w-4 mr-2 text-primary" />
+        Créer + partager une course (client privé)
+        {!isPremium && <Badge variant="secondary" className="ml-2 text-[10px]">Premium</Badge>}
+      </Button>
+
       <Button onClick={() => setShowPropose(true)} className="w-full" size="lg">
-        <Plus className="h-5 w-5 mr-2" />Partager une course
+        <Plus className="h-5 w-5 mr-2" />Partager une course existante
       </Button>
 
       <div className="grid grid-cols-2 gap-3">
