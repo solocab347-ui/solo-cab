@@ -91,10 +91,24 @@ export const DirectCourseCreationForm = ({ onSuccess, onCancel, onCreated, skipP
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [calculating, setCalculating] = useState(false);
 
-  useEffect(() => {
-    fetchDriverProfile();
-  }, [user]);
+  // Price override mode: 'auto' uses the calculator, 'percentage' adds a % surcharge to the calculated price,
+  // 'manual' lets the driver set any fixed amount (overrides everything).
+  const [priceMode, setPriceMode] = useState<'auto' | 'percentage' | 'manual'>('auto');
+  const [pricePercentage, setPricePercentage] = useState<string>('0'); // % surcharge applied to calculatedPrice
+  const [manualPrice, setManualPrice] = useState<string>(''); // EUR
 
+  // Final TTC price actually sent to the backend (respects override mode)
+  const finalPrice = (() => {
+    if (priceMode === 'manual') {
+      const v = parseFloat(manualPrice);
+      return isNaN(v) || v <= 0 ? null : parseFloat(v.toFixed(2));
+    }
+    if (priceMode === 'percentage' && calculatedPrice !== null) {
+      const pct = parseFloat(pricePercentage) || 0;
+      return parseFloat((calculatedPrice * (1 + pct / 100)).toFixed(2));
+    }
+    return calculatedPrice;
+  })();
   useEffect(() => {
     if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
       calculateRouteData();
