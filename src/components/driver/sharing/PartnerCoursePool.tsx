@@ -144,7 +144,19 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
   const [claiming, setClaiming] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
-  
+  const [receiverPos, setReceiverPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Track receiver geolocation for "distance to client" estimation
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setReceiverPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
   // Dialog states
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
