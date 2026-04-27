@@ -241,7 +241,7 @@ function DeniedGuidance({
   const isNative = Capacitor.isNativePlatform();
   const platform = Capacitor.getPlatform();
 
-  const { title, steps, ctaLabel } = useMemo(() => {
+  const { title, helper, steps, ctaLabel } = useMemo(() => {
     const isNotif = permKey === 'notifications';
     const isLoc = permKey === 'location' || permKey === 'location_background';
     const isMic = permKey === 'microphone';
@@ -249,37 +249,38 @@ function DeniedGuidance({
 
     if (isNative && platform === 'android') {
       return {
-        title: `Autorisation bloquée par Android`,
+        title: `Autorisation refusée`,
+        helper: `Le bouton ci-dessous ouvre directement les Réglages Android. Activez ${subject}, puis revenez.`,
         steps: [
-          'Touchez « Ouvrir les Réglages » ci-dessous',
-          'Allez dans « Autorisations »',
+          'Touchez « Ouvrir les Réglages »',
+          'Section « Autorisations »',
           `Activez ${subject}`,
-          'Revenez dans l\'application',
         ],
         ctaLabel: 'Ouvrir les Réglages',
       };
     }
     if (isNative && platform === 'ios') {
       return {
-        title: `Autorisation bloquée par iOS`,
+        title: `Autorisation refusée`,
+        helper: `Le bouton ouvre directement les Réglages iOS. Activez ${subject}, puis revenez.`,
         steps: [
-          'Touchez « Ouvrir les Réglages » ci-dessous',
-          `Activez ${subject} dans la liste`,
-          'Revenez dans l\'application',
+          'Touchez « Ouvrir les Réglages »',
+          `Activez ${subject}`,
         ],
         ctaLabel: 'Ouvrir les Réglages',
       };
     }
-    // Web / PWA
+    // Web / PWA — on retente toujours la prompt système au clic
     return {
-      title: `Autorisation bloquée par votre navigateur`,
+      title: `Autorisation refusée par le navigateur`,
+      helper: `Touchez le bouton pour redemander l'autorisation. Si le navigateur ne réaffiche pas la fenêtre, suivez la procédure ci-dessous.`,
       steps: [
-        'Touchez l\'icône 🔒 (cadenas) à gauche de l\'URL',
-        'Ouvrez « Autorisations du site »',
-        `Passez ${subject} sur « Autoriser »`,
-        'Rechargez la page',
+        'Icône 🔒 (cadenas) à gauche de l\'URL',
+        '« Autorisations du site »',
+        `${subject.charAt(0).toUpperCase() + subject.slice(1)} → « Autoriser »`,
+        'Recharger la page',
       ],
-      ctaLabel: 'Voir les instructions',
+      ctaLabel: 'Demander l\'autorisation',
     };
   }, [permKey, isNative, platform]);
 
@@ -289,29 +290,17 @@ function DeniedGuidance({
         <Info className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-foreground">{title}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-            Le bouton « Activer » ne peut plus afficher la fenêtre du système : vous devez réactiver l'autorisation manuellement.
-          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{helper}</p>
         </div>
       </div>
 
-      <ol className="text-[11px] text-muted-foreground space-y-1 pl-1">
-        {steps.map((step, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold shrink-0">
-              {i + 1}
-            </span>
-            <span className="leading-snug">{step}</span>
-          </li>
-        ))}
-      </ol>
-
+      {/* CTA en PREMIER — action directe */}
       <Button
         size="sm"
         variant="default"
         onClick={onOpenSettings}
         disabled={busy}
-        className="w-full gap-2 mt-1"
+        className="w-full gap-2"
       >
         {busy ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -323,6 +312,22 @@ function DeniedGuidance({
           </>
         )}
       </Button>
+
+      <details className="text-[11px]">
+        <summary className="text-muted-foreground cursor-pointer select-none py-1">
+          Procédure manuelle (si le bouton ne suffit pas)
+        </summary>
+        <ol className="text-muted-foreground space-y-1 pl-1 mt-1">
+          {steps.map((step, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold shrink-0">
+                {i + 1}
+              </span>
+              <span className="leading-snug">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </details>
     </div>
   );
 }
