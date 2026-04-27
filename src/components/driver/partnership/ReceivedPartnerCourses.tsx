@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SharedCourseClientInfo } from './SharedCourseClientInfo';
 import { SharedCoursePaymentLinkDialog } from '../sharing/SharedCoursePaymentLinkDialog';
+import { SharedCourseProgressTimeline } from '../sharing/SharedCourseProgressTimeline';
 
 interface Props {
   driverId: string | null;
