@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Loader2, AlertCircle } from 'lucide-react';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
+import { useDriverAvailability } from '@/contexts/DriverAvailabilityContext';
 import { cn } from '@/lib/utils';
 
 interface DriverAvailabilityToggleProps {
@@ -15,39 +15,34 @@ interface DriverAvailabilityToggleProps {
 
 export function DriverAvailabilityToggle({
   driverId,
-  initialAvailable = false,
   onAvailabilityChange,
   compact = false,
 }: DriverAvailabilityToggleProps) {
-  const [isAvailable, setIsAvailable] = useState(initialAvailable);
+  const { isOnline, isToggling, toggleAvailability, driverStatus } = useDriverAvailability();
+  const isBusy = driverStatus === 'assigned' || driverStatus === 'in_ride';
 
   const {
-    latitude,
-    longitude,
     accuracy,
     lastUpdate,
     error,
     isTracking,
-    updateAvailability,
   } = useDriverLocationTracker({
     driverId,
-    enabled: isAvailable,
+    enabled: isOnline,
   });
 
-  // Handle toggle
   const handleToggle = async (checked: boolean) => {
-    setIsAvailable(checked);
-    await updateAvailability(checked);
-    onAvailabilityChange?.(checked);
+    if (isBusy || isToggling) return;
+    if (checked === isOnline) return;
+    await toggleAvailability();
+    onAvailabilityChange?.(!isOnline);
   };
 
-  // Format last update time
   const formatLastUpdate = () => {
     if (!lastUpdate) return null;
     const now = new Date();
     const diff = Math.floor((now.getTime() - lastUpdate.getTime()) / 1000);
-
-    if (diff < 60) return 'À l\'instant';
+    if (diff < 60) return "À l'instant";
     if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
     return `Il y a ${Math.floor(diff / 3600)}h`;
   };
@@ -56,20 +51,21 @@ export function DriverAvailabilityToggle({
     return (
       <div className="flex items-center gap-2">
         <Switch
-          checked={isAvailable}
+          checked={isOnline}
           onCheckedChange={handleToggle}
           id="availability-toggle-compact"
+          disabled={isBusy || isToggling}
         />
         <Label
           htmlFor="availability-toggle-compact"
           className={cn(
             'text-sm cursor-pointer',
-            isAvailable ? 'text-green-600' : 'text-muted-foreground'
+            isOnline ? 'text-green-600' : 'text-muted-foreground'
           )}
         >
-          {isAvailable ? 'En ligne' : 'Hors ligne'}
+          {isOnline ? 'En ligne' : 'Hors ligne'}
         </Label>
-        {isAvailable && isTracking && (
+        {isOnline && isTracking && (
           <MapPin className="h-3.5 w-3.5 text-green-600 animate-pulse" />
         )}
       </div>
@@ -92,14 +88,15 @@ export function DriverAvailabilityToggle({
         </div>
 
         <Switch
-          checked={isAvailable}
+          checked={isOnline}
           onCheckedChange={handleToggle}
           id="availability-toggle"
+          disabled={isBusy || isToggling}
         />
       </div>
 
       {/* Status indicators */}
-      {isAvailable && (
+      {isOnline && (
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
           {isTracking ? (
             <>
