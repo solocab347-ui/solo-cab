@@ -141,19 +141,14 @@ export function ObjectivesGoalsFunnel({
   const [directClientsTarget, setDirectClientsTarget] = useState(8);
   const [independencePctTarget, setIndependencePctTarget] = useState(30);
 
-  const currentStep = STEPS[stepIndex];
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
-
   // ===== Calculs dérivés =====
   const calc = useMemo(() => {
     const weeklyRevenue = Math.round(targetRevenue / 4);
     const monthlyHours = hoursPerDay * selectedDays.length * 4;
     const hourlyRate = monthlyHours > 0 ? targetRevenue / monthlyHours : 0;
     const avgFare = targetCourses > 0 ? targetRevenue / targetCourses : 0;
-    const totalExpenses = Object.values(expenses).reduce((s, v) => s + v, 0);
     const solocabFees = targetCourses * SOLOCAB_VALUES.commission;
-    const netRevenue = targetRevenue - totalExpenses - solocabFees;
-    const netMarginPct = targetRevenue > 0 ? (netRevenue / targetRevenue) * 100 : 0;
+    const revenueAfterFees = targetRevenue - solocabFees;
     const solocabPercentage = 100 - platformPercentage;
 
     // Daily targets selon poids des jours
@@ -172,10 +167,8 @@ export function ObjectivesGoalsFunnel({
       monthlyHours,
       hourlyRate,
       avgFare,
-      totalExpenses,
       solocabFees,
-      netRevenue,
-      netMarginPct,
+      revenueAfterFees,
       solocabPercentage,
       dailyTargets,
     };
@@ -184,7 +177,6 @@ export function ObjectivesGoalsFunnel({
     targetCourses,
     hoursPerDay,
     selectedDays,
-    expenses,
     platformPercentage,
   ]);
 
