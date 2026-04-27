@@ -279,6 +279,8 @@ const DriverDashboard = () => {
     (driverProfile?.driver as any)?.onboarding_objectives_completed,
     showProfileWizard,
   ]);
+
+  // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 
   // Handle URL parameters for tab navigation (from notifications)
