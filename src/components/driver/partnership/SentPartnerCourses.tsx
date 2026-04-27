@@ -260,7 +260,7 @@ export function SentPartnerCourses({ driverId }: Props) {
       <Alert className="bg-primary/10 border-primary/30">
         <Receipt className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Vos courses partagées</strong> : Vous conservez la relation client. Votre commission ({activeCourses[0]?.commission_percentage || '15-20'}%) est versée automatiquement via Stripe Connect.
+          <strong>Vos courses partagées</strong> : Vous conservez la relation client. Votre commission ({activeCourses[0]?.commission_percentage || '20-25'}%) est versée automatiquement via Stripe Connect.
         </AlertDescription>
       </Alert>
 

@@ -99,7 +99,7 @@ export function PushCourseToPartners() {
 
   const getCommissionLabel = (amount: number | null) => {
     if (!amount) return '';
-    const pct = amount < 30 ? 15 : 20;
+    const pct = 22; // default 22% (range 20-25%)
     const comm = (amount * pct) / 100;
     return `${pct}% → ${comm.toFixed(2)}€`;
   };
