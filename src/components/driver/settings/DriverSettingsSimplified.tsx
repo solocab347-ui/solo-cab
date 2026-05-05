@@ -167,6 +167,8 @@ export function DriverSettingsSimplified({
   onEveningSurchargeChange,
   onWeekendSurchargeChange,
   onAirportSurchargeChange,
+  onApproachEnabledChange,
+  onApproachPerKmRateChange,
   onCompanyNameChange,
   onCompanyAddressChange,
   onSiretChange,
