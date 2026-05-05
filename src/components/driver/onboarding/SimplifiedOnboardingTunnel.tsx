@@ -303,11 +303,13 @@ export function SimplifiedOnboardingTunnel({
         per_km_rate: parseFloat(perKmRate),
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      }).eq('id', driverId);
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
+      } as any).eq('id', driverId);
       console.log('Auto-saved pricing');
     }, 2000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [baseFare, perKmRate, minimumPrice, hourlyRate, driverId]);
+  }, [baseFare, perKmRate, minimumPrice, hourlyRate, approachEnabled, approachPerKmRate, driverId]);
 
   // Computed
   const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
