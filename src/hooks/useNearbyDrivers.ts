@@ -56,6 +56,8 @@ interface NearbyDriverRpcRow {
   vehicle_color?: string | null;
   stripe_connect_charges_enabled?: boolean;
   accepted_payment_methods?: string[] | null;
+  approach_enabled?: boolean | null;
+  approach_per_km_rate?: number | null;
 }
 
 interface UseNearbyDriversResult {
