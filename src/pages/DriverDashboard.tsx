@@ -1097,6 +1097,8 @@ const DriverDashboard = () => {
                     eveningSurcharge={eveningSurcharge}
                     weekendSurcharge={weekendSurcharge}
                     airportSurcharge={airportSurcharge}
+                    approachEnabled={approachEnabled}
+                    approachPerKmRate={approachPerKmRate}
                     companyName={companyName}
                     companyAddress={companyAddress}
                     siret={siret}
