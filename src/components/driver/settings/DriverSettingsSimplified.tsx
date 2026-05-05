@@ -46,6 +46,8 @@ interface DriverSettingsSimplifiedProps {
   eveningSurcharge: string;
   weekendSurcharge: string;
   airportSurcharge: string;
+  approachEnabled?: boolean;
+  approachPerKmRate?: string;
   // Company
   companyName: string;
   companyAddress: string;
