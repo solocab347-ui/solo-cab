@@ -286,12 +286,19 @@ function ResultCard3D({
           }}
         >
           {priceText ? (
-            <div
-              className="text-base font-extrabold text-white tracking-tight"
-              style={{ textShadow: `0 0 12px hsl(${theme.from} / 0.4)` }}
-            >
-              {priceText}
-            </div>
+            <>
+              <div
+                className="text-base font-extrabold text-white tracking-tight"
+                style={{ textShadow: `0 0 12px hsl(${theme.from} / 0.4)` }}
+              >
+                {priceText}
+              </div>
+              {(driver.approach_fee || 0) > 0 && (
+                <div className="text-[8px] text-white/70 mt-0.5 leading-tight px-1">
+                  dont {driver.approach_fee!.toFixed(2).replace('.', ',')}€ d'approche
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-[10px] text-white/60 italic">Sur devis</div>
           )}
