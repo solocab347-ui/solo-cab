@@ -377,6 +377,77 @@ export function DriverSettingsSimplified({
             </div>
           </CollapsibleSection>
 
+          {/* Prix d'approche — courses immédiates uniquement */}
+          {onApproachEnabledChange && onApproachPerKmRateChange && (() => {
+            const approachRateNum = Math.min(
+              Math.max(parseFloat(approachPerKmRate || '0') || 0, 0),
+              APPROACH_MAX_RATE_PER_KM
+            );
+            return (
+              <CollapsibleSection
+                title="Prix d'approche"
+                icon={<Navigation className="w-5 h-5 text-primary" />}
+                description={
+                  approachEnabled
+                    ? `+${approachRateNum.toFixed(2)} €/km au-delà de ${APPROACH_DISTANCE_THRESHOLD_KM} km`
+                    : "Désactivé — aucun frais d'approche"
+                }
+                isComplete={approachEnabled && approachRateNum > 0}
+                defaultOpen={false}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">Activer le prix d'approche</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Facturé au client si vous êtes à plus de {APPROACH_DISTANCE_THRESHOLD_KM} km du point de prise en charge.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!approachEnabled}
+                      onCheckedChange={onApproachEnabledChange}
+                    />
+                  </div>
+
+                  {approachEnabled && (
+                    <>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs sm:text-sm">Tarif par km d'approche</Label>
+                          <span className="text-sm font-bold text-primary">
+                            {approachRateNum.toFixed(2)} €/km
+                          </span>
+                        </div>
+                        <Slider
+                          value={[approachRateNum]}
+                          min={0}
+                          max={APPROACH_MAX_RATE_PER_KM}
+                          step={0.05}
+                          onValueChange={(v) => onApproachPerKmRateChange(String(v[0]))}
+                        />
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                          <span>0 €</span>
+                          <span>{APPROACH_MAX_RATE_PER_KM.toFixed(2)} € max</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1.5">
+                        <p className="text-xs font-semibold text-foreground">Comment ça marche</p>
+                        <ul className="text-[11px] text-muted-foreground space-y-1 leading-snug">
+                          <li>• Si vous êtes à <strong>moins de {APPROACH_DISTANCE_THRESHOLD_KM} km</strong> du client : <strong className="text-foreground">0 €</strong> d'approche</li>
+                          <li>• Si vous êtes à <strong>plus de {APPROACH_DISTANCE_THRESHOLD_KM} km</strong> : tous les km d'approche sont facturés</li>
+                          <li>• Exemple à 5 km × {approachRateNum.toFixed(2)} €/km = <strong className="text-primary">{(5 * approachRateNum).toFixed(2)} €</strong> ajoutés au prix de la course</li>
+                          <li>• S'applique uniquement aux <strong>courses immédiates</strong></li>
+                          <li>• Le client voit la ligne « Approche » détaillée dans son récapitulatif</li>
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CollapsibleSection>
+            );
+          })()}
+
           {/* City Pricing */}
           <CollapsibleSection
             title="Tarification par ville"
