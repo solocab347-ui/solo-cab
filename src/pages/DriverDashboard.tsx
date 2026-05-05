@@ -585,6 +585,8 @@ const DriverDashboard = () => {
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : 0,
         airport_surcharge: airportSurcharge ? parseFloat(airportSurcharge) : 0,
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
         card_photo_url: cardPhotoUrl,
