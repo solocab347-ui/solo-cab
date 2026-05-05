@@ -151,6 +151,8 @@ export function DriverSettingsSimplified({
   eveningSurcharge,
   weekendSurcharge,
   airportSurcharge,
+  approachEnabled = false,
+  approachPerKmRate = "0",
   companyName,
   companyAddress,
   siret,
