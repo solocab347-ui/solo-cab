@@ -20630,16 +20630,19 @@ export type Database = {
       }
       calculate_course_price: {
         Args: {
+          _approach_distance_km?: number
           _destination_address?: string
           _distance_km: number
           _driver_id: string
           _duration_minutes: number
+          _is_immediate?: boolean
           _pickup_address?: string
           _scheduled_date?: string
           _use_hourly_rate?: boolean
         }
         Returns: {
           airport_fee: number
+          approach_fee: number
           base_price: number
           distance_price: number
           peak_hours_surcharge: number
@@ -21112,65 +21115,38 @@ export type Database = {
               user_id: string
             }[]
           }
-      find_nearby_drivers:
-        | {
-            Args: {
-              p_latitude: number
-              p_limit?: number
-              p_longitude: number
-              p_max_radius_km?: number
-              p_mode?: string
-            }
-            Returns: {
-              accepted_payment_methods: string[]
-              base_fare: number
-              company_name: string
-              display_name: string
-              distance_meters: number
-              driver_id: string
-              is_live_location: boolean
-              latitude: number
-              longitude: number
-              minimum_price: number
-              per_km_rate: number
-              profile_photo_url: string
-              search_radius_used: number
-              stripe_connect_charges_enabled: boolean
-              vehicle_brand: string
-              vehicle_color: string
-              vehicle_model: string
-            }[]
-          }
-        | {
-            Args: {
-              p_exclusive_driver_id?: string
-              p_favorite_driver_ids?: string[]
-              p_latitude: number
-              p_limit?: number
-              p_longitude: number
-              p_max_radius_km?: number
-              p_mode?: string
-            }
-            Returns: {
-              accepted_payment_methods: string[]
-              base_fare: number
-              company_name: string
-              display_name: string
-              distance_meters: number
-              driver_id: string
-              is_live_location: boolean
-              latitude: number
-              longitude: number
-              minimum_price: number
-              per_km_rate: number
-              profile_photo_url: string
-              search_radius_used: number
-              stripe_connect_charges_enabled: boolean
-              vehicle_brand: string
-              vehicle_color: string
-              vehicle_model: string
-            }[]
-          }
+      find_nearby_drivers: {
+        Args: {
+          p_exclusive_driver_id?: string
+          p_favorite_driver_ids?: string[]
+          p_latitude: number
+          p_limit?: number
+          p_longitude: number
+          p_max_radius_km?: number
+          p_mode?: string
+        }
+        Returns: {
+          accepted_payment_methods: string[]
+          approach_enabled: boolean
+          approach_per_km_rate: number
+          base_fare: number
+          company_name: string
+          display_name: string
+          distance_meters: number
+          driver_id: string
+          is_live_location: boolean
+          latitude: number
+          longitude: number
+          minimum_price: number
+          per_km_rate: number
+          profile_photo_url: string
+          search_radius_used: number
+          stripe_connect_charges_enabled: boolean
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_model: string
+        }[]
+      }
       find_nearest_available_fleet_driver:
         | {
             Args: {

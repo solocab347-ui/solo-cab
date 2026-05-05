@@ -29,6 +29,11 @@ export interface NearbyDriver {
   vehicle_brand?: string | null;
   vehicle_model?: string | null;
   vehicle_color?: string | null;
+  // Approach pricing
+  approach_enabled?: boolean | null;
+  approach_per_km_rate?: number | null;
+  approach_distance_km?: number | null;
+  approach_fee?: number;
 }
 
 type SearchMode = 'reservation' | 'immediate';
@@ -51,6 +56,8 @@ interface NearbyDriverRpcRow {
   vehicle_color?: string | null;
   stripe_connect_charges_enabled?: boolean;
   accepted_payment_methods?: string[] | null;
+  approach_enabled?: boolean | null;
+  approach_per_km_rate?: number | null;
 }
 
 interface UseNearbyDriversResult {
@@ -203,17 +210,69 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
             vehicle_brand: driver.vehicle_brand || null,
             vehicle_model: driver.vehicle_model || null,
             vehicle_color: driver.vehicle_color || null,
+            approach_enabled: driver.approach_enabled ?? false,
+            approach_per_km_rate: driver.approach_per_km_rate ?? 0,
+            approach_distance_km: null,
+            approach_fee: 0,
           };
         });
 
         const quickFiltered = quickDrivers.filter(d => d.estimated_price > 0 || d.base_fare > 0);
         setDrivers(quickFiltered);
 
-        // PHASE 2: Refine prices in background with accurate RPC (surcharges, airport fees)
+        // PHASE 2: Refine prices in background with accurate RPC (surcharges, airport fees, approach)
         if (routeDistanceKm) {
           const scheduledDateStr = scheduledDate ? scheduledDate.toISOString() : new Date().toISOString();
-          const pricePromises = data.map((driver: NearbyDriverRpcRow) =>
-            supabase.rpc('calculate_course_price', {
+          const isImmediate = effectiveMode === 'immediate';
+
+          // ──────────────────────────────────────────────────────────────
+          // APPROACH: compute real Mapbox driver→client distance for each
+          // driver who has approach pricing enabled. Only in immediate mode.
+          // Falls back to no fee if Mapbox call fails.
+          // ──────────────────────────────────────────────────────────────
+          const approachPromises = quickFiltered.map(async (d) => {
+            if (
+              !isImmediate ||
+              !d.approach_enabled ||
+              !d.approach_per_km_rate ||
+              d.approach_per_km_rate <= 0 ||
+              d.latitude == null ||
+              d.longitude == null
+            ) {
+              return { driver_id: d.driver_id, approach_distance_km: null as number | null };
+            }
+            try {
+              const { data: routeData, error } = await supabase.functions.invoke(
+                'calculate-mapbox-route',
+                {
+                  body: {
+                    pickup_latitude: d.latitude,
+                    pickup_longitude: d.longitude,
+                    destination_latitude: latitude,
+                    destination_longitude: longitude,
+                  },
+                }
+              );
+              if (error || !routeData?.success) {
+                return { driver_id: d.driver_id, approach_distance_km: null };
+              }
+              return {
+                driver_id: d.driver_id,
+                approach_distance_km: Number(routeData.distance_km) || null,
+              };
+            } catch {
+              return { driver_id: d.driver_id, approach_distance_km: null };
+            }
+          });
+
+          const approachResults = await Promise.all(approachPromises);
+          const approachMap = new Map(
+            approachResults.map((r) => [r.driver_id, r.approach_distance_km])
+          );
+
+          const pricePromises = data.map((driver: NearbyDriverRpcRow) => {
+            const approachDistance = approachMap.get(driver.driver_id) ?? null;
+            return supabase.rpc('calculate_course_price', {
               _driver_id: driver.driver_id,
               _distance_km: routeDistanceKm,
               _duration_minutes: Math.round(routeDurationMinutes || 0),
@@ -221,23 +280,30 @@ export function useNearbyDrivers(): UseNearbyDriversResult {
               _scheduled_date: scheduledDateStr,
               _pickup_address: pickupAddress || null,
               _destination_address: destinationAddress || null,
-            }).then(res => ({ data: res.data, error: res.error, driver_id: driver.driver_id }))
-          );
+              _approach_distance_km: approachDistance,
+              _is_immediate: isImmediate,
+            } as any).then(res => ({ data: res.data, error: res.error, driver_id: driver.driver_id }));
+          });
 
           Promise.all(pricePromises).then(priceResults => {
             const priceMap = new Map(priceResults.map(r => [r.driver_id, r]));
             const refinedDrivers = quickFiltered.map(driver => {
               const priceResult = priceMap.get(driver.driver_id);
+              const approachDistance = approachMap.get(driver.driver_id) ?? null;
               if (priceResult && !priceResult.error && priceResult.data?.length > 0) {
+                const row: any = priceResult.data[0];
                 return {
                   ...driver,
-                  estimated_price: Math.round(priceResult.data[0].total_price * 100) / 100,
-                  has_surcharge: (priceResult.data[0].surcharge_evening || 0) > 0 ||
-                                 (priceResult.data[0].surcharge_weekend || 0) > 0 ||
-                                 (priceResult.data[0].airport_fee || 0) > 0,
+                  estimated_price: Math.round(row.total_price * 100) / 100,
+                  has_surcharge: (row.surcharge_evening || 0) > 0 ||
+                                 (row.surcharge_weekend || 0) > 0 ||
+                                 (row.airport_fee || 0) > 0 ||
+                                 (row.approach_fee || 0) > 0,
+                  approach_distance_km: approachDistance,
+                  approach_fee: Number(row.approach_fee || 0),
                 };
               }
-              return driver;
+              return { ...driver, approach_distance_km: approachDistance };
             });
             setDrivers(refinedDrivers);
           }).catch(() => { /* keep quick prices on error */ });
