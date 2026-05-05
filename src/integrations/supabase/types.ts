@@ -8694,6 +8694,8 @@ export type Database = {
           accepted_payment_methods: string[] | null
           ai_coaching_recommendations: string | null
           airport_surcharge: number | null
+          approach_enabled: boolean
+          approach_per_km_rate: number
           auto_accept_from_partners: boolean | null
           bank_account_bank_name: string | null
           bank_account_country: string | null
@@ -8890,6 +8892,8 @@ export type Database = {
           accepted_payment_methods?: string[] | null
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
+          approach_enabled?: boolean
+          approach_per_km_rate?: number
           auto_accept_from_partners?: boolean | null
           bank_account_bank_name?: string | null
           bank_account_country?: string | null
@@ -9086,6 +9090,8 @@ export type Database = {
           accepted_payment_methods?: string[] | null
           ai_coaching_recommendations?: string | null
           airport_surcharge?: number | null
+          approach_enabled?: boolean
+          approach_per_km_rate?: number
           auto_accept_from_partners?: boolean | null
           bank_account_bank_name?: string | null
           bank_account_country?: string | null
