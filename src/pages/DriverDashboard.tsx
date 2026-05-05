@@ -1113,6 +1113,8 @@ const DriverDashboard = () => {
                     onEveningSurchargeChange={setEveningSurcharge}
                     onWeekendSurchargeChange={setWeekendSurcharge}
                     onAirportSurchargeChange={setAirportSurcharge}
+                    onApproachEnabledChange={setApproachEnabled}
+                    onApproachPerKmRateChange={setApproachPerKmRate}
                     onCompanyNameChange={setCompanyName}
                     onCompanyAddressChange={setCompanyAddress}
                     onSiretChange={setSiret}
