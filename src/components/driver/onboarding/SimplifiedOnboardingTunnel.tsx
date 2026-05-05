@@ -195,7 +195,9 @@ export function SimplifiedOnboardingTunnel({
         per_km_rate: parseFloat(perKmRate),
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      }).eq('id', driverId);
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
+      } as any).eq('id', driverId);
       if (error) throw error;
       toast.success('Tarifs enregistrés !');
       goToStep(3);
