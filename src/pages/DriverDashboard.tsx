@@ -409,6 +409,8 @@ const DriverDashboard = () => {
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
   const [minimumPrice, setMinimumPrice] = useState("0");
   const [airportSurcharge, setAirportSurcharge] = useState("0");
+  const [approachEnabled, setApproachEnabled] = useState<boolean>(false);
+  const [approachPerKmRate, setApproachPerKmRate] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   // Note: visibleToFleetManagers et visibleToCompanies sont conservés pour compatibilité DB mais non affichés
