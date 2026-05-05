@@ -29,6 +29,11 @@ export interface NearbyDriver {
   vehicle_brand?: string | null;
   vehicle_model?: string | null;
   vehicle_color?: string | null;
+  // Approach pricing
+  approach_enabled?: boolean | null;
+  approach_per_km_rate?: number | null;
+  approach_distance_km?: number | null;
+  approach_fee?: number;
 }
 
 type SearchMode = 'reservation' | 'immediate';
