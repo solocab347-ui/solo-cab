@@ -119,14 +119,10 @@ describe('Robustesse — calculate_course_price échoue ou répond mal', () => {
 
     await waitFor(() => expect(result.current.drivers.length).toBe(1));
     const d = result.current.drivers[0];
-    // Le hook applique Math.round(total*100)/100 — NaN doit être détecté avant Stripe
-    const cents = toStripeCents(d.estimated_price ?? NaN);
-    if (Number.isNaN(d.estimated_price as any) || !Number.isFinite(d.estimated_price as any)) {
-      // Garde-fou applicatif : on doit refuser de créer le hold
-      expect(isValidStripeAmount(cents)).toBe(false);
-    } else {
-      expect(isValidStripeAmount(cents)).toBe(true);
-    }
+    // total_price=null → Math.round(null*100)/100 === 0 → cents=0 (invalide pour Stripe)
+    // Le garde-fou applicatif DOIT refuser ce hold.
+    const cents = toStripeCents(d.estimated_price ?? 0);
+    expect(isValidStripeAmount(cents)).toBe(false);
   });
 
   it('si approach_fee est absent du retour RPC, le hook le normalise à 0 (pas undefined)', async () => {
