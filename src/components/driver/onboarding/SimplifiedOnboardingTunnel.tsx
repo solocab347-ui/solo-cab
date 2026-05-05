@@ -437,8 +437,12 @@ export function SimplifiedOnboardingTunnel({
             {currentStep === 2 && (
               <PricingStep
                 baseFare={baseFare} perKmRate={perKmRate} minimumPrice={minimumPrice} hourlyRate={hourlyRate}
+                approachEnabled={approachEnabled}
+                approachPerKmRate={approachPerKmRate}
                 onBaseFareChange={setBaseFare} onPerKmRateChange={setPerKmRate}
                 onMinimumPriceChange={setMinimumPrice} onHourlyRateChange={setHourlyRate}
+                onApproachEnabledChange={setApproachEnabled}
+                onApproachPerKmRateChange={setApproachPerKmRate}
               />
             )}
             {currentStep === 3 && (
