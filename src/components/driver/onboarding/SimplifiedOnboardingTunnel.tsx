@@ -68,6 +68,8 @@ export function SimplifiedOnboardingTunnel({
   const [perKmRate, setPerKmRate] = useState(String(driverProfile?.driver?.per_km_rate || ''));
   const [minimumPrice, setMinimumPrice] = useState(String(driverProfile?.driver?.minimum_price || ''));
   const [hourlyRate, setHourlyRate] = useState(String(driverProfile?.driver?.hourly_rate || ''));
+  const [approachEnabled, setApproachEnabled] = useState<boolean>(!!(driverProfile?.driver as any)?.approach_enabled);
+  const [approachPerKmRate, setApproachPerKmRate] = useState(String((driverProfile?.driver as any)?.approach_per_km_rate || '0'));
   const [savingPricing, setSavingPricing] = useState(false);
 
   // Stripe state
@@ -193,7 +195,9 @@ export function SimplifiedOnboardingTunnel({
         per_km_rate: parseFloat(perKmRate),
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      }).eq('id', driverId);
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
+      } as any).eq('id', driverId);
       if (error) throw error;
       toast.success('Tarifs enregistrés !');
       goToStep(3);
@@ -299,11 +303,13 @@ export function SimplifiedOnboardingTunnel({
         per_km_rate: parseFloat(perKmRate),
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      }).eq('id', driverId);
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
+      } as any).eq('id', driverId);
       console.log('Auto-saved pricing');
     }, 2000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [baseFare, perKmRate, minimumPrice, hourlyRate, driverId]);
+  }, [baseFare, perKmRate, minimumPrice, hourlyRate, approachEnabled, approachPerKmRate, driverId]);
 
   // Computed
   const isProfileComplete = firstName && lastName && companyName && siret.length === 14 && companyAddress;
@@ -431,8 +437,12 @@ export function SimplifiedOnboardingTunnel({
             {currentStep === 2 && (
               <PricingStep
                 baseFare={baseFare} perKmRate={perKmRate} minimumPrice={minimumPrice} hourlyRate={hourlyRate}
+                approachEnabled={approachEnabled}
+                approachPerKmRate={approachPerKmRate}
                 onBaseFareChange={setBaseFare} onPerKmRateChange={setPerKmRate}
                 onMinimumPriceChange={setMinimumPrice} onHourlyRateChange={setHourlyRate}
+                onApproachEnabledChange={setApproachEnabled}
+                onApproachPerKmRateChange={setApproachPerKmRate}
               />
             )}
             {currentStep === 3 && (

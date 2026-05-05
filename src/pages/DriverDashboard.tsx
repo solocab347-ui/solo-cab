@@ -409,6 +409,8 @@ const DriverDashboard = () => {
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
   const [minimumPrice, setMinimumPrice] = useState("0");
   const [airportSurcharge, setAirportSurcharge] = useState("0");
+  const [approachEnabled, setApproachEnabled] = useState<boolean>(false);
+  const [approachPerKmRate, setApproachPerKmRate] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   // Note: visibleToFleetManagers et visibleToCompanies sont conservés pour compatibilité DB mais non affichés
@@ -464,6 +466,8 @@ const DriverDashboard = () => {
     setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
     setMinimumPrice((driver as any).minimum_price?.toString() || "0");
     setAirportSurcharge((driver as any).airport_surcharge?.toString() || "0");
+    setApproachEnabled(!!(driver as any).approach_enabled);
+    setApproachPerKmRate((driver as any).approach_per_km_rate?.toString() || "0");
     setProfilePhotoUrl(driver.card_photo_url || (driverProfile as any).profile_photo_url || driverProfile.avatar_url || null);
     setCardPhotoUrl(driver.card_photo_url || null);
     setVehiclePhotos(driver.vehicle_photos || []);
@@ -581,6 +585,8 @@ const DriverDashboard = () => {
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : 0,
         airport_surcharge: airportSurcharge ? parseFloat(airportSurcharge) : 0,
+        approach_enabled: approachEnabled,
+        approach_per_km_rate: approachEnabled ? Math.min(Math.max(parseFloat(approachPerKmRate) || 0, 0), 1) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
         card_photo_url: cardPhotoUrl,
@@ -1091,6 +1097,8 @@ const DriverDashboard = () => {
                     eveningSurcharge={eveningSurcharge}
                     weekendSurcharge={weekendSurcharge}
                     airportSurcharge={airportSurcharge}
+                    approachEnabled={approachEnabled}
+                    approachPerKmRate={approachPerKmRate}
                     companyName={companyName}
                     companyAddress={companyAddress}
                     siret={siret}
@@ -1105,6 +1113,8 @@ const DriverDashboard = () => {
                     onEveningSurchargeChange={setEveningSurcharge}
                     onWeekendSurchargeChange={setWeekendSurcharge}
                     onAirportSurchargeChange={setAirportSurcharge}
+                    onApproachEnabledChange={setApproachEnabled}
+                    onApproachPerKmRateChange={setApproachPerKmRate}
                     onCompanyNameChange={setCompanyName}
                     onCompanyAddressChange={setCompanyAddress}
                     onSiretChange={setSiret}
