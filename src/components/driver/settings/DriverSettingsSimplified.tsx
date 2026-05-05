@@ -64,6 +64,8 @@ interface DriverSettingsSimplifiedProps {
   onEveningSurchargeChange: (v: string) => void;
   onWeekendSurchargeChange: (v: string) => void;
   onAirportSurchargeChange: (v: string) => void;
+  onApproachEnabledChange?: (v: boolean) => void;
+  onApproachPerKmRateChange?: (v: string) => void;
   onCompanyNameChange: (v: string) => void;
   onCompanyAddressChange: (v: string) => void;
   onSiretChange: (v: string) => void;
