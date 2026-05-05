@@ -27,11 +27,14 @@ import {
   MapPin,
   Clock,
   Percent,
-  Plane
+  Plane,
+  Navigation
 } from "lucide-react";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { DriverPaymentSettings } from "./DriverPaymentSettings";
+import { Slider } from "@/components/ui/slider";
+import { APPROACH_DISTANCE_THRESHOLD_KM, APPROACH_MAX_RATE_PER_KM } from "@/lib/approachFee";
 import { cn } from "@/lib/utils";
 
 interface DriverSettingsSimplifiedProps {
