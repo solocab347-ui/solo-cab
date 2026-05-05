@@ -4924,6 +4924,9 @@ export type Database = {
       }
       courses: {
         Row: {
+          approach_distance_km: number | null
+          approach_fee: number
+          approach_per_km_rate: number | null
           auto_dispatch_enabled: boolean | null
           bank_imprint_at: string | null
           cancellation_by: string | null
@@ -5018,6 +5021,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approach_distance_km?: number | null
+          approach_fee?: number
+          approach_per_km_rate?: number | null
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
@@ -5112,6 +5118,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approach_distance_km?: number | null
+          approach_fee?: number
+          approach_per_km_rate?: number | null
           auto_dispatch_enabled?: boolean | null
           bank_imprint_at?: string | null
           cancellation_by?: string | null
@@ -15857,6 +15866,9 @@ export type Database = {
       ride_requests: {
         Row: {
           accepted_by_driver_id: string | null
+          approach_distance_km: number | null
+          approach_fee: number
+          approach_per_km_rate: number | null
           client_id: string | null
           created_at: string | null
           destination_address: string
@@ -15888,6 +15900,9 @@ export type Database = {
         }
         Insert: {
           accepted_by_driver_id?: string | null
+          approach_distance_km?: number | null
+          approach_fee?: number
+          approach_per_km_rate?: number | null
           client_id?: string | null
           created_at?: string | null
           destination_address: string
@@ -15919,6 +15934,9 @@ export type Database = {
         }
         Update: {
           accepted_by_driver_id?: string | null
+          approach_distance_km?: number | null
+          approach_fee?: number
+          approach_per_km_rate?: number | null
           client_id?: string | null
           created_at?: string | null
           destination_address?: string
