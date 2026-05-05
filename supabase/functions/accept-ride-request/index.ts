@@ -83,6 +83,10 @@ serve(async (req) => {
 
     // Server-side price recalculation using RPC (source of truth)
     let serverPrice = claimed.estimated_price;
+    let approachFee = Number(claimed.approach_fee) || 0;
+    const approachDistanceKm = claimed.approach_distance_km != null ? Number(claimed.approach_distance_km) : null;
+    const approachPerKmRate = claimed.approach_per_km_rate != null ? Number(claimed.approach_per_km_rate) : null;
+    const isImmediate = !claimed.scheduled_date;
     try {
       const { data: priceData, error: priceError } = await supabaseClient.rpc("calculate_course_price", {
         _driver_id: driver.id,
@@ -92,10 +96,15 @@ serve(async (req) => {
         _pickup_address: claimed.pickup_address || null,
         _destination_address: claimed.destination_address || null,
         _use_hourly_rate: false,
+        _approach_distance_km: approachDistanceKm,
+        _is_immediate: isImmediate,
       });
       if (!priceError && priceData && priceData.length > 0) {
         serverPrice = priceData[0].total_price;
-        logStep("Server-side price calculated", { clientPrice: claimed.estimated_price, serverPrice });
+        if (priceData[0].approach_fee != null) {
+          approachFee = Number(priceData[0].approach_fee) || 0;
+        }
+        logStep("Server-side price calculated", { clientPrice: claimed.estimated_price, serverPrice, approachFee });
       } else if (priceError) {
         logStep("Price RPC fallback to client price", { priceError: priceError.message });
       }
@@ -119,6 +128,9 @@ serve(async (req) => {
       status: "driver_approaching",
       distance_km: claimed.distance_km,
       guest_estimated_price: serverPrice,
+      approach_distance_km: approachDistanceKm,
+      approach_per_km_rate: approachPerKmRate,
+      approach_fee: approachFee,
       is_guest_booking: !claimed.client_id,
       guest_name: claimed.guest_name,
       guest_email: claimed.guest_email,
