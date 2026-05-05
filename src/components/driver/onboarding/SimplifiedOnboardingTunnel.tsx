@@ -68,6 +68,8 @@ export function SimplifiedOnboardingTunnel({
   const [perKmRate, setPerKmRate] = useState(String(driverProfile?.driver?.per_km_rate || ''));
   const [minimumPrice, setMinimumPrice] = useState(String(driverProfile?.driver?.minimum_price || ''));
   const [hourlyRate, setHourlyRate] = useState(String(driverProfile?.driver?.hourly_rate || ''));
+  const [approachEnabled, setApproachEnabled] = useState<boolean>(!!(driverProfile?.driver as any)?.approach_enabled);
+  const [approachPerKmRate, setApproachPerKmRate] = useState(String((driverProfile?.driver as any)?.approach_per_km_rate || '0'));
   const [savingPricing, setSavingPricing] = useState(false);
 
   // Stripe state
