@@ -126,7 +126,7 @@ workflows:
       vars:
         PACKAGE_NAME: "com.solocab.app"
       node: latest
-      java: 17
+      java: 21
     triggering:
       events:
         - push
@@ -136,6 +136,23 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Set JAVA_HOME to JDK 21
+        script: |
+          set -e
+          echo "🔍 Recherche d'un JDK 21 installé sur la machine de build..."
+          JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
+          if [ -z "$JDK21" ]; then
+            echo "❌ Aucun JDK 21 trouvé. Versions disponibles :"
+            /usr/libexec/java_home -V || true
+            exit 1
+          fi
+          echo "✅ JDK 21 trouvé : $JDK21"
+          echo "JAVA_HOME=$JDK21" >> $CM_ENV
+          echo "PATH=$JDK21/bin:$PATH" >> $CM_ENV
+      - name: Verify Java version
+        script: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
       - name: Install npm dependencies
         script: |
           npm ci || npm install
@@ -156,7 +173,7 @@ workflows:
       - name: Build Android App Bundle (.aab)
         script: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease --stacktrace
       - name: Verify .aab artifact exists
         script: |
           set -e
