@@ -156,18 +156,18 @@ workflows:
       - name: Validate Google Play credentials
         script: |
           set -e
-          if [ -z "$G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS" ]; then
-            echo "❌ Variable G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS introuvable dans le groupe google_play."
+          if [ -z "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" ]; then
+            echo "❌ Variable GCLOUD_SERVICE_ACCOUNT_CREDENTIALS introuvable dans le groupe google_play."
             echo "   Vérifie que la variable existe exactement avec ce nom dans Codemagic → Environment variables → groupe google_play."
             exit 1
           fi
           python3 - <<'PY'
           import json, os, sys
-          raw = os.environ.get("G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS", "")
+          raw = os.environ.get("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "")
           try:
               data = json.loads(raw)
           except Exception as exc:
-              print("❌ G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS n'est pas un JSON valide.")
+              print("❌ GCLOUD_SERVICE_ACCOUNT_CREDENTIALS n'est pas un JSON valide.")
               print("   Il faut coller le contenu complet du fichier JSON, pas le nom du fichier ni du texte encodé.")
               print(f"   Détail parse JSON: {exc}")
               sys.exit(1)
@@ -251,6 +251,6 @@ workflows:
       - android/build/reports/problems/problems-report.html
     publishing:
       google_play:
-        credentials: $G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: internal
         submit_as_draft: true
