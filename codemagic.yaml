@@ -153,6 +153,31 @@ workflows:
         script: |
           java -version
           echo "JAVA_HOME=$JAVA_HOME"
+      - name: Validate Google Play credentials
+        script: |
+          set -e
+          if [ -z "$G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS" ]; then
+            echo "❌ Variable G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS introuvable dans le groupe google_play."
+            echo "   Vérifie que la variable existe exactement avec ce nom dans Codemagic → Environment variables → groupe google_play."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, os, sys
+          raw = os.environ.get("G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS", "")
+          try:
+              data = json.loads(raw)
+          except Exception as exc:
+              print("❌ G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS n'est pas un JSON valide.")
+              print("   Il faut coller le contenu complet du fichier JSON, pas le nom du fichier ni du texte encodé.")
+              print(f"   Détail parse JSON: {exc}")
+              sys.exit(1)
+          required = ["type", "project_id", "private_key", "client_email", "token_uri"]
+          missing = [key for key in required if not data.get(key)]
+          if missing:
+              print("❌ JSON Google Play incomplet. Champs manquants: " + ", ".join(missing))
+              sys.exit(1)
+          print("✅ Credentials Google Play lus et JSON valide.")
+          PY
       - name: Install npm dependencies
         script: |
           npm ci || npm install
@@ -186,7 +211,7 @@ workflows:
           echo "SOLOCAB_RELEASE_KEY_PASSWORD=$CM_KEY_PASSWORD" >> $CM_ENV
       - name: Build Android App Bundle (.aab)
         script: |
-          set -eo pipefail
+          set -e
           cd android
           echo "🔍 Vérification finale des variables de signature :"
           echo "  STORE_FILE=$SOLOCAB_RELEASE_STORE_FILE"
@@ -197,9 +222,15 @@ workflows:
             echo "❌ Le fichier keystore est introuvable à : $SOLOCAB_RELEASE_STORE_FILE"
             exit 1
           fi
-          # Pas de pipe vers tail : on veut voir l'intégralité du log Gradle
-          # pour identifier la vraie cause d'échec (compilation, signature, etc.)
-          ./gradlew bundleRelease --stacktrace --info --no-daemon
+          set +e
+          bash -lc './gradlew bundleRelease --stacktrace --info --warning-mode all --no-daemon 2>&1 | tee ../android-gradle-build.log; exit ${PIPESTATUS[0]}'
+          GRADLE_STATUS=$?
+          set -e
+          if [ "$GRADLE_STATUS" -ne 0 ]; then
+            echo "❌ Gradle a échoué. Extrait ciblé des erreurs :"
+            grep -n -E "FAILURE:|What went wrong|Execution failed|Caused by:|Compilation failed|Manifest merger failed|Duplicate class|error:|Could not" ../android-gradle-build.log | tail -n 160 || true
+            exit "$GRADLE_STATUS"
+          fi
       - name: Verify .aab artifact exists
         script: |
           set -e
@@ -216,8 +247,10 @@ workflows:
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
+      - android-gradle-build.log
+      - android/build/reports/problems/problems-report.html
     publishing:
       google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        credentials: $G_CLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: internal
         submit_as_draft: true
