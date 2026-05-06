@@ -125,6 +125,7 @@ workflows:
         - solocab_keystore
       vars:
         PACKAGE_NAME: "com.solocab.app"
+        GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1: "45:CD:B1:61:05:05:90:3C:2F:1A:C0:86:42:16:5F:54:06:28:EB:A8"
       node: latest
       java: 21
     triggering:
@@ -209,6 +210,30 @@ workflows:
           echo "SOLOCAB_RELEASE_STORE_PASSWORD=$CM_KEYSTORE_PASSWORD" >> $CM_ENV
           echo "SOLOCAB_RELEASE_KEY_ALIAS=$CM_KEY_ALIAS" >> $CM_ENV
           echo "SOLOCAB_RELEASE_KEY_PASSWORD=$CM_KEY_PASSWORD" >> $CM_ENV
+      - name: Validate Android upload certificate SHA1
+        script: |
+          set -e
+          echo "🔍 Vérification du certificat upload Android attendu par Google Play"
+          ACTUAL_SHA1=$(keytool -list -v \
+            -keystore "$SOLOCAB_RELEASE_STORE_FILE" \
+            -alias "$SOLOCAB_RELEASE_KEY_ALIAS" \
+            -storepass "$SOLOCAB_RELEASE_STORE_PASSWORD" \
+            -keypass "$SOLOCAB_RELEASE_KEY_PASSWORD" 2>/dev/null \
+            | awk -F': ' '/SHA1:/{print $2; exit}')
+          if [ -z "$ACTUAL_SHA1" ]; then
+            echo "❌ Impossible de lire le SHA1 du keystore Android configuré dans Codemagic."
+            echo "   Vérifie le fichier, l'alias et les mots de passe du keystore 'solocab_keystore'."
+            exit 1
+          fi
+          echo "  SHA1 détecté :  $ACTUAL_SHA1"
+          echo "  SHA1 attendu :  $GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1"
+          if [ "$ACTUAL_SHA1" != "$GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1" ]; then
+            echo "❌ Mauvais keystore Android : Google Play attend le certificat upload ci-dessus."
+            echo "   Remplace l'identité Codemagic 'solocab_keystore' par le keystore dont le SHA1 correspond."
+            echo "   Si ce keystore est perdu, demande une réinitialisation de clé d'upload dans Google Play Console."
+            exit 1
+          fi
+          echo "✅ Certificat upload Android conforme à Google Play"
       - name: Build Android App Bundle (.aab)
         script: |
           set -e
