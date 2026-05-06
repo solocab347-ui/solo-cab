@@ -186,14 +186,20 @@ workflows:
           echo "SOLOCAB_RELEASE_KEY_PASSWORD=$CM_KEY_PASSWORD" >> $CM_ENV
       - name: Build Android App Bundle (.aab)
         script: |
-          set -e
+          set -eo pipefail
           cd android
           echo "🔍 Vérification finale des variables de signature :"
           echo "  STORE_FILE=$SOLOCAB_RELEASE_STORE_FILE"
           echo "  KEY_ALIAS=$SOLOCAB_RELEASE_KEY_ALIAS"
           echo "  STORE_PASSWORD set: $([ -n "$SOLOCAB_RELEASE_STORE_PASSWORD" ] && echo yes || echo NO)"
           echo "  KEY_PASSWORD set:   $([ -n "$SOLOCAB_RELEASE_KEY_PASSWORD" ] && echo yes || echo NO)"
-          ./gradlew bundleRelease --stacktrace --info 2>&1 | tail -n 300
+          if [ ! -f "$SOLOCAB_RELEASE_STORE_FILE" ]; then
+            echo "❌ Le fichier keystore est introuvable à : $SOLOCAB_RELEASE_STORE_FILE"
+            exit 1
+          fi
+          # Pas de pipe vers tail : on veut voir l'intégralité du log Gradle
+          # pour identifier la vraie cause d'échec (compilation, signature, etc.)
+          ./gradlew bundleRelease --stacktrace --info --no-daemon
       - name: Verify .aab artifact exists
         script: |
           set -e
