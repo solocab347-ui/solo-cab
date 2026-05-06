@@ -170,10 +170,30 @@ workflows:
       - name: Set Gradle wrapper executable
         script: |
           chmod +x android/gradlew
+      - name: Map Codemagic signing vars to Gradle
+        script: |
+          set -e
+          echo "🔐 Mapping des variables de signature Codemagic vers Gradle"
+          if [ -z "$CM_KEYSTORE_PATH" ]; then
+            echo "❌ CM_KEYSTORE_PATH est vide — le keystore 'solocab_keystore' n'est pas attaché au workflow."
+            echo "   Vérifie : Codemagic UI → Code signing identities → solocab_keystore est bien référencé."
+            exit 1
+          fi
+          echo "✅ Keystore trouvé : $CM_KEYSTORE_PATH"
+          echo "SOLOCAB_RELEASE_STORE_FILE=$CM_KEYSTORE_PATH" >> $CM_ENV
+          echo "SOLOCAB_RELEASE_STORE_PASSWORD=$CM_KEYSTORE_PASSWORD" >> $CM_ENV
+          echo "SOLOCAB_RELEASE_KEY_ALIAS=$CM_KEY_ALIAS" >> $CM_ENV
+          echo "SOLOCAB_RELEASE_KEY_PASSWORD=$CM_KEY_PASSWORD" >> $CM_ENV
       - name: Build Android App Bundle (.aab)
         script: |
+          set -e
           cd android
-          ./gradlew bundleRelease --stacktrace
+          echo "🔍 Vérification finale des variables de signature :"
+          echo "  STORE_FILE=$SOLOCAB_RELEASE_STORE_FILE"
+          echo "  KEY_ALIAS=$SOLOCAB_RELEASE_KEY_ALIAS"
+          echo "  STORE_PASSWORD set: $([ -n "$SOLOCAB_RELEASE_STORE_PASSWORD" ] && echo yes || echo NO)"
+          echo "  KEY_PASSWORD set:   $([ -n "$SOLOCAB_RELEASE_KEY_PASSWORD" ] && echo yes || echo NO)"
+          ./gradlew bundleRelease --stacktrace --info 2>&1 | tail -n 300
       - name: Verify .aab artifact exists
         script: |
           set -e
