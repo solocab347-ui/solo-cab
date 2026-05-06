@@ -59,13 +59,13 @@ public class SoloCabPermissionsPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("overlay", canDrawOverlays());
         result.put("battery", isIgnoringBatteryOptimizations());
-        result.put("microphone", hasPermission(Manifest.permission.RECORD_AUDIO));
+        result.put("microphone", hasAndroidPermission(Manifest.permission.RECORD_AUDIO));
         call.resolve(result);
     }
 
     @PluginMethod
     public void requestMicrophone(PluginCall call) {
-        if (hasPermission(Manifest.permission.RECORD_AUDIO)) {
+        if (hasAndroidPermission(Manifest.permission.RECORD_AUDIO)) {
             resolve(call, true);
             return;
         }
@@ -99,7 +99,7 @@ public class SoloCabPermissionsPlugin extends Plugin {
         return powerManager != null && powerManager.isIgnoringBatteryOptimizations(getContext().getPackageName());
     }
 
-    private boolean hasPermission(String permission) {
+    private boolean hasAndroidPermission(String permission) {
         return ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_GRANTED;
     }
 
