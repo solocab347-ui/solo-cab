@@ -214,6 +214,13 @@ workflows:
         script: |
           set -e
           echo "🔍 Vérification du certificat upload Android attendu par Google Play"
+          mkdir -p android-signing-diagnostics
+          keytool -exportcert -rfc \
+            -keystore "$SOLOCAB_RELEASE_STORE_FILE" \
+            -alias "$SOLOCAB_RELEASE_KEY_ALIAS" \
+            -storepass "$SOLOCAB_RELEASE_STORE_PASSWORD" \
+            -keypass "$SOLOCAB_RELEASE_KEY_PASSWORD" \
+            -file android-signing-diagnostics/google-play-upload-certificate-current.pem >/dev/null 2>&1 || true
           ACTUAL_SHA1=$(keytool -list -v \
             -keystore "$SOLOCAB_RELEASE_STORE_FILE" \
             -alias "$SOLOCAB_RELEASE_KEY_ALIAS" \
@@ -227,10 +234,17 @@ workflows:
           fi
           echo "  SHA1 détecté :  $ACTUAL_SHA1"
           echo "  SHA1 attendu :  $GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1"
+          {
+            echo "SHA1 détecté: $ACTUAL_SHA1"
+            echo "SHA1 attendu par Google Play: $GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1"
+            echo ""
+            echo "Si le keystore attendu est perdu, envoyer google-play-upload-certificate-current.pem à Google Play Console pour demander la réinitialisation de la clé d'upload."
+          } > android-signing-diagnostics/README-google-play-upload-key.txt
           if [ "$ACTUAL_SHA1" != "$GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1" ]; then
             echo "❌ Mauvais keystore Android : Google Play attend le certificat upload ci-dessus."
             echo "   Remplace l'identité Codemagic 'solocab_keystore' par le keystore dont le SHA1 correspond."
             echo "   Si ce keystore est perdu, demande une réinitialisation de clé d'upload dans Google Play Console."
+            echo "   Artifact généré : android-signing-diagnostics/google-play-upload-certificate-current.pem"
             exit 1
           fi
           echo "✅ Certificat upload Android conforme à Google Play"
@@ -274,6 +288,7 @@ workflows:
       - android/app/build/outputs/**/mapping.txt
       - android-gradle-build.log
       - android/build/reports/problems/problems-report.html
+      - android-signing-diagnostics/*
     publishing:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
