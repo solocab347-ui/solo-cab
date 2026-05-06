@@ -125,7 +125,8 @@ workflows:
         - solocab_keystore
       vars:
         PACKAGE_NAME: "com.solocab.app"
-        GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1: "45:CD:B1:61:05:05:90:3C:2F:1A:C0:86:42:16:5F:54:06:28:EB:A8"
+        # Nouvelle clé d'upload validée par Google Play (effective le 8 mai 2026 18:38 UTC)
+        GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1: "7A:4C:57:0C:5E:13:D1:00:41:42:A8:64:C4:C8:7D:AF:E6:8A:88:8B"
       node: latest
       java: 21
     triggering:
