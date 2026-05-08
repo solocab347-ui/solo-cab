@@ -127,6 +127,7 @@ workflows:
         PACKAGE_NAME: "com.solocab.app"
         # Nouvelle clé d'upload validée par Google Play (effective le 8 mai 2026 18:38 UTC)
         GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1: "7A:4C:57:0C:5E:13:D1:00:41:42:A8:64:C4:C8:7D:AF:E6:8A:88:8B"
+        GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC: "2026-05-08T18:38:00Z"
       node: latest
       java: 21
     triggering:
@@ -284,6 +285,37 @@ workflows:
           fi
           AAB_SIZE=$(du -h "$AAB_FILE" | cut -f1)
           echo "✅ .aab trouvé : $AAB_FILE ($AAB_SIZE)"
+          echo "SOLOCAB_AAB_FILE=$AAB_FILE" >> $CM_ENV
+      - name: Verify signed .aab certificate SHA1
+        script: |
+          set -e
+          echo "🔍 Vérification du certificat réellement appliqué au .aab"
+          AAB_FILE="${SOLOCAB_AAB_FILE:-$(find android/app/build/outputs -name "*.aab" | head -n 1)}"
+          if [ -z "$AAB_FILE" ] || [ ! -f "$AAB_FILE" ]; then
+            echo "❌ Impossible de retrouver le .aab signé avant publication."
+            exit 1
+          fi
+          AAB_SHA1=$(keytool -printcert -jarfile "$AAB_FILE" 2>/dev/null | awk -F': ' '/SHA1:/{print $2; exit}')
+          if [ -z "$AAB_SHA1" ]; then
+            echo "❌ Impossible de lire le certificat du .aab signé : $AAB_FILE"
+            exit 1
+          fi
+          echo "  .aab signé :   $AAB_FILE"
+          echo "  SHA1 .aab :    $AAB_SHA1"
+          echo "  SHA1 attendu : $GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1"
+          echo "  Heure UTC build : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "  Activation Google Play annoncée : $GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC"
+          if [ "$AAB_SHA1" != "$GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1" ]; then
+            echo "❌ Le .aab final n'est pas signé avec la clé d'upload attendue par Google Play."
+            echo "   Le problème est côté configuration Gradle/Codemagic, pas côté Google Play."
+            exit 1
+          fi
+          if [ "$(date -u +%s)" -lt "$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC" +%s)" ]; then
+            echo "❌ La nouvelle clé d'upload n'est pas encore active côté Google Play."
+            echo "   Relance le build après l'heure UTC affichée ci-dessus."
+            exit 1
+          fi
+          echo "✅ Le .aab final est signé avec le bon certificat upload. Si Google Play refuse encore, l'activation n'est pas effective côté Google Play Console."
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
