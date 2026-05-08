@@ -125,9 +125,7 @@ workflows:
         - solocab_keystore
       vars:
         PACKAGE_NAME: "com.solocab.app"
-        # Nouvelle clé d'upload validée par Google Play (effective le 8 mai 2026 18:38 UTC)
         GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1: "7A:4C:57:0C:5E:13:D1:00:41:42:A8:64:C4:C8:7D:AF:E6:8A:88:8B"
-        GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC: "2026-05-08T18:38:00Z"
       node: latest
       java: 21
     triggering:
@@ -304,18 +302,12 @@ workflows:
           echo "  SHA1 .aab :    $AAB_SHA1"
           echo "  SHA1 attendu : $GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1"
           echo "  Heure UTC build : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-          echo "  Activation Google Play annoncée : $GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC"
           if [ "$AAB_SHA1" != "$GOOGLE_PLAY_EXPECTED_UPLOAD_SHA1" ]; then
             echo "❌ Le .aab final n'est pas signé avec la clé d'upload attendue par Google Play."
             echo "   Le problème est côté configuration Gradle/Codemagic, pas côté Google Play."
             exit 1
           fi
-          if [ "$(date -u +%s)" -lt "$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$GOOGLE_PLAY_UPLOAD_KEY_ACTIVE_AFTER_UTC" +%s)" ]; then
-            echo "❌ La nouvelle clé d'upload n'est pas encore active côté Google Play."
-            echo "   Relance le build après l'heure UTC affichée ci-dessus."
-            exit 1
-          fi
-          echo "✅ Le .aab final est signé avec le bon certificat upload. Si Google Play refuse encore, l'activation n'est pas effective côté Google Play Console."
+          echo "✅ Le .aab final est signé avec le bon certificat upload. La publication peut continuer côté Google Play."
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
