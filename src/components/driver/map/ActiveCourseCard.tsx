@@ -324,6 +324,21 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
         }
       }
     } else if (!newCourse && prev) {
+      // RACE-CONDITION GUARD: a transient empty fetch (Realtime ordering or
+      // brief RLS visibility gap) must NOT silently put the driver back online
+      // while a course is still active in DB. Re-check once after 1.5s.
+      await new Promise((r) => setTimeout(r, 1500));
+      const { data: recheck } = await supabase
+        .from('courses')
+        .select('id, status')
+        .eq('driver_id', driverId)
+        .in('status', ['accepted', 'driver_approaching', 'driver_arrived', 'in_progress'] as any[])
+        .limit(1);
+      if (recheck && recheck.length > 0) {
+        console.log('[ActiveCourseCard] Skipped reset — active course still exists, will refetch');
+        setTimeout(() => fetchActive(), 500);
+        return;
+      }
       await supabase.from('drivers').update({
         is_available_now: true,
         driver_status: 'online',
