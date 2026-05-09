@@ -1,12 +1,38 @@
 package com.solocab.app;
 
+import android.app.NotificationManager;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+
 import com.getcapacitor.BridgeActivity;
 import com.solocab.app.permissions.SoloCabPermissionsPlugin;
 
 public class MainActivity extends BridgeActivity {
     @Override
-    public void onCreate(android.os.Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SoloCabPermissionsPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Android 14+ (API 34) : `setFullScreenIntent` requiert une permission
+        // utilisateur explicite. Sans ça, les notifs "incoming_ride" dégradent
+        // en heads-up classique → l'écran ne se réveille pas → le chauffeur
+        // rate la course. On envoie l'utilisateur sur l'écran système une seule
+        // fois, au premier lancement où la permission n'est pas accordée.
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                NotificationManager nm = getSystemService(NotificationManager.class);
+                if (nm != null && !nm.canUseFullScreenIntent()) {
+                    Intent i = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT);
+                    i.setData(Uri.parse("package:" + getPackageName()));
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                }
+            }
+        } catch (Exception ignored) {
+            // Ne jamais crasher au boot pour une perm secondaire.
+        }
     }
 }
