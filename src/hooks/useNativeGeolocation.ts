@@ -53,7 +53,7 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
           backgroundMessage: 'Suivi de position en cours',
           requestPermissions: true,
           stale: false,
-          distanceFilter: 10,
+          distanceFilter: 25,
         },
         (location: any, error: any) => {
           if (error) {
