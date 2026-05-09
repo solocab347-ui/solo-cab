@@ -146,7 +146,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 await start();
               }
             }
-          }, 30_000);
+          }, 10_000);
         } else {
           // a été annulé entre-temps
           await BackgroundGeolocation.removeWatcher({ id });
