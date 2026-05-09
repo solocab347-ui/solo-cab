@@ -126,13 +126,16 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
           }, 20_000);
 
-          // Watchdog : si aucun fix > 90 s pendant que enabled === true,
+          // Watchdog : si aucun fix > 25 s pendant que enabled === true,
           // on re-arme le watcher pour éviter les zombies silencieux.
+          // Seuil 25 s = juste sous la fenêtre de visibilité client (30 s) :
+          // si le service freeze (Doze, Xiaomi/MIUI), on récupère AVANT
+          // que le chauffeur disparaisse de la recherche immédiate.
           if (watchdogRef.current) clearInterval(watchdogRef.current);
           watchdogRef.current = setInterval(async () => {
             if (!enabled || !watcherIdRef.current) return;
             const silenceMs = Date.now() - lastFixAtRef.current;
-            if (silenceMs > 90_000) {
+            if (silenceMs > 25_000) {
               console.warn('[BackgroundGPS] watchdog: silence', silenceMs, 'ms — re-arming');
               try {
                 await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
