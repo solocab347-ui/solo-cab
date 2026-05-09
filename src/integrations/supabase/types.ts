@@ -23055,6 +23055,10 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      sync_driver_status_for_driver: {
+        Args: { _driver_id: string }
+        Returns: undefined
+      }
       trigger_ai_arbitration_for_pending_ratings: {
         Args: never
         Returns: undefined
