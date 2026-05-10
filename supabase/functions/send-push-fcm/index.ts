@@ -88,22 +88,29 @@ async function sendFcmV1(
 ): Promise<DeliveryResult> {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const isIncomingRide = payload.type === 'incoming_ride';
-  const message = {
+  // CRITIQUE : pour incoming_ride on envoie un message DATA-ONLY pur.
+  // Si on inclut "notification" (top-level OU android.notification), FCM
+  // affiche la notif lui-même quand l'app est en background/killed et
+  // n'appelle JAMAIS onMessageReceived → notre full-screen intent custom
+  // (réveil d'écran, son ringtone, actions Accepter/Refuser) ne s'exécute pas.
+  // Avec data-only + priority=HIGH, Android réveille notre service à coup sûr.
+  const message: any = {
     message: {
       token,
-      ...(isIncomingRide ? {} : { notification: { title: payload.title, body: payload.body } }),
       android: {
         priority: 'HIGH' as const,
-        ttl: isIncomingRide ? '60s' : '3600s', // course = courte durée
-        notification: {
-          sound: 'default',
-          channel_id: isIncomingRide ? 'solocab_rides' : 'solocab_default',
-          // notification_priority MAX → bypass Doze + DND quand category=CALL
-          notification_priority: 'PRIORITY_MAX' as const,
-          visibility: 'PUBLIC' as const,
-          // Permet à FCM de coalescer plusieurs notifs pour une même course
-          tag: payload.data?.ride_id ? `ride-${payload.data.ride_id}` : undefined,
-        },
+        ttl: isIncomingRide ? '60s' : '3600s',
+        ...(isIncomingRide
+          ? {} // data-only : on gère tout côté SoloCabFirebaseMessagingService
+          : {
+              notification: {
+                sound: 'default',
+                channel_id: 'solocab_default',
+                notification_priority: 'PRIORITY_HIGH' as const,
+                visibility: 'PUBLIC' as const,
+                tag: payload.data?.ride_id ? `ride-${payload.data.ride_id}` : undefined,
+              },
+            }),
       },
       data: {
         type: payload.type || 'generic',
@@ -114,6 +121,11 @@ async function sendFcmV1(
       },
     },
   };
+  // Pour les notifs non-course, on garde le bloc top-level "notification"
+  // pour l'affichage natif quand l'app est killed.
+  if (!isIncomingRide) {
+    message.message.notification = { title: payload.title, body: payload.body };
+  }
   try {
     const res = await fetch(url, {
       method: 'POST',
