@@ -70,6 +70,13 @@
             </intent-filter>
         </service>
 
+        <!-- Le service Capacitor par défaut est remplacé par SoloCabFirebaseMessagingService,
+             qui relaie quand même les events vers PushNotificationsPlugin. Sans suppression,
+             Android peut livrer le FCM data-only au mauvais service et l'overlay ne s'ouvre pas. -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove" />
+
         <!-- BootReceiver : rappel post-reboot pour réactiver le tracking GPS -->
         <receiver
             android:name=".BootReceiver"
