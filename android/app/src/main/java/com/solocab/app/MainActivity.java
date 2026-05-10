@@ -35,4 +35,11 @@ public class MainActivity extends BridgeActivity {
             // Ne jamais crasher au boot pour une perm secondaire.
         }
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        IncomingRideOverlayManager.dismiss(this);
+    }
 }
