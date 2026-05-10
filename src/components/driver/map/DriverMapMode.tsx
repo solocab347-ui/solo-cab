@@ -69,6 +69,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   const [isMapReady, setIsMapReady] = useState(false);
   const [revenueHidden, setRevenueHidden] = useState(false);
   const [hasActiveCourse, setHasActiveCourse] = useState(false);
+  const [locationWaitExpired, setLocationWaitExpired] = useState(false);
 
   const { isAvailable, isOnline, driverStatus, toggleAvailability, isToggling } = useDriverAvailability();
   const isAssigned = driverStatus === 'assigned';
@@ -88,6 +89,15 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     updateIntervalMs: 8000,
   });
   const hasInitialGps = !!latitude && !!longitude;
+
+  useEffect(() => {
+    if (!trackingEnabled || hasInitialGps) {
+      setLocationWaitExpired(false);
+      return;
+    }
+    const timer = setTimeout(() => setLocationWaitExpired(true), 15_000);
+    return () => clearTimeout(timer);
+  }, [trackingEnabled, hasInitialGps]);
 
   const handleToggleAvailability = useCallback(async () => {
     if (isBusy || isToggling) return;
@@ -470,11 +480,18 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       )}
 
       {/* Loading — only while we actually try to track GPS */}
-      {trackingEnabled && !isTracking && (
+      {trackingEnabled && !hasInitialGps && !locationWaitExpired && (
         <div className="absolute inset-0 z-[42] flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none">
           <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">Localisation…</span>
+          </div>
+        </div>
+      )}
+      {trackingEnabled && !hasInitialGps && locationWaitExpired && (
+        <div className="absolute inset-x-4 top-[140px] z-[9991] flex justify-center pointer-events-none">
+          <div className="max-w-sm bg-card/95 backdrop-blur-xl text-foreground text-xs font-medium px-4 py-3 rounded-2xl shadow-xl border border-border/60">
+            Signal GPS en attente — vérifiez que la position du téléphone est activée en mode précis.
           </div>
         </div>
       )}
