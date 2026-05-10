@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { publishNativeFix } from '@/lib/nativeGpsBus';
 import { logGpsLoss } from '@/lib/gpsLossLogger';
+import { logGpsDebug, shouldRejectGpsFix } from '@/lib/gpsDebug';
 import { toast } from 'sonner';
 
 interface UseDriverBackgroundGPSOptions {
@@ -85,10 +86,23 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           accuracy?: number | null;
           speed?: number | null;
           bearing?: number | null;
+          provider?: string | null;
           timestamp?: number | null;
         }) => {
           if (!driverId || cancelled) return;
           const accuracyM = fix.accuracy ?? 0;
+          logGpsDebug('native-fix-received', fix, { driverId, enabled, source: fix.provider || 'unknown' });
+          if (shouldRejectGpsFix(fix)) {
+            logGpsLoss({
+              driverId,
+              lossType: 'invalid_or_mock_fix',
+              lat: fix.latitude,
+              lng: fix.longitude,
+              accuracyM,
+              details: { provider: fix.provider || 'unknown', reason: 'invalid_or_paris_hardcoded_fix' },
+            });
+            return;
+          }
           lastFixAtRef.current = Date.now();
           publishNativeFix({
             latitude: fix.latitude,
@@ -96,6 +110,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             accuracy: accuracyM,
             speed: fix.speed ?? null,
             bearing: fix.bearing ?? null,
+            provider: fix.provider ?? null,
             timestamp: fix.timestamp ?? Date.now(),
           });
           if (accuracyM > 100) {
@@ -115,8 +130,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               p_accuracy: accuracyM,
             });
             if (error) throw error;
+            logGpsDebug('upload-supabase-ok', fix, { driverId });
           } catch (err) {
             console.error('[BackgroundGPS] update fail', err);
+            logGpsDebug('upload-supabase-failed', fix, { driverId, error: String(err) });
           }
         };
 
@@ -146,6 +163,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             accuracy: pos.coords.accuracy ?? 0,
             speed: (pos.coords as any).speed ?? null,
             bearing: (pos.coords as any).heading ?? null,
+            provider: 'capacitor-geolocation-initial',
             timestamp: pos.timestamp,
           });
         } catch (e) {
@@ -173,6 +191,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               accuracy: location.accuracy ?? 0,
               speed: location.speed ?? null,
               bearing: location.bearing ?? null,
+              provider: (location as any).provider || 'background-geolocation',
               timestamp: location.time ?? Date.now(),
             });
           }
@@ -202,6 +221,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 accuracy: pos.coords.accuracy ?? 0,
                 speed: (pos.coords as any).speed ?? null,
                 bearing: (pos.coords as any).heading ?? null,
+                provider: 'capacitor-geolocation-tick',
                 timestamp: pos.timestamp,
               });
             } catch (e) {
