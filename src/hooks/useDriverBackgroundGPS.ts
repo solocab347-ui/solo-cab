@@ -9,6 +9,7 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { publishNativeFix } from '@/lib/nativeGpsBus';
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
@@ -79,6 +80,15 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
             if (!location || !driverId) return;
             lastFixAtRef.current = Date.now();
+            // Diffuse à tous les consommateurs natifs (UI, tracker, etc.)
+            publishNativeFix({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy ?? 0,
+              speed: location.speed ?? null,
+              bearing: location.bearing ?? null,
+              timestamp: Date.now(),
+            });
             try {
               await supabase
                 .from('drivers')
@@ -113,6 +123,14 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 maximumAge: 0,
               });
               lastFixAtRef.current = Date.now();
+              publishNativeFix({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy ?? 0,
+                speed: (pos.coords as any).speed ?? null,
+                bearing: (pos.coords as any).heading ?? null,
+                timestamp: Date.now(),
+              });
               await supabase
                 .from('drivers')
                 .update({
