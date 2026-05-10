@@ -24,6 +24,7 @@ import { GlobalRideOverlay } from "@/components/GlobalRideOverlay";
 import { NativePushRegistrar } from "@/components/NativePushRegistrar";
 import { DriverBackgroundGPS } from "@/components/DriverBackgroundGPS";
 import { DriverDeepLinkHandler } from "@/components/DriverDeepLinkHandler";
+import { ObservabilityBoot } from "@/components/ObservabilityBoot";
 
 // Eager load only critical pages (landing + 404)
 import Index from "./pages/Index";
