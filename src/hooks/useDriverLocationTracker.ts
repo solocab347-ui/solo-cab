@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
 import { useNativeGeolocation } from './useNativeGeolocation';
 import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
+import { logGpsDebug, shouldRejectGpsFix } from '@/lib/gpsDebug';
 
 interface LocationTrackerOptions {
   driverId: string | null;
@@ -80,8 +81,14 @@ export function useDriverLocationTracker({
 
   // ── Send location to DB — silent, no UI re-render on success ──
   const sendLocationToServer = useCallback(
-    async (latitude: number, longitude: number, retryCount = 0) => {
+    async (latitude: number, longitude: number, accuracy: number | null = null, retryCount = 0) => {
       if (!driverId || !mountedRef.current) return;
+      const fix = { latitude, longitude, accuracy, timestamp: Date.now(), provider: Capacitor.isNativePlatform() ? 'native-tracker' : 'web-geolocation' };
+      logGpsDebug('tracker-upload-attempt', fix, { driverId, retryCount });
+      if (shouldRejectGpsFix(fix)) {
+        console.warn('[GPS] Rejected invalid/mock tracker coordinate before DB upload', fix);
+        return;
+      }
 
       // Deduplicate: skip if position hasn't changed enough AND not enough time passed
       // BUT always force a heartbeat every HEARTBEAT_INTERVAL_MS to keep last_location_update fresh
@@ -102,7 +109,7 @@ export function useDriverLocationTracker({
           p_driver_id: driverId,
           p_latitude: latitude,
           p_longitude: longitude,
-          p_accuracy: null,
+          p_accuracy: accuracy,
         });
 
         if (error) {
@@ -121,6 +128,7 @@ export function useDriverLocationTracker({
             setLocationState((prev) => ({ ...prev, error: 'Erreur serveur GPS' }));
           }
         } else {
+          logGpsDebug('tracker-upload-ok', fix, { driverId });
           lastSentRef.current = { lat: latitude, lon: longitude, time: Date.now() };
           // Only update lastUpdate timestamp — avoid full state re-render
           if (mountedRef.current) {
@@ -141,7 +149,7 @@ export function useDriverLocationTracker({
         if (retryCount < MAX_RETRY_ATTEMPTS) {
           setTimeout(() => {
             if (mountedRef.current) {
-              sendLocationToServer(latitude, longitude, retryCount + 1);
+                sendLocationToServer(latitude, longitude, accuracy, retryCount + 1);
             }
           }, 2000 * (retryCount + 1));
         }
@@ -188,7 +196,8 @@ export function useDriverLocationTracker({
         }
         return prev;
       });
-      sendLocationToServer(lat, lng);
+      logGpsDebug('tracker-native-read', { latitude: lat, longitude: lng, accuracy: _accuracy, timestamp: now, provider: 'native-bus' }, { driverId });
+      sendLocationToServer(lat, lng, _accuracy);
     },
     [sendLocationToServer]
   );
@@ -242,7 +251,8 @@ export function useDriverLocationTracker({
       });
 
       // Always send to server (server-side dedup handles frequency)
-      sendLocationToServer(latitude, longitude);
+      logGpsDebug('tracker-web-read', { latitude, longitude, accuracy, speed, timestamp: position.timestamp, provider: 'navigator.geolocation' }, { driverId });
+      sendLocationToServer(latitude, longitude, accuracy);
     },
     [sendLocationToServer]
   );
