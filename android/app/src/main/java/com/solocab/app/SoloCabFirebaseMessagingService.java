@@ -51,12 +51,16 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
 
     private void showIncomingRideNotification(RemoteMessage msg) {
         Map<String, String> data = msg.getData();
-        String title = msg.getNotification() != null && msg.getNotification().getTitle() != null
-                ? msg.getNotification().getTitle()
-                : "🚖 Nouvelle course !";
-        String body = msg.getNotification() != null && msg.getNotification().getBody() != null
-                ? msg.getNotification().getBody()
-                : "Course disponible à proximité";
+        String title = data.get("title") != null
+                ? data.get("title")
+                : (msg.getNotification() != null && msg.getNotification().getTitle() != null
+                    ? msg.getNotification().getTitle()
+                    : "🚖 Nouvelle course !");
+        String body = data.get("body") != null
+                ? data.get("body")
+                : (msg.getNotification() != null && msg.getNotification().getBody() != null
+                    ? msg.getNotification().getBody()
+                    : "Course disponible à proximité");
         String rideId = data.get("ride_id");
         String pickupAddress = data.get("pickup_address");
         String price = data.get("price");
