@@ -101,7 +101,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         supabase
           .from('course_queue')
           .select(`
-            id, course_id, priority, expires_at,
+            id, course_id, priority, expires_at, created_at,
             course:courses!course_queue_course_id_fkey(
               pickup_address, destination_address, scheduled_date,
               guest_name, distance_km, payment_method_requested,
