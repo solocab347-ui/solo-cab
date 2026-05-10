@@ -123,6 +123,14 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 maximumAge: 0,
               });
               lastFixAtRef.current = Date.now();
+              publishNativeFix({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy ?? 0,
+                speed: (pos.coords as any).speed ?? null,
+                bearing: (pos.coords as any).heading ?? null,
+                timestamp: Date.now(),
+              });
               await supabase
                 .from('drivers')
                 .update({
