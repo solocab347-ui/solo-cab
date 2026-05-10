@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { IncomingCourse } from '@/hooks/useIncomingCourseListener';
+import { courseLatency } from '@/lib/courseLatencyTracker';
 
 interface IncomingCourseOverlayProps {
   course: IncomingCourse | null;
@@ -267,6 +268,7 @@ export function IncomingCourseOverlay({
   const handleAccept = useCallback(async () => {
     if (!course || !driverId || accepting) return;
     setAccepting(true);
+    courseLatency.markAccepted(course.rideId, course.source);
     if (audioRef.current) clearInterval(audioRef.current);
     stopCurrentPlayback();
     if (navigator.vibrate) navigator.vibrate(0);
