@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -28,13 +29,17 @@ import java.util.Map;
  * le FCM data-only arrive.
  */
 public final class IncomingRideOverlayManager {
+    private static final String TAG = "SoloCabOverlay";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static View currentView;
 
     private IncomingRideOverlayManager() {}
 
     public static void show(Context context, Map<String, String> data) {
-        if (!canDrawOverlays(context)) return;
+        if (!canDrawOverlays(context)) {
+            Log.w(TAG, "Overlay permission missing or blocked by system");
+            return;
+        }
 
         MAIN.post(() -> {
             try {
@@ -141,8 +146,10 @@ public final class IncomingRideOverlayManager {
 
                 currentView = root;
                 wm.addView(root, params);
+                Log.i(TAG, "Overlay displayed for ride_id=" + rideId);
                 MAIN.postDelayed(() -> dismiss(appContext), 300_000);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                Log.e(TAG, "Overlay display failed", e);
                 // La notification full-screen reste le fallback si le constructeur bloque l'overlay.
             }
         });
