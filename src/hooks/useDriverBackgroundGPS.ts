@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { publishNativeFix } from '@/lib/nativeGpsBus';
+import { logGpsLoss } from '@/lib/gpsLossLogger';
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
@@ -80,11 +81,21 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
             if (!location || !driverId) return;
             lastFixAtRef.current = Date.now();
+            const accuracyM = location.accuracy ?? 0;
+            if (accuracyM > 100 && driverId) {
+              logGpsLoss({
+                driverId,
+                lossType: 'low_accuracy',
+                lat: location.latitude,
+                lng: location.longitude,
+                accuracyM,
+              });
+            }
             // Diffuse à tous les consommateurs natifs (UI, tracker, etc.)
             publishNativeFix({
               latitude: location.latitude,
               longitude: location.longitude,
-              accuracy: location.accuracy ?? 0,
+              accuracy: accuracyM,
               speed: location.speed ?? null,
               bearing: location.bearing ?? null,
               timestamp: Date.now(),
@@ -155,12 +166,19 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             const silenceMs = Date.now() - lastFixAtRef.current;
             if (silenceMs > 25_000) {
               console.warn('[BackgroundGPS] watchdog: silence', silenceMs, 'ms — re-arming');
+              if (driverId) {
+                logGpsLoss({
+                  driverId,
+                  lossType: silenceMs > 60_000 ? 'no_fix_timeout' : 'watchdog_triggered',
+                  gapMs: silenceMs,
+                  details: { reason: 'silence_threshold_25s' },
+                });
+              }
               try {
                 await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
                 watcherIdRef.current = null;
               } catch {/* ignore */}
               if (!cancelled && enabled) {
-                // Re-démarre via start() qui réutilise loadBg()
                 await start();
               }
             }

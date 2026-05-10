@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { subscriptionManager } from '@/lib/subscriptionManager';
 import { realtimeHealthLogger } from '@/lib/realtimeHealthLogger';
+import { courseLatency } from '@/lib/courseLatencyTracker';
 
 export interface IncomingCourse {
   id: string;
@@ -47,14 +48,22 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     queueRef.current.sort((a, b) => b.priority - a.priority);
     const next = queueRef.current.shift()!;
     isShowingRef.current = true;
-    requestAnimationFrame(() => setIncomingCourse(next));
+    requestAnimationFrame(() => {
+      setIncomingCourse(next);
+      courseLatency.markOverlayShown(next.rideId, next.source);
+      realtimeHealthLogger.log({
+        event_type: 'course_received',
+        details: { ride_id: next.rideId, source: next.source, priority: next.priority },
+      });
+    });
   }, []);
 
-  const enqueue = useCallback((course: IncomingCourse) => {
+  const enqueue = useCallback((course: IncomingCourse, insertedAtIso?: string | null) => {
     if (dismissed.has(course.id)) return;
     if (queueRef.current.some(c => c.id === course.id)) return;
     if (incomingCourse?.id === course.id) return;
 
+    courseLatency.markReceived(course.rideId, insertedAtIso, course.source);
     queueRef.current.push(course);
     if (!isShowingRef.current) showNext();
   }, [dismissed, incomingCourse, showNext]);
@@ -92,7 +101,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
         supabase
           .from('course_queue')
           .select(`
-            id, course_id, priority, expires_at,
+            id, course_id, priority, expires_at, created_at,
             course:courses!course_queue_course_id_fkey(
               pickup_address, destination_address, scheduled_date,
               guest_name, distance_km, payment_method_requested,
@@ -176,7 +185,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
           destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
           destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process shared items
@@ -206,7 +215,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
           destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
           destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process ride requests
@@ -236,7 +245,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
           destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
           destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process direct courses
@@ -265,7 +274,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
           destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
           destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
     } catch (err) {
       console.error('[IncomingCourseListener] Error:', err);
