@@ -108,6 +108,7 @@ const App = () => (
                 <GlobalRideOverlay />
                 <NativePushRegistrar />
                 <DriverBackgroundGPS />
+                <ObservabilityBoot />
                 <DriverDeepLinkHandler />
                 <MaintenanceGuard>
                 <ErrorBoundary>
