@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { subscribeNativeFix, getLastNativeFix } from '@/lib/nativeGpsBus';
+import { logGpsDebug } from '@/lib/gpsDebug';
 
 interface NativeGeoState {
   latitude: number | null;
@@ -52,6 +53,7 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
   useEffect(() => {
     if (!isNative || !enabled) return;
     const unsub = subscribeNativeFix((fix) => {
+      logGpsDebug('native-bus-read', fix, { source: 'useNativeGeolocation' });
       setState((prev) => ({
         ...prev,
         latitude: fix.latitude,
