@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
 import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
-import { getCurrentLocation } from '@/lib/geoService';
 import { toast } from 'sonner';
 
 /**
@@ -350,31 +349,10 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         return;
       }
 
-      const firstFix = await getCurrentLocation({ enableHighAccuracy: true, timeoutMs: 10_000, maximumAgeMs: 0 });
-      if (!firstFix) {
-        setIsToggling(false);
-        toast.error("GPS introuvable", {
-          description: "Active le GPS précis du téléphone puis réessaie. SoloCab ne réutilise plus une ancienne position.",
-          duration: 7000,
-        });
-        return;
-      }
-
-      const { error: gpsError } = await supabase.rpc('update_driver_location_batch', {
-        p_driver_id: driverId,
-        p_latitude: firstFix.latitude,
-        p_longitude: firstFix.longitude,
-        p_accuracy: firstFix.accuracy,
-      });
-      if (gpsError) {
-        console.error('[DriverAvailability] initial GPS update failed', gpsError);
-        setIsToggling(false);
-        toast.error("Position GPS non enregistrée", {
-          description: "Connexion instable : impossible de passer en ligne proprement.",
-          duration: 7000,
-        });
-        return;
-      }
+      // Ne bloque plus le bouton sur un premier fix GPS : le foreground service
+      // démarre juste après le passage en ligne et publie la position réelle.
+      // Sur Xiaomi/MIUI, attendre getCurrentPosition ici pouvait figer l'UI
+      // 10–20 s et donner l'impression que le bouton ne répondait pas.
     }
 
     await enqueue(target);
