@@ -106,12 +106,12 @@ class RealtimeHealthLogger {
       event_type: e.event_type,
       channel_name: e.channel_name ?? null,
       latency_ms: e.latency_ms ?? null,
-      details: e.details ?? {},
-      device_info: this.deviceInfo,
+      details: (e.details ?? {}) as any,
+      device_info: this.deviceInfo as any,
     }));
 
     try {
-      const { error } = await supabase.from('realtime_health_log').insert(rows);
+      const { error } = await supabase.from('realtime_health_log').insert(rows as any);
       if (error) {
         console.warn('[realtimeHealth] flush failed, requeueing', error);
         // Re-queue at front (best-effort), but cap memory
