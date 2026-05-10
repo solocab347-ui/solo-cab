@@ -152,15 +152,17 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
   const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
   const [receiverPos, setReceiverPos] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Track receiver geolocation for "distance to client" estimation
+  // Track receiver geolocation for "distance to client" estimation.
+  // Passe par geoService unifié → permission demandée proprement, support natif Android.
   useEffect(() => {
-    if (!navigator.geolocation) return;
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => setReceiverPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
-      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
-    );
-    return () => navigator.geolocation.clearWatch(watchId);
+    let cleanup: (() => void) | null = null;
+    let cancelled = false;
+    watchLocation(
+      (fix) => { if (!cancelled) setReceiverPos({ lat: fix.latitude, lng: fix.longitude }); },
+      undefined,
+      { enableHighAccuracy: false, maximumAgeMs: 60_000, timeoutMs: 10_000 },
+    ).then((fn) => { if (cancelled) fn(); else cleanup = fn; });
+    return () => { cancelled = true; cleanup?.(); };
   }, []);
 
   // Dialog states
