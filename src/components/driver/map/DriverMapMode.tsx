@@ -7,6 +7,7 @@ import { ActiveCourseCard } from './ActiveCourseCard';
 import { UpcomingReservationsBanner } from './UpcomingReservationsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
+import { logGpsDebug } from '@/lib/gpsDebug';
 import { motion } from 'framer-motion';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import carTopView from '@/assets/car-top-view.png';
@@ -121,12 +122,14 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   // Init map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
+    if (!latitude || !longitude) return;
     const map = L.map(mapContainerRef.current, {
-      center: [48.8566, 2.3522],
+      center: [latitude, longitude],
       zoom: 16,
       zoomControl: false,
       attributionControl: false,
     });
+    logGpsDebug('driver-map-initial-center', { latitude, longitude, timestamp: Date.now(), provider: 'driver-map-state' }, { driverId });
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
@@ -145,7 +148,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       try { map.remove(); } catch {}
       mapRef.current = null;
     };
-  }, []);
+  }, [driverId, latitude, longitude]);
 
   const normalizeAngle = useCallback((angle: number) => {
     return ((angle % 360) + 360) % 360;
@@ -206,6 +209,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   // Update car + radar on map
   useEffect(() => {
     if (!latitude || !longitude || !mapRef.current || !isMapReady) return;
+    logGpsDebug('driver-map-read', { latitude, longitude, timestamp: Date.now(), provider: 'useDriverLocationTracker' }, { driverId, isStale, isTracking });
     const newPos: L.LatLngExpression = [latitude, longitude];
 
     // Radar overlay around car
