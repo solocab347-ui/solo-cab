@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { publishNativeFix } from '@/lib/nativeGpsBus';
 import { logGpsLoss } from '@/lib/gpsLossLogger';
+import { toast } from 'sonner';
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
@@ -23,6 +24,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
   const lastFixAtRef = useRef<number>(0);
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const notificationWarnedRef = useRef(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !driverId) return;
@@ -34,6 +36,28 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const loadBg = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'background-geolocation'));
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
     const loadPrefs = () => import('@capacitor/preferences');
+
+    const ensureAndroidGpsNotificationPermission = async () => {
+      if (Capacitor.getPlatform() !== 'android') return true;
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const current = await LocalNotifications.checkPermissions();
+        if ((current as any).display === 'granted') return true;
+        const requested = await LocalNotifications.requestPermissions();
+        const granted = (requested as any).display === 'granted';
+        if (!granted && !notificationWarnedRef.current) {
+          notificationWarnedRef.current = true;
+          toast.warning('Notification GPS non autorisée', {
+            description: 'Android doit autoriser les notifications pour afficher “SoloCab utilise votre GPS”.',
+            duration: 7000,
+          });
+        }
+        return granted;
+      } catch (e) {
+        console.warn('[BackgroundGPS] notification permission check failed', e);
+        return false;
+      }
+    };
 
     const setTrackingFlag = async (value: boolean) => {
       try {
@@ -49,10 +73,52 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const start = async () => {
       if (!enabled || watcherIdRef.current || cancelled) return;
       try {
+        await ensureAndroidGpsNotificationPermission();
         const bgMod: any = await loadBg();
         const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
         const kaMod: any = await loadKa();
         const KeepAwake = kaMod.KeepAwake || kaMod.default;
+
+        const persistFix = async (fix: {
+          latitude: number;
+          longitude: number;
+          accuracy?: number | null;
+          speed?: number | null;
+          bearing?: number | null;
+          timestamp?: number | null;
+        }) => {
+          if (!driverId || cancelled) return;
+          const accuracyM = fix.accuracy ?? 0;
+          lastFixAtRef.current = Date.now();
+          publishNativeFix({
+            latitude: fix.latitude,
+            longitude: fix.longitude,
+            accuracy: accuracyM,
+            speed: fix.speed ?? null,
+            bearing: fix.bearing ?? null,
+            timestamp: fix.timestamp ?? Date.now(),
+          });
+          if (accuracyM > 100) {
+            logGpsLoss({
+              driverId,
+              lossType: 'low_accuracy',
+              lat: fix.latitude,
+              lng: fix.longitude,
+              accuracyM,
+            });
+          }
+          try {
+            const { error } = await supabase.rpc('update_driver_location_batch', {
+              p_driver_id: driverId,
+              p_latitude: fix.latitude,
+              p_longitude: fix.longitude,
+              p_accuracy: accuracyM,
+            });
+            if (error) throw error;
+          } catch (err) {
+            console.error('[BackgroundGPS] update fail', err);
+          }
+        };
 
         // Wake lock pour empêcher le CPU de dormir
         try {
@@ -65,14 +131,35 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         // Mémorise pour le BootReceiver Android
         await setTrackingFlag(true);
 
+        // Prime immédiat : évite que la carte reste sur le centre par défaut
+        // et garantit une première écriture DB avant le premier callback watcher.
+        try {
+          const { Geolocation } = await import('@capacitor/geolocation');
+          const pos = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 12_000,
+            maximumAge: 0,
+          });
+          await persistFix({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy ?? 0,
+            speed: (pos.coords as any).speed ?? null,
+            bearing: (pos.coords as any).heading ?? null,
+            timestamp: pos.timestamp,
+          });
+        } catch (e) {
+          console.warn('[BackgroundGPS] initial fix failed, watcher will continue', e);
+        }
+
         // Démarrer le watcher background (foreground service Android)
         const id = await BackgroundGeolocation.addWatcher(
           {
-            backgroundMessage: 'SoloCab suit votre position pour vous proposer des courses.',
-            backgroundTitle: '🚗 SoloCab actif',
+            backgroundMessage: 'Votre position GPS est utilisée pour rester visible des clients.',
+            backgroundTitle: 'SoloCab utilise votre GPS',
             requestPermissions: true,
             stale: false,
-            distanceFilter: 30, // mètres
+            distanceFilter: 5, // mètres — précision prioritaire pour dispatch chauffeur
           },
           async (location, error) => {
             if (error) {
@@ -80,37 +167,14 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               return;
             }
             if (!location || !driverId) return;
-            lastFixAtRef.current = Date.now();
-            const accuracyM = location.accuracy ?? 0;
-            if (accuracyM > 100 && driverId) {
-              logGpsLoss({
-                driverId,
-                lossType: 'low_accuracy',
-                lat: location.latitude,
-                lng: location.longitude,
-                accuracyM,
-              });
-            }
-            // Diffuse à tous les consommateurs natifs (UI, tracker, etc.)
-            publishNativeFix({
+            await persistFix({
               latitude: location.latitude,
               longitude: location.longitude,
-              accuracy: accuracyM,
+              accuracy: location.accuracy ?? 0,
               speed: location.speed ?? null,
               bearing: location.bearing ?? null,
-              timestamp: Date.now(),
+              timestamp: location.time ?? Date.now(),
             });
-            try {
-              const { error } = await supabase.rpc('update_driver_location_batch', {
-                p_driver_id: driverId,
-                p_latitude: location.latitude,
-                p_longitude: location.longitude,
-                p_accuracy: accuracyM,
-              });
-              if (error) throw error;
-            } catch (err) {
-              console.error('[BackgroundGPS] update fail', err);
-            }
           }
         );
 
@@ -132,22 +196,14 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 timeout: 15_000,
                 maximumAge: 0,
               });
-              lastFixAtRef.current = Date.now();
-              publishNativeFix({
+              await persistFix({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 accuracy: pos.coords.accuracy ?? 0,
                 speed: (pos.coords as any).speed ?? null,
                 bearing: (pos.coords as any).heading ?? null,
-                timestamp: Date.now(),
+                timestamp: pos.timestamp,
               });
-              const { error } = await supabase.rpc('update_driver_location_batch', {
-                p_driver_id: driverId,
-                p_latitude: pos.coords.latitude,
-                p_longitude: pos.coords.longitude,
-                p_accuracy: pos.coords.accuracy ?? null,
-              });
-              if (error) throw error;
             } catch (e) {
               console.warn('[BackgroundGPS] tick fail', e);
             }

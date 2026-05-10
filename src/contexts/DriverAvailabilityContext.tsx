@@ -339,8 +339,10 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
     // pour que l'utilisateur voie le prompt système ("Autoriser la localisation")
     // et que le foreground service puisse réellement émettre des positions.
     if (willBeOnline) {
+      setIsToggling(true);
       const perm = await ensureLocationPermission();
       if (perm !== 'granted') {
+        setIsToggling(false);
         toast.error("Impossible de passer en ligne sans localisation", {
           description: "Autorise l'accès à la position pour recevoir des courses.",
           duration: 6000,
@@ -348,8 +350,9 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         return;
       }
 
-      const firstFix = await getCurrentLocation({ enableHighAccuracy: true, timeoutMs: 20_000, maximumAgeMs: 0 });
+      const firstFix = await getCurrentLocation({ enableHighAccuracy: true, timeoutMs: 10_000, maximumAgeMs: 0 });
       if (!firstFix) {
+        setIsToggling(false);
         toast.error("GPS introuvable", {
           description: "Active le GPS précis du téléphone puis réessaie. SoloCab ne réutilise plus une ancienne position.",
           duration: 7000,
@@ -365,6 +368,7 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
       });
       if (gpsError) {
         console.error('[DriverAvailability] initial GPS update failed', gpsError);
+        setIsToggling(false);
         toast.error("Position GPS non enregistrée", {
           description: "Connexion instable : impossible de passer en ligne proprement.",
           duration: 7000,

@@ -36,6 +36,7 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
+    useLegacyBridge: true,
   },
   plugins: {
     PushNotifications: {

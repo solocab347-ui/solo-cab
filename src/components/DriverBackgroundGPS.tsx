@@ -17,7 +17,8 @@ export function DriverBackgroundGPS() {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
 
-  // Récupérer driver_id + état online
+  // Récupérer driver_id + état connecté : online, assigné ou en course.
+  // Ne pas dépendre uniquement de is_available_now, qui passe à false pendant une course.
   useEffect(() => {
     if (!user?.id) {
       setDriverId(null);
@@ -30,13 +31,13 @@ export function DriverBackgroundGPS() {
     (async () => {
       const { data } = await supabase
         .from('drivers')
-        .select('id, is_available_now')
+        .select('id, is_available_now, driver_status')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!data) return;
       setDriverId(data.id);
-      setEnabled(!!data.is_available_now);
+      setEnabled(data.driver_status === 'online' || data.driver_status === 'assigned' || data.driver_status === 'in_ride');
 
       // Pré-demande de permission GPS dès qu'on identifie le chauffeur :
       // l'OS affiche le prompt système et l'indicateur "utilise votre position".
@@ -51,8 +52,8 @@ export function DriverBackgroundGPS() {
           table: 'drivers',
           filter: `id=eq.${data.id}`,
         }, (payload) => {
-          const next = payload.new as { is_available_now?: boolean };
-          setEnabled(!!next.is_available_now);
+          const next = payload.new as { is_available_now?: boolean; driver_status?: string | null };
+          setEnabled(next.driver_status === 'online' || next.driver_status === 'assigned' || next.driver_status === 'in_ride');
         })
         .subscribe();
     })();

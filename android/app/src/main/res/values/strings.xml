@@ -4,4 +4,7 @@
     <string name="title_activity_main">SoloCab</string>
     <string name="package_name">com.solocab.app</string>
     <string name="custom_url_scheme">com.solocab.app</string>
+    <string name="capacitor_background_geolocation_notification_channel_name">Suivi GPS SoloCab</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_tracking</string>
+    <string name="capacitor_background_geolocation_notification_color">#FF6B00</string>
 </resources>
