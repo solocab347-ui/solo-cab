@@ -13,9 +13,9 @@ android {
             if (releaseStoreFile) {
                 storeFile file(releaseStoreFile)
             }
-            keyAlias releaseKeyAlias
-            storePassword releaseStorePassword
-            keyPassword releaseKeyPassword
+            if (releaseKeyAlias) { keyAlias releaseKeyAlias }
+            if (releaseStorePassword) { storePassword releaseStorePassword }
+            if (releaseKeyPassword) { keyPassword releaseKeyPassword }
         }
     }
     defaultConfig {
