@@ -168,7 +168,7 @@ serve(async (req) => {
     // On invoque send-push-fcm en parallèle pour atteindre les apps natives installées.
     // Aucun fail si pas de token natif enregistré (la fonction tolère 0 destinataire).
     try {
-      const isRideRequest = (payload.tag || '').includes('course') || (payload.tag || '').includes('ride');
+      const isRideRequest = payload.type === 'incoming_ride' || (payload.tag || '').includes('course') || (payload.tag || '').includes('ride');
       fetch(`${supabaseUrl}/functions/v1/send-push-fcm`, {
         method: 'POST',
         headers: {
@@ -179,10 +179,11 @@ serve(async (req) => {
           user_ids: [payload.user_id],
           title: payload.title,
           body: payload.message,
-          type: isRideRequest ? 'incoming_ride' : 'generic',
+          type: payload.type || (isRideRequest ? 'incoming_ride' : 'generic'),
           data: {
             link: payload.link || '/',
             tag: payload.tag || 'solocab',
+            ...(payload.data || {}),
           },
         }),
       }).catch((e) => console.warn('[FCM relay] error', e));
