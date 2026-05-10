@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/logo-solocab.png';
 import { saveStorefrontState, loadStorefrontState } from '@/lib/storefrontState';
+import { getCurrentLocation as getUnifiedLocation } from '@/lib/geoService';
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
