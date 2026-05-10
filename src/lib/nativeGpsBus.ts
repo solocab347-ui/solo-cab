@@ -21,6 +21,7 @@ export interface NativeGpsFix {
   accuracy: number;
   speed?: number | null;
   bearing?: number | null;
+  provider?: string | null;
   timestamp: number;
 }
 
