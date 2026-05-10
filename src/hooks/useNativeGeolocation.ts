@@ -14,7 +14,7 @@
  * Sur web (no-op natif), le hook reste inerte : c'est `useDriverLocationTracker`
  * qui gère `navigator.geolocation` directement.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { subscribeNativeFix, getLastNativeFix } from '@/lib/nativeGpsBus';
 
