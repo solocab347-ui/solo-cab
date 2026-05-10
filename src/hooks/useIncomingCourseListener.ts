@@ -185,7 +185,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
           destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
           destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process shared items
@@ -215,7 +215,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: course?.pickup_longitude ? Number(course.pickup_longitude) : undefined,
           destinationLatitude: course?.destination_latitude ? Number(course.destination_latitude) : undefined,
           destinationLongitude: course?.destination_longitude ? Number(course.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process ride requests
@@ -245,7 +245,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
           destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
           destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
 
       // Process direct courses
@@ -274,7 +274,7 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
           pickupLongitude: item.pickup_longitude ? Number(item.pickup_longitude) : undefined,
           destinationLatitude: item.destination_latitude ? Number(item.destination_latitude) : undefined,
           destinationLongitude: item.destination_longitude ? Number(item.destination_longitude) : undefined,
-        });
+        }, (item as any).created_at);
       });
     } catch (err) {
       console.error('[IncomingCourseListener] Error:', err);
