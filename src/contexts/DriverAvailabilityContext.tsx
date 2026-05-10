@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
 import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
+import { getCurrentLocation } from '@/lib/geoService';
 import { toast } from 'sonner';
 
 /**
@@ -343,6 +344,30 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
         toast.error("Impossible de passer en ligne sans localisation", {
           description: "Autorise l'accès à la position pour recevoir des courses.",
           duration: 6000,
+        });
+        return;
+      }
+
+      const firstFix = await getCurrentLocation({ enableHighAccuracy: true, timeoutMs: 20_000, maximumAgeMs: 0 });
+      if (!firstFix) {
+        toast.error("GPS introuvable", {
+          description: "Active le GPS précis du téléphone puis réessaie. SoloCab ne réutilise plus une ancienne position.",
+          duration: 7000,
+        });
+        return;
+      }
+
+      const { error: gpsError } = await supabase.rpc('update_driver_location_batch', {
+        p_driver_id: driverId,
+        p_latitude: firstFix.latitude,
+        p_longitude: firstFix.longitude,
+        p_accuracy: firstFix.accuracy,
+      });
+      if (gpsError) {
+        console.error('[DriverAvailability] initial GPS update failed', gpsError);
+        toast.error("Position GPS non enregistrée", {
+          description: "Connexion instable : impossible de passer en ligne proprement.",
+          duration: 7000,
         });
         return;
       }
