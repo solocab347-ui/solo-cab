@@ -9,6 +9,7 @@ import { NearbyDriverCard } from './NearbyDriverCard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { getCurrentLocation as getUnifiedLocation } from '@/lib/geoService';
 
 interface ImmediateRideSearchProps {
   onDriverSelected: (driver: NearbyDriver, pickupAddress: string, destinationAddress: string, distanceKm: number) => void;
