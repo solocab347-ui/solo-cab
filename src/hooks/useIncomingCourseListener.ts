@@ -48,14 +48,22 @@ export function useIncomingCourseListener({ driverId, enabled = true }: UseIncom
     queueRef.current.sort((a, b) => b.priority - a.priority);
     const next = queueRef.current.shift()!;
     isShowingRef.current = true;
-    requestAnimationFrame(() => setIncomingCourse(next));
+    requestAnimationFrame(() => {
+      setIncomingCourse(next);
+      courseLatency.markOverlayShown(next.rideId, next.source);
+      realtimeHealthLogger.log({
+        event_type: 'course_received',
+        details: { ride_id: next.rideId, source: next.source, priority: next.priority },
+      });
+    });
   }, []);
 
-  const enqueue = useCallback((course: IncomingCourse) => {
+  const enqueue = useCallback((course: IncomingCourse, insertedAtIso?: string | null) => {
     if (dismissed.has(course.id)) return;
     if (queueRef.current.some(c => c.id === course.id)) return;
     if (incomingCourse?.id === course.id) return;
 
+    courseLatency.markReceived(course.rideId, insertedAtIso, course.source);
     queueRef.current.push(course);
     if (!isShowingRef.current) showNext();
   }, [dismissed, incomingCourse, showNext]);
