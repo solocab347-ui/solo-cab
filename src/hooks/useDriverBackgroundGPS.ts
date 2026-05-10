@@ -101,14 +101,13 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               timestamp: Date.now(),
             });
             try {
-              await supabase
-                .from('drivers')
-                .update({
-                  current_latitude: location.latitude,
-                  current_longitude: location.longitude,
-                  last_location_update: new Date().toISOString(),
-                })
-                .eq('id', driverId);
+              const { error } = await supabase.rpc('update_driver_location_batch', {
+                p_driver_id: driverId,
+                p_latitude: location.latitude,
+                p_longitude: location.longitude,
+                p_accuracy: accuracyM,
+              });
+              if (error) throw error;
             } catch (err) {
               console.error('[BackgroundGPS] update fail', err);
             }
@@ -142,14 +141,13 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
                 bearing: (pos.coords as any).heading ?? null,
                 timestamp: Date.now(),
               });
-              await supabase
-                .from('drivers')
-                .update({
-                  current_latitude: pos.coords.latitude,
-                  current_longitude: pos.coords.longitude,
-                  last_location_update: new Date().toISOString(),
-                })
-                .eq('id', driverId);
+              const { error } = await supabase.rpc('update_driver_location_batch', {
+                p_driver_id: driverId,
+                p_latitude: pos.coords.latitude,
+                p_longitude: pos.coords.longitude,
+                p_accuracy: pos.coords.accuracy ?? null,
+              });
+              if (error) throw error;
             } catch (e) {
               console.warn('[BackgroundGPS] tick fail', e);
             }

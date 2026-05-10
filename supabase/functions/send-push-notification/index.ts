@@ -13,6 +13,8 @@ interface PushPayload {
   message: string;
   link?: string;
   tag?: string;
+  type?: string;
+  data?: Record<string, string>;
 }
 
 serve(async (req) => {
@@ -26,27 +28,18 @@ serve(async (req) => {
     const rawVapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const rawVapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    if (!rawVapidPublicKey || !rawVapidPrivateKey) {
-      console.error('⚠️ VAPID keys not configured');
-      return new Response(
-        JSON.stringify({ error: 'VAPID keys not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const webPushEnabled = !!rawVapidPublicKey && !!rawVapidPrivateKey;
+    if (!webPushEnabled) console.warn('⚠️ VAPID keys not configured — skipping web push, native FCM/APNS continues');
 
     // Normalize to URL-safe base64 (web-push requires no padding, no +/)
     const toUrlSafeBase64 = (s: string) =>
       s.trim().replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-    const vapidPublicKey = toUrlSafeBase64(rawVapidPublicKey);
-    const vapidPrivateKey = toUrlSafeBase64(rawVapidPrivateKey);
-
-    // Configure web-push with VAPID
-    webpush.setVapidDetails(
-      'mailto:contact@solocab.fr',
-      vapidPublicKey,
-      vapidPrivateKey
-    );
+    if (webPushEnabled) {
+      const vapidPublicKey = toUrlSafeBase64(rawVapidPublicKey!);
+      const vapidPrivateKey = toUrlSafeBase64(rawVapidPrivateKey!);
+      webpush.setVapidDetails('mailto:contact@solocab.fr', vapidPublicKey, vapidPrivateKey);
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const payload: PushPayload = await req.json();
@@ -72,7 +65,7 @@ serve(async (req) => {
     let pushFailedCount = 0;
     const pushResults: Array<{ endpoint: string; success: boolean; error?: string }> = [];
 
-    if (subscriptions && subscriptions.length > 0) {
+    if (webPushEnabled && subscriptions && subscriptions.length > 0) {
       // Build notification payload
       const notificationPayload = JSON.stringify({
         title: payload.title,
@@ -175,7 +168,7 @@ serve(async (req) => {
     // On invoque send-push-fcm en parallèle pour atteindre les apps natives installées.
     // Aucun fail si pas de token natif enregistré (la fonction tolère 0 destinataire).
     try {
-      const isRideRequest = (payload.tag || '').includes('course') || (payload.tag || '').includes('ride');
+      const isRideRequest = payload.type === 'incoming_ride' || (payload.tag || '').includes('course') || (payload.tag || '').includes('ride');
       fetch(`${supabaseUrl}/functions/v1/send-push-fcm`, {
         method: 'POST',
         headers: {
@@ -186,10 +179,11 @@ serve(async (req) => {
           user_ids: [payload.user_id],
           title: payload.title,
           body: payload.message,
-          type: isRideRequest ? 'incoming_ride' : 'generic',
+          type: payload.type || (isRideRequest ? 'incoming_ride' : 'generic'),
           data: {
             link: payload.link || '/',
             tag: payload.tag || 'solocab',
+            ...(payload.data || {}),
           },
         }),
       }).catch((e) => console.warn('[FCM relay] error', e));

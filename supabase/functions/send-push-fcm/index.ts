@@ -91,7 +91,7 @@ async function sendFcmV1(
   const message = {
     message: {
       token,
-      notification: { title: payload.title, body: payload.body },
+      ...(isIncomingRide ? {} : { notification: { title: payload.title, body: payload.body } }),
       android: {
         priority: 'HIGH' as const,
         ttl: isIncomingRide ? '60s' : '3600s', // course = courte durée
@@ -107,6 +107,8 @@ async function sendFcmV1(
       },
       data: {
         type: payload.type || 'generic',
+        title: payload.title,
+        body: payload.body,
         full_screen: isIncomingRide ? 'true' : 'false',
         ...(payload.data || {}),
       },
