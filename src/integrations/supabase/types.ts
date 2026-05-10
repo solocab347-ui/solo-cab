@@ -21689,6 +21689,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_course_latency_percentiles: {
+        Args: { p_hours?: number }
+        Returns: {
+          avg_ms: number
+          max_ms: number
+          p50_ms: number
+          p95_ms: number
+          p99_ms: number
+          phase: string
+          sample_count: number
+        }[]
+      }
       get_course_partner_info: {
         Args: { p_client_user_id: string; p_course_id: string }
         Returns: {
@@ -22009,6 +22021,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_observability_hourly: {
+        Args: { p_hours?: number }
+        Returns: {
+          bucket: string
+          course_received: number
+          forced_offline: number
+          gps_losses: number
+          reconnects: number
+          zombies: number
+        }[]
+      }
+      get_observability_summary: { Args: { p_hours?: number }; Returns: Json }
       get_or_create_conversation: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
