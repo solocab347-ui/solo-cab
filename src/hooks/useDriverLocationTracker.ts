@@ -117,7 +117,7 @@ export function useDriverLocationTracker({
           if (retryCount < MAX_RETRY_ATTEMPTS) {
             setTimeout(() => {
               if (mountedRef.current) {
-                sendLocationToServer(latitude, longitude, retryCount + 1);
+                sendLocationToServer(latitude, longitude, accuracy, retryCount + 1);
               }
             }, 2000 * (retryCount + 1)); // 2s, 4s backoff
             return;
