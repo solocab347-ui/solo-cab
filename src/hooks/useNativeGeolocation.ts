@@ -46,6 +46,9 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
     };
   });
 
+  const onLocationRef = useRef(onLocation);
+  onLocationRef.current = onLocation;
+
   useEffect(() => {
     if (!isNative || !enabled) return;
     const unsub = subscribeNativeFix((fix) => {
@@ -57,12 +60,9 @@ export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocati
         speed: fix.speed ?? null,
         bearing: fix.bearing ?? null,
       }));
-      onLocation?.(fix.latitude, fix.longitude, fix.accuracy);
+      onLocationRef.current?.(fix.latitude, fix.longitude, fix.accuracy);
     });
     return unsub;
-    // onLocation est volontairement exclu : on capture la dernière référence
-    // via la closure de subscribe, mais on ne re-souscrit pas à chaque render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNative, enabled]);
 
   return state;
