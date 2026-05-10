@@ -13524,6 +13524,39 @@ export type Database = {
         }
         Relationships: []
       }
+      gps_loss_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          driver_id: string
+          gap_ms: number | null
+          id: string
+          last_known_lat: number | null
+          last_known_lng: number | null
+          loss_type: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          driver_id: string
+          gap_ms?: number | null
+          id?: string
+          last_known_lat?: number | null
+          last_known_lng?: number | null
+          loss_type: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          driver_id?: string
+          gap_ms?: number | null
+          id?: string
+          last_known_lat?: number | null
+          last_known_lng?: number | null
+          loss_type?: string
+        }
+        Relationships: []
+      }
       guest_registration_tokens: {
         Row: {
           course_id: string | null
@@ -15545,6 +15578,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      realtime_health_log: {
+        Row: {
+          channel_name: string | null
+          created_at: string
+          details: Json | null
+          device_info: Json | null
+          driver_id: string | null
+          event_type: string
+          id: string
+          latency_ms: number | null
+          user_id: string | null
+        }
+        Insert: {
+          channel_name?: string | null
+          created_at?: string
+          details?: Json | null
+          device_info?: Json | null
+          driver_id?: string | null
+          event_type: string
+          id?: string
+          latency_ms?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          channel_name?: string | null
+          created_at?: string
+          details?: Json | null
+          device_info?: Json | null
+          driver_id?: string | null
+          event_type?: string
+          id?: string
+          latency_ms?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       reengagement_campaigns: {
         Row: {
@@ -20965,6 +21034,10 @@ export type Database = {
           errors_logged: number
           pattern_code: string
         }[]
+      }
+      detect_and_fix_stale_gps_drivers: {
+        Args: { p_max_age_seconds?: number }
+        Returns: Json
       }
       detect_city_from_address: { Args: { p_address: string }; Returns: string }
       detect_paris_address: { Args: { p_address: string }; Returns: string }
