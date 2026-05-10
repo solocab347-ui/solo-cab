@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
@@ -30,6 +31,8 @@ import java.util.Map;
  */
 public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
 
+    private static final String TAG = "SoloCabFCM";
+
     public static final String ACTION_ACCEPT_RIDE = "com.solocab.app.ACTION_ACCEPT_RIDE";
     public static final String ACTION_DECLINE_RIDE = "com.solocab.app.ACTION_DECLINE_RIDE";
 
@@ -45,6 +48,7 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
 
         if ("incoming_ride".equals(type)) {
             boolean foreground = isAppInForeground();
+            Log.i(TAG, "incoming_ride received foreground=" + foreground + " ride_id=" + data.get("ride_id"));
             // Si SoloCab n'est pas visible, on force une VRAIE surcouche Android
             // SYSTEM_ALERT_WINDOW. Le full-screen intent reste le fallback sonore
             // et lockscreen si le constructeur/ROM bloque la fenêtre overlay.
@@ -143,6 +147,9 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setOnlyAlertOnce(false)
+                .setTimeoutAfter(300_000)
                 .setAutoCancel(true)
                 .setContentIntent(contentPi)
                 .setFullScreenIntent(fullScreenPi, true)
@@ -155,6 +162,7 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
             // ID stable basé sur rideId pour éviter empilement
             int notifId = rideId != null ? rideId.hashCode() : (int) (System.currentTimeMillis() % 100000);
             nm.notify(notifId, builder.build());
+            Log.i(TAG, "incoming_ride notification posted id=" + notifId);
         }
     }
 }
