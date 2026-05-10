@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
 import { useNativeGeolocation } from './useNativeGeolocation';
 import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
+import { getCurrentLocation } from '@/lib/geoService';
 import { logGpsDebug, shouldRejectGpsFix } from '@/lib/gpsDebug';
 
 interface LocationTrackerOptions {
@@ -78,6 +79,7 @@ export function useDriverLocationTracker({
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const mountedRef = useRef(true);
   const trackingRef = useRef(false);
+  const nativePrimeInFlightRef = useRef(false);
 
   // ── Send location to DB — silent, no UI re-render on success ──
   const sendLocationToServer = useCallback(
@@ -206,6 +208,30 @@ export function useDriverLocationTracker({
     enabled: enabled && Capacitor.isNativePlatform(),
     onLocation: handleNativeLocation,
   });
+
+  // Native fallback UI: if the global foreground service has not emitted yet,
+  // take ONE direct fix so the map never stays on “Localisation…” indefinitely.
+  useEffect(() => {
+    if (!enabled || !driverId || !Capacitor.isNativePlatform() || nativePrimeInFlightRef.current) return;
+    if (nativeGeo.latitude && nativeGeo.longitude) return;
+
+    nativePrimeInFlightRef.current = true;
+    let cancelled = false;
+
+    (async () => {
+      const fix = await getCurrentLocation({ enableHighAccuracy: true, timeoutMs: 15_000, maximumAgeMs: 3_000 });
+      nativePrimeInFlightRef.current = false;
+      if (cancelled || !mountedRef.current || !fix) {
+        if (!cancelled && mountedRef.current && !locationState.latitude) {
+          setLocationState((prev) => ({ ...prev, error: 'Signal GPS en attente', isTracking: false }));
+        }
+        return;
+      }
+      handleNativeLocation(fix.latitude, fix.longitude, fix.accuracy);
+    })();
+
+    return () => { cancelled = true; };
+  }, [enabled, driverId, nativeGeo.latitude, nativeGeo.longitude, handleNativeLocation, locationState.latitude]);
 
   // ── Web GPS handler — optimized to avoid re-renders ──
   const handlePositionUpdate = useCallback(
