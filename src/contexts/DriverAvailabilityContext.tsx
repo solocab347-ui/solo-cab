@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, Re
 import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
+import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
 import { toast } from 'sonner';
 
 /**
