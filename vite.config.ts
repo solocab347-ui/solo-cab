@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
       external: [
         '@capacitor-community/background-geolocation',
         '@capacitor-community/keep-awake',
+        '@sentry/capacitor',
       ],
       output: {
         manualChunks: {
@@ -31,6 +32,7 @@ export default defineConfig(({ mode }) => ({
     exclude: [
       '@capacitor-community/background-geolocation',
       '@capacitor-community/keep-awake',
+      '@sentry/capacitor',
     ],
   },
   esbuild: {
