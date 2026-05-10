@@ -81,11 +81,21 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
             if (!location || !driverId) return;
             lastFixAtRef.current = Date.now();
+            const accuracyM = location.accuracy ?? 0;
+            if (accuracyM > 100 && driverId) {
+              logGpsLoss({
+                driverId,
+                lossType: 'low_accuracy',
+                lat: location.latitude,
+                lng: location.longitude,
+                accuracyM,
+              });
+            }
             // Diffuse à tous les consommateurs natifs (UI, tracker, etc.)
             publishNativeFix({
               latitude: location.latitude,
               longitude: location.longitude,
-              accuracy: location.accuracy ?? 0,
+              accuracy: accuracyM,
               speed: location.speed ?? null,
               bearing: location.bearing ?? null,
               timestamp: Date.now(),
