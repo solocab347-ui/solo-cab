@@ -284,7 +284,7 @@ export function UnifiedBookingPage() {
     }
   }, [currentStep, drivers.length, pickupCoords, destCoords, isLoading, isGeocoding]);
 
-  const notifySelectedDrivers = useCallback(async (selected: NearbyDriver[]) => {
+  const notifySelectedDrivers = useCallback(async (selected: NearbyDriver[], requests?: Array<{ id: string; selected_driver_id: string | null }>) => {
     try {
       const driverIds = selected.map((driver) => driver.driver_id).filter(Boolean);
       if (driverIds.length === 0) return;
@@ -307,7 +307,10 @@ export function UnifiedBookingPage() {
       await Promise.allSettled(
         driverUsers
           .filter((driver): driver is { id: string; user_id: string } => Boolean(driver.user_id))
-          .map((driver) =>
+          .map((driver) => {
+            const request = requests?.find((r) => r.selected_driver_id === driver.id);
+            const selectedDriver = selected.find((d) => d.driver_id === driver.id);
+            return (
             supabase.functions.invoke('send-push-notification', {
               body: {
                 user_id: driver.user_id,
@@ -315,9 +318,16 @@ export function UnifiedBookingPage() {
                 message,
                 link: '/driver-dashboard?view=map',
                 tag: 'course_request',
+                type: 'incoming_ride',
+                data: {
+                  ride_id: request?.id || '',
+                  pickup_address: pickupAddress,
+                  destination_address: destinationAddress,
+                  price: selectedDriver?.estimated_price ? `${selectedDriver.estimated_price.toFixed(2)}€` : '',
+                },
               },
             })
-          )
+          ); })
       );
     } catch (notificationError) {
       console.error('Immediate driver push error:', notificationError);
@@ -568,7 +578,7 @@ export function UnifiedBookingPage() {
         }
       }
       const requestGroupId = crypto.randomUUID();
-      const { error: insertError } = await supabase
+      const { data: insertedRequests, error: insertError } = await supabase
         .from('ride_requests')
         .insert(selectedDrivers.map(driver => ({
           client_id: clientId, guest_name: useGuestMode ? effectiveGuestName : null,
@@ -588,9 +598,10 @@ export function UnifiedBookingPage() {
           scheduled_date: mode === 'reservation' && scheduledDate && scheduledTime ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString() : null,
           stripe_customer_id: savedCardInfo?.customerId || null,
           stripe_payment_method_id: savedCardInfo?.paymentMethodId || null,
-        } as any)));
+        } as any)))
+        .select('id, selected_driver_id');
       if (insertError) throw insertError;
-      void notifySelectedDrivers(selectedDrivers);
+      void notifySelectedDrivers(selectedDrivers, insertedRequests || []);
 
       const timeoutIso = new Date(Date.now() + timeoutMs).toISOString();
       const lowestPriceVal = selectedDrivers.reduce((min, d) => Math.min(min, d.estimated_price || 0), Infinity);

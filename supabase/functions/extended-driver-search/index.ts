@@ -10,7 +10,13 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[EXTENDED-SEARCH] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-const sendDriverPushNotification = async (userId: string, title: string, message: string, link: string) => {
+const sendDriverPushNotification = async (
+  userId: string,
+  title: string,
+  message: string,
+  link: string,
+  data: Record<string, string> = {},
+) => {
   try {
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`, {
       method: "POST",
@@ -23,6 +29,8 @@ const sendDriverPushNotification = async (userId: string, title: string, message
         message,
         link,
         tag: "course_request",
+        type: "incoming_ride",
+        data,
       }),
     });
   } catch (error) {
@@ -178,11 +186,18 @@ serve(async (req) => {
           .single();
 
         if (driverData?.user_id) {
+          const insertedReq = inserted?.find((i) => i.selected_driver_id === r.selected_driver_id);
           await sendDriverPushNotification(
             driverData.user_id,
             "🔄 Nouvelle demande disponible",
             `Client toujours en attente • ${firstReq.pickup_address} → ${firstReq.destination_address}`,
-            "/driver-dashboard?view=map"
+            "/driver-dashboard?view=map",
+            {
+              ride_id: insertedReq?.id || "",
+              pickup_address: firstReq.pickup_address || "",
+              destination_address: firstReq.destination_address || "",
+              price: firstReq.estimated_price ? `${Number(firstReq.estimated_price).toFixed(2)}€` : "",
+            }
           );
         }
       }));
@@ -265,7 +280,7 @@ serve(async (req) => {
     const { data: inserted, error: insertErr } = await supabase
       .from("ride_requests")
       .insert(newRequests)
-      .select("id, selected_driver_id");
+        .select("id, selected_driver_id");
 
     if (insertErr) {
       logStep("Error inserting extended requests", { error: insertErr.message });
@@ -280,7 +295,13 @@ serve(async (req) => {
         driver.user_id,
         "🚗 Nouvelle course disponible !",
         `${firstReq.pickup_address} → ${firstReq.destination_address} (${driver.distance_km.toFixed(1)} km de vous)`,
-        "/driver-dashboard?view=map"
+        "/driver-dashboard?view=map",
+        {
+          ride_id: inserted?.find((i) => i.selected_driver_id === driver.driver_id)?.id || "",
+          pickup_address: firstReq.pickup_address || "",
+          destination_address: firstReq.destination_address || "",
+          price: firstReq.estimated_price ? `${Number(firstReq.estimated_price).toFixed(2)}€` : "",
+        }
       )
     ));
 
