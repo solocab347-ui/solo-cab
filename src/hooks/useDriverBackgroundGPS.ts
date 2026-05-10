@@ -148,29 +148,9 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         // Mémorise pour le BootReceiver Android
         await setTrackingFlag(true);
 
-        // Prime immédiat : évite que la carte reste sur le centre par défaut
-        // et garantit une première écriture DB avant le premier callback watcher.
-        try {
-          const { Geolocation } = await import('@capacitor/geolocation');
-          const pos = await Geolocation.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 12_000,
-            maximumAge: 0,
-          });
-          await persistFix({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy ?? 0,
-            speed: (pos.coords as any).speed ?? null,
-            bearing: (pos.coords as any).heading ?? null,
-            provider: 'capacitor-geolocation-initial',
-            timestamp: pos.timestamp,
-          });
-        } catch (e) {
-          console.warn('[BackgroundGPS] initial fix failed, watcher will continue', e);
-        }
-
-        // Démarrer le watcher background (foreground service Android)
+        // Démarrer le watcher background EN PREMIER : c'est lui qui déclenche
+        // le foreground service Android + notification GPS persistante. Ne jamais
+        // le bloquer derrière getCurrentPosition, qui peut timeout sur Xiaomi/MIUI.
         const id = await BackgroundGeolocation.addWatcher(
           {
             backgroundMessage: 'Votre position GPS est utilisée pour rester visible des clients.',
@@ -201,6 +181,30 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           watcherIdRef.current = id;
           lastFixAtRef.current = Date.now();
           console.log('[BackgroundGPS] foreground service started', id);
+
+          // Prime GPS non bloquant : accélère la première écriture DB, mais
+          // si Android tarde à fournir un fix, le service reste déjà actif.
+          void (async () => {
+            try {
+              const { Geolocation } = await import('@capacitor/geolocation');
+              const pos = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 15_000,
+                maximumAge: 3_000,
+              });
+              await persistFix({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy ?? 0,
+                speed: (pos.coords as any).speed ?? null,
+                bearing: (pos.coords as any).heading ?? null,
+                provider: 'capacitor-geolocation-initial',
+                timestamp: pos.timestamp,
+              });
+            } catch (e) {
+              console.warn('[BackgroundGPS] initial fix failed, watcher remains active', e);
+            }
+          })();
 
           // Tick périodique (20s) : force getCurrentPosition pour garantir un fix
           // récent même si le distanceFilter (30 m) n'est pas franchi.
