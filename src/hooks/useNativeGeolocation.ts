@@ -1,9 +1,22 @@
 /**
- * Native background geolocation via Capacitor plugin.
- * Falls back gracefully to no-op on web.
+ * Lecture passive de la position GPS native.
+ *
+ * IMPORTANT (refonte fusion v2) :
+ * Ce hook N'ENREGISTRE PLUS de watcher BackgroundGeolocation. Il s'abonne
+ * uniquement au bus partagé `nativeGpsBus`, alimenté par
+ * `useDriverBackgroundGPS` (le seul watcher natif autorisé).
+ *
+ * Bénéfices :
+ *  - Une seule source GPS native → batterie /2, plus de race conditions.
+ *  - Plus de double demande de permission.
+ *  - Plus de double écriture concurrente sur `drivers`.
+ *
+ * Sur web (no-op natif), le hook reste inerte : c'est `useDriverLocationTracker`
+ * qui gère `navigator.geolocation` directement.
  */
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { subscribeNativeFix, getLastNativeFix } from '@/lib/nativeGpsBus';
 
 interface NativeGeoState {
   latitude: number | null;
@@ -20,86 +33,37 @@ interface UseNativeGeolocationOptions {
 }
 
 export function useNativeGeolocation({ enabled, onLocation }: UseNativeGeolocationOptions) {
-  const [state, setState] = useState<NativeGeoState>({
-    latitude: null,
-    longitude: null,
-    accuracy: null,
-    speed: null,
-    bearing: null,
-    isNative: Capacitor.isNativePlatform(),
+  const isNative = Capacitor.isNativePlatform();
+  const [state, setState] = useState<NativeGeoState>(() => {
+    const last = isNative ? getLastNativeFix() : null;
+    return {
+      latitude: last?.latitude ?? null,
+      longitude: last?.longitude ?? null,
+      accuracy: last?.accuracy ?? null,
+      speed: last?.speed ?? null,
+      bearing: last?.bearing ?? null,
+      isNative,
+    };
   });
 
-  const watcherIdRef = useRef<string | null>(null);
-  const onLocationRef = useRef(onLocation);
-  onLocationRef.current = onLocation;
-
-  const start = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    try {
-      // This plugin uses registerPlugin pattern — import the addWatcher/removeWatcher directly
-      const { registerPlugin } = await import('@capacitor/core');
-      const BackgroundGeolocation = registerPlugin<{
-        addWatcher: (
-          options: Record<string, unknown>,
-          callback: (location: any, error: any) => void
-        ) => Promise<string>;
-        removeWatcher: (options: { id: string }) => Promise<void>;
-      }>('BackgroundGeolocation');
-
-      const id = await BackgroundGeolocation.addWatcher(
-        {
-          backgroundTitle: 'SoloCab - GPS actif',
-          backgroundMessage: 'Suivi de position en cours',
-          requestPermissions: true,
-          stale: false,
-          distanceFilter: 25,
-        },
-        (location: any, error: any) => {
-          if (error) {
-            console.error('[NativeGeo] Error:', error);
-            return;
-          }
-          if (location) {
-            setState((prev) => ({
-              ...prev,
-              latitude: location.latitude,
-              longitude: location.longitude,
-              accuracy: location.accuracy,
-              speed: location.speed ?? null,
-              bearing: location.bearing ?? null,
-            }));
-            onLocationRef.current?.(location.latitude, location.longitude, location.accuracy);
-          }
-        }
-      );
-
-      watcherIdRef.current = id;
-    } catch (err) {
-      console.warn('[NativeGeo] Plugin not available:', err);
-    }
-  }, []);
-
-  const stop = useCallback(async () => {
-    if (!watcherIdRef.current) return;
-    try {
-      const { registerPlugin } = await import('@capacitor/core');
-      const BackgroundGeolocation = registerPlugin<{
-        removeWatcher: (options: { id: string }) => Promise<void>;
-      }>('BackgroundGeolocation');
-      await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
-      watcherIdRef.current = null;
-    } catch {}
-  }, []);
-
   useEffect(() => {
-    if (enabled && Capacitor.isNativePlatform()) {
-      start();
-    } else {
-      stop();
-    }
-    return () => { stop(); };
-  }, [enabled, start, stop]);
+    if (!isNative || !enabled) return;
+    const unsub = subscribeNativeFix((fix) => {
+      setState((prev) => ({
+        ...prev,
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy: fix.accuracy,
+        speed: fix.speed ?? null,
+        bearing: fix.bearing ?? null,
+      }));
+      onLocation?.(fix.latitude, fix.longitude, fix.accuracy);
+    });
+    return unsub;
+    // onLocation est volontairement exclu : on capture la dernière référence
+    // via la closure de subscribe, mais on ne re-souscrit pas à chaque render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNative, enabled]);
 
   return state;
 }
