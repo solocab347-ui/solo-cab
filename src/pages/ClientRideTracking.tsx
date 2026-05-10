@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
+import { courseLatency } from "@/lib/courseLatencyTracker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -197,7 +198,12 @@ const ClientRideTracking = () => {
       (payload) => {
         const updated = payload.new as any;
         setCourse(prev => prev ? { ...prev, ...updated } : null);
-        
+
+        // Phase 4: latence acceptation chauffeur → synchro client
+        if (updated.status === 'driver_approaching' || updated.status === 'accepted') {
+          courseLatency.markStatusSynced(courseId, 'client_tracking');
+        }
+
         if (updated.status === 'driver_arrived') {
           toast.info('🚗 Votre chauffeur est arrivé !');
         } else if (updated.status === 'in_progress') {
