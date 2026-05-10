@@ -1,5 +1,6 @@
 package com.solocab.app;
 
+import android.app.ActivityManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -12,6 +13,7 @@ import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,11 +44,32 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
         String type = data.get("type");
 
         if ("incoming_ride".equals(type)) {
-            showIncomingRideNotification(remoteMessage);
+            // Si l'app est déjà au premier plan, l'overlay React (GlobalRideOverlay)
+            // gère l'affichage via realtime/polling : pas de notif système doublon.
+            if (!isAppInForeground()) {
+                showIncomingRideNotification(remoteMessage);
+            }
             return;
         }
 
         super.onMessageReceived(remoteMessage);
+    }
+
+    private boolean isAppInForeground() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return false;
+            List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
+            if (processes == null) return false;
+            String pkg = getPackageName();
+            for (ActivityManager.RunningAppProcessInfo p : processes) {
+                if (p.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                        && p.processName != null && p.processName.equals(pkg)) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     private void showIncomingRideNotification(RemoteMessage msg) {
