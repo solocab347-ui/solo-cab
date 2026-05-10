@@ -38,6 +38,10 @@ export function DriverBackgroundGPS() {
       setDriverId(data.id);
       setEnabled(!!data.is_available_now);
 
+      // Pré-demande de permission GPS dès qu'on identifie le chauffeur :
+      // l'OS affiche le prompt système et l'indicateur "utilise votre position".
+      ensureLocationPermission({ silent: true }).catch(() => {/* ignore */});
+
       // Écoute realtime du statut driver
       channel = supabase
         .channel(`driver-bg-gps-${data.id}`)
