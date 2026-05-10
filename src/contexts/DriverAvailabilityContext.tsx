@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, Re
 import { supabase } from '@/integrations/supabase/client';
 import { playAvailabilitySound } from '@/lib/availabilitySound';
 import { deriveDriverStatusFromCourses } from '@/lib/driverCourseLifecycle';
+import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
 import { toast } from 'sonner';
 
 /**
@@ -332,6 +333,21 @@ export function DriverAvailabilityProvider({ driverId, children }: Props) {
     }
     const target: AvailabilityTarget = isOnline ? 'offline' : 'online';
     const willBeOnline = target === 'online';
+
+    // Avant de passer en ligne, on demande explicitement la permission GPS
+    // pour que l'utilisateur voie le prompt système ("Autoriser la localisation")
+    // et que le foreground service puisse réellement émettre des positions.
+    if (willBeOnline) {
+      const perm = await ensureLocationPermission();
+      if (perm !== 'granted') {
+        toast.error("Impossible de passer en ligne sans localisation", {
+          description: "Autorise l'accès à la position pour recevoir des courses.",
+          duration: 6000,
+        });
+        return;
+      }
+    }
+
     await enqueue(target);
     playAvailabilitySound(willBeOnline);
   }, [driverStatus, isOnline, enqueue]);
