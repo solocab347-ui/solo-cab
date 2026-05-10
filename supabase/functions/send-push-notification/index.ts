@@ -13,6 +13,8 @@ interface PushPayload {
   message: string;
   link?: string;
   tag?: string;
+  type?: string;
+  data?: Record<string, string>;
 }
 
 serve(async (req) => {
@@ -26,27 +28,18 @@ serve(async (req) => {
     const rawVapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const rawVapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    if (!rawVapidPublicKey || !rawVapidPrivateKey) {
-      console.error('⚠️ VAPID keys not configured');
-      return new Response(
-        JSON.stringify({ error: 'VAPID keys not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const webPushEnabled = !!rawVapidPublicKey && !!rawVapidPrivateKey;
+    if (!webPushEnabled) console.warn('⚠️ VAPID keys not configured — skipping web push, native FCM/APNS continues');
 
     // Normalize to URL-safe base64 (web-push requires no padding, no +/)
     const toUrlSafeBase64 = (s: string) =>
       s.trim().replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-    const vapidPublicKey = toUrlSafeBase64(rawVapidPublicKey);
-    const vapidPrivateKey = toUrlSafeBase64(rawVapidPrivateKey);
-
-    // Configure web-push with VAPID
-    webpush.setVapidDetails(
-      'mailto:contact@solocab.fr',
-      vapidPublicKey,
-      vapidPrivateKey
-    );
+    if (webPushEnabled) {
+      const vapidPublicKey = toUrlSafeBase64(rawVapidPublicKey!);
+      const vapidPrivateKey = toUrlSafeBase64(rawVapidPrivateKey!);
+      webpush.setVapidDetails('mailto:contact@solocab.fr', vapidPublicKey, vapidPrivateKey);
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const payload: PushPayload = await req.json();
@@ -72,7 +65,7 @@ serve(async (req) => {
     let pushFailedCount = 0;
     const pushResults: Array<{ endpoint: string; success: boolean; error?: string }> = [];
 
-    if (subscriptions && subscriptions.length > 0) {
+    if (webPushEnabled && subscriptions && subscriptions.length > 0) {
       // Build notification payload
       const notificationPayload = JSON.stringify({
         title: payload.title,
