@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
 import { useNativeGeolocation } from './useNativeGeolocation';
+import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
 
 interface LocationTrackerOptions {
   driverId: string | null;
@@ -305,10 +306,21 @@ export function useDriverLocationTracker({
   }, [enabled, acquireWakeLock, handlePositionUpdate, handleError]);
 
   // ── Web tracking start/stop — stable refs ──
-  const startWebTracking = useCallback(() => {
+  const startWebTracking = useCallback(async () => {
     if (!navigator.geolocation || trackingRef.current) return;
-    trackingRef.current = true;
 
+    // Garantir le prompt OS / browser AVANT de poser un watcher.
+    // Sans ça, sur Capacitor WebView, watchPosition reste muet et la position
+    // n'arrive jamais → le chauffeur passe online sans GPS réel.
+    const perm = await ensureLocationPermission({ silent: true });
+    if (perm !== 'granted') {
+      if (mountedRef.current) {
+        setLocationState((prev) => ({ ...prev, error: 'Permission de localisation refusée', isTracking: false }));
+      }
+      return;
+    }
+
+    trackingRef.current = true;
     acquireWakeLock();
 
     // Immediate fresh position

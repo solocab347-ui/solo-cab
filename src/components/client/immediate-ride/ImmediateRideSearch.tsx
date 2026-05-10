@@ -9,6 +9,7 @@ import { NearbyDriverCard } from './NearbyDriverCard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { getCurrentLocation as getUnifiedLocation } from '@/lib/geoService';
 
 interface ImmediateRideSearchProps {
   onDriverSelected: (driver: NearbyDriver, pickupAddress: string, destinationAddress: string, distanceKm: number) => void;
@@ -34,42 +35,34 @@ export function ImmediateRideSearch({ onDriverSelected }: ImmediateRideSearchPro
     searchNearbyDrivers,
   } = useNearbyDrivers();
 
-  // Get user's current location
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      return;
-    }
-
+  // Get user's current location — passe par geoService pour gérer le prompt natif
+  const getCurrentLocation = useCallback(async () => {
     setIsGettingLocation(true);
+    try {
+      const fix = await getUnifiedLocation({ enableHighAccuracy: true, timeoutMs: 12_000 });
+      if (!fix) {
+        setIsGettingLocation(false);
+        return;
+      }
+      setPickupCoords({ lat: fix.latitude, lng: fix.longitude });
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setPickupCoords({ lat: latitude, lng: longitude });
-
-        // Reverse geocode to get address
-        try {
-          if (!mapboxToken) return;
-          const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&language=fr`
-          );
-          const data = await response.json();
-          if (data.features?.[0]) {
-            setPickupAddress(data.features[0].place_name);
-          }
-        } catch (err) {
-          console.error('Reverse geocoding error:', err);
+      // Reverse geocode to get address
+      try {
+        if (!mapboxToken) return;
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${fix.longitude},${fix.latitude}.json?access_token=${mapboxToken}&language=fr`
+        );
+        const data = await response.json();
+        if (data.features?.[0]) {
+          setPickupAddress(data.features[0].place_name);
         }
-
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        setIsGettingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }, []);
+      } catch (err) {
+        console.error('Reverse geocoding error:', err);
+      }
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [mapboxToken]);
 
   // Geocode address
   const geocodeAddress = useCallback(async (address: string): Promise<{ lat: number; lng: number } | null> => {

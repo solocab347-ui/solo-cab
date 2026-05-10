@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/logo-solocab.png';
 import { saveStorefrontState, loadStorefrontState } from '@/lib/storefrontState';
+import { getCurrentLocation as getUnifiedLocation } from '@/lib/geoService';
 
 type BookingMode = 'reservation' | 'immediate';
 type ClientPaymentMethod = 'card' | 'cash' | null;
@@ -412,50 +413,32 @@ export function UnifiedBookingPage() {
     setShowDestSuggestions(false); setDestSuggestions([]);
   };
 
-  // Geolocation
+  // Geolocation — passe par geoService unifié (déclenche le prompt OS sur natif,
+  // gère permissions, fallback web propre).
   const getCurrentLocation = useCallback(async () => {
-    if (!navigator.geolocation) { toast.error('Géolocalisation non disponible sur ce navigateur'); return; }
-    
-    // Check permission status first via Permissions API
-    if (navigator.permissions) {
-      try {
-        const permStatus = await navigator.permissions.query({ name: 'geolocation' });
-        if (permStatus.state === 'denied') {
-          toast.error('La localisation est bloquée. Activez-la dans les paramètres de votre navigateur puis réessayez.');
-          return;
-        }
-        // 'granted' or 'prompt' → proceed normally
-      } catch {
-        // Permissions API not fully supported, proceed anyway
-      }
-    }
-
     setIsGettingLocation(true);
     pickupLock.current = true;
     if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
     setShowPickupSuggestions(false); setPickupSuggestions([]);
-    let resolved = false;
-    const resolve = async (lat: number, lng: number) => {
-      if (resolved) return; resolved = true;
-      setPickupCoords({ lat, lng });
+
+    try {
+      const fix = await getUnifiedLocation({ enableHighAccuracy: true, timeoutMs: 10_000, maximumAgeMs: 30_000 });
+      if (!fix) {
+        toast.error('Localisation indisponible. Vérifie l\'autorisation GPS dans les réglages.');
+        return;
+      }
+      setPickupCoords({ lat: fix.latitude, lng: fix.longitude });
       try {
-        if (!mapboxToken) { setIsGettingLocation(false); return; }
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=fr&limit=1`);
+        if (!mapboxToken) return;
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${fix.longitude},${fix.latitude}.json?access_token=${mapboxToken}&language=fr&limit=1`);
         const data = await res.json();
         if (data.features?.[0]) setPickupAddress(data.features[0].place_name);
-      } catch { setPickupAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }
+      } catch {
+        setPickupAddress(`${fix.latitude.toFixed(5)}, ${fix.longitude.toFixed(5)}`);
+      }
+    } finally {
       setIsGettingLocation(false);
-    };
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude), () => {},
-      { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 }
-    );
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords.latitude, pos.coords.longitude),
-      (err) => { if (!resolved) { toast.error(err.code === 1 ? 'La localisation est bloquée. Activez-la dans les paramètres de votre navigateur.' : 'GPS indisponible, réessayez'); setIsGettingLocation(false); } },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
-    );
-    setTimeout(() => { if (!resolved) { setIsGettingLocation(false); toast.error('GPS trop lent, réessayez'); } }, 10000);
+    }
   }, [mapboxToken]);
 
   // Search
