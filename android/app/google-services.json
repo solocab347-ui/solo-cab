@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "700249134545",
+    "project_id": "solocab-136cb",
+    "storage_bucket": "solocab-136cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:700249134545:android:2fd1bb23ee1e4802f43cf0",
+        "android_client_info": {
+          "package_name": "com.solocab.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdcmwQpwUUtS24Z-hZRVQzb0O9bsnrpQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
