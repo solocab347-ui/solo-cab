@@ -44,9 +44,12 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
         String type = data.get("type");
 
         if ("incoming_ride".equals(type)) {
-            // Si l'app est déjà au premier plan, l'overlay React (GlobalRideOverlay)
-            // gère l'affichage via realtime/polling : pas de notif système doublon.
-            if (!isAppInForeground()) {
+            boolean foreground = isAppInForeground();
+            // Si SoloCab n'est pas visible, on force une VRAIE surcouche Android
+            // SYSTEM_ALERT_WINDOW. Le full-screen intent reste le fallback sonore
+            // et lockscreen si le constructeur/ROM bloque la fenêtre overlay.
+            if (!foreground) {
+                IncomingRideOverlayManager.show(this, data);
                 showIncomingRideNotification(remoteMessage);
             }
             return;
