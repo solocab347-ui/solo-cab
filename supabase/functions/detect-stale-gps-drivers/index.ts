@@ -1,5 +1,5 @@
-// Cron qui force offline tout chauffeur online dont le GPS date de plus de 2 min.
-// Tourne toutes les minutes. Sécurité : ne touche jamais 'assigned' / 'in_ride'.
+// Cron de diagnostic GPS : trace les chauffeurs online dont le GPS date de plus de 2 min.
+// IMPORTANT : ne force jamais offline. Seul le bouton ON/OFF déconnecte le chauffeur.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const result = data as { fixed_count: number; drivers: unknown[] };
     if (result.fixed_count > 0) {
-      console.log(`[STALE-GPS] Forced offline ${result.fixed_count} driver(s) with stale GPS`);
+      console.log(`[STALE-GPS] Unexpected fixed_count=${result.fixed_count}; manual ON/OFF policy should keep this at 0`);
     }
 
     return new Response(JSON.stringify(result), {
