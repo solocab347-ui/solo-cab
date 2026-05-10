@@ -36,6 +36,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DeclineCourseDialog } from '../partnership/DeclineCourseDialog';
+import { watchLocation } from '@/lib/geoService';
 
 
 // Stripe pricing constants (matches backend STRIPE_PERCENTAGE / STRIPE_FIXED_FEE)
