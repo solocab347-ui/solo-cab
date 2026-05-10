@@ -77,6 +77,7 @@ const DriverCreateQuote = lazy(() => import("./pages/DriverCreateQuote"));
 const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminObservability = lazy(() => import("./pages/AdminObservability"));
 
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -271,6 +272,16 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <AdminDashboard />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/observability"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AdminObservability />
                     </Suspense>
                   </ProtectedRoute>
                 }
