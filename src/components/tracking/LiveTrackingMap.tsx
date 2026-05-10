@@ -110,11 +110,13 @@ export function LiveTrackingMap({
     if (!mapContainer.current || !mapboxToken) return;
     mapboxgl.accessToken = mapboxToken;
 
-    const center: [number, number] = driverLng && driverLat
+    const center: [number, number] | null = driverLng && driverLat
       ? [driverLng, driverLat]
       : pickupLng && pickupLat
         ? [pickupLng, pickupLat]
-        : [2.3522, 48.8566];
+        : null;
+
+    if (!center) return;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
