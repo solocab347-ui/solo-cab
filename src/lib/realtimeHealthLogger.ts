@@ -72,7 +72,6 @@ class RealtimeHealthLogger {
 
   log(event: HealthEvent) {
     if (this.buffer.length >= MAX_BUFFER) {
-      // Drop oldest to bound memory
       this.buffer.shift();
     }
     this.buffer.push({
@@ -81,7 +80,16 @@ class RealtimeHealthLogger {
       user_id: event.user_id ?? this.currentUserId,
     });
 
-    // Always log to console for dev
+    // Sentry breadcrumb (async import to avoid web/native ambiguity)
+    import('@/lib/sentry').then(({ addBreadcrumb }) => {
+      addBreadcrumb(
+        event.event_type,
+        'realtime',
+        event.event_type.includes('zombie') || event.event_type.includes('failed') ? 'warning' : 'info',
+        { channel: event.channel_name, latency_ms: event.latency_ms, ...event.details },
+      );
+    }).catch(() => {});
+
     if (event.event_type !== 'course_latency') {
       console.log(`[realtimeHealth] ${event.event_type}`, {
         channel: event.channel_name,
