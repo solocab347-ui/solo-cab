@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { subscriptionManager } from '@/lib/subscriptionManager';
+import { realtimeHealthLogger } from '@/lib/realtimeHealthLogger';
 
 export interface IncomingCourse {
   id: string;
