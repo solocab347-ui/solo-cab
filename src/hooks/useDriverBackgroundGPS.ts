@@ -80,6 +80,15 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
             if (!location || !driverId) return;
             lastFixAtRef.current = Date.now();
+            // Diffuse à tous les consommateurs natifs (UI, tracker, etc.)
+            publishNativeFix({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy ?? 0,
+              speed: location.speed ?? null,
+              bearing: location.bearing ?? null,
+              timestamp: Date.now(),
+            });
             try {
               await supabase
                 .from('drivers')
