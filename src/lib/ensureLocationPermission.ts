@@ -40,13 +40,7 @@ export async function ensureLocationPermission(opts: { silent?: boolean } = {}):
         console.warn('[ensureLocationPermission] requestPermissions failed', e);
       }
 
-      if (isGranted(status)) {
-        // Force un premier fix pour confirmer que le GPS marche
-        try {
-          await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-        } catch {/* ignore */}
-        return 'granted';
-      }
+      if (isGranted(status)) return 'granted';
 
       if (status?.location === 'denied' || status?.coarseLocation === 'denied') {
         if (!silent) {
