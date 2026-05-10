@@ -50,7 +50,7 @@ export async function initSentry() {
   try {
     if (isNative) {
       // Init Capacitor SDK avec le SDK React imbriqué
-      const cap: any = await import("@sentry/capacitor");
+      const cap: any = await import(/* @vite-ignore */ ('@sentry/' + 'capacitor'));
       cap.init(
         { ...commonOptions, dist: APP_VERSION },
         Sentry.init,
