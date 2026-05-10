@@ -87,6 +87,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     enabled: trackingEnabled,
     updateIntervalMs: 8000,
   });
+  const hasInitialGps = !!latitude && !!longitude;
 
   const handleToggleAvailability = useCallback(async () => {
     if (isBusy || isToggling) return;
@@ -121,7 +122,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
 
   // Init map
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current || mapRef.current || !hasInitialGps) return;
     if (!latitude || !longitude) return;
     const map = L.map(mapContainerRef.current, {
       center: [latitude, longitude],
@@ -148,7 +149,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
       try { map.remove(); } catch {}
       mapRef.current = null;
     };
-  }, [driverId, latitude, longitude]);
+  }, [driverId, hasInitialGps]);
 
   const normalizeAngle = useCallback((angle: number) => {
     return ((angle % 360) + 360) % 360;
