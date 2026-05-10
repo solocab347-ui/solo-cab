@@ -77,6 +77,10 @@ Deno.serve(async (req) => {
         message,
         link: type === 'incoming_ride' ? '/driver-dashboard?incoming=test' : '/notifications',
         tag: type === 'incoming_ride' ? 'course-test' : 'test',
+        type,
+        data: type === 'incoming_ride'
+          ? { ride_id: 'test-' + Date.now(), pickup_address: 'Départ test SoloCab', destination_address: 'Arrivée test', price: '12,50€' }
+          : {},
       }),
     });
     const json = await r.json().catch(() => ({}));
