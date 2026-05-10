@@ -41,6 +41,13 @@ export async function logGpsLoss(params: LogParams) {
 
   console.warn(`[gpsLoss] ${lossType}`, { driverId, gapMs, accuracyM, ...details });
 
+  // Sentry breadcrumb
+  import('@/lib/sentry').then(({ addBreadcrumb }) => {
+    addBreadcrumb(`gps:${lossType}`, 'gps', 'warning', {
+      gap_ms: gapMs, accuracy_m: accuracyM, ...details,
+    });
+  }).catch(() => {});
+
   try {
     await supabase.from('gps_loss_log').insert({
       driver_id: driverId,
