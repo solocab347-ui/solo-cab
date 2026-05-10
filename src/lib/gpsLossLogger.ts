@@ -18,7 +18,8 @@ export type GpsLossType =
   | 'background_pause'
   | 'foreground_service_lost'
   | 'no_fix_timeout'
-  | 'low_accuracy';
+  | 'low_accuracy'
+  | 'invalid_or_mock_fix';
 
 interface LogParams {
   driverId: string;
