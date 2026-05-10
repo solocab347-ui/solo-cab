@@ -11,6 +11,7 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -39,10 +40,12 @@ public class SoloCabFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
+        PushNotificationsPlugin.onNewToken(token);
     }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+        PushNotificationsPlugin.sendRemoteMessage(remoteMessage);
         Map<String, String> data = remoteMessage.getData();
         String type = data.get("type");
 
