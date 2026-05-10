@@ -1,11 +1,16 @@
 /**
  * Composant invisible : démarre/arrête le foreground service GPS chauffeur
  * dès que le chauffeur passe en ligne (et l'arrête à la déconnexion).
+ *
+ * Demande aussi la permission de localisation dès qu'on connaît le driverId,
+ * pour que l'OS affiche le prompt système et l'indicateur "l'application utilise
+ * votre position".
  */
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverBackgroundGPS } from '@/hooks/useDriverBackgroundGPS';
+import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
 
 export function DriverBackgroundGPS() {
   const { user } = useAuth();
