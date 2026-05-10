@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { checkDriverStripeStatus } from "@/hooks/useDriverStripeStatus";
 import { subscriptionManager } from "@/lib/subscriptionManager";
+import { courseLatency } from "@/lib/courseLatencyTracker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -244,7 +245,12 @@ const GuestBookingTracking = () => {
       (payload) => {
         const newStatus = (payload.new as any).status;
         const newPaymentStatus = (payload.new as any).payment_status;
-        
+
+        // Phase 4: latence acceptation chauffeur → synchro client (guest)
+        if (newStatus === 'driver_approaching' || newStatus === 'accepted') {
+          courseLatency.markStatusSynced(booking.id, 'guest_tracking');
+        }
+
         if (newStatus) {
           setBooking(prev => prev ? { ...prev, status: newStatus } : null);
         }
