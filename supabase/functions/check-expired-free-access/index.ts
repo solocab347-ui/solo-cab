@@ -263,8 +263,8 @@ serve(async (req) => {
       .from("fleet_managers")
       .select("*")
       .eq("subscription_status", "trialing")
-      .not("trial_end_date", "is", null)
-      .lt("trial_end_date", now.toISOString());
+      .not("trial_ends_at", "is", null)
+      .lt("trial_ends_at", now.toISOString());
 
     if (trialFmError) {
       logStep("Error fetching trialing fleet managers", { error: trialFmError.message });
