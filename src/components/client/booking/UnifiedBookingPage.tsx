@@ -309,6 +309,7 @@ export function UnifiedBookingPage() {
           .filter((driver): driver is { id: string; user_id: string } => Boolean(driver.user_id))
           .map((driver) => {
             const request = requests?.find((r) => r.selected_driver_id === driver.id);
+            const selectedDriver = selected.find((d) => d.driver_id === driver.id);
             return (
             supabase.functions.invoke('send-push-notification', {
               body: {
@@ -322,7 +323,7 @@ export function UnifiedBookingPage() {
                   ride_id: request?.id || '',
                   pickup_address: pickupAddress,
                   destination_address: destinationAddress,
-                  price: driver.estimated_price ? `${driver.estimated_price.toFixed(2)}€` : '',
+                  price: selectedDriver?.estimated_price ? `${selectedDriver.estimated_price.toFixed(2)}€` : '',
                 },
               },
             })
