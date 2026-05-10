@@ -9,6 +9,7 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { publishNativeFix } from '@/lib/nativeGpsBus';
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
