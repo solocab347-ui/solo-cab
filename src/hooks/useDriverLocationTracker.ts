@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
 import { useNativeGeolocation } from './useNativeGeolocation';
+import { ensureLocationPermission } from '@/lib/ensureLocationPermission';
 
 interface LocationTrackerOptions {
   driverId: string | null;
