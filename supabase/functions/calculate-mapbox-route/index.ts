@@ -1,9 +1,11 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
+import { z, parseBody, jsonResponse, corsHeaders, Latitude, Longitude } from '../_shared/validation.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const RouteSchema = z.object({
+  pickup_latitude: Latitude,
+  pickup_longitude: Longitude,
+  destination_latitude: Latitude,
+  destination_longitude: Longitude,
+});
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,16 +13,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pickup_latitude, pickup_longitude, destination_latitude, destination_longitude } = await req.json();
-
-    // Validation des paramètres
-    if (!pickup_latitude || !pickup_longitude || !destination_latitude || !destination_longitude) {
-      console.error('❌ Paramètres manquants:', { pickup_latitude, pickup_longitude, destination_latitude, destination_longitude });
-      return new Response(
-        JSON.stringify({ error: 'Coordonnées de départ et d\'arrivée requises' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const parsed = await parseBody(req, RouteSchema);
+    if (!parsed.ok) return parsed.response;
+    const { pickup_latitude, pickup_longitude, destination_latitude, destination_longitude } = parsed.data;
 
     // Récupérer le token Mapbox
     const mapboxToken = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
