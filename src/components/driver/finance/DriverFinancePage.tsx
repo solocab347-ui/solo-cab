@@ -410,15 +410,29 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       });
 
       // Calculate pending balance from driver_balance_pending
+      // ⚠️ On sépare strictement CB et espèces : seul le NET CB est virable.
+      // Les espèces sont déjà en main du chauffeur — il ne faut JAMAIS les
+      // additionner au "prochain versement", sinon on induit le chauffeur
+      // en erreur sur le montant qu'il va réellement recevoir lundi.
       const pbData = (pendingBalanceResult.data || []) as any[];
       let cashFeesOwed = 0;
       let cardFeesCollected = 0;
+      let cardNet = 0;
+      let cardGross = 0;
+      let cardCourseCount = 0;
+      let cashGross = 0;
+      let cashCourseCount = 0;
       for (const b of pbData) {
         const fee = Number(b.solocab_fee || 0);
         if (b.payment_type === 'cash') {
           cashFeesOwed += fee;
+          cashGross += Number(b.gross_amount || 0);
+          cashCourseCount += 1;
         } else {
           cardFeesCollected += fee;
+          cardNet += Number(b.net_amount || 0);
+          cardGross += Number(b.gross_amount || 0);
+          cardCourseCount += 1;
         }
       }
       setPendingBalance({
@@ -429,6 +443,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         courseCount: pbData.length,
         cashFeesOwed,
         cardFeesCollected,
+        cardNet,
+        cardGross,
+        cardCourseCount,
+        cashGross,
+        cashCourseCount,
       });
 
       // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
