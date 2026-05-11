@@ -43,7 +43,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
     const loadPrefs = () => import('@capacitor/preferences');
 
-    const GPS_NOTIFICATION_ID = 73501;
+    const GPS_NOTIFICATION_ID = 73502;
     const GPS_CHANNEL_ID = 'solocab_gps';
 
     const ensureAndroidGpsNotificationPermission = async () => {
