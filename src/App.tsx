@@ -78,6 +78,7 @@ const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminObservability = lazy(() => import("./pages/AdminObservability"));
+const SecurityDashboard = lazy(() => import("./pages/admin/SecurityDashboard"));
 
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -282,6 +283,16 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <AdminObservability />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/security"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <SecurityDashboard />
                     </Suspense>
                   </ProtectedRoute>
                 }
