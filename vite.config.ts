@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'es2020',
+    sourcemap: mode === 'production' ? false : true,
     rollupOptions: {
       // Native-only Capacitor plugins (no web entry) — never resolve at build time
       external: [

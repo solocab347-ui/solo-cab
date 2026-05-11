@@ -16439,6 +16439,45 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       security_audit_logs: {
         Row: {
           country_code: string | null
@@ -20654,6 +20693,15 @@ export type Database = {
       atomic_start_course_finalization: {
         Args: { p_course_id: string; p_driver_user_id: string }
         Returns: Json
+      }
+      audit_security_posture: {
+        Args: never
+        Returns: {
+          category: string
+          finding: string
+          object_name: string
+          severity: string
+        }[]
       }
       auto_assign_fleet_driver: {
         Args: {
