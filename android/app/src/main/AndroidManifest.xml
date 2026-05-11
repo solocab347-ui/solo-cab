@@ -70,6 +70,12 @@
             </intent-filter>
         </service>
 
+        <!-- Service natif permanent chauffeur ONLINE : GPS actif hors WebView/React -->
+        <service
+            android:name=".SoloCabDriverForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
         <!-- Le service Capacitor par défaut est remplacé par SoloCabFirebaseMessagingService,
              qui relaie quand même les events vers PushNotificationsPlugin. Sans suppression,
              Android peut livrer le FCM data-only au mauvais service et l'overlay ne s'ouvre pas. -->
@@ -77,7 +83,7 @@
             android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
             tools:node="remove" />
 
-        <!-- BootReceiver : rappel post-reboot pour réactiver le tracking GPS -->
+        <!-- BootReceiver : relance le service GPS natif après reboot / mise à jour si le chauffeur était online -->
         <receiver
             android:name=".BootReceiver"
             android:exported="true"
