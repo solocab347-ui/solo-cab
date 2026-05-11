@@ -241,14 +241,33 @@ public class SoloCabDriverForegroundService extends Service {
         return false;
     }
 
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
     private void startAsForeground() {
         Notification notification = buildNotification("SoloCab actif", "GPS actif — courses disponibles même écran verrouillé.");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        } else {
-            startForeground(NOTIFICATION_ID, notification);
+        boolean hasLoc = hasLocationPermission();
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && hasLoc) {
+                // Android 10+ : type LOCATION uniquement si la permission runtime est accordée,
+                // sinon Android 14+/15+ lève SecurityException et crashe le service (FGS type=location).
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                // Pas de permission GPS encore : on démarre quand même en foreground sans type
+                // pour rester en vie ; le tracking GPS sera (re)tenté plus tard depuis le JS.
+                startForeground(NOTIFICATION_ID, notification);
+            }
+            Log.i(TAG, "startForeground_ok hasLoc=" + hasLoc + " " + ts());
+        } catch (SecurityException se) {
+            Log.e(TAG, "startForeground_security_exception fallback_no_type", se);
+            try {
+                startForeground(NOTIFICATION_ID, notification);
+            } catch (Exception ignored) {
+                stopSelf();
+            }
         }
-        Log.i(TAG, "startForeground_ok " + ts());
     }
 
     private Notification buildNotification(String title, String body) {
