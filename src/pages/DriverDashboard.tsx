@@ -232,13 +232,10 @@ const DriverDashboard = () => {
     }
   }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
   
-  // REDIRECTION AUTOMATIQUE vers le tunnel d'onboarding si non complété
-  useEffect(() => {
-    if (driverProfile?.driver && !driverProfile.driver.onboarding_completed) {
-      // Chauffeur n'a pas complété l'onboarding - rediriger vers le tunnel
-      navigate("/driver-welcome", { replace: true });
-    }
-  }, [driverProfile?.driver?.onboarding_completed, navigate]);
+  // Onboarding non complété : on NE redirige PAS vers /driver-welcome.
+  // Le chauffeur atterrit sur le dashboard et accède au tunnel via la bannière
+  // / le bouton "Finaliser mon inscription" intégrés au dashboard.
+  // (cf. demande produit : ne pas perdre le chauffeur dans le tunnel à l'install)
 
   // Check if profile needs completion wizard
   useEffect(() => {
