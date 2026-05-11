@@ -1,11 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z, parseBody, corsHeaders } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const CardHoldSchema = z.object({
+  driver_id: z.string().uuid(),
+  course_id: z.string().uuid().optional(),
+  client_email: z.string().email().max(255).optional(),
+  client_name: z.string().trim().max(200).optional(),
+  client_user_id: z.string().uuid().optional(),
+  hold_amount_cents: z.number().int().positive().max(10_000_000).optional(),
+});
 
 const MIN_HOLD_CENTS = 100; // 1€ safety minimum (hold = exact TTC price)
 const SOLOCAB_FEE_CENTS = 50; // 0.50€ platform fee
