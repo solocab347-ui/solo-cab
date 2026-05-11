@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/productionLogger";
+import { isMobileApp } from "@/lib/platform";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -212,6 +213,21 @@ export const ProtectedRoute = ({
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // BLOCAGE WEB CHAUFFEUR : un chauffeur ne peut pas utiliser l'espace driver
+  // depuis un navigateur (GPS/push/dispatch nécessitent l'app native).
+  // Cette vérification couvre /driver-dashboard et toutes les routes "driver".
+  if (
+    !isMobileApp() &&
+    (userRole === "driver" || allowedRoles?.includes("driver"))
+  ) {
+    if (userRole === "driver") {
+      logger.info("Blocage chauffeur web : redirection vers /driver-app-required", {
+        path: location.pathname,
+      });
+      return <Navigate to="/driver-app-required" replace />;
+    }
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {

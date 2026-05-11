@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Car, CreditCard, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
+import { isMobileApp } from "@/lib/platform";
+const driverPostAuthPath = () => isMobileApp() ? "/driver-dashboard" : "/driver-app-required";
 
 interface Props {
   user: any;
@@ -100,7 +102,7 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
         onClose: () => {
           // User closed Stripe browser → continue to dashboard
           toast.info("Configuration Stripe terminée. Bienvenue !");
-          navigate("/driver-dashboard", { replace: true });
+          navigate(driverPostAuthPath(), { replace: true });
         },
       });
     } catch (err: any) {
@@ -112,7 +114,7 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
 
   const skipStripe = () => {
     toast.info("Vous pourrez configurer Stripe depuis votre tableau de bord");
-    navigate("/driver-dashboard", { replace: true });
+    navigate(driverPostAuthPath(), { replace: true });
   };
 
   return (

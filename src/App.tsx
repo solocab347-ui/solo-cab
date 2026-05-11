@@ -54,6 +54,7 @@ const OurValues = lazy(() => import("./pages/OurValues"));
 const CommentCaMarche = lazy(() => import("./pages/CommentCaMarche"));
 const Contact = lazy(() => import("./pages/Contact"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
+const DriverAppRequired = lazy(() => import("./pages/DriverAppRequired"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
 const PrivacyMyData = lazy(() => import("./pages/PrivacyMyData"));
@@ -148,6 +149,8 @@ const App = () => (
               <Route path="/nos-valeurs" element={<Suspense fallback={<LoadingFallback />}><OurValues /></Suspense>} />
               <Route path="/comment-ca-marche" element={<Suspense fallback={<LoadingFallback />}><CommentCaMarche /></Suspense>} />
               <Route path="/driver-welcome" element={<Suspense fallback={<LoadingFallback />}><DriverWelcome /></Suspense>} />
+              <Route path="/driver-app-required" element={<Suspense fallback={<LoadingFallback />}><DriverAppRequired /></Suspense>} />
+              <Route path="/telecharger-app-chauffeur" element={<Navigate to="/driver-app-required" replace />} />
               <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
               <Route path="/delete-account" element={<Suspense fallback={<LoadingFallback />}><DeleteAccount /></Suspense>} />
               <Route path="/supprimer-compte" element={<Navigate to="/delete-account" replace />} />

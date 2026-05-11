@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo-solocab.png";
+import { isMobileApp } from "@/lib/platform";
+
+const driverPostAuthPath = () =>
+  isMobileApp() ? "/driver-dashboard" : "/driver-app-required";
 
 // Step-by-step wizard registration
 
@@ -72,7 +76,7 @@ const RegisterDriverPromoFree = () => {
             .eq("user_id", session.user.id)
             .maybeSingle();
           if (existingDriver) {
-            navigate("/driver-dashboard");
+            navigate(driverPostAuthPath());
             return;
           }
         }
@@ -271,7 +275,7 @@ const RegisterDriverPromoFree = () => {
           .maybeSingle();
         if (driverData) {
           toast.success("Connexion réussie !");
-          navigate("/driver-dashboard");
+          navigate(driverPostAuthPath());
         } else {
           toast.error("Aucun profil chauffeur trouvé.");
           await supabase.auth.signOut();
@@ -565,6 +569,39 @@ function WelcomeStep({ onStart, onLogin }: { onStart: () => void; onLogin: () =>
           Déjà inscrit ? <span className="font-medium text-primary">Se connecter</span>
         </button>
       </motion.div>
+
+      {/* App native obligatoire — uniquement visible sur le web */}
+      {!isMobileApp() && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+              <Rocket className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-foreground mb-1">
+                L'app SoloCab est obligatoire pour les chauffeurs
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                Vous pouvez créer votre compte ici, mais la connexion à votre
+                espace chauffeur (GPS, courses, notifications) se fait uniquement
+                depuis l'application mobile.
+              </p>
+              <button
+                type="button"
+                onClick={() => window.location.assign("/driver-app-required")}
+                className="text-[11px] font-semibold text-primary hover:underline"
+              >
+                Voir comment télécharger l'app →
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Trust signals */}
       <div className="flex justify-center gap-8 mt-8">
