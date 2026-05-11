@@ -495,13 +495,6 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
           </div>
         </div>
       )}
-      {isStale && isTracking && (
-        <div className="absolute top-[140px] left-0 right-0 z-[9991] flex justify-center pointer-events-none">
-          <div className="bg-amber-500/90 backdrop-blur-sm text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
-            ⚠️ Position GPS obsolète — gardez l'app au premier plan
-          </div>
-        </div>
-      )}
     </div>
   );
 });
