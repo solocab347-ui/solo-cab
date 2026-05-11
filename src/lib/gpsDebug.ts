@@ -24,8 +24,9 @@ export function isGpsDebugEnabled(): boolean {
   const override = window.localStorage.getItem('solocab_gps_debug');
   if (override === '0') return false;
   if (override === '1') return true;
-  // Mode debug temporaire demandé : actif par défaut uniquement dans l'app native.
-  return Capacitor.isNativePlatform();
+  // Désactivé par défaut : les toasts "GPS tracker-native-read" étaient visibles
+  // en production. Activable manuellement via `localStorage.solocab_gps_debug = '1'`.
+  return false;
 }
 
 export function isValidCoordinate(lat: unknown, lng: unknown): lat is number {

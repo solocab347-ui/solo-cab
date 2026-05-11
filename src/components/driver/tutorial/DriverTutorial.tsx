@@ -64,7 +64,9 @@ export function DriverTutorial({
   }, []);
 
   const handleFinish = useCallback(() => {
-    onNavigateToTab("qrcode");
+    // À la fin du tutoriel, le chauffeur doit atterrir sur son tableau de bord (Accueil),
+    // pas sur l'onglet QR Code.
+    onNavigateToTab("home");
     onComplete();
   }, [onNavigateToTab, onComplete]);
 

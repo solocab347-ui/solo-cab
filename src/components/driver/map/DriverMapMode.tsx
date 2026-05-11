@@ -130,17 +130,40 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
     return () => { document.head.removeChild(style); };
   }, []);
 
-  // Init map
+  // Init map — TOUJOURS initialiser, même hors ligne, pour ne pas afficher d'écran noir.
+  // Si le GPS n'est pas encore disponible, on centre sur la dernière position connue
+  // (localStorage) ou sur un fallback France métropolitaine. Le centrage sera ajusté
+  // dès qu'un fix GPS arrivera (effet plus bas).
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || !hasInitialGps) return;
-    if (!latitude || !longitude) return;
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    let initLat = latitude ?? null;
+    let initLng = longitude ?? null;
+    if (initLat == null || initLng == null) {
+      try {
+        const raw = localStorage.getItem('solocab_driver_last_gps');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed?.lat === 'number' && typeof parsed?.lng === 'number') {
+            initLat = parsed.lat;
+            initLng = parsed.lng;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    if (initLat == null || initLng == null) {
+      // Fallback : centre France (Paris) — la carte s'affiche même sans GPS.
+      initLat = 46.6;
+      initLng = 2.4;
+    }
+
     const map = L.map(mapContainerRef.current, {
-      center: [latitude, longitude],
-      zoom: 16,
+      center: [initLat, initLng],
+      zoom: latitude && longitude ? 16 : 6,
       zoomControl: false,
       attributionControl: false,
     });
-    logGpsDebug('driver-map-initial-center', { latitude, longitude, timestamp: Date.now(), provider: 'driver-map-state' }, { driverId });
+    logGpsDebug('driver-map-initial-center', { latitude: initLat, longitude: initLng, timestamp: Date.now(), provider: 'driver-map-state' }, { driverId, hasGps: !!latitude });
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
 
@@ -221,6 +244,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   useEffect(() => {
     if (!latitude || !longitude || !mapRef.current || !isMapReady) return;
     logGpsDebug('driver-map-read', { latitude, longitude, timestamp: Date.now(), provider: 'useDriverLocationTracker' }, { driverId, isStale, isTracking });
+    try { localStorage.setItem('solocab_driver_last_gps', JSON.stringify({ lat: latitude, lng: longitude, t: Date.now() })); } catch { /* ignore */ }
     const newPos: L.LatLngExpression = [latitude, longitude];
 
     // Radar overlay around car
