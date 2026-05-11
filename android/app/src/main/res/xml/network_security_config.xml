@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SoloCab — Network Security Config (release strict)
+  - cleartextTrafficPermitted = false partout
+  - Domaines autorisés explicitement
+  - debug-overrides : autorise cleartext sur localhost en dev uniquement
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">supabase.co</domain>
+        <domain includeSubdomains="true">solocab.fr</domain>
+        <domain includeSubdomains="true">stripe.com</domain>
+        <domain includeSubdomains="true">mapbox.com</domain>
+        <domain includeSubdomains="true">lovableproject.com</domain>
+        <domain includeSubdomains="true">lovable.app</domain>
+    </domain-config>
+
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
