@@ -125,6 +125,14 @@ interface PendingBalanceStats {
   courseCount: number;
   cashFeesOwed: number; // SoloCab fees from cash courses (to be deducted)
   cardFeesCollected: number; // SoloCab fees from card courses (already taken)
+  // ⚠️ Le "prochain versement" NE doit JAMAIS inclure les espèces — elles sont
+  // déjà encaissées en main propre. On expose donc séparément le net carte
+  // (réellement virable) et le détail des courses CB.
+  cardNet: number;          // Somme des nets CB en attente (= ce qui sera viré)
+  cardGross: number;        // Brut CB en attente
+  cardCourseCount: number;  // Nombre de courses CB en attente
+  cashGross: number;        // Brut espèces (déjà en main du chauffeur)
+  cashCourseCount: number;
 }
 
 /**
@@ -402,15 +410,29 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       });
 
       // Calculate pending balance from driver_balance_pending
+      // ⚠️ On sépare strictement CB et espèces : seul le NET CB est virable.
+      // Les espèces sont déjà en main du chauffeur — il ne faut JAMAIS les
+      // additionner au "prochain versement", sinon on induit le chauffeur
+      // en erreur sur le montant qu'il va réellement recevoir lundi.
       const pbData = (pendingBalanceResult.data || []) as any[];
       let cashFeesOwed = 0;
       let cardFeesCollected = 0;
+      let cardNet = 0;
+      let cardGross = 0;
+      let cardCourseCount = 0;
+      let cashGross = 0;
+      let cashCourseCount = 0;
       for (const b of pbData) {
         const fee = Number(b.solocab_fee || 0);
         if (b.payment_type === 'cash') {
           cashFeesOwed += fee;
+          cashGross += Number(b.gross_amount || 0);
+          cashCourseCount += 1;
         } else {
           cardFeesCollected += fee;
+          cardNet += Number(b.net_amount || 0);
+          cardGross += Number(b.gross_amount || 0);
+          cardCourseCount += 1;
         }
       }
       setPendingBalance({
@@ -421,6 +443,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         courseCount: pbData.length,
         cashFeesOwed,
         cardFeesCollected,
+        cardNet,
+        cardGross,
+        cardCourseCount,
+        cashGross,
+        cashCourseCount,
       });
 
       // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
@@ -690,12 +717,36 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <Wallet className="w-4 h-4" />
               Prochain versement
             </div>
-            <p className="text-2xl font-bold text-foreground">
-              {pendingBalance.totalNet.toFixed(2)}€
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {pendingBalance.courseCount} courses • Lundi 6h
-            </p>
+            {(() => {
+              // ⚠️ Le virement Stripe ne porte QUE sur les courses CB
+              // (les espèces sont déjà encaissées en main du chauffeur).
+              // Estimation = net CB en attente − dette cash (frais semaine + arriérés).
+              const cashDebt =
+                (pendingBalance.cashFeesOwed || 0)
+                + (carryOver?.cashFeesOwedFromPastWeeks || 0);
+              const netToTransfer = Math.max(0, pendingBalance.cardNet - cashDebt);
+              return (
+                <>
+                  <p className="text-2xl font-bold text-foreground">
+                    {netToTransfer.toFixed(2)}€
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pendingBalance.cardCourseCount} course{pendingBalance.cardCourseCount > 1 ? 's' : ''} CB • Lundi 6h
+                  </p>
+                  <div className="text-[10px] text-muted-foreground mt-2 space-y-0.5 pt-2 border-t border-primary/10">
+                    <p>Net CB en attente : {pendingBalance.cardNet.toFixed(2)}€</p>
+                    {cashDebt > 0 && (
+                      <p className="text-warning">− Frais espèces à déduire : {cashDebt.toFixed(2)}€</p>
+                    )}
+                    {pendingBalance.cashCourseCount > 0 && (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        💵 {pendingBalance.cashCourseCount} course{pendingBalance.cashCourseCount > 1 ? 's' : ''} espèces ({pendingBalance.cashGross.toFixed(2)}€) — déjà en main, non virées
+                      </p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </Card>
           <Card className="p-4 bg-destructive/5 border-destructive/20">
             <div className="flex items-center gap-2 text-destructive text-sm mb-1">
