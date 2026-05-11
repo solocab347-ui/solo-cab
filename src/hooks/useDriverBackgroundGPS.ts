@@ -179,8 +179,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
 
-        // Démarrer le watcher background EN PREMIER : c'est lui qui déclenche
-        // le foreground service Android + notification GPS persistante. Ne jamais
+        // Démarrer aussi le watcher Capacitor en couche secondaire UI/bus natif.
+        // Le vrai service critique est déjà lancé au-dessus via Android natif. Ne jamais
         // le bloquer derrière getCurrentPosition, qui peut timeout sur Xiaomi/MIUI.
         const id = await BackgroundGeolocation.addWatcher(
           {
