@@ -125,6 +125,14 @@ interface PendingBalanceStats {
   courseCount: number;
   cashFeesOwed: number; // SoloCab fees from cash courses (to be deducted)
   cardFeesCollected: number; // SoloCab fees from card courses (already taken)
+  // ⚠️ Le "prochain versement" NE doit JAMAIS inclure les espèces — elles sont
+  // déjà encaissées en main propre. On expose donc séparément le net carte
+  // (réellement virable) et le détail des courses CB.
+  cardNet: number;          // Somme des nets CB en attente (= ce qui sera viré)
+  cardGross: number;        // Brut CB en attente
+  cardCourseCount: number;  // Nombre de courses CB en attente
+  cashGross: number;        // Brut espèces (déjà en main du chauffeur)
+  cashCourseCount: number;
 }
 
 /**
