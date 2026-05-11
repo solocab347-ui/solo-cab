@@ -147,6 +147,9 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       if (!enabled || watcherIdRef.current || cancelled) return;
       try {
         await ensureAndroidGpsNotificationPermission();
+        // D'abord le service natif pur Android : il ne doit pas dépendre du watcher JS/Capacitor.
+        await setTrackingFlag(true);
+        await startNativeDriverService();
         const bgMod: any = await loadBg();
         const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
         const kaMod: any = await loadKa();
@@ -217,12 +220,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
 
-        // Mémorise pour le BootReceiver Android + démarre le VRAI service natif.
-        // Ce service continue même si React/WebView est suspendu par Android/Xiaomi.
-        await setTrackingFlag(true);
-        await startNativeDriverService();
         // Mention visible immédiatement dans le tiroir Android, même si l'app est ouverte.
-        // Le watcher natif garde ensuite le service actif quand l'app passe en arrière-plan.
+        // Le service natif garde ensuite le GPS actif quand l'app passe en arrière-plan.
         await showPersistentGpsNotification();
 
         // Démarrer le watcher background EN PREMIER : c'est lui qui déclenche
