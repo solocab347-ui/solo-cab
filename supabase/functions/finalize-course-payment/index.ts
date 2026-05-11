@@ -721,6 +721,8 @@ serve(async (req) => {
           const captured = await stripe.paymentIntents.capture(orphanedPI.id, {
             amount_to_capture: captureAmountCents,
             application_fee_amount: arrears.finalFeeCents,
+          }, {
+            idempotencyKey: `finalize-orphan-capture:${course_id}:${orphanedPI.id}:v1`,
           });
 
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
