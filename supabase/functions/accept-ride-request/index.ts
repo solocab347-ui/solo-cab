@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z, parseBody, jsonResponse, corsHeaders } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const AcceptRideSchema = z.object({
+  ride_request_id: z.string().uuid(),
+});
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -30,8 +30,9 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error(`User not authenticated: ${userError?.message || 'no user data'}`);
 
-    const { ride_request_id } = await req.json();
-    if (!ride_request_id) throw new Error("ride_request_id required");
+    const parsed = await parseBody(req, AcceptRideSchema);
+    if (!parsed.ok) return parsed.response;
+    const { ride_request_id } = parsed.data;
 
     logStep("Driver accepting ride request", { ride_request_id, userId: userData.user.id });
 
@@ -373,9 +374,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    // R11: never leak internals to clients
+    return jsonResponse({ error: "Erreur lors de l'acceptation de la course" }, 500);
   }
 });
