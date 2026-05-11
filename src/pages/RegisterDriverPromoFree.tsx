@@ -76,7 +76,7 @@ const RegisterDriverPromoFree = () => {
             .eq("user_id", session.user.id)
             .maybeSingle();
           if (existingDriver) {
-            navigate("/driver-dashboard");
+            navigate(driverPostAuthPath());
             return;
           }
         }
@@ -275,7 +275,7 @@ const RegisterDriverPromoFree = () => {
           .maybeSingle();
         if (driverData) {
           toast.success("Connexion réussie !");
-          navigate("/driver-dashboard");
+          navigate(driverPostAuthPath());
         } else {
           toast.error("Aucun profil chauffeur trouvé.");
           await supabase.auth.signOut();
