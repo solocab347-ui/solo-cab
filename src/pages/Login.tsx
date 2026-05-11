@@ -13,6 +13,7 @@ import { logger } from "@/lib/productionLogger";
 import { useLocale } from "@/hooks/useLocale";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { getRememberMe, setRememberMe as persistRememberMe } from "@/lib/authStorage";
+import { isMobileApp } from "@/lib/platform";
 
 
 const REMEMBER_ME_KEY = "solocab_remember_credentials";
