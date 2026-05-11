@@ -39,12 +39,9 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("User not authenticated");
 
-    const { 
-      course_id,
-      client_email,
-    } = await req.json();
-
-    if (!course_id) throw new Error("course_id required");
+    const parsed = await parseBody(req, FinalPaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const { course_id, client_email } = parsed.data;
 
     logStep("Processing final payment request", { course_id });
 
