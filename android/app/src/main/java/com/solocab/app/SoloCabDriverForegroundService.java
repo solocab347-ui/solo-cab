@@ -72,7 +72,7 @@ public class SoloCabDriverForegroundService extends Service {
 
     // Publishable backend config: safe in client/native code, private keys are never stored here.
     private static final String SUPABASE_URL = "https://iyothopplhbwcfrpxryc.supabase.co";
-    private static final String SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Iml5b3Rob3BwbGhid2NmcnB4cnljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzI5MTUsImV4cCI6MjA3OTIwODkxNX0.qnFWbejy-Tp3HkvHPI-O_43-3hzp61hjGTrYfnnsdxQ";
+    private static final String SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5b3Rob3BwbGhid2NmcnB4cnljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzI5MTUsImV4cCI6MjA3OTIwODkxNX0.qnFWbejy-Tp3HkvHPI-O_43-3hzp61hjGTrYfnnsdxQ";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService network = Executors.newSingleThreadExecutor();
