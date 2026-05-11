@@ -109,10 +109,19 @@ export default function TrialExpiredSubscribe() {
         return;
       }
 
-      // Si l'utilisateur a déjà un abonnement actif, le rediriger
+      // Si l'utilisateur a déjà un abonnement actif :
+      // - sur app native : retour au dashboard
+      // - sur web : on reste sur cette page mais on affiche un écran "ouvrir l'app mobile"
+      //   (le dashboard est inaccessible depuis le web pour les chauffeurs)
       if (driverData.subscription_status === "active" && driverData.subscription_paid) {
-        toast.success("Vous avez déjà un abonnement actif !");
-        navigate("/chauffeur");
+        const { isMobileApp } = await import("@/lib/platform");
+        if (isMobileApp()) {
+          toast.success("Vous avez déjà un abonnement actif !");
+          navigate("/chauffeur");
+          return;
+        }
+        setAlreadySubscribed(true);
+        setLoading(false);
         return;
       }
 
