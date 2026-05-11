@@ -13557,6 +13557,60 @@ export type Database = {
         }
         Relationships: []
       }
+      gps_spoof_events: {
+        Row: {
+          anomaly_type: string
+          created_at: string
+          curr_lat: number | null
+          curr_lng: number | null
+          driver_id: string | null
+          id: string
+          is_mock_location: boolean | null
+          jump_distance_m: number | null
+          jump_duration_s: number | null
+          metadata: Json
+          observed_speed_kmh: number | null
+          prev_lat: number | null
+          prev_lng: number | null
+          ride_id: string | null
+          severity: string
+        }
+        Insert: {
+          anomaly_type: string
+          created_at?: string
+          curr_lat?: number | null
+          curr_lng?: number | null
+          driver_id?: string | null
+          id?: string
+          is_mock_location?: boolean | null
+          jump_distance_m?: number | null
+          jump_duration_s?: number | null
+          metadata?: Json
+          observed_speed_kmh?: number | null
+          prev_lat?: number | null
+          prev_lng?: number | null
+          ride_id?: string | null
+          severity?: string
+        }
+        Update: {
+          anomaly_type?: string
+          created_at?: string
+          curr_lat?: number | null
+          curr_lng?: number | null
+          driver_id?: string | null
+          id?: string
+          is_mock_location?: boolean | null
+          jump_distance_m?: number | null
+          jump_duration_s?: number | null
+          metadata?: Json
+          observed_speed_kmh?: number | null
+          prev_lat?: number | null
+          prev_lng?: number | null
+          ride_id?: string | null
+          severity?: string
+        }
+        Relationships: []
+      }
       guest_registration_tokens: {
         Row: {
           course_id: string | null
@@ -22193,6 +22247,7 @@ export type Database = {
           working_sectors: string[]
         }[]
       }
+      get_security_overview: { Args: { _hours?: number }; Returns: Json }
       get_shared_course_client_info: {
         Args: { p_receiver_driver_id: string; p_shared_course_id: string }
         Returns: {
@@ -22471,6 +22526,23 @@ export type Database = {
           last_update: string
           reconciled_driver_id: string
         }[]
+      }
+      record_gps_anomaly: {
+        Args: {
+          _anomaly_type: string
+          _curr_lat?: number
+          _curr_lng?: number
+          _driver_id: string
+          _is_mock?: boolean
+          _jump_distance_m?: number
+          _jump_duration_s?: number
+          _metadata?: Json
+          _observed_speed_kmh?: number
+          _prev_lat?: number
+          _prev_lng?: number
+          _ride_id: string
+        }
+        Returns: string
       }
       refresh_driver_statistics: { Args: never; Returns: undefined }
       register_error_pattern: {
