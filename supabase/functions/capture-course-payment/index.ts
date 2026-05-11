@@ -269,7 +269,9 @@ serve(async (req) => {
     if (amount_to_capture) {
       captureParams.amount_to_capture = captureAmountCents;
     }
-    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId, captureParams as any);
+    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId, captureParams as any, {
+      idempotencyKey: `capture:${paymentIntentId}:v1`,
+    });
 
     const capturedAmount = paymentIntent.amount_received / 100;
 

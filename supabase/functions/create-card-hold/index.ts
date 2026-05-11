@@ -185,7 +185,9 @@ serve(async (req) => {
       logStep("Creating hold requiring client card input");
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(piParams);
+    const paymentIntent = await stripe.paymentIntents.create(piParams, {
+      idempotencyKey: `card-hold:${courseId}:v1`,
+    });
 
     logStep("PaymentIntent created for hold", { 
       paymentIntentId: paymentIntent.id,

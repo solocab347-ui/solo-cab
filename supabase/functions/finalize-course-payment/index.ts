@@ -496,6 +496,8 @@ serve(async (req) => {
           const captured = await stripe.paymentIntents.capture(holdPiId, {
             amount_to_capture: captureAmountCents,
             application_fee_amount: arrears.finalFeeCents,
+          }, {
+            idempotencyKey: `finalize-capture:${course_id}:${holdPiId}:v1`,
           });
 
           logStep("✅ Hold captured successfully", {
@@ -719,6 +721,8 @@ serve(async (req) => {
           const captured = await stripe.paymentIntents.capture(orphanedPI.id, {
             amount_to_capture: captureAmountCents,
             application_fee_amount: arrears.finalFeeCents,
+          }, {
+            idempotencyKey: `finalize-orphan-capture:${course_id}:${orphanedPI.id}:v1`,
           });
 
           const stripeFee = Math.round((totalAmount * STRIPE_PERCENTAGE + STRIPE_FIXED_FEE) * 100) / 100;
@@ -970,7 +974,9 @@ serve(async (req) => {
     let paymentIntent: Stripe.PaymentIntent;
 
     try {
-      paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
+        idempotencyKey: `finalize-fallback:${course_id}:v1`,
+      });
       logStep("Fallback PaymentIntent created", { piId: paymentIntent.id, status: paymentIntent.status });
     } catch (stripeError: any) {
       logStep("Fallback PaymentIntent creation failed", { error: stripeError.message });
