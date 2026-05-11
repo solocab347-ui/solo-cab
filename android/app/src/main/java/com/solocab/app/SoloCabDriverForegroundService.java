@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -294,6 +295,9 @@ public class SoloCabDriverForegroundService extends Service {
         try {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             if (pm == null || wakeLock != null && wakeLock.isHeld()) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Log.i(TAG, "battery_optimization_ignored=" + pm.isIgnoringBatteryOptimizations(getPackageName()) + " " + ts());
+            }
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SoloCab:DriverGpsWakeLock");
             wakeLock.setReferenceCounted(false);
             wakeLock.acquire(6 * 60 * 60 * 1000L);
@@ -314,6 +318,9 @@ public class SoloCabDriverForegroundService extends Service {
     }
 
     private void startLocationTracking() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Log.i(TAG, "overlay_permission=" + Settings.canDrawOverlays(this) + " " + ts());
+        }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "location_permission_missing " + ts());

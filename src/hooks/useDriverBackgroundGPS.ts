@@ -43,22 +43,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
     const loadPrefs = () => import('@capacitor/preferences');
 
-    const GPS_NOTIFICATION_ID = 73502;
-    const GPS_CHANNEL_ID = 'solocab_gps';
-
     const ensureAndroidGpsNotificationPermission = async () => {
       if (Capacitor.getPlatform() !== 'android') return true;
       try {
         const { LocalNotifications } = await import('@capacitor/local-notifications');
-        await LocalNotifications.createChannel({
-          id: GPS_CHANNEL_ID,
-          name: 'Suivi GPS SoloCab',
-          description: 'Notification persistante quand SoloCab utilise votre position.',
-          importance: 3,
-          visibility: 1,
-          vibration: false,
-          lights: false,
-        }).catch(() => {/* channel déjà créé */});
         const current = await LocalNotifications.checkPermissions();
         if ((current as any).display === 'granted') return true;
         const requested = await LocalNotifications.requestPermissions();
@@ -75,35 +63,6 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         console.warn('[BackgroundGPS] notification permission check failed', e);
         return false;
       }
-    };
-
-    const showPersistentGpsNotification = async () => {
-      if (Capacitor.getPlatform() !== 'android') return;
-      try {
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        await LocalNotifications.cancel({ notifications: [{ id: GPS_NOTIFICATION_ID }] }).catch(() => {});
-        await LocalNotifications.schedule({
-          notifications: [{
-            id: GPS_NOTIFICATION_ID,
-            title: 'SoloCab utilise votre GPS',
-            body: 'Position GPS active pour recevoir les courses même app fermée.',
-            channelId: GPS_CHANNEL_ID,
-            ongoing: true,
-            autoCancel: false,
-            extra: { type: 'gps_tracking' },
-          } as any],
-        });
-      } catch (e) {
-        console.warn('[BackgroundGPS] persistent notification failed', e);
-      }
-    };
-
-    const cancelPersistentGpsNotification = async () => {
-      if (Capacitor.getPlatform() !== 'android') return;
-      try {
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        await LocalNotifications.cancel({ notifications: [{ id: GPS_NOTIFICATION_ID }] });
-      } catch {/* ignore */}
     };
 
     const setTrackingFlag = async (value: boolean) => {
@@ -220,12 +179,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
 
-        // Mention visible immédiatement dans le tiroir Android, même si l'app est ouverte.
-        // Le service natif garde ensuite le GPS actif quand l'app passe en arrière-plan.
-        await showPersistentGpsNotification();
-
-        // Démarrer le watcher background EN PREMIER : c'est lui qui déclenche
-        // le foreground service Android + notification GPS persistante. Ne jamais
+        // Démarrer aussi le watcher Capacitor en couche secondaire UI/bus natif.
+        // Le vrai service critique est déjà lancé au-dessus via Android natif. Ne jamais
         // le bloquer derrière getCurrentPosition, qui peut timeout sur Xiaomi/MIUI.
         const id = await BackgroundGeolocation.addWatcher(
           {
@@ -375,7 +330,6 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       }
       await setTrackingFlag(false);
       await stopNativeDriverService();
-      await cancelPersistentGpsNotification();
     };
 
     if (enabled) start();
