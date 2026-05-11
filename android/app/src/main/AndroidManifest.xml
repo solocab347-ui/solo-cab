@@ -74,7 +74,8 @@
         <service
             android:name=".SoloCabDriverForegroundService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:stopWithTask="false" />
 
         <!-- Le service Capacitor par défaut est remplacé par SoloCabFirebaseMessagingService,
              qui relaie quand même les events vers PushNotificationsPlugin. Sans suppression,
