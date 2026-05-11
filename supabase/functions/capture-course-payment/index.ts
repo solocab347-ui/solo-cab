@@ -48,8 +48,9 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) throw new Error("User not authenticated");
 
-    const { course_id, amount_to_capture } = await req.json();
-    if (!course_id) throw new Error("course_id required");
+    const parsed = await parseBody(req, CaptureSchema);
+    if (!parsed.ok) return parsed.response;
+    const { course_id, amount_to_capture } = parsed.data;
 
     logStep("Capture request", { course_id, amount_to_capture, userId: user.id });
 
