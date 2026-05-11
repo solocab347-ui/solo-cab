@@ -205,7 +205,9 @@ serve(async (req) => {
       saveCard: save_card,
     });
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      idempotencyKey: `course-payment:${course_id}:${capture_method}:v1`,
+    });
 
     logStep("Checkout session created", { sessionId: session.id });
 
