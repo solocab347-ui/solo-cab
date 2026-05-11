@@ -58,6 +58,7 @@ export default function TrialExpiredSubscribe() {
   const [wantsNfcPlate, setWantsNfcPlate] = useState(false);
   const [selectedNfcType, setSelectedNfcType] = useState<"plastic" | "wood">("plastic");
   const [driver, setDriver] = useState<DriverInfo | null>(null);
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
   const [stats, setStats] = useState<DriverStats>({
     totalClients: 0,
     totalCourses: 0,
