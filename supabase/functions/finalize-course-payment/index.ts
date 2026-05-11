@@ -496,6 +496,8 @@ serve(async (req) => {
           const captured = await stripe.paymentIntents.capture(holdPiId, {
             amount_to_capture: captureAmountCents,
             application_fee_amount: arrears.finalFeeCents,
+          }, {
+            idempotencyKey: `finalize-capture:${course_id}:${holdPiId}:v1`,
           });
 
           logStep("✅ Hold captured successfully", {
