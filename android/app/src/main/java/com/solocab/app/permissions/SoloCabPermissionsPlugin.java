@@ -19,6 +19,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.solocab.app.SoloCabDriverForegroundService;
 
 @CapacitorPlugin(name = "SoloCabPermissions")
 public class SoloCabPermissionsPlugin extends Plugin {
@@ -71,6 +72,27 @@ public class SoloCabPermissionsPlugin extends Plugin {
         }
         saveCall(call);
         ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_AUDIO);
+    }
+
+    @PluginMethod
+    public void startDriverForegroundService(PluginCall call) {
+        String driverId = call.getString("driverId");
+        String accessToken = call.getString("accessToken");
+        String refreshToken = call.getString("refreshToken");
+        if (driverId == null || driverId.isEmpty() || accessToken == null || accessToken.isEmpty()) {
+            call.reject("driverId and accessToken are required");
+            return;
+        }
+        Intent intent = SoloCabDriverForegroundService.buildStartIntent(getContext(), driverId, accessToken, refreshToken);
+        ContextCompat.startForegroundService(getContext(), intent);
+        resolve(call, true);
+    }
+
+    @PluginMethod
+    public void stopDriverForegroundService(PluginCall call) {
+        Intent intent = SoloCabDriverForegroundService.buildStopIntent(getContext());
+        getContext().startService(intent);
+        resolve(call, true);
     }
 
     @Override

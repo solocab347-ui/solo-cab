@@ -7,12 +7,17 @@
  * Sur web, ce hook est un no-op (le tracking foreground existant continue).
  */
 import { useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { publishNativeFix } from '@/lib/nativeGpsBus';
 import { logGpsLoss } from '@/lib/gpsLossLogger';
 import { logGpsDebug, shouldRejectGpsFix } from '@/lib/gpsDebug';
 import { toast } from 'sonner';
+
+const SoloCabPermissions = registerPlugin<{
+  startDriverForegroundService(options: { driverId: string; accessToken: string; refreshToken?: string | null }): Promise<{ granted?: boolean }>;
+  stopDriverForegroundService(): Promise<{ granted?: boolean }>;
+}>('SoloCabPermissions');
 
 interface UseDriverBackgroundGPSOptions {
   driverId: string | null;
@@ -38,7 +43,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
     const loadKa = () => import(/* @vite-ignore */ ('@capacitor-community/' + 'keep-awake'));
     const loadPrefs = () => import('@capacitor/preferences');
 
-    const GPS_NOTIFICATION_ID = 73501;
+    const GPS_NOTIFICATION_ID = 73502;
     const GPS_CHANNEL_ID = 'solocab_gps';
 
     const ensureAndroidGpsNotificationPermission = async () => {
@@ -112,10 +117,39 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
       } catch {/* ignore */}
     };
 
+    const startNativeDriverService = async () => {
+      if (Capacitor.getPlatform() !== 'android' || !driverId) return;
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      if (!session?.access_token) {
+        console.warn('[BackgroundGPS] native service skipped: no auth session');
+        return;
+      }
+      await SoloCabPermissions.startDriverForegroundService({
+        driverId,
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+      });
+      console.log('[BackgroundGPS] native Android foreground service requested');
+    };
+
+    const stopNativeDriverService = async () => {
+      if (Capacitor.getPlatform() !== 'android') return;
+      try {
+        await SoloCabPermissions.stopDriverForegroundService();
+        console.log('[BackgroundGPS] native Android foreground service stopped');
+      } catch (e) {
+        console.warn('[BackgroundGPS] native service stop failed', e);
+      }
+    };
+
     const start = async () => {
       if (!enabled || watcherIdRef.current || cancelled) return;
       try {
         await ensureAndroidGpsNotificationPermission();
+        // D'abord le service natif pur Android : il ne doit pas dépendre du watcher JS/Capacitor.
+        await setTrackingFlag(true);
+        await startNativeDriverService();
         const bgMod: any = await loadBg();
         const BackgroundGeolocation = bgMod.BackgroundGeolocation || bgMod.default;
         const kaMod: any = await loadKa();
@@ -186,10 +220,8 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
           console.warn('[BackgroundGPS] keep-awake unavailable', e);
         }
 
-        // Mémorise pour le BootReceiver Android
-        await setTrackingFlag(true);
         // Mention visible immédiatement dans le tiroir Android, même si l'app est ouverte.
-        // Le watcher natif garde ensuite le service actif quand l'app passe en arrière-plan.
+        // Le service natif garde ensuite le GPS actif quand l'app passe en arrière-plan.
         await showPersistentGpsNotification();
 
         // Démarrer le watcher background EN PREMIER : c'est lui qui déclenche
@@ -252,7 +284,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
 
           // Tick périodique (20s) : force getCurrentPosition pour garantir un fix
           // récent même si le distanceFilter (30 m) n'est pas franchi.
-          // Évite le badge "Position GPS obsolète" quand le chauffeur est arrêté.
+          // Maintient un heartbeat DB récent quand le chauffeur reste immobile.
           if (tickRef.current) clearInterval(tickRef.current);
           tickRef.current = setInterval(async () => {
             if (!enabled || !driverId || cancelled) return;
@@ -342,6 +374,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
         } catch {/* ignore */}
       }
       await setTrackingFlag(false);
+      await stopNativeDriverService();
       await cancelPersistentGpsNotification();
     };
 

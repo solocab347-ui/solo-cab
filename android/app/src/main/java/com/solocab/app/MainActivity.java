@@ -6,11 +6,14 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.getcapacitor.BridgeActivity;
 import com.solocab.app.permissions.SoloCabPermissionsPlugin;
 
 public class MainActivity extends BridgeActivity {
+    private static final String TAG = "SoloCabMainActivity";
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SoloCabPermissionsPlugin.class);
@@ -41,5 +44,29 @@ public class MainActivity extends BridgeActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         IncomingRideOverlayManager.dismiss(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "app_foreground onResume");
+    }
+
+    @Override
+    protected void onPause() {
+        Log.i(TAG, "app_background onPause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.i(TAG, "app_background onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.w(TAG, "activity_destroyed");
+        super.onDestroy();
     }
 }
