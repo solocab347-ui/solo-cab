@@ -36,17 +36,17 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const { 
-      course_id, 
+    const parsed = await parseBody(req, CoursePaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const {
+      course_id,
       devis_id,
       capture_method = "automatic",
       client_email,
       client_name,
       client_user_id,
       save_card = false,
-    } = await req.json();
-
-    if (!course_id) throw new Error("course_id required");
+    } = parsed.data;
 
     logStep("Processing payment request", { course_id, devis_id, capture_method, save_card });
 
