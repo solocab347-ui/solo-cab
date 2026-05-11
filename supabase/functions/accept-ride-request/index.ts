@@ -30,8 +30,9 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error(`User not authenticated: ${userError?.message || 'no user data'}`);
 
-    const { ride_request_id } = await req.json();
-    if (!ride_request_id) throw new Error("ride_request_id required");
+    const parsed = await parseBody(req, AcceptRideSchema);
+    if (!parsed.ok) return parsed.response;
+    const { ride_request_id } = parsed.data;
 
     logStep("Driver accepting ride request", { ride_request_id, userId: userData.user.id });
 
