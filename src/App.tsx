@@ -56,6 +56,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const PrivacyMyData = lazy(() => import("./pages/PrivacyMyData"));
 const SafeMode = lazy(() => import("./pages/SafeMode"));
 const NfcPlatePage = lazy(() => import("./pages/NfcPlatePage"));
 const NfcPlateOrderSuccess = lazy(() => import("./pages/NfcPlateOrderSuccess"));
@@ -150,6 +151,8 @@ const App = () => (
               <Route path="/mentions-legales" element={<Suspense fallback={<LoadingFallback />}><MentionsLegales /></Suspense>} />
               <Route path="/delete-account" element={<Suspense fallback={<LoadingFallback />}><DeleteAccount /></Suspense>} />
               <Route path="/supprimer-compte" element={<Navigate to="/delete-account" replace />} />
+              <Route path="/privacy/my-data" element={<Suspense fallback={<LoadingFallback />}><PrivacyMyData /></Suspense>} />
+              <Route path="/mes-donnees" element={<Navigate to="/privacy/my-data" replace />} />
               <Route path="/contact" element={<Suspense fallback={<LoadingFallback />}><Contact /></Suspense>} />
               <Route path="/cgu" element={<Navigate to="/terms-of-service" replace />} />
               <Route path="/safe-mode" element={<Suspense fallback={<LoadingFallback />}><SafeMode /></Suspense>} />
