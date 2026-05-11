@@ -217,6 +217,45 @@ export default function TrialExpiredSubscribe() {
     );
   }
 
+  if (alreadySubscribed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <CardTitle>Votre abonnement est actif</CardTitle>
+            <CardDescription>
+              Pour gérer vos courses, votre disponibilité et votre activité, ouvrez
+              l'application mobile SoloCab Chauffeur sur votre téléphone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Pourquoi le mobile ?</AlertTitle>
+              <AlertDescription>
+                Les fonctionnalités chauffeur (GPS, notifications, dispatch en temps réel)
+                ne sont disponibles que sur l'application mobile.
+              </AlertDescription>
+            </Alert>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/login");
+              }}
+            >
+              Se déconnecter
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!driver) {
     return null;
   }
