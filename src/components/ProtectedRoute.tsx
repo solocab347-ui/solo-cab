@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/productionLogger";
+import { isMobileApp } from "@/lib/platform";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
