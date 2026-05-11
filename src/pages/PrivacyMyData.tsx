@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,13 +73,12 @@ export default function PrivacyMyData() {
     }
   };
 
+  useEffect(() => {
+    document.title = 'Mes données personnelles — SoloCab';
+  }, []);
+
   return (
     <div className="container mx-auto max-w-3xl py-10 px-4">
-      <Helmet>
-        <title>Mes données personnelles — SoloCab</title>
-        <meta name="description" content="Exportez ou supprimez vos données SoloCab conformément au RGPD." />
-      </Helmet>
-
       <h1 className="text-3xl font-bold mb-2">Mes données personnelles</h1>
       <p className="text-muted-foreground mb-8">
         Vous disposez d'un droit d'accès, de portabilité et d'effacement (RGPD Art. 15, 17, 20).
