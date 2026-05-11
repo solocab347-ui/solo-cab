@@ -175,6 +175,8 @@ serve(async (req) => {
       },
       success_url: `${origin}/reservation-tracking/${course_id}?final_payment=success`,
       cancel_url: `${origin}/reservation-tracking/${course_id}?final_payment=cancelled`,
+    }, {
+      idempotencyKey: `final-payment:${course_id}:v1`,
     });
 
     logStep("Final payment checkout session created", { sessionId: session.id });
