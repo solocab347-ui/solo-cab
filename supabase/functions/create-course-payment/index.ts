@@ -1,11 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z, parseBody, corsHeaders } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const CoursePaymentSchema = z.object({
+  course_id: z.string().uuid(),
+  devis_id: z.string().uuid().optional(),
+  capture_method: z.enum(["automatic", "manual"]).optional(),
+  client_email: z.string().email().max(255).optional(),
+  client_name: z.string().trim().max(200).optional(),
+  client_user_id: z.string().uuid().optional(),
+  save_card: z.boolean().optional(),
+});
 
 const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 
@@ -30,17 +36,17 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const { 
-      course_id, 
+    const parsed = await parseBody(req, CoursePaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const {
+      course_id,
       devis_id,
       capture_method = "automatic",
       client_email,
       client_name,
       client_user_id,
       save_card = false,
-    } = await req.json();
-
-    if (!course_id) throw new Error("course_id required");
+    } = parsed.data;
 
     logStep("Processing payment request", { course_id, devis_id, capture_method, save_card });
 

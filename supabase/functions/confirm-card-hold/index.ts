@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z, parseBody, corsHeaders } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ConfirmHoldSchema = z.object({
+  payment_intent_id: z.string().min(1).max(255),
+  course_id: z.string().uuid(),
+});
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -28,13 +29,9 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const { 
-      payment_intent_id,
-      course_id,
-    } = await req.json();
-
-    if (!payment_intent_id) throw new Error("payment_intent_id required");
-    if (!course_id) throw new Error("course_id required");
+    const parsed = await parseBody(req, ConfirmHoldSchema);
+    if (!parsed.ok) return parsed.response;
+    const { payment_intent_id, course_id } = parsed.data;
 
     logStep("Confirming card hold", { payment_intent_id, course_id });
 

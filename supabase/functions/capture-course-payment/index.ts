@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z, parseBody, corsHeaders } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const CaptureSchema = z.object({
+  course_id: z.string().uuid(),
+  amount_to_capture: z.number().positive().max(100000).optional(),
+});
 
 const SOLOCAB_FEE_CENTS = 50; // 0.50€ par course (cash ou carte)
 const STRIPE_PERCENTAGE = 0.015;
@@ -47,8 +48,9 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) throw new Error("User not authenticated");
 
-    const { course_id, amount_to_capture } = await req.json();
-    if (!course_id) throw new Error("course_id required");
+    const parsed = await parseBody(req, CaptureSchema);
+    if (!parsed.ok) return parsed.response;
+    const { course_id, amount_to_capture } = parsed.data;
 
     logStep("Capture request", { course_id, amount_to_capture, userId: user.id });
 
