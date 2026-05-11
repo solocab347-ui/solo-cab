@@ -374,9 +374,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    // R11: never leak internals to clients
+    return jsonResponse({ error: "Erreur lors de l'acceptation de la course" }, 500);
   }
 });
