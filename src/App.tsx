@@ -54,6 +54,7 @@ const OurValues = lazy(() => import("./pages/OurValues"));
 const CommentCaMarche = lazy(() => import("./pages/CommentCaMarche"));
 const Contact = lazy(() => import("./pages/Contact"));
 const DriverWelcome = lazy(() => import("./pages/DriverWelcome"));
+const DriverAppRequired = lazy(() => import("./pages/DriverAppRequired"));
 const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
 const PrivacyMyData = lazy(() => import("./pages/PrivacyMyData"));
