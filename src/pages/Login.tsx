@@ -94,7 +94,9 @@ const Login = () => {
       if (userRole === "admin") {
         path = "/admin-dashboard";
       } else if (userRole === "driver") {
-        path = "/driver-dashboard";
+        // BLOCAGE WEB : les chauffeurs ne peuvent se connecter que dans l'app native
+        const { isMobileApp } = await import("@/lib/platform");
+        path = isMobileApp() ? "/driver-dashboard" : "/driver-app-required";
       } else if (userRole === "client") {
         path = "/client-dashboard";
       } else {
