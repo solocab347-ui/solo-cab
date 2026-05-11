@@ -47,25 +47,25 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         Log.i(TAG, "app_foreground onResume");
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         Log.i(TAG, "app_background onPause");
         super.onPause();
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         Log.i(TAG, "app_background onStop");
         super.onStop();
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         Log.w(TAG, "activity_destroyed");
         super.onDestroy();
     }
