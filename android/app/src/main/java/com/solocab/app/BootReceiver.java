@@ -1,15 +1,12 @@
 package com.solocab.app;
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
+import android.util.Log;
 
-import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 /**
  * BootReceiver — relance le rappel de tracking GPS après un reboot du téléphone
@@ -25,9 +22,12 @@ import androidx.core.app.NotificationCompat;
  */
 public class BootReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "SoloCabBootReceiver";
     private static final String PREFS_NAME = "CapacitorStorage";
     private static final String KEY_TRACKING_ENABLED = "solocab_gps_tracking_enabled";
-    private static final int BOOT_NOTIFICATION_ID = 4242;
+    private static final String KEY_DRIVER_ID = "solocab_native_driver_id";
+    private static final String KEY_ACCESS_TOKEN = "solocab_native_access_token";
+    private static final String KEY_REFRESH_TOKEN = "solocab_native_refresh_token";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -40,38 +40,20 @@ public class BootReceiver extends BroadcastReceiver {
         }
 
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        boolean wasTracking = prefs.getBoolean(KEY_TRACKING_ENABLED, false);
+        Object raw = prefs.getAll().get(KEY_TRACKING_ENABLED);
+        boolean wasTracking = raw instanceof Boolean ? (Boolean) raw : "true".equals(String.valueOf(raw));
         if (!wasTracking) return;
 
-        showReopenNotification(context);
-    }
-
-    private void showReopenNotification(Context context) {
-        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm == null) return;
-
-        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
-        if (launchIntent == null) return;
-        launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;
+        String driverId = prefs.getString(KEY_DRIVER_ID, null);
+        String accessToken = prefs.getString(KEY_ACCESS_TOKEN, null);
+        String refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null);
+        if (driverId == null || accessToken == null) {
+            Log.w(TAG, "boot_restart_skipped_missing_session action=" + action);
+            return;
         }
-        PendingIntent contentPi = PendingIntent.getActivity(context, 0, launchIntent, flags);
 
-        Notification notif = new NotificationCompat.Builder(context, SoloCabApplication.RIDES_CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-                .setContentTitle("SoloCab — réactivez votre disponibilité")
-                .setContentText("Ouvrez SoloCab pour reprendre le suivi GPS et rester visible des clients.")
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(
-                        "Votre téléphone vient de redémarrer. Ouvrez SoloCab pour relancer le suivi GPS en arrière-plan et continuer à recevoir des courses."))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(contentPi)
-                .setAutoCancel(true)
-                .setOngoing(false)
-                .build();
-
-        nm.notify(BOOT_NOTIFICATION_ID, notif);
+        Intent serviceIntent = SoloCabDriverForegroundService.buildStartIntent(context, driverId, accessToken, refreshToken);
+        ContextCompat.startForegroundService(context, serviceIntent);
+        Log.i(TAG, "boot_restart_service_started action=" + action);
     }
 }
