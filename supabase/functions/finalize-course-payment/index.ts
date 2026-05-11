@@ -353,9 +353,9 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("User not authenticated");
 
-    const { course_id } = await req.json();
-    if (!course_id) throw new Error("course_id required");
-    if (typeof course_id !== "string" || course_id.length < 10) throw new Error("Invalid course_id format");
+    const parsed = await parseBody(req, FinalizeSchema);
+    if (!parsed.ok) return parsed.response;
+    const { course_id } = parsed.data;
 
     logStep("Finalize course payment request", { course_id });
 
