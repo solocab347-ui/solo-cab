@@ -974,7 +974,9 @@ serve(async (req) => {
     let paymentIntent: Stripe.PaymentIntent;
 
     try {
-      paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
+        idempotencyKey: `finalize-fallback:${course_id}:v1`,
+      });
       logStep("Fallback PaymentIntent created", { piId: paymentIntent.id, status: paymentIntent.status });
     } catch (stripeError: any) {
       logStep("Fallback PaymentIntent creation failed", { error: stripeError.message });
