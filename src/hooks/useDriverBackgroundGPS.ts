@@ -284,7 +284,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
 
           // Tick périodique (20s) : force getCurrentPosition pour garantir un fix
           // récent même si le distanceFilter (30 m) n'est pas franchi.
-          // Évite le badge "Position GPS obsolète" quand le chauffeur est arrêté.
+          // Maintient un heartbeat DB récent quand le chauffeur reste immobile.
           if (tickRef.current) clearInterval(tickRef.current);
           tickRef.current = setInterval(async () => {
             if (!enabled || !driverId || cancelled) return;
