@@ -50,24 +50,9 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { email, password }: LoginRequest = await req.json();
-
-    // Input validation
-    if (!email || typeof email !== 'string' || email.length > 255 || !email.includes('@')) {
-      console.log('❌ Invalid email format');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Format d\'email invalide' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!password || typeof password !== 'string' || password.length < 1 || password.length > 128) {
-      console.log('❌ Invalid password format');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Mot de passe invalide' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const parsed = await parseBody(req, LoginSchema);
+    if (!parsed.ok) return parsed.response;
+    const { email, password } = parsed.data;
 
     console.log('Login attempt for:', email);
 
