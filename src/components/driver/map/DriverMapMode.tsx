@@ -244,6 +244,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
   useEffect(() => {
     if (!latitude || !longitude || !mapRef.current || !isMapReady) return;
     logGpsDebug('driver-map-read', { latitude, longitude, timestamp: Date.now(), provider: 'useDriverLocationTracker' }, { driverId, isStale, isTracking });
+    try { localStorage.setItem('solocab_driver_last_gps', JSON.stringify({ lat: latitude, lng: longitude, t: Date.now() })); } catch { /* ignore */ }
     const newPos: L.LatLngExpression = [latitude, longitude];
 
     // Radar overlay around car
