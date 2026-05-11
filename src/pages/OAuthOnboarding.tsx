@@ -43,7 +43,8 @@ const OAuthOnboarding = () => {
               .maybeSingle();
             
             if (driver) {
-              navigate("/driver-dashboard", { replace: true });
+              const { isMobileApp } = await import("@/lib/platform");
+              navigate(isMobileApp() ? "/driver-dashboard" : "/driver-app-required", { replace: true });
             } else {
               setUserType("driver");
             }
