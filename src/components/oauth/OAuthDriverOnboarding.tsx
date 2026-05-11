@@ -100,7 +100,7 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
         onClose: () => {
           // User closed Stripe browser → continue to dashboard
           toast.info("Configuration Stripe terminée. Bienvenue !");
-          navigate("/driver-welcome", { replace: true });
+          navigate("/driver-dashboard", { replace: true });
         },
       });
     } catch (err: any) {
@@ -112,7 +112,7 @@ export const OAuthDriverOnboarding = ({ user }: Props) => {
 
   const skipStripe = () => {
     toast.info("Vous pourrez configurer Stripe depuis votre tableau de bord");
-    navigate("/driver-welcome", { replace: true });
+    navigate("/driver-dashboard", { replace: true });
   };
 
   return (

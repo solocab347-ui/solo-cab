@@ -500,44 +500,47 @@ function DoneSlide() {
   );
 }
 
-// ─── Faux QR code décoratif (SVG) ───────────────────────────────────────────
+// ─── Vrai QR code (lib `qrcode`) ────────────────────────────────────────────
 function FakeQrCode() {
-  // Pattern simple pour évoquer un QR sans en générer un vrai
-  const cells = Array.from({ length: 9 * 9 }, (_, i) => {
-    // Pseudo-random stable pour le rendu
-    const x = i % 9;
-    const y = Math.floor(i / 9);
-    const isCorner =
-      (x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5);
-    const filled = isCorner || ((x * 7 + y * 13 + 3) % 5 < 2);
-    return { i, filled };
-  });
+  const [dataUrl, setDataUrl] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    // Import dynamique pour ne pas alourdir le bundle initial
+    import("qrcode")
+      .then(({ default: QRCode }) =>
+        QRCode.toDataURL("https://solocab.fr", {
+          margin: 1,
+          width: 256,
+          color: { dark: "#0a0a0a", light: "#ffffff" },
+          errorCorrectionLevel: "M",
+        }),
+      )
+      .then((url) => {
+        if (!cancelled) setDataUrl(url);
+      })
+      .catch(() => {
+        // En cas d'échec on laisse le placeholder vide ; pas de blocage UI.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!dataUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <QrCode className="w-12 h-12 text-muted-foreground/40 animate-pulse" />
+      </div>
+    );
+  }
+
   return (
-    <svg viewBox="0 0 9 9" className="w-full h-full">
-      {cells.map(({ i, filled }) =>
-        filled ? (
-          <rect
-            key={i}
-            x={i % 9}
-            y={Math.floor(i / 9)}
-            width="1"
-            height="1"
-            fill="hsl(var(--foreground))"
-          />
-        ) : null,
-      )}
-      {/* Coins emblématiques d'un QR */}
-      {[
-        [0, 0],
-        [6, 0],
-        [0, 6],
-      ].map(([x, y]) => (
-        <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width="3" height="3" fill="hsl(var(--foreground))" />
-          <rect x={x + 0.5} y={y + 0.5} width="2" height="2" fill="white" />
-          <rect x={x + 1} y={y + 1} width="1" height="1" fill="hsl(var(--foreground))" />
-        </g>
-      ))}
-    </svg>
+    <img
+      src={dataUrl}
+      alt="Aperçu QR code SoloCab"
+      className="w-full h-full object-contain"
+    />
   );
 }
+
