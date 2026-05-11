@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo-solocab.png";
+import { isMobileApp } from "@/lib/platform";
+
+const driverPostAuthPath = () =>
+  isMobileApp() ? "/driver-dashboard" : "/driver-app-required";
 
 // Step-by-step wizard registration
 
