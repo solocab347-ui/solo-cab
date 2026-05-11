@@ -82,10 +82,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Erreur Calculate Mapbox Route:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // R11: never leak internals to clients
+    return jsonResponse({ error: 'Erreur lors du calcul de l\'itinéraire' }, 500);
   }
 });
