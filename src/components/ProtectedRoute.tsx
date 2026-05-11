@@ -217,17 +217,30 @@ export const ProtectedRoute = ({
 
   // BLOCAGE WEB CHAUFFEUR : un chauffeur ne peut pas utiliser l'espace driver
   // depuis un navigateur (GPS/push/dispatch nécessitent l'app native).
-  // Cette vérification couvre /driver-dashboard et toutes les routes "driver".
+  // EXCEPTION : on autorise les pages liées à la souscription / migration / paiement
+  // pour que le chauffeur puisse souscrire à son abonnement depuis le web,
+  // puis basculer sur l'app mobile pour effectuer ses courses.
+  const WEB_DRIVER_ALLOWED_PATHS = [
+    "/chauffeur/s-abonner",
+    "/chauffeur/migration",
+    "/chauffeur/migration-success",
+    "/pioneer-payment",
+    "/driver-app-required",
+    "/delete-account",
+    "/privacy/my-data",
+  ];
+  const pathAllowedOnWeb = WEB_DRIVER_ALLOWED_PATHS.some((p) =>
+    location.pathname.startsWith(p)
+  );
   if (
     !isMobileApp() &&
-    (userRole === "driver" || allowedRoles?.includes("driver"))
+    userRole === "driver" &&
+    !pathAllowedOnWeb
   ) {
-    if (userRole === "driver") {
-      logger.info("Blocage chauffeur web : redirection vers /driver-app-required", {
-        path: location.pathname,
-      });
-      return <Navigate to="/driver-app-required" replace />;
-    }
+    logger.info("Chauffeur sur web : redirection vers /chauffeur/s-abonner", {
+      path: location.pathname,
+    });
+    return <Navigate to="/chauffeur/s-abonner" replace />;
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {

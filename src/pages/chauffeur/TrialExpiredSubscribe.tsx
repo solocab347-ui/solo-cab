@@ -58,6 +58,7 @@ export default function TrialExpiredSubscribe() {
   const [wantsNfcPlate, setWantsNfcPlate] = useState(false);
   const [selectedNfcType, setSelectedNfcType] = useState<"plastic" | "wood">("plastic");
   const [driver, setDriver] = useState<DriverInfo | null>(null);
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
   const [stats, setStats] = useState<DriverStats>({
     totalClients: 0,
     totalCourses: 0,
@@ -108,10 +109,19 @@ export default function TrialExpiredSubscribe() {
         return;
       }
 
-      // Si l'utilisateur a déjà un abonnement actif, le rediriger
+      // Si l'utilisateur a déjà un abonnement actif :
+      // - sur app native : retour au dashboard
+      // - sur web : on reste sur cette page mais on affiche un écran "ouvrir l'app mobile"
+      //   (le dashboard est inaccessible depuis le web pour les chauffeurs)
       if (driverData.subscription_status === "active" && driverData.subscription_paid) {
-        toast.success("Vous avez déjà un abonnement actif !");
-        navigate("/chauffeur");
+        const { isMobileApp } = await import("@/lib/platform");
+        if (isMobileApp()) {
+          toast.success("Vous avez déjà un abonnement actif !");
+          navigate("/chauffeur");
+          return;
+        }
+        setAlreadySubscribed(true);
+        setLoading(false);
         return;
       }
 
@@ -203,6 +213,45 @@ export default function TrialExpiredSubscribe() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (alreadySubscribed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <CardTitle>Votre abonnement est actif</CardTitle>
+            <CardDescription>
+              Pour gérer vos courses, votre disponibilité et votre activité, ouvrez
+              l'application mobile SoloCab Chauffeur sur votre téléphone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Pourquoi le mobile ?</AlertTitle>
+              <AlertDescription>
+                Les fonctionnalités chauffeur (GPS, notifications, dispatch en temps réel)
+                ne sont disponibles que sur l'application mobile.
+              </AlertDescription>
+            </Alert>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/login");
+              }}
+            >
+              Se déconnecter
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
