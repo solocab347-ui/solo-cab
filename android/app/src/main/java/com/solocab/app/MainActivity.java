@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.activity.EdgeToEdge;
+
 import com.getcapacitor.BridgeActivity;
 import com.solocab.app.permissions.SoloCabPermissionsPlugin;
 
@@ -16,6 +18,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Android 15 (SDK 35+) : edge-to-edge devient le défaut. On l'active
+        // explicitement pour garantir la rétrocompatibilité Android 14 et -.
+        EdgeToEdge.enable(this);
         registerPlugin(SoloCabPermissionsPlugin.class);
         super.onCreate(savedInstanceState);
 
