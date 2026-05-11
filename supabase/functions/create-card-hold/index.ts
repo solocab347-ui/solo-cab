@@ -43,19 +43,16 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const body = await req.json();
-    const { 
+    const parsed = await parseBody(req, CardHoldSchema);
+    if (!parsed.ok) return parsed.response;
+    const {
       driver_id,
       course_id,
       client_email,
       client_name,
       client_user_id,
-      hold_amount_cents, // NEW: exact TTC amount in cents
-    } = body;
-
-    if (!driver_id || typeof driver_id !== "string") throw new Error("driver_id required");
-    if (course_id && typeof course_id !== "string") throw new Error("Invalid course_id");
-    if (client_email && typeof client_email !== "string") throw new Error("Invalid client_email");
+      hold_amount_cents,
+    } = parsed.data;
 
     // Determine hold amount: use exact course price TTC
     let holdAmountCents = hold_amount_cents ? Math.round(Number(hold_amount_cents)) : 0;
