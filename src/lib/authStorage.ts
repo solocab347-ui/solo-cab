@@ -42,6 +42,13 @@ export function setRememberMe(remember: boolean) {
  */
 export function applyRememberMode(remember: boolean) {
   try {
+    // Sur app native (Capacitor), on FORCE la persistance : sessionStorage est
+    // vidé à chaque cold-start de la WebView, ce qui déconnecterait le chauffeur
+    // dès qu'il ferme l'app. La persistance est garantie via Capacitor Preferences.
+    const isNative = !!(window as any)?.Capacitor?.isNativePlatform?.();
+    if (isNative) {
+      remember = true;
+    }
     const from = remember ? sessionStorage : localStorage;
     const to = remember ? localStorage : sessionStorage;
 
