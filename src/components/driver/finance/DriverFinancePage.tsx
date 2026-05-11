@@ -717,12 +717,36 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
               <Wallet className="w-4 h-4" />
               Prochain versement
             </div>
-            <p className="text-2xl font-bold text-foreground">
-              {pendingBalance.totalNet.toFixed(2)}€
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {pendingBalance.courseCount} courses • Lundi 6h
-            </p>
+            {(() => {
+              // ⚠️ Le virement Stripe ne porte QUE sur les courses CB
+              // (les espèces sont déjà encaissées en main du chauffeur).
+              // Estimation = net CB en attente − dette cash (frais semaine + arriérés).
+              const cashDebt =
+                (pendingBalance.cashFeesOwed || 0)
+                + (carryOver?.cashFeesOwedFromPastWeeks || 0);
+              const netToTransfer = Math.max(0, pendingBalance.cardNet - cashDebt);
+              return (
+                <>
+                  <p className="text-2xl font-bold text-foreground">
+                    {netToTransfer.toFixed(2)}€
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pendingBalance.cardCourseCount} course{pendingBalance.cardCourseCount > 1 ? 's' : ''} CB • Lundi 6h
+                  </p>
+                  <div className="text-[10px] text-muted-foreground mt-2 space-y-0.5 pt-2 border-t border-primary/10">
+                    <p>Net CB en attente : {pendingBalance.cardNet.toFixed(2)}€</p>
+                    {cashDebt > 0 && (
+                      <p className="text-warning">− Frais espèces à déduire : {cashDebt.toFixed(2)}€</p>
+                    )}
+                    {pendingBalance.cashCourseCount > 0 && (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        💵 {pendingBalance.cashCourseCount} course{pendingBalance.cashCourseCount > 1 ? 's' : ''} espèces ({pendingBalance.cashGross.toFixed(2)}€) — déjà en main, non virées
+                      </p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </Card>
           <Card className="p-4 bg-destructive/5 border-destructive/20">
             <div className="flex items-center gap-2 text-destructive text-sm mb-1">
