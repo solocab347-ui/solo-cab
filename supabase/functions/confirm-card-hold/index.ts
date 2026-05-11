@@ -29,13 +29,9 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const { 
-      payment_intent_id,
-      course_id,
-    } = await req.json();
-
-    if (!payment_intent_id) throw new Error("payment_intent_id required");
-    if (!course_id) throw new Error("course_id required");
+    const parsed = await parseBody(req, ConfirmHoldSchema);
+    if (!parsed.ok) return parsed.response;
+    const { payment_intent_id, course_id } = parsed.data;
 
     logStep("Confirming card hold", { payment_intent_id, course_id });
 
