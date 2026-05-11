@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# SoloCab — pre-commit security scan
+# Install: cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+set -e
+
+RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
+fail=0
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|json|env|yaml|yml|toml|md)$' || true)
+[ -z "$staged" ] && exit 0
+
+# 1) Secrets en clair
+secret_patterns=(
+  'sk_live_[A-Za-z0-9]{20,}'
+  'sk_test_[A-Za-z0-9]{20,}'
+  'rk_live_[A-Za-z0-9]{20,}'
+  're_[A-Za-z0-9_-]{20,}'
+  'eyJhbGciOi[A-Za-z0-9._-]{40,}'   # JWT-like (service_role typique)
+  'AIza[0-9A-Za-z_-]{30,}'          # Google API key
+  'AKIA[0-9A-Z]{16}'                # AWS
+  'xox[baprs]-[A-Za-z0-9-]{10,}'    # Slack
+)
+for f in $staged; do
+  [ -f "$f" ] || continue
+  for p in "${secret_patterns[@]}"; do
+    if grep -E "$p" "$f" >/dev/null 2>&1; then
+      echo -e "${RED}[SECRET]${NC} pattern '$p' détecté dans $f"
+      fail=1
+    fi
+  done
+done
+
+# 2) service_role hors edge functions
+for f in $staged; do
+  [ -f "$f" ] || continue
+  if [[ "$f" == src/* ]] && grep -E 'SUPABASE_SERVICE_ROLE_KEY|service_role' "$f" >/dev/null 2>&1; then
+    echo -e "${RED}[R10]${NC} service_role référencé dans frontend: $f"
+    fail=1
+  fi
+done
+
+# 3) console.log avec PII probable
+for f in $staged; do
+  [ -f "$f" ] || continue
+  if [[ "$f" == src/* ]] && grep -nE 'console\.log\([^)]*(email|phone|password|token|card|cvc|iban)' "$f" >/dev/null 2>&1; then
+    echo -e "${YELLOW}[R11]${NC} console.log avec PII suspecté dans $f"
+  fi
+done
+
+if [ $fail -ne 0 ]; then
+  echo -e "${RED}❌ Commit bloqué — voir docs/security/SECURE_CODING_RULES.md${NC}"
+  exit 1
+fi
+echo "✅ pre-commit security scan OK"
