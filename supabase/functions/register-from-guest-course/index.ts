@@ -41,16 +41,30 @@ serve(async (req) => {
     }
     if (!course) {
       // Fallback: find any unclaimed guest course matching email/phone
-      const { data } = await admin
+      // Note: PostgREST .or() breaks on `+` in values, so we run two queries.
+      const lcEmail = email.toLowerCase();
+      let { data: byEmail } = await admin
         .from("courses")
         .select("id, guest_email, guest_phone, guest_name")
         .eq("is_guest_booking", true)
         .is("client_id", null)
-        .or(`guest_email.eq.${email.toLowerCase()},guest_phone.eq.${_phone}`)
+        .eq("guest_email", lcEmail)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      course = data;
+      if (byEmail) course = byEmail;
+      if (!course && _phone) {
+        const { data: byPhone } = await admin
+          .from("courses")
+          .select("id, guest_email, guest_phone, guest_name")
+          .eq("is_guest_booking", true)
+          .is("client_id", null)
+          .eq("guest_phone", _phone)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        course = byPhone;
+      }
     }
 
     // Course is OPTIONAL: if no guest course exists, we still create the
