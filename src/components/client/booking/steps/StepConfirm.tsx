@@ -479,9 +479,24 @@ export function StepConfirm({
                                 {showRegPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             </div>
+                            <div className="relative">
+                              <Input
+                                value={regConfirmPassword}
+                                onChange={(e) => setRegConfirmPassword(e.target.value)}
+                                placeholder="Confirmer le mot de passe *"
+                                type={showRegConfirmPassword ? "text" : "password"}
+                                className="h-11 pr-10"
+                              />
+                              <button type="button" onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                {showRegConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                            {regConfirmPassword && regPassword !== regConfirmPassword && (
+                              <p className="text-[11px] text-destructive">Les mots de passe ne correspondent pas</p>
+                            )}
                             <Button
                               className="w-full h-12 text-base font-bold gap-2"
-                              disabled={isRegistering || !regName.trim() || !regPhone.trim() || !regEmail.trim() || regPassword.length < 6}
+                              disabled={isRegistering || !regName.trim() || !regPhone.trim() || !regEmail.trim() || regPassword.length < 6 || regPassword !== regConfirmPassword}
                               onClick={handleRegister}
                             >
                               {isRegistering ? <><Loader2 className="h-4 w-4 animate-spin" />Création...</> : <><UserPlus className="h-4 w-4" />Créer mon compte</>}
