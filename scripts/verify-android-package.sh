@@ -110,7 +110,7 @@ for path in Path(os.environ['ANDROID_DIR'], 'app').rglob('*'):
     if path.suffix not in {'.gradle', '.kts'}:
         continue
     text = path.read_text(encoding='utf-8', errors='ignore')
-    m = re.search(r'applicationId\s+["\']([^"\']+)["\']', text)
+    m = re.search(r'applicationId\s*(?:=\s*)?["\']([^"\']+)["\']', text)
     if m:
         print(m.group(1))
         break
