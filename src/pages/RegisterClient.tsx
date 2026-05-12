@@ -100,9 +100,11 @@ const RegisterClient = () => {
   const [step, setStep] = useState<"form" | "card" | "done">("form");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     fullName: "",
     phone: "",
   });
@@ -220,6 +222,10 @@ const RegisterClient = () => {
     e.preventDefault();
     if (formData.password.length < 6) {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
       return;
     }
     setLoading(true);
@@ -386,7 +392,32 @@ const RegisterClient = () => {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-11" disabled={loading}>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="Retapez votre mot de passe"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="text-sm text-destructive mt-1">Les mots de passe ne correspondent pas</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full h-11" disabled={loading || !formData.password || formData.password !== formData.confirmPassword}>
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Créer mon compte
                 </Button>
