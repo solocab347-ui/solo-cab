@@ -116,6 +116,8 @@ export function StepConfirm({
   const [direction, setDirection] = useState<1 | -1>(1);
   const [authTab, setAuthTab] = useState<'register' | 'guest'>('guest');
   const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [justRegistered, setJustRegistered] = useState(false);
   const pendingNavRef = useRef<SubStep | null>(null);
