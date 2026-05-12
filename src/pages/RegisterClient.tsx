@@ -100,9 +100,11 @@ const RegisterClient = () => {
   const [step, setStep] = useState<"form" | "card" | "done">("form");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     fullName: "",
     phone: "",
   });
