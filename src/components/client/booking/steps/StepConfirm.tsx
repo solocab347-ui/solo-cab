@@ -191,6 +191,10 @@ export function StepConfirm({
   };
 
   const handleRegister = async () => {
+    if (regPassword !== regConfirmPassword) {
+      toast.error('Les mots de passe ne correspondent pas');
+      return;
+    }
     setIsRegistering(true);
     try {
       // Vérification préalable email déjà utilisé
