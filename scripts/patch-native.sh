@@ -21,6 +21,7 @@ set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_MANIFEST="$ROOT/android/app/src/main/AndroidManifest.xml"
+ANDROID_MAIN_ACTIVITY="$ROOT/android/app/src/main/java/com/solocab/app/MainActivity.java"
 IOS_PLIST="$ROOT/ios/App/App/Info.plist"
 
 GREEN='\033[0;32m'
@@ -82,6 +83,85 @@ if [ -f "$ANDROID_MANIFEST" ]; then
   echo -e "${GREEN}✅ AndroidManifest.xml patché${NC}"
 else
   echo -e "${YELLOW}⚠️  android/ non trouvé. Lancez d'abord : npx cap add android${NC}"
+fi
+
+if [ -f "$ANDROID_MAIN_ACTIVITY" ]; then
+  if grep -qE 'public vo[+*]' "$ANDROID_MAIN_ACTIVITY" || ! grep -q 'public void onResume()' "$ANDROID_MAIN_ACTIVITY"; then
+    cat > "$ANDROID_MAIN_ACTIVITY" <<'JAVA'
+package com.solocab.app;
+
+import android.app.NotificationManager;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
+
+import androidx.activity.EdgeToEdge;
+
+import com.getcapacitor.BridgeActivity;
+import com.solocab.app.permissions.SoloCabPermissionsPlugin;
+
+public class MainActivity extends BridgeActivity {
+    private static final String TAG = "SoloCabMainActivity";
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
+        registerPlugin(SoloCabPermissionsPlugin.class);
+        super.onCreate(savedInstanceState);
+
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                NotificationManager nm = getSystemService(NotificationManager.class);
+                if (nm != null && !nm.canUseFullScreenIntent()) {
+                    Intent i = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT);
+                    i.setData(Uri.parse("package:" + getPackageName()));
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        IncomingRideOverlayManager.dismiss(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.i(TAG, "app_foreground onResume");
+    }
+
+    @Override
+    public void onPause() {
+        Log.i(TAG, "app_background onPause");
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        Log.i(TAG, "app_background onStop");
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.w(TAG, "activity_destroyed");
+        super.onDestroy();
+    }
+}
+JAVA
+    echo -e "  ${GREEN}✓${NC} MainActivity.java réparé (corruption public vo+)"
+  else
+    echo -e "  ${GREEN}✓${NC} MainActivity.java valide"
+  fi
 fi
 
 echo
