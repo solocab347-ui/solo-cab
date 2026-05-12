@@ -127,6 +127,8 @@ project_id = "iyothopplhbwcfrpxryc"
     verify_jwt = false
   [functions.register-guest-client]
     verify_jwt = false
+  [functions.register-from-guest-course]
+    verify_jwt = false
   [functions.repair-driver-profiles]
     verify_jwt = true
   [functions.reset-trial-on-validation]
