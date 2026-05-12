@@ -135,7 +135,8 @@ serve(async (req) => {
       success: true,
       user_id: userId,
       client_id: client!.id,
-      course_id: course.id,
+      course_id: course?.id ?? null,
+      has_guest_course: hasGuestCourse,
       created_new: createdNew,
       email_existed: !!existing,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
