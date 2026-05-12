@@ -155,7 +155,8 @@ serve(async (req) => {
       email_existed: !!existing,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message || "server_error" }), {
+    console.error("[register-from-guest-course] fatal", err?.message, err?.stack);
+    return new Response(JSON.stringify({ success: false, error: err?.message || "server_error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
