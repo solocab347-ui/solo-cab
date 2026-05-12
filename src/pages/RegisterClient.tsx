@@ -224,6 +224,10 @@ const RegisterClient = () => {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
     setLoading(true);
 
     try {
