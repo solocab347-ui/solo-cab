@@ -12,7 +12,8 @@
     "android:no-pwa": "bash scripts/verify-no-pwa.sh",
     "android:verify": "bash scripts/verify-android-package.sh",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "appflow:build": "npm run build && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
