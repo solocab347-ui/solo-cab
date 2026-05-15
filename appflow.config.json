@@ -2,7 +2,7 @@
   "apps": [
     {
       "appId": "bec8d92b",
-      "dependencyInstallCommand": "npm ci && npm run appflow:build",
+      "dependencyInstallCommand": "npm ci",
       "webBuildCommand": "npm run build && npx cap sync ios",
       "iosPath": "ios/App",
       "androidPath": "android",
