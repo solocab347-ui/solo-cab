@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "appId": "app.lovable.bb7de2decc6d441aa3800f8d244f90e4",
+      "ionic": {
+        "iosPath": "ios/App",
+        "androidPath": "android"
+      }
+    }
+  ]
+}
