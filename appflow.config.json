@@ -2,6 +2,8 @@
   "apps": [
     {
       "appId": "6d2214a9",
+      "iosPath": "ios/App",
+      "androidPath": "android",
       "ionic": {
         "iosPath": "ios/App",
         "androidPath": "android"
@@ -9,6 +11,8 @@
     },
     {
       "appId": "cf6a9fbb",
+      "iosPath": "ios/App",
+      "androidPath": "android",
       "ionic": {
         "iosPath": "ios/App",
         "androidPath": "android"
@@ -16,6 +20,8 @@
     },
     {
       "appId": "b737366e",
+      "iosPath": "ios/App",
+      "androidPath": "android",
       "ionic": {
         "iosPath": "ios/App",
         "androidPath": "android"
