@@ -6,6 +6,13 @@
         "iosPath": "ios/App",
         "androidPath": "android"
       }
+    },
+    {
+      "appId": "cf6a9fbb",
+      "ionic": {
+        "iosPath": "ios/App",
+        "androidPath": "android"
+      }
     }
   ]
 }
