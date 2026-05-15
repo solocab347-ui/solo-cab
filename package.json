@@ -13,7 +13,7 @@
     "android:verify": "bash scripts/verify-android-package.sh",
     "lint": "eslint .",
     "preview": "vite preview",
-    "appflow:build": "npm run build && npx cap sync ios"
+    "appflow:build": "npm run build"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "8.0.1",
