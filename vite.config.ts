@@ -15,7 +15,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       // Native-only Capacitor plugins (no web entry) — never resolve at build time
       external: [
-        '@capacitor-community/background-geolocation',
         '@capacitor-community/keep-awake',
         '@sentry/capacitor',
       ],
@@ -31,7 +30,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: [
-      '@capacitor-community/background-geolocation',
       '@capacitor-community/keep-awake',
       '@sentry/capacitor',
     ],
