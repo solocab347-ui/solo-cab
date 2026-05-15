@@ -2,7 +2,7 @@
   "apps": [
     {
       "appId": "6d2214a9",
-      "dependencyInstallCommand": "npm ci || npm install",
+      "dependencyInstallCommand": "npm ci && npm run appflow:build",
       "webBuildCommand": "npm run build && npx cap sync ios",
       "iosPath": "ios/App",
       "androidPath": "android",
@@ -13,7 +13,7 @@
     },
     {
       "appId": "cf6a9fbb",
-      "dependencyInstallCommand": "npm ci || npm install",
+      "dependencyInstallCommand": "npm ci && npm run appflow:build",
       "webBuildCommand": "npm run build && npx cap sync ios",
       "iosPath": "ios/App",
       "androidPath": "android",
@@ -24,7 +24,7 @@
     },
     {
       "appId": "b737366e",
-      "dependencyInstallCommand": "npm ci || npm install",
+      "dependencyInstallCommand": "npm ci && npm run appflow:build",
       "webBuildCommand": "npm run build && npx cap sync ios",
       "iosPath": "ios/App",
       "androidPath": "android",
