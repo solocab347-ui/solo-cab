@@ -13,10 +13,9 @@
     "android:verify": "bash scripts/verify-android-package.sh",
     "lint": "eslint .",
     "preview": "vite preview",
-    "appflow:build": "npm run build && npx cap sync ios"
+    "appflow:build": "npm run build"
   },
   "dependencies": {
-    "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor-community/keep-awake": "8.0.1",
     "@capacitor/android": "8.3.0",
     "@capacitor/app": "8.0.1",

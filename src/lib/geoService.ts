@@ -16,7 +16,7 @@
  *  2. Sur web → `navigator.geolocation`.
  *  3. Toute lecture passe par `ensureLocationPermission()` au préalable.
  *  4. Pour le tracking continu chauffeur en background, c'est `useDriverBackgroundGPS`
- *     qui pilote `@capacitor-community/background-geolocation` (foreground service Android).
+ *     qui pilote le service natif Android et `@capacitor/geolocation`.
  */
 import { Capacitor } from '@capacitor/core';
 import { ensureLocationPermission } from './ensureLocationPermission';
@@ -102,7 +102,7 @@ export async function getCurrentLocation(opts: GeoOptions = {}): Promise<GeoFix 
  * (carte client, position en temps réel sur la page de réservation).
  *
  * NB : pour le foreground service chauffeur en background, utiliser
- * `useDriverBackgroundGPS` qui s'appuie sur le plugin background-geolocation.
+ * `useDriverBackgroundGPS` qui s'appuie sur le service natif Android.
  */
 export async function watchLocation(
   onFix: (fix: GeoFix) => void,
