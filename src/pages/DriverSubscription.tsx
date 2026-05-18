@@ -39,7 +39,7 @@ const DriverSubscription = () => {
     })();
   }, [navigate]);
 
-  const { data: driverProfile, isLoading } = useOptimizedDriverProfile(userId);
+  const { driverProfile, isLoading } = useOptimizedDriverProfile(userId);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut().catch(() => {});
