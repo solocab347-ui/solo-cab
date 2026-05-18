@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FileText, Activity, Gauge, Bell } from "lucide-react";
+import { Bug, Database, Shield, FileText, Activity, Gauge, Bell, Cloud } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
@@ -10,9 +10,10 @@ import AdminPushCenter from "../AdminPushCenter";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
+const CloudCostMonitor = lazy(() => import("../monitoring/CloudCostMonitor"));
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"health" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "cost" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
 
   return (
     <div className="space-y-4">
@@ -26,6 +27,16 @@ const AdminTechHub = () => {
           <Activity className="w-4 h-4" />
           <span className="hidden sm:inline">Santé</span>
           <span className="sm:hidden">🏥</span>
+        </Button>
+        <Button
+          variant={activeTab === "cost" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("cost")}
+          className="gap-2"
+        >
+          <Cloud className="w-4 h-4" />
+          <span className="hidden sm:inline">Coûts Cloud</span>
+          <span className="sm:hidden">💰</span>
         </Button>
         <Button
           variant={activeTab === "perf" ? "default" : "ghost"}
@@ -89,6 +100,11 @@ const AdminTechHub = () => {
       </div>
 
       {activeTab === "health" && <PlatformHealthDashboard />}
+      {activeTab === "cost" && (
+        <Suspense fallback={<div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
+          <CloudCostMonitor />
+        </Suspense>
+      )}
       {activeTab === "perf" && (
         <Suspense fallback={<div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
           <PerformanceDashboard />
