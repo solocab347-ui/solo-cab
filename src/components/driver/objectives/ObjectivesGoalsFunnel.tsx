@@ -423,7 +423,7 @@ export function ObjectivesGoalsFunnel({
                 </div>
               </div>
               <Badge variant="secondary" className="text-xs flex-shrink-0">
-                Obligatoire
+                Recommandé
               </Badge>
             </div>
             <Progress value={progress} className="h-2" />
