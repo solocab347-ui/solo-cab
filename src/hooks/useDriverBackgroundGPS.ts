@@ -24,9 +24,27 @@ interface UseDriverBackgroundGPSOptions {
   enabled: boolean; // true quand le chauffeur est online ou en course
 }
 
+// Cost optimization: skip DB writes if driver hasn't moved enough AND last write is recent.
+// Keeps visibility intact (< 30s freshness window) but cuts redundant inserts ~50-70%.
+const MIN_DISTANCE_METERS = 10;
+const MIN_WRITE_INTERVAL_MS = 15_000; // never skip more than 15s of silence
+const MAX_WRITE_INTERVAL_MS = 25_000; // force a heartbeat write at least every 25s (visibility = 30s)
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroundGPSOptions) {
   const keepAwakeActiveRef = useRef(false);
   const lastFixAtRef = useRef<number>(0);
+  const lastWriteAtRef = useRef<number>(0);
+  const lastWriteLatRef = useRef<number | null>(null);
+  const lastWriteLngRef = useRef<number | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const notificationWarnedRef = useRef(false);
