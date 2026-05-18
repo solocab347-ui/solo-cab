@@ -500,7 +500,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       // On prend le MAX pour couvrir aussi les cas où des entries pending
       // n'ont pas encore été agrégées (ex: course cash réglée après lundi 6h).
       const cashFeesOwedFromPastWeeks = Math.max(cashDebtFromDriver, pastPendingCashFees);
-      const pastPendingNet = pastPbData.reduce(
+      const pastPendingCardRows = pastPbData.filter((b: any) => b.payment_type !== 'cash');
+      const pastPendingNet = pastPendingCardRows.reduce(
         (sum: number, b: any) => sum + Number(b.net_amount || 0),
         0
       );
@@ -514,7 +515,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
       setCarryOver({
         cashFeesOwedFromPastWeeks,
         pastPendingNet,
-        pastPendingCourses: pastPbData.length,
+        pastPendingCourses: pastPendingCardRows.length,
         failedSettlements,
         failedSettlementsTotal,
       });
