@@ -220,17 +220,9 @@ const DriverDashboard = () => {
 
   // Incoming course overlay is now handled globally in GlobalRideOverlay
 
-  // Tutoriel : 3 propositions max au login OU silence si déjà complété une fois.
-  // Voir src/lib/tutorialState.ts pour les règles précises.
-  useEffect(() => {
-    const driverId = driverProfile?.driver?.id;
-    if (driverProfile?.driver?.onboarding_completed && driverId) {
-      if (shouldAutoShowTutorial(driverId)) {
-        setShowTutorial(true);
-        markTutorialShown(driverId); // incrémente le compteur dès la présentation
-      }
-    }
-  }, [driverProfile?.driver?.onboarding_completed, driverProfile?.driver?.id]);
+  // Tutoriel d'intro automatique désactivé — trop intrusif au login.
+  // Le chauffeur peut toujours relancer la présentation manuellement
+  // depuis Profil → Aide si besoin (composant DriverTutorial conservé).
   
   // Onboarding non complété : on NE redirige PAS vers /driver-welcome.
   // Le chauffeur atterrit sur le dashboard et accède au tunnel via la bannière
