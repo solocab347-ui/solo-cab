@@ -57,7 +57,7 @@ export function UpcomingReservationsBanner({ driverId, hasActiveCourse }: Upcomi
 
   useEffect(() => {
     fetchReservations();
-    const interval = setInterval(fetchReservations, 30000);
+    const interval = setInterval(fetchReservations, 120000);
 
     // Realtime: refresh immediately when any course status changes
     const channel = supabase
@@ -115,7 +115,7 @@ export function UpcomingReservationsBanner({ driverId, hasActiveCourse }: Upcomi
       });
     };
     checkAlerts();
-    const interval = setInterval(checkAlerts, 30000);
+    const interval = setInterval(checkAlerts, 120000);
     return () => clearInterval(interval);
   }, [reservations, alertShown]);
 
