@@ -133,6 +133,32 @@ const DriverAppRequired = () => {
             </ul>
           </Card>
 
+          {/* Subscription management — toujours accessible depuis le web */}
+          <Card className="p-4 border-primary/30 bg-primary/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Gérer mon abonnement
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  Souscrire, modifier ou résilier votre abonnement reste possible
+                  depuis le navigateur, sans avoir besoin de l'application.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/driver-subscription")}
+              size="lg"
+              className="w-full"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Accéder à mon abonnement
+            </Button>
+          </Card>
+
           {/* Download buttons */}
           <div className="space-y-3">
             <Button
