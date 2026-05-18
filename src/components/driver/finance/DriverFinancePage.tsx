@@ -150,12 +150,23 @@ interface CarryOverStats {
   failedSettlementsTotal: number;
 }
 
+interface SettlementPreview {
+  card_to_transfer: number;
+  cash_fees_owed_this_week: number;
+  cash_collected_this_week: number;
+  card_courses: number;
+  cash_courses: number;
+  net_to_transfer_estimate: number;
+  total_cash_debt_to_recover?: number;
+}
+
 export function DriverFinancePage({ driverId, initialTab = "transactions" }: DriverFinancePageProps) {
   const [settlements, setSettlements] = useState<WeekHistoryEntry[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [walletStats, setWalletStats] = useState<WalletStats | null>(null);
   const [pendingBalance, setPendingBalance] = useState<PendingBalanceStats | null>(null);
   const [carryOver, setCarryOver] = useState<CarryOverStats | null>(null);
+  const [settlementPreview, setSettlementPreview] = useState<SettlementPreview | null>(null);
   const [monthlyTransactions, setMonthlyTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [stripeEnabled, setStripeEnabled] = useState(false);
@@ -200,6 +211,7 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         driverResult,
         pendingBalanceResult,
         allBalancePendingResult,
+        settlementPreviewResult,
       ] = await Promise.all([
         supabase
           .from("driver_weekly_balances")
@@ -259,6 +271,11 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
           .eq("driver_id", driverId)
           .order("created_at", { ascending: false })
           .limit(5000),
+        supabase
+          .from("driver_settlement_preview")
+          .select("*")
+          .eq("driver_id", driverId)
+          .maybeSingle(),
       ]);
 
       // Helper : convertit une ligne driver_balance_pending en TransactionItem.
@@ -449,6 +466,16 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         cashGross,
         cashCourseCount,
       });
+
+      setSettlementPreview(settlementPreviewResult.data ? {
+        card_to_transfer: Number((settlementPreviewResult.data as any).card_to_transfer || 0),
+        cash_fees_owed_this_week: Number((settlementPreviewResult.data as any).cash_fees_owed_this_week || 0),
+        cash_collected_this_week: Number((settlementPreviewResult.data as any).cash_collected_this_week || 0),
+        card_courses: Number((settlementPreviewResult.data as any).card_courses || 0),
+        cash_courses: Number((settlementPreviewResult.data as any).cash_courses || 0),
+        net_to_transfer_estimate: Number((settlementPreviewResult.data as any).net_to_transfer_estimate || 0),
+        total_cash_debt_to_recover: Number((settlementPreviewResult.data as any).total_cash_debt_to_recover || 0),
+      } : null);
 
       // 🔁 CARRY-OVER : tout ce qui n'est pas encore réglé et qui date d'AVANT
       // le début de la semaine en cours (lundi 00:00 UTC).
