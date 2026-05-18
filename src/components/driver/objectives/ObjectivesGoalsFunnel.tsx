@@ -360,6 +360,33 @@ export function ObjectivesGoalsFunnel({
     }
   };
 
+  // ===== SKIP — le chauffeur passe sans fixer d'objectifs =====
+  const handleSkip = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          // marque l'étape comme traversée pour ne pas bloquer le dashboard
+          onboarding_objectives_completed: true,
+          // mais objectives_completed reste false → bannière de rappel sur le home
+          objectives_completed: false,
+        })
+        .eq("id", driverId);
+      if (error) throw error;
+      toast.info("Objectifs ignorés pour l'instant", {
+        description: "Vous pourrez les fixer à tout moment depuis Performance → Objectifs.",
+      });
+      onComplete();
+    } catch (e: any) {
+      console.error("[ObjectivesGoalsFunnel] skip error", e);
+      toast.error("Erreur", { description: e?.message || "Réessayez" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const canProceed = useMemo(() => {
     switch (currentStep.id) {
       case "revenue":
