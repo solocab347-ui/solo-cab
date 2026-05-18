@@ -97,8 +97,8 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkSubscription();
 
-    // Check every 5 minutes, not every minute
-    const interval = setInterval(checkSubscription, 300000);
+    // Check every 30 minutes (was 5 min) — reduces Cloud invocations ~6x
+    const interval = setInterval(checkSubscription, 1800000);
     return () => clearInterval(interval);
   }, [checkSubscription]);
 
