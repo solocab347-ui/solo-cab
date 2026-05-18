@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
 const CloudCostMonitor = lazy(() => import("../monitoring/CloudCostMonitor"));
+const DriverCostBreakdown = lazy(() => import("../monitoring/DriverCostBreakdown"));
 
 const AdminTechHub = () => {
   const [activeTab, setActiveTab] = useState<"health" | "cost" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
