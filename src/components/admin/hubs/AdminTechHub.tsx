@@ -100,6 +100,11 @@ const AdminTechHub = () => {
       </div>
 
       {activeTab === "health" && <PlatformHealthDashboard />}
+      {activeTab === "cost" && (
+        <Suspense fallback={<div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
+          <CloudCostMonitor />
+        </Suspense>
+      )}
       {activeTab === "perf" && (
         <Suspense fallback={<div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
           <PerformanceDashboard />
