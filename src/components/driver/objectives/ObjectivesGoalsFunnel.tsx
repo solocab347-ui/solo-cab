@@ -360,6 +360,33 @@ export function ObjectivesGoalsFunnel({
     }
   };
 
+  // ===== SKIP — le chauffeur passe sans fixer d'objectifs =====
+  const handleSkip = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          // marque l'étape comme traversée pour ne pas bloquer le dashboard
+          onboarding_objectives_completed: true,
+          // mais objectives_completed reste false → bannière de rappel sur le home
+          objectives_completed: false,
+        })
+        .eq("id", driverId);
+      if (error) throw error;
+      toast.info("Objectifs ignorés pour l'instant", {
+        description: "Vous pourrez les fixer à tout moment depuis Performance → Objectifs.",
+      });
+      onComplete();
+    } catch (e: any) {
+      console.error("[ObjectivesGoalsFunnel] skip error", e);
+      toast.error("Erreur", { description: e?.message || "Réessayez" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const canProceed = useMemo(() => {
     switch (currentStep.id) {
       case "revenue":
@@ -396,7 +423,7 @@ export function ObjectivesGoalsFunnel({
                 </div>
               </div>
               <Badge variant="secondary" className="text-xs flex-shrink-0">
-                Obligatoire
+                Recommandé
               </Badge>
             </div>
             <Progress value={progress} className="h-2" />
@@ -493,38 +520,50 @@ export function ObjectivesGoalsFunnel({
           </div>
 
           {/* Footer navigation */}
-          <div className="p-4 sm:p-6 border-t border-border/50 flex items-center justify-between gap-3">
-            <Button
-              variant="ghost"
-              onClick={handlePrev}
-              disabled={stepIndex === 0 || saving}
-              className="text-sm"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Précédent
-            </Button>
-
-            {currentStep.id !== "summary" ? (
-              <Button onClick={handleNext} disabled={!canProceed} className="text-sm">
-                Continuer
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            ) : (
+          <div className="p-4 sm:p-6 border-t border-border/50 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
               <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-gradient-to-r from-primary to-accent text-sm"
+                variant="ghost"
+                onClick={handlePrev}
+                disabled={stepIndex === 0 || saving}
+                className="text-sm"
               >
-                {saving ? (
-                  "Enregistrement…"
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Valider mes objectifs
-                  </>
-                )}
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Précédent
               </Button>
-            )}
+
+              {currentStep.id !== "summary" ? (
+                <Button onClick={handleNext} disabled={!canProceed} className="text-sm">
+                  Continuer
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-gradient-to-r from-primary to-accent text-sm"
+                >
+                  {saving ? (
+                    "Enregistrement…"
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      Valider mes objectifs
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {/* Skip — toujours disponible */}
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={saving}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50 text-center"
+            >
+              Passer pour l'instant — je fixerai mes objectifs plus tard
+            </button>
           </div>
         </Card>
       </div>
