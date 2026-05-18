@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
 const CloudCostMonitor = lazy(() => import("../monitoring/CloudCostMonitor"));
+const DriverCostBreakdown = lazy(() => import("../monitoring/DriverCostBreakdown"));
 
 const AdminTechHub = () => {
   const [activeTab, setActiveTab] = useState<"health" | "cost" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
@@ -102,7 +103,10 @@ const AdminTechHub = () => {
       {activeTab === "health" && <PlatformHealthDashboard />}
       {activeTab === "cost" && (
         <Suspense fallback={<div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full" />)}</div>}>
-          <CloudCostMonitor />
+          <div className="space-y-6">
+            <DriverCostBreakdown />
+            <CloudCostMonitor />
+          </div>
         </Suspense>
       )}
       {activeTab === "perf" && (
