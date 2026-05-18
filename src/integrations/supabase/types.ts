@@ -22044,6 +22044,7 @@ export type Database = {
       }
       get_company_id: { Args: { _user_id: string }; Returns: string }
       get_company_id_for_user: { Args: { user_id: string }; Returns: string }
+      get_cost_per_user_metrics: { Args: never; Returns: Json }
       get_course_invitation_by_token: {
         Args: { p_token: string }
         Returns: {
