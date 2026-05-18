@@ -118,7 +118,7 @@ export const DriverMapMode = memo(({ driverId, onSwitchToDashboard, onNavigateTo
 
   useEffect(() => {
     fetchRevenue();
-    const interval = setInterval(fetchRevenue, 60000);
+    const interval = setInterval(fetchRevenue, 300000);
     return () => clearInterval(interval);
   }, [fetchRevenue]);
 
