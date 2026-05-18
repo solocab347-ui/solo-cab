@@ -22005,6 +22005,7 @@ export type Database = {
           used_as: string
         }[]
       }
+      get_cloud_cost_metrics: { Args: never; Returns: Json }
       get_company_course_driver_profile: {
         Args: { driver_user_id: string }
         Returns: {
