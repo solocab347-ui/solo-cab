@@ -30,16 +30,9 @@ const DriverAppRequired = () => {
       navigate("/driver-dashboard", { replace: true });
       return;
     }
-    // Déconnexion silencieuse pour éviter qu'une session driver "fantôme" subsiste
-    // côté navigateur (un nouveau login depuis le web sera lui aussi bloqué).
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) await supabase.auth.signOut();
-      } catch {
-        // no-op : la page reste affichée même si signOut échoue
-      }
-    })();
+    // NOTE: on NE déconnecte PAS la session ici. Les chauffeurs doivent pouvoir
+    // accéder à /driver-subscription pour souscrire ou gérer leur abonnement
+    // depuis le web (l'app native n'est pas encore publiée sur les stores).
   }, [navigate]);
 
   const openPlayStore = () => {
