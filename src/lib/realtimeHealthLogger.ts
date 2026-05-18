@@ -34,7 +34,7 @@ interface HealthEvent {
   user_id?: string | null;
 }
 
-const FLUSH_INTERVAL_MS = 30_000;
+const FLUSH_INTERVAL_MS = 90_000;
 const MAX_BUFFER = 200;
 
 class RealtimeHealthLogger {
