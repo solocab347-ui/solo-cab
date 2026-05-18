@@ -110,7 +110,7 @@ const CloudCostMonitor = () => {
           </h2>
           <p className="text-xs text-muted-foreground">
             Dernière mise à jour : {new Date(data.generated_at).toLocaleTimeString("fr-FR")}
-            {" · auto-refresh 60s"}
+            {" · auto-refresh 5min"}
           </p>
         </div>
         <Button onClick={load} disabled={refreshing} size="sm" variant="outline" className="gap-2">
