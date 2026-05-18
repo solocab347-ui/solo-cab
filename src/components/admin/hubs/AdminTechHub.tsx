@@ -29,6 +29,16 @@ const AdminTechHub = () => {
           <span className="sm:hidden">🏥</span>
         </Button>
         <Button
+          variant={activeTab === "cost" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("cost")}
+          className="gap-2"
+        >
+          <Cloud className="w-4 h-4" />
+          <span className="hidden sm:inline">Coûts Cloud</span>
+          <span className="sm:hidden">💰</span>
+        </Button>
+        <Button
           variant={activeTab === "perf" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("perf")}
