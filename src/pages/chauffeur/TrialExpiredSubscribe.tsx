@@ -241,6 +241,13 @@ export default function TrialExpiredSubscribe() {
               </AlertDescription>
             </Alert>
             <Button
+              className="w-full"
+              onClick={() => navigate("/driver-subscription")}
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Gérer mon abonnement
+            </Button>
+            <Button
               variant="outline"
               className="w-full"
               onClick={async () => {
