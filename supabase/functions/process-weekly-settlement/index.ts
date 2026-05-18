@@ -202,7 +202,7 @@ serve(async (req) => {
     }
 
     // ═══ 3. PRE-MARK toutes les balances cash en "settled" (1 update bulk) ═══
-    const allCashIds = allDriverIds.flatMap(id => driverTotals[id].cash_balance_ids);
+    const allCashIds = allDriverIds.flatMap(id => driverTotals[id]?.cash_balance_ids || []);
     if (allCashIds.length > 0) {
       const nowIso = new Date().toISOString();
       for (let i = 0; i < allCashIds.length; i += 500) {

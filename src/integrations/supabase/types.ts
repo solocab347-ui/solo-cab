@@ -19450,16 +19450,26 @@ export type Database = {
       driver_settlement_preview: {
         Row: {
           card_courses: number | null
+          card_gross_pending: number | null
+          card_solocab_fees_pending: number | null
+          card_stripe_fees_pending: number | null
           card_to_transfer: number | null
+          cash_collected_current_week: number | null
+          cash_collected_past_pending: number | null
           cash_collected_this_week: number | null
           cash_courses: number | null
+          cash_courses_current_week: number | null
+          cash_courses_past_pending: number | null
           cash_debt_pending: number | null
+          cash_fees_owed_current_week: number | null
+          cash_fees_owed_past_pending: number | null
           cash_fees_owed_this_week: number | null
           company_name: string | null
           driver_id: string | null
           net_to_transfer_estimate: number | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
+          total_cash_debt_to_recover: number | null
         }
         Relationships: []
       }
