@@ -208,8 +208,8 @@ export function useCriticalAlerts() {
         .limit(5);
       return data || [];
     },
-    staleTime: 30000,
-    refetchInterval: 60000
+    staleTime: 120000,
+    refetchInterval: 300000
   });
 
   const visibleAlerts = alerts?.filter(a => !dismissed.includes(a.id)) || [];
