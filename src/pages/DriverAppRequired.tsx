@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Smartphone, Download, ShieldCheck, MapPin, Bell, Apple, ArrowLeft, LogOut } from "lucide-react";
+import { Smartphone, Download, ShieldCheck, MapPin, Bell, Apple, ArrowLeft, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
