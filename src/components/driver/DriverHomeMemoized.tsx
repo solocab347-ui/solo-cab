@@ -199,6 +199,30 @@ const DriverHomeComponent = ({ driverProfile, onTabChange, onSwitchToMap }: Driv
         />
       )}
 
+      {/* Rappel — pas d'objectifs configurés */}
+      {driverProfile?.driver?.id &&
+        driverProfile?.driver?.objectives_completed !== true && (
+          <Card
+            className="relative overflow-hidden p-4 bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/30 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.99] animate-fade-in"
+            {...getTapProps<HTMLDivElement>(() => onTabChange("performance"))}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shrink-0">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-foreground">
+                  Fixez vos objectifs
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Activez votre copilote de revenus et de libération plateformes.
+                </p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-primary shrink-0" />
+            </div>
+          </Card>
+        )}
+
       {/* 4 raccourcis essentiels */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
         <Card
