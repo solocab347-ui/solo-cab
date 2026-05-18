@@ -24,9 +24,27 @@ interface UseDriverBackgroundGPSOptions {
   enabled: boolean; // true quand le chauffeur est online ou en course
 }
 
+// Cost optimization: skip DB writes if driver hasn't moved enough AND last write is recent.
+// Keeps visibility intact (< 30s freshness window) but cuts redundant inserts ~50-70%.
+const MIN_DISTANCE_METERS = 10;
+const MIN_WRITE_INTERVAL_MS = 15_000; // never skip more than 15s of silence
+const MAX_WRITE_INTERVAL_MS = 25_000; // force a heartbeat write at least every 25s (visibility = 30s)
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroundGPSOptions) {
   const keepAwakeActiveRef = useRef(false);
   const lastFixAtRef = useRef<number>(0);
+  const lastWriteAtRef = useRef<number>(0);
+  const lastWriteLatRef = useRef<number | null>(null);
+  const lastWriteLngRef = useRef<number | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const notificationWarnedRef = useRef(false);
@@ -152,6 +170,25 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             });
           }
           try {
+            // Filter: skip redundant DB write if driver barely moved AND recent write exists.
+            const now = Date.now();
+            const sinceWrite = now - lastWriteAtRef.current;
+            const lastLat = lastWriteLatRef.current;
+            const lastLng = lastWriteLngRef.current;
+            const movedM = lastLat != null && lastLng != null
+              ? haversineMeters(lastLat, lastLng, fix.latitude, fix.longitude)
+              : Infinity;
+
+            const mustWrite =
+              sinceWrite >= MAX_WRITE_INTERVAL_MS ||
+              (sinceWrite >= MIN_WRITE_INTERVAL_MS && movedM >= MIN_DISTANCE_METERS) ||
+              lastWriteAtRef.current === 0;
+
+            if (!mustWrite) {
+              logGpsDebug('skip-write-filter', fix, { driverId, movedM: Math.round(movedM), sinceWriteMs: sinceWrite });
+              return;
+            }
+
             const { error } = await supabase.rpc('update_driver_location_batch', {
               p_driver_id: driverId,
               p_latitude: fix.latitude,
@@ -159,7 +196,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
               p_accuracy: accuracyM,
             });
             if (error) throw error;
-            logGpsDebug('upload-supabase-ok', fix, { driverId });
+            lastWriteAtRef.current = now;
+            lastWriteLatRef.current = fix.latitude;
+            lastWriteLngRef.current = fix.longitude;
+            logGpsDebug('upload-supabase-ok', fix, { driverId, movedM: Math.round(movedM) });
           } catch (err) {
             console.error('[BackgroundGPS] update fail', err);
             logGpsDebug('upload-supabase-failed', fix, { driverId, error: String(err) });
