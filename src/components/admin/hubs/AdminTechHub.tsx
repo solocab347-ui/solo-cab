@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Bug, Database, Shield, FileText, Activity, Gauge, Bell } from "lucide-react";
+import { Bug, Database, Shield, FileText, Activity, Gauge, Bell, Cloud } from "lucide-react";
 import { AdminErrorReports } from "../AdminErrorReports";
 import { AdminDataIntegrity } from "../AdminDataIntegrity";
 import { AdminRLSAudit } from "../AdminRLSAudit";
@@ -10,9 +10,10 @@ import AdminPushCenter from "../AdminPushCenter";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PerformanceDashboard = lazy(() => import("../monitoring/PerformanceDashboard"));
+const CloudCostMonitor = lazy(() => import("../monitoring/CloudCostMonitor"));
 
 const AdminTechHub = () => {
-  const [activeTab, setActiveTab] = useState<"health" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "cost" | "perf" | "push" | "errors" | "integrity" | "rls" | "docs">("health");
 
   return (
     <div className="space-y-4">
