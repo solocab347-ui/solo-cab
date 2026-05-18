@@ -70,7 +70,7 @@ const CloudCostMonitor = () => {
 
   useEffect(() => {
     load();
-    const i = setInterval(load, 60_000); // auto-refresh 60s
+    const i = setInterval(load, 5 * 60_000); // auto-refresh 5min (cost-conscious)
     return () => clearInterval(i);
   }, [load]);
 
