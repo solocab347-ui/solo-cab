@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Smartphone, Download, ShieldCheck, MapPin, Bell, Apple, ArrowLeft, LogOut } from "lucide-react";
+import { Smartphone, Download, ShieldCheck, MapPin, Bell, Apple, ArrowLeft, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,16 +30,9 @@ const DriverAppRequired = () => {
       navigate("/driver-dashboard", { replace: true });
       return;
     }
-    // Déconnexion silencieuse pour éviter qu'une session driver "fantôme" subsiste
-    // côté navigateur (un nouveau login depuis le web sera lui aussi bloqué).
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) await supabase.auth.signOut();
-      } catch {
-        // no-op : la page reste affichée même si signOut échoue
-      }
-    })();
+    // NOTE: on NE déconnecte PAS la session ici. Les chauffeurs doivent pouvoir
+    // accéder à /driver-subscription pour souscrire ou gérer leur abonnement
+    // depuis le web (l'app native n'est pas encore publiée sur les stores).
   }, [navigate]);
 
   const openPlayStore = () => {
@@ -138,6 +131,32 @@ const DriverAppRequired = () => {
                 </div>
               </li>
             </ul>
+          </Card>
+
+          {/* Subscription management — toujours accessible depuis le web */}
+          <Card className="p-4 border-primary/30 bg-primary/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Gérer mon abonnement
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  Souscrire, modifier ou résilier votre abonnement reste possible
+                  depuis le navigateur, sans avoir besoin de l'application.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/driver-subscription")}
+              size="lg"
+              className="w-full"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Accéder à mon abonnement
+            </Button>
           </Card>
 
           {/* Download buttons */}
