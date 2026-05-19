@@ -118,8 +118,21 @@ export async function initNativeSessionBridge(): Promise<void> {
 
     supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
-        // Déconnexion explicite : on purge le stockage natif aussi
-        void clearNative();
+        // CRITIQUE : ne purger le stockage natif QUE si l'utilisateur a
+        // explicitement cliqué sur Déconnexion. Tous les autres SIGNED_OUT
+        // (refresh token expiré faute de réseau, WebView tuée, mise en veille
+        // prolongée, app au background trop longtemps) doivent préserver la
+        // session pour qu'au prochain cold-start le chauffeur reste connecté.
+        const flag = (window as any).__solocabUserSignOut;
+        const userInitiated = !!flag?.current;
+        if (userInitiated) {
+          void clearNative();
+        } else {
+          // Le SDK Supabase a probablement vidé localStorage en même temps.
+          // On restaure depuis Preferences pour que la session survive.
+          console.warn("[nativeSession] non-user SIGNED_OUT — restoring session from native storage");
+          void restoreNativeSession();
+        }
       } else if (
         event === "SIGNED_IN" ||
         event === "TOKEN_REFRESHED" ||
