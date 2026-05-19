@@ -116,7 +116,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Drapeau : seul un signOut() explicite (clic utilisateur) peut purger la session.
   // Tous les autres SIGNED_OUT (échec refresh réseau, mobile en veille, etc.) sont ignorés.
-  const userInitiatedSignOutRef = { current: false } as { current: boolean };
+  // Exposé aussi sur window pour que nativeSessionPersistence puisse le lire
+  // sans créer de cycle d'import.
+  const userInitiatedSignOutRef = ((window as any).__solocabUserSignOut ||= { current: false }) as { current: boolean };
   (AuthProvider as any)._userSignOutFlag = userInitiatedSignOutRef;
 
   useEffect(() => {
