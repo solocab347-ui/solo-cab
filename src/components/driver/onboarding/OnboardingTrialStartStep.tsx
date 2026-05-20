@@ -95,6 +95,7 @@ export function OnboardingTrialStartStep({
     return () => {
       isMounted = false;
       clearInterval(interval);
+      clearTimeout(pollStopTimer);
       cleanup();
     };
   }, [driverId]); // Removed documentsStatus to avoid re-creating interval
