@@ -1,6 +1,7 @@
 import { PhoneOff, Mic, MicOff, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CallSession, formatCallDuration } from '@/hooks/useCallSession';
+import { useLiveKitCall } from '@/hooks/useLiveKitCall';
 import { motion } from 'framer-motion';
 
 interface ActiveCallScreenProps {
