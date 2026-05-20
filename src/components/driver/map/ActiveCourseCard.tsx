@@ -16,6 +16,7 @@ import {
   getDriverStatusFromCourse as getDriverBusyStatus,
   pickRelevantOperationalCourse,
 } from '@/lib/driverCourseLifecycle';
+import { isPhoneExchangeAllowed } from '@/lib/phonePrivacy';
 
 interface ActiveCourse {
   id: string;
