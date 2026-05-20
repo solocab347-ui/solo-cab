@@ -52,7 +52,7 @@ const DriverCostBreakdown = () => {
   useEffect(() => {
     load();
     // Auto-refresh 5 min (was 60s on legacy dashboard — cost-conscious polling).
-    const i = setInterval(load, 5 * 60_000);
+    const i = setInterval(load, 15 * 60_000);
     return () => clearInterval(i);
   }, [load]);
 

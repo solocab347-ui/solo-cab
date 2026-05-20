@@ -24,11 +24,12 @@ interface UseDriverBackgroundGPSOptions {
   enabled: boolean; // true quand le chauffeur est online ou en course
 }
 
-// Cost optimization: skip DB writes if driver hasn't moved enough AND last write is recent.
-// Keeps visibility intact (< 30s freshness window) but cuts redundant inserts ~50-70%.
-const MIN_DISTANCE_METERS = 10;
-const MIN_WRITE_INTERVAL_MS = 15_000; // never skip more than 15s of silence
-const MAX_WRITE_INTERVAL_MS = 25_000; // force a heartbeat write at least every 25s (visibility = 30s)
+// Cost optimization v2 (équilibré): skip DB writes if driver hasn't moved enough AND last write is recent.
+// Visibilité immédiate = 30s côté serveur, on garde une marge de sécurité de 5s avec un heartbeat 25s
+// uniquement quand le chauffeur EST EN COURSE. En attente (online sans course), on tolère 45s.
+const MIN_DISTANCE_METERS = 15;
+const MIN_WRITE_INTERVAL_MS = 20_000; // never skip more than 20s of silence
+const MAX_WRITE_INTERVAL_MS = 45_000; // heartbeat max 45s (reservations restent visibles <5 min)
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -246,9 +247,10 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             }
           })();
 
-          // Tick périodique (20s) : force getCurrentPosition pour garantir un fix
+          // Tick périodique (30s — était 20s) : force getCurrentPosition pour garantir un fix
           // récent même si le distanceFilter (30 m) n'est pas franchi.
-          // Maintient un heartbeat DB récent quand le chauffeur reste immobile.
+          // 30s reste sous la fenêtre de visibilité réservations (5 min) ET le watchdog
+          // 25s couvre les rides immédiats. Économise ~33% des fix natifs.
           if (tickRef.current) clearInterval(tickRef.current);
           tickRef.current = setInterval(async () => {
             if (!enabled || !driverId || cancelled) return;
@@ -257,7 +259,7 @@ export function useDriverBackgroundGPS({ driverId, enabled }: UseDriverBackgroun
             } catch (e) {
               console.warn('[BackgroundGPS] tick fail', e);
             }
-          }, 20_000);
+          }, 30_000);
 
           // Watchdog : si aucun fix > 25 s pendant que enabled === true,
           // on re-arme le watcher pour éviter les zombies silencieux.

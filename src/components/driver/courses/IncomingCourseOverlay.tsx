@@ -206,8 +206,8 @@ export function IncomingCourseOverlay({
       }
     };
 
-    // Realtime is primary; poll every 6s as safety fallback (was 2s — DB cost optimization)
-    const pollInterval = setInterval(checkStatus, 6000);
+    // Realtime is primary; poll every 10s as safety fallback (était 6s — réduction coûts DB)
+    const pollInterval = setInterval(checkStatus, 10000);
     // Initial check after 1.5s
     const initialCheck = setTimeout(checkStatus, 1500);
 
