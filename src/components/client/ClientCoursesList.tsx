@@ -583,7 +583,10 @@ const ClientCoursesList = ({ clientId, userId, exclusiveDriverId, userEmail, use
   const renderCourseCard = (course: any) => {
     const devis = course.devis?.[0];
     const facture = course.factures?.[0];
-    const driverPhone = course.drivers?.profiles?.phone;
+    const rawDriverPhone = course.drivers?.profiles?.phone;
+    // Privacy: never expose driver's phone on immediate marketplace rides.
+    // Only scheduled rides (planned) allow direct phone fallback.
+    const driverPhone = course.scheduled_date ? rawDriverPhone : null;
 
     return (
       <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
