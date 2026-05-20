@@ -473,10 +473,12 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
     (async () => {
       const { data } = await supabase
         .from("clients")
-        .select("favorite_driver_id")
+        .select("favorite_driver_id, is_exclusive, driver_id")
         .eq("id", course.client_id!)
         .maybeSingle();
       setIsFavorite(data?.favorite_driver_id === driver.id);
+      // Private relation: client is exclusive AND assigned to this driver (uses drivers.id)
+      setIsPrivateRelation(Boolean(data?.is_exclusive && data?.driver_id === driver.id));
     })();
   }, [course?.client_id, driver?.id]);
 
