@@ -533,6 +533,28 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   const isCompleted = course?.status === "completed";
   const isActive = !isCancelled && !isCompleted;
 
+  // ── VoIP anonymous call between client and driver ──
+  const {
+    activeCall,
+    incomingCall,
+    callDuration,
+    isMuted,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+  } = useCallSession({
+    userId: course?.client_id || '',
+    userType: 'client',
+    rideId: rideRequestId,
+    enabled: Boolean(course?.client_id && rideRequestId && isActive),
+  });
+
+  const handleCallDriver = () => {
+    if (driver?.user_id) startCall(driver.user_id, 'driver');
+  };
+
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent
