@@ -328,6 +328,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; phone: string } | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteSaving, setFavoriteSaving] = useState(false);
+  const [isPrivateRelation, setIsPrivateRelation] = useState(false);
 
   const isApproaching = course?.status === "driver_approaching";
   const isInProgress = course?.status === "in_progress";
