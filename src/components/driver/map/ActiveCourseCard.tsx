@@ -38,7 +38,11 @@ interface ActiveCourse {
   payment_method: string | null;
    payment_method_requested: string | null;
   driver_id: string;
-  clients: { profiles: { full_name: string; phone: string | null } | null } | null;
+  clients: {
+    is_exclusive: boolean | null;
+    driver_id: string | null;
+    profiles: { full_name: string; phone: string | null } | null;
+  } | null;
    devis: Array<{
     amount: number | null;
     status: string | null;
@@ -249,7 +253,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
         destination_latitude, destination_longitude,
         guest_name, guest_phone, guest_estimated_price, final_payment_amount,
         distance_km, payment_method, payment_method_requested, driver_id,
-        clients(profiles:user_id(full_name, phone)),
+        clients(is_exclusive, driver_id, profiles:user_id(full_name, phone)),
         devis(amount, status, accepted_at, created_at)
       `)
       .eq('driver_id', driverId)
@@ -658,7 +662,15 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
 
   const acceptedDevis = course ? getAcceptedCourseQuote(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
-  const clientPhone = course?.clients?.profiles?.phone || course?.guest_phone;
+  // Privacy: hide phone number for immediate rides without a private (exclusive) relationship
+  // Drivers must use the in-app VoIP call + chat to contact the client.
+  const isImmediateRide = !course?.scheduled_date;
+  const isPrivateRelation = Boolean(
+    course?.clients?.is_exclusive && course?.clients?.driver_id === driverId
+  );
+  const phoneAllowed = !isImmediateRide || isPrivateRelation;
+  const rawClientPhone = course?.clients?.profiles?.phone || course?.guest_phone;
+  const clientPhone = phoneAllowed ? rawClientPhone : null;
   const clientPhoneHref = clientPhone?.replace(/\s+/g, '');
   const price = course?.final_payment_amount ?? course?.guest_estimated_price ?? acceptedDevis?.amount ?? null;
   const paymentMethod = course?.payment_method || course?.payment_method_requested;
