@@ -662,13 +662,14 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
 
   const acceptedDevis = course ? getAcceptedCourseQuote(course) : null;
   const clientName = course?.clients?.profiles?.full_name || course?.guest_name || 'Client';
-  // Privacy: hide phone number for immediate rides without a private (exclusive) relationship
+  // Privacy: hide phone number for immediate rides without a private (exclusive) relationship.
   // Drivers must use the in-app VoIP call + chat to contact the client.
-  const isImmediateRide = !course?.scheduled_date;
-  const isPrivateRelation = Boolean(
-    course?.clients?.is_exclusive && course?.clients?.driver_id === driverId
-  );
-  const phoneAllowed = !isImmediateRide || isPrivateRelation;
+  const phoneAllowed = isPhoneExchangeAllowed({
+    scheduledDate: course?.scheduled_date,
+    clientIsExclusive: course?.clients?.is_exclusive,
+    clientDriverId: course?.clients?.driver_id,
+    currentDriverId: driverId,
+  });
   const rawClientPhone = course?.clients?.profiles?.phone || course?.guest_phone;
   const clientPhone = phoneAllowed ? rawClientPhone : null;
   const clientPhoneHref = clientPhone?.replace(/\s+/g, '');
