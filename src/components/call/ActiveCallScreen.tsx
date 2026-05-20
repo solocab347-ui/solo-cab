@@ -22,11 +22,12 @@ export function ActiveCallScreen({
   onToggleMute,
 }: ActiveCallScreenProps) {
   const isRinging = call.status === 'ringing';
-  const otherLabel = call.caller_type === call.receiver_type
-    ? ''
-    : call.caller_id === call.receiver_id
-      ? ''
-      : '';
+  // Connect to LiveKit room as soon as the call screen appears (caller while ringing, both while active)
+  const { connected, error: lkError } = useLiveKitCall({
+    callId: call.id,
+    enabled: call.status === 'ringing' || call.status === 'active',
+    isMuted,
+  });
 
   return (
     <motion.div
