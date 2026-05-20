@@ -98,6 +98,7 @@ export function ActiveCallScreen({
       {/* Privacy notice */}
       <p className="text-[11px] text-muted-foreground/60 mt-12 text-center px-8">
         🔒 Appel sécurisé — aucun numéro de téléphone partagé
+        {!isRinging && (connected ? ' • audio connecté' : lkError ? ' • erreur audio' : ' • connexion audio…')}
       </p>
     </motion.div>
   );
