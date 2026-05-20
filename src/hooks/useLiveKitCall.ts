@@ -118,20 +118,6 @@ export function useLiveKitCall({ callId, enabled, isMuted }: UseLiveKitCallOptio
     };
   }, [callId, enabled]);
 
-    return () => {
-      cancelled = true;
-      const r = roomRef.current;
-      roomRef.current = null;
-      if (r) r.disconnect().catch(() => {});
-      const a = audioElRef.current;
-      audioElRef.current = null;
-      if (a) {
-        try { a.pause(); a.remove(); } catch {}
-      }
-      setConnected(false);
-    };
-  }, [callId, enabled]);
-
   // Toggle mute
   useEffect(() => {
     const room = roomRef.current;
