@@ -47,6 +47,7 @@ interface CourseData {
 
 interface DriverInfo {
   id: string;
+  user_id: string | null;
   company_name: string | null;
   profile_photo_url: string | null;
   contact_phone: string | null;
