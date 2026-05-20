@@ -253,7 +253,7 @@ export function ActiveCourseCard({ driverId, onCourseChange, onCourseActive, dri
         destination_latitude, destination_longitude,
         guest_name, guest_phone, guest_estimated_price, final_payment_amount,
         distance_km, payment_method, payment_method_requested, driver_id,
-        clients(profiles:user_id(full_name, phone)),
+        clients(is_exclusive, driver_id, profiles:user_id(full_name, phone)),
         devis(amount, status, accepted_at, created_at)
       `)
       .eq('driver_id', driverId)
