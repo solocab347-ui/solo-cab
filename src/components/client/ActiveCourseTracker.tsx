@@ -357,7 +357,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
     const { data: driverData } = await supabase
       .from("drivers")
-      .select("id, company_name, card_photo_url, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
+      .select("id, user_id, company_name, card_photo_url, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
       .eq("id", data.driver_id)
       .single();
 
@@ -366,6 +366,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
       const driverPhoto = (driverData as any).card_photo_url || profile?.profile_photo_url || null;
       setDriver({
         id: driverData.id,
+        user_id: (driverData as any).user_id ?? null,
         company_name: driverData.company_name,
         profile_photo_url: driverPhoto,
         contact_phone: driverData.show_phone ? (driverData.contact_phone || profile?.phone) : null,
