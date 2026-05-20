@@ -826,6 +826,28 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
           </div>
         )}
       </SheetContent>
+
+      {/* Incoming VoIP call overlay */}
+      {incomingCall && (
+        <IncomingCallScreen
+          call={incomingCall}
+          callerName={driverName}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
+
+      {/* Active VoIP call overlay */}
+      {activeCall && !incomingCall && (
+        <ActiveCallScreen
+          call={activeCall}
+          otherName={driverName}
+          duration={callDuration}
+          isMuted={isMuted}
+          onEndCall={endCall}
+          onToggleMute={toggleMute}
+        />
+      )}
     </Sheet>
   );
 }
