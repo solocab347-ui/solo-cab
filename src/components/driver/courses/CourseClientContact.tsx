@@ -3,6 +3,9 @@ import { Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
 import { VoipCallButton } from "@/components/call/VoipCallButton";
+import { useCallSession } from "@/hooks/useCallSession";
+import { IncomingCallScreen } from "@/components/call/IncomingCallScreen";
+import { ActiveCallScreen } from "@/components/call/ActiveCallScreen";
 
 interface CourseClientContactProps {
   course: {
@@ -20,19 +23,19 @@ interface CourseClientContactProps {
     ride_type?: string;
   };
   employeePhone?: string | null;
+  /** Driver auth user_id (used as caller_id in call_sessions) */
   driverId?: string | null;
-  onStartCall?: (receiverId: string, receiverType: 'client' | 'driver') => void;
 }
 
-export function CourseClientContact({ course, employeePhone, driverId, onStartCall }: CourseClientContactProps) {
+export function CourseClientContact({ course, employeePhone, driverId }: CourseClientContactProps) {
   const [rideRequestId, setRideRequestId] = useState<string | null>(null);
   const [clientUserId, setClientUserId] = useState<string | null>(null);
 
+  const isActive = ['accepted', 'in_progress', 'driver_arrived'].includes(course.status || '');
+
   // Look up ride_request linked to this course
   useEffect(() => {
-    if (!course.id) return;
-    const isActive = ['accepted', 'in_progress', 'driver_arrived'].includes(course.status || '');
-    if (!isActive) return;
+    if (!course.id || !isActive) return;
 
     supabase
       .from('ride_requests')
@@ -45,7 +48,25 @@ export function CourseClientContact({ course, employeePhone, driverId, onStartCa
           setClientUserId(data[0].client_id);
         }
       });
-  }, [course.id, course.status]);
+  }, [course.id, isActive]);
+
+  // VoIP session — enabled only when we have driver + ride
+  const {
+    activeCall,
+    incomingCall,
+    callDuration,
+    isMuted,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+  } = useCallSession({
+    userId: driverId || '',
+    userType: 'driver',
+    rideId: rideRequestId,
+    enabled: Boolean(driverId && rideRequestId && isActive),
+  });
 
   const getClientPhone = (): string | null => {
     if (employeePhone) return employeePhone;
@@ -63,11 +84,11 @@ export function CourseClientContact({ course, employeePhone, driverId, onStartCa
 
   const phone = getClientPhone();
   const isImmediate = course.ride_type === 'immediate';
-  const isActive = ['accepted', 'in_progress', 'driver_arrived'].includes(course.status || '');
+  const clientName = getClientFirstName();
 
   const handleCall = () => {
-    if (onStartCall && clientUserId) {
-      onStartCall(clientUserId, 'client');
+    if (clientUserId) {
+      startCall(clientUserId, 'client');
     }
   };
 
@@ -88,11 +109,12 @@ export function CourseClientContact({ course, employeePhone, driverId, onStartCa
       )}
 
       {/* Appel VoIP anonyme — pour les courses actives */}
-      {isActive && clientUserId && onStartCall && (
+      {isActive && clientUserId && driverId && (
         <VoipCallButton
           onClick={handleCall}
-          label={`Appeler ${getClientFirstName()}`}
+          label={`Appeler ${clientName}`}
           variant="compact"
+          disabled={Boolean(activeCall || incomingCall)}
         />
       )}
 
@@ -102,7 +124,7 @@ export function CourseClientContact({ course, employeePhone, driverId, onStartCa
           rideId={rideRequestId}
           senderType="driver"
           senderId={driverId}
-          otherName={getClientFirstName()}
+          otherName={clientName}
           triggerLabel={isImmediate ? "💬 Contacter le client" : "💬 Chat course"}
           onCallPress={clientUserId ? handleCall : undefined}
         />
@@ -113,6 +135,28 @@ export function CourseClientContact({ course, employeePhone, driverId, onStartCa
         <p className="text-xs text-muted-foreground italic">
           Communication via chat uniquement
         </p>
+      )}
+
+      {/* Incoming call overlay */}
+      {incomingCall && (
+        <IncomingCallScreen
+          call={incomingCall}
+          callerName={clientName}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
+
+      {/* Active call overlay */}
+      {activeCall && !incomingCall && (
+        <ActiveCallScreen
+          call={activeCall}
+          otherName={clientName}
+          duration={callDuration}
+          isMuted={isMuted}
+          onEndCall={endCall}
+          onToggleMute={toggleMute}
+        />
       )}
     </div>
   );

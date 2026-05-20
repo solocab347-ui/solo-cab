@@ -15,6 +15,10 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { RideChatPanel } from "@/components/chat/RideChatPanel";
+import { VoipCallButton } from "@/components/call/VoipCallButton";
+import { useCallSession } from "@/hooks/useCallSession";
+import { IncomingCallScreen } from "@/components/call/IncomingCallScreen";
+import { ActiveCallScreen } from "@/components/call/ActiveCallScreen";
 import { useETACalculation } from "@/hooks/useETACalculation";
 import { ETADisplay } from "@/components/tracking/ETADisplay";
 import { LiveJourneyProgress } from "@/components/tracking/LiveJourneyProgress";
@@ -47,6 +51,7 @@ interface CourseData {
 
 interface DriverInfo {
   id: string;
+  user_id: string | null;
   company_name: string | null;
   profile_photo_url: string | null;
   contact_phone: string | null;
@@ -356,7 +361,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
 
     const { data: driverData } = await supabase
       .from("drivers")
-      .select("id, company_name, card_photo_url, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
+      .select("id, user_id, company_name, card_photo_url, contact_phone, show_phone, current_latitude, current_longitude, rating, total_rides, vehicle_brand, vehicle_model, vehicle_color, profiles!drivers_user_id_fkey(full_name, phone, profile_photo_url)")
       .eq("id", data.driver_id)
       .single();
 
@@ -365,6 +370,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
       const driverPhoto = (driverData as any).card_photo_url || profile?.profile_photo_url || null;
       setDriver({
         id: driverData.id,
+        user_id: (driverData as any).user_id ?? null,
         company_name: driverData.company_name,
         profile_photo_url: driverPhoto,
         contact_phone: driverData.show_phone ? (driverData.contact_phone || profile?.phone) : null,
@@ -526,6 +532,28 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
   const isCancelled = course?.status === "cancelled" || course?.status === "refused";
   const isCompleted = course?.status === "completed";
   const isActive = !isCancelled && !isCompleted;
+
+  // ── VoIP anonymous call between client and driver ──
+  const {
+    activeCall,
+    incomingCall,
+    callDuration,
+    isMuted,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+  } = useCallSession({
+    userId: course?.client_id || '',
+    userType: 'client',
+    rideId: rideRequestId,
+    enabled: Boolean(course?.client_id && rideRequestId && isActive),
+  });
+
+  const handleCallDriver = () => {
+    if (driver?.user_id) startCall(driver.user_id, 'driver');
+  };
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -704,7 +732,18 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                         <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
                       </Button>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Appel VoIP anonyme via Internet (gratuit) */}
+                      {isActive && driver.user_id && course.client_id && rideRequestId && (
+                        <VoipCallButton
+                          onClick={handleCallDriver}
+                          label={`Appeler ${driverName}`}
+                          variant="compact"
+                          className="flex-1"
+                          disabled={Boolean(activeCall || incomingCall)}
+                        />
+                      )}
+                      {/* Fallback numéro direct (uniquement si le chauffeur l'a partagé) */}
                       {driver.contact_phone && (
                         <Button
                           variant="outline"
@@ -713,7 +752,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                           asChild
                         >
                           <a href={`tel:${driver.contact_phone}`}>
-                            <Phone className="h-4 w-4 mr-1.5" /> Appeler
+                            <Phone className="h-4 w-4 mr-1.5" /> Tel.
                           </a>
                         </Button>
                       )}
@@ -724,6 +763,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                             senderType="client"
                             senderId={course.client_id}
                             otherName={driverName}
+                            onCallPress={driver.user_id ? handleCallDriver : undefined}
                           />
                         </div>
                       )}
@@ -786,6 +826,28 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
           </div>
         )}
       </SheetContent>
+
+      {/* Incoming VoIP call overlay */}
+      {incomingCall && (
+        <IncomingCallScreen
+          call={incomingCall}
+          callerName={driverName}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
+
+      {/* Active VoIP call overlay */}
+      {activeCall && !incomingCall && (
+        <ActiveCallScreen
+          call={activeCall}
+          otherName={driverName}
+          duration={callDuration}
+          isMuted={isMuted}
+          onEndCall={endCall}
+          onToggleMute={toggleMute}
+        />
+      )}
     </Sheet>
   );
 }
