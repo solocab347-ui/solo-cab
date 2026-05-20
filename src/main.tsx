@@ -6,6 +6,10 @@ import { setupGlobalErrorHandler } from "./lib/errorHandlerV2";
 import "./lib/performanceMonitor"; // Auto-instrument fetch for API timing
 import { initRememberOnBoot } from "./lib/authStorage";
 import { restoreNativeSession, initNativeSessionBridge } from "./lib/nativeSessionPersistence";
+import { initRealtimeIdleManager } from "./lib/realtimeIdleManager";
+
+// Pause WS realtime si l'onglet/app reste caché >5min (Phase 3 cost-opt)
+initRealtimeIdleManager();
 
 // 2) Appliquer la préférence "Se souvenir de moi" (web only)
 initRememberOnBoot();

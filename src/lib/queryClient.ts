@@ -11,7 +11,11 @@ import { CACHE, RETRY, calculateRetryDelay, isRetryableError } from './networkCo
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: CACHE.STANDARD_TTL, // 5 minutes
+      // Phase 2 cost-opt : staleTime par défaut 10 min (était 5 min).
+      // Les hooks critiques (driver-profile, courses, notifications) overrident déjà
+      // avec leur propre staleTime court, donc cette valeur affecte uniquement
+      // les lectures secondaires (settings, listes statiques, métadonnées).
+      staleTime: 10 * 60 * 1000,
       gcTime: CACHE.STATIC_TTL, // 30 minutes
       
       // Phase 1 perf : éviter les refetch redondants au mount si data fraîche

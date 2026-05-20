@@ -72,8 +72,9 @@ export function OnboardingTrialStartStep({
     // Fetch immédiat au chargement - données fraîches dès le départ
     fetchStatus();
 
-    // Polling toutes les 5s (réduit de 2s → 5s pour économiser la DB; Realtime gère l'instant)
-    const interval = setInterval(fetchStatus, 5000);
+    // Polling toutes les 10s (était 5s); auto-stop après 2 min car le realtime prend le relais.
+    const interval = setInterval(fetchStatus, 10000);
+    const pollStopTimer = setTimeout(() => clearInterval(interval), 120_000);
 
     // Écouter les changements en temps réel via centralized manager
     const cleanup = subscriptionManager.subscribe(
@@ -94,6 +95,7 @@ export function OnboardingTrialStartStep({
     return () => {
       isMounted = false;
       clearInterval(interval);
+      clearTimeout(pollStopTimer);
       cleanup();
     };
   }, [driverId]); // Removed documentsStatus to avoid re-creating interval
