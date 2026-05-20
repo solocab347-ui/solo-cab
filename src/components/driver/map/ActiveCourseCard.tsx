@@ -38,7 +38,11 @@ interface ActiveCourse {
   payment_method: string | null;
    payment_method_requested: string | null;
   driver_id: string;
-  clients: { profiles: { full_name: string; phone: string | null } | null } | null;
+  clients: {
+    is_exclusive: boolean | null;
+    driver_id: string | null;
+    profiles: { full_name: string; phone: string | null } | null;
+  } | null;
    devis: Array<{
     amount: number | null;
     status: string | null;
