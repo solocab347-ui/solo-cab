@@ -732,7 +732,18 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                         <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
                       </Button>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Appel VoIP anonyme via Internet (gratuit) */}
+                      {isActive && driver.user_id && course.client_id && rideRequestId && (
+                        <VoipCallButton
+                          onClick={handleCallDriver}
+                          label={`Appeler ${driverName}`}
+                          variant="compact"
+                          className="flex-1"
+                          disabled={Boolean(activeCall || incomingCall)}
+                        />
+                      )}
+                      {/* Fallback numéro direct (uniquement si le chauffeur l'a partagé) */}
                       {driver.contact_phone && (
                         <Button
                           variant="outline"
@@ -741,7 +752,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                           asChild
                         >
                           <a href={`tel:${driver.contact_phone}`}>
-                            <Phone className="h-4 w-4 mr-1.5" /> Appeler
+                            <Phone className="h-4 w-4 mr-1.5" /> Tel.
                           </a>
                         </Button>
                       )}
@@ -752,6 +763,7 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                             senderType="client"
                             senderId={course.client_id}
                             otherName={driverName}
+                            onCallPress={driver.user_id ? handleCallDriver : undefined}
                           />
                         </div>
                       )}
