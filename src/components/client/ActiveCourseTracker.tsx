@@ -746,8 +746,9 @@ export function ActiveCourseTracker({ courseId, open, onClose }: ActiveCourseTra
                           disabled={Boolean(activeCall || incomingCall)}
                         />
                       )}
-                      {/* Fallback numéro direct (uniquement si le chauffeur l'a partagé) */}
-                      {driver.contact_phone && (
+                      {/* Numéro direct uniquement pour les courses planifiées OU relation privée (chauffeur exclusif).
+                          Sur les courses immédiates marketplace, on impose l'appel VoIP anonyme. */}
+                      {driver.contact_phone && (!!course?.scheduled_date || isPrivateRelation) && (
                         <Button
                           variant="outline"
                           size="sm"
