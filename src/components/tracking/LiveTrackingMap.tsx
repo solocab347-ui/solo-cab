@@ -184,9 +184,15 @@ export function LiveTrackingMap({
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
 
-    return () => { map.current?.remove(); };
+    return () => {
+      try { (map.current as any)?.__ro?.disconnect?.(); } catch {}
+      map.current?.remove();
+      map.current = null;
+    };
+    // Re-run when coords first become available so a late GPS fix still
+    // initialises the map (otherwise the canvas stays blank with only markers).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapboxToken]);
+  }, [mapboxToken, !!(driverLat && driverLng) || !!(pickupLat && pickupLng) || !!(destLat && destLng)]);
 
   // Real-time driver position update + smooth follow
   useEffect(() => {
