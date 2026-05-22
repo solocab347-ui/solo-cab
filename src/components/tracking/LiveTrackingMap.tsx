@@ -108,13 +108,16 @@ export function LiveTrackingMap({
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
+    if (map.current) return; // already initialised
     mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] | null = driverLng && driverLat
       ? [driverLng, driverLat]
       : pickupLng && pickupLat
         ? [pickupLng, pickupLat]
-        : null;
+        : destLng && destLat
+          ? [destLng, destLat]
+          : null;
 
     if (!center) return;
 
@@ -125,6 +128,14 @@ export function LiveTrackingMap({
       zoom: 13,
       attributionControl: false,
     });
+
+    // Tiles can render blank if the container had zero size when init ran
+    // (PWA/Capacitor on slow layouts, hidden tabs, etc.). Force a resize
+    // once the map is ready AND whenever the container box changes.
+    map.current.once('load', () => map.current?.resize());
+    const ro = new ResizeObserver(() => map.current?.resize());
+    ro.observe(mapContainer.current);
+    (map.current as any).__ro = ro;
 
     // Pickup marker — only relevant BEFORE the client is in the car.
     // Once 'in_progress', client is with the driver, so hide the pickup pin
@@ -173,9 +184,15 @@ export function LiveTrackingMap({
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
 
-    return () => { map.current?.remove(); };
+    return () => {
+      try { (map.current as any)?.__ro?.disconnect?.(); } catch {}
+      map.current?.remove();
+      map.current = null;
+    };
+    // Re-run when coords first become available so a late GPS fix still
+    // initialises the map (otherwise the canvas stays blank with only markers).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapboxToken]);
+  }, [mapboxToken, !!(driverLat && driverLng) || !!(pickupLat && pickupLng) || !!(destLat && destLng)]);
 
   // Real-time driver position update + smooth follow
   useEffect(() => {
