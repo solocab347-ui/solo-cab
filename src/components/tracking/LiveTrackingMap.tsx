@@ -108,13 +108,16 @@ export function LiveTrackingMap({
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
+    if (map.current) return; // already initialised
     mapboxgl.accessToken = mapboxToken;
 
     const center: [number, number] | null = driverLng && driverLat
       ? [driverLng, driverLat]
       : pickupLng && pickupLat
         ? [pickupLng, pickupLat]
-        : null;
+        : destLng && destLat
+          ? [destLng, destLat]
+          : null;
 
     if (!center) return;
 
@@ -125,6 +128,14 @@ export function LiveTrackingMap({
       zoom: 13,
       attributionControl: false,
     });
+
+    // Tiles can render blank if the container had zero size when init ran
+    // (PWA/Capacitor on slow layouts, hidden tabs, etc.). Force a resize
+    // once the map is ready AND whenever the container box changes.
+    map.current.once('load', () => map.current?.resize());
+    const ro = new ResizeObserver(() => map.current?.resize());
+    ro.observe(mapContainer.current);
+    (map.current as any).__ro = ro;
 
     // Pickup marker — only relevant BEFORE the client is in the car.
     // Once 'in_progress', client is with the driver, so hide the pickup pin
