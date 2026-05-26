@@ -175,6 +175,8 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   const [historyView, setHistoryView] = useState<"week" | "month">("week");
   // Navigation semaine par semaine dans l'historique : 0 = semaine la plus récente.
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
+  // Navigation semaine par semaine pour le RÉCAP DU HAUT : 0 = en cours, +1 = semaine précédente, etc.
+  const [topWeekOffset, setTopWeekOffset] = useState<number>(0);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -579,6 +581,48 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   // ⚠️ TOUS les hooks (useMemo, etc.) DOIVENT être déclarés AVANT tout early return
   // sinon React lève "Rendered more hooks than during the previous render".
 
+  // ─── Récap NAVIGABLE de la semaine choisie en haut de la page ───
+  // topWeekOffset : 0 = semaine en cours, +1 = semaine précédente, etc.
+  // Source = monthlyTransactions (driver_balance_pending sur 12 mois), même
+  // source que walletStats → cohérence garantie quel que soit le filtre.
+  const topWeek = useMemo(() => {
+    const base = getCurrentVtcWeek();
+    const start = addUtcDays(base.start, -7 * topWeekOffset);
+    const end = addUtcDays(base.end, -7 * topWeekOffset);
+    return { start, end };
+  }, [topWeekOffset]);
+
+  const topWeekStats = useMemo(() => {
+    const txns = monthlyTransactions.filter((t) => {
+      const ts = new Date(t.created_at).getTime();
+      return ts >= topWeek.start.getTime() && ts <= topWeek.end.getTime();
+    });
+    const cardTxns = txns.filter((t) => t.payment_method !== 'cash');
+    const cashTxns = txns.filter((t) => t.payment_method === 'cash');
+    const cardGross = cardTxns.reduce((s, t) => s + (t.amount || 0), 0);
+    const cashGross = cashTxns.reduce((s, t) => s + (t.amount || 0), 0);
+    const cardStripeFees = cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0);
+    const cardSolocabFees = cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0);
+    const cashSolocabFees = cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0);
+    const totalEarned = cardGross + cashGross;
+    const totalFees = cardStripeFees + cardSolocabFees + cashSolocabFees;
+    const totalNet = txns.reduce((s, t) => s + (t.net_to_driver || 0), 0);
+    return {
+      txns,
+      totalEarned,
+      totalFees,
+      totalNet,
+      totalCourses: txns.length,
+      cardCourses: cardTxns.length,
+      cashCourses: cashTxns.length,
+      cardGross,
+      cashGross,
+      cardStripeFees,
+      cardSolocabFees,
+      cashSolocabFees,
+    };
+  }, [monthlyTransactions, topWeek]);
+
   // Liste des mois disponibles dans l'historique des règlements (12 derniers max).
   // On indexe sur week_end (date où la semaine se "comptabilise") pour éviter
   // qu'une semaine à cheval sur 2 mois disparaisse de la sélection.
@@ -685,57 +729,142 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
         </div>
       </div>
 
-      {/* Bandeau semaine en cours — repère temporel clair */}
-      <Card className="p-3 bg-primary/5 border-primary/20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-primary" />
-          <div>
-            <p className="text-xs text-muted-foreground">Semaine en cours</p>
-            <p className="text-sm font-semibold text-foreground">{weekLabel}</p>
-          </div>
-        </div>
-        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-          Reset chaque lundi 6h
-        </Badge>
-      </Card>
-
-      {/* (Le bandeau "Reports des semaines précédentes" est rendu plus bas,
-          APRÈS le récap de la semaine en cours, pour respecter la hiérarchie
-          d'information : la semaine d'abord, les compléments ensuite.) */}
-
-      {/* Wallet summary cards */}
-      {walletStats && (
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
-            <div className="flex items-center justify-between">
+      {/* Bandeau semaine NAVIGABLE — flèches ← → pour consulter les semaines précédentes */}
+      {(() => {
+        const isCurrent = topWeekOffset === 0;
+        const label = `${format(topWeek.start, "d MMM", { locale: fr })} → ${format(topWeek.end, "d MMM yyyy", { locale: fr })}`;
+        return (
+          <Card className="p-3 bg-primary/5 border-primary/20 flex items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTopWeekOffset((o) => o + 1)}
+              className="gap-1 shrink-0"
+              aria-label="Semaine précédente"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex items-center gap-2 flex-1 justify-center text-center">
+              <Calendar className="w-4 h-4 text-primary shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total encaissé (brut) — semaine</p>
-                <p className="text-3xl font-bold text-foreground">{walletStats.totalEarned.toFixed(2)}€</p>
+                <p className="text-xs text-muted-foreground">
+                  {isCurrent ? "Semaine en cours" : `Il y a ${topWeekOffset} semaine${topWeekOffset > 1 ? "s" : ""}`}
+                </p>
+                <p className="text-sm font-semibold text-foreground">{label}</p>
               </div>
-              <div className="p-3 rounded-full bg-primary/20">
-                <Euro className="w-6 h-6 text-primary" />
-              </div>
             </div>
-            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              <TrendingUp className="w-3 h-3 text-success" />
-              <span>{walletStats.totalCourses} courses • {walletStats.cardCourses} CB • {walletStats.cashCourses} Espèces</span>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isCurrent}
+              onClick={() => setTopWeekOffset((o) => Math.max(0, o - 1))}
+              className="gap-1 shrink-0"
+              aria-label="Semaine suivante"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </Card>
-
-          <Card className="p-3 bg-success/5 border-success/20">
-            <p className="text-xs text-muted-foreground mb-1">Net chauffeur (semaine)</p>
-            <p className="text-xl font-bold text-success">{walletStats.totalNet.toFixed(2)}€</p>
-          </Card>
-          <Card className="p-3 bg-destructive/5 border-destructive/20">
-            <p className="text-xs text-muted-foreground mb-1">Total frais (semaine)</p>
-            <p className="text-xl font-bold text-destructive">-{walletStats.totalFees.toFixed(2)}€</p>
-            <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
-              <p>Stripe: -{(walletStats.cardStripeFees).toFixed(2)}€</p>
-              <p>SoloCab: -{(walletStats.cardSolocabFees + walletStats.cashSolocabFees).toFixed(2)}€</p>
-            </div>
-          </Card>
+        );
+      })()}
+      {topWeekOffset === 0 && (
+        <div className="flex justify-end -mt-2">
+          <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+            Reset chaque lundi 6h
+          </Badge>
         </div>
       )}
+
+      {/* Wallet summary cards — reflètent la SEMAINE SÉLECTIONNÉE en haut */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">
+                Total encaissé (brut) — {topWeekOffset === 0 ? "semaine en cours" : "semaine sélectionnée"}
+              </p>
+              <p className="text-3xl font-bold text-foreground">{topWeekStats.totalEarned.toFixed(2)}€</p>
+            </div>
+            <div className="p-3 rounded-full bg-primary/20">
+              <Euro className="w-6 h-6 text-primary" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
+            <TrendingUp className="w-3 h-3 text-success" />
+            <span>{topWeekStats.totalCourses} courses • {topWeekStats.cardCourses} CB ({topWeekStats.cardGross.toFixed(2)}€) • {topWeekStats.cashCourses} Espèces ({topWeekStats.cashGross.toFixed(2)}€)</span>
+          </div>
+        </Card>
+
+        <Card className="p-3 bg-success/5 border-success/20">
+          <p className="text-xs text-muted-foreground mb-1">Net chauffeur</p>
+          <p className="text-xl font-bold text-success">{topWeekStats.totalNet.toFixed(2)}€</p>
+        </Card>
+        <Card className="p-3 bg-destructive/5 border-destructive/20">
+          <p className="text-xs text-muted-foreground mb-1">Total frais</p>
+          <p className="text-xl font-bold text-destructive">-{topWeekStats.totalFees.toFixed(2)}€</p>
+          <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+            <p>Stripe: -{topWeekStats.cardStripeFees.toFixed(2)}€</p>
+            <p>SoloCab: -{(topWeekStats.cardSolocabFees + topWeekStats.cashSolocabFees).toFixed(2)}€</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Récap DÉTAILLÉ des courses de la semaine sélectionnée */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            Courses de la semaine
+          </h3>
+          <Badge variant="outline" className="text-[10px]">
+            {topWeekStats.totalCourses} course{topWeekStats.totalCourses > 1 ? "s" : ""}
+          </Badge>
+        </div>
+        {topWeekStats.txns.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Aucune course sur cette semaine</p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {topWeekStats.txns.map((t) => {
+                const isCash = t.payment_method === 'cash';
+                return (
+                  <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`p-1.5 rounded-md shrink-0 ${isCash ? 'bg-amber-500/10' : 'bg-success/10'}`}>
+                        {isCash ? <Banknote className="w-3.5 h-3.5 text-amber-500" /> : <CreditCard className="w-3.5 h-3.5 text-success" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          {format(new Date(t.created_at), "dd/MM HH:mm", { locale: fr })}
+                          <span className={`ml-2 text-[10px] ${isCash ? 'text-amber-500' : 'text-primary'}`}>
+                            {isCash ? 'Espèces' : 'CB'}
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {t.stripe_fee_amount > 0 && `Stripe -${t.stripe_fee_amount.toFixed(2)}€ • `}
+                          SoloCab -{t.solocab_fee_amount.toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold">{t.amount.toFixed(2)}€</p>
+                      <p className="text-[10px] text-success">Net {t.net_to_driver.toFixed(2)}€</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Totaux récapitulatifs */}
+            <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Total brut</span><span className="font-semibold">{topWeekStats.totalEarned.toFixed(2)}€</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total CB</span><span className="font-semibold">{topWeekStats.cardGross.toFixed(2)}€</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Total espèces</span><span className="font-semibold">{topWeekStats.cashGross.toFixed(2)}€</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Frais Stripe</span><span className="font-semibold text-destructive">-{topWeekStats.cardStripeFees.toFixed(2)}€</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Frais SoloCab</span><span className="font-semibold text-destructive">-{(topWeekStats.cardSolocabFees + topWeekStats.cashSolocabFees).toFixed(2)}€</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Net chauffeur</span><span className="font-bold text-success">{topWeekStats.totalNet.toFixed(2)}€</span></div>
+            </div>
+          </>
+        )}
+      </Card>
 
       {/* Weekly settlement summary from driver_balance_pending */}
       {pendingBalance && (
