@@ -548,7 +548,26 @@ serve(async (req) => {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    log("ERROR", { message: msg });
+    log("ERROR", { message: msg, settlementId: currentSettlementId });
+    // Marquer le règlement comme échoué pour éviter qu'il reste bloqué en "processing"
+    if (currentSettlementId) {
+      try {
+        await supabase.from("weekly_settlements").update({
+          status: "failed",
+          processed_at: new Date().toISOString(),
+          last_error: msg.substring(0, 1000),
+        }).eq("id", currentSettlementId);
+        // Alerter les admins
+        const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+        if (admins?.length) {
+          await supabase.from("notifications").insert(admins.map((a: any) => ({
+            user_id: a.user_id, title: "🚨 Règlement hebdo échoué",
+            message: `Erreur fatale : ${msg.substring(0, 200)}`,
+            type: "warning", link: "/admin/finance/settlements",
+          })));
+        }
+      } catch (e) { log("Failed to mark settlement as failed", { error: String(e) }); }
+    }
     return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
     });
