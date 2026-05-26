@@ -555,7 +555,7 @@ serve(async (req) => {
         await supabase.from("weekly_settlements").update({
           status: "failed",
           processed_at: new Date().toISOString(),
-          last_error: msg.substring(0, 1000),
+          error_message: msg.substring(0, 1000),
         }).eq("id", currentSettlementId);
         // Alerter les admins
         const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
