@@ -581,6 +581,48 @@ export function DriverFinancePage({ driverId, initialTab = "transactions" }: Dri
   // ⚠️ TOUS les hooks (useMemo, etc.) DOIVENT être déclarés AVANT tout early return
   // sinon React lève "Rendered more hooks than during the previous render".
 
+  // ─── Récap NAVIGABLE de la semaine choisie en haut de la page ───
+  // topWeekOffset : 0 = semaine en cours, +1 = semaine précédente, etc.
+  // Source = monthlyTransactions (driver_balance_pending sur 12 mois), même
+  // source que walletStats → cohérence garantie quel que soit le filtre.
+  const topWeek = useMemo(() => {
+    const base = getCurrentVtcWeek();
+    const start = addUtcDays(base.start, -7 * topWeekOffset);
+    const end = addUtcDays(base.end, -7 * topWeekOffset);
+    return { start, end };
+  }, [topWeekOffset]);
+
+  const topWeekStats = useMemo(() => {
+    const txns = monthlyTransactions.filter((t) => {
+      const ts = new Date(t.created_at).getTime();
+      return ts >= topWeek.start.getTime() && ts <= topWeek.end.getTime();
+    });
+    const cardTxns = txns.filter((t) => t.payment_method !== 'cash');
+    const cashTxns = txns.filter((t) => t.payment_method === 'cash');
+    const cardGross = cardTxns.reduce((s, t) => s + (t.amount || 0), 0);
+    const cashGross = cashTxns.reduce((s, t) => s + (t.amount || 0), 0);
+    const cardStripeFees = cardTxns.reduce((s, t) => s + (t.stripe_fee_amount || 0), 0);
+    const cardSolocabFees = cardTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0);
+    const cashSolocabFees = cashTxns.reduce((s, t) => s + (t.solocab_fee_amount || 0), 0);
+    const totalEarned = cardGross + cashGross;
+    const totalFees = cardStripeFees + cardSolocabFees + cashSolocabFees;
+    const totalNet = txns.reduce((s, t) => s + (t.net_to_driver || 0), 0);
+    return {
+      txns,
+      totalEarned,
+      totalFees,
+      totalNet,
+      totalCourses: txns.length,
+      cardCourses: cardTxns.length,
+      cashCourses: cashTxns.length,
+      cardGross,
+      cashGross,
+      cardStripeFees,
+      cardSolocabFees,
+      cashSolocabFees,
+    };
+  }, [monthlyTransactions, topWeek]);
+
   // Liste des mois disponibles dans l'historique des règlements (12 derniers max).
   // On indexe sur week_end (date où la semaine se "comptabilise") pour éviter
   // qu'une semaine à cheval sur 2 mois disparaisse de la sélection.
