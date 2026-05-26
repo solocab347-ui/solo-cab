@@ -196,7 +196,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           .eq("id", driverId)
           .single(),
         (async () => {
-          const dateWindowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          // ⚠️ Historique complet : fenêtre 365j (au lieu de 30j) pour ne PAS perdre l'historique
+          // des courses terminées/annulées. Limite portée à 500 (cap de sécurité).
+          const dateWindowStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
           const driverFilter = buildDriverFilter(driverId);
 
           const coursesSelectWithRelations = `
@@ -285,8 +287,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               .from("courses")
               .select(select)
               .or(driverFilter)
-              .order("scheduled_date", { ascending: true })
-              .limit(200);
+              .order("scheduled_date", { ascending: false })
+              .limit(500);
 
             if (options.withDateWindow) {
               query = query.gte("scheduled_date", dateWindowStart);
