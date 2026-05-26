@@ -137,6 +137,7 @@ serve(async (req) => {
       settlementId = data.id;
       alreadyProcessed = new Set();
     }
+    currentSettlementId = settlementId;
 
     // ═══ PRE-FLIGHT solde Stripe ═══
     let stripeAvailableEur = 0;
