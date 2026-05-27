@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Bot, Lightbulb } from "lucide-react";
+import { AlertTriangle, Bot, Lightbulb, Flag } from "lucide-react";
 import AdminDisputes from "../AdminDisputes";
 import { AdminAssistantRequests } from "../AdminAssistantRequests";
 import AdminFeedback from "../AdminFeedback";
+import AdminContentReports from "../AdminContentReports";
 
 const AdminSupportHub = () => {
-  const [activeTab, setActiveTab] = useState<"disputes" | "assistant" | "feedback">("disputes");
+  const [activeTab, setActiveTab] = useState<"disputes" | "reports" | "assistant" | "feedback">("disputes");
 
   return (
     <div className="space-y-4">
@@ -20,6 +21,16 @@ const AdminSupportHub = () => {
           <AlertTriangle className="w-4 h-4" />
           <span className="hidden sm:inline">Litiges Courses</span>
           <span className="sm:hidden">Courses</span>
+        </Button>
+        <Button
+          variant={activeTab === "reports" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("reports")}
+          className="gap-2"
+        >
+          <Flag className="w-4 h-4" />
+          <span className="hidden sm:inline">Signalements</span>
+          <span className="sm:hidden">Reports</span>
         </Button>
         <Button
           variant={activeTab === "assistant" ? "default" : "ghost"}
@@ -43,6 +54,7 @@ const AdminSupportHub = () => {
       </div>
 
       {activeTab === "disputes" && <AdminDisputes />}
+      {activeTab === "reports" && <AdminContentReports />}
       {activeTab === "assistant" && <AdminAssistantRequests />}
       {activeTab === "feedback" && <AdminFeedback />}
     </div>
