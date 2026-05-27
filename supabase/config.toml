@@ -181,3 +181,5 @@ project_id = "iyothopplhbwcfrpxryc"
     verify_jwt = false
   [functions.validate-course-price]
     verify_jwt = true
+  [functions.create-demo-account]
+    verify_jwt = false
