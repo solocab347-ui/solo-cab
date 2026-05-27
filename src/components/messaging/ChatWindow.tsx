@@ -32,7 +32,9 @@ interface ChatWindowProps {
 export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowProps) => {
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isBlocked, loading: blockLoading, block, unblock } = useUserBlock(otherUser.id);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -42,7 +44,7 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
   }, [messages]);
 
   const handleSend = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && !isBlocked) {
       onSendMessage(newMessage);
       setNewMessage("");
     }
@@ -54,6 +56,11 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
       handleSend();
     }
   };
+
+  // Hide messages from blocked users
+  const visibleMessages = isBlocked
+    ? messages.filter((m) => m.sender_id === user?.id)
+    : messages;
 
   return (
     <div className="flex flex-col h-full">
@@ -68,8 +75,41 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
           </Avatar>
           <div className="flex-1">
             <h3 className="font-semibold">{otherUser.full_name}</h3>
-            <p className="text-xs text-muted-foreground">En ligne</p>
+            <p className="text-xs text-muted-foreground">
+              {isBlocked ? "Bloqué" : "En ligne"}
+            </p>
           </div>
+          {otherUser.id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Options de modération">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setReportOpen(true)}>
+                  <Flag className="w-4 h-4 mr-2" />
+                  Signaler
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {isBlocked ? (
+                  <DropdownMenuItem onClick={() => unblock()} disabled={blockLoading}>
+                    <ShieldOff className="w-4 h-4 mr-2" />
+                    Débloquer
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => block()}
+                    disabled={blockLoading}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Bloquer
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         {/* Note conservation messages */}
         <div className="mt-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -78,6 +118,7 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
           </p>
         </div>
       </div>
+
 
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
