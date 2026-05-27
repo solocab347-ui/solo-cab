@@ -190,23 +190,40 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
 
       {/* Message input */}
       <div className="border-t border-border p-4 bg-card">
-        <div className="flex items-center gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Écrivez votre message..."
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!newMessage.trim()}
-            className="bg-gradient-premium hover:opacity-90"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+        {isBlocked ? (
+          <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground">
+            <Lock className="w-4 h-4" />
+            <span className="text-sm">
+              Vous avez bloqué cet utilisateur. Débloquez pour reprendre la conversation.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Écrivez votre message..."
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!newMessage.trim()}
+              className="bg-gradient-premium hover:opacity-90"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
+
+      <ReportContentDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        contextType="message"
+        reportedUserId={otherUser.id ?? null}
+        reportedUserName={otherUser.full_name}
+      />
     </div>
   );
 };
