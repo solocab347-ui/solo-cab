@@ -4,9 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Send, MoreVertical, Flag, Ban, ShieldOff, Lock } from "lucide-react";
 import { Message } from "@/hooks/useMessaging";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserBlock } from "@/hooks/useUserBlock";
+import { ReportContentDialog } from "@/components/moderation/ReportContentDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -14,6 +23,7 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   otherUser: {
+    id?: string;
     full_name: string;
     profile_photo_url: string | null;
   };
