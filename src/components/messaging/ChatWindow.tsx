@@ -4,9 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Send, MoreVertical, Flag, Ban, ShieldOff, Lock } from "lucide-react";
 import { Message } from "@/hooks/useMessaging";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserBlock } from "@/hooks/useUserBlock";
+import { ReportContentDialog } from "@/components/moderation/ReportContentDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -14,6 +23,7 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   otherUser: {
+    id?: string;
     full_name: string;
     profile_photo_url: string | null;
   };
@@ -22,7 +32,9 @@ interface ChatWindowProps {
 export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowProps) => {
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isBlocked, loading: blockLoading, block, unblock } = useUserBlock(otherUser.id);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -32,7 +44,7 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
   }, [messages]);
 
   const handleSend = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && !isBlocked) {
       onSendMessage(newMessage);
       setNewMessage("");
     }
@@ -44,6 +56,11 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
       handleSend();
     }
   };
+
+  // Hide messages from blocked users
+  const visibleMessages = isBlocked
+    ? messages.filter((m) => m.sender_id === user?.id)
+    : messages;
 
   return (
     <div className="flex flex-col h-full">
@@ -58,8 +75,41 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
           </Avatar>
           <div className="flex-1">
             <h3 className="font-semibold">{otherUser.full_name}</h3>
-            <p className="text-xs text-muted-foreground">En ligne</p>
+            <p className="text-xs text-muted-foreground">
+              {isBlocked ? "Bloqué" : "En ligne"}
+            </p>
           </div>
+          {otherUser.id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Options de modération">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setReportOpen(true)}>
+                  <Flag className="w-4 h-4 mr-2" />
+                  Signaler
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {isBlocked ? (
+                  <DropdownMenuItem onClick={() => unblock()} disabled={blockLoading}>
+                    <ShieldOff className="w-4 h-4 mr-2" />
+                    Débloquer
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => block()}
+                    disabled={blockLoading}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Bloquer
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         {/* Note conservation messages */}
         <div className="mt-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -69,10 +119,11 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
         </div>
       </div>
 
+
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
-          {messages.map((message) => {
+          {visibleMessages.map((message) => {
             const isOwnMessage = message.sender_id === user?.id;
             const senderName = isOwnMessage 
               ? user?.user_metadata?.full_name || "Moi" 
@@ -139,23 +190,40 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
 
       {/* Message input */}
       <div className="border-t border-border p-4 bg-card">
-        <div className="flex items-center gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Écrivez votre message..."
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!newMessage.trim()}
-            className="bg-gradient-premium hover:opacity-90"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+        {isBlocked ? (
+          <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground">
+            <Lock className="w-4 h-4" />
+            <span className="text-sm">
+              Vous avez bloqué cet utilisateur. Débloquez pour reprendre la conversation.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Écrivez votre message..."
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!newMessage.trim()}
+              className="bg-gradient-premium hover:opacity-90"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
+
+      <ReportContentDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        contextType="message"
+        reportedUserId={otherUser.id ?? null}
+        reportedUserName={otherUser.full_name}
+      />
     </div>
   );
 };

@@ -5,7 +5,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, Lock, X, Phone } from 'lucide-react';
+import { MessageCircle, Send, Lock, X, Phone, Flag } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ReportContentDialog } from '@/components/moderation/ReportContentDialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -61,6 +68,7 @@ export function RideChatPanel({
 
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isControlled = isOpen !== undefined;
@@ -147,6 +155,22 @@ export function RideChatPanel({
                 <Phone className="h-5 w-5" />
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" title="Signaler">
+                  <Flag className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setReportOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  Signaler un abus
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
@@ -156,6 +180,14 @@ export function RideChatPanel({
             </Button>
           </div>
         </div>
+
+        <ReportContentDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          contextType="ride_message"
+          contextId={rideId}
+          reportedUserName={otherName}
+        />
 
         {/* Messages */}
         <div
