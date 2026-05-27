@@ -123,7 +123,7 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
-          {messages.map((message) => {
+          {visibleMessages.map((message) => {
             const isOwnMessage = message.sender_id === user?.id;
             const senderName = isOwnMessage 
               ? user?.user_metadata?.full_name || "Moi" 
