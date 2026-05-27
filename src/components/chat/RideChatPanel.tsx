@@ -155,6 +155,22 @@ export function RideChatPanel({
                 <Phone className="h-5 w-5" />
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" title="Signaler">
+                  <Flag className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setReportOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  Signaler un abus
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
@@ -164,6 +180,14 @@ export function RideChatPanel({
             </Button>
           </div>
         </div>
+
+        <ReportContentDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          contextType="ride_message"
+          contextId={rideId}
+          reportedUserName={otherName}
+        />
 
         {/* Messages */}
         <div
