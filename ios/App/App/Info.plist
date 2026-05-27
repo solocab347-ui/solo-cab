@@ -49,6 +49,16 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>SoloCab utilise le microphone pour les appels anonymes entre client et chauffeur pendant une course.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SoloCab utilise l'appareil photo pour vous permettre de prendre votre photo de profil et photographier vos documents (permis, carte VTC, véhicule).</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SoloCab accède à votre photothèque pour vous permettre de choisir votre photo de profil et vos documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>SoloCab peut enregistrer dans votre photothèque les justificatifs et reçus liés à vos courses.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SoloCab utilise votre position pour vous localiser pendant une course et calculer les itinéraires.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>SoloCab utilise votre position même en arrière-plan pour suivre votre course en cours et permettre au chauffeur ou au client de vous localiser.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
