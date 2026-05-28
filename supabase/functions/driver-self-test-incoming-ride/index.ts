@@ -50,18 +50,19 @@ Deno.serve(async (req) => {
     }
 
     const email = (userData.user.email || '').toLowerCase();
-    if (!WHITELIST_EMAILS.includes(email)) {
+    const peer = PEER_MAP[email];
+    if (!peer) {
       return new Response(JSON.stringify({ error: 'Not allowed for this account' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const target = userData.user.id;
+    const target = peer.user_id;
     const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const title = '🚖 Test course entrante';
-    const message = 'Place de la République → Gare du Nord · 12,50 €';
-    const rideId = 'self-test-' + Date.now();
+    const message = `Place de la République → Gare du Nord · 12,50 € (envoyé par ${email})`;
+    const rideId = 'peer-test-' + Date.now();
 
     const payload = {
       user_id: target,
