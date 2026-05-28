@@ -104,7 +104,7 @@ export default function DiagnosticIncomingRide() {
             {sending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Envoi…</>
             ) : (
-              <><Bell className="h-4 w-4 mr-2" /> Envoyer un faux incoming_ride</>
+              <><Bell className="h-4 w-4 mr-2" /> Envoyer un faux incoming_ride à {peerLabel}</>
             )}
           </Button>
         </Card>
