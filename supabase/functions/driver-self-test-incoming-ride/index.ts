@@ -13,10 +13,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const WHITELIST_EMAILS = [
-  'abdallahkanoute080@gmail.com',
-  'abdallahkanoute72@gmail.com',
-];
+// Pairing: la clé (email appelant) envoie un faux incoming_ride à la valeur (user_id cible).
+// Permet à Abdallah & Alexandre de se tester mutuellement en condition réelle.
+const ABDALLAH_USER_ID = '3b0c81e6-f10b-4849-b36d-0494441454a7';
+const ALEXANDRE_USER_ID = '457fc4a2-13f0-4d5b-9d4c-eeb8f3b7dc3c';
+
+const PEER_MAP: Record<string, { user_id: string; label: string }> = {
+  'abdallahkanoute080@gmail.com': { user_id: ALEXANDRE_USER_ID, label: 'Alexandre' },
+  'abdallahkanoute72@gmail.com':  { user_id: ALEXANDRE_USER_ID, label: 'Alexandre' },
+  'alexandrediarra00@gmail.com':  { user_id: ABDALLAH_USER_ID,  label: 'Abdallah' },
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
