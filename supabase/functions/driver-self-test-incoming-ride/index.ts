@@ -101,15 +101,15 @@ Deno.serve(async (req) => {
 
     await supa.from('push_delivery_logs').insert({
       user_id: target,
-      channel: 'self-test',
+      channel: 'peer-test',
       notification_type: 'incoming_ride',
       title,
       body: message,
       success: true,
-      metadata: { web_push: json, fcm: json2, triggered_by: target, email },
+      metadata: { web_push: json, fcm: json2, triggered_by: userData.user.id, sender_email: email, peer_label: peer.label },
     });
 
-    return new Response(JSON.stringify({ success: true, web_push: json, fcm: json2 }), {
+    return new Response(JSON.stringify({ success: true, sent_to: peer.label, web_push: json, fcm: json2 }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
