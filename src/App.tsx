@@ -93,6 +93,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const CancellationPolicy = lazy(() => import("./pages/CancellationPolicy"));
 const Permissions = lazy(() => import("./pages/Permissions"));
 const GpsDiagnostic = lazy(() => import("./pages/GpsDiagnostic"));
+const DiagnosticIncomingRide = lazy(() => import("./pages/DiagnosticIncomingRide"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -343,6 +344,16 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["driver", "admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <GpsDiagnostic />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/diagnostic-incoming-ride"
+                element={
+                  <ProtectedRoute allowedRoles={["driver", "admin"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DiagnosticIncomingRide />
                     </Suspense>
                   </ProtectedRoute>
                 }
