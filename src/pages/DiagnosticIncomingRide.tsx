@@ -7,7 +7,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const WHITELIST = ['abdallahkanoute080@gmail.com', 'abdallahkanoute72@gmail.com'];
+const PEER_MAP: Record<string, string> = {
+  'abdallahkanoute080@gmail.com': 'Alexandre',
+  'abdallahkanoute72@gmail.com': 'Alexandre',
+  'alexandrediarra00@gmail.com': 'Abdallah',
+};
 
 export default function DiagnosticIncomingRide() {
   const navigate = useNavigate();
@@ -16,7 +20,8 @@ export default function DiagnosticIncomingRide() {
   const [lastResult, setLastResult] = useState<null | { ok: boolean; detail: string }>(null);
 
   const email = (user?.email || '').toLowerCase();
-  const allowed = WHITELIST.includes(email);
+  const peerLabel = PEER_MAP[email];
+  const allowed = !!peerLabel;
 
   useEffect(() => {
     document.title = 'Diagnostic course entrante · SoloCab';
@@ -82,8 +87,8 @@ export default function DiagnosticIncomingRide() {
             <div className="flex-1">
               <h2 className="font-semibold">Test push « incoming_ride »</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Envoie une fausse course à votre propre device. Vérifie le son, la bannière
-                système, l'overlay plein écran, et le deep-link vers le dashboard.
+                Envoie une fausse course à <strong>{peerLabel}</strong>. Idéal pour tester
+                à deux en condition réelle (son, bannière, overlay, deep-link).
               </p>
             </div>
           </div>
@@ -99,7 +104,7 @@ export default function DiagnosticIncomingRide() {
             {sending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Envoi…</>
             ) : (
-              <><Bell className="h-4 w-4 mr-2" /> Envoyer un faux incoming_ride</>
+              <><Bell className="h-4 w-4 mr-2" /> Envoyer un faux incoming_ride à {peerLabel}</>
             )}
           </Button>
         </Card>

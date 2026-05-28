@@ -13,10 +13,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const WHITELIST_EMAILS = [
-  'abdallahkanoute080@gmail.com',
-  'abdallahkanoute72@gmail.com',
-];
+// Pairing: la clé (email appelant) envoie un faux incoming_ride à la valeur (user_id cible).
+// Permet à Abdallah & Alexandre de se tester mutuellement en condition réelle.
+const ABDALLAH_USER_ID = '3b0c81e6-f10b-4849-b36d-0494441454a7';
+const ALEXANDRE_USER_ID = '457fc4a2-13f0-4d5b-9d4c-eeb8f3b7dc3c';
+
+const PEER_MAP: Record<string, { user_id: string; label: string }> = {
+  'abdallahkanoute080@gmail.com': { user_id: ALEXANDRE_USER_ID, label: 'Alexandre' },
+  'abdallahkanoute72@gmail.com':  { user_id: ALEXANDRE_USER_ID, label: 'Alexandre' },
+  'alexandrediarra00@gmail.com':  { user_id: ABDALLAH_USER_ID,  label: 'Abdallah' },
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -44,18 +50,19 @@ Deno.serve(async (req) => {
     }
 
     const email = (userData.user.email || '').toLowerCase();
-    if (!WHITELIST_EMAILS.includes(email)) {
+    const peer = PEER_MAP[email];
+    if (!peer) {
       return new Response(JSON.stringify({ error: 'Not allowed for this account' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const target = userData.user.id;
+    const target = peer.user_id;
     const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const title = '🚖 Test course entrante';
-    const message = 'Place de la République → Gare du Nord · 12,50 €';
-    const rideId = 'self-test-' + Date.now();
+    const message = `Place de la République → Gare du Nord · 12,50 € (envoyé par ${email})`;
+    const rideId = 'peer-test-' + Date.now();
 
     const payload = {
       user_id: target,
@@ -94,15 +101,15 @@ Deno.serve(async (req) => {
 
     await supa.from('push_delivery_logs').insert({
       user_id: target,
-      channel: 'self-test',
+      channel: 'peer-test',
       notification_type: 'incoming_ride',
       title,
       body: message,
       success: true,
-      metadata: { web_push: json, fcm: json2, triggered_by: target, email },
+      metadata: { web_push: json, fcm: json2, triggered_by: userData.user.id, sender_email: email, peer_label: peer.label },
     });
 
-    return new Response(JSON.stringify({ success: true, web_push: json, fcm: json2 }), {
+    return new Response(JSON.stringify({ success: true, sent_to: peer.label, web_push: json, fcm: json2 }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
