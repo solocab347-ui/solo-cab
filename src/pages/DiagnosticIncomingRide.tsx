@@ -7,7 +7,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const WHITELIST = ['abdallahkanoute080@gmail.com', 'abdallahkanoute72@gmail.com'];
+const PEER_MAP: Record<string, string> = {
+  'abdallahkanoute080@gmail.com': 'Alexandre',
+  'abdallahkanoute72@gmail.com': 'Alexandre',
+  'alexandrediarra00@gmail.com': 'Abdallah',
+};
 
 export default function DiagnosticIncomingRide() {
   const navigate = useNavigate();
@@ -16,7 +20,8 @@ export default function DiagnosticIncomingRide() {
   const [lastResult, setLastResult] = useState<null | { ok: boolean; detail: string }>(null);
 
   const email = (user?.email || '').toLowerCase();
-  const allowed = WHITELIST.includes(email);
+  const peerLabel = PEER_MAP[email];
+  const allowed = !!peerLabel;
 
   useEffect(() => {
     document.title = 'Diagnostic course entrante · SoloCab';
