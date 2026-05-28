@@ -87,8 +87,8 @@ export default function DiagnosticIncomingRide() {
             <div className="flex-1">
               <h2 className="font-semibold">Test push « incoming_ride »</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Envoie une fausse course à votre propre device. Vérifie le son, la bannière
-                système, l'overlay plein écran, et le deep-link vers le dashboard.
+                Envoie une fausse course à <strong>{peerLabel}</strong>. Idéal pour tester
+                à deux en condition réelle (son, bannière, overlay, deep-link).
               </p>
             </div>
           </div>
