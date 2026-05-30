@@ -108,9 +108,33 @@ export function BackgroundLocationDisclosureDialog() {
             boîte de dialogue. Choisissez <strong>« Toujours autoriser »</strong>{' '}
             pour activer le mode chauffeur en arrière-plan.
           </p>
+
+          <a
+            href="https://solocab.fr/privacy-policy#background-location"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 text-xs text-primary hover:underline py-2"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Consulter notre politique de confidentialité
+            <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
 
         <div className="flex flex-col gap-2 pt-2">
+          <p className="text-[11px] text-muted-foreground text-center px-2">
+            En cliquant sur « J'accepte », vous confirmez avoir lu et compris
+            l'usage de votre localisation décrit ci-dessus et dans notre{' '}
+            <a
+              href="https://solocab.fr/privacy-policy#background-location"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              politique de confidentialité
+            </a>
+            .
+          </p>
           <Button onClick={() => respond('accepted')} className="w-full">
             J'accepte, continuer
           </Button>
