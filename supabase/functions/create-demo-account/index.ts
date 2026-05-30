@@ -9,6 +9,17 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // SECURITY: cette fonction crée/réinitialise un compte de démo avec mot de passe
+  // connu pour la review Apple. Elle DOIT être protégée par un secret interne.
+  const expectedSecret = Deno.env.get("DEMO_ACCOUNT_SECRET");
+  const providedSecret = req.headers.get("x-internal-secret");
+  if (!expectedSecret || providedSecret !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "content-type": "application/json" },
+    });
+  }
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -19,9 +30,16 @@ Deno.serve(async (req) => {
   const fullName = "Apple Review Demo";
   const phone = "+33600000000";
 
-  // Check if user exists
-  const { data: list } = await admin.auth.admin.listUsers();
-  let user = list?.users.find((u) => u.email === email);
+  // Recherche du compte existant par email (évite listUsers qui dump tout)
+  let user: any = null;
+  try {
+    const { data } = await (admin.auth.admin as any).getUserByEmail?.(email) ?? { data: null };
+    user = data?.user ?? null;
+  } catch { /* fallback below */ }
+  if (!user) {
+    const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    user = list?.users.find((u) => u.email === email) ?? null;
+  }
 
   if (!user) {
     const { data, error } = await admin.auth.admin.createUser({
