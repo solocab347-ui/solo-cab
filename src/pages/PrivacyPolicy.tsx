@@ -192,7 +192,8 @@ const PrivacyPolicy = () => {
               <ul className="list-disc pl-6 space-y-2">
                 <li><strong>Données de compte :</strong> pendant la durée de votre utilisation du service + 3 ans après suppression</li>
                 <li><strong>Données de facturation :</strong> 10 ans (obligation légale comptable)</li>
-                <li><strong>Données de géolocalisation :</strong> 1 an</li>
+                <li><strong>Données de géolocalisation (course active) :</strong> 1 an</li>
+                <li><strong>Données de géolocalisation en arrière-plan (chauffeurs) :</strong> conservées sous forme de trace de trajet liée à chaque course pendant 1 an, puis purgées. Les positions transmises hors d'un trajet (chauffeur en ligne sans course) ne sont pas archivées au-delà de 30 jours.</li>
                 <li><strong>Logs techniques :</strong> 1 an</li>
               </ul>
             </section>
