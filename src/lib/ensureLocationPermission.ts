@@ -31,7 +31,24 @@ export async function ensureLocationPermission(opts: { silent?: boolean } = {}):
 
       if (isGranted(status)) return 'granted';
 
-      // 2. Demande explicite (déclenche le prompt système Android)
+      // 2. PROMINENT DISCLOSURE (Google Play User Data policy) — sur Android,
+      // afficher notre écran d'information AVANT que l'OS ne demande
+      // ACCESS_BACKGROUND_LOCATION. La modale n'est pas re-présentée si
+      // l'utilisateur l'a déjà acceptée (persistée en localStorage).
+      if (Capacitor.getPlatform() === 'android' && !silent) {
+        const { requestBackgroundLocationDisclosure } = await import('./prominentDisclosure');
+        const accepted = await requestBackgroundLocationDisclosure();
+        if (!accepted) {
+          toast.error('Localisation requise', {
+            description:
+              "SoloCab a besoin de votre position GPS pour vous attribuer les courses. Vous pourrez activer la localisation à tout moment depuis l'écran Autorisations.",
+            duration: 8000,
+          });
+          return 'denied';
+        }
+      }
+
+      // 3. Demande explicite (déclenche le prompt système Android)
       try {
         status = await Geolocation.requestPermissions({
           permissions: ['location', 'coarseLocation'],
