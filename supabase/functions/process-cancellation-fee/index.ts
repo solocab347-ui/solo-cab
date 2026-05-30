@@ -184,6 +184,22 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+    // ═══ SECURITY: vérifier l'identité de l'appelant ═══
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerUserId = userData.user.id;
+
     const { 
       course_id,
       cancelled_by,
@@ -196,7 +212,7 @@ serve(async (req) => {
       throw new Error("cancelled_by must be 'driver', 'client', or 'system'");
     }
 
-    logStep("Processing cancellation", { course_id, cancelled_by, reason });
+    logStep("Processing cancellation", { course_id, cancelled_by, reason, callerUserId });
 
     // ═══ 1. RÉCUPÉRER DONNÉES ═══
     const { data: course, error: courseError } = await supabaseClient
@@ -214,6 +230,36 @@ serve(async (req) => {
 
     if (courseError || !course) {
       throw new Error("Course not found");
+    }
+
+    // ═══ SECURITY: l'appelant doit être le chauffeur OU le client de la course (ou admin)
+    const { data: isAdmin } = await supabaseClient.rpc("has_role", {
+      _user_id: callerUserId, _role: "admin",
+    });
+    const isDriver = course.driver?.user_id === callerUserId;
+    const isClient = course.client?.user_id === callerUserId;
+    if (!isAdmin && !isDriver && !isClient) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Empêcher de mentir sur cancelled_by : driver ne peut pas se faire passer pour client et inversement
+    if (!isAdmin) {
+      if (cancelled_by === "driver" && !isDriver) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (cancelled_by === "client" && !isClient) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (cancelled_by === "system") {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { data: config } = await supabaseClient

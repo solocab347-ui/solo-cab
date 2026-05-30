@@ -23,7 +23,34 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // SECURITY: vérifier le JWT et que l'appelant est bien le fleet_manager visé
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { course_id, driver_id, fleet_manager_id, scheduled_date }: ReassignRequest = await req.json();
+
+    // Le fleet_manager_id fourni doit correspondre à un fleet_manager appartenant au user
+    // OU le caller doit être admin.
+    const [{ data: fm }, { data: isAdmin }] = await Promise.all([
+      supabase.from("fleet_managers").select("id, user_id").eq("id", fleet_manager_id).maybeSingle(),
+      supabase.rpc("has_role", { _user_id: userData.user.id, _role: "admin" }),
+    ]);
+    if (!isAdmin && (!fm || fm.user_id !== userData.user.id)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log("Auto-reassign request:", { course_id, driver_id, fleet_manager_id, scheduled_date });
 

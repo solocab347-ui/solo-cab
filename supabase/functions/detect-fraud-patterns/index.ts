@@ -20,6 +20,35 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  // SECURITY: réservé aux admins OU au scheduler/cron (via x-internal-secret)
+  const internalSecret = Deno.env.get("INTERNAL_CRON_SECRET");
+  const providedSecret = req.headers.get("x-internal-secret");
+  const hasValidSecret = !!internalSecret && providedSecret === internalSecret;
+
+  if (!hasValidSecret) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: isAdmin } = await supabaseClient.rpc("has_role", {
+      _user_id: userData.user.id, _role: "admin",
+    });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   try {
     const results = { excessive_cancellations: 0, multiple_cards: 0, flagged: 0 };
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
