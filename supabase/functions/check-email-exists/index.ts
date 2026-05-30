@@ -77,7 +77,10 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const role = (roleRow?.role as Role) ?? "unknown";
+    const rawRole = (roleRow?.role as Role) ?? "unknown";
+    // SECURITY: ne jamais divulguer le rôle "admin" à un appelant non authentifié
+    // (évite l'énumération ciblée des comptes admin pour phishing/credential stuffing).
+    const role: Role = rawRole === "admin" ? "unknown" : rawRole;
     return json({ exists: true, role });
   } catch (err) {
     console.error("[check-email-exists] unexpected error", err);
