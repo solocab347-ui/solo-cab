@@ -14,6 +14,7 @@ import { EmergencyReset } from "@/components/EmergencyReset";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { PushNotificationListener } from "@/components/PushNotificationListener";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
+import { BackgroundLocationDisclosureDialog } from "@/components/permissions/BackgroundLocationDisclosureDialog";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 
