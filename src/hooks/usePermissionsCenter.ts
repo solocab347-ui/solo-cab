@@ -307,6 +307,17 @@ export function usePermissionsCenter({ role }: UsePermissionsCenterOptions) {
         case 'location':
         case 'location_background': {
           if (isNative) {
+            // PROMINENT DISCLOSURE (Google Play) — pour la localisation en
+            // arrière-plan sur Android, on doit afficher notre écran
+            // d'information avant le prompt système.
+            if (key === 'location_background' && platform === 'android') {
+              const { requestBackgroundLocationDisclosure } = await import('@/lib/prominentDisclosure');
+              const accepted = await requestBackgroundLocationDisclosure();
+              if (!accepted) {
+                result = 'denied';
+                break;
+              }
+            }
             const { Geolocation } = await import('@capacitor/geolocation');
             const r = await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
             result = mapCapacitorState(r.location);
