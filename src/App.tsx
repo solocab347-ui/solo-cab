@@ -108,6 +108,7 @@ const App = () => (
                 
                 <PushNotificationListener />
                 <NotificationPermissionPrompt />
+                <BackgroundLocationDisclosureDialog />
                 <EmergencyReset />
                 <ConnectionIndicator />
                 
