@@ -63,10 +63,60 @@ const PrivacyPolicy = () => {
 
               <h3 className="text-lg font-medium">2.2 Informations collectées automatiquement</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li><strong>Données de géolocalisation :</strong> pour calculer les itinéraires et tarifs des courses</li>
+                <li><strong>Données de géolocalisation (clients) :</strong> position GPS utilisée ponctuellement pour calculer les itinéraires, les tarifs et suivre la course en cours.</li>
                 <li><strong>Données techniques :</strong> type d'appareil, système d'exploitation, adresse IP</li>
                 <li><strong>Données d'utilisation :</strong> pages visitées, fonctionnalités utilisées, historique des courses</li>
               </ul>
+
+              <h3 className="text-lg font-medium" id="background-location">
+                2.3 Localisation en arrière-plan (chauffeurs uniquement)
+              </h3>
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <p>
+                  L'application SoloCab côté <strong>chauffeur</strong> collecte la position GPS précise
+                  (latitude, longitude, vitesse, cap) <strong>y compris lorsque l'application est en
+                  arrière-plan, réduite ou que l'écran est éteint</strong> (permission Android{' '}
+                  <code className="text-xs bg-muted px-1 py-0.5 rounded">ACCESS_BACKGROUND_LOCATION</code>{' '}
+                  et permission iOS <em>« Toujours »</em>).
+                </p>
+                <p>
+                  <strong>Pourquoi :</strong> sans cette collecte continue, le chauffeur cesserait de
+                  recevoir les nouvelles courses dès qu'il verrouille son téléphone ou ouvre une
+                  application de navigation (Google Maps, Waze), et le client ne pourrait plus suivre
+                  l'arrivée de son véhicule en temps réel sur la carte.
+                </p>
+                <p>
+                  <strong>Quand exactement :</strong> uniquement lorsque le chauffeur est
+                  <em> « En ligne »</em> ou qu'une course est en cours. <strong>Aucune position n'est
+                  collectée lorsque le chauffeur est hors ligne.</strong> Le passage hors ligne se fait
+                  d'un seul appui et arrête immédiatement toute collecte.
+                </p>
+                <p>
+                  <strong>Transparence pendant la collecte :</strong> un service de premier plan
+                  (<em>foreground service</em>) affiche une notification persistante indiquant que le
+                  suivi GPS est actif, conformément aux exigences Android 14+.
+                </p>
+                <p>
+                  <strong>Écran de divulgation préalable (Prominent Disclosure) :</strong> avant tout
+                  appel à la boîte de dialogue système d'Android, l'application affiche un écran
+                  expliquant clairement ce qui sera collecté, dans quel but, et propose un bouton
+                  <em> « Refuser »</em>.
+                </p>
+                <p>
+                  <strong>Comment révoquer :</strong> à tout moment via
+                  <em> Réglages Android &gt; Applications &gt; SoloCab &gt; Autorisations &gt; Localisation</em>{' '}
+                  (ou <em>Réglages iOS &gt; Confidentialité &gt; Service de localisation</em>), ou
+                  simplement en passant <em>« Hors ligne »</em> dans l'application.
+                </p>
+                <p>
+                  <strong>Usage strictement interne :</strong> les positions sont transmises de façon
+                  chiffrée (HTTPS/TLS) à nos serveurs européens et utilisées uniquement pour
+                  l'attribution des courses, le calcul des itinéraires, le suivi temps réel par le
+                  client et la conservation de la trace du trajet à des fins de preuve (réglementation
+                  VTC française – LOTI / loi Grandguillaume). <strong>Elles ne sont jamais vendues,
+                  louées ni partagées à des tiers à des fins publicitaires.</strong>
+                </p>
+              </div>
             </section>
 
             {/* Utilisation des données */}
@@ -142,7 +192,8 @@ const PrivacyPolicy = () => {
               <ul className="list-disc pl-6 space-y-2">
                 <li><strong>Données de compte :</strong> pendant la durée de votre utilisation du service + 3 ans après suppression</li>
                 <li><strong>Données de facturation :</strong> 10 ans (obligation légale comptable)</li>
-                <li><strong>Données de géolocalisation :</strong> 1 an</li>
+                <li><strong>Données de géolocalisation (course active) :</strong> 1 an</li>
+                <li><strong>Données de géolocalisation en arrière-plan (chauffeurs) :</strong> conservées sous forme de trace de trajet liée à chaque course pendant 1 an, puis purgées. Les positions transmises hors d'un trajet (chauffeur en ligne sans course) ne sont pas archivées au-delà de 30 jours.</li>
                 <li><strong>Logs techniques :</strong> 1 an</li>
               </ul>
             </section>
