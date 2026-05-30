@@ -1,9 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// SECURITY: limites anti-abus (coût AI gateway + prompt injection)
+const MAX_MESSAGES = 20;
+const MAX_MESSAGE_CHARS = 4000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,9 +16,53 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    // 1) AUTH: vérifier qu'un utilisateur est connecté
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // 2) AUTHORIZATION: seul un chauffeur peut utiliser l'assistant
+    const { data: isDriver } = await supabase.rpc("has_role", {
+      _user_id: userData.user.id, _role: "driver",
+    });
+    if (!isDriver) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 3) INPUT VALIDATION: sanitize messages (anti prompt-injection)
+    const body = await req.json().catch(() => ({}));
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
+    if (rawMessages.length === 0 || rawMessages.length > MAX_MESSAGES) {
+      return new Response(JSON.stringify({ error: "Invalid messages payload" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const messages = rawMessages
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, MAX_MESSAGE_CHARS) }));
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: "No valid messages" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
