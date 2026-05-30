@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   await admin.rpc("assign_user_role", { p_user_id: user.id, p_role: "client" });
 
   return new Response(
-    JSON.stringify({ ok: true, email, password, user_id: user.id }),
+    JSON.stringify({ ok: true, user_id: user.id }),
     { headers: { ...corsHeaders, "content-type": "application/json" } }
   );
 });
