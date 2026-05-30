@@ -21,7 +21,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MapPin, Shield, Clock, Lock } from 'lucide-react';
+import { MapPin, Shield, Clock, Lock, FileText, ExternalLink } from 'lucide-react';
 import { _registerDisclosureListener, type DisclosureDecision } from '@/lib/prominentDisclosure';
 
 export function BackgroundLocationDisclosureDialog() {
